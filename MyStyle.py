@@ -16,6 +16,16 @@ My_Style.SetCanvasDefW(800) #Width of canvas
 My_Style.SetCanvasDefX(0)   #POsition on screen
 My_Style.SetCanvasDefY(0)
 
+# For the Pad:
+My_Style.SetPadBorderMode(0)
+# My_Style.SetPadBorderSize(Width_t size = 1)
+My_Style.SetPadColor(ROOT.kWhite)
+My_Style.SetPadGridX(False)
+My_Style.SetPadGridY(False)
+My_Style.SetGridColor(0)
+My_Style.SetGridStyle(3)
+My_Style.SetGridWidth(1)
+
 # For the frame:
 My_Style.SetFrameBorderMode(0)
 My_Style.SetFrameBorderSize(1)
