@@ -38,18 +38,18 @@ class MultiFunc(object):
     def Add(self, func):
         self.funcs.append(func)
 
-    def Draw(self, option=""):
+    def Draw(self, option=None):
         """Draw all the TF1s, adjust the axis sizes properly"""
         # if ROOT.gPad:
         #     if not ROOT.gPad.IsEditable():
         #         ROOT.gROOT.MakeDefCanvas()
         #     if "a" in option.lower():
         #         ROOT.gPad.Clear()
-
         # Draw, and figure out max/min of axes for some auto-ranging
         x_low, x_high = ROOT.Double(0), ROOT.Double(0)
         x_min, x_max = 999, -999
         y_min, y_max = 999, -999
+        option = option or ""
         for i, f in enumerate(self.funcs):
             if i == 0:
                 f.Draw(option)
@@ -90,7 +90,7 @@ def grab_obj(file_name, obj_name):
 class Contribution(object):
     """Basic class to handle information about one contribution to a canvas."""
 
-    def __init__(self, obj, label="",
+    def __init__(self, obj, label=None,
                  line_width=1, line_color=ROOT.kRed, line_style=1,
                  fill_color=ROOT.kRed, fill_style=1,
                  marker_size=1, marker_color=ROOT.kRed, marker_style=1,
@@ -122,7 +122,7 @@ class Contribution(object):
             If a histogram, specify the number of bins to be grouped together.
         """
         self.obj = obj
-        self.label = label
+        self.label = label or ""
         self.line_width = line_width
         self.line_color = line_color
         self.line_style = line_style
@@ -161,9 +161,9 @@ class Plot(object):
     """
 
     def __init__(self, contributions=None, what="graph",
-                 title="", xtitle="", ytitle="", xlim=None, ylim=None,
+                 title=None, xtitle=None, ytitle=None, xlim=None, ylim=None,
                  legend=True, extend=False,
-                 ratio_subplot=None, diff_subplot=None):
+                 subplot=None, subplot_type="ratio"):
         """
         contributions: list
             List of Contribution objects.
@@ -196,9 +196,9 @@ class Plot(object):
         if what not in options:
             raise RuntimeError("`what` argument must be one of %s" % options)
         self.plot_what = what
-        self.title = title
-        self.xtitle = xtitle
-        self.ytitle = ytitle
+        self.title = title or ""
+        self.xtitle = xtitle  # don't do or "" trick here, see later
+        self.ytitle = ytitle  # don't do or "" trick here, see later
         self.xlim = xlim
         self.ylim = ylim
         self.do_legend = legend
