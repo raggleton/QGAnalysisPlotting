@@ -131,11 +131,7 @@ class Contribution(object):
         self.marker_size = marker_size
         self.marker_color = marker_color
         self.marker_style = marker_style
-        self.normalise_hist = normalise_hist
-        self.rebin_hist = rebin_hist
 
-    def get_obj(self):
-        """Get object for this contribution."""
         self.obj.SetLineWidth(self.line_width)
         self.obj.SetLineColor(self.line_color)
         self.obj.SetLineStyle(self.line_style)
@@ -144,14 +140,15 @@ class Contribution(object):
         self.obj.SetMarkerSize(self.marker_size)
         self.obj.SetMarkerColor(self.marker_color)
         self.obj.SetMarkerStyle(self.marker_style)
-        if self.normalise_hist:
-            self.obj.Scale(1./self.obj.Integral())
-        if self.rebin_hist:
-            self.obj.Rebin(self.rebin_hist) # Does this handle 2D hists?
-        if isinstance(self.obj, ROOT.TH1):
+        if rebin_hist:
+            self.obj.Rebin(rebin_hist) # Does this handle 2D hists?
+        if normalise_hist:
+            self.obj.Scale(1./obj.Integral())
+        if isinstance(self.obj, ROOT.TH1) or isinstance(self.obj, ROOT.TH2):
             self.obj.SetDirectory(0)
-        # input_file.Close()
-        return self.obj
+
+    def __eq__(self, other):
+        return self.obj == other.obj
 
 
 class Plot(object):
