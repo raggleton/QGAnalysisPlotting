@@ -29,7 +29,7 @@ My_Style.SetFrameLineWidth(1)
 # My_Style.SetPadTopMargin(0.05)
 My_Style.SetPadBottomMargin(0.13)
 My_Style.SetPadLeftMargin(0.11)
-My_Style.SetPadRightMargin(0.02)
+# My_Style.SetPadRightMargin(0.08)
 
 # For the Global title:
 # My_Style.SetOptTitle(0)
@@ -37,7 +37,7 @@ My_Style.SetTitleFont(42)
 My_Style.SetTitleColor(1)
 My_Style.SetTitleTextColor(1)
 My_Style.SetTitleFillColor(10)
-My_Style.SetTitleFontSize(0.05)
+My_Style.SetTitleFontSize(0.045)
 # My_Style.SetTitleH(0) # Set the height of the title box
 # My_Style.SetTitleW(0) # Set the width of the title box
 My_Style.SetTitleX(0.5) # Set the position of the title box
@@ -54,8 +54,11 @@ My_Style.SetTitleSize(0.05, "XYZ")
 # My_Style.SetTitleXSize(Float_t size = 0.02) # Another way to set the size?
 # My_Style.SetTitleYSize(Float_t size = 0.02)
 My_Style.SetTitleXOffset(1.05)
-My_Style.SetTitleYOffset(1.1)
+My_Style.SetTitleYOffset(1.08)
 
+# For the statistics box:
+My_Style.SetOptFile(0)
+My_Style.SetOptStat(0) # To display the mean and RMS:   SetOptStat("mr")
 
 
 # For the legend
