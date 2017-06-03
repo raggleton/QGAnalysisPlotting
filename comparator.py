@@ -16,6 +16,7 @@ import os
 import ROOT
 import common_utils as cu
 import random
+from MyStyle import My_Style
 
 
 ROOT.PyConfig.IgnoreCommandLineOptions = True
@@ -23,6 +24,7 @@ ROOT.gROOT.SetBatch(1)
 ROOT.TH1.SetDefaultSumw2()
 ROOT.gStyle.SetOptStat(0)
 # ROOT.gStyle.SetPalette(55)
+My_Style.cd()
 
 
 class MultiFunc(object):
