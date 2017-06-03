@@ -180,12 +180,11 @@ class Plot(object):
             Include legend on plot.
         extend: bool
             Extend functions to cover the whole x axis range.
-        ratio_subplot : object, None
-            If not None, draws a ratio plot below the main hist with ratios of
+        subplot : object, None
+            If not None, draws a plot below the main hist with
             all plots compared to the object provided as the argument here.
-        diff_subplot : object, None
-            If not None, draws a difference plot below the main hist with ratios of
-            all plots compared to the object provided as the argument here.
+        subplot_type : str
+            The method of comparison in the subplot: ratio, difference, or ddelta/dlambda
         """
         self.contributions = contributions if contributions else []
         self.contributions_objs = []
@@ -204,11 +203,17 @@ class Plot(object):
         self.container = None
         self.canvas = None
         self.default_canvas_size = (800, 600)
-        # self.canvas = ROOT.TCanvas("canv", "", 800, 600)
-        # self.canvas.SetTicks(1, 1)
-        self.ratio_subplot = None
-        self.diff_subplot = None
-        self.ratio_limits = [-1, 1]
+        self.main_pad = None
+        self.subplot = subplot
+        if subplot_type not in ['ratio', 'diff', "ddelta"]:
+            raise RuntimeError("subplot_type must be ratio, diff, or ddelta")
+        self.subplot_type = subplot_type
+        self.subplot_container = None
+        self.subplot_contributions = []
+        self.subplot_pad = None
+        self.subplot_limits = (0, 2)
+        self.subplot_pad_height = 0.35
+        self.subplot_line = None  # need this to remain visible...
 
     def add_contribution(self, *contribution):
         """Add Contribution to Plot. Can be single item or list."""
@@ -218,17 +223,20 @@ class Plot(object):
         """Create a container object for lots of the same TObject"""
         # use of rand is for unique name - move to uuid?
         if self.plot_what in ["graph", "both"]:
-            self.container = ROOT.TMultiGraph("mg%d" % random.randint(0, 1000), "")
+            self.container = ROOT.TMultiGraph("mg%d" % random.randint(0, 10000), "")
+            self.subplot_container = ROOT.TMultiGraph("mg_ratio%d" % random.randint(0, 10000), "")
         elif self.plot_what == "function":
             self.container = MultiFunc()
+            self.subplot_container = MultiFunc()
         elif self.plot_what == "hist":
-            self.container = ROOT.THStack("hst%d" % random.randint(0, 1000), "")
+            self.container = ROOT.THStack("hst%d" % random.randint(0, 10000), "")
+            self.subplot_container = ROOT.THStack("hst_ratio%d" % random.randint(0, 10000), "")
 
-    def populate_container_legend(self):
-        """Add objects to teh container, and to the legend"""
+    def populate_container_and_legend(self):
+        """Add objects to the container, and to the legend"""
         for c in self.contributions:
             try:
-                obj = c.get_obj().Clone()
+                obj = c.obj.Clone()
             except IOError:
                 print "Couldn't get", c.obj_name, 'from', c.file_name
                 continue
@@ -251,9 +259,39 @@ class Plot(object):
                 opt = "LF" if self.plot_what == "hist" else "LP"
                 self.legend.AddEntry(obj, c.label, opt)
 
+            # Add contirubtions for the subplot
+            if self.subplot:
+                subplot_obj = self.subplot.obj.Clone()
+                if c != self.subplot:
+                    new_hist = obj.Clone()
+                    if (self.subplot_type == "ratio"):
+                        new_hist.Divide(subplot_obj)
+                    elif (self.subplot_type == "diff"):
+                        new_hist.Add(subplot_obj, -1.)
+                    elif (self.subplot_type == "ddelta"):
+                        # Do the differntial delta spectrum, see 1704.03878
+                        new_hist.Add(subplot_obj, -1.)
+                        new_hist.Multiply(new_hist)
+                        sum_hist = obj.Clone()
+                        sum_hist.Add(subplot_obj)
+                        new_hist.Divide(sum_hist)
+                        new_hist.Scale(0.5)
+                    self.subplot_container.Add(new_hist)
+                    self.subplot_contributions.append(new_hist)
+
     def style_legend(self):
         # self.legend.SetBorderSize(0)
         self.legend.SetFillStyle(0)
+
+    def rescale_plot_labels(self, container, factor):
+        # What a pile of wank, why does ROOT scale all these sizes?
+        container.GetXaxis().SetLabelSize(0.03/factor)
+        container.GetXaxis().SetTitleSize(0.04/factor)
+        # container.GetXaxis().SetTitleOffset(1.0)  # doesn't seem to work?
+
+        container.GetYaxis().SetLabelSize(0.03/factor)
+        container.GetYaxis().SetTitleSize(0.04/factor)
+        container.GetYaxis().SetTitleOffset(1.08*factor)
 
     def plot(self, draw_opts=None):
         """Make the plot.
@@ -269,7 +307,7 @@ class Plot(object):
             if len(self.contributions) == 0:
                 raise UnboundLocalError("contributions list is empty")
 
-            self.populate_container_legend()
+            self.populate_container_and_legend()
 
         # Set default drawing opts
         # need different default drawing options for TF1s vs TGraphs
@@ -295,6 +333,25 @@ class Plot(object):
                 rand = random.randint(0, 100)  # need a unique name
                 self.canvas = ROOT.TCanvas("canv%s" % rand, "", *self.default_canvas_size)
                 self.canvas.SetTicks(1, 1)
+                if self.subplot:
+                    self.main_pad = ROOT.TPad("main_pad", "", 0, self.subplot_pad_height, 1, 1)
+                    self.main_pad.SetTicks(1, 1)
+                    self.main_pad.SetBottomMargin(0)
+                    self.main_pad.SetRightMargin(0.08)
+                    self.main_pad.Draw()
+                    self.subplot_pad = ROOT.TPad("subplot_pad", "", 0, 0, 1, self.subplot_pad_height)
+                    self.subplot_pad.SetTicks(1, 1)
+                    self.subplot_pad.SetTopMargin(0)
+                    self.subplot_pad.SetRightMargin(0.08)
+                    self.subplot_pad.SetBottomMargin(0.28)
+                    self.subplot_pad.Draw()
+                else:
+                    self.main_pad = ROOT.TPad("main_pad", "", 0, 0, 1, 1)
+                    self.main_pad.SetRightMargin(0.08)
+                    self.main_pad.SetTicks(1, 1)
+                    self.main_pad.Draw()
+
+        self.main_pad.cd()
 
         # Plot the container
         self.container.Draw(draw_opts)
@@ -312,6 +369,7 @@ class Plot(object):
             self.ytitle = self.contributions_objs[0].GetYaxis().GetTitle()
 
         modifier.SetTitle("%s;%s;%s" % (self.title, self.xtitle, self.ytitle))
+
         if self.xlim:
             modifier.GetXaxis().SetRangeUser(*self.xlim)
         if self.ylim:
@@ -321,6 +379,32 @@ class Plot(object):
         self.style_legend()
         if self.do_legend:
             self.legend.Draw()
+
+        if self.subplot:
+            self.rescale_plot_labels(modifier, 1-self.subplot_pad_height)
+
+            self.subplot_pad.cd()
+            self.subplot_container.Draw(draw_opts)
+
+            if (self.subplot_type == "ratio"):
+                self.subplot_container.SetTitle(";%s;Ratio" % (self.xtitle))
+            elif (self.subplot_type == "diff"):
+                self.subplot_container.SetTitle(";%s;Difference" % (self.xtitle))
+            elif (self.subplot_type == "ddelta"):
+                self.subplot_container.SetTitle(";%s;d#Delta/d#lambda" % (self.xtitle))
+
+            self.rescale_plot_labels(self.subplot_container, self.subplot_pad_height)
+
+            if self.subplot_type == "ratio":
+                self.subplot_line = ROOT.TLine(0., 1., 1., 1.,)
+                self.subplot_line.SetLineStyle(2)
+                self.subplot_line.SetLineWidth(2)
+                self.subplot_line.SetLineColor(ROOT.kBlack)
+                self.subplot_line.Draw()
+
+            self.subplot_pad.Update()
+            self.canvas.Update()
+
 
     def save(self, filename):
         """Save the plot to file. Do some check to make sure dir exists."""
