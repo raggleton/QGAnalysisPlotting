@@ -205,7 +205,7 @@ class Plot(object):
         self.default_canvas_size = (800, 800)
         self.main_pad = None
         self.subplot = subplot
-        if subplot_type not in ['ratio', 'diff', "ddelta"]:
+        if subplot_type and subplot_type not in ['ratio', 'diff', "ddelta"]:
             raise RuntimeError("subplot_type must be ratio, diff, or ddelta")
         self.subplot_type = subplot_type
         self.subplot_container = None
