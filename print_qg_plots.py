@@ -7,7 +7,7 @@ from comparator import Contribution, Plot, grab_obj
 from TDRStyle import TDR_Style
 from MyStyle import My_Style
 import common_utils as cu
-import random
+from uuid import uuid4
 import bisect
 import numpy as np
 
@@ -112,7 +112,7 @@ def do_2D_plot(obj, output_filename, renorm_axis=None, title=None, rebin=None):
         obj_renorm = obj
     if title:
         obj_renorm.SetTitle(title)
-    canvas = ROOT.TCanvas("canv%s" % random.randint(0, 100), "", 800, 600)
+    canvas = ROOT.TCanvas("canv%s" % uuid4(), "", 800, 600)
     canvas.SetTicks(1, 1)
     obj_renorm.Draw("COLZ")
     obj_renorm.GetYaxis().SetTitleOffset(1.3)
