@@ -17,7 +17,7 @@ ROOT.gROOT.SetBatch(1)
 ROOT.TH1.SetDefaultSumw2()
 ROOT.gStyle.SetOptStat(0)
 # TDR_Style.cd()
-My_Style.cd()
+# My_Style.cd()
 
 
 DY_COLOUR = 880
@@ -58,10 +58,6 @@ def plot_dy_vs_qcd(dy_obj, qcd_obj, output_filename, xtitle=None, title=None, re
     QCD = Contribution(qcd_obj, normalise_hist=True, fill_style=1, rebin_hist=rebin, **qcd_kwargs)
     p = Plot([DYJ, QCD], "hist", ratio_subplot=DYJ, xtitle=xtitle, ytitle="p.d.f", title=title)
     draw_opt = "NOSTACK HISTE"
-    p.plot(draw_opt)
-    hst = p.container
-    hst.GetYaxis().SetTitleOffset(1.2)
-    hst.GetXaxis().SetTitleOffset(1.1)
     p.plot(draw_opt)
     p.save(output_filename)
 
@@ -321,6 +317,7 @@ def do_all_flavour_fraction_plots():
         ytitle = "%s flavour fraction" % flav
         p = Plot(contribs, what='graph', xtitle="p_{T}^{jet} [GeV]", ytitle=ytitle, title=title)
         p.plot("ALP")
+        p.canvas.SetLogx()
         p.save(output_filename)
 
     input_files = [
