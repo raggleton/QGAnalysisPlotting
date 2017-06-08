@@ -56,7 +56,7 @@ def plot_dy_vs_qcd(dy_obj, qcd_obj, output_filename, xtitle=None, title=None, re
     qcd_kwargs = qcd_kwargs or {}
     DYJ = Contribution(dy_obj, normalise_hist=True, fill_style=1, rebin_hist=rebin, **dy_kwargs)
     QCD = Contribution(qcd_obj, normalise_hist=True, fill_style=1, rebin_hist=rebin, **qcd_kwargs)
-    p = Plot([DYJ, QCD], "hist", ratio_subplot=DYJ, xtitle=xtitle, ytitle="p.d.f", title=title)
+    p = Plot([DYJ, QCD], what="hist", subplot=DYJ, xtitle=xtitle, ytitle="p.d.f", title=title, subplot_type="diff")
     draw_opt = "NOSTACK HISTE"
     p.plot(draw_opt)
     p.save(output_filename)
