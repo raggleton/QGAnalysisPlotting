@@ -99,11 +99,11 @@ def do_all_inclusive_plots():
                        rebin=rebin, dy_kwargs=dy_kwargs, qcd_kwargs=qcd_kwargs)
 
 
-def do_2D_plot(obj, output_filename, renorm_axis=None, title=None, rebin=None):
+def do_2D_plot(obj, output_filename, renorm_axis=None, title=None, rebin=None, recolour=True):
     if rebin:
         obj.Rebin2D(*rebin)
     if renorm_axis:
-        obj_renorm = cu.make_normalised_TH2(obj, renorm_axis)
+        obj_renorm = cu.make_normalised_TH2(obj, renorm_axis, recolour)
     else:
         obj_renorm = obj
     if title:
@@ -120,39 +120,54 @@ def do_all_2D_plots():
     """Do 2D distributions"""
     for v in ['jet_LHA', 'jet_pTD', 'jet_width', 'jet_thrust', 'jet_multiplicity', 'jet_flavour', "jet_genParton_flavour"]:
         v += "_vs_pt"
-        rebin = [1, 4]
+
+        rebin = [2, 4]
         if v == "jet_multiplicity_vs_pt":
             rebin = [2, 4]
+        elif v == "jet_thrust_vs_pt" or "flavour" in v:
+            rebin = [1, 4]
+
+        recolour = False if "flavour" in v else True
+
         for rn in ['Y']:  # different renormalisation axes
             do_2D_plot(grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" % ROOT_DIR, "ZPlusJets_QG/%s" % v),
                        output_filename="%s/plots_2d/dy_zpj_%s_norm%s.pdf" % (ROOT_DIR, v, rn),
-                       renorm_axis=rn, title=DY_ZpJ_LABEL, rebin=rebin)
+                       renorm_axis=rn, title=DY_ZpJ_LABEL, rebin=rebin, recolour=recolour)
             do_2D_plot(grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" % ROOT_DIR, "Dijet_QG/%s" % v),
                        output_filename="%s/plots_2d/dy_dijet_%s_norm%s.pdf" % (ROOT_DIR, v, rn),
-                       renorm_axis=rn, title=DY_Dijet_LABEL, rebin=rebin)
-            do_2D_plot(grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_QCD_.root" % ROOT_DIR, "ZPlusJets_QG/%s" % v),
-                       output_filename="%s/plots_2d/qcd_zpj_%s_norm%s.pdf" % (ROOT_DIR, v, rn),
-                       renorm_axis=rn, title=QCD_ZpJ_LABEL, rebin=rebin)
+                       renorm_axis=rn, title=DY_Dijet_LABEL, rebin=rebin, recolour=recolour)
+
             do_2D_plot(grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_QCD_.root" % ROOT_DIR, "Dijet_QG/%s" % v),
                        output_filename="%s/plots_2d/qcd_dijet_%s_norm%s.pdf" % (ROOT_DIR, v, rn),
-                       renorm_axis=rn, title=QCD_Dijet_LABEL, rebin=rebin)
+                       renorm_axis=rn, title=QCD_Dijet_LABEL, rebin=rebin, recolour=recolour)
 
             if v in ["jet_flavour_vs_pt", "jet_genParton_flavour_vs_pt"]:
                 continue
 
             # Flavour matched reco
             do_2D_plot(grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" % ROOT_DIR, "ZPlusJets_QG/q%s" % v),
-                       output_filename="%s/plots_2d/dy_zpj_%s_norm%s_flavMatched.pdf" % (ROOT_DIR, v, rn),
+                       output_filename="%s/plots_2d/dy_zpj_%s_norm%s_qflavMatched.pdf" % (ROOT_DIR, v, rn),
                        renorm_axis=rn, title=DY_ZpJ_QFLAV_LABEL, rebin=rebin)
+
+            do_2D_plot(grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" % ROOT_DIR, "ZPlusJets_QG/g%s" % v),
+                       output_filename="%s/plots_2d/dy_zpj_%s_norm%s_gflavMatched.pdf" % (ROOT_DIR, v, rn),
+                       renorm_axis=rn, title=DY_ZpJ_GFLAV_LABEL, rebin=rebin)
+
             do_2D_plot(grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" % ROOT_DIR, "Dijet_QG/g%s" % v),
-                       output_filename="%s/plots_2d/dy_dijet_%s_norm%s_flavMatched.pdf" % (ROOT_DIR, v, rn),
+                       output_filename="%s/plots_2d/dy_dijet_%s_norm%s_gflavMatched.pdf" % (ROOT_DIR, v, rn),
                        renorm_axis=rn, title=DY_Dijet_GFLAV_LABEL, rebin=rebin)
-            do_2D_plot(grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_QCD_.root" % ROOT_DIR, "ZPlusJets_QG/q%s" % v),
-                       output_filename="%s/plots_2d/qcd_zpj_%s_norm%s_flavMatched.pdf" % (ROOT_DIR, v, rn),
-                       renorm_axis=rn, title=QCD_ZpJ_QFLAV_LABEL, rebin=rebin)
+
+            do_2D_plot(grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" % ROOT_DIR, "Dijet_QG/q%s" % v),
+                       output_filename="%s/plots_2d/dy_dijet_%s_norm%s_qflavMatched.pdf" % (ROOT_DIR, v, rn),
+                       renorm_axis=rn, title=DY_Dijet_QFLAV_LABEL, rebin=rebin)
+
             do_2D_plot(grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_QCD_.root" % ROOT_DIR, "Dijet_QG/g%s" % v),
-                       output_filename="%s/plots_2d/qcd_dijet_%s_norm%s_flavMatched.pdf" % (ROOT_DIR, v, rn),
+                       output_filename="%s/plots_2d/qcd_dijet_%s_norm%s_gflavMatched.pdf" % (ROOT_DIR, v, rn),
                        renorm_axis=rn, title=QCD_Dijet_GFLAV_LABEL, rebin=rebin)
+
+            do_2D_plot(grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_QCD_.root" % ROOT_DIR, "Dijet_QG/q%s" % v),
+                       output_filename="%s/plots_2d/qcd_dijet_%s_norm%s_qflavMatched.pdf" % (ROOT_DIR, v, rn),
+                       renorm_axis=rn, title=QCD_Dijet_QFLAV_LABEL, rebin=rebin)
 
             # GenJets
             # do_2D_plot(grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" % ROOT_DIR, "ZPlusJets_QG/gen%s" % v),
