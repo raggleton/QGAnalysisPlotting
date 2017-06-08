@@ -198,11 +198,11 @@ class Plot(object):
         self.xlim = xlim
         self.ylim = ylim
         self.do_legend = legend
-        self.legend = ROOT.TLegend(0.65, 0.6, 0.9, 0.9) if legend else None
+        self.legend = ROOT.TLegend(0.65, 0.6, 0.94, 0.85) if legend else None
         self.do_extend = extend
         self.container = None
         self.canvas = None
-        self.default_canvas_size = (800, 600)
+        self.default_canvas_size = (800, 800)
         self.main_pad = None
         self.subplot = subplot
         if subplot_type not in ['ratio', 'diff', "ddelta"]:
@@ -211,8 +211,9 @@ class Plot(object):
         self.subplot_container = None
         self.subplot_contributions = []
         self.subplot_pad = None
-        self.subplot_limits = (0, 2)
-        self.subplot_pad_height = 0.35
+        self.subplot_ratio_lim = (0, 2)
+        self.subplot_pad_height = 0.32
+        self.subplot_pad_fudge = 0.01  # to get non-overlapping subplot axis
         self.subplot_line = None  # need this to remain visible...
 
     def add_contribution(self, *contribution):
@@ -259,7 +260,7 @@ class Plot(object):
                 opt = "LF" if self.plot_what == "hist" else "LP"
                 self.legend.AddEntry(obj, c.label, opt)
 
-            # Add contirubtions for the subplot
+            # Add contributions for the subplot
             if self.subplot:
                 subplot_obj = self.subplot.obj.Clone()
                 if c != self.subplot:
@@ -288,10 +289,12 @@ class Plot(object):
         container.GetXaxis().SetLabelSize(0.03/factor)
         container.GetXaxis().SetTitleSize(0.04/factor)
         # container.GetXaxis().SetTitleOffset(1.0)  # doesn't seem to work?
+        container.GetXaxis().SetTickLength(0.02/factor)
 
         container.GetYaxis().SetLabelSize(0.03/factor)
         container.GetYaxis().SetTitleSize(0.04/factor)
-        container.GetYaxis().SetTitleOffset(1.08*factor)
+        container.GetYaxis().SetTitleOffset(1.2*factor)
+        # container.GetYaxis().SetTickLength(0.03/factor)
 
     def plot(self, draw_opts=None):
         """Make the plot.
@@ -330,27 +333,34 @@ class Plot(object):
                 self.canvas.cd()
                 print "Using existing canvas", self.canvas.GetName()
             else:
-                rand = random.randint(0, 100)  # need a unique name
+                rand = random.randint(0, 10000)  # need a unique name
                 self.canvas = ROOT.TCanvas("canv%s" % rand, "", *self.default_canvas_size)
                 self.canvas.SetTicks(1, 1)
+                right_margin = 0.03
                 if self.subplot:
-                    self.main_pad = ROOT.TPad("main_pad", "", 0, self.subplot_pad_height, 1, 1)
+                    self.main_pad = ROOT.TPad("main_pad", "", 0, self.subplot_pad_height+self.subplot_pad_fudge, 1, 1)
                     self.main_pad.SetTicks(1, 1)
-                    self.main_pad.SetBottomMargin(0)
-                    self.main_pad.SetRightMargin(0.08)
+                    self.main_pad.SetBottomMargin(2*self.subplot_pad_fudge)
+                    self.main_pad.SetTopMargin(0.12)
+                    self.main_pad.SetRightMargin(right_margin)
+                    self.canvas.cd()
                     self.main_pad.Draw()
-                    self.subplot_pad = ROOT.TPad("subplot_pad", "", 0, 0, 1, self.subplot_pad_height)
+                    self.subplot_pad = ROOT.TPad("subplot_pad", "", 0, 0, 1, self.subplot_pad_height-self.subplot_pad_fudge)
                     self.subplot_pad.SetTicks(1, 1)
-                    self.subplot_pad.SetTopMargin(0)
-                    self.subplot_pad.SetRightMargin(0.08)
-                    self.subplot_pad.SetBottomMargin(0.28)
+                    self.subplot_pad.SetFillColor(0)
+                    self.subplot_pad.SetFillStyle(0)
+                    self.subplot_pad.SetTopMargin(0.02)
+                    self.subplot_pad.SetRightMargin(right_margin)
+                    self.subplot_pad.SetBottomMargin(0.3)
+                    self.canvas.cd()
                     self.subplot_pad.Draw()
                 else:
                     self.main_pad = ROOT.TPad("main_pad", "", 0, 0, 1, 1)
-                    self.main_pad.SetRightMargin(0.08)
+                    self.main_pad.SetRightMargin(right_margin)
                     self.main_pad.SetTicks(1, 1)
                     self.main_pad.Draw()
 
+        self.canvas.cd()
         self.main_pad.cd()
 
         # Plot the container
@@ -383,6 +393,12 @@ class Plot(object):
         if self.subplot:
             self.rescale_plot_labels(modifier, 1-self.subplot_pad_height)
 
+            # Get rid of main plot x axis labels
+            modifier.GetHistogram().GetXaxis().SetLabelSize(0)
+            modifier.GetXaxis().SetLabelSize(0)
+            modifier.GetHistogram().GetXaxis().SetTitleSize(0)
+            modifier.GetXaxis().SetTitleSize(0)
+
             self.subplot_pad.cd()
             self.subplot_container.Draw(draw_opts)
 
@@ -394,8 +410,11 @@ class Plot(object):
                 self.subplot_container.SetTitle(";%s;d#Delta/d#lambda" % (self.xtitle))
 
             self.rescale_plot_labels(self.subplot_container, self.subplot_pad_height)
+            self.subplot_container.GetYaxis().SetNdivisions(505)
 
             if self.subplot_type == "ratio":
+                # self.subplot_container.SetMinimum(self.subplot_ratio_lim[0])  # use this, not SetRangeUser()
+                # self.subplot_container.SetMaximum(self.subplot_ratio_lim[1])
                 self.subplot_line = ROOT.TLine(0., 1., 1., 1.,)
                 self.subplot_line.SetLineStyle(2)
                 self.subplot_line.SetLineWidth(2)
