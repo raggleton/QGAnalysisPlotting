@@ -140,7 +140,7 @@ def th2_to_arr(h):
     return arr
 
 
-def make_normalised_TH2(hist, norm_axis):
+def make_normalised_TH2(hist, norm_axis, recolour=True):
     if norm_axis not in ['X', 'x', 'y', 'Y']:
         raise RuntimeError("norm_axis must be one of 'X', 'Y' ")
     norm_axis = norm_axis.upper()
@@ -151,11 +151,18 @@ def make_normalised_TH2(hist, norm_axis):
 
     if norm_axis == 'Y':
         arr = arr.T
-    # now set so the maximum in each bin is the same,
-    # scale other bins accordingly
-    for ind, xbin in enumerate(arr):
-        if xbin.max() > 0:
-            arr[ind] = xbin / xbin.max()
+    if recolour:
+        # can set so the maximum in each bin is the same,
+        # scale other bins accordingly
+        # this retain the colour scheme for each set of bins
+        for ind, xbin in enumerate(arr):
+            if xbin.max() > 0:
+                arr[ind] = xbin / xbin.max()
+    else:
+        # alternatively, can rescale so sum over bins = 1
+        for ind, xbin in enumerate(arr):
+            arr[ind] = xbin / xbin.sum()
+
     if norm_axis == 'Y':
         arr = arr.T
 
