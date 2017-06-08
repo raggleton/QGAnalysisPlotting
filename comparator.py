@@ -15,7 +15,7 @@ Example usage:
 import os
 import ROOT
 import common_utils as cu
-import random
+from uuid import uuid4
 from MyStyle import My_Style
 
 
@@ -222,16 +222,15 @@ class Plot(object):
 
     def create_container(self):
         """Create a container object for lots of the same TObject"""
-        # use of rand is for unique name - move to uuid?
         if self.plot_what in ["graph", "both"]:
-            self.container = ROOT.TMultiGraph("mg%d" % random.randint(0, 10000), "")
-            self.subplot_container = ROOT.TMultiGraph("mg_ratio%d" % random.randint(0, 10000), "")
+            self.container = ROOT.TMultiGraph("mg%s" % uuid4(), "")
+            self.subplot_container = ROOT.TMultiGraph("mg_ratio%s" % uuid4(), "")
         elif self.plot_what == "function":
             self.container = MultiFunc()
             self.subplot_container = MultiFunc()
         elif self.plot_what == "hist":
-            self.container = ROOT.THStack("hst%d" % random.randint(0, 10000), "")
-            self.subplot_container = ROOT.THStack("hst_ratio%d" % random.randint(0, 10000), "")
+            self.container = ROOT.THStack("hst%s" % uuid4(), "")
+            self.subplot_container = ROOT.THStack("hst_ratio%s" % uuid4(), "")
 
     def populate_container_and_legend(self):
         """Add objects to the container, and to the legend"""
@@ -333,8 +332,7 @@ class Plot(object):
                 self.canvas.cd()
                 print "Using existing canvas", self.canvas.GetName()
             else:
-                rand = random.randint(0, 10000)  # need a unique name
-                self.canvas = ROOT.TCanvas("canv%s" % rand, "", *self.default_canvas_size)
+                self.canvas = ROOT.TCanvas("canv%s" % uuid4(), "", *self.default_canvas_size)
                 self.canvas.SetTicks(1, 1)
                 right_margin = 0.03
                 if self.subplot:
