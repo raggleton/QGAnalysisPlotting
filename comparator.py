@@ -84,7 +84,7 @@ def grab_obj(file_name, obj_name):
     obj = cu.get_from_file(input_file, obj_name)
     obj.SetDirectory(0)  # Ownership kludge
     input_file.Close()
-    return obj.Clone()
+    return obj.Clone(str(uuid4()))
 
 
 class Contribution(object):
@@ -236,7 +236,7 @@ class Plot(object):
         """Add objects to the container, and to the legend"""
         for c in self.contributions:
             try:
-                obj = c.obj.Clone()
+                obj = c.obj.Clone(str(uuid4()))
             except IOError:
                 print "Couldn't get", c.obj_name, 'from', c.file_name
                 continue
