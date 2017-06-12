@@ -66,6 +66,25 @@ def plot_dy_vs_qcd(dy_obj, qcd_obj, output_filename, xtitle=None, title=None, re
     p.save(output_filename)
 
 
+def do_comparison_plot(entries, output_filename, rebin=1, **plot_kwargs):
+    conts = [Contribution(ent[0], normalise_hist=True, fill_style=0, rebin_hist=rebin, **ent[1]) for ent in entries]
+    p = Plot(conts, what="hist", subplot=conts[0], ytitle="p.d.f", subplot_type="diff", **plot_kwargs)
+    draw_opt = "NOSTACK HISTE"
+    p.legend.SetX1(0.55)
+    p.legend.SetY1(0.6)
+    p.plot(draw_opt)
+    p.save(output_filename)
+
+
+def get_projection_plot(h2d, start_val, end_val):
+    y_axis = h2d.GetYaxis()
+    bin_edges = [y_axis.GetBinLowEdge(i) for i in range(1, y_axis.GetNbins()+1)]
+    bin_start = bisect.bisect_right(bin_edges, start_val)
+    bin_end = bisect.bisect_right(bin_edges, end_val)
+    hproj = h2d.ProjectionX(h2d.GetName()+"_projX"+str(uuid4()), bin_start, bin_end, "eo")
+    return hproj
+
+
 def do_all_inclusive_plots():
     """Do plots inclusive over all pt, eta, nvtx"""
 
@@ -359,60 +378,80 @@ def do_all_flavour_fraction_plots():
 
 
 def do_chs_vs_puppi_plots():
-
-    def do_chs_vs_puppi_plot(chs_entries, puppi_entries, output_filename, rebin=1, xtitle=None, title=None):
-        conts = [Contribution(ent[0], normalise_hist=True, fill_style=0, rebin_hist=rebin, **ent[1]) for ent in chain(chs_entries, puppi_entries)]
-        p = Plot(conts, what="hist", subplot=conts[0], xtitle=xtitle, ytitle="p.d.f", subplot_type="diff", title=title)
-        draw_opt = "NOSTACK HISTE"
-        p.legend.SetX1(0.55)
-        p.legend.SetY1(0.6)
-        p.plot(draw_opt)
-        p.save(output_filename)
-
-    def get_projection_plot(h2d, start_val, end_val):
-        y_axis = h2d.GetYaxis()
-        bin_edges = [y_axis.GetBinLowEdge(i) for i in range(1, y_axis.GetNbins()+1)]
-        bin_start = bisect.bisect_right(bin_edges, start_val)
-        bin_end = bisect.bisect_right(bin_edges, end_val)
-        hproj = h2d.ProjectionX(h2d.GetName()+"_projX", bin_start, bin_end, "eo")
-        return hproj
-
     for v in ['jet_LHA', 'jet_pTD', 'jet_width', 'jet_thrust', 'jet_multiplicity']:
         v += "_vs_pt"
 
-        for (start_val, end_val) in [(80, 100), (100, 200), (100, 2000), (400, 500), (1000, 2000)]:
-            h2d_dyj_chs = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" % CHS_DIR, "ZPlusJets_QG/q%s" % v)
-            h2d_qcd_chs = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_QCD_.root" % CHS_DIR, "Dijet_QG/g%s" % v)
+        h2d_dyj_chs = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" % CHS_DIR, "ZPlusJets_QG/q%s" % v)
+        h2d_qcd_chs = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_QCD_.root" % CHS_DIR, "Dijet_QG/g%s" % v)
 
-            h2d_dyj_puppi = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" % PUPPI_DIR, "ZPlusJets_QG/q%s" % v)
-            h2d_qcd_puppi = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_QCD_.root" % PUPPI_DIR, "Dijet_QG/g%s" % v)
+        h2d_dyj_puppi = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" % PUPPI_DIR, "ZPlusJets_QG/q%s" % v)
+        h2d_qcd_puppi = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_QCD_.root" % PUPPI_DIR, "Dijet_QG/g%s" % v)
+        
+        lw = 2
+        dy_kwargs_chs = dict(line_color=DY_COLOUR, fill_color=DY_COLOUR, label=DY_ZpJ_QFLAV_LABEL + " [CHS]", line_width=lw)
+        qcd_kwargs_chs = dict(line_color=QCD_COLOUR, fill_color=QCD_COLOUR, label=QCD_Dijet_GFLAV_LABEL + " [CHS]", line_width=lw)
 
-            dy_kwargs_chs = dict(line_color=DY_COLOUR, fill_color=DY_COLOUR, label=DY_ZpJ_QFLAV_LABEL + " [CHS]", line_width=2)
-            qcd_kwargs_chs = dict(line_color=QCD_COLOUR, fill_color=QCD_COLOUR, label=QCD_Dijet_GFLAV_LABEL + " [CHS]", line_width=2)
-
-            puppi_ls = 3
-            dy_kwargs_puppi = dict(line_color=DY_COLOUR+2, fill_color=DY_COLOUR+2, label=DY_ZpJ_QFLAV_LABEL + " [PUPPI]", line_style=puppi_ls, line_width=2)
-            qcd_kwargs_puppi = dict(line_color=QCD_COLOUR-3, fill_color=QCD_COLOUR-3, label=QCD_Dijet_GFLAV_LABEL + " [PUPPI]", line_style=puppi_ls, line_width=2)
-
-            chs_entries = [
+        puppi_ls = 3
+        dy_kwargs_puppi = dict(line_color=DY_COLOUR+2, fill_color=DY_COLOUR+2, label=DY_ZpJ_QFLAV_LABEL + " [PUPPI]", line_style=puppi_ls, line_width=lw)
+        qcd_kwargs_puppi = dict(line_color=QCD_COLOUR-3, fill_color=QCD_COLOUR-3, label=QCD_Dijet_GFLAV_LABEL + " [PUPPI]", line_style=puppi_ls, line_width=lw)
+        
+        rebin = 2
+        xlim = None
+        if "thrust" in v:
+            rebin = 1
+            xlim = (0, 0.5)
+        
+        for (start_val, end_val) in [(80, 100), (100, 200), (400, 500), (1000, 2000)]:
+            entries = [
                 (get_projection_plot(h2d_dyj_chs, start_val, end_val), dy_kwargs_chs),
-                (get_projection_plot(h2d_qcd_chs, start_val, end_val), qcd_kwargs_chs)
-            ]
-            puppi_entries = [
+                (get_projection_plot(h2d_qcd_chs, start_val, end_val), qcd_kwargs_chs),
                 (get_projection_plot(h2d_dyj_puppi, start_val, end_val), dy_kwargs_puppi),
                 (get_projection_plot(h2d_qcd_puppi, start_val, end_val), qcd_kwargs_puppi),
             ]
-            rebin = 2
-            if "thrust" in v:
-                rebin = 1
-            do_chs_vs_puppi_plot(chs_entries, puppi_entries, "ak4_chs_vs_puppi/%s_pt%dto%d_flavMatched.pdf" % (v, start_val, end_val),
-                                 rebin=rebin, title="%d < p_{T}^{jet} < %d GeV" % (start_val, end_val))
+            
+            do_comparison_plot(entries, "ak4_chs_vs_puppi/%s_pt%dto%d_flavMatched.pdf" % (v, start_val, end_val),
+                               rebin=rebin, title="%d < p_{T}^{jet} < %d GeV" % (start_val, end_val), xlim=xlim)
+
+
+def do_wrong_plots():
+    for v in ['jet_LHA', 'jet_pTD', 'jet_width', 'jet_thrust', 'jet_multiplicity']:
+        v += "_vs_pt"
+
+        h2d_dyj_chs = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" % CHS_DIR, "ZPlusJets_QG/q%s" % v)
+        h2d_dyj_wrong_chs = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" % CHS_DIR, "ZPlusJets_QG/g%s" % v)
+        h2d_qcd_chs = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_QCD_.root" % CHS_DIR, "Dijet_QG/g%s" % v)
+        h2d_qcd_wrong_chs = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_QCD_.root" % CHS_DIR, "Dijet_QG/q%s" % v)
+
+        lw = 2
+        dy_kwargs_chs = dict(line_color=DY_COLOUR, fill_color=DY_COLOUR, label=DY_ZpJ_QFLAV_LABEL, line_width=lw)
+        dy_kwargs_wrong_chs = dict(line_color=DY_COLOUR, fill_color=DY_COLOUR, label=DY_ZpJ_GFLAV_LABEL, line_width=lw, line_style=3)
+        qcd_kwargs_chs = dict(line_color=QCD_COLOUR, fill_color=QCD_COLOUR, label=QCD_Dijet_GFLAV_LABEL, line_width=lw)
+        qcd_kwargs_wrong_chs = dict(line_color=QCD_COLOUR, fill_color=QCD_COLOUR, label=QCD_Dijet_QFLAV_LABEL, line_width=lw, line_style=3)
+
+        rebin = 2
+        xlim = None
+        if "thrust" in v:
+            rebin = 1
+            xlim = (0, 0.5)
+
+        for (start_val, end_val) in [(80, 100), (100, 200), (400, 500), (1000, 2000)]:
+
+            entries = [
+                (get_projection_plot(h2d_dyj_chs, start_val, end_val), dy_kwargs_chs),
+                (get_projection_plot(h2d_dyj_wrong_chs, start_val, end_val), dy_kwargs_wrong_chs),
+                (get_projection_plot(h2d_qcd_chs, start_val, end_val), qcd_kwargs_chs),
+                (get_projection_plot(h2d_qcd_wrong_chs, start_val, end_val), qcd_kwargs_wrong_chs),
+            ]
+
+            do_comparison_plot(entries, "%s/wrongFlavs/%s_pt%dto%d_flavMatched.pdf" % (ROOT_DIR, v, start_val, end_val),
+                               rebin=rebin, title="%d < p_{T}^{jet} < %d GeV %s (\"wrong\" flavours)" % (start_val, end_val, TITLE_STR), xlim=xlim)
 
 
 
 if __name__ == '__main__':
     # do_all_inclusive_plots()
     # do_all_2D_plots()
-    # do_all_exclusive_plots()
+    do_all_exclusive_plots()
     # do_all_flavour_fraction_plots()
-    do_chs_vs_puppi_plots()
+    # do_chs_vs_puppi_plots()
+    # do_wrong_plots()
