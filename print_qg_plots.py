@@ -194,7 +194,7 @@ def do_all_exclusive_plots():
     plot_dir = "plots_dy_vs_qcd"
     dy_kwargs = dict(line_color=DY_COLOUR, fill_color=DY_COLOUR)
     qcd_kwargs = dict(line_color=QCD_COLOUR, fill_color=QCD_COLOUR)
-    counter = 0
+
     for v in ['jet_LHA', 'jet_pTD', 'jet_width', 'jet_thrust', 'jet_multiplicity', 'jet_flavour', "jet_genParton_flavour"]:
         v += "_vs_pt"
 
@@ -225,20 +225,10 @@ def do_all_exclusive_plots():
             rebin = 1
 
         do_projection_plot(80, 100, h2d_dyj, h2d_qcd, "%s/%s/ptBinned/%s_pt{start_val}to{end_val}.pdf" % (ROOT_DIR, plot_dir, v), rebin)
-        counter += 1
-        print counter
         do_projection_plot(100, 200, h2d_dyj, h2d_qcd, "%s/%s/ptBinned/%s_pt{start_val}to{end_val}.pdf" % (ROOT_DIR, plot_dir, v), rebin)
-        counter += 1
-        print counter
         do_projection_plot(100, 2000, h2d_dyj, h2d_qcd, "%s/%s/ptBinned/%s_pt{start_val}to{end_val}.pdf" % (ROOT_DIR, plot_dir, v), rebin)
-        counter += 1
-        print counter
         do_projection_plot(400, 500, h2d_dyj, h2d_qcd, "%s/%s/ptBinned/%s_pt{start_val}to{end_val}.pdf" % (ROOT_DIR, plot_dir, v), rebin)
-        counter += 1
-        print counter
         do_projection_plot(1000, 2000, h2d_dyj, h2d_qcd, "%s/%s/ptBinned/%s_pt{start_val}to{end_val}.pdf" % (ROOT_DIR, plot_dir, v), rebin)
-        counter += 1
-        print counter
 
         if v in ["jet_flavour_vs_pt", "jet_genParton_flavour_vs_pt"]:
             continue
@@ -250,20 +240,10 @@ def do_all_exclusive_plots():
         h2d_qcd = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_QCD_.root" % ROOT_DIR, "Dijet_QG/g%s" % v)
 
         do_projection_plot(80, 100, h2d_dyj, h2d_qcd, "%s/%s/ptBinned/%s_pt{start_val}to{end_val}_flavMatched.pdf" % (ROOT_DIR, plot_dir, v), rebin)
-        counter += 1
-        print counter
         do_projection_plot(100, 200, h2d_dyj, h2d_qcd, "%s/%s/ptBinned/%s_pt{start_val}to{end_val}_flavMatched.pdf" % (ROOT_DIR, plot_dir, v), rebin)
-        counter += 1
-        print counter
         do_projection_plot(100, 2000, h2d_dyj, h2d_qcd, "%s/%s/ptBinned/%s_pt{start_val}to{end_val}_flavMatched.pdf" % (ROOT_DIR, plot_dir, v), rebin)
-        counter += 1
-        print counter
         do_projection_plot(400, 500, h2d_dyj, h2d_qcd, "%s/%s/ptBinned/%s_pt{start_val}to{end_val}_flavMatched.pdf" % (ROOT_DIR, plot_dir, v), rebin)
-        counter += 1
-        print counter
         do_projection_plot(1000, 2000, h2d_dyj, h2d_qcd, "%s/%s/ptBinned/%s_pt{start_val}to{end_val}_flavMatched.pdf" % (ROOT_DIR, plot_dir, v), rebin)
-        counter += 1
-        print counter
 
         # Gen Jets
         # dy_kwargs['label'] = DY_ZpJ_GEN_LABEL
@@ -391,7 +371,7 @@ def do_chs_vs_puppi_plots():
 
     def get_projection_plot(h2d, start_val, end_val):
         y_axis = h2d.GetYaxis()
-        bin_edges = [y_axis.GetBinLowEdge(i) for i in range(1, y_axis.GetNbins()+1)] 
+        bin_edges = [y_axis.GetBinLowEdge(i) for i in range(1, y_axis.GetNbins()+1)]
         bin_start = bisect.bisect_right(bin_edges, start_val)
         bin_end = bisect.bisect_right(bin_edges, end_val)
         hproj = h2d.ProjectionX(h2d.GetName()+"_projX", bin_start, bin_end, "eo")
@@ -425,7 +405,7 @@ def do_chs_vs_puppi_plots():
             rebin = 2
             if "thrust" in v:
                 rebin = 1
-            do_chs_vs_puppi_plot(chs_entries, puppi_entries, "ak4_chs_vs_puppi/%s_pt%dto%d_flavMatched.pdf" % (v, start_val, end_val), 
+            do_chs_vs_puppi_plot(chs_entries, puppi_entries, "ak4_chs_vs_puppi/%s_pt%dto%d_flavMatched.pdf" % (v, start_val, end_val),
                                  rebin=rebin, title="%d < p_{T}^{jet} < %d GeV" % (start_val, end_val))
 
 
