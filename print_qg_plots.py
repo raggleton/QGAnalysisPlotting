@@ -192,21 +192,6 @@ def do_all_2D_plots():
                        output_filename="%s/plots_2d/qcd_dijet_%s_norm%s_qflavMatched.pdf" % (ROOT_DIR, v, rn),
                        renorm_axis=rn, title=QCD_Dijet_QFLAV_LABEL, rebin=rebin)
 
-            # GenJets
-            # do_2D_plot(grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" % ROOT_DIR, "ZPlusJets_QG/gen%s" % v),
-            #            output_filename="%s/plots_2d/dy_zpj_%s_norm%s_genJets.pdf" % (ROOT_DIR, v, rn),
-            #            renorm_axis=rn, title=DY_ZpJ_GEN_LABEL)
-            # do_2D_plot(grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" % ROOT_DIR, "Dijet_QG/gen%s" % v),
-            #            output_filename="%s/plots_2d/dy_dijet_%s_norm%s_genJets.pdf" % (ROOT_DIR, v, rn),
-            #            renorm_axis=rn, title=DY_Dijet_GEN_LABEL)
-            # do_2D_plot(grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_QCD_.root" % ROOT_DIR, "ZPlusJets_QG/gen%s" % v),
-            #            output_filename="%s/plots_2d/qcd_zpj_%s_norm%s_genJets.pdf" % (ROOT_DIR, v, rn),
-            #            renorm_axis=rn, title=QCD_ZpJ_GEN_LABEL)
-            # do_2D_plot(grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_QCD_.root" % ROOT_DIR, "Dijet_QG/gen%s" % v),
-            #            output_filename="%s/plots_2d/qcd_dijet_%s_norm%s_genJets.pdf" % (ROOT_DIR, v, rn),
-            #            renorm_axis=rn, title=QCD_Dijet_GEN_LABEL)
-
-
 
 def do_all_exclusive_plots():
     """Do pt/eta/nvtx binned 1D plots"""
