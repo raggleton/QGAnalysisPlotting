@@ -341,14 +341,18 @@ def do_wrong_plots():
 
         h2d_dyj_chs = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" % CHS_DIR, "ZPlusJets_QG/q%s" % v)
         h2d_dyj_wrong_chs = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" % CHS_DIR, "ZPlusJets_QG/g%s" % v)
+        h2d_dyj_qcd_chs = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" % CHS_DIR, "Dijet_QG/q%s" % v)
+        h2d_dyj_qcd_wrong_chs = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" % CHS_DIR, "Dijet_QG/g%s" % v)
         h2d_qcd_chs = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_QCD_.root" % CHS_DIR, "Dijet_QG/g%s" % v)
         h2d_qcd_wrong_chs = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_QCD_.root" % CHS_DIR, "Dijet_QG/q%s" % v)
 
-        lw = 2
+        lw = 1
         dy_kwargs_chs = dict(line_color=DY_COLOUR, fill_color=DY_COLOUR, label=DY_ZpJ_QFLAV_LABEL, line_width=lw)
-        dy_kwargs_wrong_chs = dict(line_color=DY_COLOUR, fill_color=DY_COLOUR, label=DY_ZpJ_GFLAV_LABEL, line_width=lw, line_style=3)
+        dy_kwargs_wrong_chs = dict(line_color=DY_COLOUR+4, fill_color=DY_COLOUR+4, label=DY_ZpJ_GFLAV_LABEL, line_width=lw, line_style=1)
+        dy_kwargs_qcd_chs = dict(line_color=ROOT.kGreen+2, fill_color=ROOT.kGreen+2, label=DY_Dijet_QFLAV_LABEL, line_width=lw, line_style=1)
+        dy_kwargs_qcd_wrong_chs = dict(line_color=ROOT.kOrange-1, fill_color=ROOT.kOrange-1, label=DY_Dijet_GFLAV_LABEL, line_width=lw, line_style=1)
         qcd_kwargs_chs = dict(line_color=QCD_COLOUR, fill_color=QCD_COLOUR, label=QCD_Dijet_GFLAV_LABEL, line_width=lw)
-        qcd_kwargs_wrong_chs = dict(line_color=QCD_COLOUR, fill_color=QCD_COLOUR, label=QCD_Dijet_QFLAV_LABEL, line_width=lw, line_style=3)
+        qcd_kwargs_wrong_chs = dict(line_color=ROOT.kRed, fill_color=ROOT.kRed, label=QCD_Dijet_QFLAV_LABEL, line_width=lw, line_style=1)
 
         rebin = 2
         xlim = None
@@ -360,8 +364,10 @@ def do_wrong_plots():
             entries = [
                 (get_projection_plot(h2d_dyj_chs, start_val, end_val), dy_kwargs_chs),
                 (get_projection_plot(h2d_dyj_wrong_chs, start_val, end_val), dy_kwargs_wrong_chs),
-                (get_projection_plot(h2d_qcd_chs, start_val, end_val), qcd_kwargs_chs),
+                (get_projection_plot(h2d_dyj_qcd_chs, start_val, end_val), dy_kwargs_qcd_chs),
+                (get_projection_plot(h2d_dyj_qcd_wrong_chs, start_val, end_val), dy_kwargs_qcd_wrong_chs),
                 (get_projection_plot(h2d_qcd_wrong_chs, start_val, end_val), qcd_kwargs_wrong_chs),
+                (get_projection_plot(h2d_qcd_chs, start_val, end_val), qcd_kwargs_chs),
             ]
 
             do_comparison_plot(entries, "%s/wrongFlavs/%s_pt%dto%d_flavMatched.pdf" % (ROOT_DIR, v, start_val, end_val),
