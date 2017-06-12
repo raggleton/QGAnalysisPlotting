@@ -54,6 +54,9 @@ ROOT_DIR = CHS_DIR
 TITLE_STR = "[%s]" % ROOT_DIR.replace("workdir_", "")
 
 
+PT_BINS = ((80, 100), (100, 200), (400, 500), (1000, 2000))
+
+
 def do_comparison_plot(entries, output_filename, rebin=1, **plot_kwargs):
     conts = [Contribution(ent[0], normalise_hist=True, fill_style=0, rebin_hist=rebin, **ent[1]) for ent in entries]
     p = Plot(conts, what="hist", subplot=conts[0], ytitle="p.d.f", subplot_type="diff", **plot_kwargs)
@@ -175,7 +178,7 @@ def do_all_exclusive_plots():
         if "thrust" in v:
             xlim = (0, 0.5)
 
-        for (start_val, end_val) in [(80, 100), (100, 200), (400, 500), (1000, 2000)]:
+        for (start_val, end_val) in PT_BINS:
             entries = [
                 (get_projection_plot(h2d_dyj, start_val, end_val), dy_kwargs),
                 (get_projection_plot(h2d_qcd, start_val, end_val), qcd_kwargs),
@@ -320,7 +323,7 @@ def do_chs_vs_puppi_plots():
             rebin = 1
             xlim = (0, 0.5)
 
-        for (start_val, end_val) in [(80, 100), (100, 200), (400, 500), (1000, 2000)]:
+        for (start_val, end_val) in PT_BINS:
             entries = [
                 (get_projection_plot(h2d_dyj_chs, start_val, end_val), dy_kwargs_chs),
                 (get_projection_plot(h2d_qcd_chs, start_val, end_val), qcd_kwargs_chs),
@@ -353,8 +356,7 @@ def do_wrong_plots():
             rebin = 1
             xlim = (0, 0.5)
 
-        for (start_val, end_val) in [(80, 100), (100, 200), (400, 500), (1000, 2000)]:
-
+        for (start_val, end_val) in PT_BINS:
             entries = [
                 (get_projection_plot(h2d_dyj_chs, start_val, end_val), dy_kwargs_chs),
                 (get_projection_plot(h2d_dyj_wrong_chs, start_val, end_val), dy_kwargs_wrong_chs),
