@@ -54,18 +54,6 @@ ROOT_DIR = CHS_DIR
 TITLE_STR = "[%s]" % ROOT_DIR.replace("workdir_", "")
 
 
-def plot_dy_vs_qcd(dy_obj, qcd_obj, output_filename, xtitle=None, title=None, rebin=1, dy_kwargs=None, qcd_kwargs=None):
-    """Plot DY vs QCD sample"""
-    dy_kwargs = dy_kwargs or {}
-    qcd_kwargs = qcd_kwargs or {}
-    DYJ = Contribution(dy_obj, normalise_hist=True, fill_style=1, rebin_hist=rebin, **dy_kwargs)
-    QCD = Contribution(qcd_obj, normalise_hist=True, fill_style=1, rebin_hist=rebin, **qcd_kwargs)
-    p = Plot([DYJ, QCD], what="hist", subplot=DYJ, xtitle=xtitle, ytitle="p.d.f", title=title, subplot_type="diff")
-    draw_opt = "NOSTACK HISTE"
-    p.plot(draw_opt)
-    p.save(output_filename)
-
-
 def do_comparison_plot(entries, output_filename, rebin=1, **plot_kwargs):
     conts = [Contribution(ent[0], normalise_hist=True, fill_style=0, rebin_hist=rebin, **ent[1]) for ent in entries]
     p = Plot(conts, what="hist", subplot=conts[0], ytitle="p.d.f", subplot_type="diff", **plot_kwargs)
@@ -83,43 +71,6 @@ def get_projection_plot(h2d, start_val, end_val):
     bin_end = bisect.bisect_right(bin_edges, end_val)
     hproj = h2d.ProjectionX(h2d.GetName()+"_projX"+str(uuid4()), bin_start, bin_end, "eo")
     return hproj
-
-
-def do_all_inclusive_plots():
-    """Do plots inclusive over all pt, eta, nvtx"""
-
-    for v in ['LHA', 'pTD', 'width', 'thrust', 'multiplicity']:
-        rebin = 1
-        if v == "multiplicity":
-            rebin = 2
-
-        plot_dir = "plots_dy_vs_qcd"
-        dy_kwargs = dict(line_color=DY_COLOUR, fill_color=DY_COLOUR)
-        qcd_kwargs = dict(line_color=QCD_COLOUR, fill_color=QCD_COLOUR)
-
-        # all reco jets
-        dy_kwargs['label'] = DY_ZpJ_LABEL
-        qcd_kwargs['label'] = QCD_Dijet_LABEL
-        plot_dy_vs_qcd(dy_obj=grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" % ROOT_DIR, "ZPlusJets_QG/jet_%s" % v),
-                       qcd_obj=grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_QCD_.root" % ROOT_DIR, "Dijet_QG/jet_%s" % v),
-                       output_filename="%s/%s/jet_%s.pdf" % (ROOT_DIR, plot_dir, v),
-                       rebin=rebin, dy_kwargs=dy_kwargs, qcd_kwargs=qcd_kwargs)
-
-        # "correct" flav matched reco jets
-        dy_kwargs['label'] = DY_ZpJ_QFLAV_LABEL
-        qcd_kwargs['label'] = QCD_Dijet_GFLAV_LABEL
-        plot_dy_vs_qcd(dy_obj=grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" % ROOT_DIR, "ZPlusJets_QG/qjet_%s" % v),
-                       qcd_obj=grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_QCD_.root" % ROOT_DIR, "Dijet_QG/gjet_%s" % v),
-                       output_filename="%s/%s/jet_%s_flav_matched.pdf" % (ROOT_DIR, plot_dir, v),
-                       rebin=rebin, dy_kwargs=dy_kwargs, qcd_kwargs=qcd_kwargs)
-
-        # gen jets (no flav matching)
-        dy_kwargs['label'] = DY_ZpJ_GEN_LABEL
-        qcd_kwargs['label'] = QCD_Dijet_GEN_LABEL
-        plot_dy_vs_qcd(dy_obj=grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" % ROOT_DIR, "ZPlusJets_QG/genjet_%s" % v),
-                       qcd_obj=grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_QCD_.root" % ROOT_DIR, "Dijet_QG/genjet_%s" % v),
-                       output_filename="%s/%s/genjet_%s.pdf" % (ROOT_DIR, plot_dir, v),
-                       rebin=rebin, dy_kwargs=dy_kwargs, qcd_kwargs=qcd_kwargs)
 
 
 def do_2D_plot(obj, output_filename, renorm_axis=None, title=None, rebin=None, recolour=True):
@@ -417,7 +368,6 @@ def do_wrong_plots():
 
 
 if __name__ == '__main__':
-    # do_all_inclusive_plots()
     # do_all_2D_plots()
     do_all_exclusive_plots()
     # do_all_flavour_fraction_plots()
