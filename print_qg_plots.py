@@ -48,8 +48,8 @@ QCD_Dijet_GFLAV_LABEL = "QCD, Dijet selection (g-matched)"
 CHS_DIR = "workdir_ak4chs"
 PUPPI_DIR = "workdir_ak4puppi"
 
-# ROOT_DIR = CHS_DIR
-ROOT_DIR = PUPPI_DIR
+ROOT_DIR = CHS_DIR
+# ROOT_DIR = PUPPI_DIR
 
 TITLE_STR = "[%s]" % ROOT_DIR.replace("workdir_", "")
 
@@ -211,31 +211,23 @@ def do_all_2D_plots():
 def do_all_exclusive_plots():
     """Do pt/eta/nvtx binned 1D plots"""
     plot_dir = "plots_dy_vs_qcd"
-    dy_kwargs = dict(line_color=DY_COLOUR, fill_color=DY_COLOUR)
-    qcd_kwargs = dict(line_color=QCD_COLOUR, fill_color=QCD_COLOUR)
 
-    for v in ['jet_LHA', 'jet_pTD', 'jet_width', 'jet_thrust', 'jet_multiplicity', 'jet_flavour', "jet_genParton_flavour"]:
+    for v in ['jet_flavour', "jet_genParton_flavour", 'jet_LHA', 'jet_pTD', 'jet_width', 'jet_thrust', 'jet_multiplicity']:
         v += "_vs_pt"
 
-        # All reco jets
-        dy_kwargs['label'] = DY_ZpJ_LABEL
-        qcd_kwargs['label'] = QCD_Dijet_LABEL
         h2d_dyj = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" % ROOT_DIR, "ZPlusJets_QG/%s" % v)
         h2d_qcd = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_QCD_.root" % ROOT_DIR, "Dijet_QG/%s" % v)
 
-        y_axis = h2d_dyj.GetYaxis()
-        bin_edges = [y_axis.GetBinLowEdge(i) for i in range(1, y_axis.GetNbins()+1)]
+        if "flavour" not in v:
+            h2d_dyj_q = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" % ROOT_DIR, "ZPlusJets_QG/q%s" % v)
+            h2d_qcd_g = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_QCD_.root" % ROOT_DIR, "Dijet_QG/g%s" % v)
 
+        lw = 2
+        dy_kwargs = dict(line_color=DY_COLOUR, fill_color=DY_COLOUR, label=DY_ZpJ_LABEL, line_width=lw)
+        qcd_kwargs = dict(line_color=QCD_COLOUR, fill_color=QCD_COLOUR, label=QCD_Dijet_LABEL, line_width=lw)
 
-        def do_projection_plot(start_val, end_val, h2d_dyj, h2d_qcd, output_filename, rebin_y=1):
-            """Find the best set of y bin edges fro given start_val & end_val, and plot the projection onto the x axis"""
-            bin_start = bisect.bisect_right(bin_edges, start_val)
-            bin_end = bisect.bisect_right(bin_edges, end_val)
-            hproj_dyj = h2d_dyj.ProjectionX(v+"_dyj_projX", bin_start, bin_end, "eo")
-            hproj_qcd = h2d_qcd.ProjectionX(v+"_qcd_projX", bin_start, bin_end, "eo")
-            plot_dy_vs_qcd(hproj_dyj, hproj_qcd, output_filename.format(start_val=start_val, end_val=end_val),
-                           xtitle=None, title="%d < p_{T}^{jet} < %d GeV %s" % (start_val, end_val, TITLE_STR),
-                           rebin=rebin_y, dy_kwargs=dy_kwargs, qcd_kwargs=qcd_kwargs)
+        dy_kwargs_q = dict(line_color=DY_COLOUR, fill_color=DY_COLOUR, label=DY_ZpJ_QFLAV_LABEL, line_width=lw)
+        qcd_kwargs_g = dict(line_color=QCD_COLOUR, fill_color=QCD_COLOUR, label=QCD_Dijet_GFLAV_LABEL, line_width=lw)
 
         rebin = 2
         if v == "jet_multiplicity_vs_pt":
@@ -243,38 +235,29 @@ def do_all_exclusive_plots():
         elif "flavour" in v or "thrust" in v:
             rebin = 1
 
-        do_projection_plot(80, 100, h2d_dyj, h2d_qcd, "%s/%s/ptBinned/%s_pt{start_val}to{end_val}.pdf" % (ROOT_DIR, plot_dir, v), rebin)
-        do_projection_plot(100, 200, h2d_dyj, h2d_qcd, "%s/%s/ptBinned/%s_pt{start_val}to{end_val}.pdf" % (ROOT_DIR, plot_dir, v), rebin)
-        do_projection_plot(100, 2000, h2d_dyj, h2d_qcd, "%s/%s/ptBinned/%s_pt{start_val}to{end_val}.pdf" % (ROOT_DIR, plot_dir, v), rebin)
-        do_projection_plot(400, 500, h2d_dyj, h2d_qcd, "%s/%s/ptBinned/%s_pt{start_val}to{end_val}.pdf" % (ROOT_DIR, plot_dir, v), rebin)
-        do_projection_plot(1000, 2000, h2d_dyj, h2d_qcd, "%s/%s/ptBinned/%s_pt{start_val}to{end_val}.pdf" % (ROOT_DIR, plot_dir, v), rebin)
+        xlim = None
+        if "thrust" in v:
+            xlim = (0, 0.5)
 
-        if v in ["jet_flavour_vs_pt", "jet_genParton_flavour_vs_pt"]:
-            continue
+        for (start_val, end_val) in [(80, 100), (100, 200), (400, 500), (1000, 2000)]:
+            entries = [
+                (get_projection_plot(h2d_dyj, start_val, end_val), dy_kwargs),
+                (get_projection_plot(h2d_qcd, start_val, end_val), qcd_kwargs),
+            ]
 
-        # Flavour matched jets
-        dy_kwargs['label'] = DY_ZpJ_QFLAV_LABEL
-        qcd_kwargs['label'] = QCD_Dijet_GFLAV_LABEL
-        h2d_dyj = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" % ROOT_DIR, "ZPlusJets_QG/q%s" % v)
-        h2d_qcd = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_QCD_.root" % ROOT_DIR, "Dijet_QG/g%s" % v)
+            do_comparison_plot(entries, "%s/%s/ptBinned/%s_pt%dto%d.pdf" % (ROOT_DIR, plot_dir, v, start_val, end_val),
+                               rebin=rebin, title="%d < p_{T}^{jet} < %d GeV" % (start_val, end_val), xlim=xlim)
 
-        do_projection_plot(80, 100, h2d_dyj, h2d_qcd, "%s/%s/ptBinned/%s_pt{start_val}to{end_val}_flavMatched.pdf" % (ROOT_DIR, plot_dir, v), rebin)
-        do_projection_plot(100, 200, h2d_dyj, h2d_qcd, "%s/%s/ptBinned/%s_pt{start_val}to{end_val}_flavMatched.pdf" % (ROOT_DIR, plot_dir, v), rebin)
-        do_projection_plot(100, 2000, h2d_dyj, h2d_qcd, "%s/%s/ptBinned/%s_pt{start_val}to{end_val}_flavMatched.pdf" % (ROOT_DIR, plot_dir, v), rebin)
-        do_projection_plot(400, 500, h2d_dyj, h2d_qcd, "%s/%s/ptBinned/%s_pt{start_val}to{end_val}_flavMatched.pdf" % (ROOT_DIR, plot_dir, v), rebin)
-        do_projection_plot(1000, 2000, h2d_dyj, h2d_qcd, "%s/%s/ptBinned/%s_pt{start_val}to{end_val}_flavMatched.pdf" % (ROOT_DIR, plot_dir, v), rebin)
+            if "flavour" in v:
+                continue
 
-        # Gen Jets
-        # dy_kwargs['label'] = DY_ZpJ_GEN_LABEL
-        # qcd_kwargs['label'] = QCD_Dijet_GEN_LABEL
-        # h2d_dyj = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" % ROOT_DIR, "ZPlusJets_QG/gen%s" % v)
-        # h2d_qcd = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_QCD_.root" % ROOT_DIR, "Dijet_QG/gen%s" % v)
+            entries = [
+                (get_projection_plot(h2d_dyj_q, start_val, end_val), dy_kwargs_q),
+                (get_projection_plot(h2d_qcd_g, start_val, end_val), qcd_kwargs_g),
+            ]
 
-        # do_projection_plot(80, 100, h2d_dyj, h2d_qcd, "%s/%s/ptBinned/gen%s_pt{start_val}to{end_val}.pdf" % (ROOT_DIR, plot_dir, v), rebin)
-        # do_projection_plot(100, 200, h2d_dyj, h2d_qcd, "%s/%s/ptBinned/gen%s_pt{start_val}to{end_val}.pdf" % (ROOT_DIR, plot_dir, v), rebin)
-        # do_projection_plot(100, 2000, h2d_dyj, h2d_qcd, "%s/%s/ptBinned/gen%s_pt{start_val}to{end_val}.pdf" % (ROOT_DIR, plot_dir, v), rebin)
-        # do_projection_plot(400, 500, h2d_dyj, h2d_qcd, "%s/%s/ptBinned/gen%s_pt{start_val}to{end_val}.pdf" % (ROOT_DIR, plot_dir, v), rebin)
-        # do_projection_plot(1000, 2000, h2d_dyj, h2d_qcd, "%s/%s/ptBinned/gen%s_pt{start_val}to{end_val}.pdf" % (ROOT_DIR, plot_dir, v), rebin)
+            do_comparison_plot(entries, "%s/%s/ptBinned/%s_pt%dto%d_flavMatched.pdf" % (ROOT_DIR, plot_dir, v, start_val, end_val),
+                               rebin=rebin, title="%d < p_{T}^{jet} < %d GeV" % (start_val, end_val), xlim=xlim)
 
 
 def do_all_flavour_fraction_plots():
@@ -386,7 +369,7 @@ def do_chs_vs_puppi_plots():
 
         h2d_dyj_puppi = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" % PUPPI_DIR, "ZPlusJets_QG/q%s" % v)
         h2d_qcd_puppi = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_QCD_.root" % PUPPI_DIR, "Dijet_QG/g%s" % v)
-        
+
         lw = 2
         dy_kwargs_chs = dict(line_color=DY_COLOUR, fill_color=DY_COLOUR, label=DY_ZpJ_QFLAV_LABEL + " [CHS]", line_width=lw)
         qcd_kwargs_chs = dict(line_color=QCD_COLOUR, fill_color=QCD_COLOUR, label=QCD_Dijet_GFLAV_LABEL + " [CHS]", line_width=lw)
@@ -400,7 +383,7 @@ def do_chs_vs_puppi_plots():
         if "thrust" in v:
             rebin = 1
             xlim = (0, 0.5)
-        
+
         for (start_val, end_val) in [(80, 100), (100, 200), (400, 500), (1000, 2000)]:
             entries = [
                 (get_projection_plot(h2d_dyj_chs, start_val, end_val), dy_kwargs_chs),
@@ -408,7 +391,7 @@ def do_chs_vs_puppi_plots():
                 (get_projection_plot(h2d_dyj_puppi, start_val, end_val), dy_kwargs_puppi),
                 (get_projection_plot(h2d_qcd_puppi, start_val, end_val), qcd_kwargs_puppi),
             ]
-            
+
             do_comparison_plot(entries, "ak4_chs_vs_puppi/%s_pt%dto%d_flavMatched.pdf" % (v, start_val, end_val),
                                rebin=rebin, title="%d < p_{T}^{jet} < %d GeV" % (start_val, end_val), xlim=xlim)
 
