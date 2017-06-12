@@ -410,6 +410,9 @@ class Plot(object):
             self.rescale_plot_labels(self.subplot_container, self.subplot_pad_height)
             self.subplot_container.GetYaxis().SetNdivisions(505)
 
+            if self.xlim:
+                self.subplot_container.GetXaxis().SetRangeUser(*self.xlim)
+
             if self.subplot_type == "ratio":
                 # self.subplot_container.SetMinimum(self.subplot_ratio_lim[0])  # use this, not SetRangeUser()
                 # self.subplot_container.SetMaximum(self.subplot_ratio_lim[1])
