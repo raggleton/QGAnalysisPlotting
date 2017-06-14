@@ -11,6 +11,7 @@ from uuid import uuid4
 import bisect
 import numpy as np
 from itertools import chain
+import os
 
 
 ROOT.PyConfig.IgnoreCommandLineOptions = True
@@ -90,6 +91,9 @@ def do_2D_plot(obj, output_filename, renorm_axis=None, title=None, rebin=None, r
     obj_renorm.Draw("COLZ")
     obj_renorm.GetYaxis().SetTitleOffset(1.3)
     obj_renorm.GetXaxis().SetTitleOffset(1.1)
+    odir = os.path.dirname(os.path.abspath(output_filename))
+    if not os.path.isdir(odir):
+        os.makedirs(odir)
     canvas.SaveAs(output_filename)
 
 
