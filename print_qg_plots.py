@@ -396,6 +396,8 @@ def do_gen_plots():
                     zpj_dirname="ZPlusJets_genjet", dj_dirname="Dijet_genjet")
     do_all_exclusive_plots(var_list=COMMON_VARS[:-1], var_prepend="gen", plot_dir="plots_dy_vs_qcd_gen",
                            zpj_dirname="ZPlusJets_genjet", dj_dirname="Dijet_genjet", pt_bins=PT_BINS+[(100, 2000)])
+    do_all_flavour_fraction_plots(var_prepend="gen", plot_dir="flav_fractions_gen",
+                                  zpj_dirname="ZPlusJets_genjet", dj_dirname="Dijet_genjet")
 
 
 if __name__ == '__main__':
