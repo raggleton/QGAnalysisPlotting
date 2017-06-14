@@ -98,10 +98,9 @@ def do_2D_plot(obj, output_filename, renorm_axis=None, title=None, rebin=None, r
     canvas.SaveAs(output_filename)
 
 
-def do_all_2D_plots(plot_dir="plots_2d", zpj_dirname="ZPlusJets_QG", dj_dirname="Dijet_QG", var_list=None, var_prepend=None):
+def do_all_2D_plots(plot_dir="plots_2d", zpj_dirname="ZPlusJets_QG", dj_dirname="Dijet_QG", var_list=None, var_prepend=""):
     """Do 2D distributions"""
     var_list = var_list or COMMON_VARS
-    var_prepend = var_prepend or ""
     for v in var_list:
         v = "%s%s_vs_pt" % (var_prepend, v)
 
@@ -155,10 +154,9 @@ def do_all_2D_plots(plot_dir="plots_2d", zpj_dirname="ZPlusJets_QG", dj_dirname=
 
 
 def do_all_exclusive_plots(plot_dir="plots_dy_vs_qcd", zpj_dirname="ZPlusJets_QG", dj_dirname="Dijet_QG",
-                           var_list=None, var_prepend=None, pt_bins=None):
+                           var_list=None, var_prepend="", pt_bins=None):
     """Do pt/eta/nvtx binned 1D plots"""
     var_list = var_list or COMMON_VARS
-    var_prepend = var_prepend or ""
     pt_bins = pt_bins or PT_BINS
 
     for v in var_list:
@@ -209,12 +207,11 @@ def do_all_exclusive_plots(plot_dir="plots_dy_vs_qcd", zpj_dirname="ZPlusJets_QG
                                rebin=rebin, title="%d < p_{T}^{jet} < %d GeV" % (start_val, end_val), xlim=xlim)
 
 
-def do_all_flavour_fraction_plots():
+def do_all_flavour_fraction_plots(var_prepend="", plot_dir="flav_fractions", zpj_dirname="ZPlusJets_QG", dj_dirname="Dijet_QG"):
     """Do plots of flavour fraction of jets as a function of PT, for various samples"""
 
-    def get_flavour_fractions(input_file, selection, which=None):
-        which = which or ""
-        h2d_flav = grab_obj(input_file, "%s_QG/jet_%sflavour_vs_pt" % (selection, which))
+    def get_flavour_fractions(input_file, dirname, which="", var_prepend=""):
+        h2d_flav = grab_obj(input_file, "%s/%sjet_%sflavour_vs_pt" % (dirname, var_prepend, which))
 
         h2d_flav.Rebin2D(1, 5)
         y_axis = h2d_flav.GetYaxis()
@@ -250,9 +247,9 @@ def do_all_flavour_fraction_plots():
 
         return x_bins, flav_dict
 
-    def do_flavour_fraction_vs_pt(input_file, selection, output_filename, title=None, which=None):
-        """Plot flavour fractions vs PT for one input file & selection"""
-        x_bins, flav_dict = get_flavour_fractions(input_file, selection, which)
+    def do_flavour_fraction_vs_pt(input_file, dirname, output_filename, title="", which="", var_prepend=""):
+        """Plot flavour fractions vs PT for one input file & dirname"""
+        x_bins, flav_dict = get_flavour_fractions(input_file, dirname, which, var_prepend)
         # TODO: check if empy arrays
         gr_flav_u = ROOT.TGraph(len(x_bins), np.array(x_bins), np.array(flav_dict['u']))
         gr_flav_d = ROOT.TGraph(len(x_bins), np.array(x_bins), np.array(flav_dict['d']))
@@ -274,18 +271,19 @@ def do_all_flavour_fraction_plots():
         p_flav.plot("ALP")
         p_flav.save(output_filename)
 
-    do_flavour_fraction_vs_pt("%s/uhh2.AnalysisModuleRunner.MC.MC_QCD_.root" % ROOT_DIR, "Dijet", "%s/qcd_dijet_flav_frac.pdf" % (ROOT_DIR), title=QCD_Dijet_LABEL)
-    do_flavour_fraction_vs_pt("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" % ROOT_DIR, "Dijet", "%s/dy_dijet_flav_frac.pdf" % (ROOT_DIR), title=DY_Dijet_LABEL)
-    do_flavour_fraction_vs_pt("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" % ROOT_DIR, "ZPlusJets", "%s/dy_zpj_flav_frac.pdf" % (ROOT_DIR), title=DY_ZpJ_LABEL)
+    do_flavour_fraction_vs_pt("%s/uhh2.AnalysisModuleRunner.MC.MC_QCD_.root" % ROOT_DIR, dj_dirname, "%s/%s/qcd_dijet_flav_frac.pdf" % (ROOT_DIR, plot_dir), title=QCD_Dijet_LABEL, var_prepend=var_prepend)
+    do_flavour_fraction_vs_pt("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" % ROOT_DIR, dj_dirname, "%s/%s/dy_dijet_flav_frac.pdf" % (ROOT_DIR, plot_dir), title=DY_Dijet_LABEL, var_prepend=var_prepend)
+    do_flavour_fraction_vs_pt("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" % ROOT_DIR, zpj_dirname, "%s/%s/dy_zpj_flav_frac.pdf" % (ROOT_DIR, plot_dir), title=DY_ZpJ_LABEL, var_prepend=var_prepend)
 
-    do_flavour_fraction_vs_pt("%s/uhh2.AnalysisModuleRunner.MC.MC_QCD_.root" % ROOT_DIR, "Dijet", "%s/qcd_dijet_genParton_flav_frac.pdf" % (ROOT_DIR), title=QCD_Dijet_LABEL, which="genParton_")
-    do_flavour_fraction_vs_pt("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" % ROOT_DIR, "Dijet", "%s/dy_dijet_genParton_flav_frac.pdf" % (ROOT_DIR), title=DY_Dijet_LABEL, which="genParton_")
-    do_flavour_fraction_vs_pt("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" % ROOT_DIR, "ZPlusJets", "%s/dy_zpj_genParton_flav_frac.pdf" % (ROOT_DIR), title=DY_ZpJ_LABEL, which="genParton_")
+    if var_prepend != "gen":
+        do_flavour_fraction_vs_pt("%s/uhh2.AnalysisModuleRunner.MC.MC_QCD_.root" % ROOT_DIR, dj_dirname, "%s/%s/qcd_dijet_genParton_flav_frac.pdf" % (ROOT_DIR, plot_dir), title=QCD_Dijet_LABEL, which="genParton_")
+        do_flavour_fraction_vs_pt("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" % ROOT_DIR, dj_dirname, "%s/%s/dy_dijet_genParton_flav_frac.pdf" % (ROOT_DIR, plot_dir), title=DY_Dijet_LABEL, which="genParton_")
+        do_flavour_fraction_vs_pt("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" % ROOT_DIR, zpj_dirname, "%s/%s/dy_zpj_genParton_flav_frac.pdf" % (ROOT_DIR, plot_dir), title=DY_ZpJ_LABEL, which="genParton_")
 
-    def compare_flavour_fractions_vs_pt(input_files, selections, labels, flav, output_filename, title=None, which=None):
+    def compare_flavour_fractions_vs_pt(input_files, dirnames, labels, flav, output_filename, title="", which="", var_prepend=""):
         """Plot a specified flavour fraction vs pT for several sources.
-        Each entry in input_files, selections, and labels corresponds to one line"""
-        info = [get_flavour_fractions(ifile, sel, which) for ifile, sel in zip(input_files, selections)]
+        Each entry in input_files, dirnames, and labels corresponds to one line"""
+        info = [get_flavour_fractions(ifile, sel, which=which, var_prepend=var_prepend) for ifile, sel in zip(input_files, dirnames)]
         contribs = []
         for i, (x_bins, fdict) in enumerate(info):
             if flav in ['u', 'd', 's', 'c', 'b', 't', 'g']:
@@ -305,8 +303,9 @@ def do_all_flavour_fraction_plots():
         "%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" % ROOT_DIR,
         "%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" % ROOT_DIR
     ]
-    compare_flavour_fractions_vs_pt(input_files, ["Dijet", "Dijet", "ZPlusJets"], [QCD_Dijet_LABEL, DY_Dijet_LABEL, DY_ZpJ_LABEL], "g", "%s/compare_g_frac.pdf" % ROOT_DIR, title=TITLE_STR)
-    compare_flavour_fractions_vs_pt(input_files, ["Dijet", "Dijet", "ZPlusJets"], [QCD_Dijet_LABEL, DY_Dijet_LABEL, DY_ZpJ_LABEL], "g", "%s/compare_g_frac_genParton.pdf" % ROOT_DIR, title=TITLE_STR, which="genParton_")
+    compare_flavour_fractions_vs_pt(input_files, [dj_dirname, dj_dirname, zpj_dirname], [QCD_Dijet_LABEL, DY_Dijet_LABEL, DY_ZpJ_LABEL], "g", "%s/%s/compare_g_frac.pdf" % (ROOT_DIR, plot_dir), title=TITLE_STR, var_prepend=var_prepend)
+    if var_prepend != "gen":
+        compare_flavour_fractions_vs_pt(input_files, [dj_dirname, dj_dirname, zpj_dirname], [QCD_Dijet_LABEL, DY_Dijet_LABEL, DY_ZpJ_LABEL], "g", "%s/%s/compare_g_frac_genParton.pdf" % (ROOT_DIR, plot_dir), title=TITLE_STR, which="genParton_")
 
 
 def do_chs_vs_puppi_plots():
