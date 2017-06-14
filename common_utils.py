@@ -161,7 +161,8 @@ def make_normalised_TH2(hist, norm_axis, recolour=True):
     else:
         # alternatively, can rescale so sum over bins = 1
         for ind, xbin in enumerate(arr):
-            arr[ind] = xbin / xbin.sum()
+            if xbin.sum() != 0:
+                arr[ind] = xbin / xbin.sum()
 
     if norm_axis == 'Y':
         arr = arr.T
