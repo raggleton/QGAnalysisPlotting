@@ -344,16 +344,18 @@ def do_chs_vs_puppi_plots():
                                rebin=rebin, title="%d < p_{T}^{jet} < %d GeV" % (start_val, end_val), xlim=xlim)
 
 
-def do_wrong_plots():
+def do_wrong_plots(var_prepend="", plot_dir="wrong_flavs", zpj_dirname="ZPlusJets_QG", dj_dirname="Dijet_QG", pt_bins=None):
+    # var_list = var_list or COMMON_VARS
+    pt_bins = pt_bins or PT_BINS
     for v in ['jet_LHA', 'jet_pTD', 'jet_width', 'jet_thrust', 'jet_multiplicity']:
-        v += "_vs_pt"
+        v = "%s%s_vs_pt" % (var_prepend, v)
 
-        h2d_dyj_chs = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" % CHS_DIR, "ZPlusJets_QG/q%s" % v)
-        h2d_dyj_wrong_chs = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" % CHS_DIR, "ZPlusJets_QG/g%s" % v)
-        h2d_dyj_qcd_chs = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" % CHS_DIR, "Dijet_QG/q%s" % v)
-        h2d_dyj_qcd_wrong_chs = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" % CHS_DIR, "Dijet_QG/g%s" % v)
-        h2d_qcd_chs = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_QCD_.root" % CHS_DIR, "Dijet_QG/g%s" % v)
-        h2d_qcd_wrong_chs = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_QCD_.root" % CHS_DIR, "Dijet_QG/q%s" % v)
+        h2d_dyj_chs = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" % CHS_DIR, "%s/q%s" % (zpj_dirname, v))
+        h2d_dyj_wrong_chs = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" % CHS_DIR, "%s/g%s" % (zpj_dirname, v))
+        h2d_dyj_qcd_chs = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" % CHS_DIR, "%s/q%s" % (dj_dirname, v))
+        h2d_dyj_qcd_wrong_chs = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" % CHS_DIR, "%s/g%s" % (dj_dirname, v))
+        h2d_qcd_chs = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_QCD_.root" % CHS_DIR, "%s/g%s" % (dj_dirname, v))
+        h2d_qcd_wrong_chs = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_QCD_.root" % CHS_DIR, "%s/q%s" % (dj_dirname, v))
 
         lw = 1
         dy_kwargs_chs = dict(line_color=DY_COLOUR, fill_color=DY_COLOUR, label=DY_ZpJ_QFLAV_LABEL, line_width=lw)
@@ -369,7 +371,7 @@ def do_wrong_plots():
             rebin = 1
             xlim = (0, 0.5)
 
-        for (start_val, end_val) in PT_BINS:
+        for (start_val, end_val) in pt_bins:
             entries = [
                 (get_projection_plot(h2d_dyj_chs, start_val, end_val), dy_kwargs_chs),
                 (get_projection_plot(h2d_dyj_wrong_chs, start_val, end_val), dy_kwargs_wrong_chs),
@@ -379,25 +381,31 @@ def do_wrong_plots():
                 (get_projection_plot(h2d_qcd_chs, start_val, end_val), qcd_kwargs_chs),
             ]
 
-            do_comparison_plot(entries, "%s/wrongFlavs/%s_pt%dto%d_flavMatched.pdf" % (ROOT_DIR, v, start_val, end_val),
+            do_comparison_plot(entries, "%s/%s/%s_pt%dto%d_flavMatched.pdf" % (ROOT_DIR, plot_dir, v, start_val, end_val),
                                rebin=rebin, title="%d < p_{T}^{jet} < %d GeV %s (\"wrong\" flavours)" % (start_val, end_val, TITLE_STR), xlim=xlim)
 
 
 def do_reco_plots():
-    do_all_2D_plots()
-    do_all_exclusive_plots()
-    do_all_flavour_fraction_plots()
-    do_chs_vs_puppi_plots()
+    global TITLE_STR
+    TITLE_STR = "[%s]" % ROOT_DIR.replace("workdir_", "")
+    # do_all_2D_plots()
+    # do_all_exclusive_plots()
+    # do_all_flavour_fraction_plots()
+    # do_chs_vs_puppi_plots()
     do_wrong_plots()
 
 
 def do_gen_plots():
+    global TITLE_STR
+    TITLE_STR = TITLE_STR.replace("chs", " GenJet").replace("puppi", " GenJet")
     do_all_2D_plots(var_list=COMMON_VARS[:-1], var_prepend="gen", plot_dir="plots_2d_gen",
                     zpj_dirname="ZPlusJets_genjet", dj_dirname="Dijet_genjet")
     do_all_exclusive_plots(var_list=COMMON_VARS[:-1], var_prepend="gen", plot_dir="plots_dy_vs_qcd_gen",
                            zpj_dirname="ZPlusJets_genjet", dj_dirname="Dijet_genjet", pt_bins=PT_BINS+[(100, 2000)])
     do_all_flavour_fraction_plots(var_prepend="gen", plot_dir="flav_fractions_gen",
                                   zpj_dirname="ZPlusJets_genjet", dj_dirname="Dijet_genjet")
+    do_wrong_plots(var_prepend="gen", plot_dir="wrong_flavs_gen",
+                   zpj_dirname="ZPlusJets_genjet", dj_dirname="Dijet_genjet", pt_bins=PT_BINS+[(100, 2000)])
 
 
 if __name__ == '__main__':
