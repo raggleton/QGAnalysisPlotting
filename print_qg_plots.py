@@ -56,7 +56,7 @@ ROOT_DIR = CHS_DIR
 TITLE_STR = "[%s]" % ROOT_DIR.replace("workdir_", "")
 
 
-PT_BINS = ((80, 100), (100, 200), (400, 500), (1000, 2000))
+PT_BINS = [(80, 100), (100, 200), (400, 500), (1000, 2000)]
 
 
 def do_comparison_plot(entries, output_filename, rebin=1, **plot_kwargs):
@@ -154,19 +154,22 @@ def do_all_2D_plots(plot_dir="plots_2d", zpj_dirname="ZPlusJets_QG", dj_dirname=
                        renorm_axis=rn, title=QCD_Dijet_QFLAV_LABEL, rebin=rebin)
 
 
-def do_all_exclusive_plots():
+def do_all_exclusive_plots(plot_dir="plots_dy_vs_qcd", zpj_dirname="ZPlusJets_QG", dj_dirname="Dijet_QG",
+                           var_list=None, var_prepend=None, pt_bins=None):
     """Do pt/eta/nvtx binned 1D plots"""
-    plot_dir = "plots_dy_vs_qcd"
+    var_list = var_list or COMMON_VARS
+    var_prepend = var_prepend or ""
+    pt_bins = pt_bins or PT_BINS
 
-    for v in COMMON_VARS:
-        v += "_vs_pt"
+    for v in var_list:
+        v = "%s%s_vs_pt" % (var_prepend, v)
 
-        h2d_dyj = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" % ROOT_DIR, "ZPlusJets_QG/%s" % v)
-        h2d_qcd = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_QCD_.root" % ROOT_DIR, "Dijet_QG/%s" % v)
+        h2d_dyj = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" % ROOT_DIR, "%s/%s" % (zpj_dirname, v))
+        h2d_qcd = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_QCD_.root" % ROOT_DIR, "%s/%s" % (dj_dirname, v))
 
         if "flavour" not in v:
-            h2d_dyj_q = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" % ROOT_DIR, "ZPlusJets_QG/q%s" % v)
-            h2d_qcd_g = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_QCD_.root" % ROOT_DIR, "Dijet_QG/g%s" % v)
+            h2d_dyj_q = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" % ROOT_DIR, "%s/q%s" % (zpj_dirname, v))
+            h2d_qcd_g = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_QCD_.root" % ROOT_DIR, "%s/g%s" % (dj_dirname, v))
 
         lw = 2
         dy_kwargs = dict(line_color=DY_COLOUR, fill_color=DY_COLOUR, label=DY_ZpJ_LABEL, line_width=lw)
@@ -185,7 +188,7 @@ def do_all_exclusive_plots():
         if "thrust" in v:
             xlim = (0, 0.5)
 
-        for (start_val, end_val) in PT_BINS:
+        for (start_val, end_val) in pt_bins:
             entries = [
                 (get_projection_plot(h2d_dyj, start_val, end_val), dy_kwargs),
                 (get_projection_plot(h2d_qcd, start_val, end_val), qcd_kwargs),
