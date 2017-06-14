@@ -381,10 +381,19 @@ def do_wrong_plots():
                                rebin=rebin, title="%d < p_{T}^{jet} < %d GeV %s (\"wrong\" flavours)" % (start_val, end_val, TITLE_STR), xlim=xlim)
 
 
+def do_reco_plots():
+    do_all_2D_plots()
+    do_all_exclusive_plots()
+    do_all_flavour_fraction_plots()
+    do_chs_vs_puppi_plots()
+    do_wrong_plots()
+
+
+def do_gen_plots():
+    do_all_2D_plots(var_list=COMMON_VARS[:-1], var_prepend="gen", plot_dir="plots_2d_gen",
+                    zpj_dirname="ZPlusJets_genjet", dj_dirname="Dijet_genjet")
+
 
 if __name__ == '__main__':
-    # do_all_2D_plots()
-    do_all_exclusive_plots()
-    # do_all_flavour_fraction_plots()
-    # do_chs_vs_puppi_plots()
-    # do_wrong_plots()
+    # do_reco_plots()
+    do_gen_plots()
