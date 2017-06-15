@@ -142,8 +142,8 @@ class Contribution(object):
         self.obj.SetMarkerStyle(self.marker_style)
         if rebin_hist:
             self.obj.Rebin(rebin_hist) # Does this handle 2D hists?
-        if normalise_hist:
-            self.obj.Scale(1./obj.Integral())
+        if normalise_hist and obj.Integral() != 0:
+            self.obj.Scale(1./(obj.GetBinWidth(1) * obj.Integral()))
         if isinstance(self.obj, ROOT.TH1) or isinstance(self.obj, ROOT.TH2):
             self.obj.SetDirectory(0)
 
