@@ -61,7 +61,7 @@ PT_BINS = [(80, 100), (100, 200), (400, 500), (1000, 2000)]
 
 def do_comparison_plot(entries, output_filename, rebin=1, **plot_kwargs):
     conts = [Contribution(ent[0], normalise_hist=True, fill_style=0, rebin_hist=rebin, **ent[1]) for ent in entries]
-    p = Plot(conts, what="hist", subplot=conts[0], ytitle="p.d.f", subplot_type="diff", **plot_kwargs)
+    p = Plot(conts, what="hist", subplot=conts[0], ytitle="p.d.f", **plot_kwargs)
     draw_opt = "NOSTACK HISTE"
     p.legend.SetX1(0.55)
     p.legend.SetY1(0.6)
@@ -87,11 +87,13 @@ def do_2D_plot(obj, output_filename, renorm_axis=None, title=None, rebin=None, r
         obj_renorm = obj
     if title:
         obj_renorm.SetTitle(title)
-    canvas = ROOT.TCanvas("canv%s" % uuid4(), "", 800, 600)
+    canvas = ROOT.TCanvas("canv%s" % uuid4(), "", 800, 800)
     canvas.SetTicks(1, 1)
+    canvas.SetLeftMargin(0.13)
+    canvas.SetBottomMargin(0.11)
     obj_renorm.Draw("COLZ")
-    obj_renorm.GetYaxis().SetTitleOffset(1.3)
-    obj_renorm.GetXaxis().SetTitleOffset(1.1)
+    obj_renorm.GetYaxis().SetTitleOffset(1.7)
+    obj_renorm.GetXaxis().SetTitleOffset(1.2)
     odir = os.path.dirname(os.path.abspath(output_filename))
     if not os.path.isdir(odir):
         os.makedirs(odir)
