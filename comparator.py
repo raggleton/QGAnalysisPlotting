@@ -384,6 +384,8 @@ class Plot(object):
             modifier.GetXaxis().SetRangeUser(*self.xlim)
         if self.ylim:
             modifier.GetYaxis().SetRangeUser(*self.ylim)
+            modifier.SetMinimum(self.ylim[0])  # use this, not SetRangeUser()
+            modifier.SetMaximum(self.ylim[1])
 
         # Plot legend
         self.style_legend()
