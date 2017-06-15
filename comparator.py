@@ -160,7 +160,7 @@ class Plot(object):
     def __init__(self, contributions=None, what="graph",
                  title=None, xtitle=None, ytitle=None, xlim=None, ylim=None,
                  legend=True, extend=False,
-                 subplot=None, subplot_type="ratio"):
+                 subplot=None, subplot_type=None):
         """
         contributions: list
             List of Contribution objects.
@@ -208,6 +208,8 @@ class Plot(object):
         if subplot_type and subplot_type not in ['ratio', 'diff', "ddelta"]:
             raise RuntimeError("subplot_type must be ratio, diff, or ddelta")
         self.subplot_type = subplot_type
+        if not self.subplot_type:
+            self.subplot = None
         self.subplot_container = None
         self.subplot_contributions = []
         self.subplot_pad = None
