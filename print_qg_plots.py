@@ -194,12 +194,14 @@ def do_all_exclusive_plots(plot_dir="plots_dy_vs_qcd", zpj_dirname="ZPlusJets_QG
             rebin = 1
 
         xlim = None
-        if "thrust" in v:
+        if "thrust" in v or "pTD" in v:
             xlim = (0, 0.5)
 
         ylim = None
         if "flavour" in v:
             ylim = (0, 1)
+        elif "LHA" in v:
+            ylim = (0, 5)
 
         for (start_val, end_val) in pt_bins:
             entries = [
@@ -403,7 +405,7 @@ def do_wrong_plots(var_prepend="", plot_dir="wrong_flavs", zpj_dirname="ZPlusJet
 
 def do_jet_algo_comparison_plots(plot_dir="compare_jet_algo", zpj_dirname="ZPlusJets_QG", dj_dirname="Dijet_QG",
                                  var_list=None, var_prepend="", pt_bins=None, subplot_type="diff"):
-    """Do pt/eta/nvtx binned 1D plots"""
+    """Do pt/eta/nvtx binned 1D plots, comparing different jet algos"""
     var_list = var_list or COMMON_VARS
     pt_bins = pt_bins or PT_BINS
 
@@ -435,11 +437,11 @@ def do_jet_algo_comparison_plots(plot_dir="compare_jet_algo", zpj_dirname="ZPlus
         rebin = 2
         if v == "jet_multiplicity_vs_pt":
             rebin = 4
-        elif "flavour" in v or "thrust" in v:
+        elif "flavour" in v or "thrust" in v or "pTD" in v:
             rebin = 1
 
         xlim = None
-        if "thrust" in v:
+        if "thrust" in v or "pTD" in v:
             xlim = (0, 0.5)
 
         ylim = None
