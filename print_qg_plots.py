@@ -47,16 +47,25 @@ QCD_Dijet_GFLAV_LABEL = "QCD, Dijet selection (g-matched)"
 
 COMMON_VARS = ['jet_LHA', 'jet_pTD', 'jet_width', 'jet_thrust', 'jet_multiplicity', 'jet_flavour', "jet_genParton_flavour"]
 
-CHS_DIR = "workdir_ak4chs"
+AK4_GENJET_DIR = "workdir_ak4chs"
+AK8_GENJET_DIR = "workdir_ak4chs_ak8genjet"
+
+CHS_DIR = AK4_GENJET_DIR
+TITLE_STR = "ak4 GenJet"
+
+CHS_DIR = AK8_GENJET_DIR
+TITLE_STR = "ak8 GenJet"
+
 PUPPI_DIR = "workdir_ak4puppi"
 
 ROOT_DIR = CHS_DIR
 # ROOT_DIR = PUPPI_DIR
 
-TITLE_STR = "[%s]" % ROOT_DIR.replace("workdir_", "")
+# TITLE_STR = "[%s]" % ROOT_DIR.replace("workdir_", "")
 
 
 PT_BINS = [(80, 100), (100, 200), (400, 500), (1000, 2000)]
+THEORY_PT_BINS = PT_BINS + [(80, 2000)]
 
 
 def do_comparison_plot(entries, output_filename, rebin=1, **plot_kwargs):
@@ -114,7 +123,7 @@ def do_all_2D_plots(plot_dir="plots_2d", zpj_dirname="ZPlusJets_QG", dj_dirname=
 
         recolour = False if "flavour" in v else True
 
-        for rn in ['Y']:  # different renormalisation axes
+        for rn in ['Y', None]:  # different renormalisation axes
             do_2D_plot(grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" % ROOT_DIR, "%s/%s" % (zpj_dirname, v)),
                        output_filename="%s/%s/dy_zpj_%s_norm%s.pdf" % (ROOT_DIR, plot_dir, v, rn),
                        renorm_axis=rn, title=DY_ZpJ_LABEL, rebin=rebin, recolour=recolour)
@@ -156,7 +165,7 @@ def do_all_2D_plots(plot_dir="plots_2d", zpj_dirname="ZPlusJets_QG", dj_dirname=
 
 
 def do_all_exclusive_plots(plot_dir="plots_dy_vs_qcd", zpj_dirname="ZPlusJets_QG", dj_dirname="Dijet_QG",
-                           var_list=None, var_prepend="", pt_bins=None):
+                           var_list=None, var_prepend="", pt_bins=None, subplot_type="diff"):
     """Do pt/eta/nvtx binned 1D plots"""
     var_list = var_list or COMMON_VARS
     pt_bins = pt_bins or PT_BINS
@@ -188,6 +197,10 @@ def do_all_exclusive_plots(plot_dir="plots_dy_vs_qcd", zpj_dirname="ZPlusJets_QG
         if "thrust" in v:
             xlim = (0, 0.5)
 
+        ylim = None
+        if "flavour" in v:
+            ylim = (0, 1)
+
         for (start_val, end_val) in pt_bins:
             entries = [
                 (get_projection_plot(h2d_dyj, start_val, end_val), dy_kwargs),
@@ -195,7 +208,8 @@ def do_all_exclusive_plots(plot_dir="plots_dy_vs_qcd", zpj_dirname="ZPlusJets_QG
             ]
 
             do_comparison_plot(entries, "%s/%s/ptBinned/%s_pt%dto%d.pdf" % (ROOT_DIR, plot_dir, v, start_val, end_val),
-                               rebin=rebin, title="%d < p_{T}^{jet} < %d GeV" % (start_val, end_val), xlim=xlim)
+                               rebin=rebin, title="%d < p_{T}^{jet} < %d GeV" % (start_val, end_val),
+                               xlim=xlim, ylim=ylim, subplot_type=subplot_type)
 
             if "flavour" in v:
                 continue
@@ -206,7 +220,7 @@ def do_all_exclusive_plots(plot_dir="plots_dy_vs_qcd", zpj_dirname="ZPlusJets_QG
             ]
 
             do_comparison_plot(entries, "%s/%s/ptBinned/%s_pt%dto%d_flavMatched.pdf" % (ROOT_DIR, plot_dir, v, start_val, end_val),
-                               rebin=rebin, title="%d < p_{T}^{jet} < %d GeV" % (start_val, end_val), xlim=xlim)
+                               rebin=rebin, title="%d < p_{T}^{jet} < %d GeV" % (start_val, end_val), xlim=xlim, subplot_type=subplot_type)
 
 
 def do_all_flavour_fraction_plots(var_prepend="", plot_dir="flav_fractions", zpj_dirname="ZPlusJets_QG", dj_dirname="Dijet_QG"):
@@ -295,7 +309,7 @@ def do_all_flavour_fraction_plots(var_prepend="", plot_dir="flav_fractions", zpj
             c = Contribution(gr, label="%s" % (labels[i]), line_style=i+1)
             contribs.append(c)
         ytitle = "%s flavour fraction" % flav
-        p = Plot(contribs, what='graph', xtitle="p_{T}^{jet} [GeV]", ytitle=ytitle, title=title)
+        p = Plot(contribs, what='graph', xtitle="p_{T}^{jet} [GeV]", ytitle=ytitle, title=title, ylim=(0, 1))
         p.plot("ALP")
         p.canvas.SetLogx()
         p.save(output_filename)
