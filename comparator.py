@@ -15,7 +15,6 @@ Example usage:
 import os
 import ROOT
 import common_utils as cu
-from uuid import uuid4
 from MyStyle import My_Style
 
 
@@ -84,7 +83,7 @@ def grab_obj(file_name, obj_name):
     obj = cu.get_from_file(input_file, obj_name)
     obj.SetDirectory(0)  # Ownership kludge
     input_file.Close()
-    return obj.Clone(str(uuid4()))
+    return obj.Clone(ROOT.TUUID().AsString())
 
 
 class Contribution(object):
@@ -225,20 +224,20 @@ class Plot(object):
     def create_container(self):
         """Create a container object for lots of the same TObject"""
         if self.plot_what in ["graph", "both"]:
-            self.container = ROOT.TMultiGraph("mg%s" % uuid4(), "")
-            self.subplot_container = ROOT.TMultiGraph("mg_ratio%s" % uuid4(), "")
+            self.container = ROOT.TMultiGraph(ROOT.TUUID().AsString(), "")
+            self.subplot_container = ROOT.TMultiGraph(ROOT.TUUID().AsString(), "")
         elif self.plot_what == "function":
             self.container = MultiFunc()
             self.subplot_container = MultiFunc()
         elif self.plot_what == "hist":
-            self.container = ROOT.THStack("hst%s" % uuid4(), "")
-            self.subplot_container = ROOT.THStack("hst_ratio%s" % uuid4(), "")
+            self.container = ROOT.THStack(ROOT.TUUID().AsString(), "")
+            self.subplot_container = ROOT.THStack(ROOT.TUUID().AsString(), "")
 
     def populate_container_and_legend(self):
         """Add objects to the container, and to the legend"""
         for c in self.contributions:
             try:
-                obj = c.obj.Clone(str(uuid4()))
+                obj = c.obj.Clone(ROOT.TUUID().AsString())
             except IOError:
                 print "Couldn't get", c.obj_name, 'from', c.file_name
                 continue
@@ -334,7 +333,7 @@ class Plot(object):
                 self.canvas.cd()
                 print "Using existing canvas", self.canvas.GetName()
             else:
-                self.canvas = ROOT.TCanvas("canv%s" % uuid4(), "", *self.default_canvas_size)
+                self.canvas = ROOT.TCanvas(ROOT.TUUID().AsString(), "", *self.default_canvas_size)
                 self.canvas.SetTicks(1, 1)
                 right_margin = 0.03
                 if self.subplot:
