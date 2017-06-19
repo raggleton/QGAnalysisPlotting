@@ -379,6 +379,10 @@ class Plot(object):
 
         modifier.SetTitle("%s;%s;%s" % (self.title, self.xtitle, self.ytitle))
 
+        for ob in self.contributions_objs:
+            ob.GetXaxis().SetTitle(self.xtitle)
+            ob.GetXaxis().SetTitle(self.ytitle)
+
         if self.xlim:
             modifier.GetXaxis().SetRangeUser(*self.xlim)
         if self.ylim:
