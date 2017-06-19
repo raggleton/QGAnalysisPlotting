@@ -286,14 +286,14 @@ class Plot(object):
 
     def rescale_plot_labels(self, container, factor):
         # What a pile of wank, why does ROOT scale all these sizes?
-        container.GetXaxis().SetLabelSize(0.03/factor)
-        container.GetXaxis().SetTitleSize(0.04/factor)
-        # container.GetXaxis().SetTitleOffset(1.0)  # doesn't seem to work?
-        container.GetXaxis().SetTickLength(0.02/factor)
+        container.GetXaxis().SetLabelSize(container.GetXaxis().GetLabelSize()/factor)
+        container.GetXaxis().SetTitleSize(container.GetXaxis().GetTitleSize()/factor)
+        container.GetXaxis().SetTitleOffset(container.GetXaxis().GetTitleOffset()*factor)  # doesn't seem to work?
+        container.GetXaxis().SetTickLength(container.GetXaxis().GetTickLength()/factor)
 
-        container.GetYaxis().SetLabelSize(0.03/factor)
-        container.GetYaxis().SetTitleSize(0.04/factor)
-        container.GetYaxis().SetTitleOffset(1.2*factor)
+        container.GetYaxis().SetLabelSize(container.GetYaxis().GetLabelSize()/factor)
+        container.GetYaxis().SetTitleSize(container.GetYaxis().GetTitleSize()/factor)
+        container.GetYaxis().SetTitleOffset(container.GetYaxis().GetTitleOffset()*factor)
         # container.GetYaxis().SetTickLength(0.03/factor)
 
     def plot(self, draw_opts=None):
