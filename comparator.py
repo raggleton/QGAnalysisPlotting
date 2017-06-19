@@ -387,8 +387,8 @@ class Plot(object):
             modifier.SetMaximum(self.ylim[1])
 
         # Plot legend
-        self.style_legend()
         if self.do_legend:
+            self.style_legend()
             self.legend.Draw()
 
         if self.subplot:
