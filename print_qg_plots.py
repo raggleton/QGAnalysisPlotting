@@ -132,6 +132,31 @@ def do_2D_plot(obj, output_filename, renorm_axis=None, title=None, rebin=None, r
     canvas.SaveAs(output_filename)
 
 
+def get_ddelta_plot(one_hist, other_hist):
+    """Make ddelta/dX plot
+
+    Calculated as:
+    0.5 * (x-y)^2 / (x+y)
+    """
+    new_hist = one_hist.Clone(ROOT.TUUID().AsString())
+    new_hist.Add(other_hist, -1.)
+    new_hist.Multiply(new_hist)
+    sum_hist = one_hist.Clone(ROOT.TUUID().AsString())
+    sum_hist.Add(other_hist)
+    new_hist.Divide(sum_hist)
+    new_hist.Scale(0.5)
+    return new_hist
+
+
+def calculate_delta(one_hist, other_hist):
+    dist = get_ddelta_plot(one_hist, other_hist)
+    return dist.Integral()*dist.GetBinWidth(1)
+
+
+def calculate_delta(diff_hist):
+    return diff_hist.Integral()*diff_hist.GetBinWidth(1)
+
+
 def do_all_2D_plots(plot_dir="plots_2d", zpj_dirname="ZPlusJets_QG", dj_dirname="Dijet_QG", var_list=None, var_prepend=""):
     """Do 2D distributions"""
     var_list = var_list or COMMON_VARS
