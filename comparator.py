@@ -192,8 +192,8 @@ class Plot(object):
             raise RuntimeError("`what` argument must be one of %s" % options)
         self.plot_what = what
         self.title = title or ""
-        self.xtitle = xtitle  # don't do or "" trick here, see later
-        self.ytitle = ytitle  # don't do or "" trick here, see later
+        self.xtitle = xtitle
+        self.ytitle = ytitle
         self.xlim = xlim
         self.ylim = ylim
         self.do_legend = legend

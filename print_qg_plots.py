@@ -78,8 +78,8 @@ PUPPI_DIR = "workdir_ak4puppi"
 # Controls all the things!!
 ROOT_DIR = CHS_DIR
 # ROOT_DIR = PUPPI_DIR
-
-TITLE_STR = "[%s]" % ROOT_DIR.replace("workdir_", "")
+# Use this for data plots
+# TITLE_STR = "[%s]" % ROOT_DIR.replace("workdir_", "")
 
 
 PT_BINS = [(80, 100), (100, 200), (400, 500), (1000, 2000)]
@@ -220,7 +220,6 @@ def do_all_exclusive_plots(plot_dir="plots_dy_vs_qcd", zpj_dirname="ZPlusJets_QG
 
     for ang in var_list:
         v = "%s%s_vs_pt" % (var_prepend, ang.var)
-        print v
 
         h2d_dyj = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" % ROOT_DIR, "%s/%s" % (zpj_dirname, v))
         h2d_qcd = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_QCD_.root" % ROOT_DIR, "%s/%s" % (dj_dirname, v))
@@ -412,7 +411,7 @@ def do_chs_vs_puppi_plots():
 
 
 def do_wrong_plots(var_prepend="", plot_dir="wrong_flavs", zpj_dirname="ZPlusJets_QG", dj_dirname="Dijet_QG", pt_bins=None):
-    # var_list = var_list or COMMON_VARS
+    """Plot all the sample/selection.flavour combinations to check distributions indep of sample"""
     pt_bins = pt_bins or PT_BINS
     for v in ['jet_LHA', 'jet_pTD', 'jet_width', 'jet_thrust', 'jet_multiplicity']:
         v = "%s%s_vs_pt" % (var_prepend, v)
@@ -572,11 +571,10 @@ def do_angularity_delta_plots(plot_dir="deltas", zpj_dirname="ZPlusJets_QG", dj_
         bin_labels = []
         for ind, ang in enumerate(var_list, 1):
             v = "%s%s_vs_pt" % (var_prepend, ang.var)
-            print "Doing", v
 
             h2d_dyj = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" % ROOT_DIR, "%s/%s" % (zpj_dirname, v))
             h2d_qcd = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_QCD_.root" % ROOT_DIR, "%s/%s" % (dj_dirname, v))
-            print "Doing projection hists"
+
             h_dy = get_projection_plot(h2d_dyj, start_val, end_val)
             h_dy.Scale(1./(h_dy.GetBinWidth(1)*h_dy.Integral()))
 
