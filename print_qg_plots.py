@@ -46,15 +46,15 @@ QCD_Dijet_GEN_LABEL = "QCD, Dijet selection (GenJets)"
 QCD_Dijet_QFLAV_LABEL = "QCD, Dijet selection (uds-matched)"
 QCD_Dijet_GFLAV_LABEL = "QCD, Dijet selection (g-matched)"
 
-Angle = namedtuple("Angle", ['var', 'kappa', 'beta', 'name'])
+Angle = namedtuple("Angle", ['var', 'kappa', 'beta', 'name', "lambda_str"])
 COMMON_VARS = [
-    Angle('jet_multiplicity', 0, 0, "Multiplicity"),
-    Angle('jet_pTD', 2, 0, "p_{T}^{D}"),
-    Angle('jet_LHA', 1, 0.5, "LHA"),
-    Angle('jet_width', 1, 1, "Width"),
-    Angle('jet_thrust', 1, 2, "Thrust"),
-    Angle('jet_flavour', 0, 0, 0),
-    Angle("jet_genParton_flavour", 0, 0, 0)
+    Angle('jet_multiplicity', 0, 0, "Multiplicity", "#lambda_{0}^{0}"),
+    Angle('jet_pTD', 2, 0, "(p_{T}^{D})^{2}", "#lambda_{0}^{2}"),
+    Angle('jet_LHA', 1, 0.5, "LHA", "#lambda_{0.5}^{1}"),
+    Angle('jet_width', 1, 1, "Width", "#lambda_{1}^{1}"),
+    Angle('jet_thrust', 1, 2, "Thrust", "#lambda_{2}^{1}"),
+    Angle('jet_flavour', 0, 0, "", ""),
+    Angle("jet_genParton_flavour", 0, 0, "", "")
 ]
 
 
@@ -256,9 +256,9 @@ def do_all_exclusive_plots(plot_dir="plots_dy_vs_qcd", zpj_dirname="ZPlusJets_QG
                 (get_projection_plot(h2d_dyj, start_val, end_val), dy_kwargs),
                 (get_projection_plot(h2d_qcd, start_val, end_val), qcd_kwargs),
             ]
-
             do_comparison_plot(entries, "%s/%s/ptBinned/%s_pt%dto%d.pdf" % (ROOT_DIR, plot_dir, v, start_val, end_val),
                                rebin=rebin, title="%d < p_{T}^{jet} < %d GeV" % (start_val, end_val),
+                               xtitle=ang.name + " (" + ang.lambda_str + ")",
                                xlim=xlim, ylim=ylim, subplot_type=subplot_type)
 
             if "flavour" in v:
@@ -268,9 +268,10 @@ def do_all_exclusive_plots(plot_dir="plots_dy_vs_qcd", zpj_dirname="ZPlusJets_QG
                 (get_projection_plot(h2d_dyj_q, start_val, end_val), dy_kwargs_q),
                 (get_projection_plot(h2d_qcd_g, start_val, end_val), qcd_kwargs_g),
             ]
-
             do_comparison_plot(entries, "%s/%s/ptBinned/%s_pt%dto%d_flavMatched.pdf" % (ROOT_DIR, plot_dir, v, start_val, end_val),
-                               rebin=rebin, title="%d < p_{T}^{jet} < %d GeV" % (start_val, end_val), xlim=xlim, subplot_type=subplot_type)
+                               rebin=rebin, title="%d < p_{T}^{jet} < %d GeV" % (start_val, end_val),
+                               xtitle=ang.name + " (" + ang.lambda_str + ")",
+                               xlim=xlim, subplot_type=subplot_type)
 
 
 def do_all_flavour_fraction_plots(var_prepend="", plot_dir="flav_fractions", zpj_dirname="ZPlusJets_QG", dj_dirname="Dijet_QG"):
@@ -582,17 +583,11 @@ def do_angularity_delta_plots(plot_dir="deltas", zpj_dirname="ZPlusJets_QG", dj_
             h_qcd.Scale(1./(h_qcd.GetBinWidth(1)*h_qcd.Integral()))
 
             ddelta_hist = get_ddelta_plot(h_dy, h_qcd)
-            print "got ddelta hist"
-            lambda_str = "#lambda_{{{beta}}}^{{{kappa}}}".format(**ang.__dict__)
-            lambda_str = "#lambdaX"
             plot_ddelta(ddelta_hist, "%s/%s/angularities_pt%dto%d_ddelta_%s.pdf" % (ROOT_DIR, plot_dir, start_val, end_val, ang.var),
-                        xtitle=ang.name + " (" + lambda_str + ")", ytitle="d#Delta/d" + lambda_str)
+                        xtitle=ang.name + " (" + ang.lambda_str + ")", ytitle="d#Delta/d" + ang.lambda_str)
 
-            print "calcualting delta"
             deltas.append(calculate_delta(ddelta_hist))
-            print "calcualted delta:", calculate_delta(ddelta_hist)
-            bin_labels.append("#splitline{%s}{%s}" % (ang.name, lambda_str))
-            print "appended everything"
+            bin_labels.append("#splitline{%s}{%s}" % (ang.name, ang.lambda_str))
 
         do_deltas_plot(var_list, deltas, "%s/%s/angularities_pt%dto%d.pdf" % (ROOT_DIR, plot_dir, start_val, end_val),
                         bin_labels=bin_labels, title=TITLE_STR + ", %d < p_{T}^{jet} < %d GeV" % (start_val, end_val), xtitle="Angularity: (#kappa, #beta)")
@@ -647,6 +642,7 @@ def do_gen_reco_comparison_plots(var_list=None, gen_var_prepend="gen", reco_var_
 
             do_comparison_plot(entries, "%s/%s/%s_pt%dto%d.pdf" % (ROOT_DIR, plot_dir, ang.var, start_val, end_val),
                                rebin=rebin, title="%d < p_{T}^{jet} < %d GeV" % (start_val, end_val),
+                               xtitle=ang.name + " (" + ang.lambda_str + ")",
                                xlim=xlim, ylim=ylim, subplot_type=subplot_type)
 
             # Do flavour-tagged comparison
@@ -667,6 +663,7 @@ def do_gen_reco_comparison_plots(var_list=None, gen_var_prepend="gen", reco_var_
 
             do_comparison_plot(entries, "%s/%s/%s_flavMatched_pt%dto%d.pdf" % (ROOT_DIR, plot_dir, ang.var, start_val, end_val),
                                rebin=rebin, title="%d < p_{T}^{jet} < %d GeV" % (start_val, end_val),
+                               xtitle=ang.name + " (" + ang.lambda_str + ")",
                                xlim=xlim, ylim=ylim, subplot_type=subplot_type)
 
 def do_reco_plots():
