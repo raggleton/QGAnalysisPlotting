@@ -730,10 +730,85 @@ def do_gen_reco_comparison_plots(var_list=None, gen_var_prepend="gen", reco_var_
                                xtitle=ang.name + " (" + ang.lambda_str + ")",
                                xlim=xlim, ylim=ylim, subplot_type=subplot_type)
 
+
+def do_all_exclusive_plots_comparison(sources, plot_dir="plots_dy_vs_qcd", zpj_dirname="ZPlusJets_QG", dj_dirname="Dijet_QG",
+                                      var_list=None, var_prepend="", pt_bins=None, subplot_type="diff", do_flav_tagged=True):
+    """Do 1D plots, comparing various sources. FOr each source plots DY & QCD samples."""
+    var_list = var_list or COMMON_VARS[2:]
+    pt_bins = pt_bins or PT_BINS
+
+    for ang in var_list:
+
+        v = "%s%s_vs_pt" % (var_prepend, ang.var)
+        for (start_val, end_val) in pt_bins:
+            entries_normal, entries_flav = [], []
+
+            # Get all plots
+            for source in sources:
+
+                h2d_dyj = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" % source['root_dir'], "%s/%s" % (zpj_dirname, v))
+                h2d_qcd = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_QCD_.root" % source['root_dir'], "%s/%s" % (dj_dirname, v))
+                lw = 2
+                dy_kwargs = dict(line_color=DY_COLOUR, fill_color=DY_COLOUR, label=DY_ZpJ_LABEL + " " + source.get('label', ''), line_width=lw)
+                dy_kwargs.update(source.get('style', {}))
+                dy_kwargs.update(source.get('dy_style', {}))
+
+                qcd_kwargs = dict(line_color=QCD_COLOUR, fill_color=QCD_COLOUR, label=QCD_Dijet_LABEL + " " + source.get('label', ''), line_width=lw)
+                qcd_kwargs.update(source.get('style', {}))
+                qcd_kwargs.update(source.get('qcd_style', {}))
+
+                entries_normal.append((get_projection_plot(h2d_dyj, start_val, end_val), dy_kwargs))
+                entries_normal.append((get_projection_plot(h2d_qcd, start_val, end_val), qcd_kwargs))
+
+                if not do_flav_tagged or "flavour" in v:
+                    continue
+
+                # Flav tagged plots
+                h2d_dyj_q = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" % source['root_dir'], "%s/q%s" % (zpj_dirname, v))
+                h2d_qcd_g = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_QCD_.root" % source['root_dir'], "%s/g%s" % (dj_dirname, v))
+
+                dy_kwargs_q = dict(line_color=DY_COLOUR, fill_color=DY_COLOUR, label=DY_ZpJ_QFLAV_LABEL + " " + source.get('label', ''), line_width=lw)
+                dy_kwargs_q.update(source.get('style', {}))
+                dy_kwargs_q.update(source.get('dy_style', {}))
+
+                qcd_kwargs_g = dict(line_color=QCD_COLOUR, fill_color=QCD_COLOUR, label=QCD_Dijet_GFLAV_LABEL + " " + source.get('label', ''), line_width=lw)
+                qcd_kwargs_g.update(source.get('style', {}))
+                qcd_kwargs_g.update(source.get('qcd_style', {}))
+
+                entries_flav.append((get_projection_plot(h2d_dyj_q, start_val, end_val), dy_kwargs_q))
+                entries_flav.append((get_projection_plot(h2d_qcd_g, start_val, end_val), qcd_kwargs_g))
+
+            rebin = 2
+            if v == "jet_multiplicity_vs_pt":
+                rebin = 2
+            elif "flavour" in v or "thrust" in v or 'pTD' in v:
+                rebin = 1
+
+            xlim = None
+            if "thrust" in v or "pTD" in v:
+                xlim = (0, 0.5)
+
+            ylim = None
+            if "flavour" in v:
+                ylim = (0, 1)
+            elif "LHA" in v:
+                ylim = (0, 5)
+
+            do_comparison_plot(entries_normal, "%s/%s/ptBinned/%s_pt%dto%d.pdf" % (ROOT_DIR, plot_dir, v, start_val, end_val),
+                               rebin=rebin, title="%d < p_{T}^{jet} < %d GeV" % (start_val, end_val),
+                               xtitle=ang.name + " (" + ang.lambda_str + ")",
+                               xlim=xlim, ylim=ylim, subplot_type=subplot_type)
+            if do_flav_tagged:
+                do_comparison_plot(entries_flav, "%s/%s/ptBinned/%s_pt%dto%d_flavMatched.pdf" % (ROOT_DIR, plot_dir, v, start_val, end_val),
+                                   rebin=rebin, title="%d < p_{T}^{jet} < %d GeV" % (start_val, end_val),
+                                   xtitle=ang.name + " (" + ang.lambda_str + ")",
+                                   xlim=xlim, subplot_type=subplot_type)
+
+
 def do_reco_plots():
     global TITLE_STR
     TITLE_STR = "[%s]" % ROOT_DIR.replace("workdir_", "")
-    # do_all_2D_plots()
+    do_all_2D_plots()
     do_all_exclusive_plots(subplot_type=None)
     # do_all_flavour_fraction_plots()
     # do_chs_vs_puppi_plots()
