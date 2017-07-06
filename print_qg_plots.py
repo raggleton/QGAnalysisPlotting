@@ -15,6 +15,13 @@ import os
 from array import array
 from collections import namedtuple
 
+# For debugging
+import sys
+import tracers
+# sys.settrace(tracers.trace_calls)
+# sys.settrace(tracers.trace_calls_detail)
+# sys.settrace(tracers.trace_calls_and_returns)
+
 
 ROOT.PyConfig.IgnoreCommandLineOptions = True
 ROOT.gROOT.SetBatch(1)
