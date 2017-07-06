@@ -27,7 +27,6 @@ ROOT.PyConfig.IgnoreCommandLineOptions = True
 ROOT.gROOT.SetBatch(1)
 ROOT.TH1.SetDefaultSumw2()
 ROOT.gStyle.SetOptStat(0)
-# TDR_Style.cd()
 
 
 DY_COLOUR = 880
@@ -96,8 +95,9 @@ ROOT_DIR = CHS_DIR
 # TITLE_STR = "[%s]" % ROOT_DIR.replace("workdir_", "")
 
 
-PT_BINS = [(80, 100), (100, 200), (400, 500), (1000, 2000)]
-THEORY_PT_BINS = PT_BINS + [(80, 2000)]
+PT_BINS = [(80, 100), (100, 200), (400, 500), (1000, 2000), (80, 2000)]
+# PT_BINS = [(80, 100), (100, 200), (200, 300), (300, 400), (400, 500), (500, 700), (700, 1000), (1000, 2000)]
+THEORY_PT_BINS = [(100, 200), (400, 500), (1000, 2000), (80, 2000)]
 
 
 def do_comparison_plot(entries, output_filename, rebin=1, **plot_kwargs):
