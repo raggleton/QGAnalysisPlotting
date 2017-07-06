@@ -537,11 +537,17 @@ def plot_ddelta(ddelta_hist, output_filename, xtitle, ytitle, title=""):
     p.save(output_filename)
 
 
-def do_deltas_plot(deltas, output_filename, bin_labels, title="", xtitle=""):
+def construct_deltas_graph(deltas):
     N = len(deltas)
     gr = ROOT.TGraphErrors(N, array('d', range(N)), array('d', deltas), array('d', [0.5]*N), array('d', [0.00001]*N))
-    cont = Contribution(gr, label="blah", marker_style=0, line_width=2)
-    p = Plot([cont], what="graph", title=title, xtitle=xtitle, ytitle="Separation #Delta", legend=None)
+    return gr
+
+
+def do_deltas_plot(graph_contribs, output_filename, bin_labels, title="", xtitle=""):
+    p = Plot(graph_contribs, what="graph", title=title, xtitle=xtitle, ytitle="Separation #Delta", legend=True)
+    p.legend.SetX1(0.7)
+    p.legend.SetY1(0.15)
+    p.legend.SetY2(0.35)
     p.plot("AP")
     # p.container.GetXaxis().LabelsOption("h")
     xax = p.container.GetXaxis()
@@ -552,7 +558,7 @@ def do_deltas_plot(deltas, output_filename, bin_labels, title="", xtitle=""):
     p.save(output_filename)
 
 
-def do_pt_min_delta_plots(plot_dir="deltas_ptmin", zpj_dirname="ZPlusJets_QG", dj_dirname="Dijet_QG", var_list=None, var_prepend="", flavour_tag=False):
+def do_pt_min_delta_plots(sources, plot_dir="deltas_ptmin", zpj_dirname="ZPlusJets_QG", dj_dirname="Dijet_QG", var_list=None, var_prepend="", flavour_tag=False, save_component_hists=False):
     """Do plots comparing power of different ptMin cuts"""
     var_list = var_list or COMMON_VARS
     ptmin_bins = [50, 100, 200, 400, 800]
@@ -561,35 +567,49 @@ def do_pt_min_delta_plots(plot_dir="deltas_ptmin", zpj_dirname="ZPlusJets_QG", d
     output_append = "_flavMatched" if flavour_tag else ""
     for ang in var_list:
         v = "%s%s_vs_pt" % (var_prepend, ang.var)
-        deltas, bin_labels = [], []
-        conts = []
-        for ind, pt_min in enumerate(ptmin_bins, 1):
-            h2d_dyj = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" % ROOT_DIR, "%s_ptMin_%d/%s%s" % (zpj_dirname, pt_min, dyj_flav, v))
-            h2d_qcd = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_QCD_.root" % ROOT_DIR, "%s_ptMin_%d/%s%s" % (dj_dirname, pt_min, dj_flav, v))
-            start_val, end_val = 80, 2000
-            h_dy = get_projection_plot(h2d_dyj, start_val, end_val)
-            if (h_dy.Integral()>0):
-                h_dy.Scale(1./(h_dy.GetBinWidth(1)*h_dy.Integral()))
+        graph_contribs, bin_labels = [], []
 
-            h_qcd = get_projection_plot(h2d_qcd, start_val, end_val)
-            if (h_qcd.Integral()>0):
-                h_qcd.Scale(1./(h_qcd.GetBinWidth(1)*h_qcd.Integral()))
-            ddelta_hist = get_ddelta_plot(h_dy, h_qcd)
-            plot_ddelta(ddelta_hist, "%s/%s/%s_ddelta_ptMin_%d%s.pdf" % (ROOT_DIR, plot_dir, ang.var, pt_min, output_append),
-                        xtitle=ang.name + " (" + ang.lambda_str + ")", ytitle="d#Delta/d" + ang.lambda_str)
-            conts.append(Contribution(ddelta_hist, line_width=1, line_style=ind, line_color=(ind*10)+44, fill_color=(ind*10)+44, label="p_{T}^{Min} = %d GeV" % pt_min, rebin_hist=2))
-            deltas.append(calculate_delta(ddelta_hist))
-            bin_labels.append("%d" % pt_min)
+        for source_ind, source in enumerate(sources):
+            deltas, conts = [], []
 
-        p = Plot(conts, what="hist", xtitle=ang.name, ytitle="p.d.f")
-        p.plot("NOSTACK HISTE")
-        p.save("%s/%s/%s_ddelta_ptMin_comparison%s.pdf" % (ROOT_DIR, plot_dir, ang.var, output_append))
+            for ind, pt_min in enumerate(ptmin_bins, 1):
+                h2d_dyj = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" % source['root_dir'], "%s_ptMin_%d/%s%s" % (zpj_dirname, pt_min, dyj_flav, v))
+                h2d_qcd = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_QCD_.root" % source['root_dir'], "%s_ptMin_%d/%s%s" % (dj_dirname, pt_min, dj_flav, v))
+                start_val, end_val = 80, 2000
+                h_dy = get_projection_plot(h2d_dyj, start_val, end_val)
+                if (h_dy.Integral()>0):
+                    h_dy.Scale(1./(h_dy.GetBinWidth(1)*h_dy.Integral()))
 
-        do_deltas_plot(deltas, "%s/%s/ptMins_%s%s.pdf" % (ROOT_DIR, plot_dir, ang.var, output_append),
-                        bin_labels=bin_labels, title=TITLE_STR + ", %s [%s]" % (ang.name, ang.lambda_str), xtitle="p_{T}^{min} [GeV]")
+                h_qcd = get_projection_plot(h2d_qcd, start_val, end_val)
+                if (h_qcd.Integral()>0):
+                    h_qcd.Scale(1./(h_qcd.GetBinWidth(1)*h_qcd.Integral()))
+
+                ddelta_hist = get_ddelta_plot(h_dy, h_qcd)
+                conts.append(Contribution(ddelta_hist, line_width=1, line_style=ind, line_color=(ind*10)+44, fill_color=(ind*10)+44, label="p_{T}^{Min} = %d GeV" % pt_min, rebin_hist=2))
+                deltas.append(calculate_delta(ddelta_hist))
+
+                if source_ind == 0:
+                    bin_labels.append("%d" % pt_min)
+
+                if save_component_hists:
+                    plot_ddelta(ddelta_hist, "%s/%s/%s_ddelta_ptMin_%d%s.pdf" % (source['root_dir'], plot_dir, ang.var, pt_min, output_append),
+                                xtitle=ang.name + " (" + ang.lambda_str + ")", ytitle="d#Delta/d" + ang.lambda_str)
+
+            if save_component_hists:
+                p = Plot(conts, what="hist", xtitle=ang.name, ytitle="p.d.f")
+                p.plot("NOSTACK HISTE")
+                p.save("%s/%s/%s_ddelta_ptMin_comparison%s.pdf" % (source['root_dir'], plot_dir, ang.var, output_append))
+
+            gr = construct_deltas_graph(deltas)
+            gr.SetName(source.get("label", ""))
+            c = Contribution(gr, label=source.get("label", ""), marker_style=0, line_width=2, **source.get("style", {}))
+            graph_contribs.append(c)
+
+        do_deltas_plot(graph_contribs, "%s/%s/ptMins_%s%s.pdf" % (ROOT_DIR, plot_dir, ang.var, output_append),
+                       bin_labels=bin_labels, title=TITLE_STR + ", %s [%s]" % (ang.name, ang.lambda_str), xtitle="p_{T}^{min} [GeV]")
 
 
-def do_angularity_delta_plots(plot_dir="delta_angularities", zpj_dirname="ZPlusJets_QG", dj_dirname="Dijet_QG", var_list=None, var_prepend="", pt_bins=None, flavour_tag=False):
+def do_angularity_delta_plots(sources, plot_dir="delta_angularities", zpj_dirname="ZPlusJets_QG", dj_dirname="Dijet_QG", var_list=None, var_prepend="", pt_bins=None, flavour_tag=False, save_component_hists=False):
     """Do plots comparing power of different angularities"""
     var_list = var_list or COMMON_VARS
     pt_bins = pt_bins or PT_BINS
@@ -599,31 +619,43 @@ def do_angularity_delta_plots(plot_dir="delta_angularities", zpj_dirname="ZPlusJ
     dj_flav = "g" if flavour_tag else ""
     output_append = "_flavMatched" if flavour_tag else ""
     for (start_val, end_val) in pt_bins:
-        deltas = []
-        bin_labels = []
-        for ind, ang in enumerate(var_list, 1):
-            v = "%s%s_vs_pt" % (var_prepend, ang.var)
+        graph_contribs, bin_labels = [], []
 
-            h2d_dyj = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" % ROOT_DIR, "%s/%s%s" % (zpj_dirname, dyj_flav, v))
-            h2d_qcd = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_QCD_.root" % ROOT_DIR, "%s/%s%s" % (dj_dirname, dj_flav, v))
+        for source_ind, source in enumerate(sources):
+            deltas = []
 
-            h_dy = get_projection_plot(h2d_dyj, start_val, end_val)
-            if (h_dy.Integral() > 0):
-                h_dy.Scale(1./(h_dy.GetBinWidth(1)*h_dy.Integral()))
+            # construct a graph of angularities for this source
+            for ind, ang in enumerate(var_list, 1):
+                v = "%s%s_vs_pt" % (var_prepend, ang.var)
 
-            h_qcd = get_projection_plot(h2d_qcd, start_val, end_val)
-            if (h_qcd.Integral() > 0):
-                h_qcd.Scale(1./(h_qcd.GetBinWidth(1)*h_qcd.Integral()))
+                h2d_dyj = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" % source['root_dir'], "%s/%s%s" % (zpj_dirname, dyj_flav, v))
+                h2d_qcd = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_QCD_.root" % source['root_dir'], "%s/%s%s" % (dj_dirname, dj_flav, v))
 
-            ddelta_hist = get_ddelta_plot(h_dy, h_qcd)
-            plot_ddelta(ddelta_hist, "%s/%s/angularities_pt%dto%d_ddelta_%s%s.pdf" % (ROOT_DIR, plot_dir, start_val, end_val, ang.var, output_append),
-                        xtitle=ang.name + " (" + ang.lambda_str + ")", ytitle="d#Delta/d" + ang.lambda_str)
+                h_dy = get_projection_plot(h2d_dyj, start_val, end_val)
+                if (h_dy.Integral() > 0):
+                    h_dy.Scale(1./(h_dy.GetBinWidth(1)*h_dy.Integral()))
 
-            deltas.append(calculate_delta(ddelta_hist))
-            bin_labels.append("#splitline{%s}{%s}" % (ang.name, ang.lambda_str))
+                h_qcd = get_projection_plot(h2d_qcd, start_val, end_val)
+                if (h_qcd.Integral() > 0):
+                    h_qcd.Scale(1./(h_qcd.GetBinWidth(1)*h_qcd.Integral()))
 
-        do_deltas_plot(deltas, "%s/%s/angularities_pt%dto%d%s.pdf" % (ROOT_DIR, plot_dir, start_val, end_val, output_append),
-                        bin_labels=bin_labels, title=TITLE_STR + ", %d < p_{T}^{jet} < %d GeV" % (start_val, end_val), xtitle="Angularity: (#kappa, #beta)")
+                ddelta_hist = get_ddelta_plot(h_dy, h_qcd)
+                deltas.append(calculate_delta(ddelta_hist))
+
+                if source_ind == 0:
+                    bin_labels.append("#splitline{%s}{%s}" % (ang.name, ang.lambda_str))
+
+                if save_component_hists:
+                    plot_ddelta(ddelta_hist, "%s/%s/angularities_pt%dto%d_ddelta_%s%s.pdf" % (source['root_dir'], plot_dir, start_val, end_val, ang.var, output_append),
+                                xtitle=ang.name + " (" + ang.lambda_str + ")", ytitle="d#Delta/d" + ang.lambda_str)
+
+            gr = construct_deltas_graph(deltas)
+            gr.SetName(source.get("label", ""))
+            c = Contribution(gr, label=source.get("label", ""), marker_style=0, line_width=2, **source.get("style", {}))
+            graph_contribs.append(c)
+
+        do_deltas_plot(graph_contribs, "%s/%s/angularities_pt%dto%d%s.pdf" % (ROOT_DIR, plot_dir, start_val, end_val, output_append),
+                       bin_labels=bin_labels, title=TITLE_STR + ", %d < p_{T}^{jet} < %d GeV" % (start_val, end_val), xtitle="Angularity: (#kappa, #beta)")
 
 
 def do_gen_reco_comparison_plots(var_list=None, gen_var_prepend="gen", reco_var_prepend="",
@@ -706,6 +738,24 @@ def do_reco_plots():
     # do_all_flavour_fraction_plots()
     # do_chs_vs_puppi_plots()
     # do_wrong_plots()
+    sources = [
+        {"root_dir": ROOT_DIR, 'label': "Pythia", "style": {'line_style': 1}}
+        # {"root_dir": ROOT_DIR, 'label': "Herwig", "style": {'line_style': 1}}
+    ]
+    # do_pt_min_delta_plots(sources, var_list=COMMON_VARS[0:-2])
+    do_angularity_delta_plots(sources, var_list=COMMON_VARS[0:-2], pt_bins=THEORY_PT_BINS)
+
+
+def do_reco_comparison_plots():
+    """Compare reco jets from different generators"""
+    sources = [
+        {"root_dir": ROOT_DIR, 'label': "Pythia", "style": {'line_style': 1, 'line_color': ROOT.kBlack}},
+        {"root_dir": HERWIG_AK4_DIR, 'label': "Herwig", "style": {'line_style': 2, 'line_color': ROOT.kRed}}
+
+    ]
+    # do_pt_min_delta_plots(sources, var_list=COMMON_VARS[0:-2])
+    do_angularity_delta_plots(sources, plot_dir="delta_angularities_compare_generators",
+                              var_list=COMMON_VARS[0:-2], pt_bins=THEORY_PT_BINS)
 
 
 def do_gen_plots():
@@ -720,6 +770,22 @@ def do_gen_plots():
     # do_jet_algo_comparison_plots(var_list=COMMON_VARS[:-1], var_prepend="gen", plot_dir="compare_jet_algo",
     #                              zpj_dirname=ZPJ_GENJET_RDIR, dj_dirname=DJ_GENJET_RDIR, pt_bins=THEORY_PT_BINS, subplot_type=None)
     do_pt_min_delta_plots(var_list=COMMON_VARS[0:-2], var_prepend="gen", plot_dir="deltas_ptMin_gen",
+
+    # Separation plots
+    sources = [
+        {"root_dir": AK4_GENJET_DIR, 'label': "", "style": {'line_style': 1}},
+    ]
+    do_pt_min_delta_plots(sources, var_list=COMMON_VARS[0:-2], var_prepend="gen", plot_dir="deltas_ptMin_gen",
+                          zpj_dirname=ZPJ_GENJET_RDIR, dj_dirname=DJ_GENJET_RDIR, save_component_hists=True)
+    do_angularity_delta_plots(sources, var_list=COMMON_VARS[:-2], var_prepend="gen", plot_dir="deltas_angularities_gen",
+                          zpj_dirname=ZPJ_GENJET_RDIR, dj_dirname=DJ_GENJET_RDIR, pt_bins=THEORY_PT_BINS, save_component_hists=True)
+    # flav-tagged versions
+    do_pt_min_delta_plots(sources, var_list=COMMON_VARS[0:-2], var_prepend="gen", plot_dir="deltas_ptMin_gen",
+                          zpj_dirname=ZPJ_GENJET_RDIR, dj_dirname=DJ_GENJET_RDIR, flavour_tag=True, save_component_hists=True)
+    do_angularity_delta_plots(sources, var_list=COMMON_VARS[:-2], var_prepend="gen", plot_dir="deltas_angularities_gen",
+                          zpj_dirname=ZPJ_GENJET_RDIR, dj_dirname=DJ_GENJET_RDIR, pt_bins=THEORY_PT_BINS, flavour_tag=True, save_component_hists=True)
+
+
                           zpj_dirname=ZPJ_GENJET_RDIR, dj_dirname=DJ_GENJET_RDIR)
     do_angularity_delta_plots(var_list=COMMON_VARS[:-2], var_prepend="gen", plot_dir="deltas_angularities_gen",
                           zpj_dirname=ZPJ_GENJET_RDIR, dj_dirname=DJ_GENJET_RDIR, pt_bins=THEORY_PT_BINS[1:])
