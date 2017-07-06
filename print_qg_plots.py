@@ -70,12 +70,19 @@ DJ_RECOJET_RDIR = "Dijet_QG"
 ZPJ_GENJET_RDIR = "ZPlusJets_genjet"
 DJ_GENJET_RDIR = "Dijet_genjet"
 
+PYTHIA_AK4_DIR = "workdir_ak4chs"
+HERWIG_AK4_DIR = "workdir_ak4chs_herwig"
 
-AK4_GENJET_DIR = "workdir_ak4chs"
+AK4_GENJET_DIR = PYTHIA_AK4_DIR
+AK4_GENJET_DIR = HERWIG_AK4_DIR
+# AK4_GENJET_DIR = "workdir_ak4chs_thirdjetcut"
+
 AK8_GENJET_DIR = "workdir_ak4chs_ak8genjet"
+AK8_GENJET_DIR = "workdir_ak4chs_ak8genjet_herwig"
 
 CHS_DIR = AK4_GENJET_DIR
 TITLE_STR = "ak4 GenJet"
+# TITLE_STR = "ak4 GenJet (w/extra jet cut)"
 
 # CHS_DIR = AK8_GENJET_DIR
 # TITLE_STR = "ak8 GenJet"
@@ -834,17 +841,28 @@ def do_reco_comparison_plots():
 
 
 def do_gen_plots():
-    # do_all_2D_plots(var_list=COMMON_VARS[:-1], var_prepend="gen", plot_dir="plots_2d_gen",
-    #                 zpj_dirname=ZPJ_GENJET_RDIR, dj_dirname=DJ_GENJET_RDIR)
+    global TITLE_STR
+    TITLE_STR = "ak4 GenJet"
+    # sources = [
+    #     {"root_dir": ROOT_DIR, 'label': "", "style": {'line_style': 1}},
+    # ]
+    # do_all_exclusive_plots_comparison(sources=sources, var_list=COMMON_VARS[:-1], var_prepend="gen",
+    #                                   plot_dir="plots_dy_vs_qcd_gen", zpj_dirname=ZPJ_GENJET_RDIR, dj_dirname=DJ_GENJET_RDIR,
+    #                                   pt_bins=THEORY_PT_BINS, subplot_type=None, do_flav_tagged=True)
+
+    do_all_2D_plots(var_list=COMMON_VARS[:-1], var_prepend="gen", plot_dir="plots_2d_gen",
+                    zpj_dirname=ZPJ_GENJET_RDIR, dj_dirname=DJ_GENJET_RDIR)
     do_all_exclusive_plots(var_list=COMMON_VARS[:-1], var_prepend="gen", plot_dir="plots_dy_vs_qcd_gen",
                            zpj_dirname=ZPJ_GENJET_RDIR, dj_dirname=DJ_GENJET_RDIR, pt_bins=THEORY_PT_BINS, subplot_type=None)
-    # do_all_flavour_fraction_plots(var_prepend="gen", plot_dir="flav_fractions_gen",
-    #                               zpj_dirname=ZPJ_GENJET_RDIR, dj_dirname=DJ_GENJET_RDIR)
-    # do_wrong_plots(var_prepend="gen", plot_dir="wrong_flavs_gen",
-    #                zpj_dirname=ZPJ_GENJET_RDIR, dj_dirname=DJ_GENJET_RDIR, pt_bins=THEORY_PT_BINS)
-    # do_jet_algo_comparison_plots(var_list=COMMON_VARS[:-1], var_prepend="gen", plot_dir="compare_jet_algo",
-    #                              zpj_dirname=ZPJ_GENJET_RDIR, dj_dirname=DJ_GENJET_RDIR, pt_bins=THEORY_PT_BINS, subplot_type=None)
-    do_pt_min_delta_plots(var_list=COMMON_VARS[0:-2], var_prepend="gen", plot_dir="deltas_ptMin_gen",
+    do_all_flavour_fraction_plots(var_prepend="gen", plot_dir="flav_fractions_gen",
+                                  zpj_dirname=ZPJ_GENJET_RDIR, dj_dirname=DJ_GENJET_RDIR)
+    do_wrong_plots(var_prepend="gen", plot_dir="wrong_flavs_gen",
+                   zpj_dirname=ZPJ_GENJET_RDIR, dj_dirname=DJ_GENJET_RDIR, pt_bins=THEORY_PT_BINS)
+    do_jet_algo_comparison_plots(var_list=COMMON_VARS[:-1], var_prepend="gen", plot_dir="compare_jet_algo",
+                                 zpj_dirname=ZPJ_GENJET_RDIR, dj_dirname=DJ_GENJET_RDIR, pt_bins=THEORY_PT_BINS, subplot_type=None)
+    do_gen_reco_comparison_plots(var_list=COMMON_VARS[:-1], gen_var_prepend="gen", reco_var_prepend="",
+                                 plot_dir="plot_reco_gen", zpj_reco_dirname=ZPJ_RECOJET_RDIR, dj_reco_dirname=DJ_RECOJET_RDIR,
+                                 zpj_gen_dirname=ZPJ_GENJET_RDIR, dj_gen_dirname=DJ_GENJET_RDIR, pt_bins=THEORY_PT_BINS)
 
     # Separation plots
     sources = [
@@ -861,18 +879,30 @@ def do_gen_plots():
                           zpj_dirname=ZPJ_GENJET_RDIR, dj_dirname=DJ_GENJET_RDIR, pt_bins=THEORY_PT_BINS, flavour_tag=True, save_component_hists=True)
 
 
+
+def do_gen_comparison_plots():
+    """Compare genjets from different generators"""
+    sources = [
+        {"root_dir": PYTHIA_AK4_DIR, 'label': "Pythia", "style": {'line_style': 1}},
+        {"root_dir": HERWIG_AK4_DIR, 'label': "Herwig", "style": {'line_style': 2}}
+    ]
+    do_all_exclusive_plots_comparison(sources=sources, var_list=COMMON_VARS[:-1], var_prepend="gen",
+                                      plot_dir="plots_dy_vs_qcd_gen_compare_generators",
+                                      zpj_dirname=ZPJ_GENJET_RDIR, dj_dirname=DJ_GENJET_RDIR,
+                                      pt_bins=THEORY_PT_BINS, subplot_type=None, do_flav_tagged=False)
+
+    sources = [
+        {"root_dir": PYTHIA_AK4_DIR, 'label': "Pythia", "style": {'line_color': ROOT.kBlack}},
+        {"root_dir": HERWIG_AK4_DIR, 'label': "Herwig", "style": {'line_color': ROOT.kRed, 'line_style': 2}}
+    ]
+    do_pt_min_delta_plots(sources, var_list=COMMON_VARS[0:-2], var_prepend="gen", plot_dir="deltas_ptMin_gen_compare_generators",
                           zpj_dirname=ZPJ_GENJET_RDIR, dj_dirname=DJ_GENJET_RDIR)
-    do_angularity_delta_plots(var_list=COMMON_VARS[:-2], var_prepend="gen", plot_dir="deltas_angularities_gen",
-                          zpj_dirname=ZPJ_GENJET_RDIR, dj_dirname=DJ_GENJET_RDIR, pt_bins=THEORY_PT_BINS[1:])
-    do_pt_min_delta_plots(var_list=COMMON_VARS[0:-2], var_prepend="gen", plot_dir="deltas_ptMin_gen",
-                          zpj_dirname=ZPJ_GENJET_RDIR, dj_dirname=DJ_GENJET_RDIR, flavour_tag=True)
-    do_angularity_delta_plots(var_list=COMMON_VARS[:-2], var_prepend="gen", plot_dir="deltas_angularities_gen",
-                          zpj_dirname=ZPJ_GENJET_RDIR, dj_dirname=DJ_GENJET_RDIR, pt_bins=THEORY_PT_BINS[1:], flavour_tag=True)
-    # do_gen_reco_comparison_plots(var_list=COMMON_VARS[:-1], gen_var_prepend="gen", reco_var_prepend="",
-    #                              plot_dir="plot_reco_gen", zpj_reco_dirname=ZPJ_RECOJET_RDIR, dj_reco_dirname=DJ_RECOJET_RDIR,
-    #                              zpj_gen_dirname=ZPJ_GENJET_RDIR, dj_gen_dirname=DJ_GENJET_RDIR, pt_bins=THEORY_PT_BINS[:])
+    do_angularity_delta_plots(sources, var_list=COMMON_VARS[:-2], var_prepend="gen", plot_dir="deltas_angularities_gen_compare_generators",
+                          zpj_dirname=ZPJ_GENJET_RDIR, dj_dirname=DJ_GENJET_RDIR, pt_bins=THEORY_PT_BINS)
 
 
 if __name__ == '__main__':
-    # do_reco_plots()
+    do_reco_plots()
+    do_reco_comparison_plots()
     do_gen_plots()
+    do_gen_comparison_plots()
