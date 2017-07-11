@@ -351,7 +351,7 @@ class Plot(object):
                     self.subplot_pad.SetFillStyle(0)
                     self.subplot_pad.SetTopMargin(2*self.subplot_pad_fudge)
                     self.subplot_pad.SetRightMargin(right_margin)
-                    self.subplot_pad.SetBottomMargin(0.32)
+                    self.subplot_pad.SetBottomMargin(0.35)
                     self.canvas.cd()
                     self.subplot_pad.Draw()
                 else:
@@ -416,6 +416,7 @@ class Plot(object):
                 self.subplot_container.SetTitle(";%s;d#Delta/d#lambda" % (self.xtitle))
 
             self.rescale_plot_labels(self.subplot_container, self.subplot_pad_height)
+            self.subplot_container.GetXaxis().SetTitleOffset(self.subplot_container.GetXaxis().GetTitleOffset()*2.8)
             self.subplot_container.GetYaxis().SetNdivisions(505)
 
             if self.xlim:
