@@ -665,7 +665,7 @@ def do_angularity_delta_plots(sources, plot_dir="delta_angularities", zpj_dirnam
             graph_contribs.append(c)
 
         do_deltas_plot(graph_contribs, "%s/%s/angularities_pt%dto%d%s.pdf" % (ROOT_DIR, plot_dir, start_val, end_val, output_append),
-                       bin_labels=bin_labels, title=TITLE_STR + ", %d < p_{T}^{jet} < %d GeV" % (start_val, end_val), xtitle="Angularity: (#kappa, #beta)")
+                       bin_labels=bin_labels, title="%d < p_{T}^{jet} < %d GeV" % (start_val, end_val), xtitle="Angularity: (#kappa, #beta)")
 
 
 def do_gen_reco_comparison_plots(var_list=None, gen_var_prepend="gen", reco_var_prepend="",
@@ -840,7 +840,7 @@ def do_reco_comparison_plots():
     ]
     do_all_exclusive_plots_comparison(sources=sources, var_list=COMMON_VARS[:-2],
                                       plot_dir="plots_dy_vs_qcd_compare_generators",
-                                      subplot_type=None, do_flav_tagged=False)
+                                      subplot_type=None, do_flav_tagged=False, pt_bins=THEORY_PT_BINS)
     sources = [
         {"root_dir": PYTHIA_AK4_DIR, 'label': "Pythia", "style": {'line_style': 1, 'line_color': ROOT.kBlack}},
         {"root_dir": HERWIG_AK4_DIR, 'label': "Herwig", "style": {'line_style': 2, 'line_color': ROOT.kRed}}
