@@ -116,67 +116,6 @@ def do_all_2D_plots(plot_dir="plots_2d", zpj_dirname="ZPlusJets_QG", dj_dirname=
                        renorm_axis=rn, title=QCD_Dijet_QFLAV_LABEL, rebin=rebin)
 
 
-def do_all_exclusive_plots(plot_dir="plots_dy_vs_qcd", zpj_dirname="ZPlusJets_QG", dj_dirname="Dijet_QG",
-                           var_list=None, var_prepend="", pt_bins=None, subplot_type="diff"):
-    """Do pt/eta/nvtx binned 1D plots"""
-    var_list = var_list or COMMON_VARS[2:]
-    pt_bins = pt_bins or PT_BINS
-
-    for ang in var_list:
-        v = "%s%s_vs_pt" % (var_prepend, ang.var)
-
-        h2d_dyj = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" % ROOT_DIR, "%s/%s" % (zpj_dirname, v))
-        h2d_qcd = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_QCD_.root" % ROOT_DIR, "%s/%s" % (dj_dirname, v))
-
-        if "flavour" not in v:
-            h2d_dyj_q = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" % ROOT_DIR, "%s/q%s" % (zpj_dirname, v))
-            h2d_qcd_g = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_QCD_.root" % ROOT_DIR, "%s/g%s" % (dj_dirname, v))
-
-        lw = 2
-        dy_kwargs = dict(line_color=DY_COLOUR, fill_color=DY_COLOUR, label=DY_ZpJ_LABEL, line_width=lw)
-        qcd_kwargs = dict(line_color=QCD_COLOUR, fill_color=QCD_COLOUR, label=QCD_Dijet_LABEL, line_width=lw)
-
-        dy_kwargs_q = dict(line_color=DY_COLOUR, fill_color=DY_COLOUR, label=DY_ZpJ_QFLAV_LABEL, line_width=lw)
-        qcd_kwargs_g = dict(line_color=QCD_COLOUR, fill_color=QCD_COLOUR, label=QCD_Dijet_GFLAV_LABEL, line_width=lw)
-
-        rebin = 2
-        if v == "jet_multiplicity_vs_pt":
-            rebin = 2
-        elif "flavour" in v or "thrust" in v:
-            rebin = 1
-
-        xlim = None
-        if "thrust" in v or "pTD" in v:
-            xlim = (0, 0.5)
-
-        ylim = None
-        if "flavour" in v:
-            ylim = (0, 1)
-        elif "LHA" in v:
-            ylim = (0, 5)
-
-        for (start_val, end_val) in pt_bins:
-            entries = [
-                (get_projection_plot(h2d_dyj, start_val, end_val), dy_kwargs),
-                (get_projection_plot(h2d_qcd, start_val, end_val), qcd_kwargs),
-            ]
-            do_comparison_plot(entries, "%s/%s/ptBinned/%s_pt%dto%d.pdf" % (ROOT_DIR, plot_dir, v, start_val, end_val),
-                               rebin=rebin, title="%d < p_{T}^{jet} < %d GeV" % (start_val, end_val),
-                               xtitle=ang.name + " (" + ang.lambda_str + ")",
-                               xlim=xlim, ylim=ylim, subplot_type=subplot_type)
-
-            if "flavour" in v:
-                continue
-            continue
-            entries = [
-                (get_projection_plot(h2d_dyj_q, start_val, end_val), dy_kwargs_q),
-                (get_projection_plot(h2d_qcd_g, start_val, end_val), qcd_kwargs_g),
-            ]
-            do_comparison_plot(entries, "%s/%s/ptBinned/%s_pt%dto%d_flavMatched.pdf" % (ROOT_DIR, plot_dir, v, start_val, end_val),
-                               rebin=rebin, title="%d < p_{T}^{jet} < %d GeV" % (start_val, end_val),
-                               xtitle=ang.name + " (" + ang.lambda_str + ")",
-                               xlim=xlim, subplot_type=subplot_type)
-
 def do_chs_vs_puppi_plots():
     sources = [
         {"root_dir": CHS_DIR, 'label': "CHS", "style": {'line_style': 1}},
@@ -378,7 +317,10 @@ def do_reco_plots():
     global TITLE_STR
     TITLE_STR = "[%s]" % ROOT_DIR.replace("workdir_", "")
     # do_all_2D_plots()
-    do_all_exclusive_plots(subplot_type=None)
+    sources = [{"root_dir": ROOT_DIR, 'label': "", "style": {'line_style': 1}}]
+    do_all_exclusive_plots_comparison(sources=sources, var_list=COMMON_VARS[:-1],
+                                      plot_dir=os.path.join(ROOT_DIR, "plots_dy_vs_qcd"),
+                                      pt_bins=THEORY_PT_BINS, subplot_type=None, do_flav_tagged=True)
     # do_all_flavour_fraction_plots()
     # do_chs_vs_puppi_plots()
     # do_wrong_plots()
@@ -443,17 +385,13 @@ def do_reco_reweight_comparison_plots():
 def do_gen_plots():
     global TITLE_STR
     TITLE_STR = "ak4 GenJet"
-    # sources = [
-    #     {"root_dir": ROOT_DIR, 'label': "", "style": {'line_style': 1}},
-    # ]
-    # do_all_exclusive_plots_comparison(sources=sources, var_list=COMMON_VARS[:-1], var_prepend="gen",
-    #                                   plot_dir=os.path.join(ROOT_DIR, "plots_dy_vs_qcd_gen"), zpj_dirname=ZPJ_GENJET_RDIR, dj_dirname=DJ_GENJET_RDIR,
-    #                                   pt_bins=THEORY_PT_BINS, subplot_type=None, do_flav_tagged=True)
-
+    sources = [{"root_dir": ROOT_DIR, 'label': "", "style": {'line_style': 1}}]
+    do_all_exclusive_plots_comparison(sources=sources, var_list=COMMON_VARS[:-1], var_prepend="gen",
+                                      plot_dir=os.path.join(ROOT_DIR, "plots_dy_vs_qcd_gen"),
+                                      zpj_dirname=ZPJ_GENJET_RDIR, dj_dirname=DJ_GENJET_RDIR,
+                                      pt_bins=THEORY_PT_BINS, subplot_type=None, do_flav_tagged=True)
     do_all_2D_plots(var_list=COMMON_VARS[:-1], var_prepend="gen", plot_dir="plots_2d_gen",
                     zpj_dirname=ZPJ_GENJET_RDIR, dj_dirname=DJ_GENJET_RDIR)
-    do_all_exclusive_plots(var_list=COMMON_VARS[:-1], var_prepend="gen", plot_dir="plots_dy_vs_qcd_gen",
-                           zpj_dirname=ZPJ_GENJET_RDIR, dj_dirname=DJ_GENJET_RDIR, pt_bins=THEORY_PT_BINS, subplot_type=None)
     # do_all_flavour_fraction_plots(var_prepend="gen", plot_dir="flav_fractions_gen",
     #                               zpj_dirname=ZPJ_GENJET_RDIR, dj_dirname=DJ_GENJET_RDIR)
     # do_wrong_plots(var_prepend="gen", plot_dir="wrong_flavs_gen",
