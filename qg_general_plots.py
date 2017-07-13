@@ -75,8 +75,8 @@ def do_2D_plot(obj, output_filename, renorm_axis=None, title=None, rebin=None, r
 
 
 def do_all_exclusive_plots_comparison(sources, plot_dir="plots_dy_vs_qcd", zpj_dirname="ZPlusJets_QG", dj_dirname="Dijet_QG",
-                                      var_list=None, var_prepend="", pt_bins=None, subplot_type="diff", do_flav_tagged=True):
-    """Do 1D plots, comparing various sources. For each source plots DY & QCD samples. IF zpj_dirname or dj_dirname blank, not plotted."""
+                                      var_list=None, var_prepend="", pt_bins=None, subplot_type=None, do_flav_tagged=True):
+    """Do 1D plots, comparing various sources. For each source plots DY & QCD samples. If zpj_dirname or dj_dirname blank, not plotted."""
     var_list = var_list or COMMON_VARS[2:]
     pt_bins = pt_bins or PT_BINS
 
