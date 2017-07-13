@@ -749,7 +749,7 @@ def do_gen_reco_comparison_plots(var_list=None, gen_var_prepend="gen", reco_var_
 
 def do_all_exclusive_plots_comparison(sources, plot_dir="plots_dy_vs_qcd", zpj_dirname="ZPlusJets_QG", dj_dirname="Dijet_QG",
                                       var_list=None, var_prepend="", pt_bins=None, subplot_type="diff", do_flav_tagged=True):
-    """Do 1D plots, comparing various sources. FOr each source plots DY & QCD samples."""
+    """Do 1D plots, comparing various sources. For each source plots DY & QCD samples. IF zpj_dirname or dj_dirname blank, not plotted."""
     var_list = var_list or COMMON_VARS[2:]
     pt_bins = pt_bins or PT_BINS
 
@@ -761,38 +761,41 @@ def do_all_exclusive_plots_comparison(sources, plot_dir="plots_dy_vs_qcd", zpj_d
 
             # Get all plots
             for source in sources:
-
-                h2d_dyj = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" % source['root_dir'], "%s/%s" % (zpj_dirname, v))
-                h2d_qcd = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_QCD_.root" % source['root_dir'], "%s/%s" % (dj_dirname, v))
                 lw = 2
-                dy_kwargs = dict(line_color=DY_COLOUR, fill_color=DY_COLOUR, label=DY_ZpJ_LABEL + " " + source.get('label', ''), line_width=lw)
-                dy_kwargs.update(source.get('style', {}))
-                dy_kwargs.update(source.get('dy_style', {}))
 
-                qcd_kwargs = dict(line_color=QCD_COLOUR, fill_color=QCD_COLOUR, label=QCD_Dijet_LABEL + " " + source.get('label', ''), line_width=lw)
-                qcd_kwargs.update(source.get('style', {}))
-                qcd_kwargs.update(source.get('qcd_style', {}))
+                if zpj_dirname:
+                    h2d_dyj = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" % source['root_dir'], "%s/%s" % (zpj_dirname, v))
+                    dy_kwargs = dict(line_color=DY_COLOUR, fill_color=DY_COLOUR, label=DY_ZpJ_LABEL + " " + source.get('label', ''), line_width=lw)
+                    dy_kwargs.update(source.get('style', {}))
+                    dy_kwargs.update(source.get('dy_style', {}))
+                    entries_normal.append((get_projection_plot(h2d_dyj, start_val, end_val), dy_kwargs))
 
-                entries_normal.append((get_projection_plot(h2d_dyj, start_val, end_val), dy_kwargs))
-                entries_normal.append((get_projection_plot(h2d_qcd, start_val, end_val), qcd_kwargs))
+                if dj_dirname:
+                    h2d_qcd = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_QCD_.root" % source['root_dir'], "%s/%s" % (dj_dirname, v))
+                    qcd_kwargs = dict(line_color=QCD_COLOUR, fill_color=QCD_COLOUR, label=QCD_Dijet_LABEL + " " + source.get('label', ''), line_width=lw)
+                    qcd_kwargs.update(source.get('style', {}))
+                    qcd_kwargs.update(source.get('qcd_style', {}))
+                    print qcd_kwargs
+                    print source.get('style', {})
+                    entries_normal.append((get_projection_plot(h2d_qcd, start_val, end_val), qcd_kwargs))
 
                 if not do_flav_tagged or "flavour" in v:
                     continue
 
                 # Flav tagged plots
-                h2d_dyj_q = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" % source['root_dir'], "%s/q%s" % (zpj_dirname, v))
-                h2d_qcd_g = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_QCD_.root" % source['root_dir'], "%s/g%s" % (dj_dirname, v))
+                if zpj_dirname:
+                    h2d_dyj_q = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" % source['root_dir'], "%s/q%s" % (zpj_dirname, v))
+                    dy_kwargs_q = dict(line_color=DY_COLOUR, fill_color=DY_COLOUR, label=DY_ZpJ_QFLAV_LABEL + " " + source.get('label', ''), line_width=lw)
+                    dy_kwargs_q.update(source.get('style', {}))
+                    dy_kwargs_q.update(source.get('dy_style', {}))
+                    entries_flav.append((get_projection_plot(h2d_dyj_q, start_val, end_val), dy_kwargs_q))
 
-                dy_kwargs_q = dict(line_color=DY_COLOUR, fill_color=DY_COLOUR, label=DY_ZpJ_QFLAV_LABEL + " " + source.get('label', ''), line_width=lw)
-                dy_kwargs_q.update(source.get('style', {}))
-                dy_kwargs_q.update(source.get('dy_style', {}))
-
-                qcd_kwargs_g = dict(line_color=QCD_COLOUR, fill_color=QCD_COLOUR, label=QCD_Dijet_GFLAV_LABEL + " " + source.get('label', ''), line_width=lw)
-                qcd_kwargs_g.update(source.get('style', {}))
-                qcd_kwargs_g.update(source.get('qcd_style', {}))
-
-                entries_flav.append((get_projection_plot(h2d_dyj_q, start_val, end_val), dy_kwargs_q))
-                entries_flav.append((get_projection_plot(h2d_qcd_g, start_val, end_val), qcd_kwargs_g))
+                if dj_dirname:
+                    h2d_qcd_g = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_QCD_.root" % source['root_dir'], "%s/g%s" % (dj_dirname, v))
+                    qcd_kwargs_g = dict(line_color=QCD_COLOUR, fill_color=QCD_COLOUR, label=QCD_Dijet_GFLAV_LABEL + " " + source.get('label', ''), line_width=lw)
+                    qcd_kwargs_g.update(source.get('style', {}))
+                    qcd_kwargs_g.update(source.get('qcd_style', {}))
+                    entries_flav.append((get_projection_plot(h2d_qcd_g, start_val, end_val), qcd_kwargs_g))
 
             rebin = 2
             if v == "jet_multiplicity_vs_pt":
