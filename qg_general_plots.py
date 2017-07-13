@@ -33,10 +33,12 @@ def do_comparison_plot(entries, output_filename, rebin=1, **plot_kwargs):
     plot_kwargs : any other kwargs to be passed to the Plot object ctor
     """
     conts = [Contribution(ent[0], normalise_hist=True, fill_style=0, rebin_hist=rebin, **ent[1]) for ent in entries]
-    p = Plot(conts, what="hist", subplot=conts[0], ytitle="p.d.f", **plot_kwargs)
+    do_legend = len(conts) > 1
+    p = Plot(conts, what="hist", subplot=conts[0], ytitle="p.d.f", legend=do_legend, **plot_kwargs)
     draw_opt = "NOSTACK HISTE"
-    p.legend.SetX1(0.55)
-    p.legend.SetY1(0.6)
+    if do_legend:
+        p.legend.SetX1(0.55)
+        p.legend.SetY1(0.6)
     p.plot(draw_opt)
     p.save(output_filename)
 
