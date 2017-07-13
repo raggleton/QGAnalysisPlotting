@@ -178,39 +178,15 @@ def do_all_exclusive_plots(plot_dir="plots_dy_vs_qcd", zpj_dirname="ZPlusJets_QG
                                xlim=xlim, subplot_type=subplot_type)
 
 def do_chs_vs_puppi_plots():
-    for v in ['jet_LHA', 'jet_pTD', 'jet_width', 'jet_thrust', 'jet_multiplicity']:
-        v += "_vs_pt"
-
-        h2d_dyj_chs = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" % CHS_DIR, "ZPlusJets_QG/q%s" % v)
-        h2d_qcd_chs = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_QCD_.root" % CHS_DIR, "Dijet_QG/g%s" % v)
-
-        h2d_dyj_puppi = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" % PUPPI_DIR, "ZPlusJets_QG/q%s" % v)
-        h2d_qcd_puppi = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_QCD_.root" % PUPPI_DIR, "Dijet_QG/g%s" % v)
-
-        lw = 2
-        dy_kwargs_chs = dict(line_color=DY_COLOUR, fill_color=DY_COLOUR, label=DY_ZpJ_QFLAV_LABEL + " [CHS]", line_width=lw)
-        qcd_kwargs_chs = dict(line_color=QCD_COLOUR, fill_color=QCD_COLOUR, label=QCD_Dijet_GFLAV_LABEL + " [CHS]", line_width=lw)
-
-        puppi_ls = 3
-        dy_kwargs_puppi = dict(line_color=DY_COLOUR+2, fill_color=DY_COLOUR+2, label=DY_ZpJ_QFLAV_LABEL + " [PUPPI]", line_style=puppi_ls, line_width=lw)
-        qcd_kwargs_puppi = dict(line_color=QCD_COLOUR-3, fill_color=QCD_COLOUR-3, label=QCD_Dijet_GFLAV_LABEL + " [PUPPI]", line_style=puppi_ls, line_width=lw)
-
-        rebin = 2
-        xlim = None
-        if "thrust" in v:
-            rebin = 1
-            xlim = (0, 0.5)
-
-        for (start_val, end_val) in PT_BINS:
-            entries = [
-                (get_projection_plot(h2d_dyj_chs, start_val, end_val), dy_kwargs_chs),
-                (get_projection_plot(h2d_qcd_chs, start_val, end_val), qcd_kwargs_chs),
-                (get_projection_plot(h2d_dyj_puppi, start_val, end_val), dy_kwargs_puppi),
-                (get_projection_plot(h2d_qcd_puppi, start_val, end_val), qcd_kwargs_puppi),
-            ]
-
-            do_comparison_plot(entries, "ak4_chs_vs_puppi/%s_pt%dto%d_flavMatched.pdf" % (v, start_val, end_val),
-                               rebin=rebin, title="%d < p_{T}^{jet} < %d GeV" % (start_val, end_val), xlim=xlim)
+    sources = [
+        {"root_dir": CHS_DIR, 'label': "CHS", "style": {'line_style': 1}},
+        {"root_dir": PUPPI_DIR, 'label': "PUPPI", "style": {'line_style': 3}}
+    ]
+    do_all_exclusive_plots_comparison(sources, var_list=COMMON_VARS[2:],
+                                      plot_dir=os.path.join(ROOT_DIR, "ak4_chs_vs_puppi"),
+                                      zpj_dirname="ZPlusJets_QG", dj_dirname="Dijet_QG",
+                                      var_prepend="", pt_bins=None,
+                                      subplot_type=None, do_flav_tagged=True)
 
 
 def do_wrong_plots(var_prepend="", plot_dir="wrong_flavs", zpj_dirname="ZPlusJets_QG", dj_dirname="Dijet_QG", pt_bins=None):
