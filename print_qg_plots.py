@@ -171,73 +171,16 @@ def do_wrong_plots(var_prepend="", plot_dir="wrong_flavs", zpj_dirname="ZPlusJet
 
 def do_jet_algo_comparison_plots(plot_dir="compare_jet_algo", zpj_dirname="ZPlusJets_QG", dj_dirname="Dijet_QG",
                                  var_list=None, var_prepend="", pt_bins=None, subplot_type="diff"):
-    """Do pt/eta/nvtx binned 1D plots, comparing different jet algos"""
-    var_list = var_list or COMMON_VARS
-    pt_bins = pt_bins or PT_BINS
-
-    for ang in var_list:
-        v = "%s%s_vs_pt" % (var_prepend, ang.var)
-
-        h2d_dyj_ak4 = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" % AK4_GENJET_DIR, "%s/%s" % (zpj_dirname, v))
-        h2d_dyj_ak8 = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" % AK8_GENJET_DIR, "%s/%s" % (zpj_dirname, v))
-        h2d_qcd_ak4 = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_QCD_.root" % AK4_GENJET_DIR, "%s/%s" % (dj_dirname, v))
-        h2d_qcd_ak8 = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_QCD_.root" % AK8_GENJET_DIR, "%s/%s" % (dj_dirname, v))
-
-        if "flavour" not in v:
-            h2d_dyj_q_ak4 = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" % AK4_GENJET_DIR, "%s/q%s" % (zpj_dirname, v))
-            h2d_dyj_q_ak8 = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" % AK8_GENJET_DIR, "%s/q%s" % (zpj_dirname, v))
-            h2d_qcd_g_ak4 = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_QCD_.root" % AK4_GENJET_DIR, "%s/g%s" % (dj_dirname, v))
-            h2d_qcd_g_ak8 = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_QCD_.root" % AK8_GENJET_DIR, "%s/g%s" % (dj_dirname, v))
-
-        lw = 2
-        dy_kwargs_ak4 = dict(line_color=DY_COLOUR, fill_color=DY_COLOUR, label=DY_ZpJ_LABEL + " [ak4]", line_width=lw)
-        dy_kwargs_ak8 = dict(line_color=DY_COLOUR, fill_color=DY_COLOUR, label=DY_ZpJ_LABEL + " [ak8]", line_width=lw, line_style=2)
-        qcd_kwargs_ak4 = dict(line_color=QCD_COLOUR, fill_color=QCD_COLOUR, label=QCD_Dijet_LABEL + " [ak4]", line_width=lw)
-        qcd_kwargs_ak8 = dict(line_color=QCD_COLOUR, fill_color=QCD_COLOUR, label=QCD_Dijet_LABEL + " [ak8]", line_width=lw, line_style=2)
-
-        dy_kwargs_q_ak4 = dict(line_color=DY_COLOUR, fill_color=DY_COLOUR, label=DY_ZpJ_QFLAV_LABEL + " [ak4]", line_width=lw)
-        dy_kwargs_q_ak8 = dict(line_color=DY_COLOUR, fill_color=DY_COLOUR, label=DY_ZpJ_QFLAV_LABEL + " [ak8]", line_width=lw, line_style=2)
-        qcd_kwargs_g_ak4 = dict(line_color=QCD_COLOUR, fill_color=QCD_COLOUR, label=QCD_Dijet_GFLAV_LABEL + " [ak4]", line_width=lw)
-        qcd_kwargs_g_ak8 = dict(line_color=QCD_COLOUR, fill_color=QCD_COLOUR, label=QCD_Dijet_GFLAV_LABEL + " [ak8]", line_width=lw, line_style=2)
-
-        rebin = 2
-        if v == "jet_multiplicity_vs_pt":
-            rebin = 4
-        elif "flavour" in v or "thrust" in v or "pTD" in v:
-            rebin = 1
-
-        xlim = None
-        if "thrust" in v or "pTD" in v:
-            xlim = (0, 0.5)
-
-        ylim = None
-        if "flavour" in v:
-            ylim = (0, 1)
-
-        for (start_val, end_val) in pt_bins:
-            entries = [
-                (get_projection_plot(h2d_dyj_ak4, start_val, end_val), dy_kwargs_ak4),
-                (get_projection_plot(h2d_qcd_ak4, start_val, end_val), qcd_kwargs_ak4),
-                (get_projection_plot(h2d_dyj_ak8, start_val, end_val), dy_kwargs_ak8),
-                (get_projection_plot(h2d_qcd_ak8, start_val, end_val), qcd_kwargs_ak8),
-            ]
-
-            do_comparison_plot(entries, "%s/%s/ptBinned/%s_pt%dto%d.pdf" % (ROOT_DIR, plot_dir, v, start_val, end_val),
-                               rebin=rebin, title="%d < p_{T}^{jet} < %d GeV" % (start_val, end_val),
-                               xlim=xlim, ylim=ylim, subplot_type=subplot_type)
-
-            if "flavour" in v:
-                continue
-
-            entries = [
-                (get_projection_plot(h2d_dyj_q_ak4, start_val, end_val), dy_kwargs_q_ak4),
-                (get_projection_plot(h2d_dyj_q_ak8, start_val, end_val), dy_kwargs_q_ak8),
-                (get_projection_plot(h2d_qcd_g_ak4, start_val, end_val), qcd_kwargs_g_ak4),
-                (get_projection_plot(h2d_qcd_g_ak8, start_val, end_val), qcd_kwargs_g_ak8),
-            ]
-
-            do_comparison_plot(entries, "%s/%s/ptBinned/%s_pt%dto%d_flavMatched.pdf" % (ROOT_DIR, plot_dir, v, start_val, end_val),
-                               rebin=rebin, title="%d < p_{T}^{jet} < %d GeV" % (start_val, end_val), xlim=xlim, subplot_type=subplot_type)
+    """Do 1D plots comparing different jet algos"""
+    sources = [
+        {"root_dir": AK4_GENJET_DIR, 'label': "AK4", "style": {'line_style': 1}},
+        {"root_dir": AK8_GENJET_DIR, 'label': "AK8", "style": {'line_style': 2}}
+    ]
+    do_all_exclusive_plots_comparison(sources, var_list=var_list,
+                                      plot_dir=plot_dir,
+                                      zpj_dirname=zpj_dirname, dj_dirname=dj_dirname,
+                                      var_prepend=var_prepend, pt_bins=pt_bins,
+                                      subplot_type=subplot_type, do_flav_tagged=True)
 
 
 def do_gen_reco_comparison_plots(var_list=None, gen_var_prepend="gen", reco_var_prepend="",
@@ -396,7 +339,7 @@ def do_gen_plots():
     #                               zpj_dirname=ZPJ_GENJET_RDIR, dj_dirname=DJ_GENJET_RDIR)
     # do_wrong_plots(var_prepend="gen", plot_dir="wrong_flavs_gen",
     #                zpj_dirname=ZPJ_GENJET_RDIR, dj_dirname=DJ_GENJET_RDIR, pt_bins=THEORY_PT_BINS)
-    # do_jet_algo_comparison_plots(var_list=COMMON_VARS[:-1], var_prepend="gen", plot_dir="compare_jet_algo",
+    # do_jet_algo_comparison_plots(var_list=COMMON_VARS[:-1], var_prepend="gen", plot_dir=os.path.join(ROOT_DIR, "compare_jet_algo"),
     #                              zpj_dirname=ZPJ_GENJET_RDIR, dj_dirname=DJ_GENJET_RDIR, pt_bins=THEORY_PT_BINS, subplot_type=None)
     # do_gen_reco_comparison_plots(var_list=COMMON_VARS[:-1], gen_var_prepend="gen", reco_var_prepend="",
     #                              plot_dir="plot_reco_gen", zpj_reco_dirname=ZPJ_RECOJET_RDIR, dj_reco_dirname=DJ_RECOJET_RDIR,
