@@ -11,6 +11,7 @@ from array import array
 from comparator import Contribution, Plot, grab_obj
 import common_utils as cu
 from qg_common import *
+from qg_general_plots import *
 
 # For debugging
 import sys
