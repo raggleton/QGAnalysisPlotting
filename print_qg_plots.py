@@ -275,6 +275,21 @@ def do_reco_plots():
     do_angularity_delta_plots(sources, var_list=COMMON_VARS[0:-2], pt_bins=THEORY_PT_BINS, save_component_hists=True)
 
 
+def do_reco_flav_split_plots():
+    """Do plots comparing individual q flavours"""
+    global TITLE_STR
+    TITLE_STR = "[%s]" % ROOT_DIR.replace("workdir_", "")
+    sources = [
+        # {"root_dir": ROOT_DIR, 'label': "All", "style": {'line_style': 1}},
+        {"root_dir": ROOT_DIR, 'label': "jet1 = u", "zpj_dirname": "ZPlusJets_QG_u", "dj_dirname": "Dijet_QG_u", "style": {'line_style': 1}},
+        {"root_dir": ROOT_DIR, 'label': "jet1 = d", "zpj_dirname": "ZPlusJets_QG_d", "dj_dirname": "Dijet_QG_d", "style": {'line_style': 2}},
+        {"root_dir": ROOT_DIR, 'label': "jet1 = s", "zpj_dirname": "ZPlusJets_QG_s", "dj_dirname": "Dijet_QG_s", "style": {'line_style': 3}}
+    ]
+    do_all_exclusive_plots_comparison(sources=sources, var_list=COMMON_VARS[:-1],
+                                      plot_dir=os.path.join(ROOT_DIR, "plots_dy_vs_qcd_flav_split"),
+                                      pt_bins=THEORY_PT_BINS, subplot_type=None, do_flav_tagged=False)
+
+
 def do_reco_generator_comparison_plots():
     """Compare reco jets from different generators"""
     sources = [
@@ -485,6 +500,7 @@ def do_pythia_comparison_plots():
 
 if __name__ == '__main__':
     do_reco_plots()
+    do_reco_flav_split_plots()
     do_reco_generator_comparison_plots()
     do_reco_reweight_comparison_plots()
 
