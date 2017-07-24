@@ -275,7 +275,7 @@ def do_reco_plots():
     do_angularity_delta_plots(sources, var_list=COMMON_VARS[0:-2], pt_bins=THEORY_PT_BINS, save_component_hists=True)
 
 
-def do_reco_comparison_plots():
+def do_reco_generator_comparison_plots():
     """Compare reco jets from different generators"""
     sources = [
         {"root_dir": PYTHIA_AK4_DIR, 'label': "Pythia", "style": {'line_style': 1}},
@@ -368,7 +368,7 @@ def do_gen_plots():
 
 
 
-def do_gen_comparison_plots():
+def do_gen_generator_comparison_plots():
     """Compare genjets from different generators"""
     sources = [
         {"root_dir": PYTHIA_AK4_DIR, 'label': "Pythia", "style": {'line_style': 1}},
@@ -484,10 +484,11 @@ def do_pythia_comparison_plots():
 
 
 if __name__ == '__main__':
-    # do_reco_plots()
-    # do_reco_comparison_plots()
-    # do_reco_reweight_comparison_plots()
-    # do_gen_plots()
-    # do_gen_comparison_plots()
-    # do_gen_reweight_comparison_plots()
+    do_reco_plots()
+    do_reco_generator_comparison_plots()
+    do_reco_reweight_comparison_plots()
+
+    do_gen_plots()
+    do_gen_generator_comparison_plots()
+    do_gen_reweight_comparison_plots()
     do_pythia_comparison_plots()
