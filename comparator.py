@@ -13,6 +13,7 @@ Example usage:
 
 
 import os
+import numpy as np
 import ROOT
 import common_utils as cu
 from MyStyle import My_Style
@@ -253,7 +254,6 @@ class Plot(object):
                         obj.SetRange(self.xlim[0], self.xlim[1])
                     elif self.plot_what == "both":
                         obj.GetListOfFunctions().At(0).SetRange(self.xlim[0], self.xlim[1])
-
             self.container.Add(obj)
             self.contributions_objs.append(obj)
 
@@ -424,7 +424,9 @@ class Plot(object):
 
             if self.subplot_type == "ratio":
                 # self.subplot_container.SetMinimum(self.subplot_ratio_lim[0])  # use this, not SetRangeUser()
-                # self.subplot_container.SetMaximum(self.subplot_ratio_lim[1])
+                self.subplot_container.SetMinimum(0)  # use this, not SetRangeUser()
+                bin_meds = [np.mean(cu.th1_to_arr(h)) for h in self.subplot_contributions]
+                self.subplot_container.SetMaximum(min(5, max(2., 2*max(bin_meds))))
                 xax = modifier.GetXaxis()
                 self.subplot_line = ROOT.TLine(xax.GetXmin(), 1., xax.GetXmax(), 1.)
                 self.subplot_line.SetLineStyle(2)

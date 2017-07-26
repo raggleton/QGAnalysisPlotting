@@ -182,3 +182,8 @@ def make_normalised_TH2(hist, norm_axis, recolour=True):
             hnew.SetBinContent(x_ind, y_ind, val)
 #     hnew.SetAxisRange(0.5, 1., 'Z')
     return hnew
+
+
+def th1_to_arr(hist):
+    return np.array([hist.GetBinContent(i) for i in range(1, hist.GetNbinsX()+1)])
+
