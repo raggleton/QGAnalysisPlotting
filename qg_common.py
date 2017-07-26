@@ -4,8 +4,11 @@
 from collections import namedtuple
 
 
-DY_COLOUR = 880
-QCD_COLOUR = 867
+DY_COLOUR = 880 # kViolet
+QCD_COLOUR = 867 #kAzure+7
+
+DY_COLOURS = [880, 871, 882, 884]
+QCD_COLOURS = [867, 868, 864, 853]
 
 PT_BINS = [(80, 100), (100, 200), (400, 500), (1000, 2000), (80, 2000)]
 THEORY_PT_BINS = [(100, 200), (400, 500), (1000, 2000), (80, 2000)]
