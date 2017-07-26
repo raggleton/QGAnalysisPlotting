@@ -127,7 +127,9 @@ def do_pt_min_delta_plots(sources, plot_dir="deltas_ptmin", zpj_dirname="ZPlusJe
 
             gr = construct_deltas_graph(deltas)
             gr.SetName(source.get("label", ""))
-            c = Contribution(gr, label=source.get("label", ""), marker_style=0, line_width=2, **source.get("style", {}))
+            if 'style' in source and 'line_width' not in source['style']:
+                source['style']['line_width'] = 2
+            c = Contribution(gr, label=source.get("label", ""), marker_style=0, **source.get("style", {}))
             graph_contribs.append(c)
 
         do_deltas_plot(graph_contribs, "%s/ptMins_%s%s.pdf" % (plot_dir, ang.var, output_append),
@@ -176,7 +178,9 @@ def do_angularity_delta_plots(sources, plot_dir="delta_angularities", zpj_dirnam
 
             gr = construct_deltas_graph(deltas)
             gr.SetName(source.get("label", ""))
-            c = Contribution(gr, label=source.get("label", ""), marker_style=0, line_width=2, **source.get("style", {}))
+            if 'style' in source and 'line_width' not in source['style']:
+                source['style']['line_width'] = 2
+            c = Contribution(gr, label=source.get("label", ""), marker_style=0, **source.get("style", {}))
             graph_contribs.append(c)
 
         do_deltas_plot(graph_contribs, "%s/angularities_pt%dto%d%s.pdf" % (plot_dir, start_val, end_val, output_append),
