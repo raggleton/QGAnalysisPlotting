@@ -340,6 +340,41 @@ def do_reco_reweight_comparison_plots():
                               pt_bins=THEORY_PT_BINS)
 
 
+def do_reco_pu_comparison_plots():
+    """Compare by PU bins"""
+    pu_bins = [(5, 15), (20, 25), (30, 40)]
+    sources = []
+    for ind, (pu_min, pu_max) in enumerate(pu_bins):
+        sources.append({
+            "root_dir": ROOT_DIR,
+            'label': "PU %d-%d" % (pu_min, pu_max),
+            'zpj_dirname': ZPJ_RECOJET_RDIR + "_PU_%d_to_%d" % (pu_min, pu_max),
+            'dj_dirname': DJ_RECOJET_RDIR + "_PU_%d_to_%d" % (pu_min, pu_max),
+            "style": {'line_style': 1, "line_width": 1},
+            "dy_style": {'line_color': DY_COLOURS[ind], 'fill_color': DY_COLOURS[ind]},
+            "qcd_style": {'line_color': QCD_COLOURS[ind], 'fill_color': QCD_COLOURS[ind]}
+        })
+    # do_all_exclusive_plots_comparison(sources=sources, var_list=COMMON_VARS[:-2], zpj_dirname=None,
+    #                                   plot_dir=os.path.join(ROOT_DIR, "plots_dy_vs_qcd_compare_pu_dijet"),
+    #                                   pt_bins=THEORY_PT_BINS, subplot_type="ratio", do_flav_tagged=False)
+    # do_all_exclusive_plots_comparison(sources=sources, var_list=COMMON_VARS[:-2], dj_dirname=None,
+    #                                   plot_dir=os.path.join(ROOT_DIR, "plots_dy_vs_qcd_compare_pu_zpj"),
+    #                                   pt_bins=THEORY_PT_BINS, subplot_type="ratio", do_flav_tagged=False)
+
+
+    for ind, s in enumerate(sources):
+        sources[ind]['style']['line_width'] = 2
+        sources[ind]['style']['line_color'] = DY_COLOURS[ind]
+        if ind == 2:
+            do_angularity_delta_plots(sources[ind:ind+1], var_list=COMMON_VARS[2:-2],
+                              plot_dir=os.path.join(ROOT_DIR, "deltas_angularities_compare_pu_PU_%d_to_%d" % (pu_bins[ind][0], pu_bins[ind][1])),
+                              pt_bins=THEORY_PT_BINS, save_component_hists=True)
+
+    do_angularity_delta_plots(sources, var_list=COMMON_VARS[:-2],
+                              plot_dir=os.path.join(ROOT_DIR, "deltas_angularities_compare_pu"),
+                              pt_bins=THEORY_PT_BINS)
+
+
 def do_gen_plots():
     global TITLE_STR
     TITLE_STR = "ak4 GenJet"
@@ -503,6 +538,7 @@ if __name__ == '__main__':
     do_reco_flav_split_plots()
     do_reco_generator_comparison_plots()
     do_reco_reweight_comparison_plots()
+    do_reco_pu_comparison_plots()
 
     do_gen_plots()
     do_gen_generator_comparison_plots()
