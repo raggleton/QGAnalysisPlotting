@@ -98,8 +98,8 @@ def do_pt_min_delta_plots(sources, plot_dir="deltas_ptmin", zpj_dirname="ZPlusJe
             deltas, conts = [], []
 
             for ind, pt_min in enumerate(ptmin_bins, 1):
-                h2d_dyj = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" % source['root_dir'], "%s_ptMin_%d/%s%s" % (zpj_dirname, pt_min, dyj_flav, v))
-                h2d_qcd = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_QCD_.root" % source['root_dir'], "%s_ptMin_%d/%s%s" % (dj_dirname, pt_min, dj_flav, v))
+                h2d_dyj = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" % source['root_dir'], "%s_ptMin_%d/%s%s" % (source.get('zpj_dirname', zpj_dirname), pt_min, dyj_flav, v))
+                h2d_qcd = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_QCD_.root" % source['root_dir'], "%s_ptMin_%d/%s%s" % (source.get('dj_dirname', dj_dirname), pt_min, dj_flav, v))
                 start_val, end_val = 80, 2000
                 h_dy = get_projection_plot(h2d_dyj, start_val, end_val)
                 if (h_dy.Integral()>0):
@@ -153,8 +153,8 @@ def do_angularity_delta_plots(sources, plot_dir="delta_angularities", zpj_dirnam
             for ind, ang in enumerate(var_list, 1):
                 v = "%s%s_vs_pt" % (var_prepend, ang.var)
 
-                h2d_dyj = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" % source['root_dir'], "%s/%s%s" % (zpj_dirname, dyj_flav, v))
-                h2d_qcd = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_QCD_.root" % source['root_dir'], "%s/%s%s" % (dj_dirname, dj_flav, v))
+                h2d_dyj = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" % source['root_dir'], "%s/%s%s" % (source.get('zpj_dirname', zpj_dirname), dyj_flav, v))
+                h2d_qcd = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_QCD_.root" % source['root_dir'], "%s/%s%s" % (source.get('dj_dirname', dj_dirname), dj_flav, v))
 
                 h_dy = get_projection_plot(h2d_dyj, start_val, end_val)
                 if (h_dy.Integral() > 0):
