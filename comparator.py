@@ -222,7 +222,7 @@ class Plot(object):
         """Add Contribution to Plot. Can be single item or list."""
         self.contributions.extend(*contribution)
 
-    def create_container(self):
+    def _create_container(self):
         """Create a container object for lots of the same TObject"""
         if self.plot_what in ["graph", "both"]:
             self.container = ROOT.TMultiGraph(ROOT.TUUID().AsString(), "")
@@ -234,7 +234,7 @@ class Plot(object):
             self.container = ROOT.THStack(ROOT.TUUID().AsString(), "")
             self.subplot_container = ROOT.THStack(ROOT.TUUID().AsString(), "")
 
-    def populate_container_and_legend(self):
+    def _populate_container_and_legend(self):
         """Add objects to the container, and to the legend"""
         for c in self.contributions:
             try:
@@ -281,11 +281,11 @@ class Plot(object):
                     self.subplot_container.Add(new_hist)
                     self.subplot_contributions.append(new_hist)
 
-    def style_legend(self):
+    def _style_legend(self):
         # self.legend.SetBorderSize(0)
         self.legend.SetFillStyle(0)
 
-    def rescale_plot_labels(self, container, factor):
+    def _rescale_plot_labels(self, container, factor):
         # What a pile of wank, why does ROOT scale all these sizes?
         container.GetXaxis().SetLabelSize(container.GetXaxis().GetLabelSize()/factor)
         container.GetXaxis().SetTitleSize(container.GetXaxis().GetTitleSize()/factor)
@@ -305,13 +305,13 @@ class Plot(object):
         """
         if not self.container:
             # First make a container
-            self.create_container()
+            self._create_container()
 
             # Now add all the contributions to the container, styling as we go
             if len(self.contributions) == 0:
                 raise UnboundLocalError("contributions list is empty")
 
-            self.populate_container_and_legend()
+            self._populate_container_and_legend()
 
         # Set default drawing opts
         # need different default drawing options for TF1s vs TGraphs
@@ -402,11 +402,11 @@ class Plot(object):
 
         # Plot legend
         if self.do_legend:
-            self.style_legend()
+            self._style_legend()
             self.legend.Draw()
 
         if self.subplot:
-            self.rescale_plot_labels(modifier, 1-self.subplot_pad_height)
+            self._rescale_plot_labels(modifier, 1-self.subplot_pad_height)
 
             # Get rid of main plot x axis labels
             modifier.GetHistogram().GetXaxis().SetLabelSize(0)
@@ -424,7 +424,7 @@ class Plot(object):
             elif (self.subplot_type == "ddelta"):
                 self.subplot_container.SetTitle(";%s;d#Delta/d#lambda" % (self.xtitle))
 
-            self.rescale_plot_labels(self.subplot_container, self.subplot_pad_height)
+            self._rescale_plot_labels(self.subplot_container, self.subplot_pad_height)
             self.subplot_container.GetXaxis().SetTitleOffset(self.subplot_container.GetXaxis().GetTitleOffset()*2.8)
             self.subplot_container.GetYaxis().SetNdivisions(505)
 
