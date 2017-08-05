@@ -385,11 +385,20 @@ class Plot(object):
             ob.GetXaxis().SetTitle(self.ytitle)
 
         if self.xlim:
-            modifier.GetXaxis().SetRangeUser(*self.xlim)
+            if self.plot_what == "graph":
+                modifier.GetXaxis().SetLimits(*self.xlim)
+            else:
+                modifier.GetXaxis().SetRangeUser(*self.xlim)
         if self.ylim:
+            # dont use the SetLimits for graphs, that doesnt work properly.
+            # no idea, ROOT is fucking insane
             modifier.GetYaxis().SetRangeUser(*self.ylim)
             modifier.SetMinimum(self.ylim[0])  # use this, not SetRangeUser()
             modifier.SetMaximum(self.ylim[1])
+
+        # Draw it again to update
+        if self.plot_what == "graph":
+            self.container.Draw(draw_opts)
 
         # Plot legend
         if self.do_legend:
