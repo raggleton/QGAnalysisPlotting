@@ -297,6 +297,12 @@ class Plot(object):
         container.GetYaxis().SetTitleOffset(container.GetYaxis().GetTitleOffset()*factor)
         # container.GetYaxis().SetTickLength(0.03/factor)
 
+    def set_logx(self, state=True):
+        self.main_pad.SetLogx(int(state))
+
+    def set_logy(self, state=True):
+        self.main_pad.SetLogy(int(state))
+
     def plot(self, draw_opts=None):
         """Make the plot.
 
