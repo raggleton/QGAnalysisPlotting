@@ -416,6 +416,8 @@ def do_gen_plots():
                               zpj_dirname=ZPJ_GENJET_RDIR, dj_dirname=DJ_GENJET_RDIR,
                               pt_bins=THEORY_PT_BINS, save_component_hists=True)
     # flav-tagged versions
+    if ROOT_DIR == HERWIG_AK4_DIR:
+      return
     do_pt_min_delta_plots(sources, var_list=COMMON_VARS[0:-2], var_prepend="gen",
                           plot_dir=os.path.join(ROOT_DIR, "deltas_ptMin_gen"),
                           zpj_dirname=ZPJ_GENJET_RDIR, dj_dirname=DJ_GENJET_RDIR,
