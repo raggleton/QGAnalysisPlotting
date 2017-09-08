@@ -86,6 +86,9 @@ def do_all_exclusive_plots_comparison(sources, plot_dir="plots_dy_vs_qcd", zpj_d
     var_list = var_list or COMMON_VARS[:]
     pt_bins = pt_bins or PT_BINS
 
+    if isinstance(sources, dict):
+        sources = [sources]
+
     for ang in var_list:
 
         v = "%s%s_vs_pt" % (var_prepend, ang.var)
