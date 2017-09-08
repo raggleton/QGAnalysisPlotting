@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-"""Print QG plots"""
+"""Print main QG plots for a given sample."""
 
 import ROOT
 from MyStyle import My_Style
@@ -505,49 +505,6 @@ def do_gen_reweight_comparison_plots():
                               zpj_dirname=ZPJ_GENJET_RDIR, dj_dirname=DJ_GENJET_RDIR, pt_bins=THEORY_PT_BINS)
 
 
-def do_pythia_comparison_plots():
-    """To compare mg+pythia vs pythia only"""
-    # reco
-    sources = [
-        {"root_dir": PYTHIA_AK4_DIR, 'label': "Madgraph+Pythia", "style": {'line_style': 1}},
-        {"root_dir": PYTHIA_ONLY_AK4_DIR, 'label': "Pythia only", "style": {'line_style': 1, 'line_color': ROOT.kRed, 'fill_color': ROOT.kRed, }}
-    ]
-    do_all_exclusive_plots_comparison(sources, var_list=COMMON_VARS[:-2],
-                                      plot_dir=os.path.join(ROOT_DIR, "mg_pythia_vs_pythia_only"),
-                                      zpj_dirname="",
-                                      subplot_type=None, do_flav_tagged=False,
-                                      pt_bins=THEORY_PT_BINS)
-
-    # gen
-    sources = [
-        {"root_dir": PYTHIA_AK4_DIR, 'label': "Madgraph+Pythia", "style": {'line_style': 1}},
-        {"root_dir": PYTHIA_ONLY_AK4_DIR, 'label': "Pythia only", "style": {'line_style': 1, 'line_color': ROOT.kRed, 'fill_color': ROOT.kRed}}
-    ]
-    do_all_exclusive_plots_comparison(sources, var_list=COMMON_VARS[:-2], var_prepend="gen",
-                                      plot_dir=os.path.join(ROOT_DIR, "mg_pythia_vs_pythia_only_gen"),
-                                      dj_dirname=DJ_GENJET_RDIR, zpj_dirname="",
-                                      subplot_type=None, do_flav_tagged=False,
-                                      pt_bins=THEORY_PT_BINS)
-
-    # flavour fractions
-    input_files = [
-        os.path.join(PYTHIA_AK4_DIR, 'uhh2.AnalysisModuleRunner.MC.MC_QCD_.root'),
-        os.path.join(PYTHIA_ONLY_AK4_DIR, 'uhh2.AnalysisModuleRunner.MC.MC_QCD_.root')
-    ]
-    # reco
-    compare_flavour_fractions_vs_pt(input_files,
-                                    [DJ_RECOJET_RDIR, DJ_RECOJET_RDIR],
-                                    [QCD_Dijet_LABEL + " Madgraph+Pythia", QCD_Dijet_LABEL+" Pythia only"],
-                                    "g", "%s/flav_fractions/compare_g_frac.%s" % (ROOT_DIR, OUTPUT_FMT),
-                                    title="ak4 PFCHS jets", var_prepend="")
-    # gen
-    compare_flavour_fractions_vs_pt(input_files,
-                                    [DJ_GENJET_RDIR, DJ_GENJET_RDIR],
-                                    [QCD_Dijet_LABEL + " Madgraph+Pythia", QCD_Dijet_LABEL+" Pythia only"],
-                                    "g", "%s/flav_fractions_gen/compare_g_frac.%s" % (ROOT_DIR, OUTPUT_FMT),
-                                    title="ak4 GenJets", var_prepend="gen")
-
-
 if __name__ == '__main__':
     do_reco_plots()
     do_reco_flav_split_plots()
@@ -558,4 +515,3 @@ if __name__ == '__main__':
     do_gen_plots()
     do_gen_generator_comparison_plots()
     do_gen_reweight_comparison_plots()
-    do_pythia_comparison_plots()
