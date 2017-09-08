@@ -298,26 +298,6 @@ def do_reco_flav_split_plots():
                                       pt_bins=THEORY_PT_BINS, subplot_type=None, do_flav_tagged=False)
 
 
-def do_reco_generator_comparison_plots():
-    """Compare reco jets from different generators"""
-    sources = [
-        {"root_dir": PYTHIA_AK4_DIR, 'label': "Pythia", "style": {'line_style': 1}},
-        {"root_dir": HERWIG_AK4_DIR, 'label': "Herwig", "style": {'line_style': 2}}
-
-    ]
-    do_all_exclusive_plots_comparison(sources=sources, var_list=COMMON_VARS[:-2],
-                                      plot_dir=os.path.join(ROOT_DIR, "plots_dy_vs_qcd_compare_generators"),
-                                      subplot_type=None, do_flav_tagged=False, pt_bins=THEORY_PT_BINS)
-    sources = [
-        {"root_dir": PYTHIA_AK4_DIR, 'label': "Pythia", "style": {'line_style': 1, 'line_color': ROOT.kBlack}},
-        {"root_dir": HERWIG_AK4_DIR, 'label': "Herwig", "style": {'line_style': 2, 'line_color': ROOT.kRed}}
-
-    ]
-    # do_pt_min_delta_plots(sources, var_list=COMMON_VARS[0:-2])
-    do_angularity_delta_plots(sources, plot_dir=os.path.join(ROOT_DIR, "delta_angularities_compare_generators"),
-                              var_list=COMMON_VARS[0:-2], pt_bins=THEORY_PT_BINS)
-
-
 def do_reco_pu_comparison_plots():
     """Compare by PU bins"""
     pu_bins = [(5, 15), (20, 25), (30, 40)]
@@ -402,35 +382,9 @@ def do_gen_plots():
                               pt_bins=THEORY_PT_BINS, flavour_tag=True, save_component_hists=True)
 
 
-
-def do_gen_generator_comparison_plots():
-    """Compare genjets from different generators"""
-    sources = [
-        {"root_dir": PYTHIA_AK4_DIR, 'label': "Pythia", "style": {'line_style': 1}},
-        {"root_dir": HERWIG_AK4_DIR, 'label': "Herwig", "style": {'line_style': 2}}
-    ]
-    do_all_exclusive_plots_comparison(sources=sources, var_list=COMMON_VARS[:-2], var_prepend="gen",
-                                      plot_dir=os.path.join(ROOT_DIR, "plots_dy_vs_qcd_gen_compare_generators"),
-                                      zpj_dirname=ZPJ_GENJET_RDIR, dj_dirname=DJ_GENJET_RDIR,
-                                      pt_bins=THEORY_PT_BINS, subplot_type=None, do_flav_tagged=False)
-
-    sources = [
-        {"root_dir": PYTHIA_AK4_DIR, 'label': "Pythia", "style": {'line_color': ROOT.kBlack}},
-        {"root_dir": HERWIG_AK4_DIR, 'label': "Herwig", "style": {'line_color': ROOT.kRed, 'line_style': 2}}
-    ]
-    do_pt_min_delta_plots(sources, var_list=COMMON_VARS[0:-2], var_prepend="gen",
-                          plot_dir=os.path.join(ROOT_DIR, "deltas_ptMin_gen_compare_generators"),
-                          zpj_dirname=ZPJ_GENJET_RDIR, dj_dirname=DJ_GENJET_RDIR)
-    do_angularity_delta_plots(sources, var_list=COMMON_VARS[:-2], var_prepend="gen",
-                              plot_dir=os.path.join(ROOT_DIR, "deltas_angularities_gen_compare_generators"),
-                              zpj_dirname=ZPJ_GENJET_RDIR, dj_dirname=DJ_GENJET_RDIR, pt_bins=THEORY_PT_BINS)
-
-
 if __name__ == '__main__':
     do_reco_plots()
     do_reco_flav_split_plots()
-    do_reco_generator_comparison_plots()
     do_reco_pu_comparison_plots()
 
     do_gen_plots()
-    do_gen_generator_comparison_plots()
