@@ -87,7 +87,7 @@ def do_pt_min_delta_plots(sources, plot_dir="deltas_ptmin", zpj_dirname="ZPlusJe
     """Do plots comparing power of different ptMin cuts"""
     var_list = var_list or COMMON_VARS
     ptmin_bins = [50, 100, 200, 400, 800][:-1]
-    dyj_flav = "q" if flavour_tag else ""
+    zpj_flav = "q" if flavour_tag else ""
     dj_flav = "g" if flavour_tag else ""
     output_append = "_flavMatched" if flavour_tag else ""
     for ang in var_list:
@@ -98,7 +98,7 @@ def do_pt_min_delta_plots(sources, plot_dir="deltas_ptmin", zpj_dirname="ZPlusJe
             deltas, conts = [], []
 
             for ind, pt_min in enumerate(ptmin_bins, 1):
-                h2d_dyj = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" % source['root_dir'], "%s_ptMin_%d/%s%s" % (source.get('zpj_dirname', zpj_dirname), pt_min, dyj_flav, v))
+                h2d_dyj = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" % source['root_dir'], "%s_ptMin_%d/%s%s" % (source.get('zpj_dirname', zpj_dirname), pt_min, zpj_flav, v))
                 h2d_qcd = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_QCD_.root" % source['root_dir'], "%s_ptMin_%d/%s%s" % (source.get('dj_dirname', dj_dirname), pt_min, dj_flav, v))
                 start_val, end_val = 80, 2000
                 h_dy = get_projection_plot(h2d_dyj, start_val, end_val)
@@ -142,7 +142,7 @@ def do_angularity_delta_plots(sources, plot_dir="delta_angularities", zpj_dirnam
     pt_bins = pt_bins or PT_BINS
     h2d_dyj = None
     h2d_qcd = None
-    dyj_flav = "q" if flavour_tag else ""
+    zpj_flav = "q" if flavour_tag else ""
     dj_flav = "g" if flavour_tag else ""
     output_append = "_flavMatched" if flavour_tag else ""
     for (start_val, end_val) in pt_bins:
@@ -155,7 +155,7 @@ def do_angularity_delta_plots(sources, plot_dir="delta_angularities", zpj_dirnam
             for ind, ang in enumerate(var_list, 1):
                 v = "%s%s_vs_pt" % (var_prepend, ang.var)
 
-                h2d_dyj = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" % source['root_dir'], "%s/%s%s" % (source.get('zpj_dirname', zpj_dirname), dyj_flav, v))
+                h2d_dyj = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" % source['root_dir'], "%s/%s%s" % (source.get('zpj_dirname', zpj_dirname), zpj_flav, v))
                 h2d_qcd = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_QCD_.root" % source['root_dir'], "%s/%s%s" % (source.get('dj_dirname', dj_dirname), dj_flav, v))
 
                 h_dy = get_projection_plot(h2d_dyj, start_val, end_val)
