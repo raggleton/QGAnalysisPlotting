@@ -14,16 +14,18 @@ PT_BINS = [(80, 100), (100, 200), (400, 500), (1000, 2000), (80, 2000)]
 THEORY_PT_BINS = [(100, 200), (400, 500), (1000, 2000), (80, 2000)]
 THEORY_PT_BINS = [(100, 200), (200, 300), (300, 400), (400, 500), (500, 600), (600, 800), (800, 1000), (1000, 2000), (80, 2000)]
 
-Angle = namedtuple("Angle", ['var', 'kappa', 'beta', 'name', "lambda_str"])
-COMMON_VARS = [
-    Angle('jet_multiplicity', 0, 0, "Multiplicity", "#lambda_{0}^{0}"),
-    Angle('jet_pTD', 2, 0, "(p_{T}^{D})^{2}", "#lambda_{0}^{2}"),
-    Angle('jet_LHA', 1, 0.5, "LHA", "#lambda_{0.5}^{1}"),
-    Angle('jet_width', 1, 1, "Width", "#lambda_{1}^{1}"),
-    Angle('jet_thrust', 1, 2, "Thrust", "#lambda_{2}^{1}"),
-    Angle('jet_flavour', 0, 0, "", ""),
-    Angle("jet_genParton_flavour", 0, 0, "", "")
+Angle = namedtuple("Angle", ['var', 'kappa', 'beta', 'name', "lambda_str", "colour"])
+COMMON_VARS_WITH_FLAV = [
+    Angle('jet_multiplicity', 0, 0, "Multiplicity", "#lambda_{0}^{0}", 2),
+    Angle('jet_pTD', 2, 0, "(p_{T}^{D})^{2}", "#lambda_{0}^{2}", 418),
+    Angle('jet_LHA', 1, 0.5, "LHA", "#lambda_{0.5}^{1}", 600),
+    Angle('jet_width', 1, 1, "Width", "#lambda_{1}^{1}", 861),
+    Angle('jet_thrust', 1, 2, "Thrust", "#lambda_{2}^{1}", 617),
+    Angle('jet_flavour', 0, 0, "Flavour", "PDGID", 7),
+    Angle("jet_genParton_flavour", 0, 0, "Flavour", "PDGID", 8)
 ]
+
+COMMON_VARS = COMMON_VARS_WITH_FLAV[:]
 
 DY_ZpJ_LABEL = "DY+j, Z+jets selection"
 DY_ZpJ_GEN_LABEL = "DY+j, Z+jets selection (GenJets)"
