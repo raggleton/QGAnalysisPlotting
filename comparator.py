@@ -236,34 +236,28 @@ class Plot(object):
 
     def _populate_container_and_legend(self):
         """Add objects to the container, and to the legend"""
-        for c in self.contributions:
-            try:
-                obj = c.obj.Clone(ROOT.TUUID().AsString())
-            except IOError:
-                print "Couldn't get", c.obj_name, 'from', c.file_name
-                continue
-
+        for contrib in self.contributions:
             if self.plot_what == "graph":
                 # if drawing only graph, we need to remove the fit if there is one
-                if (obj.GetListOfFunctions().GetSize() > 0):
-                    obj.GetListOfFunctions().Remove(obj.GetListOfFunctions().At(0))
+                if (contrib.obj.GetListOfFunctions().GetSize() > 0):
+                    contrib.obj.GetListOfFunctions().Remove(contrib.obj.GetListOfFunctions().At(0))
             else:
                 # if drawing function, extend range as per user's request
                 if self.do_extend:
                     if self.plot_what == 'function':
-                        obj.SetRange(self.xlim[0], self.xlim[1])
+                        contrib.obj.SetRange(self.xlim[0], self.xlim[1])
                     elif self.plot_what == "both":
-                        obj.GetListOfFunctions().At(0).SetRange(self.xlim[0], self.xlim[1])
-            self.container.Add(obj)
-            self.contributions_objs.append(obj)
+                        contrib.obj.GetListOfFunctions().At(0).SetRange(self.xlim[0], self.xlim[1])
+            self.container.Add(contrib.obj)
+            self.contributions_objs.append(contrib.obj)
 
             if self.do_legend:
                 opt = "LF" if self.plot_what == "hist" else "LP"
-                self.legend.AddEntry(obj, c.label, opt)
+                self.legend.AddEntry(contrib.obj, contrib.label, opt)
 
             # Add contributions for the subplot
             if self.subplot:
-                subplot_obj = self.subplot.obj.Clone()
+                subplot_obj = self.subplot.contrib.obj.Clone()
                 if c != self.subplot:
                     new_hist = obj.Clone()
                     if (self.subplot_type == "ratio"):
@@ -274,7 +268,7 @@ class Plot(object):
                         # Do the differntial delta spectrum, see 1704.03878
                         new_hist.Add(subplot_obj, -1.)
                         new_hist.Multiply(new_hist)
-                        sum_hist = obj.Clone()
+                        sum_hist = contrib.obj.Clone()
                         sum_hist.Add(subplot_obj)
                         new_hist.Divide(sum_hist)
                         new_hist.Scale(0.5)
