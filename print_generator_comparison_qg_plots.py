@@ -29,12 +29,17 @@ ROOT.TH1.SetDefaultSumw2()
 ROOT.gStyle.SetOptStat(0)
 
 
+# Control legend labelling
 PYTHIA_LABEL = ", MG+Pythia"
 HERWIG_LABEL = ", Herwig"
 
+# Control output format
+OFMT = "pdf"
 
 def do_reco_generator_comparison_plots(pythia_dir, herwig_dir, plot_dir):
     """Compare reco jets from different generators"""
+    
+    # Distributions
     sources = [
         {"root_dir": pythia_dir, 'label': PYTHIA_LABEL, "style": {'line_style': 1}},
         {"root_dir": herwig_dir, 'label': HERWIG_LABEL, "style": {'line_style': 2}}
@@ -42,8 +47,10 @@ def do_reco_generator_comparison_plots(pythia_dir, herwig_dir, plot_dir):
     ]
     qgg.do_all_exclusive_plots_comparison(sources=sources, var_list=qgc.COMMON_VARS[:-2],
                                           plot_dir=os.path.join(plot_dir, "plots_dy_vs_qcd_compare_generators"),
-                                          subplot_type=None, do_flav_tagged=False, pt_bins=qgc.THEORY_PT_BINS)
+                                          subplot_type=None, do_flav_tagged=False, pt_bins=qgc.THEORY_PT_BINS,
+                                          ofmt=OFMT)
 
+    # Delta plots
     sources = [
         {"root_dir": pythia_dir, 'label': PYTHIA_LABEL, "style": {'line_style': 1, 'line_color': ROOT.kBlack}},
         {"root_dir": herwig_dir, 'label': HERWIG_LABEL, "style": {'line_style': 2, 'line_color': ROOT.kRed}}
@@ -51,12 +58,15 @@ def do_reco_generator_comparison_plots(pythia_dir, herwig_dir, plot_dir):
     ]
     # qgd.do_pt_min_delta_plots(sources, var_list=qgc.COMMON_VARS[0:-2])
     qgd.do_angularity_delta_plots(sources, plot_dir=os.path.join(plot_dir, "delta_angularities_compare_generators"),
-                                  var_list=qgc.COMMON_VARS[0:-2], pt_bins=qgc.THEORY_PT_BINS)
+                                  var_list=qgc.COMMON_VARS[0:-2], pt_bins=qgc.THEORY_PT_BINS,
+                                  ofmt=OFMT)
 
 
 
 def do_gen_generator_comparison_plots(pythia_dir, herwig_dir, plot_dir):
     """Compare genjets from different generators"""
+
+    # Distributions
     sources = [
         {"root_dir": pythia_dir, 'label': PYTHIA_LABEL, "style": {'line_style': 1}},
         {"root_dir": herwig_dir, 'label': HERWIG_LABEL, "style": {'line_style': 2}}
@@ -64,18 +74,22 @@ def do_gen_generator_comparison_plots(pythia_dir, herwig_dir, plot_dir):
     qgg.do_all_exclusive_plots_comparison(sources=sources, var_list=qgc.COMMON_VARS[:-2], var_prepend="gen",
                                           plot_dir=os.path.join(plot_dir, "plots_dy_vs_qcd_gen_compare_generators"),
                                           zpj_dirname=qgc.ZPJ_GENJET_RDIR, dj_dirname=qgc.DJ_GENJET_RDIR,
-                                          pt_bins=qgc.THEORY_PT_BINS, subplot_type=None, do_flav_tagged=False)
+                                          pt_bins=qgc.THEORY_PT_BINS, subplot_type=None, do_flav_tagged=False,
+                                          ofmt=OFMT)
 
+    # Delta plots
     sources = [
         {"root_dir": pythia_dir, 'label': PYTHIA_LABEL, "style": {'line_color': ROOT.kBlack}},
         {"root_dir": herwig_dir, 'label': HERWIG_LABEL, "style": {'line_color': ROOT.kRed, 'line_style': 2}}
     ]
     qgd.do_pt_min_delta_plots(sources, var_list=qgc.COMMON_VARS[0:-2], var_prepend="gen",
                           plot_dir=os.path.join(plot_dir, "deltas_ptMin_gen_compare_generators"),
-                          zpj_dirname=qgc.ZPJ_GENJET_RDIR, dj_dirname=qgc.DJ_GENJET_RDIR)
+                          zpj_dirname=qgc.ZPJ_GENJET_RDIR, dj_dirname=qgc.DJ_GENJET_RDIR,
+                          ofmt=OFMT)
     qgd.do_angularity_delta_plots(sources, var_list=qgc.COMMON_VARS[:-2], var_prepend="gen",
                                   plot_dir=os.path.join(plot_dir, "deltas_angularities_gen_compare_generators"),
-                                  zpj_dirname=qgc.ZPJ_GENJET_RDIR, dj_dirname=qgc.DJ_GENJET_RDIR, pt_bins=qgc.THEORY_PT_BINS)
+                                  zpj_dirname=qgc.ZPJ_GENJET_RDIR, dj_dirname=qgc.DJ_GENJET_RDIR, pt_bins=qgc.THEORY_PT_BINS,
+                                  ofmt=OFMT)
 
 
 if __name__ == '__main__':
