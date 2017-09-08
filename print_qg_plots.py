@@ -261,18 +261,16 @@ def do_gen_reco_comparison_plots(var_list=None, gen_var_prepend="gen", reco_var_
 
 
 def do_reco_plots():
-    global TITLE_STR
-    TITLE_STR = "[%s]" % ROOT_DIR.replace("workdir_", "")
-    # do_all_2D_plots()
+    do_all_2D_plots()
     sources = [{"root_dir": ROOT_DIR, 'label': "", "style": {'line_style': 1}}]
     do_all_exclusive_plots_comparison(sources=sources, var_list=COMMON_VARS[:-1],
                                       plot_dir=os.path.join(ROOT_DIR, "plots_dy_vs_qcd"),
                                       pt_bins=THEORY_PT_BINS, subplot_type=None, do_flav_tagged=True)
     # do_all_flavour_fraction_plots()
     # do_chs_vs_puppi_plots()
-    # do_wrong_plots()
+    do_wrong_plots()
     sources = [
-        {"root_dir": ROOT_DIR, 'label': "-", "style": {'line_style': 1}}
+        {"root_dir": ROOT_DIR, "style": {'line_style': 1}}
         # {"root_dir": ROOT_DIR, 'label': "Herwig", "style": {'line_style': 1}}
     ]
     # do_pt_min_delta_plots(sources, var_list=COMMON_VARS[0:-2])
@@ -360,12 +358,12 @@ def do_reco_pu_comparison_plots():
             "dy_style": {'line_color': DY_COLOURS[ind], 'fill_color': DY_COLOURS[ind]},
             "qcd_style": {'line_color': QCD_COLOURS[ind], 'fill_color': QCD_COLOURS[ind]}
         })
-    # do_all_exclusive_plots_comparison(sources=sources, var_list=COMMON_VARS[:-2], zpj_dirname=None,
-    #                                   plot_dir=os.path.join(ROOT_DIR, "plots_dy_vs_qcd_compare_pu_dijet"),
-    #                                   pt_bins=THEORY_PT_BINS, subplot_type="ratio", do_flav_tagged=False)
-    # do_all_exclusive_plots_comparison(sources=sources, var_list=COMMON_VARS[:-2], dj_dirname=None,
-    #                                   plot_dir=os.path.join(ROOT_DIR, "plots_dy_vs_qcd_compare_pu_zpj"),
-    #                                   pt_bins=THEORY_PT_BINS, subplot_type="ratio", do_flav_tagged=False)
+    do_all_exclusive_plots_comparison(sources=sources, var_list=COMMON_VARS[1:-2], zpj_dirname=None,
+                                      plot_dir=os.path.join(ROOT_DIR, "plots_dy_vs_qcd_compare_pu_dijet"),
+                                      pt_bins=THEORY_PT_BINS, subplot_type="ratio", do_flav_tagged=False)
+    do_all_exclusive_plots_comparison(sources=sources, var_list=COMMON_VARS[1:-2], dj_dirname=None,
+                                      plot_dir=os.path.join(ROOT_DIR, "plots_dy_vs_qcd_compare_pu_zpj"),
+                                      pt_bins=THEORY_PT_BINS, subplot_type="ratio", do_flav_tagged=False)
 
 
     for ind, s in enumerate(sources):
@@ -506,7 +504,7 @@ def do_pythia_comparison_plots():
     # reco
     sources = [
         {"root_dir": PYTHIA_AK4_DIR, 'label': "Madgraph+Pythia", "style": {'line_style': 1}},
-        {"root_dir": PYTHIA_ONLY_AK4_DIR, 'label': "Pythia only", "style": {'line_style': 2, 'line_color': ROOT.kRed, 'fill_color': ROOT.kRed, }}
+        {"root_dir": PYTHIA_ONLY_AK4_DIR, 'label': "Pythia only", "style": {'line_style': 1, 'line_color': ROOT.kRed, 'fill_color': ROOT.kRed, }}
     ]
     do_all_exclusive_plots_comparison(sources, var_list=COMMON_VARS[:-2],
                                       plot_dir=os.path.join(ROOT_DIR, "mg_pythia_vs_pythia_only"),
@@ -517,7 +515,7 @@ def do_pythia_comparison_plots():
     # gen
     sources = [
         {"root_dir": PYTHIA_AK4_DIR, 'label': "Madgraph+Pythia", "style": {'line_style': 1}},
-        {"root_dir": PYTHIA_ONLY_AK4_DIR, 'label': "Pythia only", "style": {'line_style': 2, 'line_color': ROOT.kRed, 'fill_color': ROOT.kRed}}
+        {"root_dir": PYTHIA_ONLY_AK4_DIR, 'label': "Pythia only", "style": {'line_style': 1, 'line_color': ROOT.kRed, 'fill_color': ROOT.kRed}}
     ]
     do_all_exclusive_plots_comparison(sources, var_list=COMMON_VARS[:-2], var_prepend="gen",
                                       plot_dir=os.path.join(ROOT_DIR, "mg_pythia_vs_pythia_only_gen"),
