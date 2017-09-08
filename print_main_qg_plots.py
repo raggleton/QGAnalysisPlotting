@@ -163,20 +163,6 @@ def do_wrong_plots(var_prepend="", plot_dir="wrong_flavs", zpj_dirname="ZPlusJet
                                    rebin=rebin, title="%d < p_{T}^{jet} < %d GeV %s (\"wrong\" flavours)" % (start_val, end_val, TITLE_STR), xlim=xlim)
 
 
-def do_jet_algo_comparison_plots(plot_dir="compare_jet_algo", zpj_dirname="ZPlusJets_QG", dj_dirname="Dijet_QG",
-                                 var_list=None, var_prepend="", pt_bins=None, subplot_type="diff"):
-    """Do 1D plots comparing different jet algos"""
-    sources = [
-        {"root_dir": AK4_GENJET_DIR, 'label': "AK4", "style": {'line_style': 1}},
-        {"root_dir": AK8_GENJET_DIR, 'label': "AK8", "style": {'line_style': 2}}
-    ]
-    qgg.do_all_exclusive_plots_comparison(sources, var_list=var_list,
-                                          plot_dir=plot_dir,
-                                          zpj_dirname=zpj_dirname, dj_dirname=dj_dirname,
-                                          var_prepend=var_prepend, pt_bins=pt_bins,
-                                          subplot_type=subplot_type, do_flav_tagged=True)
-
-
 def do_gen_reco_comparison_plots(var_list=None, gen_var_prepend="gen", reco_var_prepend="",
                                  plot_dir="plot_reco_gen", zpj_reco_dirname=qgc.ZPJ_RECOJET_RDIR, dj_reco_dirname=qgc.DJ_RECOJET_RDIR,
                                  zpj_gen_dirname=qgc.ZPJ_GENJET_RDIR, dj_gen_dirname=qgc.DJ_GENJET_RDIR, pt_bins=qgc.THEORY_PT_BINS, subplot_type=None):
@@ -333,8 +319,6 @@ def do_gen_plots():
     #                               zpj_dirname=qgc.ZPJ_GENJET_RDIR, dj_dirname=qgc.DJ_GENJET_RDIR)
     do_wrong_plots(var_prepend="gen", plot_dir="wrong_flavs_gen",
                    zpj_dirname=qgc.ZPJ_GENJET_RDIR, dj_dirname=qgc.DJ_GENJET_RDIR, pt_bins=qgc.THEORY_PT_BINS)
-    # do_jet_algo_comparison_plots(var_list=qgc.COMMON_VARS[:-1], var_prepend="gen", plot_dir=os.path.join(ROOT_DIR, "compare_jet_algo"),
-    #                              zpj_dirname=qgc.ZPJ_GENJET_RDIR, dj_dirname=qgc.DJ_GENJET_RDIR, pt_bins=qgc.THEORY_PT_BINS, subplot_type=None)
     # do_gen_reco_comparison_plots(var_list=qgc.COMMON_VARS[:-1], gen_var_prepend="gen", reco_var_prepend="",
     #                              plot_dir="plot_reco_gen", zpj_reco_dirname=qgc.ZPJ_RECOJET_RDIR, dj_reco_dirname=qgc.DJ_RECOJET_RDIR,
     #                              zpj_gen_dirname=qgc.ZPJ_GENJET_RDIR, dj_gen_dirname=qgc.DJ_GENJET_RDIR, pt_bins=qgc.THEORY_PT_BINS)
