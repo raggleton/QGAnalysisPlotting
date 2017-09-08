@@ -122,18 +122,6 @@ def do_all_2D_plots(plot_dir="plots_2d", zpj_dirname="ZPlusJets_QG", dj_dirname=
                            renorm_axis=rn, title=qgc.QCD_Dijet_QFLAV_LABEL, rebin=rebin)
 
 
-def do_chs_vs_puppi_plots():
-    sources = [
-        {"root_dir": CHS_DIR, 'label': "CHS", "style": {'line_style': 1}},
-        {"root_dir": PUPPI_DIR, 'label': "PUPPI", "style": {'line_style': 3}}
-    ]
-    qgg.do_all_exclusive_plots_comparison(sources, var_list=qgc.COMMON_VARS[2:],
-                                          plot_dir=os.path.join(ROOT_DIR, "ak4_chs_vs_puppi"),
-                                          zpj_dirname="ZPlusJets_QG", dj_dirname="Dijet_QG",
-                                          var_prepend="", pt_bins=None,
-                                          subplot_type=None, do_flav_tagged=True)
-
-
 def do_wrong_plots(var_prepend="", plot_dir="wrong_flavs", zpj_dirname="ZPlusJets_QG", dj_dirname="Dijet_QG", pt_bins=None):
     """Plot all the sample/selection.flavour combinations to check distributions indep of sample"""
     pt_bins = pt_bins or qgc.PT_BINS
@@ -269,7 +257,6 @@ def do_reco_plots():
                                           plot_dir=os.path.join(ROOT_DIR, "plots_dy_vs_qcd"),
                                           pt_bins=qgc.THEORY_PT_BINS, subplot_type=None, do_flav_tagged=True)
     # do_all_flavour_fraction_plots()
-    # do_chs_vs_puppi_plots()
     do_wrong_plots()
     sources = [
         {"root_dir": ROOT_DIR, "style": {'line_style': 1}}
