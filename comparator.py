@@ -263,9 +263,9 @@ class Plot(object):
 
             # Add contributions for the subplot
             if self.subplot:
-                subplot_obj = self.subplot.contrib.obj.Clone()
-                if c != self.subplot:
-                    new_hist = obj.Clone()
+                subplot_obj = self.subplot.obj.Clone()
+                if contrib != self.subplot:
+                    new_hist = contrib.obj.Clone()
                     if (self.subplot_type == "ratio"):
                         new_hist.Divide(subplot_obj)
                     elif (self.subplot_type == "diff"):
