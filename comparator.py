@@ -234,6 +234,12 @@ class Plot(object):
             self.container = ROOT.THStack(ROOT.TUUID().AsString(), "")
             self.subplot_container = ROOT.THStack(ROOT.TUUID().AsString(), "")
 
+        if self.container:
+            ROOT.SetOwnership(self.container, False)
+        if self.subplot_container:
+            ROOT.SetOwnership(self.subplot_container, False)
+
+
     def _populate_container_and_legend(self):
         """Add objects to the container, and to the legend"""
         for contrib in self.contributions:
