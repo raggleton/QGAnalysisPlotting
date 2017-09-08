@@ -60,6 +60,9 @@ ROOT_DIR = CHS_DIR
 # Use this for data plots
 # TITLE_STR = "[%s]" % ROOT_DIR.replace("workdir_", "")
 
+# Control plot output format
+OUTPUT_FMT = "pdf"
+
 
 def do_all_2D_plots(plot_dir="plots_2d", zpj_dirname="ZPlusJets_QG", dj_dirname="Dijet_QG", var_list=None, var_prepend=""):
     """Do 2D distributions"""
@@ -77,14 +80,14 @@ def do_all_2D_plots(plot_dir="plots_2d", zpj_dirname="ZPlusJets_QG", dj_dirname=
 
         for rn in ['Y', None]:  # different renormalisation axes
             do_2D_plot(grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" % ROOT_DIR, "%s/%s" % (zpj_dirname, v)),
-                       output_filename="%s/%s/dy_zpj_%s_norm%s.pdf" % (ROOT_DIR, plot_dir, v, rn),
+                       output_filename="%s/%s/dy_zpj_%s_norm%s.%s" % (ROOT_DIR, plot_dir, v, rn, OUTPUT_FMT),
                        renorm_axis=rn, title=DY_ZpJ_LABEL, rebin=rebin, recolour=recolour)
             do_2D_plot(grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" % ROOT_DIR, "%s/%s" % (dj_dirname, v)),
-                       output_filename="%s/%s/dy_dijet_%s_norm%s.pdf" % (ROOT_DIR, plot_dir, v, rn),
+                       output_filename="%s/%s/dy_dijet_%s_norm%s.%s" % (ROOT_DIR, plot_dir, v, rn, OUTPUT_FMT),
                        renorm_axis=rn, title=DY_Dijet_LABEL, rebin=rebin, recolour=recolour)
 
             do_2D_plot(grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_QCD_.root" % ROOT_DIR, "%s/%s" % (dj_dirname, v)),
-                       output_filename="%s/%s/qcd_dijet_%s_norm%s.pdf" % (ROOT_DIR, plot_dir, v, rn),
+                       output_filename="%s/%s/qcd_dijet_%s_norm%s.%s" % (ROOT_DIR, plot_dir, v, rn, OUTPUT_FMT),
                        renorm_axis=rn, title=QCD_Dijet_LABEL, rebin=rebin, recolour=recolour)
 
             if "flavour" in v:
@@ -92,27 +95,27 @@ def do_all_2D_plots(plot_dir="plots_2d", zpj_dirname="ZPlusJets_QG", dj_dirname=
 
             # Flavour matched reco
             do_2D_plot(grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" % ROOT_DIR, "%s/q%s" % (zpj_dirname, v)),
-                       output_filename="%s/%s/dy_zpj_%s_norm%s_qflavMatched.pdf" % (ROOT_DIR, plot_dir, v, rn),
+                       output_filename="%s/%s/dy_zpj_%s_norm%s_qflavMatched.%s" % (ROOT_DIR, plot_dir, v, rn, OUTPUT_FMT),
                        renorm_axis=rn, title=DY_ZpJ_QFLAV_LABEL, rebin=rebin)
 
             do_2D_plot(grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" % ROOT_DIR, "%s/g%s" % (zpj_dirname, v)),
-                       output_filename="%s/%s/dy_zpj_%s_norm%s_gflavMatched.pdf" % (ROOT_DIR, plot_dir, v, rn),
+                       output_filename="%s/%s/dy_zpj_%s_norm%s_gflavMatched.%s" % (ROOT_DIR, plot_dir, v, rn, OUTPUT_FMT),
                        renorm_axis=rn, title=DY_ZpJ_GFLAV_LABEL, rebin=rebin)
 
             do_2D_plot(grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" % ROOT_DIR, "%s/g%s" % (dj_dirname, v)),
-                       output_filename="%s/%s/dy_dijet_%s_norm%s_gflavMatched.pdf" % (ROOT_DIR, plot_dir, v, rn),
+                       output_filename="%s/%s/dy_dijet_%s_norm%s_gflavMatched.%s" % (ROOT_DIR, plot_dir, v, rn, OUTPUT_FMT),
                        renorm_axis=rn, title=DY_Dijet_GFLAV_LABEL, rebin=rebin)
 
             do_2D_plot(grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" % ROOT_DIR, "%s/q%s" % (dj_dirname, v)),
-                       output_filename="%s/%s/dy_dijet_%s_norm%s_qflavMatched.pdf" % (ROOT_DIR, plot_dir, v, rn),
+                       output_filename="%s/%s/dy_dijet_%s_norm%s_qflavMatched.%s" % (ROOT_DIR, plot_dir, v, rn, OUTPUT_FMT),
                        renorm_axis=rn, title=DY_Dijet_QFLAV_LABEL, rebin=rebin)
 
             do_2D_plot(grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_QCD_.root" % ROOT_DIR, "%s/g%s" % (dj_dirname, v)),
-                       output_filename="%s/%s/qcd_dijet_%s_norm%s_gflavMatched.pdf" % (ROOT_DIR, plot_dir, v, rn),
+                       output_filename="%s/%s/qcd_dijet_%s_norm%s_gflavMatched.%s" % (ROOT_DIR, plot_dir, v, rn, OUTPUT_FMT),
                        renorm_axis=rn, title=QCD_Dijet_GFLAV_LABEL, rebin=rebin)
 
             do_2D_plot(grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_QCD_.root" % ROOT_DIR, "%s/q%s" % (dj_dirname, v)),
-                       output_filename="%s/%s/qcd_dijet_%s_norm%s_qflavMatched.pdf" % (ROOT_DIR, plot_dir, v, rn),
+                       output_filename="%s/%s/qcd_dijet_%s_norm%s_qflavMatched.%s" % (ROOT_DIR, plot_dir, v, rn, OUTPUT_FMT),
                        renorm_axis=rn, title=QCD_Dijet_QFLAV_LABEL, rebin=rebin)
 
 
@@ -165,7 +168,7 @@ def do_wrong_plots(var_prepend="", plot_dir="wrong_flavs", zpj_dirname="ZPlusJet
                 (get_projection_plot(h2d_qcd_chs, start_val, end_val), qcd_kwargs_chs),
             ]
 
-            do_comparison_plot(entries, "%s/%s/%s_pt%dto%d_flavMatched.pdf" % (ROOT_DIR, plot_dir, v, start_val, end_val),
+            do_comparison_plot(entries, "%s/%s/%s_pt%dto%d_flavMatched.%s" % (ROOT_DIR, plot_dir, v, start_val, end_val, OUTPUT_FMT),
                                rebin=rebin, title="%d < p_{T}^{jet} < %d GeV %s (\"wrong\" flavours)" % (start_val, end_val, TITLE_STR), xlim=xlim)
 
 
@@ -229,7 +232,7 @@ def do_gen_reco_comparison_plots(var_list=None, gen_var_prepend="gen", reco_var_
             if "thrust" in v_reco:
                 xlim = (0, 0.5)
 
-            do_comparison_plot(entries, "%s/%s/%s_pt%dto%d.pdf" % (ROOT_DIR, plot_dir, ang.var, start_val, end_val),
+            do_comparison_plot(entries, "%s/%s/%s_pt%dto%d.%s" % (ROOT_DIR, plot_dir, ang.var, start_val, end_val, OUTPUT_FMT),
                                rebin=rebin, title="%d < p_{T}^{jet} < %d GeV" % (start_val, end_val),
                                xtitle=ang.name + " (" + ang.lambda_str + ")",
                                xlim=xlim, ylim=ylim, subplot_type=subplot_type)
@@ -250,7 +253,7 @@ def do_gen_reco_comparison_plots(var_list=None, gen_var_prepend="gen", reco_var_
                 (get_projection_plot(h2d_qcd_gen_g, start_val, end_val), qcd_gen_kwargs)
             ]
 
-            do_comparison_plot(entries, "%s/%s/%s_flavMatched_pt%dto%d.pdf" % (ROOT_DIR, plot_dir, ang.var, start_val, end_val),
+            do_comparison_plot(entries, "%s/%s/%s_flavMatched_pt%dto%d.%s" % (ROOT_DIR, plot_dir, ang.var, start_val, end_val, OUTPUT_FMT),
                                rebin=rebin, title="%d < p_{T}^{jet} < %d GeV" % (start_val, end_val),
                                xtitle=ang.name + " (" + ang.lambda_str + ")",
                                xlim=xlim, ylim=ylim, subplot_type=subplot_type)
@@ -523,13 +526,13 @@ def do_pythia_comparison_plots():
     compare_flavour_fractions_vs_pt(input_files,
                                     [DJ_RECOJET_RDIR, DJ_RECOJET_RDIR],
                                     [QCD_Dijet_LABEL + " Madgraph+Pythia", QCD_Dijet_LABEL+" Pythia only"],
-                                    "g", "%s/flav_fractions/compare_g_frac.pdf" % ROOT_DIR,
+                                    "g", "%s/flav_fractions/compare_g_frac.%s" % (ROOT_DIR, OUTPUT_FMT),
                                     title="ak4 PFCHS jets", var_prepend="")
     # gen
     compare_flavour_fractions_vs_pt(input_files,
                                     [DJ_GENJET_RDIR, DJ_GENJET_RDIR],
                                     [QCD_Dijet_LABEL + " Madgraph+Pythia", QCD_Dijet_LABEL+" Pythia only"],
-                                    "g", "%s/flav_fractions_gen/compare_g_frac.pdf" % ROOT_DIR,
+                                    "g", "%s/flav_fractions_gen/compare_g_frac.%s" % (ROOT_DIR, OUTPUT_FMT),
                                     title="ak4 GenJets", var_prepend="gen")
 
 
