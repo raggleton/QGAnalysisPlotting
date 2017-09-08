@@ -152,7 +152,8 @@ def do_all_exclusive_plots_comparison(sources, plot_dir="plots_dy_vs_qcd", zpj_d
                                rebin=rebin, title="%d < p_{T}^{jet} < %d GeV" % (start_val, end_val),
                                xtitle=ang.name + " (" + ang.lambda_str + ")",
                                xlim=xlim, ylim=ylim, subplot_type=subplot_type)
-            if do_flav_tagged:
+
+            if do_flav_tagged and "flavour" not in v:
                 do_comparison_plot(entries_flav, "%s/ptBinned/%s_pt%dto%d_flavMatched.pdf" % (plot_dir, v, start_val, end_val),
                                    rebin=rebin, title="%d < p_{T}^{jet} < %d GeV" % (start_val, end_val),
                                    xtitle=ang.name + " (" + ang.lambda_str + ")",
