@@ -131,7 +131,7 @@ def do_pt_min_delta_plots(sources, plot_dir="deltas_ptmin",
             gr.SetName(source.get("label", ""))
             if 'style' in source and 'line_width' not in source['style']:
                 source['style']['line_width'] = 2
-            c = Contribution(gr, label=source.get("label", ""), marker_style=0, **source.get("style", {}))
+            c = Contribution(gr, label=source.get("label", "").lstrip(", "), marker_style=0, **source.get("style", {}))
             graph_contribs.append(c)
 
         do_deltas_plot(graph_contribs, 
@@ -188,7 +188,7 @@ def do_angularity_delta_plots(sources, plot_dir="delta_angularities",
             gr.SetName(source.get("label", ""))
             if 'style' in source and 'line_width' not in source['style']:
                 source['style']['line_width'] = 2
-            c = Contribution(gr, label=source.get("label", ""), marker_style=0, **source.get("style", {}))
+            c = Contribution(gr, label=source.get("label", "").lstrip(", "), marker_style=0, **source.get("style", {}))
             graph_contribs.append(c)
 
         do_deltas_plot(graph_contribs, 
