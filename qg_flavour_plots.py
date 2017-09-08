@@ -13,6 +13,7 @@ from array import array
 from comparator import Contribution, Plot, grab_obj
 import common_utils as cu
 from qg_common import *
+from qg_general_plots import get_projection_plot
 
 # For debugging
 import sys
@@ -26,15 +27,6 @@ ROOT.PyConfig.IgnoreCommandLineOptions = True
 ROOT.gROOT.SetBatch(1)
 ROOT.TH1.SetDefaultSumw2()
 ROOT.gStyle.SetOptStat(0)
-
-
-def get_projection_plot(h2d, start_val, end_val):
-    y_axis = h2d.GetYaxis()
-    bin_edges = [y_axis.GetBinLowEdge(i) for i in range(1, y_axis.GetNbins()+1)]
-    bin_start = bisect.bisect_right(bin_edges, start_val)
-    bin_end = bisect.bisect_right(bin_edges, end_val)
-    hproj = h2d.ProjectionX(ROOT.TUUID().AsString(), bin_start, bin_end, "eo")
-    return hproj
 
 
 def get_flavour_fractions(input_file, dirname, which="", var_prepend=""):
