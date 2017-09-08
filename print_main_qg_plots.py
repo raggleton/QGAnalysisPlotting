@@ -5,10 +5,7 @@
 import ROOT
 from MyStyle import My_Style
 My_Style.cd()
-import bisect
-import numpy as np
 import os
-from array import array
 
 # My stuff
 from comparator import Contribution, Plot, grab_obj

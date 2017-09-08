@@ -8,8 +8,6 @@ import ROOT
 from MyStyle import My_Style
 My_Style.cd()
 from comparator import Contribution, Plot, grab_obj
-import common_utils as cu
-import numpy as np
 import os
 from itertools import product
 
