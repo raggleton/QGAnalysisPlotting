@@ -33,13 +33,16 @@ ROOT.TH1.SetDefaultSumw2()
 ROOT.gStyle.SetOptStat(0)
 
 
-PYTHIA_AK4_DIR = "workdir_ak4chs"
-PYTHIA_ONLY_AK4_DIR = "workdir_ak4chs_pythiaOnlyFlat"
-HERWIG_AK4_DIR = "workdir_ak4chs_herwig"
-HERWIG_AK4_REWEIGHTED_DIR = "workdir_ak4chs_herwig_reweight"
+SETUP = "ak8puppi"
+
+PYTHIA_ONLY_AK4_DIR = "workdir_%s_pythiaOnlyFlat" % SETUP
+PYTHIA_AK4_DIR = "workdir_%s_mgpythia" % SETUP
+# PYTHIA_ONLY_AK4_DIR = "workdir_%s_pythiaOnlyFlat" % SETUP
+HERWIG_AK4_DIR = "workdir_%s_herwig" % SETUP
+HERWIG_AK4_REWEIGHTED_DIR = "workdir_%s_herwig_reweight" % SETUP
 
 AK4_GENJET_DIR = PYTHIA_AK4_DIR
-AK4_GENJET_DIR = PYTHIA_ONLY_AK4_DIR
+# AK4_GENJET_DIR = PYTHIA_ONLY_AK4_DIR
 # AK4_GENJET_DIR = HERWIG_AK4_DIR
 # AK4_GENJET_DIR = HERWIG_AK4_REWEIGHTED_DIR
 
@@ -53,7 +56,8 @@ TITLE_STR = "ak4 GenJet"
 # CHS_DIR = AK8_GENJET_DIR
 # TITLE_STR = "ak8 GenJet"
 
-PUPPI_DIR = "workdir_ak4puppi"
+PUPPI_DIR = "workdir_ak4puppi_mgpythia"
+# PUPPI_DIR = "workdir_ak4puppi_herwig"
 
 # Controls all the things!!
 ROOT_DIR = CHS_DIR
@@ -382,17 +386,17 @@ def do_reco_pu_comparison_plots():
 def do_gen_plots():
     global TITLE_STR
     TITLE_STR = "ak4 GenJet"
+    do_all_2D_plots(var_list=COMMON_VARS[:-2], var_prepend="gen", plot_dir="plots_2d_gen",
+                    zpj_dirname=ZPJ_GENJET_RDIR, dj_dirname=DJ_GENJET_RDIR)
     sources = [{"root_dir": ROOT_DIR, 'label': "", "style": {'line_style': 1}}]
-    do_all_exclusive_plots_comparison(sources=sources, var_list=COMMON_VARS[:-1], var_prepend="gen",
+    do_all_exclusive_plots_comparison(sources=sources, var_list=COMMON_VARS[:-2], var_prepend="gen",
                                       plot_dir=os.path.join(ROOT_DIR, "plots_dy_vs_qcd_gen"),
                                       zpj_dirname=ZPJ_GENJET_RDIR, dj_dirname=DJ_GENJET_RDIR,
                                       pt_bins=THEORY_PT_BINS, subplot_type=None, do_flav_tagged=True)
-    do_all_2D_plots(var_list=COMMON_VARS[:-1], var_prepend="gen", plot_dir="plots_2d_gen",
-                    zpj_dirname=ZPJ_GENJET_RDIR, dj_dirname=DJ_GENJET_RDIR)
     # do_all_flavour_fraction_plots(var_prepend="gen", plot_dir="flav_fractions_gen",
     #                               zpj_dirname=ZPJ_GENJET_RDIR, dj_dirname=DJ_GENJET_RDIR)
-    # do_wrong_plots(var_prepend="gen", plot_dir="wrong_flavs_gen",
-    #                zpj_dirname=ZPJ_GENJET_RDIR, dj_dirname=DJ_GENJET_RDIR, pt_bins=THEORY_PT_BINS)
+    do_wrong_plots(var_prepend="gen", plot_dir="wrong_flavs_gen",
+                   zpj_dirname=ZPJ_GENJET_RDIR, dj_dirname=DJ_GENJET_RDIR, pt_bins=THEORY_PT_BINS)
     # do_jet_algo_comparison_plots(var_list=COMMON_VARS[:-1], var_prepend="gen", plot_dir=os.path.join(ROOT_DIR, "compare_jet_algo"),
     #                              zpj_dirname=ZPJ_GENJET_RDIR, dj_dirname=DJ_GENJET_RDIR, pt_bins=THEORY_PT_BINS, subplot_type=None)
     # do_gen_reco_comparison_plots(var_list=COMMON_VARS[:-1], gen_var_prepend="gen", reco_var_prepend="",
