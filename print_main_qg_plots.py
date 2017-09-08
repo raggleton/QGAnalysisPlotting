@@ -318,36 +318,6 @@ def do_reco_generator_comparison_plots():
                               var_list=COMMON_VARS[0:-2], pt_bins=THEORY_PT_BINS)
 
 
-def do_reco_reweight_comparison_plots():
-    """Compare effect of reweighting to Pythia spectrum"""
-    sources = [
-        {"root_dir": HERWIG_AK4_REWEIGHTED_DIR, 'label': "Reweighted to Pythia", "style": {'line_style': 1}},
-        {"root_dir": HERWIG_AK4_DIR, 'label': "Not reweighted", "style": {'line_style': 2}}
-    ]
-    do_all_exclusive_plots_comparison(sources=sources, var_list=COMMON_VARS[:-2],
-                                      plot_dir=os.path.join(ROOT_DIR, "plots_dy_vs_qcd_compare_reweight"),
-                                      pt_bins=THEORY_PT_BINS, subplot_type=None, do_flav_tagged=False)
-
-    sources = [
-        {"root_dir": HERWIG_AK4_REWEIGHTED_DIR, 'label': "Reweighted to Pythia", "style": {'line_color': ROOT.kGreen}},
-        {"root_dir": HERWIG_AK4_DIR, 'label': "Not reweighted", "style": {'line_color': ROOT.kAzure}}
-    ]
-    # do_pt_min_delta_plots(sources, var_list=COMMON_VARS[0:-2], plot_dir=os.path.join(ROOT_DIR, "deltas_ptMin_compare_reweight"))
-    do_angularity_delta_plots(sources, var_list=COMMON_VARS[:-2],
-                              plot_dir=os.path.join(ROOT_DIR, "deltas_angularities_compare_reweight"),
-                              pt_bins=THEORY_PT_BINS)
-
-    sources = [
-        {"root_dir": PYTHIA_AK4_DIR, 'label': "Pythia", "style": {'line_color': ROOT.kBlack}},
-        {"root_dir": HERWIG_AK4_REWEIGHTED_DIR, 'label': "Reweighted to Pythia", "style": {'line_color': ROOT.kGreen}},
-        {"root_dir": HERWIG_AK4_DIR, 'label': "Not reweighted", "style": {'line_color': ROOT.kAzure}}
-    ]
-    # do_pt_min_delta_plots(sources, var_list=COMMON_VARS[0:-2], plot_dir=os.path.join(ROOT_DIR, "deltas_ptMin_compare_normal_and_reweight"))
-    do_angularity_delta_plots(sources, var_list=COMMON_VARS[:-2],
-                              plot_dir=os.path.join(ROOT_DIR, "deltas_angularities_compare_normal_and_reweight"),
-                              pt_bins=THEORY_PT_BINS)
-
-
 def do_reco_pu_comparison_plots():
     """Compare by PU bins"""
     pu_bins = [(5, 15), (20, 25), (30, 40)]
@@ -456,62 +426,11 @@ def do_gen_generator_comparison_plots():
                               zpj_dirname=ZPJ_GENJET_RDIR, dj_dirname=DJ_GENJET_RDIR, pt_bins=THEORY_PT_BINS)
 
 
-def do_gen_reweight_comparison_plots():
-    """Compare effect of reweighting to Pythia spectrum"""
-    sources = [
-        {"root_dir": HERWIG_AK4_REWEIGHTED_DIR, 'label': "Reweighted to Pythia", "style": {'line_style': 1}},
-        {"root_dir": HERWIG_AK4_DIR, 'label': "Not reweighted", "style": {'line_style': 2}}
-    ]
-    do_all_exclusive_plots_comparison(sources=sources, var_list=COMMON_VARS[:-2], var_prepend="gen",
-                                      plot_dir=os.path.join(ROOT_DIR, "plots_dy_vs_qcd_gen_compare_reweight"),
-                                      zpj_dirname=ZPJ_GENJET_RDIR, dj_dirname=DJ_GENJET_RDIR,
-                                      pt_bins=THEORY_PT_BINS, subplot_type=None, do_flav_tagged=False)
-
-    sources = [
-        {"root_dir": HERWIG_AK4_REWEIGHTED_DIR, 'label': "Reweighted to Pythia", "style": {'line_color': ROOT.kGreen}},
-        {"root_dir": HERWIG_AK4_DIR, 'label': "Not reweighted", "style": {'line_color': ROOT.kAzure}}
-    ]
-    do_pt_min_delta_plots(sources, var_list=COMMON_VARS[0:-2], var_prepend="gen",
-                          plot_dir=os.path.join(ROOT_DIR, "deltas_ptMin_gen_compare_reweight"),
-                          zpj_dirname=ZPJ_GENJET_RDIR, dj_dirname=DJ_GENJET_RDIR)
-    do_angularity_delta_plots(sources, var_list=COMMON_VARS[:-2], var_prepend="gen",
-                              plot_dir=os.path.join(ROOT_DIR, "deltas_angularities_gen_compare_reweight"),
-                              zpj_dirname=ZPJ_GENJET_RDIR, dj_dirname=DJ_GENJET_RDIR, pt_bins=THEORY_PT_BINS)
-
-    # Put Pythia, Herwig, & Herwig reweighted on same plots
-    sources = [
-        {"root_dir": PYTHIA_AK4_DIR, 'label': "Pythia", "style": {'line_style': 1}},
-        {"root_dir": HERWIG_AK4_REWEIGHTED_DIR, 'label': "Herwig, reweighted to Pythia",
-            "style": {'line_style': 2},
-            "dy_style": {'line_color': ROOT.kRed, 'fill_color': ROOT.kRed},
-            "qcd_style": {'line_color': ROOT.kBlue, 'fill_color': ROOT.kBlue}
-        },
-        {"root_dir": HERWIG_AK4_DIR, 'label': "Herwig, not reweighted", "style": {'line_style': 2}}
-    ]
-    do_all_exclusive_plots_comparison(sources=sources, var_list=COMMON_VARS[:-2], var_prepend="gen",
-                                      plot_dir=os.path.join(ROOT_DIR, "plots_dy_vs_qcd_gen_compare_reweight_compare_generators"),
-                                      zpj_dirname=ZPJ_GENJET_RDIR, dj_dirname=DJ_GENJET_RDIR,
-                                      pt_bins=THEORY_PT_BINS, subplot_type="diff", do_flav_tagged=False)
-    sources = [
-        {"root_dir": PYTHIA_AK4_DIR, 'label': "Pythia", "style": {'line_color': ROOT.kBlack}},
-        {"root_dir": HERWIG_AK4_REWEIGHTED_DIR, 'label': "Reweighted to Pythia", "style": {'line_color': ROOT.kGreen}},
-        {"root_dir": HERWIG_AK4_DIR, 'label': "Not reweighted", "style": {'line_color': ROOT.kAzure}}
-    ]
-    do_pt_min_delta_plots(sources, var_list=COMMON_VARS[0:-2], var_prepend="gen",
-                          plot_dir=os.path.join(ROOT_DIR, "deltas_ptMin_gen_compare_normal_and_reweight"),
-                          zpj_dirname=ZPJ_GENJET_RDIR, dj_dirname=DJ_GENJET_RDIR)
-    do_angularity_delta_plots(sources, var_list=COMMON_VARS[:-2], var_prepend="gen",
-                              plot_dir=os.path.join(ROOT_DIR, "deltas_angularities_gen_compare_normal_and_reweight"),
-                              zpj_dirname=ZPJ_GENJET_RDIR, dj_dirname=DJ_GENJET_RDIR, pt_bins=THEORY_PT_BINS)
-
-
 if __name__ == '__main__':
     do_reco_plots()
     do_reco_flav_split_plots()
     do_reco_generator_comparison_plots()
-    do_reco_reweight_comparison_plots()
     do_reco_pu_comparison_plots()
 
     do_gen_plots()
     do_gen_generator_comparison_plots()
-    do_gen_reweight_comparison_plots()
