@@ -77,7 +77,7 @@ def do_2D_plot(obj, output_filename, renorm_axis=None, title=None, rebin=None, r
 
 
 def do_all_exclusive_plots_comparison(sources, plot_dir="plots_dy_vs_qcd", zpj_dirname="ZPlusJets_QG", dj_dirname="Dijet_QG",
-                                      var_list=None, var_prepend="", pt_bins=None, subplot_type=None, do_flav_tagged=True):
+                                      var_list=None, var_prepend="", pt_bins=None, subplot_type=None, do_flav_tagged=True, ofmt="pdf"):
     """Do 1D plots, comparing various sources. For each source plots DY & QCD samples. If zpj_dirname or dj_dirname blank, not plotted.
 
     Relies on QCD sample file being called uhh2.AnalysisModuleRunner.MC.MC_QCD_.root,
@@ -148,13 +148,13 @@ def do_all_exclusive_plots_comparison(sources, plot_dir="plots_dy_vs_qcd", zpj_d
             elif "LHA" in v:
                 ylim = (0, 5)
 
-            do_comparison_plot(entries_normal, "%s/ptBinned/%s_pt%dto%d.pdf" % (plot_dir, v, start_val, end_val),
+            do_comparison_plot(entries_normal, "%s/ptBinned/%s_pt%dto%d.%s" % (plot_dir, v, start_val, end_val, ofmt),
                                rebin=rebin, title="%d < p_{T}^{jet} < %d GeV" % (start_val, end_val),
                                xtitle=ang.name + " (" + ang.lambda_str + ")",
                                xlim=xlim, ylim=ylim, subplot_type=subplot_type)
 
             if do_flav_tagged and "flavour" not in v:
-                do_comparison_plot(entries_flav, "%s/ptBinned/%s_pt%dto%d_flavMatched.pdf" % (plot_dir, v, start_val, end_val),
+                do_comparison_plot(entries_flav, "%s/ptBinned/%s_pt%dto%d_flavMatched.%s" % (plot_dir, v, start_val, end_val, ofmt),
                                    rebin=rebin, title="%d < p_{T}^{jet} < %d GeV" % (start_val, end_val),
                                    xtitle=ang.name + " (" + ang.lambda_str + ")",
                                    xlim=xlim, subplot_type=subplot_type)
