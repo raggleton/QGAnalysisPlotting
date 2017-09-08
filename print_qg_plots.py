@@ -17,6 +17,7 @@ from qg_common import *
 from qg_general_plots import *
 from qg_flavour_plots import *
 from qg_delta_plots import *
+from qg_roc_plots import *
 
 # For debugging
 import sys
@@ -275,13 +276,15 @@ def do_reco_plots():
         # {"root_dir": ROOT_DIR, 'label': "Herwig", "style": {'line_style': 1}}
     ]
     # do_pt_min_delta_plots(sources, var_list=COMMON_VARS[0:-2])
-    do_angularity_delta_plots(sources, var_list=COMMON_VARS[0:-2], pt_bins=THEORY_PT_BINS, save_component_hists=True)
+    do_angularity_delta_plots(sources, var_list=COMMON_VARS[0:-2], pt_bins=THEORY_PT_BINS, 
+                              plot_dir=os.path.join(ROOT_DIR, 'delta_angularities'),
+                              save_component_hists=True)
+    do_angularity_roc_plots(sources, var_list=COMMON_VARS[0:-2], pt_bins=THEORY_PT_BINS,
+                            plot_dir=os.path.join(ROOT_DIR, 'roc_angularities'))
 
 
 def do_reco_flav_split_plots():
     """Do plots comparing individual q flavours"""
-    global TITLE_STR
-    TITLE_STR = "[%s]" % ROOT_DIR.replace("workdir_", "")
     sources = [
         # {"root_dir": ROOT_DIR, 'label': "All", "style": {'line_style': 1}},
         {"root_dir": ROOT_DIR, 'label': "jet1 = u", "zpj_dirname": "ZPlusJets_QG_u", "dj_dirname": "Dijet_QG_u", "style": {'line_style': 1}},
@@ -397,6 +400,11 @@ def do_gen_plots():
     # do_gen_reco_comparison_plots(var_list=COMMON_VARS[:-1], gen_var_prepend="gen", reco_var_prepend="",
     #                              plot_dir="plot_reco_gen", zpj_reco_dirname=ZPJ_RECOJET_RDIR, dj_reco_dirname=DJ_RECOJET_RDIR,
     #                              zpj_gen_dirname=ZPJ_GENJET_RDIR, dj_gen_dirname=DJ_GENJET_RDIR, pt_bins=THEORY_PT_BINS)
+
+    do_angularity_roc_plots(sources, var_list=COMMON_VARS[0:-2], pt_bins=THEORY_PT_BINS,
+                            zpj_dirname=ZPJ_GENJET_RDIR, dj_dirname=DJ_GENJET_RDIR, var_prepend="gen",
+                            plot_dir=os.path.join(ROOT_DIR, 'roc_angularities_gen'))
+
 
     # Separation plots
     sources = [
