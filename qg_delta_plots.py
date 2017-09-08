@@ -82,8 +82,10 @@ def do_deltas_plot(graph_contribs, output_filename, bin_labels, title="", xtitle
     p.save(output_filename)
 
 
-def do_pt_min_delta_plots(sources, plot_dir="deltas_ptmin", zpj_dirname="ZPlusJets_QG", dj_dirname="Dijet_QG",
-                          var_list=None, var_prepend="", flavour_tag=False, save_component_hists=False):
+def do_pt_min_delta_plots(sources, plot_dir="deltas_ptmin", 
+                          zpj_dirname="ZPlusJets_QG", dj_dirname="Dijet_QG",
+                          var_list=None, var_prepend="", flavour_tag=False, 
+                          save_component_hists=False, ofmt="pdf"):
     """Do plots comparing power of different ptMin cuts"""
     var_list = var_list or COMMON_VARS
     ptmin_bins = [50, 100, 200, 400, 800][:-1]
@@ -117,13 +119,13 @@ def do_pt_min_delta_plots(sources, plot_dir="deltas_ptmin", zpj_dirname="ZPlusJe
                     bin_labels.append("%d" % pt_min)
 
                 if save_component_hists:
-                    plot_ddelta(ddelta_hist, "%s/%s/%s_ddelta_ptMin_%d%s.pdf" % (source['root_dir'], plot_dir, ang.var, pt_min, output_append),
+                    plot_ddelta(ddelta_hist, "%s/%s/%s_ddelta_ptMin_%d%s.%s" % (source['root_dir'], plot_dir, ang.var, pt_min, output_append, ofmt),
                                 xtitle=ang.name + " (" + ang.lambda_str + ")", ytitle="d#Delta/d" + ang.lambda_str)
 
             if save_component_hists:
                 p = Plot(conts, what="hist", xtitle=ang.name, ytitle="p.d.f")
                 p.plot("NOSTACK HISTE")
-                p.save("%s/%s/%s_ddelta_ptMin_comparison%s.pdf" % (source['root_dir'], plot_dir, ang.var, output_append))
+                p.save("%s/%s/%s_ddelta_ptMin_comparison%s.%s" % (source['root_dir'], plot_dir, ang.var, output_append, ofmt))
 
             gr = construct_deltas_graph(deltas)
             gr.SetName(source.get("label", ""))
@@ -132,11 +134,17 @@ def do_pt_min_delta_plots(sources, plot_dir="deltas_ptmin", zpj_dirname="ZPlusJe
             c = Contribution(gr, label=source.get("label", ""), marker_style=0, **source.get("style", {}))
             graph_contribs.append(c)
 
-        do_deltas_plot(graph_contribs, "%s/ptMins_%s%s.pdf" % (plot_dir, ang.var, output_append),
-                       bin_labels=bin_labels, title="%s [%s]" % (ang.name, ang.lambda_str), xtitle="p_{T}^{min} [GeV]")
+        do_deltas_plot(graph_contribs, 
+                       "%s/ptMins_%s%s.%s" % (plot_dir, ang.var, output_append, ofmt),
+                       bin_labels=bin_labels, 
+                       title="%s [%s]" % (ang.name, ang.lambda_str), 
+                       xtitle="p_{T}^{min} [GeV]")
 
 
-def do_angularity_delta_plots(sources, plot_dir="delta_angularities", zpj_dirname="ZPlusJets_QG", dj_dirname="Dijet_QG", var_list=None, var_prepend="", pt_bins=None, flavour_tag=False, save_component_hists=False):
+def do_angularity_delta_plots(sources, plot_dir="delta_angularities", 
+                              zpj_dirname="ZPlusJets_QG", dj_dirname="Dijet_QG", 
+                              var_list=None, var_prepend="", pt_bins=None, 
+                              flavour_tag=False, save_component_hists=False, ofmt="pdf"):
     """Do plots comparing power of different angularities"""
     var_list = var_list or COMMON_VARS
     pt_bins = pt_bins or PT_BINS
@@ -173,7 +181,7 @@ def do_angularity_delta_plots(sources, plot_dir="delta_angularities", zpj_dirnam
                     bin_labels.append("#splitline{%s}{%s}" % (ang.name, ang.lambda_str))
 
                 if save_component_hists:
-                    plot_ddelta(ddelta_hist, "%s/%s/angularities_pt%dto%d_ddelta_%s%s.pdf" % (source['root_dir'], plot_dir, start_val, end_val, ang.var, output_append),
+                    plot_ddelta(ddelta_hist, "%s/%s/angularities_pt%dto%d_ddelta_%s%s.%s" % (source['root_dir'], plot_dir, start_val, end_val, ang.var, output_append, ofmt),
                                 xtitle=ang.name + " (" + ang.lambda_str + ")", ytitle="d#Delta/d" + ang.lambda_str)
 
             gr = construct_deltas_graph(deltas)
@@ -183,6 +191,9 @@ def do_angularity_delta_plots(sources, plot_dir="delta_angularities", zpj_dirnam
             c = Contribution(gr, label=source.get("label", ""), marker_style=0, **source.get("style", {}))
             graph_contribs.append(c)
 
-        do_deltas_plot(graph_contribs, "%s/angularities_pt%dto%d%s.pdf" % (plot_dir, start_val, end_val, output_append),
-                       bin_labels=bin_labels, title="%d < p_{T}^{jet} < %d GeV" % (start_val, end_val), xtitle="Angularity: (#kappa, #beta)")
+        do_deltas_plot(graph_contribs, 
+                       "%s/angularities_pt%dto%d%s.%s" % (plot_dir, start_val, end_val, output_append, ofmt),
+                       bin_labels=bin_labels, 
+                       title="%d < p_{T}^{jet} < %d GeV" % (start_val, end_val), 
+                       xtitle="Angularity: (#kappa, #beta)")
 
