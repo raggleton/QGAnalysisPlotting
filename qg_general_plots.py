@@ -34,6 +34,8 @@ def do_comparison_plot(entries, output_filename, rebin=1, **plot_kwargs):
     """
     conts = [Contribution(ent[0], normalise_hist=True, fill_style=0, rebin_hist=rebin, **ent[1]) for ent in entries]
     do_legend = len(conts) > 1
+    if len(conts) == 0:
+        raise RuntimeError("0 contributions for this plot")
     p = Plot(conts, what="hist", subplot=conts[0], ytitle="p.d.f", legend=do_legend, **plot_kwargs)
     draw_opt = "NOSTACK HISTE"
     if do_legend:
