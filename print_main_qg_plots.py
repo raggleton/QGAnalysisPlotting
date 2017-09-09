@@ -34,7 +34,7 @@ ROOT.TH1.SetDefaultSumw2()
 ROOT.gStyle.SetOptStat(0)
 
 
-SETUP = "ak8puppi"
+SETUP = "ak4chs"
 
 PYTHIA_AK4_DIR = "workdir_%s_mgpythia" % SETUP
 PYTHIA_ONLY_AK4_DIR = "workdir_%s_pythiaOnlyFlat" % SETUP
@@ -63,14 +63,14 @@ def do_all_2D_plots(root_dir, plot_dir="plots_2d", zpj_dirname="ZPlusJets_QG", d
         recolour = False if "flavour" in v else True
 
         for rn in ['Y', None]:  # different renormalisation axes
-            qgg.do_2D_plot(grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" % root_dir, "%s/%s" % (zpj_dirname, v)),
+            qgg.do_2D_plot(grab_obj(os.path.join(root_dir, qgc.DY_FILENAME), "%s/%s" % (zpj_dirname, v)),
                            output_filename="%s/%s/dy_zpj_%s_norm%s.%s" % (root_dir, plot_dir, v, rn, OUTPUT_FMT),
                            renorm_axis=rn, title=qgc.DY_ZpJ_LABEL, rebin=rebin, recolour=recolour)
-            qgg.do_2D_plot(grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" % root_dir, "%s/%s" % (dj_dirname, v)),
+            qgg.do_2D_plot(grab_obj(os.path.join(root_dir, qgc.DY_FILENAME), "%s/%s" % (dj_dirname, v)),
                            output_filename="%s/%s/dy_dijet_%s_norm%s.%s" % (root_dir, plot_dir, v, rn, OUTPUT_FMT),
                            renorm_axis=rn, title=qgc.DY_Dijet_LABEL, rebin=rebin, recolour=recolour)
 
-            qgg.do_2D_plot(grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_QCD_.root" % root_dir, "%s/%s" % (dj_dirname, v)),
+            qgg.do_2D_plot(grab_obj(os.path.join(root_dir, qgc.QCD_FILENAME), "%s/%s" % (dj_dirname, v)),
                            output_filename="%s/%s/qcd_dijet_%s_norm%s.%s" % (root_dir, plot_dir, v, rn, OUTPUT_FMT),
                            renorm_axis=rn, title=qgc.QCD_Dijet_LABEL, rebin=rebin, recolour=recolour)
 
@@ -78,27 +78,27 @@ def do_all_2D_plots(root_dir, plot_dir="plots_2d", zpj_dirname="ZPlusJets_QG", d
                 continue
 
             # Flavour matched reco
-            qgg.do_2D_plot(grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" % root_dir, "%s/q%s" % (zpj_dirname, v)),
+            qgg.do_2D_plot(grab_obj(os.path.join(root_dir, qgc.DY_FILENAME), "%s/q%s" % (zpj_dirname, v)),
                            output_filename="%s/%s/dy_zpj_%s_norm%s_qflavMatched.%s" % (root_dir, plot_dir, v, rn, OUTPUT_FMT),
                            renorm_axis=rn, title=qgc.DY_ZpJ_QFLAV_LABEL, rebin=rebin)
 
-            qgg.do_2D_plot(grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" % root_dir, "%s/g%s" % (zpj_dirname, v)),
+            qgg.do_2D_plot(grab_obj(os.path.join(root_dir, qgc.DY_FILENAME), "%s/g%s" % (zpj_dirname, v)),
                            output_filename="%s/%s/dy_zpj_%s_norm%s_gflavMatched.%s" % (root_dir, plot_dir, v, rn, OUTPUT_FMT),
                            renorm_axis=rn, title=qgc.DY_ZpJ_GFLAV_LABEL, rebin=rebin)
 
-            qgg.do_2D_plot(grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" % root_dir, "%s/g%s" % (dj_dirname, v)),
+            qgg.do_2D_plot(grab_obj(os.path.join(root_dir, qgc.DY_FILENAME), "%s/g%s" % (dj_dirname, v)),
                            output_filename="%s/%s/dy_dijet_%s_norm%s_gflavMatched.%s" % (root_dir, plot_dir, v, rn, OUTPUT_FMT),
                            renorm_axis=rn, title=qgc.DY_Dijet_GFLAV_LABEL, rebin=rebin)
 
-            qgg.do_2D_plot(grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" % root_dir, "%s/q%s" % (dj_dirname, v)),
+            qgg.do_2D_plot(grab_obj(os.path.join(root_dir, qgc.DY_FILENAME), "%s/q%s" % (dj_dirname, v)),
                            output_filename="%s/%s/dy_dijet_%s_norm%s_qflavMatched.%s" % (root_dir, plot_dir, v, rn, OUTPUT_FMT),
                            renorm_axis=rn, title=qgc.DY_Dijet_QFLAV_LABEL, rebin=rebin)
 
-            qgg.do_2D_plot(grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_QCD_.root" % root_dir, "%s/g%s" % (dj_dirname, v)),
+            qgg.do_2D_plot(grab_obj(os.path.join(root_dir, qgc.QCD_FILENAME), "%s/g%s" % (dj_dirname, v)),
                            output_filename="%s/%s/qcd_dijet_%s_norm%s_gflavMatched.%s" % (root_dir, plot_dir, v, rn, OUTPUT_FMT),
                            renorm_axis=rn, title=qgc.QCD_Dijet_GFLAV_LABEL, rebin=rebin)
 
-            qgg.do_2D_plot(grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_QCD_.root" % root_dir, "%s/q%s" % (dj_dirname, v)),
+            qgg.do_2D_plot(grab_obj(os.path.join(root_dir, qgc.QCD_FILENAME), "%s/q%s" % (dj_dirname, v)),
                            output_filename="%s/%s/qcd_dijet_%s_norm%s_qflavMatched.%s" % (root_dir, plot_dir, v, rn, OUTPUT_FMT),
                            renorm_axis=rn, title=qgc.QCD_Dijet_QFLAV_LABEL, rebin=rebin)
 
@@ -107,13 +107,13 @@ def do_all_flavour_fraction_plots(root_dir, plot_dir="flav_fractions", zpj_dirna
     """Do plots of jet flavour fractions vs pT, for both Z+jets and dijets regions"""
     
     # Z+jets
-    qgf.do_flavour_fraction_vs_pt(input_file="%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" % root_dir, 
+    qgf.do_flavour_fraction_vs_pt(input_file=os.path.join(root_dir, qgc.DY_FILENAME), 
                                   title="Z+jets selection",
                                   dirname=zpj_dirname, which=flav_source, var_prepend=var_prepend,
                                   output_filename="%s/zpj_flavour_fractions.%s" % (plot_dir, OUTPUT_FMT))
 
     # Dijets
-    qgf.do_flavour_fraction_vs_pt(input_file="%s/uhh2.AnalysisModuleRunner.MC.MC_QCD_.root" % root_dir, 
+    qgf.do_flavour_fraction_vs_pt(input_file=os.path.join(root_dir, qgc.QCD_FILENAME), 
                                   title="Dijet selection",
                                   dirname=dj_dirname, which=flav_source, var_prepend=var_prepend,
                                   output_filename="%s/dj_flavour_fractions.%s" % (plot_dir, OUTPUT_FMT)) 
@@ -126,12 +126,12 @@ def do_wrong_plots(root_dir, var_prepend="", plot_dir="wrong_flavs", zpj_dirname
     for v in ['jet_LHA', 'jet_pTD', 'jet_width', 'jet_thrust', 'jet_multiplicity']:
         v = "%s%s_vs_pt" % (var_prepend, v)
 
-        h2d_dyj_chs = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" % root_dir, "%s/q%s" % (zpj_dirname, v))
-        h2d_dyj_wrong_chs = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" % root_dir, "%s/g%s" % (zpj_dirname, v))
-        h2d_dyj_qcd_chs = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" % root_dir, "%s/q%s" % (dj_dirname, v))
-        h2d_dyj_qcd_wrong_chs = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" % root_dir, "%s/g%s" % (dj_dirname, v))
-        h2d_qcd_chs = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_QCD_.root" % root_dir, "%s/g%s" % (dj_dirname, v))
-        h2d_qcd_wrong_chs = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_QCD_.root" % root_dir, "%s/q%s" % (dj_dirname, v))
+        h2d_dyj_chs = grab_obj(os.path.join(root_dir, qgc.DY_FILENAME), "%s/q%s" % (zpj_dirname, v))
+        h2d_dyj_wrong_chs = grab_obj(os.path.join(root_dir, qgc.DY_FILENAME), "%s/g%s" % (zpj_dirname, v))
+        h2d_dyj_qcd_chs = grab_obj(os.path.join(root_dir, qgc.DY_FILENAME), "%s/q%s" % (dj_dirname, v))
+        h2d_dyj_qcd_wrong_chs = grab_obj(os.path.join(root_dir, qgc.DY_FILENAME), "%s/g%s" % (dj_dirname, v))
+        h2d_qcd_chs = grab_obj(os.path.join(root_dir, qgc.QCD_FILENAME), "%s/g%s" % (dj_dirname, v))
+        h2d_qcd_wrong_chs = grab_obj(os.path.join(root_dir, qgc.QCD_FILENAME), "%s/q%s" % (dj_dirname, v))
 
         lw = 1
         dy_kwargs_chs = dict(line_color=qgc.DY_COLOUR, fill_color=qgc.DY_COLOUR, label=qgc.DY_ZpJ_QFLAV_LABEL, line_width=lw)
@@ -169,16 +169,16 @@ def do_gen_reco_comparison_plots(root_dir, var_list=None, gen_var_prepend="gen",
         v_reco = "%s%s_vs_pt" % (reco_var_prepend, ang.var)
         v_gen = "%s%s_vs_pt" % (gen_var_prepend, ang.var)
 
-        h2d_dyj_reco = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" % root_dir, "%s/%s" % (zpj_reco_dirname, v_reco))
-        h2d_qcd_reco = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_QCD_.root" % root_dir, "%s/%s" % (dj_reco_dirname, v_reco))
-        h2d_dyj_gen = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" % root_dir, "%s/%s" % (zpj_gen_dirname, v_gen))
-        h2d_qcd_gen = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_QCD_.root" % root_dir, "%s/%s" % (dj_gen_dirname, v_gen))
+        h2d_dyj_reco = grab_obj(os.path.join(root_dir, qgc.DY_FILENAME), "%s/%s" % (zpj_reco_dirname, v_reco))
+        h2d_qcd_reco = grab_obj(os.path.join(root_dir, qgc.QCD_FILENAME), "%s/%s" % (dj_reco_dirname, v_reco))
+        h2d_dyj_gen = grab_obj(os.path.join(root_dir, qgc.DY_FILENAME), "%s/%s" % (zpj_gen_dirname, v_gen))
+        h2d_qcd_gen = grab_obj(os.path.join(root_dir, qgc.QCD_FILENAME), "%s/%s" % (dj_gen_dirname, v_gen))
 
         if "flavour" not in v_reco:
-            h2d_dyj_reco_q = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" % root_dir, "%s/q%s" % (zpj_reco_dirname, v_reco))
-            h2d_qcd_reco_g = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_QCD_.root" % root_dir, "%s/g%s" % (dj_reco_dirname, v_reco))
-            h2d_dyj_gen_q = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" % root_dir, "%s/q%s" % (zpj_gen_dirname, v_gen))
-            h2d_qcd_gen_g = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_QCD_.root" % root_dir, "%s/g%s" % (dj_gen_dirname, v_gen))
+            h2d_dyj_reco_q = grab_obj(os.path.join(root_dir, qgc.DY_FILENAME), "%s/q%s" % (zpj_reco_dirname, v_reco))
+            h2d_qcd_reco_g = grab_obj(os.path.join(root_dir, qgc.QCD_FILENAME), "%s/g%s" % (dj_reco_dirname, v_reco))
+            h2d_dyj_gen_q = grab_obj(os.path.join(root_dir, qgc.DY_FILENAME), "%s/q%s" % (zpj_gen_dirname, v_gen))
+            h2d_qcd_gen_g = grab_obj(os.path.join(root_dir, qgc.QCD_FILENAME), "%s/g%s" % (dj_gen_dirname, v_gen))
 
 
         for (start_val, end_val) in pt_bins:

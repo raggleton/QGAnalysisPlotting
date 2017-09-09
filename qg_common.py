@@ -5,10 +5,11 @@ from collections import namedtuple
 
 
 DY_COLOUR = 880 # kViolet
-QCD_COLOUR = 867 #kAzure+7
+QCD_COLOUR = 867 # kAzure+7
 
-DY_COLOURS = [880, 871, 882, 884]
-QCD_COLOURS = [867, 868, 864, 853]
+# When comparing e.g. PU bins
+DY_COLOURS = [871, 880, 882, 884]
+QCD_COLOURS = [868, 867, 864, 853]
 
 PT_BINS = [(80, 100), (100, 200), (400, 500), (1000, 2000), (80, 2000)]
 THEORY_PT_BINS = [(100, 200), (400, 500), (1000, 2000), (80, 2000)]
@@ -52,3 +53,7 @@ ZPJ_RECOJET_RDIR = "ZPlusJets_QG"
 DJ_RECOJET_RDIR = "Dijet_QG"
 ZPJ_GENJET_RDIR = "ZPlusJets_genjet"
 DJ_GENJET_RDIR = "Dijet_genjet"
+
+# Common filenames
+DY_FILENAME = "uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root"
+QCD_FILENAME = "uhh2.AnalysisModuleRunner.MC.MC_QCD_.root"

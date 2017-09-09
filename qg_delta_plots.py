@@ -102,8 +102,8 @@ def do_pt_min_delta_plots(sources, plot_dir="deltas_ptmin",
             colours = [ROOT.kBlue, ROOT.kRed, ROOT.kGreen+2, ROOT.kOrange-3, ROOT.kMagenta, ROOT.kAzure+1]
 
             for pt_min, this_colour in zip(ptmin_bins, colours):
-                h2d_dyj = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" % source['root_dir'], "%s_ptMin_%d/%s%s" % (source.get('zpj_dirname', zpj_dirname), pt_min, zpj_flav, v))
-                h2d_qcd = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_QCD_.root" % source['root_dir'], "%s_ptMin_%d/%s%s" % (source.get('dj_dirname', dj_dirname), pt_min, dj_flav, v))
+                h2d_dyj = grab_obj(os.path.join(source['root_dir'], qgc.DY_FILENAME), "%s_ptMin_%d/%s%s" % (source.get('zpj_dirname', zpj_dirname), pt_min, zpj_flav, v))
+                h2d_qcd = grab_obj(os.path.join(source['root_dir'], qgc.QCD_FILENAME), "%s_ptMin_%d/%s%s" % (source.get('dj_dirname', dj_dirname), pt_min, dj_flav, v))
                 start_val, end_val = 80, 2000
                 h_dy = get_projection_plot(h2d_dyj, start_val, end_val)
                 if (h_dy.Integral()>0):
@@ -175,8 +175,8 @@ def do_angularity_delta_plots(sources, plot_dir="delta_angularities",
             for ang in var_list:
                 v = "%s%s_vs_pt" % (var_prepend, ang.var)
 
-                h2d_dyj = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" % source['root_dir'], "%s/%s%s" % (source.get('zpj_dirname', zpj_dirname), zpj_flav, v))
-                h2d_qcd = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_QCD_.root" % source['root_dir'], "%s/%s%s" % (source.get('dj_dirname', dj_dirname), dj_flav, v))
+                h2d_dyj = grab_obj(os.path.join(source['root_dir'], qgc.DY_FILENAME), "%s/%s%s" % (source.get('zpj_dirname', zpj_dirname), zpj_flav, v))
+                h2d_qcd = grab_obj(os.path.join(source['root_dir'], qgc.QCD_FILENAME), "%s/%s%s" % (source.get('dj_dirname', dj_dirname), dj_flav, v))
 
                 h_dy = get_projection_plot(h2d_dyj, start_val, end_val)
                 if (h_dy.Integral() > 0):

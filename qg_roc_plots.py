@@ -134,8 +134,8 @@ def do_angularity_roc_plots(sources, plot_dir="roc_angularities_roc", zpj_dirnam
             for ind, ang in enumerate(var_list, 1):
                 v = "%s%s_vs_pt" % (var_prepend, ang.var)
 
-                h2d_dyj = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" % source['root_dir'], "%s/%s%s" % (source.get('zpj_dirname', zpj_dirname), zpj_flav, v))
-                h2d_qcd = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_QCD_.root" % source['root_dir'], "%s/%s%s" % (source.get('dj_dirname', dj_dirname), dj_flav, v))
+                h2d_dyj = grab_obj(os.path.join(source['root_dir'], qgc.DY_FILENAME), "%s/%s%s" % (source.get('zpj_dirname', zpj_dirname), zpj_flav, v))
+                h2d_qcd = grab_obj(os.path.join(source['root_dir'], qgc.QCD_FILENAME), "%s/%s%s" % (source.get('dj_dirname', dj_dirname), dj_flav, v))
 
                 h_dy = get_projection_plot(h2d_dyj, start_val, end_val)
                 if (h_dy.Integral() > 0):
