@@ -50,7 +50,7 @@ OUTPUT_FMT = "pdf"
 
 def do_all_2D_plots(root_dir, plot_dir="plots_2d", zpj_dirname="ZPlusJets_QG", dj_dirname="Dijet_QG", var_list=None, var_prepend=""):
     """Do 2D distributions"""
-    var_list = var_list or qgc.COMMON_VARS
+    var_list = var_list or qgc.COMMON_VARS_WITH_FLAV
     for ang in var_list:
         v = "%s%s_vs_pt" % (var_prepend, ang.var)
 
@@ -288,10 +288,11 @@ def do_reco_pu_comparison_plots(root_dir):
 
 
 def do_gen_plots(root_dir):
-    do_all_2D_plots(root_dir, var_list=qgc.COMMON_VARS, var_prepend="gen", plot_dir="plots_2d_gen",
+    # need to avoid genPArtonFlavour
+    do_all_2D_plots(root_dir, var_list=qgc.COMMON_VARS_WITH_FLAV[:-1], var_prepend="gen", plot_dir="plots_2d_gen",
                     zpj_dirname=qgc.ZPJ_GENJET_RDIR, dj_dirname=qgc.DJ_GENJET_RDIR)
     sources = [{"root_dir": root_dir, 'label': "", "style": {'line_style': 1}}]
-    qgg.do_all_exclusive_plots_comparison(sources=sources, var_list=qgc.COMMON_VARS, var_prepend="gen",
+    qgg.do_all_exclusive_plots_comparison(sources=sources, var_list=qgc.COMMON_VARS_WITH_FLAV[:-1], var_prepend="gen",
                                           plot_dir=os.path.join(root_dir, "plots_dy_vs_qcd_gen"),
                                           zpj_dirname=qgc.ZPJ_GENJET_RDIR, dj_dirname=qgc.DJ_GENJET_RDIR,
                                           pt_bins=qgc.THEORY_PT_BINS, subplot_type=None, do_flav_tagged=True)

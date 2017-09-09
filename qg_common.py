@@ -25,7 +25,7 @@ COMMON_VARS_WITH_FLAV = [
     Angle("jet_genParton_flavour", 0, 0, "Flavour", "PDGID", 8)
 ]
 
-COMMON_VARS = COMMON_VARS_WITH_FLAV[:]
+COMMON_VARS = COMMON_VARS_WITH_FLAV[:-2]
 
 DY_ZpJ_LABEL = "DY+j, Z+jets selection"
 DY_ZpJ_GEN_LABEL = "DY+j, Z+jets selection (GenJets)"
