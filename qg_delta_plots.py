@@ -98,8 +98,9 @@ def do_pt_min_delta_plots(sources, plot_dir="deltas_ptmin",
 
         for source_ind, source in enumerate(sources):
             deltas, conts = [], []
-
-            for ind, pt_min in enumerate(ptmin_bins, 1):
+            # for the component comparison plot
+            colours = [ROOT.kBlue, ROOT.kRed, ROOT.kGreen+2, ROOT.kOrange-3, ROOT.kMagenta, ROOT.kAzure+1]
+            for ind, (pt_min, this_colour) in enumerate(zip(ptmin_bins, colours), 1):
                 h2d_dyj = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" % source['root_dir'], "%s_ptMin_%d/%s%s" % (source.get('zpj_dirname', zpj_dirname), pt_min, zpj_flav, v))
                 h2d_qcd = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_QCD_.root" % source['root_dir'], "%s_ptMin_%d/%s%s" % (source.get('dj_dirname', dj_dirname), pt_min, dj_flav, v))
                 start_val, end_val = 80, 2000
@@ -112,15 +113,24 @@ def do_pt_min_delta_plots(sources, plot_dir="deltas_ptmin",
                     h_qcd.Scale(1./(h_qcd.GetBinWidth(1)*h_qcd.Integral()))
 
                 ddelta_hist = get_ddelta_plot(h_dy, h_qcd)
-                conts.append(Contribution(ddelta_hist, line_width=1, line_style=ind, line_color=(ind*10)+44, fill_color=(ind*10)+44, label="p_{T}^{Min} = %d GeV" % pt_min, rebin_hist=2))
-                deltas.append(calculate_delta(ddelta_hist))
 
+                c = Contribution(ddelta_hist, line_width=1, line_style=ind, 
+                                 marker_color=this_colour, line_color=this_colour, fill_color=this_colour, 
+                                 label="p_{T}^{Min} = %d GeV" % pt_min, rebin_hist=2)
+                conts.append(c)
+
+                deltas.append(calculate_delta(ddelta_hist))
+                
                 if source_ind == 0:
                     bin_labels.append("%d" % pt_min)
 
                 if save_component_hists:
-                    plot_ddelta(ddelta_hist, "%s/delta_ptmin_components/%s_ddelta_ptMin_%d%s.%s" % (plot_dir, ang.var, pt_min, output_append, ofmt),
-                                xtitle=ang.name + " (" + ang.lambda_str + ")", ytitle="d#Delta/d" + ang.lambda_str)
+                    # need to clone here otherwise the colour will be set inside 
+                    # plot_delta, which in turn will nullify whatever colours we chose above.
+                    plot_ddelta(ddelta_hist.Clone(ROOT.TUUID().AsString()), 
+                                "%s/delta_ptmin_components/%s_ddelta_ptMin_%d%s.%s" % (plot_dir, ang.var, pt_min, output_append, ofmt),
+                                xtitle=ang.name + " (" + ang.lambda_str + ")", 
+                                ytitle="d#Delta/d" + ang.lambda_str)
 
             if save_component_hists:
                 p = Plot(conts, what="hist", xtitle=ang.name, ytitle="p.d.f")
