@@ -97,10 +97,11 @@ def do_pt_min_delta_plots(sources, plot_dir="deltas_ptmin",
         graph_contribs, bin_labels = [], []
 
         for source_ind, source in enumerate(sources):
-            deltas, conts = [], []
+            deltas, components = [], []
             # for the component comparison plot
             colours = [ROOT.kBlue, ROOT.kRed, ROOT.kGreen+2, ROOT.kOrange-3, ROOT.kMagenta, ROOT.kAzure+1]
-            for ind, (pt_min, this_colour) in enumerate(zip(ptmin_bins, colours), 1):
+
+            for pt_min, this_colour in zip(ptmin_bins, colours):
                 h2d_dyj = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" % source['root_dir'], "%s_ptMin_%d/%s%s" % (source.get('zpj_dirname', zpj_dirname), pt_min, zpj_flav, v))
                 h2d_qcd = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_QCD_.root" % source['root_dir'], "%s_ptMin_%d/%s%s" % (source.get('dj_dirname', dj_dirname), pt_min, dj_flav, v))
                 start_val, end_val = 80, 2000
@@ -114,10 +115,10 @@ def do_pt_min_delta_plots(sources, plot_dir="deltas_ptmin",
 
                 ddelta_hist = get_ddelta_plot(h_dy, h_qcd)
 
-                c = Contribution(ddelta_hist, line_width=1, line_style=ind, 
+                c = Contribution(ddelta_hist, line_width=1,
                                  marker_color=this_colour, line_color=this_colour, fill_color=this_colour, 
-                                 label="p_{T}^{Min} = %d GeV" % pt_min, rebin_hist=2)
-                conts.append(c)
+                                 label="p_{T}^{Min} = %d GeV" % pt_min, rebin_hist=1)
+                components.append(c)
 
                 deltas.append(calculate_delta(ddelta_hist))
                 
@@ -133,7 +134,8 @@ def do_pt_min_delta_plots(sources, plot_dir="deltas_ptmin",
                                 ytitle="d#Delta/d" + ang.lambda_str)
 
             if save_component_hists:
-                p = Plot(conts, what="hist", xtitle=ang.name, ytitle="p.d.f")
+                # plot all differential distributions for this pt bin on one plot
+                p = Plot(components, what="hist", xtitle=ang.name, ytitle="p.d.f")
                 p.plot("NOSTACK HISTE")
                 p.save("%s/delta_ptmin_components/%s_ddelta_ptMin_comparison%s.%s" % (plot_dir, ang.var, output_append, ofmt))
 
@@ -167,10 +169,14 @@ def do_angularity_delta_plots(sources, plot_dir="delta_angularities",
         graph_contribs, bin_labels = [], []
 
         for source_ind, source in enumerate(sources):
-            deltas = []
+            deltas, components = [], []
+
+            # for the component comparison plot
+            # skip 1st one so double up
+            colours = [ROOT.kBlue, ROOT.kBlue, ROOT.kRed, ROOT.kGreen+2, ROOT.kOrange-3, ROOT.kAzure+1]
 
             # construct a graph of angularities for this source
-            for ind, ang in enumerate(var_list, 1):
+            for ang, this_colour in zip(var_list, colours):
                 v = "%s%s_vs_pt" % (var_prepend, ang.var)
 
                 h2d_dyj = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" % source['root_dir'], "%s/%s%s" % (source.get('zpj_dirname', zpj_dirname), zpj_flav, v))
@@ -191,8 +197,24 @@ def do_angularity_delta_plots(sources, plot_dir="delta_angularities",
                     bin_labels.append("#splitline{%s}{%s}" % (ang.name, ang.lambda_str))
 
                 if save_component_hists:
-                    plot_ddelta(ddelta_hist, "%s/delta_angularities_components/angularities_pt%dto%d_ddelta_%s%s.%s" % (plot_dir, start_val, end_val, ang.var, output_append, ofmt),
+                    plot_ddelta(ddelta_hist.Clone(ddelta_hist.GetName()+"x"), "%s/delta_angularities_components/angularities_pt%dto%d_ddelta_%s%s.%s" % (plot_dir, start_val, end_val, ang.var, output_append, ofmt),
                                 xtitle=ang.name + " (" + ang.lambda_str + ")", ytitle="d#Delta/d" + ang.lambda_str)
+                
+                if ang.var != "jet_multiplicity":
+                    c = Contribution(ddelta_hist, line_width=1,
+                                     marker_color=this_colour, line_color=this_colour, fill_color=this_colour, 
+                                     label=ang.name + " (" + ang.lambda_str + ")", rebin_hist=1)
+                    components.append(c)
+
+            if save_component_hists:
+                # plot all differential distributions for this pt bin on one plot
+                p = Plot(components, what="hist", 
+                         xtitle="#lambda^{#kappa}_{#beta}", 
+                         ytitle="d#Delta/d#lambda", 
+                         title="%d < p_{T}^{jet} < %d GeV" % (start_val, end_val))
+                p.plot("NOSTACK HISTE")
+                prefix = "pt%dto%d" % (start_val, end_val)
+                p.save("%s/delta_angularities_components/%s_ddelta_angularity_comparison%s.%s" % (plot_dir, prefix, output_append, ofmt))
 
             gr = construct_deltas_graph(deltas)
             gr.SetName(source.get("label", ""))
