@@ -83,7 +83,7 @@ def do_all_exclusive_plots_comparison(sources, plot_dir="plots_dy_vs_qcd", zpj_d
     Relies on QCD sample file being called uhh2.AnalysisModuleRunner.MC.MC_QCD_.root,
     and the DYJetsToLL one being called uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root
     """
-    var_list = var_list or COMMON_VARS[:]
+    var_list = var_list or COMMON_VARS_WITH_FLAV
     pt_bins = pt_bins or PT_BINS
 
     if isinstance(sources, dict):

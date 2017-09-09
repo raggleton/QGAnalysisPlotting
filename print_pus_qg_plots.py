@@ -38,7 +38,7 @@ def do_chs_vs_puppi_plots(chs_dir, puppi_dir, plot_dir):
         {"root_dir": chs_dir, 'label': ", CHS", "style": {'line_style': 1}},
         {"root_dir": puppi_dir, 'label': ", PUPPI", "style": {'line_style': 3}}
     ]
-    qgg.do_all_exclusive_plots_comparison(sources, var_list=qgc.COMMON_VARS[:-2],
+    qgg.do_all_exclusive_plots_comparison(sources, var_list=qgc.COMMON_VARS,
                                           plot_dir=os.path.join(plot_dir, "chs_vs_puppi"),
                                           zpj_dirname="ZPlusJets_QG", dj_dirname="Dijet_QG",
                                           var_prepend="", pt_bins=None,

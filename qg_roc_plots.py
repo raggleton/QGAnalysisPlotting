@@ -114,7 +114,7 @@ def do_roc_plot(hist_signal, hist_background, output_filename):
 def do_angularity_roc_plots(sources, plot_dir="roc_angularities_roc", zpj_dirname="ZPlusJets_QG", dj_dirname="Dijet_QG",
                                       pt_bins=None, var_list=None, var_prepend="", flavour_tag=False):
     """Do roc plots, with different angularities on the same plot"""
-    var_list = var_list or COMMON_VARS[:-2]
+    var_list = var_list or COMMON_VARS
     pt_bins = pt_bins or PT_BINS
     zpj_flav = "q" if flavour_tag else ""
     dj_flav = "g" if flavour_tag else ""

@@ -38,7 +38,7 @@ def do_pythia_comparison_distribution_plots(mgpythia_dir, pythia_only_dir, plot_
         {"root_dir": mgpythia_dir, 'label': "Madgraph+Pythia", "style": {'line_style': 1}},
         {"root_dir": pythia_only_dir, 'label': "Pythia only", "style": {'line_style': 1, 'line_color': ROOT.kRed, 'fill_color': ROOT.kRed, }}
     ]
-    qgg.do_all_exclusive_plots_comparison(sources, var_list=qgc.COMMON_VARS[:],
+    qgg.do_all_exclusive_plots_comparison(sources, var_list=qgc.COMMON_VARS_WITH_FLAV,
                                           plot_dir=os.path.join(plot_dir, "mg_pythia_vs_pythia_only"),
                                           zpj_dirname="",
                                           subplot_type=None, do_flav_tagged=False,
@@ -49,7 +49,7 @@ def do_pythia_comparison_distribution_plots(mgpythia_dir, pythia_only_dir, plot_
         {"root_dir": mgpythia_dir, 'label': "Madgraph+Pythia", "style": {'line_style': 1}},
         {"root_dir": pythia_only_dir, 'label': "Pythia only", "style": {'line_style': 1, 'line_color': ROOT.kRed, 'fill_color': ROOT.kRed}}
     ]
-    qgg.do_all_exclusive_plots_comparison(sources, var_list=qgc.COMMON_VARS[:-2], var_prepend="gen",
+    qgg.do_all_exclusive_plots_comparison(sources, var_list=qgc.COMMON_VARS_WITH_FLAV, var_prepend="gen",
                                           plot_dir=os.path.join(plot_dir, "mg_pythia_vs_pythia_only_gen"),
                                           dj_dirname=qgc.DJ_GENJET_RDIR, zpj_dirname="",
                                           subplot_type=None, do_flav_tagged=False,
@@ -66,15 +66,17 @@ def do_pythia_comparison_flav_fractions_plots(mgpythia_dir, pythia_only_dir, plo
     ]
     # reco
     qgf.compare_flavour_fractions_vs_pt(input_files,
-                                        [qgc.DJ_RECOJET_RDIR, qgc.DJ_RECOJET_RDIR],
-                                        [qgc.QCD_Dijet_LABEL + " Madgraph+Pythia", qgc.QCD_Dijet_LABEL+" Pythia only"],
-                                        "g", "%s/flav_fractions/compare_g_frac.%s" % (plot_dir, OUTPUT_FMT),
+                                        dirnames=[qgc.DJ_RECOJET_RDIR, qgc.DJ_RECOJET_RDIR],
+                                        labels=[qgc.QCD_Dijet_LABEL + " Madgraph+Pythia", qgc.QCD_Dijet_LABEL+" Pythia only"],
+                                        flav="g", 
+                                        output_filename="%s/flav_fractions/compare_g_frac.%s" % (plot_dir, OUTPUT_FMT),
                                         title="%s PF %s jets" % (algo, pus.upper()), var_prepend="")
     # gen
     qgf.compare_flavour_fractions_vs_pt(input_files,
-                                        [qgc.DJ_GENJET_RDIR, qgc.DJ_GENJET_RDIR],
-                                        [qgc.QCD_Dijet_LABEL + " Madgraph+Pythia", qgc.QCD_Dijet_LABEL+" Pythia only"],
-                                        "g", "%s/flav_fractions_gen/compare_g_frac.%s" % (plot_dir, OUTPUT_FMT),
+                                        dirnames=[qgc.DJ_GENJET_RDIR, qgc.DJ_GENJET_RDIR],
+                                        labels=[qgc.QCD_Dijet_LABEL + " Madgraph+Pythia", qgc.QCD_Dijet_LABEL+" Pythia only"],
+                                        flav="g", 
+                                        output_filename="%s/flav_fractions_gen/compare_g_frac.%s" % (plot_dir, OUTPUT_FMT),
                                         title="%s GenJets" % (algo), var_prepend="gen")
 
 

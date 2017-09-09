@@ -57,12 +57,12 @@ if __name__ == '__main__':
         PLOT_DIR = AK8_DIR
         
         # reco jets
-        do_jet_algo_comparison_plots(AK4_DIR, AK8_DIR, var_list=qgc.COMMON_VARS[:-2],
+        do_jet_algo_comparison_plots(AK4_DIR, AK8_DIR, var_list=qgc.COMMON_VARS,
                                      plot_dir=os.path.join(PLOT_DIR, "compare_jet_algo"))
         
         # gen jets
         do_jet_algo_comparison_plots(AK4_DIR, AK8_DIR, 
-                                     var_list=qgc.COMMON_VARS[:-2], var_prepend="gen", 
+                                     var_list=qgc.COMMON_VARS, var_prepend="gen", 
                                      plot_dir=os.path.join(PLOT_DIR, "compare_jet_algo_gen"),
                                      zpj_dirname=qgc.ZPJ_GENJET_RDIR, dj_dirname=qgc.DJ_GENJET_RDIR, 
                                      pt_bins=qgc.THEORY_PT_BINS, subplot_type=None)

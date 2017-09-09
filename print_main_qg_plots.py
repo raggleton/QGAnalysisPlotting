@@ -220,7 +220,7 @@ def do_gen_reco_comparison_plots(root_dir, var_list=None, gen_var_prepend="gen",
 def do_reco_plots(root_dir):
     do_all_2D_plots(root_dir)
     sources = [{"root_dir": root_dir, 'label': "", "style": {'line_style': 1}}]
-    qgg.do_all_exclusive_plots_comparison(sources=sources, var_list=qgc.COMMON_VARS[:-1],
+    qgg.do_all_exclusive_plots_comparison(sources=sources, var_list=qgc.COMMON_VARS_WITH_FLAV,
                                           plot_dir=os.path.join(root_dir, "plots_dy_vs_qcd"),
                                           pt_bins=qgc.THEORY_PT_BINS, subplot_type=None, do_flav_tagged=True)
     # qgf.do_flavour_fraction_vs_pt(root_dir)
@@ -228,10 +228,10 @@ def do_reco_plots(root_dir):
     do_reco_pu_comparison_plots(root_dir)
 
     # Separation plots
-    qgd.do_angularity_delta_plots(sources, var_list=qgc.COMMON_VARS[0:-2], pt_bins=qgc.THEORY_PT_BINS, 
+    qgd.do_angularity_delta_plots(sources, var_list=qgc.COMMON_VARS, pt_bins=qgc.THEORY_PT_BINS, 
                                   plot_dir=os.path.join(root_dir, 'delta_angularities'),
                                   save_component_hists=True)
-    qgr.do_angularity_roc_plots(sources, var_list=qgc.COMMON_VARS[0:-2], pt_bins=qgc.THEORY_PT_BINS,
+    qgr.do_angularity_roc_plots(sources, var_list=qgc.COMMON_VARS, pt_bins=qgc.THEORY_PT_BINS,
                                 plot_dir=os.path.join(root_dir, 'roc_angularities'))
     
 
@@ -250,10 +250,10 @@ def do_reco_pu_comparison_plots(root_dir):
             "dy_style": {'line_color': qgc.DY_COLOURS[ind], 'fill_color': qgc.DY_COLOURS[ind]},
             "qcd_style": {'line_color': qgc.QCD_COLOURS[ind], 'fill_color': qgc.QCD_COLOURS[ind]}
         })
-    qgg.do_all_exclusive_plots_comparison(sources=sources, var_list=qgc.COMMON_VARS[1:-2], zpj_dirname=None,
+    qgg.do_all_exclusive_plots_comparison(sources=sources, var_list=qgc.COMMON_VARS, zpj_dirname=None,
                                           plot_dir=os.path.join(root_dir, "plots_dy_vs_qcd_compare_pu_dijet"),
                                           pt_bins=qgc.THEORY_PT_BINS, subplot_type="ratio", do_flav_tagged=False)
-    qgg.do_all_exclusive_plots_comparison(sources=sources, var_list=qgc.COMMON_VARS[1:-2], dj_dirname=None,
+    qgg.do_all_exclusive_plots_comparison(sources=sources, var_list=qgc.COMMON_VARS, dj_dirname=None,
                                           plot_dir=os.path.join(root_dir, "plots_dy_vs_qcd_compare_pu_zpj"),
                                           pt_bins=qgc.THEORY_PT_BINS, subplot_type="ratio", do_flav_tagged=False)
 
@@ -263,20 +263,20 @@ def do_reco_pu_comparison_plots(root_dir):
         sources[ind]['style']['line_color'] = qgc.DY_COLOURS[ind]
         if ind == 2:
             qgd.do_angularity_delta_plots(sources[ind:ind+1], 
-                                          var_list=qgc.COMMON_VARS[2:-2],
+                                          var_list=qgc.COMMON_VARS,
                                           plot_dir=os.path.join(root_dir, "deltas_angularities_compare_pu_PU_%d_to_%d" % (pu_bins[ind][0], pu_bins[ind][1])),
                                           pt_bins=qgc.THEORY_PT_BINS, save_component_hists=True)
 
-    qgd.do_angularity_delta_plots(sources, var_list=qgc.COMMON_VARS[:-2],
+    qgd.do_angularity_delta_plots(sources, var_list=qgc.COMMON_VARS,
                                   plot_dir=os.path.join(root_dir, "deltas_angularities_compare_pu"),
                                   pt_bins=qgc.THEORY_PT_BINS)
 
 
 def do_gen_plots(root_dir):
-    do_all_2D_plots(root_dir, var_list=qgc.COMMON_VARS[:-2], var_prepend="gen", plot_dir="plots_2d_gen",
+    do_all_2D_plots(root_dir, var_list=qgc.COMMON_VARS, var_prepend="gen", plot_dir="plots_2d_gen",
                     zpj_dirname=qgc.ZPJ_GENJET_RDIR, dj_dirname=qgc.DJ_GENJET_RDIR)
     sources = [{"root_dir": root_dir, 'label': "", "style": {'line_style': 1}}]
-    qgg.do_all_exclusive_plots_comparison(sources=sources, var_list=qgc.COMMON_VARS[:-2], var_prepend="gen",
+    qgg.do_all_exclusive_plots_comparison(sources=sources, var_list=qgc.COMMON_VARS, var_prepend="gen",
                                           plot_dir=os.path.join(root_dir, "plots_dy_vs_qcd_gen"),
                                           zpj_dirname=qgc.ZPJ_GENJET_RDIR, dj_dirname=qgc.DJ_GENJET_RDIR,
                                           pt_bins=qgc.THEORY_PT_BINS, subplot_type=None, do_flav_tagged=True)
@@ -288,27 +288,27 @@ def do_gen_plots(root_dir):
     #                              plot_dir="plot_reco_gen", zpj_reco_dirname=qgc.ZPJ_RECOJET_RDIR, dj_reco_dirname=qgc.DJ_RECOJET_RDIR,
     #                              zpj_gen_dirname=qgc.ZPJ_GENJET_RDIR, dj_gen_dirname=qgc.DJ_GENJET_RDIR, pt_bins=qgc.THEORY_PT_BINS)
 
-    qgr.do_angularity_roc_plots(sources, var_list=qgc.COMMON_VARS[0:-2], pt_bins=qgc.THEORY_PT_BINS,
+    qgr.do_angularity_roc_plots(sources, var_list=qgc.COMMON_VARS, pt_bins=qgc.THEORY_PT_BINS,
                                 zpj_dirname=qgc.ZPJ_GENJET_RDIR, dj_dirname=qgc.DJ_GENJET_RDIR, var_prepend="gen",
                                 plot_dir=os.path.join(root_dir, 'roc_angularities_gen'))
 
 
     # Separation plots
-    qgd.do_pt_min_delta_plots(sources, var_list=qgc.COMMON_VARS[0:-2], var_prepend="gen",
+    qgd.do_pt_min_delta_plots(sources, var_list=qgc.COMMON_VARS, var_prepend="gen",
                               plot_dir=os.path.join(root_dir, "deltas_ptMin_gen"),
                               zpj_dirname=qgc.ZPJ_GENJET_RDIR, dj_dirname=qgc.DJ_GENJET_RDIR, save_component_hists=True)
-    qgd.do_angularity_delta_plots(sources, var_list=qgc.COMMON_VARS[:-2], var_prepend="gen",
+    qgd.do_angularity_delta_plots(sources, var_list=qgc.COMMON_VARS, var_prepend="gen",
                                   plot_dir=os.path.join(root_dir, "deltas_angularities_gen"),
                                   zpj_dirname=qgc.ZPJ_GENJET_RDIR, dj_dirname=qgc.DJ_GENJET_RDIR,
                                   pt_bins=qgc.THEORY_PT_BINS, save_component_hists=True)
     # flav-tagged versions
     if root_dir == HERWIG_AK4_DIR:
       return
-    qgd.do_pt_min_delta_plots(sources, var_list=qgc.COMMON_VARS[0:-2], var_prepend="gen",
+    qgd.do_pt_min_delta_plots(sources, var_list=qgc.COMMON_VARS, var_prepend="gen",
                               plot_dir=os.path.join(root_dir, "deltas_ptMin_gen"),
                               zpj_dirname=qgc.ZPJ_GENJET_RDIR, dj_dirname=qgc.DJ_GENJET_RDIR,
                               flavour_tag=True, save_component_hists=True)
-    qgd.do_angularity_delta_plots(sources, var_list=qgc.COMMON_VARS[:-2], var_prepend="gen",
+    qgd.do_angularity_delta_plots(sources, var_list=qgc.COMMON_VARS, var_prepend="gen",
                                   plot_dir=os.path.join(root_dir, "deltas_angularities_gen"),
                                   zpj_dirname=qgc.ZPJ_GENJET_RDIR, dj_dirname=qgc.DJ_GENJET_RDIR,
                                   pt_bins=qgc.THEORY_PT_BINS, flavour_tag=True, save_component_hists=True)
