@@ -40,15 +40,20 @@ def make_roc_graph(hist_signal, hist_background):
 
     # forward is integral from 0 to x
     signal_cum_forward = hist_signal.GetCumulative(True, "_cumFwd")
-    signal_cum_forward.Scale(1./signal_cum_forward.GetMaximum())
+    if (signal_cum_forward.GetMaximum() > 0):
+        signal_cum_forward.Scale(1./signal_cum_forward.GetMaximum())
+    
     background_cum_forward = hist_background.GetCumulative(True, "_cumFwd")
-    background_cum_forward.Scale(1./background_cum_forward.GetMaximum())
+    if (background_cum_forward.GetMaximum() > 0):
+        background_cum_forward.Scale(1./background_cum_forward.GetMaximum())
 
     # backward is from x to 1
     signal_cum_backward = hist_signal.GetCumulative(False, "_cumBwd")
-    signal_cum_backward.Scale(1./signal_cum_backward.GetMaximum())
+    if (signal_cum_backward.GetMaximum() > 0):
+        signal_cum_backward.Scale(1./signal_cum_backward.GetMaximum())
     background_cum_backward = hist_background.GetCumulative(False, "_cumBwd")
-    background_cum_backward.Scale(1./background_cum_backward.GetMaximum())
+    if (background_cum_backward.GetMaximum() > 0):
+        background_cum_backward.Scale(1./background_cum_backward.GetMaximum())
 
     # p = Plot([Contribution(signal_cum_forward, label="signalFwd", line_color=ROOT.kRed),
     #           Contribution(background_cum_forward, label="bkgFwd", line_color=ROOT.kBlue)],
