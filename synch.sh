@@ -11,12 +11,18 @@ function sync {
         mkdir "$WORKDIR"
     fi
 
-    # Remember to change this
-    GEN="MGPythia"
-    GEN="Herwig"
-    # GEN="PythiaOnlyFlat"
-
-    rsync -avzP NAF:"/nfs/dust/cms/user/aggleton/CMSSW_8_0_24_patch1/src/UHH2/QGAnalysis/Selection/$GEN/$WORKDIR/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" "$WORKDIR/"
+    GEN=""
+    if [[ "$WORKDIR" == *"_mgpythia"* ]]; then
+        GEN="MGPythia"
+    elif [[ "$WORKDIR" == *"_herwig"* ]]; then
+        GEN="Herwig"
+    elif [[ "$WORKDIR" == *"_pythiaOnlyFlat"* ]]; then
+        GEN="PythiaOnlyFlat"
+    fi
+    
+    if [[ "$WORKDIR" != *"_pythiaOnlyFlat"* ]]; then
+        rsync -avzP NAF:"/nfs/dust/cms/user/aggleton/CMSSW_8_0_24_patch1/src/UHH2/QGAnalysis/Selection/$GEN/$WORKDIR/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" "$WORKDIR/"
+    fi
     rsync -avzP NAF:"/nfs/dust/cms/user/aggleton/CMSSW_8_0_24_patch1/src/UHH2/QGAnalysis/Selection/$GEN/$WORKDIR/uhh2.AnalysisModuleRunner.MC.MC_QCD_.root" "$WORKDIR/"
 }
 
