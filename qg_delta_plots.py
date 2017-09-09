@@ -119,13 +119,13 @@ def do_pt_min_delta_plots(sources, plot_dir="deltas_ptmin",
                     bin_labels.append("%d" % pt_min)
 
                 if save_component_hists:
-                    plot_ddelta(ddelta_hist, "%s/%s/%s_ddelta_ptMin_%d%s.%s" % (source['root_dir'], plot_dir, ang.var, pt_min, output_append, ofmt),
+                    plot_ddelta(ddelta_hist, "%s/delta_ptmin_components/%s_ddelta_ptMin_%d%s.%s" % (plot_dir, ang.var, pt_min, output_append, ofmt),
                                 xtitle=ang.name + " (" + ang.lambda_str + ")", ytitle="d#Delta/d" + ang.lambda_str)
 
             if save_component_hists:
                 p = Plot(conts, what="hist", xtitle=ang.name, ytitle="p.d.f")
                 p.plot("NOSTACK HISTE")
-                p.save("%s/%s/%s_ddelta_ptMin_comparison%s.%s" % (source['root_dir'], plot_dir, ang.var, output_append, ofmt))
+                p.save("%s/delta_ptmin_components/%s_ddelta_ptMin_comparison%s.%s" % (plot_dir, ang.var, output_append, ofmt))
 
             gr = construct_deltas_graph(deltas)
             gr.SetName(source.get("label", ""))
@@ -181,7 +181,7 @@ def do_angularity_delta_plots(sources, plot_dir="delta_angularities",
                     bin_labels.append("#splitline{%s}{%s}" % (ang.name, ang.lambda_str))
 
                 if save_component_hists:
-                    plot_ddelta(ddelta_hist, "%s/%s/angularities_pt%dto%d_ddelta_%s%s.%s" % (source['root_dir'], plot_dir, start_val, end_val, ang.var, output_append, ofmt),
+                    plot_ddelta(ddelta_hist, "%s/delta_angularities_components/angularities_pt%dto%d_ddelta_%s%s.%s" % (plot_dir, start_val, end_val, ang.var, output_append, ofmt),
                                 xtitle=ang.name + " (" + ang.lambda_str + ")", ytitle="d#Delta/d" + ang.lambda_str)
 
             gr = construct_deltas_graph(deltas)
