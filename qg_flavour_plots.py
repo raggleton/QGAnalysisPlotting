@@ -30,6 +30,10 @@ ROOT.gStyle.SetOptStat(0)
 
 
 def get_flavour_fractions(input_file, dirname, which="", var_prepend=""):
+    """
+    which : str
+        Which flavour to use, either "" or genParton_
+    """
     h2d_flav = grab_obj(input_file, "%s/%sjet_%sflavour_vs_pt" % (dirname, var_prepend, which))
 
     h2d_flav.Rebin2D(1, 5)
@@ -99,14 +103,15 @@ def do_flavour_fraction_vs_pt(input_file, dirname, output_filename, title="", wh
     gr_flav_g = ROOT.TGraph(len(x_bins), np.array(x_bins), np.array(flav_dict['g']))
     # gr_flav_uds = ROOT.TGraph(len(x_bins), np.array(x_bins), np.array([u+d+s for u, d, s in zip(flav_dict['u'], flav_dict['d'], flav_dict['s'])]))
 
-    plot_u = Contribution(gr_flav_u, label="u frac", line_color=ROOT.kRed, marker_color=ROOT.kRed)
-    plot_d = Contribution(gr_flav_d, label="d frac", line_color=ROOT.kBlue, marker_color=ROOT.kBlue)
-    plot_s = Contribution(gr_flav_s, label="s frac", line_color=ROOT.kBlack, marker_color=ROOT.kBlack)
-    plot_c = Contribution(gr_flav_c, label="c frac", line_color=ROOT.kGreen-3, marker_color=ROOT.kGreen-3)
-    plot_b = Contribution(gr_flav_b, label="b frac", line_color=ROOT.kOrange, marker_color=ROOT.kOrange)
-    plot_g = Contribution(gr_flav_g, label="g frac", line_color=ROOT.kViolet, marker_color=ROOT.kViolet)
+    plot_u = Contribution(gr_flav_u, label="u fraction", line_color=ROOT.kRed, marker_color=ROOT.kRed)
+    plot_d = Contribution(gr_flav_d, label="d fraction", line_color=ROOT.kBlue, marker_color=ROOT.kBlue)
+    plot_s = Contribution(gr_flav_s, label="s fraction", line_color=ROOT.kBlack, marker_color=ROOT.kBlack)
+    plot_c = Contribution(gr_flav_c, label="c fraction", line_color=ROOT.kGreen-3, marker_color=ROOT.kGreen-3)
+    plot_b = Contribution(gr_flav_b, label="b fraction", line_color=ROOT.kOrange, marker_color=ROOT.kOrange)
+    plot_g = Contribution(gr_flav_g, label="g fraction", line_color=ROOT.kViolet, marker_color=ROOT.kViolet)
     # plot_uds = Contribution(gr_flav_uds, label="uds frac", line_color=ROOT.kOrange+2, marker_color=ROOT.kOrange+2)
 
-    p_flav = Plot([plot_u, plot_d, plot_s, plot_g, plot_c, plot_b], what='graph', xtitle="p_{T}^{jet} [GeV]", title=title)
+    p_flav = Plot([plot_u, plot_d, plot_s, plot_c, plot_b, plot_g], what='graph', 
+                  xtitle="p_{T}^{jet} [GeV]", ytitle="Fraction", title=title, ylim=[0, 1])
     p_flav.plot("ALP")
     p_flav.save(output_filename)
