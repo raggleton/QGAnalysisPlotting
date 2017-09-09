@@ -171,12 +171,8 @@ def do_angularity_delta_plots(sources, plot_dir="delta_angularities",
         for source_ind, source in enumerate(sources):
             deltas, components = [], []
 
-            # for the component comparison plot
-            # skip 1st one so double up
-            colours = [ROOT.kBlue, ROOT.kBlue, ROOT.kRed, ROOT.kGreen+2, ROOT.kOrange-3, ROOT.kAzure+1]
-
             # construct a graph of angularities for this source
-            for ang, this_colour in zip(var_list, colours):
+            for ang in var_list:
                 v = "%s%s_vs_pt" % (var_prepend, ang.var)
 
                 h2d_dyj = grab_obj("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" % source['root_dir'], "%s/%s%s" % (source.get('zpj_dirname', zpj_dirname), zpj_flav, v))
@@ -202,7 +198,7 @@ def do_angularity_delta_plots(sources, plot_dir="delta_angularities",
                 
                 if ang.var != "jet_multiplicity":
                     c = Contribution(ddelta_hist, line_width=1,
-                                     marker_color=this_colour, line_color=this_colour, fill_color=this_colour, 
+                                     marker_color=ang.colour, line_color=ang.colour, fill_color=ang.colour, 
                                      label=ang.name + " (" + ang.lambda_str + ")", rebin_hist=1)
                     components.append(c)
 
