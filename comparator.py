@@ -92,7 +92,7 @@ class Contribution(object):
 
     def __init__(self, obj, label=None,
                  line_width=1, line_color=ROOT.kRed, line_style=1,
-                 fill_color=ROOT.kRed, fill_style=1,
+                 fill_color=ROOT.kRed, fill_style=0,
                  marker_size=1, marker_color=ROOT.kRed, marker_style=1,
                  normalise_hist=False, rebin_hist=None):
         """
