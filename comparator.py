@@ -82,10 +82,12 @@ def grab_obj(file_name, obj_name):
     # TODO: checks!
     input_file = cu.open_root_file(file_name)
     obj = cu.get_from_file(input_file, obj_name)
-    obj.SetDirectory(0)  # Ownership kludge
-    input_file.Close()
-    return obj.Clone(ROOT.TUUID().AsString())
-
+    if isinstance(obj, (ROOT.TH1, ROOT.TGraph)):
+        obj.SetDirectory(0)  # Ownership kludge
+        input_file.Close()
+        return obj.Clone(ROOT.TUUID().AsString())
+    else:
+        return obj
 
 class Contribution(object):
     """Basic class to handle information about one contribution to a canvas."""
@@ -448,7 +450,7 @@ class Plot(object):
                 # self.subplot_container.SetMinimum(self.subplot_ratio_lim[0])  # use this, not SetRangeUser()
                 self.subplot_container.SetMinimum(0)  # use this, not SetRangeUser()
                 bin_meds = [np.mean(cu.th1_to_arr(h)) for h in self.subplot_contributions]
-                self.subplot_container.SetMaximum(min(5, max(2., 2*max(bin_meds))))
+                self.subplot_container.SetMaximum(min(50, max(1.5, 2*max(bin_meds))))
                 xax = modifier.GetXaxis()
                 self.subplot_line = ROOT.TLine(xax.GetXmin(), 1., xax.GetXmax(), 1.)
                 self.subplot_line.SetLineStyle(2)
