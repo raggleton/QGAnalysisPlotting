@@ -1,6 +1,6 @@
 """Common vars for doing QG plots"""
 
-
+import argparse
 from collections import namedtuple
 
 
@@ -57,3 +57,16 @@ DJ_GENJET_RDIR = "Dijet_genjet"
 # Common filenames
 DY_FILENAME = "uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root"
 QCD_FILENAME = "uhh2.AnalysisModuleRunner.MC.MC_QCD_.root"
+
+
+def get_parser():
+    """Return a parser to loop over several input dirs"""
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('workdirs', 
+                        nargs='+',
+                        help='Workdir(s) with ROOT files to process. '
+                        'Each directory must have ROOT files '
+                        '"uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" '
+                        'and "uhh2.AnalysisModuleRunner.MC.MC_QCD_.root" in it. '
+                        'Several dirs can be specified here, separated by a space.')
+    return parser

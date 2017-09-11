@@ -30,8 +30,6 @@ ROOT.gROOT.SetBatch(1)
 ROOT.TH1.SetDefaultSumw2()
 ROOT.gStyle.SetOptStat(0)
 
-ROOT_DIR = "workdir_ak4chs_mgpythia"
-
 # Control output format
 OUTPUT_FMT = "pdf"
 
@@ -84,10 +82,10 @@ def do_all_1D_plots_in_dir(directories, output_dir, components_styles_dicts=None
         p.save(os.path.join(output_dir, obj_name + "." + OUTPUT_FMT))
 
 
-def do_dijet_distributions():
+def do_dijet_distributions(root_dir):
     """Do plots comparing different jet flavs in dijet region"""
     dir_names = ["Dijet_Presel_gg", "Dijet_Presel_qg", "Dijet_Presel_qq"]
-    root_file = cu.open_root_file(os.path.join(ROOT_DIR, qgc.QCD_FILENAME))
+    root_file = cu.open_root_file(os.path.join(root_dir, qgc.QCD_FILENAME))
     directories = [cu.get_from_file(root_file, dn) for dn in dir_names]
     gg_col = ROOT.kRed
     qg_col = ROOT.kGreen+2
@@ -98,22 +96,22 @@ def do_dijet_distributions():
         {"label": "qq", "line_color": qq_col, "fill_color": qq_col, "marker_color": qq_col},
     ]
     do_all_1D_plots_in_dir(directories=directories, 
-                           output_dir=os.path.join(ROOT_DIR, "Dijet_kin_comparison"),
+                           output_dir=os.path.join(root_dir, "Dijet_kin_comparison"),
                            components_styles_dicts=csd)
     # Do stacked, filled version
     for x in csd:
         x['fill_style'] = 1001
     do_all_1D_plots_in_dir(directories=directories, 
-                           output_dir=os.path.join(ROOT_DIR, "Dijet_kin_comparison_stacked"),
+                           output_dir=os.path.join(root_dir, "Dijet_kin_comparison_stacked"),
                            components_styles_dicts=csd,
                            draw_opts="HIST",
                            do_ratio=False)
 
 
-def do_zpj_distributions():
+def do_zpj_distributions(root_dir):
     """Do plots comparing different jet flavs in z+jets region"""
     dir_names = ["ZPlusJets_Presel_q", "ZPlusJets_Presel_g"]
-    root_file = cu.open_root_file(os.path.join(ROOT_DIR, qgc.DY_FILENAME))
+    root_file = cu.open_root_file(os.path.join(root_dir, qgc.DY_FILENAME))
     directories = [cu.get_from_file(root_file, dn) for dn in dir_names]
     g_col = ROOT.kRed
     q_col = ROOT.kBlue
@@ -122,17 +120,23 @@ def do_zpj_distributions():
         {"label": "g", "line_color": g_col, "fill_color": g_col, "marker_color": g_col}
     ]
     do_all_1D_plots_in_dir(directories=directories, 
-                           output_dir=os.path.join(ROOT_DIR, "ZpJ_kin_comparison"),
+                           output_dir=os.path.join(root_dir, "ZpJ_kin_comparison"),
                            components_styles_dicts=csd)
     # Do stacked, filled version
     for x in csd:
         x['fill_style'] = 1001
     do_all_1D_plots_in_dir(directories=directories, 
-                           output_dir=os.path.join(ROOT_DIR, "ZpJ_kin_comparison_stacked"),
+                           output_dir=os.path.join(root_dir, "ZpJ_kin_comparison_stacked"),
                            components_styles_dicts=csd,
                            draw_opts="HIST",
                            do_ratio=False)
 
+
 if __name__ == "__main__":
-    do_dijet_distributions()
-    do_zpj_distributions()
+    parser = qgc.get_parser()
+    args = parser.parse_args()
+
+    for workdir in args.workdirs:
+        do_dijet_distributions(workdir)
+        do_zpj_distributions(workdir)
+

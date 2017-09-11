@@ -357,8 +357,12 @@ def do_gen_plots(root_dir):
 
 
 if __name__ == '__main__':
-    if is_herwig_sample(ROOT_DIR):
-        qgc.COMMON_VARS_WITH_FLAV = qgc.COMMON_VARS[:]
+    parser = qgc.get_parser()
+    args = parser.parse_args()
+    
+    for workdir in args.workdirs:
+        if is_herwig_sample(workdir):
+            qgc.COMMON_VARS_WITH_FLAV = qgc.COMMON_VARS[:]
 
-    do_reco_plots(ROOT_DIR)
-    do_gen_plots(ROOT_DIR)
+        do_reco_plots(workdir)
+        do_gen_plots(workdir)
