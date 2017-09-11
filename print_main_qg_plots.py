@@ -44,8 +44,13 @@ HERWIG_AK4_REWEIGHTED_DIR = "workdir_%s_herwig_reweight" % SETUP
 # Controls all the things!!
 ROOT_DIR = PYTHIA_AK4_DIR
 
+
 # Control plot output format
 OUTPUT_FMT = "pdf"
+
+
+def is_herwig_sample(name):
+  return "herwig" in name.lower()
 
 
 def do_all_2D_plots(root_dir, plot_dir="plots_2d", zpj_dirname="ZPlusJets_QG", dj_dirname="Dijet_QG", var_list=None, var_prepend=""):
@@ -247,8 +252,11 @@ def do_reco_plots(root_dir):
     sources = [{"root_dir": root_dir, 'label': "", "style": {'line_style': 1}}]
     qgg.do_all_exclusive_plots_comparison(sources=sources, var_list=qgc.COMMON_VARS_WITH_FLAV,
                                           plot_dir=os.path.join(root_dir, "plots_dy_vs_qcd"),
-                                          pt_bins=qgc.THEORY_PT_BINS, subplot_type=None, do_flav_tagged=True)
-    do_all_flavour_fraction_plots(root_dir, plot_dir=os.path.join(root_dir, "flav_fractions"), flav_source="genParton_")
+                                          pt_bins=qgc.THEORY_PT_BINS, subplot_type=None, 
+                                          do_flav_tagged=not is_herwig_sample(root_dir))
+    if not is_herwig_sample(root_dir):
+        do_all_flavour_fraction_plots(root_dir, plot_dir=os.path.join(root_dir, "flav_fractions"), flav_source="genParton_")
+    
     do_wrong_plots(root_dir)
     do_reco_pu_comparison_plots(root_dir)
 
@@ -308,12 +316,15 @@ def do_gen_plots(root_dir):
     qgg.do_all_exclusive_plots_comparison(sources=sources, var_list=qgc.COMMON_VARS_WITH_FLAV[:-1], var_prepend="gen",
                                           plot_dir=os.path.join(root_dir, "plots_dy_vs_qcd_gen"),
                                           zpj_dirname=qgc.ZPJ_GENJET_RDIR, dj_dirname=qgc.DJ_GENJET_RDIR,
-                                          pt_bins=qgc.THEORY_PT_BINS, subplot_type=None, do_flav_tagged=True)
-    do_all_flavour_fraction_plots(root_dir, var_prepend="gen", flav_source="",
-                                  plot_dir=os.path.join(root_dir, "flav_fractions_gen"), 
-                                  zpj_dirname=qgc.ZPJ_GENJET_RDIR, dj_dirname=qgc.DJ_GENJET_RDIR)
-    do_wrong_plots(root_dir, var_prepend="gen", plot_dir="wrong_flavs_gen",
-                   zpj_dirname=qgc.ZPJ_GENJET_RDIR, dj_dirname=qgc.DJ_GENJET_RDIR, pt_bins=qgc.THEORY_PT_BINS)
+                                          pt_bins=qgc.THEORY_PT_BINS, subplot_type=None, 
+                                          do_flav_tagged=not is_herwig_sample(root_dir))
+    if not is_herwig_sample(root_dir):
+        do_all_flavour_fraction_plots(root_dir, var_prepend="gen", flav_source="",
+                                      plot_dir=os.path.join(root_dir, "flav_fractions_gen"), 
+                                      zpj_dirname=qgc.ZPJ_GENJET_RDIR, dj_dirname=qgc.DJ_GENJET_RDIR)
+    
+        do_wrong_plots(root_dir, var_prepend="gen", plot_dir="wrong_flavs_gen",
+                       zpj_dirname=qgc.ZPJ_GENJET_RDIR, dj_dirname=qgc.DJ_GENJET_RDIR, pt_bins=qgc.THEORY_PT_BINS)
     # do_gen_reco_comparison_plots(var_list=qgc.COMMON_VARS[:-1], gen_var_prepend="gen", reco_var_prepend="",
     #                              plot_dir="plot_reco_gen", zpj_reco_dirname=qgc.ZPJ_RECOJET_RDIR, dj_reco_dirname=qgc.DJ_RECOJET_RDIR,
     #                              zpj_gen_dirname=qgc.ZPJ_GENJET_RDIR, dj_gen_dirname=qgc.DJ_GENJET_RDIR, pt_bins=qgc.THEORY_PT_BINS)
@@ -332,8 +343,9 @@ def do_gen_plots(root_dir):
                                   pt_bins=qgc.THEORY_PT_BINS, save_component_hists=True)
     
     # flav-tagged versions
-    if root_dir == HERWIG_AK4_DIR:
-      return
+    if is_herwig_sample(root_dir):
+        return
+
     qgd.do_pt_min_delta_plots(sources, var_list=qgc.COMMON_VARS, var_prepend="gen",
                               plot_dir=os.path.join(root_dir, "deltas_ptMin_gen"),
                               zpj_dirname=qgc.ZPJ_GENJET_RDIR, dj_dirname=qgc.DJ_GENJET_RDIR,
@@ -345,5 +357,8 @@ def do_gen_plots(root_dir):
 
 
 if __name__ == '__main__':
+    if is_herwig_sample(ROOT_DIR):
+        qgc.COMMON_VARS_WITH_FLAV = qgc.COMMON_VARS[:]
+
     do_reco_plots(ROOT_DIR)
     do_gen_plots(ROOT_DIR)
