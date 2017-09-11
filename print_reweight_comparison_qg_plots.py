@@ -69,7 +69,11 @@ def do_reco_reweight_comparison_plots(pythia_dir, herwig_dir, herwig_reweighted_
     ]
     qgg.do_all_exclusive_plots_comparison(sources=sources, var_list=qgc.COMMON_VARS,
                                           plot_dir=os.path.join(plot_dir, "plots_dy_vs_qcd_compare_reweight_compare_generators"),
-                                          pt_bins=qgc.THEORY_PT_BINS, subplot_type="diff", do_flav_tagged=False,
+                                          pt_bins=qgc.THEORY_PT_BINS, 
+                                          subplot_type="diff", 
+                                          # subplot_title="#splitline{#Delta wrt}{%s}" % sources[0]['label'],
+                                          subplot_title="#Delta",
+                                          do_flav_tagged=False,
                                           ofmt=OUTPUT_FMT)
 
     sources = [
@@ -124,7 +128,11 @@ def do_gen_reweight_comparison_plots(pythia_dir, herwig_dir, herwig_reweighted_d
     qgg.do_all_exclusive_plots_comparison(sources=sources, var_list=qgc.COMMON_VARS, var_prepend="gen",
                                           plot_dir=os.path.join(plot_dir, "plots_dy_vs_qcd_gen_compare_reweight_compare_generators"),
                                           zpj_dirname=qgc.ZPJ_GENJET_RDIR, dj_dirname=qgc.DJ_GENJET_RDIR,
-                                          pt_bins=qgc.THEORY_PT_BINS, subplot_type="diff", do_flav_tagged=False,
+                                          pt_bins=qgc.THEORY_PT_BINS, 
+                                          subplot_type="diff", 
+                                          # subplot_title="#splitline{#Delta wrt}{%s}" % sources[0]['label'],
+                                          subplot_title="#Delta",
+                                          do_flav_tagged=False,
                                           ofmt=OUTPUT_FMT)
     sources = [
         {"root_dir": pythia_dir, 'label': "Pythia", "style": {'line_color': ROOT.kBlack}},

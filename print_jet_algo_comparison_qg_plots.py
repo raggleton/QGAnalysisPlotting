@@ -44,7 +44,8 @@ def do_jet_algo_comparison_plots(ak4_dir, ak8_dir, plot_dir="compare_jet_algo", 
                                           plot_dir=plot_dir,
                                           zpj_dirname=zpj_dirname, dj_dirname=dj_dirname,
                                           var_prepend=var_prepend, pt_bins=pt_bins,
-                                          subplot_type=subplot_type, do_flav_tagged=True,
+                                          subplot_type=subplot_type, subplot_title="#Delta(AK8,AK4)",
+                                          do_flav_tagged=True,
                                           ofmt=OUTPUT_FMT)
 
 if __name__ == '__main__':
