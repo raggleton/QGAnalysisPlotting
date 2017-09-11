@@ -160,7 +160,7 @@ class Plot(object):
     def __init__(self, contributions=None, what="graph",
                  title=None, xtitle=None, ytitle=None, xlim=None, ylim=None,
                  legend=True, extend=False,
-                 subplot=None, subplot_type=None):
+                 subplot=None, subplot_type=None, subplot_title=None):
         """
         contributions: list
             List of Contribution objects.
@@ -217,6 +217,7 @@ class Plot(object):
         self.subplot_pad_height = 0.32
         self.subplot_pad_fudge = 0.01  # to get non-overlapping subplot axis
         self.subplot_line = None  # need this to remain visible...
+        self.subplot_title = subplot_title
 
     def add_contribution(self, *contribution):
         """Add Contribution to Plot. Can be single item or list."""
@@ -426,12 +427,15 @@ class Plot(object):
             self.subplot_pad.cd()
             self.subplot_container.Draw(draw_opts)
 
-            if (self.subplot_type == "ratio"):
-                self.subplot_container.SetTitle(";%s;Ratio" % (self.xtitle))
-            elif (self.subplot_type == "diff"):
-                self.subplot_container.SetTitle(";%s;Difference" % (self.xtitle))
-            elif (self.subplot_type == "ddelta"):
-                self.subplot_container.SetTitle(";%s;d#Delta/d#lambda" % (self.xtitle))
+            if self.subplot_title == None:
+                if (self.subplot_type == "ratio"):
+                    self.subplot_title = "#splitline{Ratio vs}{%s}" % (self.subplot.label)
+                elif (self.subplot_type == "diff"):
+                    self.subplot_title = "#splitline{Difference}{vs %s}" % (self.subplot.label)
+                elif (self.subplot_type == "ddelta"):
+                    self.subplot_title = "d#Delta/d#lambda"
+            
+            self.subplot_container.SetTitle(";%s;%s" % (self.xtitle, self.subplot_title))
 
             self._rescale_plot_labels(self.subplot_container, self.subplot_pad_height)
             self.subplot_container.GetXaxis().SetTitleOffset(self.subplot_container.GetXaxis().GetTitleOffset()*2.8)
