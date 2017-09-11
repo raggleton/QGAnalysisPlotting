@@ -118,6 +118,14 @@ def do_all_flavour_fraction_plots(root_dir, plot_dir="flav_fractions", zpj_dirna
                                   dirname=dj_dirname, which=flav_source, var_prepend=var_prepend,
                                   output_filename="%s/dj_flavour_fractions.%s" % (plot_dir, OUTPUT_FMT)) 
 
+    # Compare gluon fractions
+    qgf.compare_flavour_fractions_vs_pt(input_files=[os.path.join(root_dir, qgc.QCD_FILENAME), os.path.join(root_dir, qgc.DY_FILENAME)],
+                                        dirnames=[dj_dirname, zpj_dirname],
+                                        labels=["Dijet", "Z+jets"],
+                                        flav="g",
+                                        output_filename="%s/g_flav_fraction_compare.%s" % (plot_dir, OUTPUT_FMT),
+                                        which=flav_source,
+                                        var_prepend=var_prepend)
 
 
 def do_wrong_plots(root_dir, var_prepend="", plot_dir="wrong_flavs", zpj_dirname="ZPlusJets_QG", dj_dirname="Dijet_QG", pt_bins=None):
