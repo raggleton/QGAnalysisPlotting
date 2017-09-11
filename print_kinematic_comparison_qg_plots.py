@@ -71,7 +71,7 @@ def do_all_1D_plots_in_dir(directories, output_dir, components_styles_dicts=None
             ylim = [1E-9, 1E-1]
         p = Plot(contributions, what='hist', ytitle="p.d.f.", 
                  subplot_type="ratio" if do_ratio else None, 
-                 subplot_title="#splitline{Ratio wrt}{%s}" % contributions[0].get('label', 'NOLABEL'),
+                 subplot_title="#splitline{Ratio wrt}{%s}" % contributions[0].label,
                  subplot=contributions[0], ylim=ylim)
         p.legend.SetX1(0.8)
         p.legend.SetX2(0.9)
