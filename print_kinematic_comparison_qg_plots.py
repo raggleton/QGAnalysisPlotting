@@ -41,7 +41,7 @@ def get_list_of_obj(directory):
     return [x.GetName() for x in key_list]
 
 
-def do_all_1D_plots_in_dir(directories, output_dir, components_styles_dicts=None):
+def do_all_1D_plots_in_dir(directories, output_dir, components_styles_dicts=None, draw_opts="NOSTACK HISTE", do_ratio=True):
     """
     Given a set of TDirs, loop over all 1D hists, and for each plot all TDirs on a canvas.
 
@@ -66,12 +66,20 @@ def do_all_1D_plots_in_dir(directories, output_dir, components_styles_dicts=None
             print obj_name, "is not a TH1"
             continue
 
-        contributions = [Contribution(ob, normalise_hist=True, **csd) 
+        contributions = [Contribution(ob, normalise_hist="nostack" in draw_opts.lower(), **csd) 
                          for ob, csd in zip(objs, components_styles_dicts)]
-        p = Plot(contributions, what='hist', ytitle="p.d.f.", subplot_type="ratio", subplot=contributions[0])
-        p.plot("NOSTACK HISTE")
+        ylim = None
+        if "pt_jet" in obj_name and "ratio" not in obj_name and "frac" not in obj_name:
+            ylim = [1E-9, 1E-1]
+        p = Plot(contributions, what='hist', ytitle="p.d.f.", 
+                 subplot_type="ratio" if do_ratio else None, 
+                 subplot_title="#splitline{Ratio wrt}{%s}" % contributions[0].get('label', 'NOLABEL'),
+                 subplot=contributions[0], ylim=ylim)
+        p.legend.SetX1(0.8)
+        p.legend.SetX2(0.9)
+        p.plot(draw_opts)
         # EURGH FIXME
-        if "pt_jet" in obj_name and "ratio" not in obj_name:
+        if "pt_jet" in obj_name and "ratio" not in obj_name and "frac" not in obj_name:
             p.set_logy()
         p.save(os.path.join(output_dir, obj_name + "." + OUTPUT_FMT))
 
@@ -87,11 +95,19 @@ def do_dijet_distributions():
     csd = [
         {"label": "gg", "line_color": gg_col, "fill_color": gg_col, "marker_color": gg_col},
         {"label": "qg", "line_color": qg_col, "fill_color": qg_col, "marker_color": qg_col},
-        {"label": "qq", "line_color": qq_col, "fill_color": qq_col, "marker_color": qq_col}
+        {"label": "qq", "line_color": qq_col, "fill_color": qq_col, "marker_color": qq_col},
     ]
     do_all_1D_plots_in_dir(directories=directories, 
                            output_dir=os.path.join(ROOT_DIR, "Dijet_kin_comparison"),
                            components_styles_dicts=csd)
+    # Do stacked, filled version
+    for x in csd:
+        x['fill_style'] = 1001
+    do_all_1D_plots_in_dir(directories=directories, 
+                           output_dir=os.path.join(ROOT_DIR, "Dijet_kin_comparison_stacked"),
+                           components_styles_dicts=csd,
+                           draw_opts="HIST",
+                           do_ratio=False)
 
 
 def do_zpj_distributions():
@@ -108,6 +124,14 @@ def do_zpj_distributions():
     do_all_1D_plots_in_dir(directories=directories, 
                            output_dir=os.path.join(ROOT_DIR, "ZpJ_kin_comparison"),
                            components_styles_dicts=csd)
+    # Do stacked, filled version
+    for x in csd:
+        x['fill_style'] = 1001
+    do_all_1D_plots_in_dir(directories=directories, 
+                           output_dir=os.path.join(ROOT_DIR, "ZpJ_kin_comparison_stacked"),
+                           components_styles_dicts=csd,
+                           draw_opts="HIST",
+                           do_ratio=False)
 
 if __name__ == "__main__":
     do_dijet_distributions()
