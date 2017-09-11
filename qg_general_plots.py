@@ -70,7 +70,8 @@ def do_2D_plot(obj, output_filename, renorm_axis=None, title=None, rebin=None, r
     obj_renorm.Draw("COLZ")
     obj_renorm.GetYaxis().SetTitleOffset(1.7)
     obj_renorm.GetXaxis().SetTitleOffset(1.2)
-    odir = os.path.dirname(os.path.abspath(output_filename))
+    output_filename = os.path.abspath(output_filename)
+    odir = os.path.dirname(output_filename)
     if not os.path.isdir(odir):
         os.makedirs(odir)
     canvas.SaveAs(output_filename)
