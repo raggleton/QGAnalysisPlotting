@@ -36,7 +36,7 @@ def do_pt_plot(pythia_dir, herwig_dir, selection, hist_name, output_name, title=
     p = Plot([c_pythia, c_herwig], what="hist", legend=True, subplot_type='ratio', subplot=c_pythia, title=title)
     p.plot("NOSTACK HISTE")
     p.main_pad.SetLogy()
-    p.container.SetMinimum(1E-10)
+    p.container.SetMinimum(1E-12)
     p.subplot_container.SetMaximum(1.5)
     p.subplot_container.SetMinimum(0)
     p.canvas.Update()
