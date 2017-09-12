@@ -325,9 +325,10 @@ def do_gen_plots(root_dir):
     
         do_wrong_plots(root_dir, var_prepend="gen", plot_dir="wrong_flavs_gen",
                        zpj_dirname=qgc.ZPJ_GENJET_RDIR, dj_dirname=qgc.DJ_GENJET_RDIR, pt_bins=qgc.THEORY_PT_BINS)
-    # do_gen_reco_comparison_plots(var_list=qgc.COMMON_VARS[:-1], gen_var_prepend="gen", reco_var_prepend="",
-    #                              plot_dir="plot_reco_gen", zpj_reco_dirname=qgc.ZPJ_RECOJET_RDIR, dj_reco_dirname=qgc.DJ_RECOJET_RDIR,
-    #                              zpj_gen_dirname=qgc.ZPJ_GENJET_RDIR, dj_gen_dirname=qgc.DJ_GENJET_RDIR, pt_bins=qgc.THEORY_PT_BINS)
+    
+    do_gen_reco_comparison_plots(root_dir, var_list=qgc.COMMON_VARS[:-1], gen_var_prepend="gen", reco_var_prepend="",
+                                 plot_dir="plot_reco_gen", zpj_reco_dirname=qgc.ZPJ_RECOJET_RDIR, dj_reco_dirname=qgc.DJ_RECOJET_RDIR,
+                                 zpj_gen_dirname=qgc.ZPJ_GENJET_RDIR, dj_gen_dirname=qgc.DJ_GENJET_RDIR, pt_bins=qgc.THEORY_PT_BINS)
 
     qgr.do_angularity_roc_plots(sources, var_list=qgc.COMMON_VARS, pt_bins=qgc.THEORY_PT_BINS,
                                 zpj_dirname=qgc.ZPJ_GENJET_RDIR, dj_dirname=qgc.DJ_GENJET_RDIR, var_prepend="gen",
