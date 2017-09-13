@@ -59,13 +59,13 @@ def do_reco_reweight_comparison_plots(pythia_dir, herwig_dir, herwig_reweighted_
 
     # Now put Pythia, Herwig, & Herwig reweighted on same plots
     sources = [
-        {"root_dir": pythia_dir, 'label': "MG + Pythia", "style": {'line_style': 1}},
-        {"root_dir": herwig_reweighted_dir, 'label': "Herwig, reweighted to MG+Pythia",
+        {"root_dir": pythia_dir, 'label': ", MG + Pythia", "style": {'line_style': 1}},
+        {"root_dir": herwig_reweighted_dir, 'label': ", Herwig, reweighted to MG+Pythia",
             "style": {'line_style': 2},
             "dy_style": {'line_color': ROOT.kRed, 'fill_color': ROOT.kRed},
             "qcd_style": {'line_color': ROOT.kBlue, 'fill_color': ROOT.kBlue}
         },
-        {"root_dir": herwig_dir, 'label': "Herwig, not reweighted", "style": {'line_style': 2}}
+        {"root_dir": herwig_dir, 'label': ", Herwig, not reweighted", "style": {'line_style': 2}}
     ]
     qgg.do_all_exclusive_plots_comparison(sources=sources, var_list=qgc.COMMON_VARS,
                                           plot_dir=os.path.join(plot_dir, "plots_dy_vs_qcd_compare_reweight_compare_generators"),
@@ -78,7 +78,7 @@ def do_reco_reweight_comparison_plots(pythia_dir, herwig_dir, herwig_reweighted_
                                           ofmt=OUTPUT_FMT)
 
     sources = [
-        {"root_dir": pythia_dir, 'label': "MG + Pythia", "style": {'line_color': ROOT.kBlack}},
+        {"root_dir": pythia_dir, 'label': ", MG + Pythia", "style": {'line_color': ROOT.kBlack}},
         {"root_dir": herwig_reweighted_dir, 'label': REWEIGHT_LABEL, "style": {'line_color': ROOT.kGreen+2}},
         {"root_dir": herwig_dir, 'label': NOT_REWEIGHT_LABEL, "style": {'line_color': ROOT.kAzure}}
     ]
@@ -118,13 +118,13 @@ def do_gen_reweight_comparison_plots(pythia_dir, herwig_dir, herwig_reweighted_d
 
     # Now put Pythia, Herwig, & Herwig reweighted on same plots
     sources = [
-        {"root_dir": pythia_dir, 'label': "MG + Pythia", "style": {'line_style': 1}},
-        {"root_dir": herwig_reweighted_dir, 'label': "Herwig, reweighted to MG+Pythia",
+        {"root_dir": pythia_dir, 'label': ", MG + Pythia", "style": {'line_style': 1}},
+        {"root_dir": herwig_reweighted_dir, 'label': ", Herwig, reweighted to MG+Pythia",
             "style": {'line_style': 2},
             "dy_style": {'line_color': ROOT.kRed, 'fill_color': ROOT.kRed},
             "qcd_style": {'line_color': ROOT.kBlue, 'fill_color': ROOT.kBlue}
         },
-        {"root_dir": herwig_dir, 'label': "Herwig, not reweighted", "style": {'line_style': 2}}
+        {"root_dir": herwig_dir, 'label': ", Herwig, not reweighted", "style": {'line_style': 2}}
     ]
     qgg.do_all_exclusive_plots_comparison(sources=sources, var_list=qgc.COMMON_VARS, var_prepend="gen",
                                           plot_dir=os.path.join(plot_dir, "plots_dy_vs_qcd_gen_compare_reweight_compare_generators"),
