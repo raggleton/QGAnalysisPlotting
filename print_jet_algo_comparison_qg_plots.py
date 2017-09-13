@@ -59,7 +59,8 @@ if __name__ == '__main__':
         
         # reco jets
         do_jet_algo_comparison_plots(AK4_DIR, AK8_DIR, var_list=qgc.COMMON_VARS,
-                                     plot_dir=os.path.join(PLOT_DIR, "compare_jet_algo"))
+                                     plot_dir=os.path.join(PLOT_DIR, "compare_jet_algo"),
+                                     subplot_type=None)
         
         # gen jets
         do_jet_algo_comparison_plots(AK4_DIR, AK8_DIR, 
