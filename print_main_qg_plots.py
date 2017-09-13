@@ -177,7 +177,7 @@ def do_wrong_plots(root_dir, var_prepend="", plot_dir="wrong_flavs", zpj_dirname
 def do_gen_reco_comparison_plots(root_dir, var_list=None, gen_var_prepend="gen", reco_var_prepend="",
                                  plot_dir="plot_reco_gen", zpj_reco_dirname=qgc.ZPJ_RECOJET_RDIR, dj_reco_dirname=qgc.DJ_RECOJET_RDIR,
                                  zpj_gen_dirname=qgc.ZPJ_GENJET_RDIR, dj_gen_dirname=qgc.DJ_GENJET_RDIR, pt_bins=qgc.THEORY_PT_BINS, subplot_type=None):
-    var_list = var_list or qgc.COMMON_VARS[:-1]
+    var_list = var_list or qgc.COMMON_VARS
     for ang in var_list:
         v_reco = "%s%s_vs_pt" % (reco_var_prepend, ang.var)
         v_gen = "%s%s_vs_pt" % (gen_var_prepend, ang.var)
@@ -326,7 +326,7 @@ def do_gen_plots(root_dir):
         do_wrong_plots(root_dir, var_prepend="gen", plot_dir="wrong_flavs_gen",
                        zpj_dirname=qgc.ZPJ_GENJET_RDIR, dj_dirname=qgc.DJ_GENJET_RDIR, pt_bins=qgc.THEORY_PT_BINS)
     
-    do_gen_reco_comparison_plots(root_dir, var_list=qgc.COMMON_VARS[:-1], gen_var_prepend="gen", reco_var_prepend="",
+    do_gen_reco_comparison_plots(root_dir, var_list=qgc.COMMON_VARS, gen_var_prepend="gen", reco_var_prepend="",
                                  plot_dir="plot_reco_gen", zpj_reco_dirname=qgc.ZPJ_RECOJET_RDIR, dj_reco_dirname=qgc.DJ_RECOJET_RDIR,
                                  zpj_gen_dirname=qgc.ZPJ_GENJET_RDIR, dj_gen_dirname=qgc.DJ_GENJET_RDIR, pt_bins=qgc.THEORY_PT_BINS)
 
