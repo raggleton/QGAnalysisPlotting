@@ -56,6 +56,21 @@ def do_reco_reweight_comparison_plots(pythia_dir, herwig_dir, herwig_reweighted_
                                   plot_dir=os.path.join(plot_dir, "deltas_angularities_compare_reweight"),
                                   pt_bins=qgc.THEORY_PT_BINS,
                                   ofmt=OUTPUT_FMT)
+    
+    # Now just do Pythia vs Herwig reweighted
+    sources = [
+        {"root_dir": pythia_dir, 'label': ", MG + Pythia", "style": {'line_style': 1}},
+        {"root_dir": herwig_reweighted_dir, 'label': ", Herwig, reweighted to MG+Pythia", "style": {'line_style': 1},
+          "dy_style": {'line_color': ROOT.kRed, 'fill_color': ROOT.kRed},
+          "qcd_style": {'line_color': ROOT.kBlue, 'fill_color': ROOT.kBlue}
+        }
+    ]
+    qgg.do_all_exclusive_plots_comparison(sources=sources, var_list=qgc.COMMON_VARS,
+                                          plot_dir=os.path.join(plot_dir, "plots_dy_vs_qcd_compare_reweight_compare_pythia_herwig_reweight"),
+                                          pt_bins=qgc.THEORY_PT_BINS, 
+                                          subplot_type=None, 
+                                          do_flav_tagged=False,
+                                          ofmt=OUTPUT_FMT)
 
     # Now put Pythia, Herwig, & Herwig reweighted on same plots
     sources = [
@@ -115,6 +130,23 @@ def do_gen_reweight_comparison_plots(pythia_dir, herwig_dir, herwig_reweighted_d
                                   plot_dir=os.path.join(plot_dir, "deltas_angularities_gen_compare_reweight"),
                                   zpj_dirname=qgc.ZPJ_GENJET_RDIR, dj_dirname=qgc.DJ_GENJET_RDIR, pt_bins=qgc.THEORY_PT_BINS,
                                   ofmt=OUTPUT_FMT)
+
+    # Now jsut do Pythia vs Herwig reweighted
+    sources = [
+        {"root_dir": pythia_dir, 'label': ", MG + Pythia", "style": {'line_style': 1}},
+        {"root_dir": herwig_reweighted_dir, 'label': ", Herwig, reweighted to MG+Pythia", "style": {'line_style': 1},
+          "dy_style": {'line_color': ROOT.kRed, 'fill_color': ROOT.kRed},
+          "qcd_style": {'line_color': ROOT.kBlue, 'fill_color': ROOT.kBlue}
+        }
+    ]
+    qgg.do_all_exclusive_plots_comparison(sources=sources, var_list=qgc.COMMON_VARS, var_prepend="gen",
+                                          plot_dir=os.path.join(plot_dir, "plots_dy_vs_qcd_gen_compare_reweight_compare_pythia_herwig_reweight"),
+                                          zpj_dirname=qgc.ZPJ_GENJET_RDIR, dj_dirname=qgc.DJ_GENJET_RDIR,
+                                          pt_bins=qgc.THEORY_PT_BINS, 
+                                          subplot_type=None, 
+                                          do_flav_tagged=False,
+                                          ofmt=OUTPUT_FMT)
+
 
     # Now put Pythia, Herwig, & Herwig reweighted on same plots
     sources = [
