@@ -142,13 +142,13 @@ def do_all_exclusive_plots_comparison(sources, plot_dir="plots_dy_vs_qcd",
                     entries_flav.append((get_projection_plot(h2d_qcd_g, start_val, end_val), qcd_kwargs_g))
 
             rebin = 2
-            if v == "jet_multiplicity_vs_pt":
+            if "multiplicity" in v:
                 rebin = 2
             elif "flavour" in v or "thrust" in v or 'pTD' in v:
                 rebin = 1
 
             xlim = None
-            if "thrust" in v or "pTD" in v:
+            if "width" in v or "thrust" in v or "pTD" in v:
                 xlim = (0, 0.5)
 
             ylim = None
