@@ -60,9 +60,13 @@ def do_all_2D_plots(root_dir, plot_dir="plots_2d", zpj_dirname="ZPlusJets_QG", d
         v = "%s%s_vs_pt" % (var_prepend, ang.var)
 
         rebin = [2, 4]
-        if v == "jet_multiplicity_vs_pt":
+        xlim = None
+        if "multiplicity" in v:
             rebin = [2, 4]
-        elif v == "jet_thrust_vs_pt" or "flavour" in v:
+        elif "thrust" in v or "width" in v:
+            rebin = [1, 4]
+            xlim = [0, 0.5]
+        elif "flavour" in v:
             rebin = [1, 4]
 
         recolour = False if "flavour" in v else True
@@ -70,14 +74,14 @@ def do_all_2D_plots(root_dir, plot_dir="plots_2d", zpj_dirname="ZPlusJets_QG", d
         for rn in ['Y', None]:  # different renormalisation axes
             qgg.do_2D_plot(grab_obj(os.path.join(root_dir, qgc.DY_FILENAME), "%s/%s" % (zpj_dirname, v)),
                            output_filename="%s/%s/dy_zpj_%s_norm%s.%s" % (root_dir, plot_dir, v, rn, OUTPUT_FMT),
-                           renorm_axis=rn, title=qgc.DY_ZpJ_LABEL, rebin=rebin, recolour=recolour)
+                           renorm_axis=rn, title=qgc.DY_ZpJ_LABEL, rebin=rebin, recolour=recolour, xlim=xlim)
             qgg.do_2D_plot(grab_obj(os.path.join(root_dir, qgc.DY_FILENAME), "%s/%s" % (dj_dirname, v)),
                            output_filename="%s/%s/dy_dijet_%s_norm%s.%s" % (root_dir, plot_dir, v, rn, OUTPUT_FMT),
-                           renorm_axis=rn, title=qgc.DY_Dijet_LABEL, rebin=rebin, recolour=recolour)
+                           renorm_axis=rn, title=qgc.DY_Dijet_LABEL, rebin=rebin, recolour=recolour, xlim=xlim)
 
             qgg.do_2D_plot(grab_obj(os.path.join(root_dir, qgc.QCD_FILENAME), "%s/%s" % (dj_dirname, v)),
                            output_filename="%s/%s/qcd_dijet_%s_norm%s.%s" % (root_dir, plot_dir, v, rn, OUTPUT_FMT),
-                           renorm_axis=rn, title=qgc.QCD_Dijet_LABEL, rebin=rebin, recolour=recolour)
+                           renorm_axis=rn, title=qgc.QCD_Dijet_LABEL, rebin=rebin, recolour=recolour, xlim=xlim)
 
             if "flavour" in v:
                 continue
@@ -85,27 +89,27 @@ def do_all_2D_plots(root_dir, plot_dir="plots_2d", zpj_dirname="ZPlusJets_QG", d
             # Flavour matched reco
             qgg.do_2D_plot(grab_obj(os.path.join(root_dir, qgc.DY_FILENAME), "%s/q%s" % (zpj_dirname, v)),
                            output_filename="%s/%s/dy_zpj_%s_norm%s_qflavMatched.%s" % (root_dir, plot_dir, v, rn, OUTPUT_FMT),
-                           renorm_axis=rn, title=qgc.DY_ZpJ_QFLAV_LABEL, rebin=rebin)
+                           renorm_axis=rn, title=qgc.DY_ZpJ_QFLAV_LABEL, rebin=rebin, xlim=xlim)
 
             qgg.do_2D_plot(grab_obj(os.path.join(root_dir, qgc.DY_FILENAME), "%s/g%s" % (zpj_dirname, v)),
                            output_filename="%s/%s/dy_zpj_%s_norm%s_gflavMatched.%s" % (root_dir, plot_dir, v, rn, OUTPUT_FMT),
-                           renorm_axis=rn, title=qgc.DY_ZpJ_GFLAV_LABEL, rebin=rebin)
+                           renorm_axis=rn, title=qgc.DY_ZpJ_GFLAV_LABEL, rebin=rebin, xlim=xlim)
 
             qgg.do_2D_plot(grab_obj(os.path.join(root_dir, qgc.DY_FILENAME), "%s/g%s" % (dj_dirname, v)),
                            output_filename="%s/%s/dy_dijet_%s_norm%s_gflavMatched.%s" % (root_dir, plot_dir, v, rn, OUTPUT_FMT),
-                           renorm_axis=rn, title=qgc.DY_Dijet_GFLAV_LABEL, rebin=rebin)
+                           renorm_axis=rn, title=qgc.DY_Dijet_GFLAV_LABEL, rebin=rebin, xlim=xlim)
 
             qgg.do_2D_plot(grab_obj(os.path.join(root_dir, qgc.DY_FILENAME), "%s/q%s" % (dj_dirname, v)),
                            output_filename="%s/%s/dy_dijet_%s_norm%s_qflavMatched.%s" % (root_dir, plot_dir, v, rn, OUTPUT_FMT),
-                           renorm_axis=rn, title=qgc.DY_Dijet_QFLAV_LABEL, rebin=rebin)
+                           renorm_axis=rn, title=qgc.DY_Dijet_QFLAV_LABEL, rebin=rebin, xlim=xlim)
 
             qgg.do_2D_plot(grab_obj(os.path.join(root_dir, qgc.QCD_FILENAME), "%s/g%s" % (dj_dirname, v)),
                            output_filename="%s/%s/qcd_dijet_%s_norm%s_gflavMatched.%s" % (root_dir, plot_dir, v, rn, OUTPUT_FMT),
-                           renorm_axis=rn, title=qgc.QCD_Dijet_GFLAV_LABEL, rebin=rebin)
+                           renorm_axis=rn, title=qgc.QCD_Dijet_GFLAV_LABEL, rebin=rebin, xlim=xlim)
 
             qgg.do_2D_plot(grab_obj(os.path.join(root_dir, qgc.QCD_FILENAME), "%s/q%s" % (dj_dirname, v)),
                            output_filename="%s/%s/qcd_dijet_%s_norm%s_qflavMatched.%s" % (root_dir, plot_dir, v, rn, OUTPUT_FMT),
-                           renorm_axis=rn, title=qgc.QCD_Dijet_QFLAV_LABEL, rebin=rebin)
+                           renorm_axis=rn, title=qgc.QCD_Dijet_QFLAV_LABEL, rebin=rebin, xlim=xlim)
 
 
 def do_all_flavour_fraction_plots(root_dir, plot_dir="flav_fractions", zpj_dirname="ZPlusJets_QG", dj_dirname="Dijet_QG", var_prepend="", flav_source=""):
