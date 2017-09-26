@@ -54,7 +54,7 @@ def get_projection_plot(h2d, start_val, end_val):
     return hproj
 
 
-def do_2D_plot(obj, output_filename, renorm_axis=None, title=None, rebin=None, recolour=True):
+def do_2D_plot(obj, output_filename, renorm_axis=None, title=None, rebin=None, recolour=True, xlim=None):
     if rebin:
         obj.Rebin2D(*rebin)
     if renorm_axis:
@@ -68,6 +68,8 @@ def do_2D_plot(obj, output_filename, renorm_axis=None, title=None, rebin=None, r
     canvas.SetLeftMargin(0.13)
     canvas.SetBottomMargin(0.11)
     obj_renorm.Draw("COLZ")
+    if xlim is not None:
+        obj_renorm.GetXaxis().SetRangeUser(*xlim)
     obj_renorm.GetYaxis().SetTitleOffset(1.7)
     obj_renorm.GetXaxis().SetTitleOffset(1.2)
     output_filename = os.path.abspath(output_filename)
