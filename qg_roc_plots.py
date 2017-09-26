@@ -117,7 +117,7 @@ def do_roc_plot(hist_signal, hist_background, output_filename):
 
 
 def do_angularity_roc_plots(sources, plot_dir="roc_angularities_roc", zpj_dirname="ZPlusJets_QG", dj_dirname="Dijet_QG",
-                                      pt_bins=None, var_list=None, var_prepend="", flavour_tag=False):
+                             pt_bins=None, var_list=None, var_prepend="", flavour_tag=False):
     """Do roc plots, with different angularities on the same plot"""
     var_list = var_list or COMMON_VARS
     pt_bins = pt_bins or PT_BINS
@@ -150,8 +150,11 @@ def do_angularity_roc_plots(sources, plot_dir="roc_angularities_roc", zpj_dirnam
                 ang_label = "%s [%s]" % (ang.name, ang.lambda_str)
 
                 roc_gr.SetName(source.get("label", ""))
+                # if 'line_color' not in source.get('style', {}):
+                source['style']['line_color'] = ang.colour
+
                 c = Contribution(roc_gr, label=source.get("label", "")+" "+ang_label,
-                                 marker_style=0, marker_color=ang.colour, line_color=ang.colour, **source.get("style", {}))
+                                 marker_style=0, marker_color=ang.colour, **source.get("style", {}))
                 graph_contribs.append(c)
 
         basic_gr = ROOT.TGraph(2, array('d', [0, 1]), array('d', [0, 1]))
