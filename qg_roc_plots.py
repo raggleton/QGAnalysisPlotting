@@ -111,7 +111,7 @@ def do_roc_plot(hist_signal, hist_background, output_filename):
     """"Make a single ROC plot"""
     gr = make_roc_graph(hist_signal, hist_background)
     cont = Contribution(gr, marker_style=21)
-    p = Plot([cont], "graph", xtitle="#epsilon_{ B}", ytitle="#epsilon_{ S}", xlim=[0, 1], ylim=[0, 1], legend=False)
+    p = Plot([cont], "graph", xtitle="#epsilon_{ g}", ytitle="#epsilon_{ q}", xlim=[0, 1], ylim=[0, 1], legend=False)
     p.plot("AL")
     p.save(output_filename)
 
@@ -156,8 +156,8 @@ def do_angularity_roc_plots(sources, plot_dir="roc_angularities_roc", zpj_dirnam
 
         basic_gr = ROOT.TGraph(2, array('d', [0, 1]), array('d', [0, 1]))
         graph_contribs.insert(0, Contribution(basic_gr, line_color=ROOT.kBlack, marker_color=ROOT.kBlack, line_style=2, label="y=x"))
-        p = Plot(graph_contribs, what='graph', xtitle="#epsilon_{ B}", ytitle="#epsilon_{ S}", title="%d < p_{T}^{jet} < %d GeV" % (start_val, end_val),
-                 xlim=[0, 1], ylim=[0, 1], legend=True)
+        p = Plot(graph_contribs, what='graph', xtitle="#epsilon_{ g}", ytitle="#epsilon_{ q}", title="%d < p_{T}^{jet} < %d GeV" % (start_val, end_val),
+                 xlim=[1E-1, 1], ylim=[0, 1], legend=True)
         p.legend.SetY1(0.15)
         p.legend.SetY2(0.4)
         p.plot("AL")
