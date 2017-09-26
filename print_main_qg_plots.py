@@ -293,6 +293,16 @@ def do_reco_pu_comparison_plots(root_dir):
                                           pt_bins=qgc.THEORY_PT_BINS, subplot_type="ratio", subplot_title=subplot_title, 
                                           do_flav_tagged=False)
 
+    if not is_herwig_sample(root_dir):
+        qgg.do_all_exclusive_plots_comparison(sources=sources, var_list=qgc.COMMON_VARS, zpj_dirname=None,
+                                              plot_dir=os.path.join(root_dir, "plots_dy_vs_qcd_compare_pu_dijet"),
+                                              pt_bins=qgc.THEORY_PT_BINS, subplot_type="ratio", subplot_title=subplot_title, 
+                                              do_flav_tagged=True)
+        qgg.do_all_exclusive_plots_comparison(sources=sources, var_list=qgc.COMMON_VARS, dj_dirname=None,
+                                              plot_dir=os.path.join(root_dir, "plots_dy_vs_qcd_compare_pu_zpj"),
+                                              pt_bins=qgc.THEORY_PT_BINS, subplot_type="ratio", subplot_title=subplot_title, 
+                                              do_flav_tagged=True)
+
     # Separation plots
     for ind, s in enumerate(sources):
         sources[ind]['style']['line_width'] = 2
