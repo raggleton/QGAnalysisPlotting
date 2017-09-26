@@ -193,7 +193,7 @@ def do_angularity_delta_plots(sources, plot_dir="delta_angularities",
                     bin_labels.append("#splitline{%s}{%s}" % (ang.name, ang.lambda_str))
 
                 if save_component_hists:
-                    plot_ddelta(ddelta_hist.Clone(ddelta_hist.GetName()+"x"), "%s/delta_angularities_components/angularities_pt%dto%d_ddelta_%s%s.%s" % (plot_dir, start_val, end_val, ang.var, output_append, ofmt),
+                    plot_ddelta(ddelta_hist.Clone(ddelta_hist.GetName()+"x"), "%s/delta_angularities_components/angularities_pt%dto%d_ddelta_%s_source%d%s.%s" % (plot_dir, start_val, end_val, ang.var, source_ind, output_append, ofmt),
                                 xtitle=ang.name + " (" + ang.lambda_str + ")", ytitle="d#Delta/d" + ang.lambda_str)
                 
                 if ang.var != "jet_multiplicity":
@@ -210,7 +210,7 @@ def do_angularity_delta_plots(sources, plot_dir="delta_angularities",
                          title="%d < p_{T}^{jet} < %d GeV" % (start_val, end_val))
                 p.plot("NOSTACK HISTE")
                 prefix = "pt%dto%d" % (start_val, end_val)
-                p.save("%s/delta_angularities_components/%s_ddelta_angularity_comparison%s.%s" % (plot_dir, prefix, output_append, ofmt))
+                p.save("%s/delta_angularities_components/%s_ddelta_angularity_comparison_source%d%s.%s" % (plot_dir, prefix, source_ind, output_append, ofmt))
 
             gr = construct_deltas_graph(deltas)
             gr.SetName(source.get("label", ""))
