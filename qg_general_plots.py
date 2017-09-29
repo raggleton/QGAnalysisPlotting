@@ -45,13 +45,23 @@ def do_comparison_plot(entries, output_filename, rebin=1, **plot_kwargs):
     p.save(output_filename)
 
 
-def get_projection_plot(h2d, start_val, end_val):
-    y_axis = h2d.GetYaxis()
-    bin_edges = [y_axis.GetBinLowEdge(i) for i in range(1, y_axis.GetNbins()+1)]
+def get_projection_plot(h2d, start_val, end_val, cut_axis='y'):
+    cut_axis = cut_axis.lower()
+    if cut_axis == "y":
+        axis = h2d.GetYaxis()
+    elif cut_axis == "x":
+        axis = h2d.GetXaxis()
+    else:
+        raise RuntimeError("cut_axis must be x or y")
+    bin_edges = [axis.GetBinLowEdge(i) for i in range(1, axis.GetNbins()+1)]
     bin_start = bisect.bisect_right(bin_edges, start_val)
     bin_end = bisect.bisect_right(bin_edges, end_val)
-    hproj = h2d.ProjectionX(ROOT.TUUID().AsString(), bin_start, bin_end, "eo")
-    return hproj
+    if cut_axis == "y":
+        hproj = h2d.ProjectionX(ROOT.TUUID().AsString(), bin_start, bin_end, "eo")
+        return hproj
+    elif cut_axis == "x":
+        hproj = h2d.ProjectionY(ROOT.TUUID().AsString(), bin_start, bin_end, "eo")
+        return hproj
 
 
 def do_2D_plot(obj, output_filename, renorm_axis=None, title=None, rebin=None, recolour=True, xlim=None):
