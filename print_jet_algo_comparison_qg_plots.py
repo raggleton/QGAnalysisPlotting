@@ -48,6 +48,21 @@ def do_jet_algo_comparison_plots(ak4_dir, ak8_dir, plot_dir="compare_jet_algo", 
                                           do_flav_tagged=True,
                                           ofmt=OUTPUT_FMT)
 
+
+def do_delta_angularity_comparison_plots(ak4_dir, ak8_dir, root_dir):
+    sources = [
+        {"root_dir": ak4_dir, 'label': "AK4", "style": {'line_color': ROOT.kRed}},
+        {"root_dir": ak8_dir, 'label': "AK8", "style": {'line_color': ROOT.kBlue, 'line_style': 2}}
+    ]
+    qgd.do_angularity_delta_plots(sources, var_list=qgc.COMMON_VARS, pt_bins=qgc.THEORY_PT_BINS, 
+                                  plot_dir=os.path.join(root_dir, 'deltas_angularities_compare_jet_algo'),
+                                  save_component_hists=True)
+    qgd.do_angularity_delta_plots(sources, var_list=qgc.COMMON_VARS, var_prepend="gen",
+                                  plot_dir=os.path.join(root_dir, "deltas_angularities_compare_jet_algo_gen"),
+                                  zpj_dirname=qgc.ZPJ_GENJET_RDIR, dj_dirname=qgc.DJ_GENJET_RDIR,
+                                  pt_bins=qgc.THEORY_PT_BINS, save_component_hists=True)
+
+
 if __name__ == '__main__':
     for pus in ['chs', 'puppi']:
         # only need to edit this:
@@ -68,3 +83,4 @@ if __name__ == '__main__':
                                      plot_dir=os.path.join(PLOT_DIR, "compare_jet_algo_gen"),
                                      zpj_dirname=qgc.ZPJ_GENJET_RDIR, dj_dirname=qgc.DJ_GENJET_RDIR, 
                                      pt_bins=qgc.THEORY_PT_BINS, subplot_type=None)
+        do_delta_angularity_comparison_plots(AK4_DIR, AK8_DIR, root_dir=AK8_DIR)
