@@ -64,7 +64,17 @@ def get_projection_plot(h2d, start_val, end_val, cut_axis='y'):
         return hproj
 
 
-def do_2D_plot(obj, output_filename, renorm_axis=None, title=None, rebin=None, recolour=True, xlim=None):
+def do_2D_plot(obj, output_filename, renorm_axis=None, title=None, rebin=None, recolour=True, xlim=None, ylim=None, logz=False):
+    """Print a 2D hist to file.
+
+    renorm_axis : [None, "X", "Y"]
+        Allow renormalising along a given axis
+
+    recolour : bool
+        Only used if renorm_axis != None
+        If True, resets colour so max bin in each row/col (depending on renorm_axis) has value 1.
+
+    """
     if rebin:
         obj.Rebin2D(*rebin)
     if renorm_axis:
@@ -77,9 +87,13 @@ def do_2D_plot(obj, output_filename, renorm_axis=None, title=None, rebin=None, r
     canvas.SetTicks(1, 1)
     canvas.SetLeftMargin(0.13)
     canvas.SetBottomMargin(0.11)
+    if logz:
+        canvas.SetLogz(1)
     obj_renorm.Draw("COLZ")
     if xlim is not None:
         obj_renorm.GetXaxis().SetRangeUser(*xlim)
+    if ylim is not None:
+        obj_renorm.GetYaxis().SetRangeUser(*ylim)
     obj_renorm.GetYaxis().SetTitleOffset(1.7)
     obj_renorm.GetXaxis().SetTitleOffset(1.2)
     output_filename = os.path.abspath(output_filename)
