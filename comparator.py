@@ -208,7 +208,7 @@ class Plot(object):
         self.main_pad = None
         self.subplot = subplot
         if subplot_type and subplot_type not in ['ratio', 'diff', "ddelta"]:
-            raise RuntimeError("subplot_type must be ratio, diff, or ddelta")
+            raise RuntimeError("subplot_type must be one of None, ratio, diff, or ddelta")
         self.subplot_type = subplot_type
         if not self.subplot_type:
             self.subplot = None
