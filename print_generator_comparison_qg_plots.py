@@ -12,6 +12,7 @@ from itertools import product
 import qg_common as qgc
 import qg_general_plots as qgg
 import qg_delta_plots as qgd
+import qg_roc_plots as qgr
 
 # For debugging
 import sys
@@ -92,7 +93,40 @@ def do_gen_generator_comparison_plots(pythia_dir, herwig_dir, plot_dir):
                                   ofmt=OUTPUT_FMT)
 
 
+def do_jet_algo_generator_comparison_plots(pythia_ak4_dir, herwig_ak4_dir, pythia_ak8_dir, herwig_ak8_dir, plot_dir):
+    """Do ak4 vs ak8, for both pythia and herwig"""
+    
+    # Distributions
+    sources = [
+        {"root_dir": pythia_ak4_dir, 'label': PYTHIA_LABEL + " AK4", "style": {'line_style': 1}},
+        {"root_dir": herwig_ak4_dir, 'label': HERWIG_LABEL + " AK4", "style": {'line_style': 2}},
+        {"root_dir": pythia_ak8_dir, 'label': PYTHIA_LABEL + " AK8", "style": {'line_style': 1}, 
+          "dy_style": {'line_color': qgc.DY_COLOURS[-2], 'fill_color': qgc.DY_COLOURS[-2]},
+          "qcd_style": {'line_color': qgc.QCD_COLOURS[-2], 'fill_color': qgc.QCD_COLOURS[-2]}},
+        {"root_dir": herwig_ak8_dir, 'label': HERWIG_LABEL + " AK8", "style": {'line_style': 2},
+          "dy_style": {'line_color': qgc.DY_COLOURS[-2], 'fill_color': qgc.DY_COLOURS[-2]},
+          "qcd_style": {'line_color': qgc.QCD_COLOURS[-2], 'fill_color': qgc.QCD_COLOURS[-2]}},
+    ]
+
+    # qgg.do_all_exclusive_plots_comparison(sources=sources, var_list=qgc.COMMON_VARS,
+    #                                       plot_dir=os.path.join(plot_dir, "plots_dy_vs_qcd_compare_ak4_ak8_generators"),
+    #                                       subplot_type=None, do_flav_tagged=False, pt_bins=qgc.THEORY_PT_BINS,
+    #                                       ofmt=OUTPUT_FMT)
+    sources = [
+        {"root_dir": pythia_ak4_dir, 'label': PYTHIA_LABEL + " AK4", "style": {'line_width': 1, 'line_style': 1, 'line_color': ROOT.kBlue}},
+        {"root_dir": herwig_ak4_dir, 'label': HERWIG_LABEL + " AK4", "style": {'line_width': 1, 'line_style': 1, 'line_color': ROOT.kRed}},
+        {"root_dir": pythia_ak8_dir, 'label': PYTHIA_LABEL + " AK8", "style": {'line_width': 1, 'line_style': 2, 'line_color': ROOT.kBlue}}, 
+        {"root_dir": herwig_ak8_dir, 'label': HERWIG_LABEL + " AK8", "style": {'line_width': 1, 'line_style': 2, 'line_color': ROOT.kRed}},
+    ]
+    qgd.do_angularity_delta_plots(sources, plot_dir=os.path.join(plot_dir, "delta_angularities_compare_ak4_ak8_generators"),
+                                  var_list=qgc.COMMON_VARS, pt_bins=qgc.THEORY_PT_BINS, save_component_hists=True,
+                                  ofmt=OUTPUT_FMT)
+    # qgr.do_angularity_roc_plots(sources, plot_dir=os.path.join(plot_dir, "roc_angularities_compare_ak4_ak8_generators"),
+    #                             pt_bins=qgc.THEORY_PT_BINS, var_list=qgc.COMMON_VARS)
+
+
 if __name__ == '__main__':
+    """
     ALGOS = ["ak4", "ak8"]
     PUS = ["chs", "puppi"]
 
@@ -105,3 +139,8 @@ if __name__ == '__main__':
 
         do_reco_generator_comparison_plots(PYTHIA_DIR, HERWIG_DIR, PLOT_DIR)
         do_gen_generator_comparison_plots(PYTHIA_DIR, HERWIG_DIR, PLOT_DIR)
+    do_jet_algo_generator_comparison_plots("workdir_ak4puppi_mgpythia", 
+                                           "workdir_ak4puppi_herwig_reweight", 
+                                           "workdir_ak8puppi_mgpythia", 
+                                           "workdir_ak8puppi_herwig_reweight", 
+                                           "workdir_ak8puppi_herwig_reweight")
