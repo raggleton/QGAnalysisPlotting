@@ -14,7 +14,9 @@ from array import array
 import qg_common as qgc
 import qg_general_plots as qgg
 import qg_flavour_plots as qgf
-from comparator import grab_obj
+import qg_delta_plots as qgd
+from comparator import grab_obj, Contribution, Plot
+import common_utils as cu
 
 # For debugging
 # If your code segfaults, try enabling one of these, sometimes it helps it to run...
@@ -99,8 +101,9 @@ def do_pythia_comparison_flav_fractions_plots(mgpythia_dir, pythia_only_dir, plo
 
 def do_component_plots(mgpythia_dir, pythia_only_dir, plot_dir):
 
+    # Do 2D plots for diff ptMin folders
     ptmin_vals = [50, 100, 200, 400, 800]
-    plotnames = ["genjet_pt_vs_constituent_pt", "genjet_pt_vs_constituent_deta", "genjet_pt_vs_constituent_dphi", "genjet_pt_vs_constituent_dr"]
+    plotnames = ["genjet_pt_vs_constituent_pt", "genjet_pt_vs_constituent_zi", "genjet_pt_vs_constituent_deta", "genjet_pt_vs_constituent_dphi", "genjet_pt_vs_constituent_dr"]
     for plotname, ptmin, renorm, logz in product(plotnames, ptmin_vals, ['Y', None], [True, False]):
         rebin = [1, 1]
         ylim = [ptmin, 2000]
@@ -177,15 +180,17 @@ def do_component_plots(mgpythia_dir, pythia_only_dir, plot_dir):
                                  rebin=rebin, recolour=True, xlim=xlim, ylim=ylim, logz=logz)
 
 
-    # Do projection plots for bins & compare
     for (jet_pt_min, jet_pt_max) in jet_pt_vals:
         lw = 2
         dirname = "Dijet_genjet"
-        plotname = "genjet_constituent_pt_vs_constituent_dr_pt%dto%d" % (jet_pt_min, jet_pt_max)
+        jet_type = "g"
+        plotname = jet_type + "genjet_constituent_zi_vs_constituent_thetai_pt%dto%d" % (jet_pt_min, jet_pt_max)
         this_hist = os.path.join(dirname, plotname)
-        cut_pt_bins = [(0, 2), (5, 10), (20, 25), (50, 60), (100, 120), (500, 700)]
+        
+        # Do projection plots for various zi bins
+        cut_zi_bins = [(0, 0.05), (0, 0.1), (0.1, 0.2), (0.3, 0.4), (0.4, 0.5), (0.8, 1.0)]
 
-        for i, (start_val, end_val) in enumerate(cut_pt_bins):
+        for i, (start_val, end_val) in enumerate(cut_zi_bins):
             entries_normal = []    
 
             h2d_mgpythia = grab_obj(os.path.join(mgpythia_dir, qgc.QCD_FILENAME), this_hist)
@@ -196,79 +201,114 @@ def do_component_plots(mgpythia_dir, pythia_only_dir, plot_dir):
             pythiaonly_kwargs = dict(line_color=ROOT.kRed, fill_color=ROOT.kRed, label="Pythia only", line_width=lw)
             entries_normal.append((qgg.get_projection_plot(h2d_pythiaonly, start_val, end_val, 'y'), pythiaonly_kwargs))
 
-            rebin = 4
-            ofilename = "genjet_constituent_dr_binned_pt%dto%d_jetPt%dto%d" % (start_val, end_val, jet_pt_min, jet_pt_max)
+            ofilename = jet_type+"genjet_constituent_thetai_binned_zi%gto%g_jetPt%dto%d" % (start_val, end_val, jet_pt_min, jet_pt_max)
+            rebin = 5 if end_val <= 0.1 else 2
+            xlim = None if end_val <= 0.1 else [0, 0.6]
             qgg.do_comparison_plot(entries_normal, "%s/constituent_plots/%s.%s" % (plot_dir, ofilename, OUTPUT_FMT),
-                                   rebin=rebin, title="%d < p_{T}^{const.} < %d GeV, %d < p_{T}^{jet} < %d GeV" % (start_val, end_val, jet_pt_min, jet_pt_max),
-                                   xtitle="#DeltaR(const., jet axis)",
-                                   xlim=[0, 0.6], ylim=None, 
+                                   rebin=rebin, title="%g < z_{i} < %g, %d < p_{T}^{jet} < %d GeV" % (start_val, end_val, jet_pt_min, jet_pt_max),
+                                   xtitle="#theta_{i}",
+                                   xlim=xlim, ylim=None, 
                                    subplot_type="ratio", subplot_title="#splitline{Ratio wrt}{MG+Pythia}")
+        
+        # Do projections hists for various theta_i bins
+        cut_thetai_bins = [(0, 0.01), (0.01, 0.02), (0.02, 0.05), (0.05, 0.10), (0.1, 0.15), (0.15, 0.2), (0.2, 0.3), (0.3, 0.4), (0.4, 0.6), (0.6, 0.8), (0.8, 1), (1, 1.5)]
+        deltas = []
+        delta_components = []
+        colours = [ROOT.kBlue, ROOT.kRed, ROOT.kGreen+2, ROOT.kOrange-3, ROOT.kMagenta, ROOT.kAzure+1]
 
-        # do box n whisker plots
-        canv = ROOT.TCanvas(ROOT.TUUID().AsString(), "", 800, 600)
-        canv.SetTicks(1, 1)
-        leg = ROOT.TLegend(0.6, 0.6, 0.88, 0.88)
-        x_range = [0, 0.4]
-        y_range = [0, 120]
-        rebin = 4
-        bar_offset = 0.2
-        bar_width = 0.2
-        title = "%d < p_{T}^{jet} < %d GeV" % (jet_pt_min, jet_pt_max)
-
-        h2d_mgpythia = grab_obj(os.path.join(mgpythia_dir, qgc.QCD_FILENAME), this_hist)
-        h2d_mgpythia.RebinX(rebin)
-        h2d_mgpythia.SetLineColor(qgc.QCD_COLOUR)
-        h2d_mgpythia.SetBarOffset(-bar_offset)
-        h2d_mgpythia.SetBarWidth(bar_width)
-        h2d_mgpythia.GetXaxis().SetRangeUser(*x_range)
-        h2d_mgpythia.SetTitle(title)
-        leg.AddEntry(h2d_mgpythia, "MG+Pythia",  "L")
-
-        h2d_pythiaonly = grab_obj(os.path.join(pythia_only_dir, qgc.QCD_FILENAME), this_hist)
-        h2d_pythiaonly.RebinX(rebin)
-        h2d_pythiaonly.SetLineColor(ROOT.kRed)
-        h2d_pythiaonly.SetBarOffset(bar_offset)
-        h2d_pythiaonly.SetBarWidth(bar_width)
-        h2d_pythiaonly.GetXaxis().SetRangeUser(*x_range)
-        h2d_pythiaonly.SetTitle(title)
-        leg.AddEntry(h2d_pythiaonly, "Pythia only",  "L")
-
-        draw_opt = "candlex(00000311)"
-        # draw_opt = "candlex"
-        h2d_mgpythia.Draw(draw_opt)
-        # h2d_pythiaonly.Draw(draw_opt + " same")
-        h2d_mgpythia.GetYaxis().SetRangeUser(*y_range)
-        # ROOT.gPad.GetYaxis().SetRangeUser(*y_range)
-        # h2d_pythiaonly.GetYaxis().SetRangeUser(*y_range)
-        leg.Draw()
-        # ROOT.gPad.BuildLegend(0.6, 0.6, 0.88, 0.88, "", "L")
-
-        ofilename = "genjet_constituent_pt_dr_box_pt%dto%d" % (jet_pt_min, jet_pt_max)
-        canv.SaveAs("%s/constituent_plots/%s.%s" % (plot_dir, ofilename, OUTPUT_FMT))
-
-        continue
-
-        cut_dr_bins = [(0, 0.01), (0.01, 0.02), (0.02, 0.05), (0.05, 0.10), (0.15, 0.2), (0.3, 0.4), (0.4, 0.6)]
-
-        for i, (start_val, end_val) in enumerate(cut_dr_bins):
+        for i, (start_val, end_val) in enumerate(cut_thetai_bins[::]):
             entries_normal = []    
 
             h2d_mgpythia = grab_obj(os.path.join(mgpythia_dir, qgc.QCD_FILENAME), this_hist)
             mgpythia_kwargs = dict(line_color=qgc.QCD_COLOUR, fill_color=qgc.QCD_COLOUR, label="MG+Pythia", line_width=lw)
-            entries_normal.append((qgg.get_projection_plot(h2d_mgpythia, start_val, end_val, 'x'), mgpythia_kwargs))
+            h_mgpythia = qgg.get_projection_plot(h2d_mgpythia, start_val, end_val, 'x')
+            h_mgpythia.Rebin(4)
+            entries_normal.append((h_mgpythia.Clone(ROOT.TUUID().AsString()), mgpythia_kwargs))
 
             h2d_pythiaonly = grab_obj(os.path.join(pythia_only_dir, qgc.QCD_FILENAME), this_hist)
             pythiaonly_kwargs = dict(line_color=ROOT.kRed, fill_color=ROOT.kRed, label="Pythia only", line_width=lw)
-            entries_normal.append((qgg.get_projection_plot(h2d_pythiaonly, start_val, end_val, 'x'), pythiaonly_kwargs))
+            h_pythiaonly = qgg.get_projection_plot(h2d_pythiaonly, start_val, end_val, 'x')
+            h_pythiaonly.Rebin(4)
+            entries_normal.append((h_pythiaonly.Clone(ROOT.TUUID().AsString()), pythiaonly_kwargs))
 
-            rebin = 4 if end_val <= 0.1 else 1
-            ofilename = "genjet_constituent_pt_binned_dr%gto%g_jetPt%dto%d" % (start_val, end_val, jet_pt_min, jet_pt_max)
-            xlim = [0, 100] if end_val <= 0.1 else [0, 20]
+            # rebin = 5 if end_val <= 0.1 else 2
+            rebin = None
+            xlim = [0, 0.5] if end_val <= 0.1 else [0, 0.2]
+            ofilename = jet_type+"genjet_constituent_zi_binned_thetai%gto%g_jetPt%dto%d" % (start_val, end_val, jet_pt_min, jet_pt_max)
             qgg.do_comparison_plot(entries_normal, "%s/constituent_plots/%s.%s" % (plot_dir, ofilename, OUTPUT_FMT),
-                                   rebin=rebin, title="%g < #DeltaR(const., jet) < %g, %d < p_{T}^{jet} < %d GeV" % (start_val, end_val, jet_pt_min, jet_pt_max),
-                                   xtitle="p_{T}^{const.} [GeV]",
-                                   xlim=xlim, 
+                                   rebin=rebin, title="%g < #theta_{i} < %g, %d < p_{T}^{jet} < %d GeV" % (start_val, end_val, jet_pt_min, jet_pt_max),
+                                   xtitle="z_{i}", xlim=xlim,
                                    subplot_type="ratio", subplot_title="#splitline{Ratio wrt}{MG+Pythia}")
+            
+            ddelta_hist = qgd.get_ddelta_plot(h_mgpythia, h_pythiaonly)
+
+            this_colour = colours[i%len(colours)]
+            line_style = 1 + i // len(colours)
+            c = Contribution(ddelta_hist, label="%g-%g" % (start_val, end_val), line_width=1, line_style=line_style,
+                             marker_color=this_colour, line_color=this_colour, fill_color=this_colour)
+            delta_components.append(c)
+
+            deltas.append(qgd.calculate_delta(ddelta_hist))
+
+        p = Plot(delta_components, what="hist", ytitle="p.d.f", xlim=[0, 0.2], title="%d < p_{T}^{jet} < %d GeV" % (jet_pt_min, jet_pt_max))
+        p.plot("NOSTACK HISTE")
+        p.save("%s/constituent_plots/ddelta_thetai_jetPt%dto%d.%s" % (plot_dir, jet_pt_min, jet_pt_max, OUTPUT_FMT))
+
+        gr = qgd.construct_deltas_graph(deltas[::])
+        c = Contribution(gr, label="BLAH", marker_style=0)
+        graph_contribs = []
+        graph_contribs.append(c)
+        bin_labels = ["{:g} - {:g}".format(*b) for b in cut_thetai_bins]
+        qgd.do_deltas_plot(graph_contribs, 
+                           "%s/constituent_plots/delta_thetai_jetPt%dto%d.%s" % (plot_dir, jet_pt_min, jet_pt_max, OUTPUT_FMT),
+                           bin_labels=bin_labels, 
+                           title="%d < p_{T}^{jet} < %d GeV" % (jet_pt_min, jet_pt_max), 
+                           xtitle="#theta_{i}")
+
+
+        # do box n whisker plots
+        # canv = ROOT.TCanvas(ROOT.TUUID().AsString(), "", 800, 600)
+        # canv.SetTicks(1, 1)
+        # leg = ROOT.TLegend(0.6, 0.6, 0.88, 0.88)
+        # x_range = [0, 0.4]
+        # y_range = [0, 120]
+        # rebin = 4
+        # bar_offset = 0.2
+        # bar_width = 0.2
+        # title = "%d < p_{T}^{jet} < %d GeV" % (jet_pt_min, jet_pt_max)
+
+        # h2d_mgpythia = grab_obj(os.path.join(mgpythia_dir, qgc.QCD_FILENAME), this_hist)
+        # h2d_mgpythia.RebinX(rebin)
+        # h2d_mgpythia.SetLineColor(qgc.QCD_COLOUR)
+        # h2d_mgpythia.SetBarOffset(-bar_offset)
+        # h2d_mgpythia.SetBarWidth(bar_width)
+        # h2d_mgpythia.GetXaxis().SetRangeUser(*x_range)
+        # h2d_mgpythia.SetTitle(title)
+        # leg.AddEntry(h2d_mgpythia, "MG+Pythia",  "L")
+
+        # h2d_pythiaonly = grab_obj(os.path.join(pythia_only_dir, qgc.QCD_FILENAME), this_hist)
+        # h2d_pythiaonly.RebinX(rebin)
+        # h2d_pythiaonly.SetLineColor(ROOT.kRed)
+        # h2d_pythiaonly.SetBarOffset(bar_offset)
+        # h2d_pythiaonly.SetBarWidth(bar_width)
+        # h2d_pythiaonly.GetXaxis().SetRangeUser(*x_range)
+        # h2d_pythiaonly.SetTitle(title)
+        # leg.AddEntry(h2d_pythiaonly, "Pythia only",  "L")
+
+        # draw_opt = "candlex(00000311)"
+        # # draw_opt = "candlex"
+        # h2d_mgpythia.Draw(draw_opt)
+        # h2d_pythiaonly.Draw(draw_opt + " same")
+        # # h2d_mgpythia.GetYaxis().SetRangeUser(*y_range)
+        # # h2d_pythiaonly.GetYaxis().SetRangeUser(*y_range)
+        # h2d_mgpythia.GetYaxis().SetLimits(y_range[0], y_range[1])
+        # h2d_pythiaonly.GetYaxis().SetLimits(y_range[0], y_range[1])
+        # # ROOT.gPad.GetYaxis().SetRangeUser(*y_range)
+        # leg.Draw()
+        # # ROOT.gPad.BuildLegend(0.6, 0.6, 0.88, 0.88, "", "L")
+
+        # ofilename = "genjet_constituent_pt_dr_box_pt%dto%d" % (jet_pt_min, jet_pt_max)
+        # canv.SaveAs("%s/constituent_plots/%s.%s" % (plot_dir, ofilename, OUTPUT_FMT))
 
 
 
