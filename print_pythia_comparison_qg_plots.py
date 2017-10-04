@@ -7,6 +7,8 @@ from MyStyle import My_Style
 My_Style.cd()
 import os
 from itertools import product
+import math
+from array import array
 
 # My stuff
 import qg_common as qgc
@@ -112,20 +114,68 @@ def do_component_plots(mgpythia_dir, pythia_only_dir, plot_dir):
                                output_filename="%s/constituent_plots/ptMin_%d/%s_pythiaOnly_norm%s%s.%s" % (plot_dir, ptmin, plotname, renorm, log_append, OUTPUT_FMT),
                                renorm_axis=renorm, title="Pythia only", rebin=rebin, recolour=True, ylim=ylim, logz=logz)
 
+    def do_2D_plot_with_contours(obj, contour_obj, output_filename, renorm_axis=None, title=None, rebin=None, recolour=True, xlim=None, ylim=None, logz=False):
+        """Like normal 2D plotter but contour_obj will be plotted using contours"""
+        if rebin:
+            obj.Rebin2D(*rebin)
+        if renorm_axis:
+            obj_renorm = cu.make_normalised_TH2(obj, renorm_axis, recolour)
+        else:
+            obj_renorm = obj
+        if title:
+            obj_renorm.SetTitle(title)
+        canvas = ROOT.TCanvas(ROOT.TUUID().AsString(), "", 800, 800)
+        canvas.SetTicks(1, 1)
+        canvas.SetLeftMargin(0.13)
+        canvas.SetBottomMargin(0.11)
+        if logz:
+            canvas.SetLogz(1)
+        obj_renorm.Draw("COLZ")
+        if xlim is not None:
+            obj_renorm.GetXaxis().SetRangeUser(*xlim)
+        if ylim is not None:
+            obj_renorm.GetYaxis().SetRangeUser(*ylim)
+        obj_renorm.GetYaxis().SetTitleOffset(1.7)
+        obj_renorm.GetXaxis().SetTitleOffset(1.2)
+        if contour_obj:
+            contour_obj.Draw("CONT3 SAME")
+        output_filename = os.path.abspath(output_filename)
+        odir = os.path.dirname(output_filename)
+        if not os.path.isdir(odir):
+            os.makedirs(odir)
+        canvas.SaveAs(output_filename)
+
+    #  Do 2D plots for premade jet pt cut objs
     jet_pt_vals = [(100, 200), (800, 1000)]
     for (jet_pt_min, jet_pt_max), renorm, logz in product(jet_pt_vals, ['X', 'Y', None], [True, False]):
-        rebin = [1, 1]
-        ylim = [0, jet_pt_max]
+        rebin = [2, 2]
+        xlim = None
+        ylim = [0, 0.4]
         dirname = "Dijet_genjet"
-        plotname = "genjet_constituent_pt_vs_constituent_dr_pt%dto%d" % (jet_pt_min, jet_pt_max)
+        jet_type = "g"
+        plotname = jet_type+"genjet_constituent_zi_vs_constituent_thetai_pt%dto%d" % (jet_pt_min, jet_pt_max)
         this_hist = os.path.join(dirname, plotname)
         log_append = "_logZ" if logz else ""
-        qgg.do_2D_plot(grab_obj(os.path.join(mgpythia_dir, qgc.QCD_FILENAME), this_hist),
-                               output_filename="%s/constituent_plots/%s_mgpythia_norm%s%s.%s" % (plot_dir, plotname, renorm, log_append, OUTPUT_FMT),
-                               renorm_axis=renorm, title="MG+Pythia, %d < p_{T}^{j} < %d GeV" % (jet_pt_min, jet_pt_max), rebin=rebin, recolour=True, ylim=ylim, logz=logz)
-        qgg.do_2D_plot(grab_obj(os.path.join(pythia_only_dir, qgc.QCD_FILENAME), this_hist),
-                               output_filename="%s/constituent_plots/%s_pythiaOnly_norm%s%s.%s" % (plot_dir, plotname, renorm, log_append, OUTPUT_FMT),
-                               renorm_axis=renorm, title="Pythia only, %d < p_{T}^{j} < %d GeV" % (jet_pt_min, jet_pt_max), rebin=rebin, recolour=True, ylim=ylim, logz=logz)
+        contour_hist = grab_obj(os.path.join(mgpythia_dir, qgc.QCD_FILENAME), this_hist).Clone("contours")
+        for xbin in range(1, contour_hist.GetNbinsX()+1):
+            for ybin in range(1, contour_hist.GetNbinsY()+1):
+                xval = 0.5*(contour_hist.GetXaxis().GetBinCenter(xbin)+contour_hist.GetXaxis().GetBinCenter(xbin+1))
+                yval = 0.5*(contour_hist.GetYaxis().GetBinCenter(ybin)+contour_hist.GetYaxis().GetBinCenter(ybin+1))
+                contour_hist.SetBinContent(xbin, ybin, math.sqrt(xval/0.4) * yval)
+        levels = array('d', [0.001, 0.002, 0.005, 0.01, 0.02, 0.05, 0.1, 0.2, 0.5])
+        contour_hist.SetContour(len(levels), levels)
+        contour_hist.SetLineColor(ROOT.kRed)
+        do_2D_plot_with_contours(grab_obj(os.path.join(mgpythia_dir, qgc.QCD_FILENAME), this_hist),
+                                 contour_hist,
+                                 output_filename="%s/constituent_plots/%s_mgpythia_norm%s%s.%s" % (plot_dir, plotname, renorm, log_append, OUTPUT_FMT),
+                                 renorm_axis=renorm, title="MG+Pythia, %d < p_{T}^{j} < %d GeV" % (jet_pt_min, jet_pt_max),
+                                 rebin=rebin, recolour=True, xlim=xlim, ylim=ylim, logz=logz)
+        do_2D_plot_with_contours(grab_obj(os.path.join(pythia_only_dir, qgc.QCD_FILENAME), this_hist),
+                                 contour_hist,
+                                 output_filename="%s/constituent_plots/%s_pythiaOnly_norm%s%s.%s" % (plot_dir, plotname, renorm, log_append, OUTPUT_FMT),
+                                 renorm_axis=renorm, title="Pythia only, %d < p_{T}^{j} < %d GeV" % (jet_pt_min, jet_pt_max),
+                                 rebin=rebin, recolour=True, xlim=xlim, ylim=ylim, logz=logz)
+
 
     # Do projection plots for bins & compare
     for (jet_pt_min, jet_pt_max) in jet_pt_vals:
