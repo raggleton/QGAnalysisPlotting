@@ -8,8 +8,8 @@ DY_COLOUR = 880 # kViolet
 QCD_COLOUR = 867 # kAzure+7
 
 # When comparing e.g. PU bins
-DY_COLOURS = [871, 880, 882, 884]
-QCD_COLOURS = [868, 867, 864, 853]
+DY_COLOURS = [880, 882, 884, 871]
+QCD_COLOURS = [867, 600, 853, 425]
 
 PT_BINS = [(80, 100), (100, 200), (400, 500), (1000, 2000), (80, 2000)]
 THEORY_PT_BINS = [(100, 200), (400, 500), (1000, 2000), (80, 2000)]
