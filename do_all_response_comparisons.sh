@@ -22,5 +22,8 @@ do
     for PUS in chs puppi;
     do
         $CMD workdir_ak${R}${PUS}_mgpythia workdir_ak${R}${PUS}_herwig_reweight --output workdir_ak${R}${PUS}_herwig_reweight/response_plots_compareGenerator
+        # individual ones
+        $CMD workdir_ak${R}${PUS}_mgpythia
+        $CMD workdir_ak${R}${PUS}_herwig_reweight
     done
 done
