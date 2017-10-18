@@ -90,11 +90,15 @@ def do_projection_plots(root_dirs, plot_dir="response_plots", zpj_dirname="ZPlus
 if __name__ == '__main__':
     parser = qgc.get_parser()
     args = parser.parse_args()
-    
+
+    if args.output is None:
+        args.output = args.workdirs[0]
+
     # Do 2D plots
     for workdir in args.workdirs:
         do_all_2D_plots(workdir)
 
     # Do 1D comparison plots, without and with flavour matching
-    do_projection_plots(args.workdirs, plot_dir=os.path.join(args.workdirs[0], "response_plots"))
-    do_projection_plots(args.workdirs, plot_dir=os.path.join(args.workdirs[0], "response_plots"), flav_matched=True)
+    app = "_comparison" if len(args.workdirs) > 1 else ""
+    do_projection_plots(args.workdirs, plot_dir=os.path.join(args.output, "response_plots%s" % (app)))
+    do_projection_plots(args.workdirs, plot_dir=os.path.join(args.output, "response_plots%s" % (app)), flav_matched=True)
