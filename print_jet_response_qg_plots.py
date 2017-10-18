@@ -49,18 +49,19 @@ def do_projection_plots(root_dirs, plot_dir="response_plots", zpj_dirname="ZPlus
     pt_bins = [(30, 40), (50, 70), (90, 100), (150, 200), (250, 300), (500, 600), (1000, 2000)]
     for (pt_min, pt_max) in pt_bins:
         
-        lw = 2
+        lw = 2 if len(root_dirs) == 1 else 1
 
         entries = []
 
-        for root_dir in root_dirs:
+        for ind, root_dir in enumerate(root_dirs):
             if zpj_dirname:
                 flav_str = "q" if flav_matched else ""
                 h2d_dyj = grab_obj(os.path.join(root_dir, qgc.DY_FILENAME), "%s/%s" % (zpj_dirname, "%sjet_response_vs_genjet_pt" % (flav_str)))
                 obj = qgg.get_projection_plot(h2d_dyj, pt_min, pt_max)
 
-                dy_reco_kwargs = dict(line_color=qgc.DY_COLOUR, fill_color=qgc.DY_COLOUR, line_width=lw,
-                                       label=qgc.DY_ZpJ_QFLAV_LABEL if flav_matched else qgc.DY_ZpJ_LABEL)
+                col = qgc.DY_COLOURS[ind]
+                dy_reco_kwargs = dict(line_color=col, fill_color=col, line_width=lw,
+                                      label=qgc.DY_ZpJ_QFLAV_LABEL if flav_matched else qgc.DY_ZpJ_LABEL)
                 if len(root_dirs) > 1:
                     dy_reco_kwargs['label'] += " ["+root_dir+"]"
                 entries.append((obj, dy_reco_kwargs))
@@ -70,7 +71,8 @@ def do_projection_plots(root_dirs, plot_dir="response_plots", zpj_dirname="ZPlus
                 h2d_qcd = grab_obj(os.path.join(root_dir, qgc.QCD_FILENAME), "%s/%s" % (dj_dirname, "%sjet_response_vs_genjet_pt" % (flav_str)))
                 obj = qgg.get_projection_plot(h2d_qcd, pt_min, pt_max)
 
-                qcd_reco_kwargs = dict(line_color=qgc.QCD_COLOUR, fill_color=qgc.QCD_COLOUR, line_width=lw,
+                col = qgc.QCD_COLOURS[ind]
+                qcd_reco_kwargs = dict(line_color=col, fill_color=col, line_width=lw,
                                        label=qgc.QCD_Dijet_GFLAV_LABEL if flav_matched else qgc.QCD_Dijet_LABEL)
                 if len(root_dirs) > 1:
                     qcd_reco_kwargs['label'] += " ["+root_dir+"]"
