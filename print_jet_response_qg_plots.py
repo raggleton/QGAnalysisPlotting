@@ -26,19 +26,41 @@ OUTPUT_FMT = "pdf"
 
 
 # 2D plot, with various normalisations, logZ settings, box n whiskers plot
-def do_all_2D_plots(root_dir, plot_dir="plots_2d", zpj_dirname="ZPlusJets_QG", dj_dirname="Dijet_QG", var_list=None, var_prepend=""):
-    for rn in ['Y', None]:
-        pass
-        # ZPJ
-        # ALL
-        # Q
-        # G
-        
-        # DJ
-        # ALL
-        # Q
-        # G
-        
+def do_all_2D_plots(root_dir, plot_dir="plots_2d", zpj_dirname="ZPlusJets_QG", dj_dirname="Dijet_QG"):
+    """Do 2D plots of response vs pt, with various normalisations, etc
+    
+    plot_dir : output dir for plots
+    """
+    for flav_matched, renorm, logz in product([True, False], ['Y', None], [True, False]):
+
+        log_append = "_logZ" if logz else ""
+
+        line = ROOT.TLine(1, 0, 1, 2000)
+        line.SetLineStyle(2)
+        line.SetLineWidth(2)
+        line.SetLineColor(13)
+
+        if zpj_dirname:
+            flav_str = "q" if flav_matched else ""
+            h2d_dyj = grab_obj(os.path.join(root_dir, qgc.DY_FILENAME), "%s/%s" % (zpj_dirname, "%sjet_response_vs_genjet_pt" % (flav_str)))
+            flav_append = "_%sflavMatched" % flav_str if flav_matched else ""
+            output_filename = os.path.join(plot_dir, "response_vs_genjet_pt_zpj%s_norm%s%s.%s" % (flav_append, renorm, log_append, OUTPUT_FMT))
+            title = qgc.DY_ZpJ_LABEL
+            if flav_matched:
+                title += " (%s-matched)" % flav_str
+            zlim = [1E-5, 1] if logz and renorm else None
+            qgg.do_2D_plot(h2d_dyj, output_filename, renorm_axis=renorm, title=title, rebin=None, recolour=True, xlim=None, ylim=None, zlim=zlim, logz=logz, other_things_to_draw=[line])
+
+        if dj_dirname:
+            flav_str = "g" if flav_matched else ""
+            h2d_qcd = grab_obj(os.path.join(root_dir, qgc.QCD_FILENAME), "%s/%s" % (dj_dirname, "%sjet_response_vs_genjet_pt" % (flav_str)))
+            flav_append = "_%sflavMatched" % flav_str if flav_matched else ""
+            output_filename = os.path.join(plot_dir, "response_vs_genjet_pt_dj%s_norm%s%s.%s" % (flav_append, renorm, log_append, OUTPUT_FMT))
+            title = qgc.QCD_Dijet_LABEL
+            if flav_matched:
+                title += " (%s-matched)" % flav_str
+            zlim = [1E-5, 1] if logz and renorm else None
+            qgg.do_2D_plot(h2d_qcd, output_filename, renorm_axis=renorm, title=title, rebin=None, recolour=True, xlim=None, ylim=None, zlim=zlim, logz=logz, other_things_to_draw=[line])
 
 
 def do_projection_plots(root_dirs, plot_dir="response_plots", zpj_dirname="ZPlusJets_QG", dj_dirname="Dijet_QG", flav_matched=False):
@@ -103,7 +125,7 @@ if __name__ == '__main__':
 
     # Do 2D plots
     for workdir in args.workdirs:
-        do_all_2D_plots(workdir)
+        do_all_2D_plots(workdir, plot_dir=os.path.join(workdir, "response_2d"))
 
     # Do 1D comparison plots, without and with flavour matching
     do_projection_plots(args.workdirs, plot_dir=args.output)
