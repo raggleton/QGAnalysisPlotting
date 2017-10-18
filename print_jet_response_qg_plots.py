@@ -31,36 +31,68 @@ def do_all_2D_plots(root_dir, plot_dir="plots_2d", zpj_dirname="ZPlusJets_QG", d
     
     plot_dir : output dir for plots
     """
-    for flav_matched, renorm, logz in product([True, False], ['Y', None], [True, False]):
+    line = ROOT.TLine(1, 0, 1, 2000)
+    line.SetLineStyle(2)
+    line.SetLineWidth(2)
+    line.SetLineColor(13)
 
-        log_append = "_logZ" if logz else ""
+    for flav_matched in [True, False]:
+        for renorm, logz in product(['Y', None], [True, False]):
 
-        line = ROOT.TLine(1, 0, 1, 2000)
-        line.SetLineStyle(2)
-        line.SetLineWidth(2)
-        line.SetLineColor(13)
+            log_append = "_logZ" if logz else ""
 
-        if zpj_dirname:
-            flav_str = "q" if flav_matched else ""
-            h2d_dyj = grab_obj(os.path.join(root_dir, qgc.DY_FILENAME), "%s/%s" % (zpj_dirname, "%sjet_response_vs_genjet_pt" % (flav_str)))
-            flav_append = "_%sflavMatched" % flav_str if flav_matched else ""
-            output_filename = os.path.join(plot_dir, "response_vs_genjet_pt_zpj%s_norm%s%s.%s" % (flav_append, renorm, log_append, OUTPUT_FMT))
-            title = qgc.DY_ZpJ_LABEL
-            if flav_matched:
-                title += " (%s-matched)" % flav_str
-            zlim = [1E-5, 1] if logz and renorm else None
-            qgg.do_2D_plot(h2d_dyj, output_filename, renorm_axis=renorm, title=title, rebin=None, recolour=True, xlim=None, ylim=None, zlim=zlim, logz=logz, other_things_to_draw=[line])
 
-        if dj_dirname:
-            flav_str = "g" if flav_matched else ""
-            h2d_qcd = grab_obj(os.path.join(root_dir, qgc.QCD_FILENAME), "%s/%s" % (dj_dirname, "%sjet_response_vs_genjet_pt" % (flav_str)))
-            flav_append = "_%sflavMatched" % flav_str if flav_matched else ""
-            output_filename = os.path.join(plot_dir, "response_vs_genjet_pt_dj%s_norm%s%s.%s" % (flav_append, renorm, log_append, OUTPUT_FMT))
-            title = qgc.QCD_Dijet_LABEL
-            if flav_matched:
-                title += " (%s-matched)" % flav_str
-            zlim = [1E-5, 1] if logz and renorm else None
-            qgg.do_2D_plot(h2d_qcd, output_filename, renorm_axis=renorm, title=title, rebin=None, recolour=True, xlim=None, ylim=None, zlim=zlim, logz=logz, other_things_to_draw=[line])
+            if zpj_dirname:
+                flav_str = "q" if flav_matched else ""
+                h2d_dyj = grab_obj(os.path.join(root_dir, qgc.DY_FILENAME), "%s/%s" % (zpj_dirname, "%sjet_response_vs_genjet_pt" % (flav_str)))
+                flav_append = "_%sflavMatched" % flav_str if flav_matched else ""
+                output_filename = os.path.join(plot_dir, "response_vs_genjet_pt_zpj%s_norm%s%s.%s" % (flav_append, renorm, log_append, OUTPUT_FMT))
+                title = qgc.DY_ZpJ_LABEL
+                if flav_matched:
+                    title += " (%s-matched)" % flav_str
+                zlim = [1E-5, 1] if logz and renorm else None
+                qgg.do_2D_plot(h2d_dyj, output_filename, renorm_axis=renorm, title=title, rebin=None, recolour=True, xlim=None, ylim=None, zlim=zlim, logz=logz, other_things_to_draw=[line])
+                # output_filename = os.path.join(plot_dir, "response_vs_genjet_pt_zpj%s_norm%s%s_box.%s" % (flav_append, renorm, log_append, OUTPUT_FMT))
+                # qgg.do_2D_plot(h2d_dyj, output_filename, draw_opt="CANDLEY1", renorm_axis=renorm, title=title, rebin=None, recolour=True, xlim=None, ylim=None, zlim=zlim, logz=logz, other_things_to_draw=[line])
+
+            if dj_dirname:
+                flav_str = "g" if flav_matched else ""
+                h2d_qcd = grab_obj(os.path.join(root_dir, qgc.QCD_FILENAME), "%s/%s" % (dj_dirname, "%sjet_response_vs_genjet_pt" % (flav_str)))
+                flav_append = "_%sflavMatched" % flav_str if flav_matched else ""
+                output_filename = os.path.join(plot_dir, "response_vs_genjet_pt_dj%s_norm%s%s.%s" % (flav_append, renorm, log_append, OUTPUT_FMT))
+                title = qgc.QCD_Dijet_LABEL
+                if flav_matched:
+                    title += " (%s-matched)" % flav_str
+                zlim = [1E-5, 1] if logz and renorm else None
+                qgg.do_2D_plot(h2d_qcd, output_filename, renorm_axis=renorm, title=title, rebin=None, recolour=True, xlim=None, ylim=None, zlim=zlim, logz=logz, other_things_to_draw=[line])
+                # output_filename = os.path.join(plot_dir, "response_vs_genjet_pt_dj%s_norm%s%s_box.%s" % (flav_append, renorm, log_append, OUTPUT_FMT))
+                # qgg.do_2D_plot(h2d_qcd, output_filename, draw_opt="CANDLEY1", renorm_axis=renorm, title=title, rebin=None, recolour=True, xlim=None, ylim=None, zlim=zlim, logz=logz, other_things_to_draw=[line])
+
+        # Do box plot comparing them both
+        canvas = ROOT.TCanvas(ROOT.TUUID().AsString(), "", 800, 800)
+        canvas.SetTicks(1, 1)
+        canvas.SetLeftMargin(0.13)
+        canvas.SetBottomMargin(0.11)
+        h2d_qcd.SetTitle("Dijet & Z+Jets%s" % (" (flav matched)" if flav_matched else ""))
+        h2d_qcd.SetLineColor(ROOT.kBlue)
+        h2d_qcd.SetFillStyle(0)
+        draw_opt = "CANDLEY(00000311)"
+        h2d_qcd.Draw(draw_opt)
+        h2d_qcd.GetXaxis().SetRangeUser(0.7, 2.5)
+        h2d_dyj.SetLineColor(ROOT.kRed)
+        h2d_dyj.SetFillStyle(0)
+        h2d_dyj.Draw(draw_opt + " SAME")
+        h2d_qcd.GetYaxis().SetTitleOffset(1.7)
+        h2d_qcd.GetXaxis().SetTitleOffset(1.2)
+        leg = ROOT.TLegend(0.5, 0.6, 0.88, 0.88)
+        leg.AddEntry(h2d_qcd, qgc.DY_ZpJ_QFLAV_LABEL if flav_matched else qgc.DY_ZpJ_LABEL, "L")
+        leg.AddEntry(h2d_dyj, qgc.QCD_Dijet_GFLAV_LABEL if flav_matched else qgc.QCD_Dijet_LABEL, "L")
+        leg.Draw()
+        line.SetLineStyle(1)
+        line.Draw()
+        output_filename = os.path.join(plot_dir, "response_vs_genjet_pt_both%s_box.%s" % ("_flavMatched" if flav_matched else "", OUTPUT_FMT))
+        canvas.SaveAs(output_filename)
+
 
 
 def do_projection_plots(root_dirs, plot_dir="response_plots", zpj_dirname="ZPlusJets_QG", dj_dirname="Dijet_QG", flav_matched=False):
