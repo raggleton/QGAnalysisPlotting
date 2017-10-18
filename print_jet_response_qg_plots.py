@@ -99,7 +99,7 @@ if __name__ == '__main__':
 
     if args.output is None:
         app = "_comparison" if len(args.workdirs) > 1 else ""
-        args.output = os.path.join(args.output, "response_plots%s" % (app))
+        args.output = os.path.join(args.workdirs[0], "response_plots%s" % (app))
 
     # Do 2D plots
     for workdir in args.workdirs:
