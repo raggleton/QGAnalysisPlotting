@@ -75,7 +75,7 @@ def get_projection_plot(h2d, start_val, end_val, cut_axis='y'):
         return hproj
 
 
-def do_2D_plot(obj, output_filename, renorm_axis=None, title=None, rebin=None, recolour=True, xlim=None, ylim=None, logz=False):
+def do_2D_plot(obj, output_filename, draw_opt="COLZ", renorm_axis=None, title=None, rebin=None, recolour=True, xlim=None, ylim=None, zlim=None, logz=False, other_things_to_draw=None):
     """Print a 2D hist to file.
 
     renorm_axis : [None, "X", "Y"]
@@ -84,6 +84,8 @@ def do_2D_plot(obj, output_filename, renorm_axis=None, title=None, rebin=None, r
     recolour : bool
         Only used if renorm_axis != None
         If True, resets colour so max bin in each row/col (depending on renorm_axis) has value 1.
+
+    other_things_to_draw : list of other objects that will be drawn after the hist
 
     """
     if rebin:
@@ -100,13 +102,19 @@ def do_2D_plot(obj, output_filename, renorm_axis=None, title=None, rebin=None, r
     canvas.SetBottomMargin(0.11)
     if logz:
         canvas.SetLogz(1)
-    obj_renorm.Draw("COLZ")
+    obj_renorm.Draw(draw_opt)
     if xlim is not None:
         obj_renorm.GetXaxis().SetRangeUser(*xlim)
     if ylim is not None:
         obj_renorm.GetYaxis().SetRangeUser(*ylim)
     obj_renorm.GetYaxis().SetTitleOffset(1.7)
     obj_renorm.GetXaxis().SetTitleOffset(1.2)
+    if zlim:
+        obj_renorm.SetMinimum(zlim[0])
+        obj_renorm.SetMaximum(zlim[1])
+    if other_things_to_draw:
+        for x in other_things_to_draw:
+            x.Draw()
     output_filename = os.path.abspath(output_filename)
     odir = os.path.dirname(output_filename)
     if not os.path.isdir(odir):
