@@ -98,13 +98,13 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     if args.output is None:
-        args.output = args.workdirs[0]
+        app = "_comparison" if len(args.workdirs) > 1 else ""
+        args.output = os.path.join(args.output, "response_plots%s" % (app))
 
     # Do 2D plots
     for workdir in args.workdirs:
         do_all_2D_plots(workdir)
 
     # Do 1D comparison plots, without and with flavour matching
-    app = "_comparison" if len(args.workdirs) > 1 else ""
-    do_projection_plots(args.workdirs, plot_dir=os.path.join(args.output, "response_plots%s" % (app)))
-    do_projection_plots(args.workdirs, plot_dir=os.path.join(args.output, "response_plots%s" % (app)), flav_matched=True)
+    do_projection_plots(args.workdirs, plot_dir=args.output)
+    do_projection_plots(args.workdirs, plot_dir=args.output, flav_matched=True)
