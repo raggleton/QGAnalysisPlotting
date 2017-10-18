@@ -61,6 +61,8 @@ def do_projection_plots(root_dirs, plot_dir="response_plots", zpj_dirname="ZPlus
 
                 dy_reco_kwargs = dict(line_color=qgc.DY_COLOUR, fill_color=qgc.DY_COLOUR, line_width=lw,
                                        label=qgc.DY_ZpJ_QFLAV_LABEL if flav_matched else qgc.DY_ZpJ_LABEL)
+                if len(root_dirs) > 1:
+                    dy_reco_kwargs['label'] += " ["+root_dir+"]"
                 entries.append((obj, dy_reco_kwargs))
 
             if dj_dirname:
@@ -70,6 +72,8 @@ def do_projection_plots(root_dirs, plot_dir="response_plots", zpj_dirname="ZPlus
 
                 qcd_reco_kwargs = dict(line_color=qgc.QCD_COLOUR, fill_color=qgc.QCD_COLOUR, line_width=lw,
                                        label=qgc.QCD_Dijet_GFLAV_LABEL if flav_matched else qgc.QCD_Dijet_LABEL)
+                if len(root_dirs) > 1:
+                    qcd_reco_kwargs['label'] += " ["+root_dir+"]"
                 entries.append((obj, qcd_reco_kwargs))
 
         flav_str = "_flavMatched" if flav_matched else ""
