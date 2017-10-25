@@ -98,14 +98,7 @@ def do_dijet_distributions(root_dir):
     do_all_1D_plots_in_dir(directories=directories, 
                            output_dir=os.path.join(root_dir, "Dijet_kin_comparison"),
                            components_styles_dicts=csd)
-    # Do stacked, filled version
-    for x in csd:
-        x['fill_style'] = 1001
-    do_all_1D_plots_in_dir(directories=directories, 
-                           output_dir=os.path.join(root_dir, "Dijet_kin_comparison_stacked"),
-                           components_styles_dicts=csd,
-                           draw_opts="HIST",
-                           do_ratio=False)
+
 
 
 def do_zpj_distributions(root_dir):
@@ -122,14 +115,6 @@ def do_zpj_distributions(root_dir):
     do_all_1D_plots_in_dir(directories=directories, 
                            output_dir=os.path.join(root_dir, "ZpJ_kin_comparison"),
                            components_styles_dicts=csd)
-    # Do stacked, filled version
-    for x in csd:
-        x['fill_style'] = 1001
-    do_all_1D_plots_in_dir(directories=directories, 
-                           output_dir=os.path.join(root_dir, "ZpJ_kin_comparison_stacked"),
-                           components_styles_dicts=csd,
-                           draw_opts="HIST",
-                           do_ratio=False)
 
 
 if __name__ == "__main__":
