@@ -306,6 +306,9 @@ class Plot(object):
     def set_logy(self, state=True):
         self.main_pad.SetLogy(int(state))
 
+    def set_logz(self, state=True):
+        self.main_pad.SetLogz(int(state))
+
     def plot(self, draw_opts=None):
         """Make the plot.
 
