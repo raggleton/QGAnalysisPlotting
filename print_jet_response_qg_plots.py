@@ -102,7 +102,7 @@ def do_projection_plots(root_dirs, plot_dir="response_plots", zpj_dirname="ZPlus
     flav_matched : If True, use hists with explicit gen-parton flavour matching
     plot_dir : output dir for plots
     """
-    pt_bins = [(20, 40), (60, 80), (100, 120), (160, 200), (260, 300), (500, 600), (1000, 2000)]
+    pt_bins = [(20, 40), (40, 60), (60, 80), (100, 120), (160, 200), (260, 300), (500, 600), (1000, 2000)]
     for (pt_min, pt_max) in pt_bins:
         
         lw = 2 if len(root_dirs) == 1 else 1
