@@ -150,16 +150,21 @@ def do_projection_plots(root_dirs, plot_dir="response_plots", zpj_dirname="ZPlus
 
 if __name__ == '__main__':
     parser = qgc.get_parser()
+    parser.add_argument("--comparison", action='store_true', 
+                        help="Only do comparison plots. Otherwise only do 2D plots for each dir.")
     args = parser.parse_args()
+    print args
 
-    if args.output is None:
-        app = "_comparison" if len(args.workdirs) > 1 else ""
-        args.output = os.path.join(args.workdirs[0], "response_plots%s" % (app))
-
-    # Do 2D plots
-    for workdir in args.workdirs:
-        do_all_2D_plots(workdir, plot_dir=os.path.join(workdir, "response_2d"))
-
-    # Do 1D comparison plots, without and with flavour matching
-    do_projection_plots(args.workdirs, plot_dir=args.output)
-    do_projection_plots(args.workdirs, plot_dir=args.output, flav_matched=True)
+    if not args.comparison:
+        # Do 2D plots
+        for workdir in args.workdirs:
+            do_all_2D_plots(workdir, plot_dir=os.path.join(workdir, "response_2d"))
+            do_projection_plots([workdir], plot_dir=os.path.join(workdir, "response_plots"))
+            do_projection_plots([workdir], plot_dir=os.path.join(workdir, "response_plots"), flav_matched=True)
+    else:
+        if args.output is None:
+            app = "_comparison" if len(args.workdirs) > 1 else ""
+            args.output = os.path.join(args.workdirs[0], "response_plots%s" % (app))
+        # Do 1D comparison plots, without and with flavour matching
+        do_projection_plots(args.workdirs, plot_dir=args.output)
+        do_projection_plots(args.workdirs, plot_dir=args.output, flav_matched=True)
