@@ -39,9 +39,9 @@ def get_list_of_obj(directory):
     return [x.GetName() for x in key_list]
 
 
-def do_all_1D_plots_in_dir(directories, output_dir, components_styles_dicts=None, draw_opts="NOSTACK HISTE", do_ratio=True):
+def do_all_1D_projection_plots_in_dir(directories, output_dir, components_styles_dicts=None, draw_opts="NOSTACK HISTE", do_ratio=True):
     """
-    Given a set of TDirs, loop over all 1D hists, and for each plot all TDirs on a canvas.
+    Given a set of TDirs, loop over all 2D hists, do projection hists for chosen bins, and plot all TDir contributions on a canvas for comparison.
 
     components_styles_dicts should be a list of style dicts, one for each directory/contribution to a plot. 
     This should include label for this component.
@@ -56,30 +56,42 @@ def do_all_1D_plots_in_dir(directories, output_dir, components_styles_dicts=None
     if not all(x == list_of_obj[0] for x in list_of_obj):
         raise RuntimeError("Different number of object in the TDirectorys")
 
+    pt_bins = [(20, 40), (40, 60), (60, 80), (100, 120), (160, 200), (260, 300), (500, 600), (1000, 2000)]
+
     for obj_name in list_of_obj[0]:
         objs = [d.Get(obj_name) for d in directories]
 
-        # Ignore TH2s
-        if not isinstance(objs[0], (ROOT.TH1F, ROOT.TH1D, ROOT.TH1I)):
-            print obj_name, "is not a TH1"
+        # Ignore TH1s
+        if not isinstance(objs[0], (ROOT.TH2F, ROOT.TH2D, ROOT.TH2I)):
+            print obj_name, "is not a TH2"
+            continue
+        
+        if "flav" in obj_name:
             continue
 
-        contributions = [Contribution(ob, normalise_hist="nostack" in draw_opts.lower(), **csd) 
-                         for ob, csd in zip(objs, components_styles_dicts)]
-        ylim = None
-        if "pt_jet" in obj_name and "ratio" not in obj_name and "frac" not in obj_name:
-            ylim = [1E-9, 1E-1]
-        p = Plot(contributions, what='hist', ytitle="p.d.f.", 
-                 subplot_type="ratio" if do_ratio else None, 
-                 subplot_title="#splitline{Ratio wrt}{%s}" % contributions[0].label,
-                 subplot=contributions[0], ylim=ylim)
-        p.legend.SetX1(0.8)
-        p.legend.SetX2(0.9)
-        p.plot(draw_opts)
-        # EURGH FIXME
-        if "pt_jet" in obj_name and "ratio" not in obj_name and "frac" not in obj_name:
-            p.set_logy()
-        p.save(os.path.join(output_dir, obj_name + "." + OUTPUT_FMT))
+        for pt_min, pt_max in pt_bins:
+            
+            rebin = 1
+            if "n_jets" not in obj_name and "n_mu" not in obj_name:
+                rebin = 2
+            contributions = [Contribution(qgg.get_projection_plot(ob, pt_min, pt_max), normalise_hist=True, rebin_hist=rebin, **csd) 
+                             for ob, csd in zip(objs, components_styles_dicts)]
+            ylim = None
+            # if "pt_jet" in obj_name and "ratio" not in obj_name and "frac" not in obj_name:
+            #     ylim = [1E-9, 1E-1]
+            title = "%d < p_{T}^{jet 1} < %d GeV" % (pt_min, pt_max)
+            p = Plot(contributions, what='hist', ytitle="p.d.f.", 
+                     title=title,
+                     subplot_type="ratio" if do_ratio else None, 
+                     subplot_title="#splitline{Ratio wrt}{%s}" % contributions[0].label,
+                     subplot=contributions[0], ylim=ylim)
+            p.legend.SetX1(0.8)
+            p.legend.SetX2(0.9)
+            p.plot(draw_opts)
+            # EURGH FIXME
+            # if "pt_jet" in obj_name and "ratio" not in obj_name and "frac" not in obj_name:
+            #     p.set_logy()
+            p.save(os.path.join(output_dir, obj_name+"_pt%dto%d.%s" % (pt_min, pt_max, OUTPUT_FMT)))
 
 
 def do_dijet_distributions(root_dir):
@@ -95,9 +107,9 @@ def do_dijet_distributions(root_dir):
         {"label": "qg", "line_color": qg_col, "fill_color": qg_col, "marker_color": qg_col},
         {"label": "qq", "line_color": qq_col, "fill_color": qq_col, "marker_color": qq_col},
     ]
-    do_all_1D_plots_in_dir(directories=directories, 
-                           output_dir=os.path.join(root_dir, "Dijet_kin_comparison"),
-                           components_styles_dicts=csd)
+    do_all_1D_projection_plots_in_dir(directories=directories, 
+                                      output_dir=os.path.join(root_dir, "Dijet_kin_comparison"),
+                                      components_styles_dicts=csd)
 
 
 
@@ -112,9 +124,9 @@ def do_zpj_distributions(root_dir):
         {"label": "q", "line_color": q_col, "fill_color": q_col, "marker_color": q_col},
         {"label": "g", "line_color": g_col, "fill_color": g_col, "marker_color": g_col}
     ]
-    do_all_1D_plots_in_dir(directories=directories, 
-                           output_dir=os.path.join(root_dir, "ZpJ_kin_comparison"),
-                           components_styles_dicts=csd)
+    do_all_1D_projection_plots_in_dir(directories=directories, 
+                                      output_dir=os.path.join(root_dir, "ZpJ_kin_comparison"),
+                                      components_styles_dicts=csd)
 
 
 if __name__ == "__main__":
