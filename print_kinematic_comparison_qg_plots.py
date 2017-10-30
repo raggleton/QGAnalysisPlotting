@@ -120,7 +120,11 @@ def do_dijet_distributions(root_dir):
     do_all_1D_projection_plots_in_dir(directories=directories, 
                                       output_dir=os.path.join(root_dir, "Dijet_kin_comparison"),
                                       components_styles_dicts=csd)
-
+    # do jet1 vs jet2 flav
+    output_filename = os.path.join(root_dir, "Dijet_kin_comparison", "flav_jet1_jet2.%s" % OUTPUT_FMT)
+    h2d = cu.get_from_file(root_file, "Dijet_Presel/flav_jet1_jet2")
+    h2d.Scale(1./h2d.Integral())
+    qgg.do_2D_plot(h2d, output_filename, draw_opt="COLZ", logz=True, zlim=[1E-4, 1])
 
 
 def do_zpj_distributions(root_dir):
