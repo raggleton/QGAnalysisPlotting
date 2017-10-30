@@ -102,22 +102,42 @@ def do_pythia_comparison_flav_fractions_plots(mgpythia_dir, pythia_only_dir, plo
 def do_component_plots(mgpythia_dir, pythia_only_dir, plot_dir):
 
     # Do 2D plots for diff ptMin folders
+    jet_flavs = ["", "g", "q"]
     ptmin_vals = [50, 100, 200, 400, 800]
+    ptmin_vals = [100, 800]
+    # first the pt vs ones:
     plotnames = ["genjet_pt_vs_constituent_pt", "genjet_pt_vs_constituent_zi", "genjet_pt_vs_constituent_deta", "genjet_pt_vs_constituent_dphi", "genjet_pt_vs_constituent_dr"]
-    for plotname, ptmin, renorm, logz in product(plotnames, ptmin_vals, ['Y', None], [True, False]):
+    for plotname, ptmin, renorm, logz, flav in product(plotnames, ptmin_vals, ['Y', None], [True, False], jet_flavs):
         rebin = [1, 1]
         ylim = [ptmin, 2000]
         dirname = "Dijet_genjet_ptMin_%d" % ptmin
-        this_hist = os.path.join(dirname, plotname)
+        this_hist = os.path.join(dirname, flav+plotname)
         log_append = "_logZ" if logz else ""
         qgg.do_2D_plot(grab_obj(os.path.join(mgpythia_dir, qgc.QCD_FILENAME), this_hist),
-                               output_filename="%s/constituent_plots/ptMin_%d/%s_mgpythia_norm%s%s.%s" % (plot_dir, ptmin, plotname, renorm, log_append, OUTPUT_FMT),
+                               output_filename="%s/constituent_plots/ptMin_%d/%s_mgpythia_norm%s%s.%s" % (plot_dir, ptmin, flav+plotname, renorm, log_append, OUTPUT_FMT),
                                renorm_axis=renorm, title="MG+Pythia", rebin=rebin, recolour=True, ylim=ylim, logz=logz)
         qgg.do_2D_plot(grab_obj(os.path.join(pythia_only_dir, qgc.QCD_FILENAME), this_hist),
-                               output_filename="%s/constituent_plots/ptMin_%d/%s_pythiaOnly_norm%s%s.%s" % (plot_dir, ptmin, plotname, renorm, log_append, OUTPUT_FMT),
+                               output_filename="%s/constituent_plots/ptMin_%d/%s_pythiaOnly_norm%s%s.%s" % (plot_dir, ptmin, flav+plotname, renorm, log_append, OUTPUT_FMT),
                                renorm_axis=renorm, title="Pythia only", rebin=rebin, recolour=True, ylim=ylim, logz=logz)
 
-    def do_2D_plot_with_contours(obj, contour_obj, output_filename, renorm_axis=None, title=None, rebin=None, recolour=True, xlim=None, ylim=None, logz=False):
+    # Now LHA vs X ones
+    plotnames = ["genjet_LHA_vs_zi", "genjet_LHA_vs_thetai"]
+    for plotname, ptmin, renorm, logz, flav in product(plotnames, ptmin_vals, ['X', 'Y', None], [True, False], jet_flavs):
+        rebin = [4, 4]
+        xlim = [0, 0.5] if ("zi" in plotname and renorm != "X") else None
+        ylim = None
+        dirname = "Dijet_genjet_ptMin_%d" % ptmin
+        this_hist = os.path.join(dirname, flav+plotname)
+        log_append = "_logZ" if logz else ""
+        qgg.do_2D_plot(grab_obj(os.path.join(mgpythia_dir, qgc.QCD_FILENAME), this_hist),
+                               output_filename="%s/constituent_plots/ptMin_%d/%s_mgpythia_norm%s%s.%s" % (plot_dir, ptmin, flav+plotname, renorm, log_append, OUTPUT_FMT),
+                               renorm_axis=renorm, title="MG+Pythia, %s-jet, ptMin = %d GeV" % (flav, ptmin), rebin=rebin, recolour=True, xlim=xlim, ylim=ylim, logz=logz)
+        qgg.do_2D_plot(grab_obj(os.path.join(pythia_only_dir, qgc.QCD_FILENAME), this_hist),
+                               output_filename="%s/constituent_plots/ptMin_%d/%s_pythiaOnly_norm%s%s.%s" % (plot_dir, ptmin, flav+plotname, renorm, log_append, OUTPUT_FMT),
+                               renorm_axis=renorm, title="Pythia only, %s-jet, ptMin = %d GeV" % (flav, ptmin), rebin=rebin, recolour=True, xlim=xlim, ylim=ylim, logz=logz)
+
+
+    def do_2D_plot_with_contours(obj, contour_obj, output_filename, renorm_axis=None, title=None, rebin=None, recolour=True, xlim=None, ylim=None, logx=False, logy=False, logz=False):
         """Like normal 2D plotter but contour_obj will be plotted using contours"""
         if rebin:
             obj.Rebin2D(*rebin)
@@ -131,6 +151,10 @@ def do_component_plots(mgpythia_dir, pythia_only_dir, plot_dir):
         canvas.SetTicks(1, 1)
         canvas.SetLeftMargin(0.13)
         canvas.SetBottomMargin(0.11)
+        if logx:
+            canvas.SetLogx(1)
+        if logy:
+            canvas.SetLogy(1)
         if logz:
             canvas.SetLogz(1)
         obj_renorm.Draw("COLZ")
@@ -150,10 +174,10 @@ def do_component_plots(mgpythia_dir, pythia_only_dir, plot_dir):
 
     #  Do 2D plots for premade jet pt cut objs
     jet_pt_vals = [(100, 200), (800, 1000)]
-    for (jet_pt_min, jet_pt_max), renorm, logz in product(jet_pt_vals, ['X', 'Y', None], [True, False]):
-        rebin = [2, 2]
-        xlim = None
-        ylim = [0, 0.4]
+    for (jet_pt_min, jet_pt_max), renorm, logz in product(jet_pt_vals, ['X', 'Y', None][2:], [True, False]):
+        rebin = [1, 1]
+        xlim = [0, 1]
+        ylim = [0, 0.05]
         dirname = "Dijet_genjet"
         jet_type = "g"
         plotname = jet_type+"genjet_constituent_zi_vs_constituent_thetai_pt%dto%d" % (jet_pt_min, jet_pt_max)
@@ -180,6 +204,7 @@ def do_component_plots(mgpythia_dir, pythia_only_dir, plot_dir):
                                  rebin=rebin, recolour=True, xlim=xlim, ylim=ylim, logz=logz)
 
 
+    # Do 1D projection plots
     for (jet_pt_min, jet_pt_max) in jet_pt_vals:
         lw = 2
         dirname = "Dijet_genjet"
@@ -188,7 +213,7 @@ def do_component_plots(mgpythia_dir, pythia_only_dir, plot_dir):
         this_hist = os.path.join(dirname, plotname)
         
         # Do projection plots for various zi bins
-        cut_zi_bins = [(0, 0.05), (0, 0.1), (0.1, 0.2), (0.3, 0.4), (0.4, 0.5), (0.8, 1.0)]
+        cut_zi_bins = [(0, 0.001), (0, 0.005), (0, 0.01), (0, 0.05), (0.05, 0.1), (0, 0.1), (0.1, 0.2), (0.3, 0.4), (0.4, 0.5), (0.8, 1.0), (0, 1)]
 
         for i, (start_val, end_val) in enumerate(cut_zi_bins):
             entries_normal = []    
@@ -204,14 +229,17 @@ def do_component_plots(mgpythia_dir, pythia_only_dir, plot_dir):
             ofilename = jet_type+"genjet_constituent_thetai_binned_zi%gto%g_jetPt%dto%d" % (start_val, end_val, jet_pt_min, jet_pt_max)
             rebin = 5 if end_val <= 0.1 else 2
             xlim = None if end_val <= 0.1 else [0, 0.6]
+            if end_val >= 1:
+                rebin = 4
+                xlim = [0, 1.2]
             qgg.do_comparison_plot(entries_normal, "%s/constituent_plots/%s.%s" % (plot_dir, ofilename, OUTPUT_FMT),
                                    rebin=rebin, title="%g < z_{i} < %g, %d < p_{T}^{jet} < %d GeV" % (start_val, end_val, jet_pt_min, jet_pt_max),
                                    xtitle="#theta_{i}",
                                    xlim=xlim, ylim=None, 
                                    subplot_type="ratio", subplot_title="#splitline{Ratio wrt}{MG+Pythia}")
-        
+
         # Do projections hists for various theta_i bins
-        cut_thetai_bins = [(0, 0.01), (0.01, 0.02), (0.02, 0.05), (0.05, 0.10), (0.1, 0.15), (0.15, 0.2), (0.2, 0.3), (0.3, 0.4), (0.4, 0.6), (0.6, 0.8), (0.8, 1), (1, 1.5)]
+        cut_thetai_bins = [(0, 0.01), (0.01, 0.02), (0.02, 0.05), (0.05, 0.10), (0.1, 0.15), (0.15, 0.2), (0.2, 0.3), (0.3, 0.4), (0.4, 0.6), (0.6, 0.8), (0.8, 1), (1, 1.5), (0, 2)][-1:]
         deltas = []
         delta_components = []
         colours = [ROOT.kBlue, ROOT.kRed, ROOT.kGreen+2, ROOT.kOrange-3, ROOT.kMagenta, ROOT.kAzure+1]
@@ -234,6 +262,8 @@ def do_component_plots(mgpythia_dir, pythia_only_dir, plot_dir):
             # rebin = 5 if end_val <= 0.1 else 2
             rebin = None
             xlim = [0, 0.5] if end_val <= 0.1 else [0, 0.2]
+            if end_val == 2:
+                xlim = [0, 0.2]
             ofilename = jet_type+"genjet_constituent_zi_binned_thetai%gto%g_jetPt%dto%d" % (start_val, end_val, jet_pt_min, jet_pt_max)
             qgg.do_comparison_plot(entries_normal, "%s/constituent_plots/%s.%s" % (plot_dir, ofilename, OUTPUT_FMT),
                                    rebin=rebin, title="%g < #theta_{i} < %g, %d < p_{T}^{jet} < %d GeV" % (start_val, end_val, jet_pt_min, jet_pt_max),
