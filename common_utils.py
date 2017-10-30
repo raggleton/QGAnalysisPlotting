@@ -141,8 +141,10 @@ def th2_to_arr(h):
 
 
 def make_normalised_TH2(hist, norm_axis, recolour=True):
-    if norm_axis not in ['X', 'x', 'y', 'Y']:
-        raise RuntimeError("norm_axis must be one of 'X', 'Y' ")
+    norm_axis = norm_axis.upper()
+    possible_opts = ['X', 'Y']
+    if norm_axis not in possible_opts:
+        raise RuntimeError("norm_axis must be one of %s" % possible_opts)
     norm_axis = norm_axis.upper()
 
     # easiest way to cope with x or y is to just get a 2D matrix of values,
