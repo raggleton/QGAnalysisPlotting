@@ -112,7 +112,7 @@ def do_all_1D_projection_plots_in_dir(directories, output_dir, components_styles
                      subplot_type="ratio" if do_ratio else None, 
                      subplot_title="#splitline{Ratio wrt}{%s}" % contributions[0].label,
                      subplot=contributions[0], ylim=ylim)
-            p.legend.SetX1(0.8)
+            p.legend.SetX1(0.6)
             p.legend.SetX2(0.9)
             p.plot(draw_opts)
             # EURGH FIXME
