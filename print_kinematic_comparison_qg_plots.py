@@ -96,16 +96,26 @@ def do_all_1D_projection_plots_in_dir(directories, output_dir, components_styles
 
 def do_dijet_distributions(root_dir):
     """Do plots comparing different jet flavs in dijet region"""
-    dir_names = ["Dijet_Presel_gg", "Dijet_Presel_qg", "Dijet_Presel_qq"]
+    dir_names = ["Dijet_Presel_gg", "Dijet_Presel_qg", "Dijet_Presel_qq", 
+                 "Dijet_Presel_q_unknown", "Dijet_Presel_g_unknown",
+                 "Dijet_Presel_unknown_q", "Dijet_Presel_unknown_g",
+                 "Dijet_Presel_unknown_unknown"
+                ]
     root_file = cu.open_root_file(os.path.join(root_dir, qgc.QCD_FILENAME))
     directories = [cu.get_from_file(root_file, dn) for dn in dir_names]
     gg_col = ROOT.kRed
     qg_col = ROOT.kGreen+2
     qq_col = ROOT.kBlue
+    unknown_cols = [ROOT.kOrange+1, ROOT.kOrange+4, ROOT.kPink+6, ROOT.kViolet, ROOT.kAzure+1]
     csd = [
         {"label": "gg", "line_color": gg_col, "fill_color": gg_col, "marker_color": gg_col},
         {"label": "qg", "line_color": qg_col, "fill_color": qg_col, "marker_color": qg_col},
         {"label": "qq", "line_color": qq_col, "fill_color": qq_col, "marker_color": qq_col},
+        {"label": "1:q  2:unknown", "line_color": unknown_cols[0], "fill_color": unknown_cols[0], "marker_color": unknown_cols[0]},
+        {"label": "1:g  2:unknown", "line_color": unknown_cols[1], "fill_color": unknown_cols[1], "marker_color": unknown_cols[1]},
+        {"label": "1:unknown  2:q", "line_color": unknown_cols[2], "fill_color": unknown_cols[2], "marker_color": unknown_cols[2]},
+        {"label": "1:unknown  2:g", "line_color": unknown_cols[3], "fill_color": unknown_cols[3], "marker_color": unknown_cols[3]},
+        {"label": "1:unknown  2:unknown", "line_color": unknown_cols[4], "fill_color": unknown_cols[4], "marker_color": unknown_cols[4]},
     ]
     do_all_1D_projection_plots_in_dir(directories=directories, 
                                       output_dir=os.path.join(root_dir, "Dijet_kin_comparison"),
@@ -115,14 +125,16 @@ def do_dijet_distributions(root_dir):
 
 def do_zpj_distributions(root_dir):
     """Do plots comparing different jet flavs in z+jets region"""
-    dir_names = ["ZPlusJets_Presel_q", "ZPlusJets_Presel_g"]
+    dir_names = ["ZPlusJets_Presel_q", "ZPlusJets_Presel_g", "ZPlusJets_Presel_unknown"]
     root_file = cu.open_root_file(os.path.join(root_dir, qgc.DY_FILENAME))
     directories = [cu.get_from_file(root_file, dn) for dn in dir_names]
     g_col = ROOT.kRed
     q_col = ROOT.kBlue
+    unknown_col = ROOT.kViolet
     csd = [
         {"label": "q", "line_color": q_col, "fill_color": q_col, "marker_color": q_col},
-        {"label": "g", "line_color": g_col, "fill_color": g_col, "marker_color": g_col}
+        {"label": "g", "line_color": g_col, "fill_color": g_col, "marker_color": g_col},
+        {"label": "unknown", "line_color": unknown_col, "fill_color": unknown_col, "marker_color": unknown_col}
     ]
     do_all_1D_projection_plots_in_dir(directories=directories, 
                                       output_dir=os.path.join(root_dir, "ZpJ_kin_comparison"),
