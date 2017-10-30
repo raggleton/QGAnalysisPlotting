@@ -452,8 +452,20 @@ class Plot(object):
             if self.subplot_type == "ratio":
                 # self.subplot_container.SetMinimum(self.subplot_ratio_lim[0])  # use this, not SetRangeUser()
                 self.subplot_container.SetMinimum(0)  # use this, not SetRangeUser()
-                bin_meds = [np.mean(cu.th1_to_arr(h)) for h in self.subplot_contributions]
-                self.subplot_container.SetMaximum(min(50, max(1.5, 2*max(bin_meds))))
+                
+                # Make sure that the upper limit is the largest bin of the contributions,
+                # so long as it is within 1.5 and some upper limit
+                bin_meds = [np.max(cu.th1_to_arr(h)) for h in self.subplot_contributions]
+                self.subplot_container.SetMaximum(min(10, max(1.5, 1.*max(bin_meds))))
+                
+                # Make sure the lower limit is the smallest bin of the contributions, 
+                # so long as it is within 0 and 0.5
+                bin_mins = [np.min(cu.th1_to_arr(h)) for h in self.subplot_contributions]
+                self.subplot_container.SetMinimum(min(0.5, min(bin_mins)))
+                
+                # self.subplot_container.SetMaximum(1.5)
+                # self.subplot_container.SetMinimum(0.5)
+                
                 xax = modifier.GetXaxis()
                 self.subplot_line = ROOT.TLine(xax.GetXmin(), 1., xax.GetXmax(), 1.)
                 self.subplot_line.SetLineStyle(2)
