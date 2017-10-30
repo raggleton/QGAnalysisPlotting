@@ -7,6 +7,7 @@ from MyStyle import My_Style
 My_Style.cd()
 import os
 from itertools import product
+import numpy as np
 
 # My stuff
 from comparator import Contribution, Plot, grab_obj
@@ -70,12 +71,38 @@ def do_all_1D_projection_plots_in_dir(directories, output_dir, components_styles
             continue
 
         for pt_min, pt_max in pt_bins:
-            
+            # print pt_min, pt_max
             rebin = 1
             if "n_jets" not in obj_name and "n_mu" not in obj_name:
                 rebin = 2
             contributions = [Contribution(qgg.get_projection_plot(ob, pt_min, pt_max), normalise_hist=True, rebin_hist=rebin, **csd) 
                              for ob, csd in zip(objs, components_styles_dicts)]
+            
+            # filter contributions to ensure odd low stat ones don't dominate the scale
+            # combination of factors to remove noisy samples
+            mean_errs = []
+            max_over_mean_errs = []
+            rel_err_vars = []
+            for cont in contributions:
+                obj = cont.obj
+                errs = [obj.GetBinError(i) for i in range(obj.GetNbinsX()+1)]
+                mean_errs.append(np.mean(errs))
+                max_over_mean_errs.append(np.max(errs) / np.mean(errs))
+                rel_err_vars.append(np.std(errs) / np.mean(errs))
+                # print "obj", cont.label
+                # print 'mean errs', np.mean(errs)
+                # print 'rel max err', np.max(errs) / np.mean(errs)
+                # print 'stddev err', np.std(errs)
+                # print 'rel std dev err', np.std(errs) / np.mean(errs)
+            ref_mean_err = np.median(mean_errs)
+            ref_rel_err_var = np.median(rel_err_vars)
+            # print '-'*20
+            # print 'mean mean err', ref_mean_err
+            # print 'mean var', ref_rel_err_var
+            contributions = [cont for cont, merr, rev, mom 
+                             in zip(contributions, mean_errs, rel_err_vars, max_over_mean_errs) 
+                             if (merr < 2.5*ref_mean_err) and (rev < 5*ref_rel_err_var or mom<11)]
+
             ylim = None
             # if "pt_jet" in obj_name and "ratio" not in obj_name and "frac" not in obj_name:
             #     ylim = [1E-9, 1E-1]
