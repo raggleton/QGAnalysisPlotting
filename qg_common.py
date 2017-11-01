@@ -29,24 +29,24 @@ COMMON_VARS_WITH_FLAV = [
 COMMON_VARS = COMMON_VARS_WITH_FLAV[:-2]
 
 DY_ZpJ_LABEL = "DY+j, Z+jets selection"
-DY_ZpJ_GEN_LABEL = "#splitline{DY+j, Z+jets selection}{(GenJets)}"
-DY_ZpJ_QFLAV_LABEL = "#splitline{DY+j, Z+jets selection}{(uds-matched)}"
-DY_ZpJ_GFLAV_LABEL = "#splitline{DY+j, Z+jets selection}{(g-matched)}"
+DY_ZpJ_GEN_LABEL = "DY+j, Z+jets selection\n(GenJets)"
+DY_ZpJ_QFLAV_LABEL = "DY+j, Z+jets selection\n(uds-matched)"
+DY_ZpJ_GFLAV_LABEL = "DY+j, Z+jets selection\n(g-matched)"
 
 DY_Dijet_LABEL = "DY+j, Dijet selection"
-DY_Dijet_GEN_LABEL = "#splitline{DY+j, Dijet selection}{(GenJets)}"
-DY_Dijet_QFLAV_LABEL = "#splitline{DY+j, Dijet selection}{(uds-matched)}"
-DY_Dijet_GFLAV_LABEL = "#splitline{DY+j, Dijet selection}{(g-matched)}"
+DY_Dijet_GEN_LABEL = "DY+j, Dijet selection\n(GenJets)"
+DY_Dijet_QFLAV_LABEL = "DY+j, Dijet selection\n(uds-matched)"
+DY_Dijet_GFLAV_LABEL = "DY+j, Dijet selection\n(g-matched)"
 
 QCD_ZpJ_LABEL = "QCD, Z+jets selection"
-QCD_ZpJ_GEN_LABEL = "#splitline{QCD, Z+jets selection}{(GenJets)}"
-QCD_ZpJ_QFLAV_LABEL = "#splitline{QCD, Z+jets selection}{(uds-matched)}"
-QCD_ZpJ_GFLAV_LABEL = "#splitline{QCD, Z+jets selection}{(g-matched)}"
+QCD_ZpJ_GEN_LABEL = "QCD, Z+jets selection\n(GenJets)"
+QCD_ZpJ_QFLAV_LABEL = "QCD, Z+jets selection\n(uds-matched)"
+QCD_ZpJ_GFLAV_LABEL = "QCD, Z+jets selection\n(g-matched)"
 
 QCD_Dijet_LABEL = "QCD, Dijet selection"
-QCD_Dijet_GEN_LABEL = "#splitline{QCD, Dijet selection}{(GenJets)}"
-QCD_Dijet_QFLAV_LABEL = "#splitline{QCD, Dijet selection}{(uds-matched)}"
-QCD_Dijet_GFLAV_LABEL = "#splitline{QCD, Dijet selection}{(g-matched)}"
+QCD_Dijet_GEN_LABEL = "QCD, Dijet selection\n(GenJets)"
+QCD_Dijet_QFLAV_LABEL = "QCD, Dijet selection\n(uds-matched)"
+QCD_Dijet_GFLAV_LABEL = "QCD, Dijet selection\n(g-matched)"
 
 # Dirs in ROOT files
 ZPJ_RECOJET_RDIR = "ZPlusJets_QG"
