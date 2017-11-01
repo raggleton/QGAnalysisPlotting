@@ -26,13 +26,13 @@ ROOT.TH1.SetDefaultSumw2()
 ROOT.gStyle.SetOptStat(0)
 
 
-def make_comparison_plot_ingredients(entries, rebin=1, **plot_kwargs):
+def make_comparison_plot_ingredients(entries, rebin=1, normalise_hist=True, **plot_kwargs):
     """Make the Plot object for a comparison plot. User can then add other elements to the plot.
 
     entries : list of 2-tuples, with (object, dict), where the dict is a set of kwargs passed to the Contribution object
     plot_kwargs : any other kwargs to be passed to the Plot object ctor
     """
-    conts = [Contribution(ent[0], normalise_hist=True, rebin_hist=rebin, **ent[1]) for ent in entries]
+    conts = [Contribution(ent[0], normalise_hist=normalise_hist, rebin_hist=rebin, **ent[1]) for ent in entries]
     do_legend = len(conts) > 1
     if len(conts) == 0:
         raise RuntimeError("0 contributions for this plot")
