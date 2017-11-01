@@ -261,8 +261,15 @@ class Plot(object):
             self.contributions_objs.append(contrib.obj)
 
             if self.do_legend:
+                # Split text by newline \n
+                # Add an entry for each line
                 opt = "LF" if self.plot_what == "hist" else "LP"
-                self.legend.AddEntry(contrib.obj, contrib.label, opt)
+                for i, substr in enumerate(contrib.label.split("\n")):
+                    if i == 0:
+                        self.legend.AddEntry(contrib.obj, substr, opt)
+                    else:
+                        self.legend.AddEntry(0, substr, "")
+
 
             # Add contributions for the subplot
             if self.subplot:
