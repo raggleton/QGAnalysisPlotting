@@ -20,6 +20,7 @@ ROOT.PyConfig.IgnoreCommandLineOptions = True
 ROOT.gROOT.SetBatch(1)
 ROOT.TH1.SetDefaultSumw2()
 ROOT.gStyle.SetOptStat(0)
+ROOT.gStyle.SetOptFit(1)
 
 # Control output format
 OUTPUT_FMT = "pdf"
@@ -95,12 +96,72 @@ def do_all_2D_plots(root_dir, plot_dir="plots_2d", zpj_dirname="ZPlusJets_QG", d
         canvas.SaveAs(output_filename)
 
 
+def determine_fit_range(hist):
+    """Determine lower & upper limit of fit range
+    
+    Parameters
+    ----------
+    hist : TH1
+        Description
+    
+    Returns
+    -------
+    tuple
+        (lower limit, upper limit)
+    """
+    # mean = hist.GetMean()
+    mean = hist.GetBinCenter(hist.GetMaximumBin())
+    rms = hist.GetRMS()
+    return (mean - 1.5*rms, mean + 1.5*rms)
 
-def do_projection_plots(root_dirs, plot_dir="response_plots", zpj_dirname="ZPlusJets_QG", dj_dirname="Dijet_QG", flav_matched=False):
+
+def do_gaus_fit(hist):
+    """Do a Gaussian fit to histogram
+
+    Parameters
+    ----------
+    hist : TH1
+        Histogram to fit to
+    """
+    func_name = hist.GetName()+"_f1"
+    func_name = "gausFit"
+    fit_range = determine_fit_range(hist)
+    func = ROOT.TF1(func_name, "gaus", fit_range[0], fit_range[1])
+    # func.SetParameters(hist.GetMaximum(), hist.GetMean(), hist.GetRMS())
+    fit_result = hist.Fit(func_name, "ERS", "L")
+    print "fit result:", int(fit_result)
+
+
+def fit_results_to_str(fit):
+    """Turn fit results into str, lines split by \n
+    
+    Parameters
+    ----------
+    fit : TF1
+        Description
+    
+    Returns
+    -------
+    str
+        Description
+    
+    """
+    parts = []
+    chi2 = fit.GetChisquare()
+    ndf = fit.GetNDF()
+    parts.append("chi2/ndof: %.3e/%d = %.3e" % (chi2, ndf, chi2/ndf))
+    parts.append("prob: %.3e" % fit.GetProb())
+    for i in range(fit.GetNpar()):
+        parts.append("%s: %.3e #pm %.3e" % (fit.GetParName(i), fit.GetParameter(i), fit.GetParError(i)))
+    return "\n".join(parts)
+
+
+def do_projection_plots(root_dirs, plot_dir="response_plots", zpj_dirname="ZPlusJets_QG", dj_dirname="Dijet_QG", flav_matched=False, do_fits=False):
     """Plot both/either q and g jet repsonse, for various genjet pt bins. Contributions from all root_dirs are shown on same plot.
     
     flav_matched : If True, use hists with explicit gen-parton flavour matching
     plot_dir : output dir for plots
+    do_fits : If Ture, try and do a Gaussian fit to each 1D hist
     """
     pt_bins = [(20, 40), (40, 60), (60, 80), (100, 120), (160, 200), (260, 300), (500, 600), (1000, 2000)]
     for (pt_min, pt_max) in pt_bins:
@@ -114,32 +175,48 @@ def do_projection_plots(root_dirs, plot_dir="response_plots", zpj_dirname="ZPlus
                 flav_str = "q" if flav_matched else ""
                 h2d_dyj = grab_obj(os.path.join(root_dir, qgc.DY_FILENAME), "%s/%s" % (zpj_dirname, "%sjet_response_vs_genjet_pt" % (flav_str)))
                 obj = qgg.get_projection_plot(h2d_dyj, pt_min, pt_max)
-
+                obj.Scale(1./obj.Integral())
                 col = qgc.DY_COLOURS[ind]
-                dy_reco_kwargs = dict(line_color=col, fill_color=col, line_width=lw,
+                dy_reco_kwargs = dict(line_color=col, fill_color=col, line_width=lw, marker_color=col,
                                       label=qgc.DY_ZpJ_QFLAV_LABEL if flav_matched else qgc.DY_ZpJ_LABEL)
                 if len(root_dirs) > 1:
                     dy_reco_kwargs['label'] += " ["+root_dir+"]"
+
+                if do_fits:
+                    do_gaus_fit(obj)
+                    dy_reco_kwargs['label'] += "\n"
+                    dy_reco_kwargs['label'] += fit_results_to_str(obj.GetFunction("gausFit"))
+
                 entries.append((obj, dy_reco_kwargs))
 
             if dj_dirname:
                 flav_str = "g" if flav_matched else ""
                 h2d_qcd = grab_obj(os.path.join(root_dir, qgc.QCD_FILENAME), "%s/%s" % (dj_dirname, "%sjet_response_vs_genjet_pt" % (flav_str)))
                 obj = qgg.get_projection_plot(h2d_qcd, pt_min, pt_max)
-
+                obj.Scale(1./obj.Integral())
                 col = qgc.QCD_COLOURS[ind]
-                qcd_reco_kwargs = dict(line_color=col, fill_color=col, line_width=lw,
+                qcd_reco_kwargs = dict(line_color=col, fill_color=col, line_width=lw, marker_color=col,
                                        label=qgc.QCD_Dijet_GFLAV_LABEL if flav_matched else qgc.QCD_Dijet_LABEL)
                 if len(root_dirs) > 1:
                     qcd_reco_kwargs['label'] += " ["+root_dir+"]"
+
+                if do_fits:
+                    do_gaus_fit(obj)
+                    qcd_reco_kwargs['label'] += "\n"
+                    qcd_reco_kwargs['label'] += fit_results_to_str(obj.GetFunction("gausFit"))
+
                 entries.append((obj, qcd_reco_kwargs))
 
         flav_str = "_flavMatched" if flav_matched else ""
         output_filename = os.path.join(plot_dir, "jet_response_ptGen%dto%d%s.%s" % (pt_min, pt_max, flav_str, OUTPUT_FMT))
-        plot = qgg.make_comparison_plot_ingredients(entries, rebin=1, 
+        plot = qgg.make_comparison_plot_ingredients(entries, rebin=1, normalise_hist=False,
                                                     title="%d < p_{T}^{GenJet} < %d GeV" % (pt_min, pt_max),
-                                                    xtitle="Response (p_{T}^{Reco} / p_{T}^{Gen})", xlim=(0, 3))
-        plot.plot("HISTE NOSTACK")
+                                                    xtitle="Response (p_{T}^{Reco} / p_{T}^{Gen})", xlim=(0.25, 1.75))
+        plot.legend.SetX1(0.65)
+        plot.legend.SetX2(0.95)
+        plot.legend.SetY1(0.5)
+        plot.legend.SetY2(0.89)
+        plot.plot("E NOSTACK")
         max_y = plot.container.GetHistogram().GetMaximum()
         line = ROOT.TLine(1, 0, 1, max_y)
         line.SetLineWidth(2)
@@ -160,8 +237,8 @@ if __name__ == '__main__':
         # Do 2D plots
         for workdir in args.workdirs:
             do_all_2D_plots(workdir, plot_dir=os.path.join(workdir, "response_2d"))
-            do_projection_plots([workdir], plot_dir=os.path.join(workdir, "response_plots"))
-            do_projection_plots([workdir], plot_dir=os.path.join(workdir, "response_plots"), flav_matched=True)
+            do_projection_plots([workdir], plot_dir=os.path.join(workdir, "response_plots"), do_fits=True)
+            do_projection_plots([workdir], plot_dir=os.path.join(workdir, "response_plots"), do_fits=True, flav_matched=True)
     else:
         if args.output is None:
             app = "_comparison" if len(args.workdirs) > 1 else ""
