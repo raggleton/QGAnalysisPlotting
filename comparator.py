@@ -142,6 +142,14 @@ class Contribution(object):
         self.obj.SetMarkerSize(self.marker_size)
         self.obj.SetMarkerColor(self.marker_color)
         self.obj.SetMarkerStyle(self.marker_style)
+
+        # Match fit to hist styles
+        if self.obj.GetListOfFunctions().GetSize() == 1:
+            func = self.obj.GetListOfFunctions().At(0)
+            func.SetLineStyle(line_style)
+            func.SetLineWidth(line_width)
+            func.SetLineColor(line_color)
+
         if rebin_hist and rebin_hist != 1:
             self.obj.Rebin(rebin_hist) # Does this handle 2D hists?
         if normalise_hist and obj.Integral() != 0:
