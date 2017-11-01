@@ -8,6 +8,7 @@ My_Style.cd()
 import os
 from itertools import product
 import numpy as np
+np.seterr(all='raise')
 
 # My stuff
 from comparator import Contribution, Plot, grab_obj
@@ -77,7 +78,10 @@ def do_all_1D_projection_plots_in_dir(directories, output_dir, components_styles
                 rebin = 2
             contributions = [Contribution(qgg.get_projection_plot(ob, pt_min, pt_max), normalise_hist=True, rebin_hist=rebin, **csd) 
                              for ob, csd in zip(objs, components_styles_dicts)]
-            
+
+            if len(contributions) == 0:
+                continue
+
             # filter contributions to ensure odd low stat ones don't dominate the scale
             # combination of factors to remove noisy samples
             mean_errs = []
@@ -86,14 +90,21 @@ def do_all_1D_projection_plots_in_dir(directories, output_dir, components_styles
             for cont in contributions:
                 obj = cont.obj
                 errs = [obj.GetBinError(i) for i in range(obj.GetNbinsX()+1)]
-                mean_errs.append(np.mean(errs))
-                max_over_mean_errs.append(np.max(errs) / np.mean(errs))
-                rel_err_vars.append(np.std(errs) / np.mean(errs))
-                # print "obj", cont.label
-                # print 'mean errs', np.mean(errs)
-                # print 'rel max err', np.max(errs) / np.mean(errs)
-                # print 'stddev err', np.std(errs)
-                # print 'rel std dev err', np.std(errs) / np.mean(errs)
+                if obj.GetEntries() > 0:
+                    mean_errs.append(np.mean(errs))
+                    max_over_mean_errs.append(np.max(errs) / np.mean(errs))
+                    rel_err_vars.append(np.std(errs) / np.mean(errs))
+                    # print "obj", cont.label
+                    # print 'mean errs', np.mean(errs)
+                    # print 'rel max err', np.max(errs) / np.mean(errs)
+                    # print 'stddev err', np.std(errs)
+                    # print 'rel std dev err', np.std(errs) / np.mean(errs)
+                else:
+                    # Dud values if 0 entries
+                    mean_errs.append(9999999)
+                    max_over_mean_errs.append(9999999)
+                    rel_err_vars.append(9999999)
+                    
             ref_mean_err = np.median(mean_errs)
             ref_rel_err_var = np.median(rel_err_vars)
             # print '-'*20
