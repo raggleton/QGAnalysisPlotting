@@ -1,0 +1,3 @@
+#!/bin/bash
+# ./print_kinematic_comparison_qg_plots.py workdir_ak4chs_mgpythia workdir_ak4chs_mgpythia_alleta workdir_ak8chs_mgpythia workdir_ak8chs_mgpythia_alleta
+./print_kinematic_comparison_qg_plots.py workdir_ak8chs_mgpythia workdir_ak8chs_mgpythia_alleta
