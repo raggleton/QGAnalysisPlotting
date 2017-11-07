@@ -271,7 +271,7 @@ class Plot(object):
             if self.do_legend:
                 # Split text by newline \n
                 # Add an entry for each line
-                opt = "LFP" if self.plot_what == "hist" else "LP"
+                opt = "LP" if self.plot_what == "hist" else "LP"
                 for i, substr in enumerate(contrib.label.split("\n")):
                     if i == 0:
                         self.legend.AddEntry(contrib.obj, substr, opt)
