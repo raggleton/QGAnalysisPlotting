@@ -178,10 +178,20 @@ def do_dijet_distributions(root_dir):
                                       filter_noisy=False)
 
     # do jet1 vs jet2 flav
-    output_filename = os.path.join(root_dir, "Dijet_kin_comparison", "flav_jet1_jet2.%s" % OUTPUT_FMT)
+    output_filename = os.path.join(root_dir, "Dijet_kin_comparison_2d", "flav_jet1_jet2.%s" % OUTPUT_FMT)
     h2d = cu.get_from_file(root_file, "Dijet_Presel/flav_jet1_jet2")
     h2d.Scale(1./h2d.Integral())
     qgg.do_2D_plot(h2d, output_filename, draw_opt="COLZ", logz=True, zlim=[1E-4, 1])
+
+    # do jet1 vs jet2 eta
+    for dname in dir_names:
+        output_filename = os.path.join(root_dir, "Dijet_kin_comparison_2d", "eta_jet1_eta_jet2_%s.%s" % (dname.replace("Dijet_Presel_", ""), OUTPUT_FMT))
+        h2d = cu.get_from_file(root_file, "%s/eta_jet1_vs_eta_jet2" % dname)
+        h2d.Scale(1./h2d.Integral())
+        title = dname.replace("Dijet_Presel_", "")
+        qgg.do_2D_plot(h2d, output_filename, draw_opt="COLZ", logz=False, title=title)
+        qgg.do_2D_plot(h2d, output_filename.replace(".%s" % OUTPUT_FMT, "_logZ.%s" % OUTPUT_FMT), 
+                       draw_opt="COLZ", logz=True, title=title)
 
 
 def do_zpj_distributions(root_dir):
