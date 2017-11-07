@@ -71,6 +71,10 @@ def do_all_1D_projection_plots_in_dir(directories, output_dir, components_styles
         if "flav" in obj_name:
             continue
 
+        if obj_name in ['eta_jet1_vs_eta_jet2', 'phi_jet1_vs_pt_jet1', 'phi_jet2_vs_pt_jet1', 
+                        'reliso_mu1_vs_pt_jet1', 'reliso_mu2_vs_pt_jet1', 'dphi_mumu_jet1_vs_pt_jet1', 'dphi_mumu_vs_pt_jet1']:
+            continue
+
         for pt_min, pt_max in pt_bins:
             # print pt_min, pt_max
             rebin = 1
