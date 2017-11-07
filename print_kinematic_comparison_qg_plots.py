@@ -41,12 +41,16 @@ def get_list_of_obj(directory):
     return [x.GetName() for x in key_list]
 
 
-def do_all_1D_projection_plots_in_dir(directories, output_dir, components_styles_dicts=None, draw_opts="NOSTACK HISTE", do_ratio=True):
+def do_all_1D_projection_plots_in_dir(directories, output_dir, components_styles_dicts=None, 
+                                      draw_opts="NOSTACK HISTE", do_ratio=True, 
+                                      normalise_hists=True, filter_noisy=True):
     """
     Given a set of TDirs, loop over all 2D hists, do projection hists for chosen bins, and plot all TDir contributions on a canvas for comparison.
 
     components_styles_dicts should be a list of style dicts, one for each directory/contribution to a plot. 
     This should include label for this component.
+
+    filter_noisy aims to remove low stats/large error components that muddle things up
     """
     if len(directories) != len(components_styles_dicts):
         raise IndexError("Need same number of style dicts and directories")
@@ -80,49 +84,50 @@ def do_all_1D_projection_plots_in_dir(directories, output_dir, components_styles
             rebin = 1
             if "n_jets" not in obj_name and "n_mu" not in obj_name:
                 rebin = 2
-            contributions = [Contribution(qgg.get_projection_plot(ob, pt_min, pt_max), normalise_hist=True, rebin_hist=rebin, **csd) 
+            contributions = [Contribution(qgg.get_projection_plot(ob, pt_min, pt_max), 
+                                          normalise_hist=normalise_hists, rebin_hist=rebin, **csd) 
                              for ob, csd in zip(objs, components_styles_dicts)]
 
             if len(contributions) == 0:
                 continue
-
-            # filter contributions to ensure odd low stat ones don't dominate the scale
-            # combination of factors to remove noisy samples
-            mean_errs = []
-            max_over_mean_errs = []
-            rel_err_vars = []
-            for cont in contributions:
-                obj = cont.obj
-                errs = [obj.GetBinError(i) for i in range(obj.GetNbinsX()+1)]
-                if obj.GetEntries() > 0:
-                    mean_errs.append(np.mean(errs))
-                    max_over_mean_errs.append(np.max(errs) / np.mean(errs))
-                    rel_err_vars.append(np.std(errs) / np.mean(errs))
-                    # print "obj", cont.label
-                    # print 'mean errs', np.mean(errs)
-                    # print 'rel max err', np.max(errs) / np.mean(errs)
-                    # print 'stddev err', np.std(errs)
-                    # print 'rel std dev err', np.std(errs) / np.mean(errs)
-                else:
-                    # Dud values if 0 entries
-                    mean_errs.append(9999999)
-                    max_over_mean_errs.append(9999999)
-                    rel_err_vars.append(9999999)
-                    
-            ref_mean_err = np.median(mean_errs)
-            ref_rel_err_var = np.median(rel_err_vars)
-            # print '-'*20
-            # print 'mean mean err', ref_mean_err
-            # print 'mean var', ref_rel_err_var
-            contributions = [cont for cont, merr, rev, mom 
-                             in zip(contributions, mean_errs, rel_err_vars, max_over_mean_errs) 
-                             if (merr < 2.5*ref_mean_err) and (rev < 5*ref_rel_err_var or mom<11)]
+            if filter_noisy:
+                # filter contributions to ensure odd low stat ones don't dominate the scale
+                # combination of factors to remove noisy samples
+                mean_errs = []
+                max_over_mean_errs = []
+                rel_err_vars = []
+                for cont in contributions:
+                    obj = cont.obj
+                    errs = [obj.GetBinError(i) for i in range(obj.GetNbinsX()+1)]
+                    if obj.GetEntries() > 0:
+                        mean_errs.append(np.mean(errs))
+                        max_over_mean_errs.append(np.max(errs) / np.mean(errs))
+                        rel_err_vars.append(np.std(errs) / np.mean(errs))
+                        # print "obj", cont.label
+                        # print 'mean errs', np.mean(errs)
+                        # print 'rel max err', np.max(errs) / np.mean(errs)
+                        # print 'stddev err', np.std(errs)
+                        # print 'rel std dev err', np.std(errs) / np.mean(errs)
+                    else:
+                        # Dud values if 0 entries
+                        mean_errs.append(9999999)
+                        max_over_mean_errs.append(9999999)
+                        rel_err_vars.append(9999999)
+                        
+                ref_mean_err = np.median(mean_errs)
+                ref_rel_err_var = np.median(rel_err_vars)
+                # print '-'*20
+                # print 'mean mean err', ref_mean_err
+                # print 'mean var', ref_rel_err_var
+                contributions = [cont for cont, merr, rev, mom 
+                                 in zip(contributions, mean_errs, rel_err_vars, max_over_mean_errs) 
+                                 if (merr < 2.5*ref_mean_err) and (rev < 5*ref_rel_err_var or mom<11)]
 
             ylim = None
             # if "pt_jet" in obj_name and "ratio" not in obj_name and "frac" not in obj_name:
             #     ylim = [1E-9, 1E-1]
             title = "%d < p_{T}^{jet 1} < %d GeV" % (pt_min, pt_max)
-            p = Plot(contributions, what='hist', ytitle="p.d.f.", 
+            p = Plot(contributions, what='hist', ytitle="p.d.f." if normalise_hists else "N", 
                      title=title,
                      subplot_type="ratio" if do_ratio else None, 
                      subplot_title="#splitline{Ratio wrt}{%s}" % contributions[0].label,
