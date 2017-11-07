@@ -262,7 +262,7 @@ def do_projection_plots(root_dirs, plot_dir="response_plots", zpj_dirname="ZPlus
                 obj.Rebin(rebin)
                 obj.Scale(1./obj.Integral())
                 col = qgc.DY_COLOURS[ind]
-                dy_reco_kwargs = dict(line_color=col, fill_color=col, line_width=lw, marker_color=col,
+                dy_reco_kwargs = dict(line_color=col, fill_color=col, line_width=lw, marker_color=col, marker_style=qgc.DY_MARKER,
                                       label=qgc.DY_ZpJ_QFLAV_LABEL if flav_matched else qgc.DY_ZpJ_LABEL)
                 if len(root_dirs) > 1:
                     dy_reco_kwargs['label'] += " ["+root_dir+"]"
@@ -284,7 +284,7 @@ def do_projection_plots(root_dirs, plot_dir="response_plots", zpj_dirname="ZPlus
                 obj.Rebin(rebin)
                 obj.Scale(1./obj.Integral())
                 col = qgc.QCD_COLOURS[ind]
-                qcd_reco_kwargs = dict(line_color=col, fill_color=col, line_width=lw, marker_color=col,
+                qcd_reco_kwargs = dict(line_color=col, fill_color=col, line_width=lw, marker_color=col, marker_style=qgc.QCD_MARKER,
                                        label=qgc.QCD_Dijet_GFLAV_LABEL if flav_matched else qgc.QCD_Dijet_LABEL)
                 if len(root_dirs) > 1:
                     qcd_reco_kwargs['label'] += " ["+root_dir+"]"

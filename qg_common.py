@@ -13,6 +13,10 @@ QCD_COLOUR = 867 # kAzure+7
 # DY_COLOUR =  880 # kViolet
 # QCD_COLOUR = 600 # kBlue
 
+# You shoudl use markers as well for colourblindness
+DY_MARKER = 20
+QCD_MARKER = 21
+
 # When comparing e.g. PU bins
 # FIXME: update for colourblindness
 DY_COLOURS = [880, 882, 884, 871]
