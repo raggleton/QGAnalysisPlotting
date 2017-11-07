@@ -203,9 +203,57 @@ def do_dijet_distributions(root_dir):
         h2d = cu.get_from_file(root_file, "%s/eta_jet1_vs_eta_jet2" % dname)
         h2d.Scale(1./h2d.Integral())
         title = dname.replace("Dijet_Presel_", "")
-        qgg.do_2D_plot(h2d, output_filename, draw_opt="COLZ", logz=False, title=title)
+        vline = ROOT.TLine(0, -5, 0, 5)
+        vline.SetLineStyle(2)
+        hline = ROOT.TLine(-5, 0, 5, 0)
+        hline.SetLineStyle(2)
+        lines = [hline, vline]
+        if dname == "Dijet_Presel_gg":
+            for ind, factor in enumerate(np.arange(0.6, 2.2, 0.2), 1):
+                ellipse = ROOT.TEllipse(0, 0, factor*1.7*np.sqrt(2), factor*1*np.sqrt(2), 0, 360, 45)
+                integral = get_integral_under_ellipse(h2d, ellipse)
+                print "Fraction under ellipse with factor", factor, " = ", integral / h2d.Integral()
+                ellipse.SetFillStyle(0)
+                ellipse.SetLineStyle(ind)
+                lines.append(ellipse)
+
+        qgg.do_2D_plot(h2d, output_filename, draw_opt="COLZ", logz=False, title=title, other_things_to_draw=lines)
         qgg.do_2D_plot(h2d, output_filename.replace(".%s" % OUTPUT_FMT, "_logZ.%s" % OUTPUT_FMT), 
-                       draw_opt="COLZ", logz=True, title=title)
+                       draw_opt="COLZ", logz=True, title=title, other_things_to_draw=lines)
+
+
+
+def get_integral_under_ellipse(hist, ellipse):
+    """Get integral of 2d hist under ellipse
+    
+    Parameters
+    ----------
+    hist : TH2
+        Description
+    ellipse : Tellipse
+        Description
+    
+    Returns
+    -------
+    float
+    """
+    old_fill_style = ellipse.GetFillStyle()
+    ellipse.SetFillStyle(1001)
+    integral = 0
+    for xbin in range(1, hist.GetNbinsX()+1):
+        for ybin in range(1, hist.GetNbinsY()+1):
+            contents = hist.GetBinContent(xbin, ybin)
+            if contents == 0:
+                continue
+            x_center = hist.GetXaxis().GetBinCenter(xbin)
+            y_center = hist.GetYaxis().GetBinCenter(ybin)
+            a = ellipse.GetR1()
+            b = ellipse.GetR2()
+            in_ellipse = ((pow((x_center+y_center), 2) / (a*a)) + (pow((x_center-y_center), 2) / (b*b))) <= 2;
+            if in_ellipse:
+                integral += contents
+    ellipse.SetFillStyle(old_fill_style)
+    return integral
 
 
 def do_zpj_distributions(root_dir):
