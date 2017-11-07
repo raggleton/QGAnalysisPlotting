@@ -8,6 +8,7 @@ from MyStyle import My_Style
 My_Style.cd()
 import os
 from itertools import product
+from array import array
 
 # My stuff
 from comparator import Contribution, Plot, grab_obj
@@ -156,6 +157,77 @@ def fit_results_to_str(fit):
     return "\n".join(parts)
 
 
+def fits_to_graph(pt_bins, fits):
+    """Summary
+    
+    Parameters
+    ----------
+    pt_bins : [(float, float)]
+        pt bin edges
+    fits : TYPE
+        Description
+    
+    Returns
+    -------
+    TGraphErrors
+        Description
+    """
+    n_fits = len(fits)
+    x, ex = [], []
+    for pt_min, pt_max in pt_bins:
+        center = 0.5*(pt_min+pt_max)
+        x.append(center)
+        half_width = pt_max - center
+        ex.append(half_width)
+
+    y, ey = [], []
+    for fit in fits:
+        for i in range(fit.GetNpar()):
+            if fit.GetParName(i) == "Mean":
+                y.append(fit.GetParameter(i))
+                ey.append(fit.GetParError(i))
+    gr = ROOT.TGraphErrors(n_fits, array('d', x), array('d', y), array('d', ex), array('d', ey))
+    return gr
+
+
+def do_response_graph(pt_bins, zpj_fits, dj_fits, title, output_filename):
+    """Create and plot graph from fit results
+    
+    Parameters
+    ----------
+    zpj_fits : TF1
+        Description
+    dj_fits : TF1
+        Description
+    output_filename : str
+        Description
+    """
+    gr_zpj = fits_to_graph(pt_bins, zpj_fits)
+    gr_qcd = fits_to_graph(pt_bins, dj_fits)
+    conts = [
+        Contribution(gr_zpj, label=qgc.DY_ZpJ_LABEL, line_color=qgc.DY_COLOUR, marker_color=qgc.DY_COLOUR, marker_style=22),
+        Contribution(gr_qcd, label=qgc.QCD_Dijet_LABEL, line_color=qgc.QCD_COLOUR, marker_color=qgc.QCD_COLOUR, marker_style=23)
+    ]
+    xmin = pt_bins[0][0]
+    xmax = pt_bins[-1][1]
+    plot = Plot(conts, what="graph", legend=True, xlim=(xmin, xmax),
+                title=title,
+                xtitle="p_{T}^{GenJet} [GeV]", 
+                ytitle="Mean fitted response #pm fit error")
+    plot.plot("ALP")
+    plot.set_logx()
+    line_center = ROOT.TLine(xmin, 1, xmax, 1)
+    line_center.SetLineStyle(2)
+    line_center.Draw("SAME")
+    line_upper = ROOT.TLine(xmin, 1.1, xmax, 1.1)
+    line_upper.SetLineStyle(2)
+    line_upper.Draw("SAME")
+    line_lower = ROOT.TLine(xmin, 0.9, xmax, 0.9)
+    line_lower.SetLineStyle(2)
+    line_lower.Draw("SAME")
+    plot.save(output_filename)
+
+
 def do_projection_plots(root_dirs, plot_dir="response_plots", zpj_dirname="ZPlusJets_QG", dj_dirname="Dijet_QG", flav_matched=False, do_fits=False):
     """Plot both/either q and g jet repsonse, for various genjet pt bins. Contributions from all root_dirs are shown on same plot.
     
@@ -163,18 +235,28 @@ def do_projection_plots(root_dirs, plot_dir="response_plots", zpj_dirname="ZPlus
     plot_dir : output dir for plots
     do_fits : If Ture, try and do a Gaussian fit to each 1D hist
     """
-    pt_bins = [(20, 40), (40, 60), (60, 80), (100, 120), (160, 200), (260, 300), (500, 600), (1000, 2000)]
+    pt_bins = [(20, 40), (40, 60), (60, 80), (80, 100), (100, 120), (120, 140), (160, 200), (200, 240), (240, 300), (300, 400), (400, 500), (500, 600), (600, 800), (800, 1000), (1000, 2000)]
+    print_pt_bins = [(20, 40), (40, 60), (60, 80), (100, 120), (160, 200), (240, 300), (400, 500), (500, 600), (800, 1000), (1000, 2000)]
+    print_pt_bins = pt_bins
+    zpj_fits = []
+    dj_fits = []
     for (pt_min, pt_max) in pt_bins:
-        
+        print pt_min, pt_max
+        if pt_min > pt_max:
+            raise RuntimeError("pt_min < pt_max!")
+
         lw = 2 if len(root_dirs) == 1 else 1
 
-        entries = []
+        plot_entries = []
+        do_plot = (pt_min, pt_max) in print_pt_bins
+        rebin = 1
 
         for ind, root_dir in enumerate(root_dirs):
             if zpj_dirname:
                 flav_str = "q" if flav_matched else ""
                 h2d_dyj = grab_obj(os.path.join(root_dir, qgc.DY_FILENAME), "%s/%s" % (zpj_dirname, "%sjet_response_vs_genjet_pt" % (flav_str)))
                 obj = qgg.get_projection_plot(h2d_dyj, pt_min, pt_max)
+                obj.Rebin(rebin)
                 obj.Scale(1./obj.Integral())
                 col = qgc.DY_COLOURS[ind]
                 dy_reco_kwargs = dict(line_color=col, fill_color=col, line_width=lw, marker_color=col,
@@ -184,15 +266,19 @@ def do_projection_plots(root_dirs, plot_dir="response_plots", zpj_dirname="ZPlus
 
                 if do_fits:
                     do_gaus_fit(obj)
+                    fit = obj.GetFunction("gausFit")
                     dy_reco_kwargs['label'] += "\n"
-                    dy_reco_kwargs['label'] += fit_results_to_str(obj.GetFunction("gausFit"))
+                    dy_reco_kwargs['label'] += fit_results_to_str(fit)
+                    zpj_fits.append(fit)
 
-                entries.append((obj, dy_reco_kwargs))
+                if do_plot:
+                    plot_entries.append((obj, dy_reco_kwargs))
 
             if dj_dirname:
                 flav_str = "g" if flav_matched else ""
                 h2d_qcd = grab_obj(os.path.join(root_dir, qgc.QCD_FILENAME), "%s/%s" % (dj_dirname, "%sjet_response_vs_genjet_pt" % (flav_str)))
                 obj = qgg.get_projection_plot(h2d_qcd, pt_min, pt_max)
+                obj.Rebin(rebin)
                 obj.Scale(1./obj.Integral())
                 col = qgc.QCD_COLOURS[ind]
                 qcd_reco_kwargs = dict(line_color=col, fill_color=col, line_width=lw, marker_color=col,
@@ -202,28 +288,36 @@ def do_projection_plots(root_dirs, plot_dir="response_plots", zpj_dirname="ZPlus
 
                 if do_fits:
                     do_gaus_fit(obj)
+                    fit = obj.GetFunction("gausFit")
                     qcd_reco_kwargs['label'] += "\n"
-                    qcd_reco_kwargs['label'] += fit_results_to_str(obj.GetFunction("gausFit"))
+                    qcd_reco_kwargs['label'] += fit_results_to_str(fit)
+                    dj_fits.append(fit)
 
-                entries.append((obj, qcd_reco_kwargs))
+                if do_plot:
+                    plot_entries.append((obj, qcd_reco_kwargs))
 
         flav_str = "_flavMatched" if flav_matched else ""
-        output_filename = os.path.join(plot_dir, "jet_response_ptGen%dto%d%s.%s" % (pt_min, pt_max, flav_str, OUTPUT_FMT))
-        plot = qgg.make_comparison_plot_ingredients(entries, rebin=1, normalise_hist=False,
+
+        if do_plot:
+            output_filename = os.path.join(plot_dir, "jet_response_ptGen%dto%d%s.%s" % (pt_min, pt_max, flav_str, OUTPUT_FMT))
+            plot = qgg.make_comparison_plot_ingredients(plot_entries, rebin=1, normalise_hist=False,
                                                     title="%d < p_{T}^{GenJet} < %d GeV" % (pt_min, pt_max),
                                                     xtitle="Response (p_{T}^{Reco} / p_{T}^{Gen})", xlim=(0.25, 1.75))
-        plot.legend.SetX1(0.65)
-        plot.legend.SetX2(0.95)
-        plot.legend.SetY1(0.5)
-        plot.legend.SetY2(0.89)
-        plot.plot("E NOSTACK")
-        max_y = plot.container.GetHistogram().GetMaximum()
-        line = ROOT.TLine(1, 0, 1, max_y)
-        line.SetLineWidth(2)
-        line.SetLineStyle(2)
-        line.SetLineColor(13)
-        line.Draw()
-        plot.save(output_filename)
+            plot.legend.SetX1(0.65)
+            plot.legend.SetX2(0.95)
+            plot.legend.SetY1(0.5)
+            plot.legend.SetY2(0.89)
+            plot.plot("E NOSTACK")
+            max_y = plot.container.GetHistogram().GetMaximum()
+            line = ROOT.TLine(1, 0, 1, max_y)
+            line.SetLineWidth(2)
+            line.SetLineStyle(2)
+            line.SetLineColor(13)
+            line.Draw()
+            plot.save(output_filename)
+
+    do_response_graph(pt_bins, zpj_fits, dj_fits, title="Flav Matched" if flav_matched else "Not flav matched",
+                      output_filename=os.path.join(plot_dir, "gr_jet_response%s.%s" % (flav_str, OUTPUT_FMT)))
 
 
 if __name__ == '__main__':
