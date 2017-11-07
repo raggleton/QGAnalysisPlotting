@@ -143,7 +143,7 @@ def do_all_1D_projection_plots_in_dir(directories, output_dir, components_styles
 
 def do_dijet_distributions(root_dir):
     """Do plots comparing different jet flavs in dijet region"""
-    dir_names = ["Dijet_Presel_gg", "Dijet_Presel_qg", "Dijet_Presel_qq", 
+    dir_names = ["Dijet_Presel_gg", "Dijet_Presel_qg", "Dijet_Presel_gq", "Dijet_Presel_qq", 
                  "Dijet_Presel_q_unknown", "Dijet_Presel_g_unknown",
                  "Dijet_Presel_unknown_q", "Dijet_Presel_unknown_g",
                  "Dijet_Presel_unknown_unknown"
@@ -152,11 +152,13 @@ def do_dijet_distributions(root_dir):
     directories = [cu.get_from_file(root_file, dn) for dn in dir_names]
     gg_col = ROOT.kRed
     qg_col = ROOT.kGreen+2
+    gq_col = ROOT.kBlack
     qq_col = ROOT.kBlue
     unknown_cols = [ROOT.kOrange+1, ROOT.kOrange+4, ROOT.kPink+6, ROOT.kViolet, ROOT.kAzure+1]
     csd = [
         {"label": "gg", "line_color": gg_col, "fill_color": gg_col, "marker_color": gg_col},
         {"label": "qg", "line_color": qg_col, "fill_color": qg_col, "marker_color": qg_col},
+        {"label": "gq", "line_color": gq_col, "fill_color": gq_col, "marker_color": gq_col},
         {"label": "qq", "line_color": qq_col, "fill_color": qq_col, "marker_color": qq_col},
         {"label": "1:q  2:unknown", "line_color": unknown_cols[0], "fill_color": unknown_cols[0], "marker_color": unknown_cols[0]},
         {"label": "1:g  2:unknown", "line_color": unknown_cols[1], "fill_color": unknown_cols[1], "marker_color": unknown_cols[1]},
