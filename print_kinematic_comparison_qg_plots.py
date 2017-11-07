@@ -82,7 +82,16 @@ def do_all_1D_projection_plots_in_dir(directories, output_dir, components_styles
         for pt_min, pt_max in pt_bins:
             # print pt_min, pt_max
             rebin = 1
-            if "n_jets" not in obj_name and "n_mu" not in obj_name:
+            # exceptions...why didn't i pick the same number of bins...
+            do_not_rebin = any([
+                "n_jets" in obj_name, 
+                "n_mu" in obj_name, 
+                "met_sig" in obj_name, 
+                obj_name.startswith('dphi_mumu'), 
+                obj_name.startswith('pt_jet3_frac'), 
+                obj_name.startswith('pt_jet1_jet2_ratio')
+            ])
+            if not do_not_rebin:
                 if objs[0].GetNbinsX() % 5 == 0:
                     rebin = 5
                 elif objs[0].GetNbinsX() % 4 == 0:
