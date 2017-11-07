@@ -83,7 +83,12 @@ def do_all_1D_projection_plots_in_dir(directories, output_dir, components_styles
             # print pt_min, pt_max
             rebin = 1
             if "n_jets" not in obj_name and "n_mu" not in obj_name:
-                rebin = 5
+                if objs[0].GetNbinsX() % 5 == 0:
+                    rebin = 5
+                elif objs[0].GetNbinsX() % 4 == 0:
+                    rebin = 4
+                elif objs[0].GetNbinsX() % 3 == 0:
+                    rebin = 3
             contributions = [Contribution(qgg.get_projection_plot(ob, pt_min, pt_max), 
                                           normalise_hist=normalise_hists, rebin_hist=rebin, **csd) 
                              for ob, csd in zip(objs, components_styles_dicts)]
