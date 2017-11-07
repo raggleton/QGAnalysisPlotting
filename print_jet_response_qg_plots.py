@@ -150,7 +150,10 @@ def fit_results_to_str(fit):
     parts = []
     chi2 = fit.GetChisquare()
     ndf = fit.GetNDF()
-    parts.append("chi2/ndof: %.3e/%d = %.3e" % (chi2, ndf, chi2/ndf))
+    if ndf > 0:
+        parts.append("chi2/ndof: %.3e/%d = %.3e" % (chi2, ndf, chi2/ndf))
+    else:
+        parts.append("chi2/ndof: %.3e/0 = Inf" % (chi2))
     parts.append("prob: %.3e" % fit.GetProb())
     for i in range(fit.GetNpar()):
         parts.append("%s: %.3e #pm %.3e" % (fit.GetParName(i), fit.GetParameter(i), fit.GetParError(i)))
