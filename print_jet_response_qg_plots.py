@@ -113,7 +113,7 @@ def determine_fit_range(hist):
     # mean = hist.GetMean()
     mean = hist.GetBinCenter(hist.GetMaximumBin())
     rms = hist.GetRMS()
-    return (mean - 1.5*rms, mean + 1.5*rms)
+    return (mean - 1.*rms, mean + 1.*rms)
 
 
 def do_gaus_fit(hist):
