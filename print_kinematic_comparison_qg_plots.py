@@ -156,15 +156,15 @@ def do_dijet_distributions(root_dir):
     qq_col = ROOT.kBlue
     unknown_cols = [ROOT.kOrange+1, ROOT.kOrange+4, ROOT.kPink+6, ROOT.kViolet, ROOT.kAzure+1]
     csd = [
-        {"label": "gg", "line_color": gg_col, "fill_color": gg_col, "marker_color": gg_col},
-        {"label": "qg", "line_color": qg_col, "fill_color": qg_col, "marker_color": qg_col},
-        {"label": "gq", "line_color": gq_col, "fill_color": gq_col, "marker_color": gq_col},
-        {"label": "qq", "line_color": qq_col, "fill_color": qq_col, "marker_color": qq_col},
-        {"label": "1:q  2:unknown", "line_color": unknown_cols[0], "fill_color": unknown_cols[0], "marker_color": unknown_cols[0]},
-        {"label": "1:g  2:unknown", "line_color": unknown_cols[1], "fill_color": unknown_cols[1], "marker_color": unknown_cols[1]},
-        {"label": "1:unknown  2:q", "line_color": unknown_cols[2], "fill_color": unknown_cols[2], "marker_color": unknown_cols[2]},
-        {"label": "1:unknown  2:g", "line_color": unknown_cols[3], "fill_color": unknown_cols[3], "marker_color": unknown_cols[3]},
-        {"label": "1:unknown  2:unknown", "line_color": unknown_cols[4], "fill_color": unknown_cols[4], "marker_color": unknown_cols[4]},
+        {"label": "gg", "line_color": gg_col, "fill_color": gg_col, "marker_color": gg_col, "marker_style": 20},
+        {"label": "qg", "line_color": qg_col, "fill_color": qg_col, "marker_color": qg_col, "marker_style": 21},
+        {"label": "gq", "line_color": gq_col, "fill_color": gq_col, "marker_color": gq_col, "marker_style": 22},
+        {"label": "qq", "line_color": qq_col, "fill_color": qq_col, "marker_color": qq_col, "marker_style": 23},
+        {"label": "1:q  2:unknown", "line_color": unknown_cols[0], "fill_color": unknown_cols[0], "marker_color": unknown_cols[0], "marker_style": 29},
+        {"label": "1:g  2:unknown", "line_color": unknown_cols[1], "fill_color": unknown_cols[1], "marker_color": unknown_cols[1], "marker_style": 33},
+        {"label": "1:unknown  2:q", "line_color": unknown_cols[2], "fill_color": unknown_cols[2], "marker_color": unknown_cols[2], "marker_style": 34},
+        {"label": "1:unknown  2:g", "line_color": unknown_cols[3], "fill_color": unknown_cols[3], "marker_color": unknown_cols[3], "marker_style": 41},
+        {"label": "1:unknown  2:unknown", "line_color": unknown_cols[4], "fill_color": unknown_cols[4], "marker_color": unknown_cols[4], "marker_style": 47},
     ]
     # Compare shapes
     do_all_1D_projection_plots_in_dir(directories=directories, 
@@ -203,9 +203,9 @@ def do_zpj_distributions(root_dir):
     q_col = ROOT.kBlue
     unknown_col = ROOT.kViolet
     csd = [
-        {"label": "q", "line_color": q_col, "fill_color": q_col, "marker_color": q_col},
-        {"label": "g", "line_color": g_col, "fill_color": g_col, "marker_color": g_col},
-        {"label": "unknown", "line_color": unknown_col, "fill_color": unknown_col, "marker_color": unknown_col}
+        {"label": "q", "line_color": q_col, "fill_color": q_col, "marker_color": q_col, "marker_style": 20},
+        {"label": "g", "line_color": g_col, "fill_color": g_col, "marker_color": g_col, "marker_style": 21},
+        {"label": "unknown", "line_color": unknown_col, "fill_color": unknown_col, "marker_color": unknown_col, "marker_style": 22}
     ]
     # Compare shapes
     do_all_1D_projection_plots_in_dir(directories=directories, 
