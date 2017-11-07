@@ -4,10 +4,17 @@ import argparse
 from collections import namedtuple
 
 
-DY_COLOUR = 880 # kViolet
+# Purple & blue look ~ same to red-green colourblind people
+# (V.Dark blue & light pruple do look a bit diff)
+# Red and blue does look different
+DY_COLOUR =  632 # kRed 
 QCD_COLOUR = 867 # kAzure+7
 
+# DY_COLOUR =  880 # kViolet
+# QCD_COLOUR = 600 # kBlue
+
 # When comparing e.g. PU bins
+# FIXME: update for colourblindness
 DY_COLOURS = [880, 882, 884, 871]
 QCD_COLOURS = [867, 600, 853, 425]
 
