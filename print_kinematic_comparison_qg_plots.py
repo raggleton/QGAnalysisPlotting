@@ -166,9 +166,17 @@ def do_dijet_distributions(root_dir):
         {"label": "1:unknown  2:g", "line_color": unknown_cols[3], "fill_color": unknown_cols[3], "marker_color": unknown_cols[3]},
         {"label": "1:unknown  2:unknown", "line_color": unknown_cols[4], "fill_color": unknown_cols[4], "marker_color": unknown_cols[4]},
     ]
+    # Compare shapes
     do_all_1D_projection_plots_in_dir(directories=directories, 
-                                      output_dir=os.path.join(root_dir, "Dijet_kin_comparison"),
+                                      output_dir=os.path.join(root_dir, "Dijet_kin_comparison_normalised"),
                                       components_styles_dicts=csd)
+    # Compare relative yields
+    do_all_1D_projection_plots_in_dir(directories=directories, 
+                                      output_dir=os.path.join(root_dir, "Dijet_kin_comparison_absolute"),
+                                      components_styles_dicts=csd,
+                                      normalise_hists=False,
+                                      filter_noisy=False)
+
     # do jet1 vs jet2 flav
     output_filename = os.path.join(root_dir, "Dijet_kin_comparison", "flav_jet1_jet2.%s" % OUTPUT_FMT)
     h2d = cu.get_from_file(root_file, "Dijet_Presel/flav_jet1_jet2")
@@ -189,9 +197,16 @@ def do_zpj_distributions(root_dir):
         {"label": "g", "line_color": g_col, "fill_color": g_col, "marker_color": g_col},
         {"label": "unknown", "line_color": unknown_col, "fill_color": unknown_col, "marker_color": unknown_col}
     ]
+    # Compare shapes
     do_all_1D_projection_plots_in_dir(directories=directories, 
-                                      output_dir=os.path.join(root_dir, "ZpJ_kin_comparison"),
+                                      output_dir=os.path.join(root_dir, "ZpJ_kin_comparison_normalised"),
                                       components_styles_dicts=csd)
+    # Compare relative yields
+    do_all_1D_projection_plots_in_dir(directories=directories, 
+                                      output_dir=os.path.join(root_dir, "ZpJ_kin_comparison_absolute"),
+                                      components_styles_dicts=csd,
+                                      normalise_hists=False,
+                                      filter_noisy=False)
 
 
 if __name__ == "__main__":
