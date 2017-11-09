@@ -106,6 +106,11 @@ def do_all_1D_projection_plots_in_dir(directories, output_dir, components_styles
 
             if len(contributions) == 0:
                 continue
+            # Ignore empty objs
+            total_entries = sum(c.obj.GetEntries() for c in contributions)
+            if total_entries == 0:
+                continue
+
             if filter_noisy:
                 # filter contributions to ensure odd low stat ones don't dominate the scale
                 # combination of factors to remove noisy samples
