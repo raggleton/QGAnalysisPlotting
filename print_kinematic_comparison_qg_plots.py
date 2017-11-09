@@ -76,7 +76,8 @@ def do_all_1D_projection_plots_in_dir(directories, output_dir, components_styles
             continue
 
         if obj_name in ['eta_jet1_vs_eta_jet2', 'phi_jet1_vs_pt_jet1', 'phi_jet2_vs_pt_jet1', 
-                        'reliso_mu1_vs_pt_jet1', 'reliso_mu2_vs_pt_jet1', 'dphi_mumu_jet1_vs_pt_jet1', 'dphi_mumu_vs_pt_jet1']:
+                        'reliso_mu1_vs_pt_jet1', 'reliso_mu2_vs_pt_jet1', 'dphi_mumu_jet1_vs_pt_jet1', 
+                        'dphi_mumu_vs_pt_jet1', 'pt_jet1_z_pt_jet2_z_ratio']:
             continue
 
         for pt_min, pt_max in pt_bins:
@@ -89,7 +90,8 @@ def do_all_1D_projection_plots_in_dir(directories, output_dir, components_styles
                 "met_sig" in obj_name, 
                 obj_name.startswith('dphi_mumu'), 
                 obj_name.startswith('pt_jet3_frac'), 
-                obj_name.startswith('pt_jet1_jet2_ratio')
+                obj_name.startswith('pt_jet1_jet2_ratio'),
+                obj_name.startswith('pt_jet2_z_ratio')
             ])
             if not do_not_rebin:
                 if objs[0].GetNbinsX() % 5 == 0:
