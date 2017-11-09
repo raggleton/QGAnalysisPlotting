@@ -29,14 +29,15 @@ ROOT.TH1.SetDefaultSumw2()
 ROOT.gStyle.SetOptStat(0)
 
 
-def get_flavour_fractions(input_file, dirname, which="", var_prepend=""):
+def get_flavour_fractions(input_file, dirname, flav_source="", var_prepend="", which_jet="both"):
     """
-    which : str
+    flav_source : str
         Which flavour to use, either "" or genParton_
     """
-    h2d_flav = grab_obj(input_file, "%s/%sjet_%sflavour_vs_pt" % (dirname, var_prepend, which))
+    jet_str = "" if which_jet == "both" else str(which_jet)
+    h2d_flav = grab_obj(input_file, "%s/%sjet%s_%sflavour_vs_pt" % (dirname, var_prepend, jet_str, flav_source))
 
-    h2d_flav.Rebin2D(1, 5)
+    h2d_flav.Rebin2D(1, 10)
     y_axis = h2d_flav.GetYaxis()
     pt_bins_lower, pt_bins_upper = [], []
     flav_dict = {'d': [], 'u': [], 's': [], 'c': [], 'b': [] ,'t': [], 'g': []}
@@ -71,10 +72,10 @@ def get_flavour_fractions(input_file, dirname, which="", var_prepend=""):
     return x_bins, flav_dict
 
 
-def compare_flavour_fractions_vs_pt(input_files, dirnames, labels, flav, output_filename, title="", which="", var_prepend=""):
+def compare_flavour_fractions_vs_pt(input_files, dirnames, labels, flav, output_filename, title="", flav_source="", var_prepend="", which_jet="both", xtitle="p_{T}^{jet} [GeV]"):
     """Plot a specified flavour fraction vs pT for several sources.
     Each entry in input_files, dirnames, and labels corresponds to one line"""
-    info = [get_flavour_fractions(ifile, sel, which=which, var_prepend=var_prepend) for ifile, sel in zip(input_files, dirnames)]
+    info = [get_flavour_fractions(ifile, sel, flav_source=flav_source, var_prepend=var_prepend, which_jet=(which_jet if "Dijet" in sel else "both")) for ifile, sel in zip(input_files, dirnames)]
     contribs = []
     for i, (x_bins, fdict) in enumerate(info):
         if flav in ['u', 'd', 's', 'c', 'b', 't', 'g']:
@@ -84,16 +85,16 @@ def compare_flavour_fractions_vs_pt(input_files, dirnames, labels, flav, output_
         c = Contribution(gr, label="%s" % (labels[i]), line_style=i+1)
         contribs.append(c)
     ytitle = "%s flavour fraction" % flav
-    p = Plot(contribs, what='graph', xtitle="p_{T}^{jet} [GeV]", ytitle=ytitle, title=title, ylim=(0, 1))
-    p.legend.SetX1(0.4)
+    p = Plot(contribs, what='graph', xtitle=xtitle, ytitle=ytitle, title=title, ylim=(0, 1))
+    # p.legend.SetX1(0.4)
     p.plot("ALP")
     p.canvas.SetLogx()
     p.save(output_filename)
 
 
-def do_flavour_fraction_vs_pt(input_file, dirname, output_filename, title="", which="", var_prepend=""):
+def do_flavour_fraction_vs_pt(input_file, dirname, output_filename, title="", flav_source="", var_prepend=""):
     """Plot flavour fractions vs PT for one input file & dirname in the ROOT file"""
-    x_bins, flav_dict = get_flavour_fractions(input_file, dirname, which, var_prepend)
+    x_bins, flav_dict = get_flavour_fractions(input_file, dirname, flav_source, var_prepend)
     # TODO: check if empy arrays
     gr_flav_u = ROOT.TGraph(len(x_bins), np.array(x_bins), np.array(flav_dict['u']))
     gr_flav_d = ROOT.TGraph(len(x_bins), np.array(x_bins), np.array(flav_dict['d']))

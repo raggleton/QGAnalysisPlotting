@@ -118,22 +118,25 @@ def do_all_flavour_fraction_plots(root_dir, plot_dir="flav_fractions", zpj_dirna
     # Z+jets
     qgf.do_flavour_fraction_vs_pt(input_file=os.path.join(root_dir, qgc.DY_FILENAME), 
                                   title="Z+jets selection",
-                                  dirname=zpj_dirname, which=flav_source, var_prepend=var_prepend,
+                                  dirname=zpj_dirname, flav_source=flav_source, var_prepend=var_prepend,
                                   output_filename="%s/zpj_flavour_fractions.%s" % (plot_dir, OUTPUT_FMT))
 
     # Dijets
     qgf.do_flavour_fraction_vs_pt(input_file=os.path.join(root_dir, qgc.QCD_FILENAME), 
                                   title="Dijet selection",
-                                  dirname=dj_dirname, which=flav_source, var_prepend=var_prepend,
+                                  dirname=dj_dirname, flav_source=flav_source, var_prepend=var_prepend,
                                   output_filename="%s/dj_flavour_fractions.%s" % (plot_dir, OUTPUT_FMT)) 
 
+    dirnames = [dj_dirname, zpj_dirname]
+    labels = ["Dijet", "Z+jets"]
+    this_flav = "g"
     # Compare gluon fractions
     qgf.compare_flavour_fractions_vs_pt(input_files=[os.path.join(root_dir, qgc.QCD_FILENAME), os.path.join(root_dir, qgc.DY_FILENAME)],
-                                        dirnames=[dj_dirname, zpj_dirname],
-                                        labels=["Dijet", "Z+jets"],
-                                        flav="g",
-                                        output_filename="%s/g_flav_fraction_compare.%s" % (plot_dir, OUTPUT_FMT),
-                                        which=flav_source,
+                                        dirnames=dirnames,
+                                        labels=labels,
+                                        flav=this_flav,
+                                        output_filename="%s/g_flav_fraction_compare_bothjets.%s" % (plot_dir, OUTPUT_FMT),
+                                        flav_source=flav_source,
                                         var_prepend=var_prepend)
 
 
