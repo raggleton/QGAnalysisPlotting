@@ -9,6 +9,7 @@ import os
 from itertools import product
 import numpy as np
 np.seterr(all='raise')
+from array import array
 
 # My stuff
 from comparator import Contribution, Plot, grab_obj
@@ -66,7 +67,6 @@ def do_all_1D_projection_plots_in_dir(directories, output_dir, components_styles
 
     for obj_name in list_of_obj[0]:
         objs = [d.Get(obj_name) for d in directories]
-
         # Ignore TH1s
         if not isinstance(objs[0], (ROOT.TH2F, ROOT.TH2D, ROOT.TH2I)):
             print obj_name, "is not a TH2"
@@ -211,29 +211,99 @@ def do_dijet_distributions(root_dir, dir_append=""):
         qgg.do_2D_plot(h2d, output_filename, draw_opt="COLZ", logz=True, zlim=[1E-4, 1])
     
     # do jet1 vs jet2 eta
+    ellipse_eff_dict = {}
+    deta_eff_dict = {}
     for dname in dir_names:
         output_filename = os.path.join(root_dir, "Dijet_kin_comparison_2d%s" % dir_append, "eta_jet1_eta_jet2_%s.%s" % (dname.replace("Dijet_Presel_", ""), OUTPUT_FMT))
         h2d = cu.get_from_file(root_file, "%s/eta_jet1_vs_eta_jet2" % dname)
-        h2d.Scale(1./h2d.Integral())
+        h2d.Rebin2D(2, 2)
+        # h2d.Scale(1./h2d.Integral())
         title = dname.replace("Dijet_Presel_", "")
         vline = ROOT.TLine(0, -5, 0, 5)
         vline.SetLineStyle(2)
         hline = ROOT.TLine(-5, 0, 5, 0)
         hline.SetLineStyle(2)
         lines = [hline, vline]
-        if dname == "Dijet_Presel_gg":
-            for ind, factor in enumerate(np.arange(0.6, 2.2, 0.2), 1):
-                ellipse = ROOT.TEllipse(0, 0, factor*1.7*np.sqrt(2), factor*1*np.sqrt(2), 0, 360, 45)
-                integral = get_integral_under_ellipse(h2d, ellipse)
-                print "Fraction under ellipse with factor", factor, " = ", integral / h2d.Integral()
-                ellipse.SetFillStyle(0)
-                ellipse.SetLineStyle(ind)
-                lines.append(ellipse)
-
+        print dname
+        """
+        # Do ellipse efficiencies for diff size ellipses
+        effs = []
+        for ind, factor in enumerate(np.arange(0.1, 2.2, 0.1), 1):
+            ellipse = ROOT.TEllipse(0, 0, factor*1.7*np.sqrt(2), factor*1*np.sqrt(2), 0, 360, 45)
+            integral = get_integral_under_ellipse(h2d, ellipse)
+            print "Fraction under ellipse with factor", factor, " = ", integral / h2d.Integral()
+            ellipse.SetFillStyle(0)
+            ellipse.SetLineStyle(ind)
+            lines.append(ellipse)
+            effs.append(integral)
+        ellipse_eff_dict[dname] = effs
+        """
         qgg.do_2D_plot(h2d, output_filename, draw_opt="COLZ", logz=False, title=title, other_things_to_draw=lines)
         qgg.do_2D_plot(h2d, output_filename.replace(".%s" % OUTPUT_FMT, "_logZ.%s" % OUTPUT_FMT), 
                        draw_opt="COLZ", logz=True, title=title, other_things_to_draw=lines)
+        """ 
+        effs = []
+        for ind, deta in enumerate(np.arange(0.1, 2.5, 0.1), 1):
+            integral = get_integral_under_deta(h2d, deta)
+            effs.append(integral)
+        deta_eff_dict[dname] = effs
+        """ 
 
+    """
+    output_filename = os.path.join(root_dir, "Dijet_kin_comparison_2d", "ellipse_roc_jet2.%s" % OUTPUT_FMT)
+    do_roc_plot(ellipse_eff_dict, output_filename)
+
+    output_filename = os.path.join(root_dir, "Dijet_kin_comparison_2d", "deta_roc_jet2.%s" % OUTPUT_FMT)
+    do_roc_plot(deta_eff_dict, output_filename)
+    """
+
+def do_roc_plot(eff_dict, output_filename):
+    """Turn dict of efficiencies into ROC plot
+    
+    Parameters
+    ----------
+    eff_dict : TYPE
+        Description
+    output_filename : TYPE
+        Description
+    """
+    signal_effs = [0] * len(eff_dict.values()[0])
+    bkg_effs = [0] * len(eff_dict.values()[0])
+    for k, v in eff_dict.iteritems():
+        if k.replace("Dijet_Presel_", "").lstrip("_unknown_").lstrip("_q").startswith("g"):
+            print k
+            for ind, eff in enumerate(v):
+                signal_effs[ind] += eff
+        else:
+            for ind, eff in enumerate(v):
+                bkg_effs[ind] += eff
+    # divide by totals
+    for ind, (s, b) in enumerate(zip(signal_effs, bkg_effs)):
+        total = s + b
+        signal_effs[ind] /= total
+        bkg_effs[ind] /= total
+    print signal_effs
+    print bkg_effs
+
+    gr = ROOT.TGraph(len(signal_effs), array('d', bkg_effs), array('d', signal_effs))
+    cont = Contribution(gr, marker_style=21)
+    p = Plot([cont], "graph", xtitle="fraction jet2!=g", ytitle="fraction jet2=g", xlim=[0, 1], ylim=[0, 1], legend=False)
+    p.plot("AP")
+    p.save(output_filename)
+
+
+def get_integral_under_deta(hist, deta):
+    integral = 0
+    for xbin in range(1, hist.GetNbinsX()+1):
+        for ybin in range(1, hist.GetNbinsY()+1):
+            contents = hist.GetBinContent(xbin, ybin)
+            if contents == 0:
+                continue
+            x_center = hist.GetXaxis().GetBinCenter(xbin)
+            y_center = hist.GetYaxis().GetBinCenter(ybin)
+            if (abs(y_center - x_center) < deta):
+                integral += contents
+    return integral
 
 
 def get_integral_under_ellipse(hist, ellipse):
