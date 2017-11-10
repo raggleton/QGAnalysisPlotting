@@ -162,14 +162,17 @@ def do_all_1D_projection_plots_in_dir(directories, output_dir, components_styles
             p.save(os.path.join(output_dir, obj_name+"_pt%dto%d.%s" % (pt_min, pt_max, OUTPUT_FMT)))
 
 
-def do_dijet_distributions(root_dir):
+def do_dijet_distributions(root_dir, dir_append=""):
     """Do plots comparing different jet flavs in dijet region"""
     dir_names = ["Dijet_Presel_gg", "Dijet_Presel_qg", "Dijet_Presel_gq", "Dijet_Presel_qq", 
                  "Dijet_Presel_q_unknown", "Dijet_Presel_g_unknown",
                  "Dijet_Presel_unknown_q", "Dijet_Presel_unknown_g",
                  "Dijet_Presel_unknown_unknown"
                 ]
+    remove_unknowns = dir_append == "_highPt"
+    dir_names = [d + dir_append for d in dir_names if not ("unknown" in d and remove_unknowns)]
     root_file = cu.open_root_file(os.path.join(root_dir, qgc.QCD_FILENAME))
+    
     directories = [cu.get_from_file(root_file, dn) for dn in dir_names]
     gg_col = ROOT.kRed
     qg_col = ROOT.kGreen+2
@@ -187,26 +190,29 @@ def do_dijet_distributions(root_dir):
         {"label": "1:unknown  2:g", "line_color": unknown_cols[3], "fill_color": unknown_cols[3], "marker_color": unknown_cols[3], "marker_style": 34, "marker_size": 1.2},
         {"label": "1:unknown  2:unknown", "line_color": unknown_cols[4], "fill_color": unknown_cols[4], "marker_color": unknown_cols[4], "marker_style": 47, "marker_size": 1.2},
     ]
+    csd = [c for c in csd if not ("unknown" in c['label'] and remove_unknowns)]
+
     # Compare shapes
     do_all_1D_projection_plots_in_dir(directories=directories, 
-                                      output_dir=os.path.join(root_dir, "Dijet_kin_comparison_normalised"),
+                                      output_dir=os.path.join(root_dir, "Dijet_kin_comparison_normalised%s" % dir_append),
                                       components_styles_dicts=csd)
-    # Compare relative yields
+    # Compare yields
     do_all_1D_projection_plots_in_dir(directories=directories, 
-                                      output_dir=os.path.join(root_dir, "Dijet_kin_comparison_absolute"),
+                                      output_dir=os.path.join(root_dir, "Dijet_kin_comparison_absolute%s" % dir_append),
                                       components_styles_dicts=csd,
                                       normalise_hists=False,
                                       filter_noisy=False)
 
     # do jet1 vs jet2 flav
-    output_filename = os.path.join(root_dir, "Dijet_kin_comparison_2d", "flav_jet1_jet2.%s" % OUTPUT_FMT)
-    h2d = cu.get_from_file(root_file, "Dijet_Presel/flav_jet1_jet2")
-    h2d.Scale(1./h2d.Integral())
-    qgg.do_2D_plot(h2d, output_filename, draw_opt="COLZ", logz=True, zlim=[1E-4, 1])
-
+    output_filename = os.path.join(root_dir, "Dijet_kin_comparison_2d", "flav_jet1_jet2%s.%s" % (dir_append, OUTPUT_FMT))
+    h2d = cu.get_from_file(root_file, "Dijet_Presel%s/flav_jet1_jet2" % dir_append)
+    if h2d.Integral() > 0:
+        h2d.Scale(1./h2d.Integral())
+        qgg.do_2D_plot(h2d, output_filename, draw_opt="COLZ", logz=True, zlim=[1E-4, 1])
+    
     # do jet1 vs jet2 eta
     for dname in dir_names:
-        output_filename = os.path.join(root_dir, "Dijet_kin_comparison_2d", "eta_jet1_eta_jet2_%s.%s" % (dname.replace("Dijet_Presel_", ""), OUTPUT_FMT))
+        output_filename = os.path.join(root_dir, "Dijet_kin_comparison_2d%s" % dir_append, "eta_jet1_eta_jet2_%s.%s" % (dname.replace("Dijet_Presel_", ""), OUTPUT_FMT))
         h2d = cu.get_from_file(root_file, "%s/eta_jet1_vs_eta_jet2" % dname)
         h2d.Scale(1./h2d.Integral())
         title = dname.replace("Dijet_Presel_", "")
@@ -263,9 +269,10 @@ def get_integral_under_ellipse(hist, ellipse):
     return integral
 
 
-def do_zpj_distributions(root_dir):
+def do_zpj_distributions(root_dir, dir_append=""):
     """Do plots comparing different jet flavs in z+jets region"""
     dir_names = ["ZPlusJets_Presel_q", "ZPlusJets_Presel_g", "ZPlusJets_Presel_unknown"]
+    dir_names = [d+dir_append for d in dir_names]
     root_file = cu.open_root_file(os.path.join(root_dir, qgc.DY_FILENAME))
     directories = [cu.get_from_file(root_file, dn) for dn in dir_names]
     g_col = ROOT.kRed
@@ -278,15 +285,23 @@ def do_zpj_distributions(root_dir):
     ]
     # Compare shapes
     do_all_1D_projection_plots_in_dir(directories=directories, 
-                                      output_dir=os.path.join(root_dir, "ZpJ_kin_comparison_normalised"),
+                                      output_dir=os.path.join(root_dir, "ZpJ_kin_comparison_normalised%s" % dir_append),
                                       components_styles_dicts=csd)
-    # Compare relative yields
+    # Compare yields
     do_all_1D_projection_plots_in_dir(directories=directories, 
-                                      output_dir=os.path.join(root_dir, "ZpJ_kin_comparison_absolute"),
+                                      output_dir=os.path.join(root_dir, "ZpJ_kin_comparison_absolute%s" % dir_append),
                                       components_styles_dicts=csd,
                                       normalise_hists=False,
                                       filter_noisy=False)
-
+    
+    for dname in dir_names:
+        output_filename = os.path.join(root_dir, "ZpJ_kin_comparison_2d%s" % dir_append, "pt_jet1_z_pt_jet2_z_ratio_%s.%s" % (dname.replace("ZPlusJets_Presel_", ""), OUTPUT_FMT))
+        h2d = cu.get_from_file(root_file, "%s/pt_jet1_z_pt_jet2_z_ratio" % dname)
+        # h2d.Scale(1./h2d.Integral())
+        title = dname.replace("ZPlusJets_Presel_", "")
+        qgg.do_2D_plot(h2d, output_filename, draw_opt="COLZ", logz=False, title=title)
+        qgg.do_2D_plot(h2d, output_filename.replace(".%s" % OUTPUT_FMT, "_logZ.%s" % OUTPUT_FMT), 
+                       draw_opt="COLZ", logz=True, title=title)
 
 if __name__ == "__main__":
     parser = qgc.get_parser()
@@ -294,5 +309,7 @@ if __name__ == "__main__":
 
     for workdir in args.workdirs:
         do_dijet_distributions(workdir)
+        do_dijet_distributions(workdir, "_highPt")
         do_zpj_distributions(workdir)
+        do_zpj_distributions(workdir, "_highPt")
 
