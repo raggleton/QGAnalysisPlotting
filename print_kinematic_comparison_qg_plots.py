@@ -142,7 +142,7 @@ def do_all_1D_projection_plots_in_dir(directories, output_dir, components_styles
                 # print 'mean var', ref_rel_err_var
                 contributions = [cont for cont, merr, rev, mom 
                                  in zip(contributions, mean_errs, rel_err_vars, max_over_mean_errs) 
-                                 if (merr < 2.5*ref_mean_err) and (rev < 5*ref_rel_err_var or mom<11)]
+                                 if (merr < 2.5*ref_mean_err) and (rev < 5*ref_rel_err_var or mom<5)]
 
             ylim = None
             # if "pt_jet" in obj_name and "ratio" not in obj_name and "frac" not in obj_name:
