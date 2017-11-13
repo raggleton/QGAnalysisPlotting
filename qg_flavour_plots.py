@@ -75,15 +75,17 @@ def compare_flavour_fractions_vs_pt(input_files, dirnames, pt_bins, labels, flav
     Each entry in input_files, dirnames, and labels corresponds to one line"""
     bin_centers = [0.5*(x[0]+x[1]) for x in pt_bins]
     bin_widths = [0.5*(x[1]-x[0]) for x in pt_bins]
-    info = [get_flavour_fractions(ifile, sel, pt_bins, flav_source=flav_source, var_prepend=var_prepend, which_jet=(which_jet if "Dijet" in sel else "both")) for ifile, sel in zip(input_files, dirnames)]
+    info = [get_flavour_fractions(ifile, sel, pt_bins, flav_source=flav_source, var_prepend=var_prepend, which_jet=(which_jet if "Dijet" in sel else "both")) 
+            for ifile, sel in zip(input_files, dirnames)]
     contribs = []
     N = len(bin_centers)
+    colours = [ROOT.kRed, ROOT.kBlack, ROOT.kBlue, ROOT.kGreen-3]
     for i, fdict in enumerate(info):
         if flav in ['u', 'd', 's', 'c', 'b', 't', 'g']:
             gr = ROOT.TGraphErrors(N, np.array(bin_centers), np.array(fdict[flav]), np.array(bin_widths), np.zeros(N))
         else:
             gr = ROOT.TGraphErrors(N, np.array(bin_centers), 1.-np.array(fdict[flav.replace("1-", '')]), np.array(bin_widths), np.zeros(N))
-        c = Contribution(gr, label="%s" % (labels[i]), line_style=i+1, marker_style=21+i)
+        c = Contribution(gr, label="%s" % (labels[i]), line_color=colours[i], marker_style=20+i, marker_color=colours[i])
         contribs.append(c)
     ytitle = "%s flavour fraction" % flav
     p = Plot(contribs, what='graph', xtitle=xtitle, ytitle=ytitle, title=title, ylim=(0, 1))
@@ -109,13 +111,13 @@ def do_flavour_fraction_vs_pt(input_file, dirname, pt_bins, output_filename, tit
     gr_flav_g = ROOT.TGraphErrors(N, np.array(bin_centers), np.array(flav_dict['g']), np.array(bin_widths), np.zeros(N))
     gr_flav_unknown = ROOT.TGraphErrors(N, np.array(bin_centers), np.array(flav_dict['unknown']), np.array(bin_widths), np.zeros(N))
 
-    plot_u = Contribution(gr_flav_u, label="u", line_color=ROOT.kRed, marker_color=ROOT.kRed, marker_style=21)
-    plot_d = Contribution(gr_flav_d, label="d", line_color=ROOT.kBlue, marker_color=ROOT.kBlue, marker_style=22)
-    plot_s = Contribution(gr_flav_s, label="s", line_color=ROOT.kBlack, marker_color=ROOT.kBlack, marker_style=23)
-    plot_c = Contribution(gr_flav_c, label="c", line_color=ROOT.kGreen-3, marker_color=ROOT.kGreen-3, marker_style=24)
-    plot_b = Contribution(gr_flav_b, label="b", line_color=ROOT.kOrange, marker_color=ROOT.kOrange, marker_style=25)
-    plot_g = Contribution(gr_flav_g, label="g", line_color=ROOT.kViolet, marker_color=ROOT.kViolet, marker_style=26)
-    plot_unknown = Contribution(gr_flav_unknown, label="unknown", line_color=ROOT.kGray+1, marker_color=ROOT.kGray+1, marker_style=27)
+    plot_u = Contribution(gr_flav_u, label="u", line_color=ROOT.kRed, marker_color=ROOT.kRed, marker_style=20)
+    plot_d = Contribution(gr_flav_d, label="d", line_color=ROOT.kBlue, marker_color=ROOT.kBlue, marker_style=21)
+    plot_s = Contribution(gr_flav_s, label="s", line_color=ROOT.kBlack, marker_color=ROOT.kBlack, marker_style=22)
+    plot_c = Contribution(gr_flav_c, label="c", line_color=ROOT.kGreen-3, marker_color=ROOT.kGreen-3, marker_style=23)
+    plot_b = Contribution(gr_flav_b, label="b", line_color=ROOT.kOrange, marker_color=ROOT.kOrange, marker_style=24)
+    plot_g = Contribution(gr_flav_g, label="g", line_color=ROOT.kViolet, marker_color=ROOT.kViolet, marker_style=25)
+    plot_unknown = Contribution(gr_flav_unknown, label="unknown", line_color=ROOT.kGray+1, marker_color=ROOT.kGray+1, marker_style=26)
 
     p_flav = Plot([plot_u, plot_d, plot_s, plot_c, plot_b, plot_g, plot_unknown], what='graph', 
                   xtitle="p_{T}^{jet} [GeV]", ytitle="Fraction", title=title, ylim=[0, 1])
