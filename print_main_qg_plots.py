@@ -112,52 +112,6 @@ def do_all_2D_plots(root_dir, plot_dir="plots_2d", zpj_dirname="ZPlusJets_QG", d
                            renorm_axis=rn, title=qgc.QCD_Dijet_QFLAV_LABEL, rebin=rebin, xlim=xlim)
 
 
-def do_all_flavour_fraction_plots(root_dir, plot_dir="flav_fractions", zpj_dirname="ZPlusJets_QG", dj_dirname="Dijet_QG", var_prepend="", flav_source=""):
-    """Do plots of jet flavour fractions vs pT, for both Z+jets and dijets regions"""
-    
-    # Z+jets
-    qgf.do_flavour_fraction_vs_pt(input_file=os.path.join(root_dir, qgc.DY_FILENAME), 
-                                  title="Z+jets selection",
-                                  dirname=zpj_dirname, flav_source=flav_source, var_prepend=var_prepend,
-                                  output_filename="%s/zpj_flavour_fractions.%s" % (plot_dir, OUTPUT_FMT))
-
-    # Dijets
-    qgf.do_flavour_fraction_vs_pt(input_file=os.path.join(root_dir, qgc.QCD_FILENAME), 
-                                  title="Dijet selection",
-                                  dirname=dj_dirname, flav_source=flav_source, var_prepend=var_prepend,
-                                  output_filename="%s/dj_flavour_fractions.%s" % (plot_dir, OUTPUT_FMT)) 
-
-    dirnames = [dj_dirname, zpj_dirname]
-    labels = ["Dijet", "Z+jets"]
-    this_flav = "g"
-    # Compare gluon fractions
-    qgf.compare_flavour_fractions_vs_pt(input_files=[os.path.join(root_dir, qgc.QCD_FILENAME), os.path.join(root_dir, qgc.DY_FILENAME)],
-                                        dirnames=dirnames,
-                                        labels=labels,
-                                        flav=this_flav,
-                                        output_filename="%s/g_flav_fraction_compare_bothjets.%s" % (plot_dir, OUTPUT_FMT),
-                                        flav_source=flav_source,
-                                        var_prepend=var_prepend)
-    qgf.compare_flavour_fractions_vs_pt(input_files=[os.path.join(root_dir, qgc.QCD_FILENAME), os.path.join(root_dir, qgc.DY_FILENAME)],
-                                        dirnames=dirnames,
-                                        labels=labels,
-                                        flav=this_flav,
-                                        output_filename="%s/g_flav_fraction_compare_jet1.%s" % (plot_dir, OUTPUT_FMT),
-                                        flav_source=flav_source,
-                                        var_prepend=var_prepend,
-                                        which_jet="1",
-                                        xtitle="p_{T}^{jet 1} [GeV]")
-    qgf.compare_flavour_fractions_vs_pt(input_files=[os.path.join(root_dir, qgc.QCD_FILENAME), os.path.join(root_dir, qgc.DY_FILENAME)],
-                                        dirnames=dirnames,
-                                        labels=labels,
-                                        flav=this_flav,
-                                        output_filename="%s/g_flav_fraction_compare_jet2.%s" % (plot_dir, OUTPUT_FMT),
-                                        flav_source=flav_source,
-                                        var_prepend=var_prepend,
-                                        which_jet="2",
-                                        xtitle="p_{T}^{jet 2} [GeV]")
-
-
 def do_wrong_plots(root_dir, var_prepend="", plot_dir="wrong_flavs", zpj_dirname="ZPlusJets_QG", dj_dirname="Dijet_QG", pt_bins=None):
     """Plot all the sample/selection.flavour combinations to check distributions indep of sample"""
     pt_bins = pt_bins or qgc.PT_BINS
@@ -280,11 +234,8 @@ def do_reco_plots(root_dir):
                                           pt_bins=qgc.THEORY_PT_BINS, subplot_type=None, 
                                           do_flav_tagged=not is_herwig_sample(root_dir))
     if not is_herwig_sample(root_dir):
-        do_all_flavour_fraction_plots(root_dir, plot_dir=os.path.join(root_dir, "flav_fractions"), flav_source="genParton_")
-    
-    do_wrong_plots(root_dir)
+        do_wrong_plots(root_dir)
     do_reco_pu_comparison_plots(root_dir)
-
     # Separation plots
     qgd.do_angularity_delta_plots(sources, var_list=qgc.COMMON_VARS, pt_bins=qgc.THEORY_PT_BINS, 
                                   plot_dir=os.path.join(root_dir, 'delta_angularities'),
@@ -354,10 +305,6 @@ def do_gen_plots(root_dir):
                                           pt_bins=qgc.THEORY_PT_BINS, subplot_type=None, 
                                           do_flav_tagged=not is_herwig_sample(root_dir))
     if not is_herwig_sample(root_dir):
-        do_all_flavour_fraction_plots(root_dir, var_prepend="gen", flav_source="",
-                                      plot_dir=os.path.join(root_dir, "flav_fractions_gen"), 
-                                      zpj_dirname=qgc.ZPJ_GENJET_RDIR, dj_dirname=qgc.DJ_GENJET_RDIR)
-    
         do_wrong_plots(root_dir, var_prepend="gen", plot_dir="wrong_flavs_gen",
                        zpj_dirname=qgc.ZPJ_GENJET_RDIR, dj_dirname=qgc.DJ_GENJET_RDIR, pt_bins=qgc.THEORY_PT_BINS)
     
