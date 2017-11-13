@@ -51,11 +51,25 @@ def do_all_flavour_fraction_plots(root_dir, plot_dir="flav_fractions", zpj_dirna
 
     # Dijets
     qgf.do_flavour_fraction_vs_pt(input_file=os.path.join(root_dir, qgc.QCD_FILENAME), 
-                                  title="Dijet selection",
+                                  title="Dijet selection (both jets)",
                                   dirname=dj_dirname, 
                                   pt_bins=pt_bins,
                                   flav_source=flav_source, var_prepend=var_prepend,
                                   output_filename="%s/dj_flavour_fractions.%s" % (plot_dir, OUTPUT_FMT)) 
+    qgf.do_flavour_fraction_vs_pt(input_file=os.path.join(root_dir, qgc.QCD_FILENAME), 
+                                  title="Dijet selection (jet 1)",
+                                  dirname=dj_dirname, 
+                                  pt_bins=pt_bins,
+                                  flav_source=flav_source, var_prepend=var_prepend,
+                                  which_jet="1",
+                                  output_filename="%s/dj_flavour_fractions_jet1.%s" % (plot_dir, OUTPUT_FMT)) 
+    qgf.do_flavour_fraction_vs_pt(input_file=os.path.join(root_dir, qgc.QCD_FILENAME), 
+                                  title="Dijet selection (jet 2)",
+                                  dirname=dj_dirname, 
+                                  pt_bins=pt_bins,
+                                  flav_source=flav_source, var_prepend=var_prepend,
+                                  which_jet="2",
+                                  output_filename="%s/dj_flavour_fractions_jet2.%s" % (plot_dir, OUTPUT_FMT)) 
 
     dirnames = [dj_dirname, zpj_dirname]
     labels = ["Dijet", "Z+jets"]

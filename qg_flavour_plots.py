@@ -95,11 +95,11 @@ def compare_flavour_fractions_vs_pt(input_files, dirnames, pt_bins, labels, flav
     p.save(output_filename)
 
 
-def do_flavour_fraction_vs_pt(input_file, dirname, pt_bins, output_filename, title="", flav_source="", var_prepend=""):
+def do_flavour_fraction_vs_pt(input_file, dirname, pt_bins, output_filename, title="", flav_source="", var_prepend="", which_jet="both"):
     """Plot all flavour fractions vs PT for one input file & dirname in the ROOT file"""
     bin_centers = [0.5*(x[0]+x[1]) for x in pt_bins]
     bin_widths = [0.5*(x[1]-x[0]) for x in pt_bins]
-    flav_dict = get_flavour_fractions(input_file, dirname, pt_bins, flav_source, var_prepend)
+    flav_dict = get_flavour_fractions(input_file, dirname, pt_bins, flav_source, var_prepend, which_jet)
     
     # TODO: check if empty arrays
     N = len(bin_centers)
