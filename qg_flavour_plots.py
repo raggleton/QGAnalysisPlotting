@@ -29,35 +29,33 @@ ROOT.TH1.SetDefaultSumw2()
 ROOT.gStyle.SetOptStat(0)
 
 
-def get_flavour_fractions(input_file, dirname, flav_source="", var_prepend="", which_jet="both"):
-    """
+def get_flavour_fractions(input_file, dirname, pt_bins, flav_source="", var_prepend="", which_jet="both"):
+    """Get dict of flav : [fraction for specified pt bins] for a given input file & directory.
+
     flav_source : str
-        Which flavour to use, either "" or genParton_
+        Which flavour to use, either "" or "genParton_"
+    which_jet : "both", 1, 2
+        Which jet to look at - both, or one of the two in particular
     """
     jet_str = "" if which_jet == "both" else str(which_jet)
     h2d_flav = grab_obj(input_file, "%s/%sjet%s_%sflavour_vs_pt" % (dirname, var_prepend, jet_str, flav_source))
 
-    h2d_flav.Rebin2D(1, 10)
-    y_axis = h2d_flav.GetYaxis()
-    pt_bins_lower, pt_bins_upper = [], []
     flav_dict = {'d': [], 'u': [], 's': [], 'c': [], 'b': [] ,'t': [], 'g': []}
-    for i in range(1, y_axis.GetNbins()-1):
+    for (pt_min, pt_max) in pt_bins:
+        h_flav = get_projection_plot(h2d_flav, pt_min, pt_max)
 
-        d_frac = h2d_flav.GetBinContent(2, i)
-        u_frac = h2d_flav.GetBinContent(3, i)
-        s_frac = h2d_flav.GetBinContent(4, i)
-        c_frac = h2d_flav.GetBinContent(5, i)
-        b_frac = h2d_flav.GetBinContent(6, i)
-        t_frac = h2d_flav.GetBinContent(7, i)
-        g_frac = h2d_flav.GetBinContent(22, i)
+        d_frac = h_flav.GetBinContent(2)
+        u_frac = h_flav.GetBinContent(3)
+        s_frac = h_flav.GetBinContent(4)
+        c_frac = h_flav.GetBinContent(5)
+        b_frac = h_flav.GetBinContent(6)
+        t_frac = h_flav.GetBinContent(7)
+        g_frac = h_flav.GetBinContent(22)
 
         total = d_frac+u_frac+s_frac+c_frac+b_frac+t_frac+g_frac
 
         if total == 0:
             continue
-
-        pt_bins_lower.append(y_axis.GetBinLowEdge(i))
-        pt_bins_upper.append(y_axis.GetBinLowEdge(i+1))
 
         flav_dict['d'].append(d_frac / total)
         flav_dict['u'].append(u_frac / total)
@@ -67,15 +65,15 @@ def get_flavour_fractions(input_file, dirname, flav_source="", var_prepend="", w
         flav_dict['t'].append(t_frac / total)
         flav_dict['g'].append(g_frac / total)
 
-    x_bins = [0.5 * (x1+x2) for x1,x2 in zip(pt_bins_lower[:], pt_bins_upper[:])]
-
+    x_bins = [0.5*(x[0]+x[1]) for x in pt_bins]
     return x_bins, flav_dict
 
 
 def compare_flavour_fractions_vs_pt(input_files, dirnames, labels, flav, output_filename, title="", flav_source="", var_prepend="", which_jet="both", xtitle="p_{T}^{jet} [GeV]"):
     """Plot a specified flavour fraction vs pT for several sources.
     Each entry in input_files, dirnames, and labels corresponds to one line"""
-    info = [get_flavour_fractions(ifile, sel, flav_source=flav_source, var_prepend=var_prepend, which_jet=(which_jet if "Dijet" in sel else "both")) for ifile, sel in zip(input_files, dirnames)]
+    pt_bins = [(20, 40), (40, 60), (60, 80), (100, 120), (160, 200), (260, 300), (500, 600), (1000, 2000)]
+    info = [get_flavour_fractions(ifile, sel, pt_bins, flav_source=flav_source, var_prepend=var_prepend, which_jet=(which_jet if "Dijet" in sel else "both")) for ifile, sel in zip(input_files, dirnames)]
     contribs = []
     for i, (x_bins, fdict) in enumerate(info):
         if flav in ['u', 'd', 's', 'c', 'b', 't', 'g']:
@@ -94,7 +92,9 @@ def compare_flavour_fractions_vs_pt(input_files, dirnames, labels, flav, output_
 
 def do_flavour_fraction_vs_pt(input_file, dirname, output_filename, title="", flav_source="", var_prepend=""):
     """Plot flavour fractions vs PT for one input file & dirname in the ROOT file"""
-    x_bins, flav_dict = get_flavour_fractions(input_file, dirname, flav_source, var_prepend)
+    pt_bins = [(20, 40), (40, 60), (60, 80), (100, 120), (160, 200), (260, 300), (500, 600), (1000, 2000)]
+    x_bins, flav_dict = get_flavour_fractions(input_file, dirname, pt_bins, flav_source, var_prepend)
+    
     # TODO: check if empy arrays
     gr_flav_u = ROOT.TGraph(len(x_bins), np.array(x_bins), np.array(flav_dict['u']))
     gr_flav_d = ROOT.TGraph(len(x_bins), np.array(x_bins), np.array(flav_dict['d']))
