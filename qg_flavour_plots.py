@@ -56,7 +56,7 @@ def get_flavour_fractions(input_file, dirname, pt_bins, flav_source="", var_prep
         total = d_frac+u_frac+s_frac+c_frac+b_frac+t_frac+g_frac+unknown_frac
 
         if total == 0:
-            continue
+            total = 1  # so no Inf
 
         flav_dict['unknown'].append(unknown_frac / total)
         flav_dict['d'].append(d_frac / total)
