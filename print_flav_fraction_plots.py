@@ -35,17 +35,26 @@ OUTPUT_FMT = "pdf"
 def do_all_flavour_fraction_plots(root_dir, plot_dir="flav_fractions", zpj_dirname="ZPlusJets_QG", dj_dirname="Dijet_QG", var_prepend="", flav_source=""):
     """Do plots of jet flavour fractions vs pT, for both Z+jets and dijets regions"""
     
+    pt_bins = [(0, 20), (20, 40), (40, 60), (60, 80), (80, 100), (100, 120),
+               (120, 160), (160, 200), (200, 260), (260, 300), (300, 400),
+               (400, 500), (500, 600), (600, 800), (800, 1000), 
+               (1000, 1400), (1400, 2000)]
+
     # Plots of all flavour fractions vs pT for a given sample/selection
     # Z+jets
     qgf.do_flavour_fraction_vs_pt(input_file=os.path.join(root_dir, qgc.DY_FILENAME), 
                                   title="Z+jets selection",
-                                  dirname=zpj_dirname, flav_source=flav_source, var_prepend=var_prepend,
+                                  dirname=zpj_dirname,
+                                  pt_bins=pt_bins,
+                                  flav_source=flav_source, var_prepend=var_prepend,
                                   output_filename="%s/zpj_flavour_fractions.%s" % (plot_dir, OUTPUT_FMT))
 
     # Dijets
     qgf.do_flavour_fraction_vs_pt(input_file=os.path.join(root_dir, qgc.QCD_FILENAME), 
                                   title="Dijet selection",
-                                  dirname=dj_dirname, flav_source=flav_source, var_prepend=var_prepend,
+                                  dirname=dj_dirname, 
+                                  pt_bins=pt_bins,
+                                  flav_source=flav_source, var_prepend=var_prepend,
                                   output_filename="%s/dj_flavour_fractions.%s" % (plot_dir, OUTPUT_FMT)) 
 
     dirnames = [dj_dirname, zpj_dirname]
@@ -54,6 +63,7 @@ def do_all_flavour_fraction_plots(root_dir, plot_dir="flav_fractions", zpj_dirna
     # Compare gluon fractions across samples/selections
     qgf.compare_flavour_fractions_vs_pt(input_files=[os.path.join(root_dir, qgc.QCD_FILENAME), os.path.join(root_dir, qgc.DY_FILENAME)],
                                         dirnames=dirnames,
+                                        pt_bins=pt_bins,
                                         labels=labels,
                                         flav=this_flav,
                                         output_filename="%s/g_flav_fraction_compare_bothjets.%s" % (plot_dir, OUTPUT_FMT),
@@ -61,6 +71,7 @@ def do_all_flavour_fraction_plots(root_dir, plot_dir="flav_fractions", zpj_dirna
                                         var_prepend=var_prepend)
     qgf.compare_flavour_fractions_vs_pt(input_files=[os.path.join(root_dir, qgc.QCD_FILENAME), os.path.join(root_dir, qgc.DY_FILENAME)],
                                         dirnames=dirnames,
+                                        pt_bins=pt_bins,
                                         labels=labels,
                                         flav=this_flav,
                                         output_filename="%s/g_flav_fraction_compare_jet1.%s" % (plot_dir, OUTPUT_FMT),
@@ -70,6 +81,7 @@ def do_all_flavour_fraction_plots(root_dir, plot_dir="flav_fractions", zpj_dirna
                                         xtitle="p_{T}^{jet 1} [GeV]")
     qgf.compare_flavour_fractions_vs_pt(input_files=[os.path.join(root_dir, qgc.QCD_FILENAME), os.path.join(root_dir, qgc.DY_FILENAME)],
                                         dirnames=dirnames,
+                                        pt_bins=pt_bins,
                                         labels=labels,
                                         flav=this_flav,
                                         output_filename="%s/g_flav_fraction_compare_jet2.%s" % (plot_dir, OUTPUT_FMT),

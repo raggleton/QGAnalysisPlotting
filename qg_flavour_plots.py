@@ -70,13 +70,9 @@ def get_flavour_fractions(input_file, dirname, pt_bins, flav_source="", var_prep
     return flav_dict
 
 
-def compare_flavour_fractions_vs_pt(input_files, dirnames, labels, flav, output_filename, title="", flav_source="", var_prepend="", which_jet="both", xtitle="p_{T}^{jet} [GeV]"):
+def compare_flavour_fractions_vs_pt(input_files, dirnames, pt_bins, labels, flav, output_filename, title="", flav_source="", var_prepend="", which_jet="both", xtitle="p_{T}^{jet} [GeV]"):
     """Plot a specified flavour fraction vs pT for several sources.
     Each entry in input_files, dirnames, and labels corresponds to one line"""
-    pt_bins = [(0, 20), (20, 40), (40, 60), (60, 80), (80, 100), (100, 120),
-               (120, 160), (160, 200), (200, 260), (260, 300), (300, 400),
-               (400, 500), (500, 600), (600, 800), (800, 1000),
-               (1000, 1400), (1400, 2000)]
     bin_centers = [0.5*(x[0]+x[1]) for x in pt_bins]
     bin_widths = [0.5*(x[1]-x[0]) for x in pt_bins]
     info = [get_flavour_fractions(ifile, sel, pt_bins, flav_source=flav_source, var_prepend=var_prepend, which_jet=(which_jet if "Dijet" in sel else "both")) for ifile, sel in zip(input_files, dirnames)]
@@ -97,12 +93,8 @@ def compare_flavour_fractions_vs_pt(input_files, dirnames, labels, flav, output_
     p.save(output_filename)
 
 
-def do_flavour_fraction_vs_pt(input_file, dirname, output_filename, title="", flav_source="", var_prepend=""):
+def do_flavour_fraction_vs_pt(input_file, dirname, pt_bins, output_filename, title="", flav_source="", var_prepend=""):
     """Plot all flavour fractions vs PT for one input file & dirname in the ROOT file"""
-    pt_bins = [(0, 20), (20, 40), (40, 60), (60, 80), (80, 100), (100, 120),
-               (120, 160), (160, 200), (200, 260), (260, 300), (300, 400),
-               (400, 500), (500, 600), (600, 800), (800, 1000), 
-               (1000, 1400), (1400, 2000)]
     bin_centers = [0.5*(x[0]+x[1]) for x in pt_bins]
     bin_widths = [0.5*(x[1]-x[0]) for x in pt_bins]
     flav_dict = get_flavour_fractions(input_file, dirname, pt_bins, flav_source, var_prepend)
