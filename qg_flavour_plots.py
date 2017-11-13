@@ -40,10 +40,11 @@ def get_flavour_fractions(input_file, dirname, pt_bins, flav_source="", var_prep
     jet_str = "" if which_jet == "both" else str(which_jet)
     h2d_flav = grab_obj(input_file, "%s/%sjet%s_%sflavour_vs_pt" % (dirname, var_prepend, jet_str, flav_source))
 
-    flav_dict = {'d': [], 'u': [], 's': [], 'c': [], 'b': [] ,'t': [], 'g': []}
+    flav_dict = {'d': [], 'u': [], 's': [], 'c': [], 'b': [] ,'t': [], 'g': [], 'unknown': []}
     for (pt_min, pt_max) in pt_bins:
         h_flav = get_projection_plot(h2d_flav, pt_min, pt_max)
 
+        unknown_frac = h_flav.GetBinContent(1)
         d_frac = h_flav.GetBinContent(2)
         u_frac = h_flav.GetBinContent(3)
         s_frac = h_flav.GetBinContent(4)
@@ -52,11 +53,12 @@ def get_flavour_fractions(input_file, dirname, pt_bins, flav_source="", var_prep
         t_frac = h_flav.GetBinContent(7)
         g_frac = h_flav.GetBinContent(22)
 
-        total = d_frac+u_frac+s_frac+c_frac+b_frac+t_frac+g_frac
+        total = d_frac+u_frac+s_frac+c_frac+b_frac+t_frac+g_frac+unknown_frac
 
         if total == 0:
             continue
 
+        flav_dict['unknown'].append(unknown_frac / total)
         flav_dict['d'].append(d_frac / total)
         flav_dict['u'].append(u_frac / total)
         flav_dict['s'].append(s_frac / total)
@@ -105,7 +107,7 @@ def do_flavour_fraction_vs_pt(input_file, dirname, output_filename, title="", fl
     bin_widths = [0.5*(x[1]-x[0]) for x in pt_bins]
     flav_dict = get_flavour_fractions(input_file, dirname, pt_bins, flav_source, var_prepend)
     
-    # TODO: check if empy arrays
+    # TODO: check if empty arrays
     N = len(bin_centers)
     gr_flav_u = ROOT.TGraphErrors(N, np.array(bin_centers), np.array(flav_dict['u']), np.array(bin_widths), np.zeros(N))
     gr_flav_d = ROOT.TGraphErrors(N, np.array(bin_centers), np.array(flav_dict['d']), np.array(bin_widths), np.zeros(N))
@@ -113,7 +115,7 @@ def do_flavour_fraction_vs_pt(input_file, dirname, output_filename, title="", fl
     gr_flav_c = ROOT.TGraphErrors(N, np.array(bin_centers), np.array(flav_dict['c']), np.array(bin_widths), np.zeros(N))
     gr_flav_b = ROOT.TGraphErrors(N, np.array(bin_centers), np.array(flav_dict['b']), np.array(bin_widths), np.zeros(N))
     gr_flav_g = ROOT.TGraphErrors(N, np.array(bin_centers), np.array(flav_dict['g']), np.array(bin_widths), np.zeros(N))
-    # gr_flav_uds = ROOT.TGraph(len(bin_centers), np.array(bin_centers), np.array([u+d+s for u, d, s in zip(flav_dict['u'], flav_dict['d'], flav_dict['s'])]))
+    gr_flav_unknown = ROOT.TGraphErrors(N, np.array(bin_centers), np.array(flav_dict['unknown']), np.array(bin_widths), np.zeros(N))
 
     plot_u = Contribution(gr_flav_u, label="u", line_color=ROOT.kRed, marker_color=ROOT.kRed, marker_style=21)
     plot_d = Contribution(gr_flav_d, label="d", line_color=ROOT.kBlue, marker_color=ROOT.kBlue, marker_style=22)
@@ -121,9 +123,9 @@ def do_flavour_fraction_vs_pt(input_file, dirname, output_filename, title="", fl
     plot_c = Contribution(gr_flav_c, label="c", line_color=ROOT.kGreen-3, marker_color=ROOT.kGreen-3, marker_style=24)
     plot_b = Contribution(gr_flav_b, label="b", line_color=ROOT.kOrange, marker_color=ROOT.kOrange, marker_style=25)
     plot_g = Contribution(gr_flav_g, label="g", line_color=ROOT.kViolet, marker_color=ROOT.kViolet, marker_style=26)
-    # plot_uds = Contribution(gr_flav_uds, label="uds frac", line_color=ROOT.kOrange+2, marker_color=ROOT.kOrange+2)
+    plot_unknown = Contribution(gr_flav_unknown, label="unknown", line_color=ROOT.kGray+1, marker_color=ROOT.kGray+1, marker_style=27)
 
-    p_flav = Plot([plot_u, plot_d, plot_s, plot_c, plot_b, plot_g], what='graph', 
+    p_flav = Plot([plot_u, plot_d, plot_s, plot_c, plot_b, plot_g, plot_unknown], what='graph', 
                   xtitle="p_{T}^{jet} [GeV]", ytitle="Fraction", title=title, ylim=[0, 1])
     p_flav.plot("ALP")
     p_flav.save(output_filename)
