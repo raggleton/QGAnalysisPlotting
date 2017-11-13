@@ -85,7 +85,7 @@ def compare_flavour_fractions_vs_pt(input_files, dirnames, labels, flav, output_
             gr = ROOT.TGraphErrors(N, np.array(bin_centers), np.array(fdict[flav]), np.array(bin_widths), np.zeros(N))
         else:
             gr = ROOT.TGraphErrors(N, np.array(bin_centers), 1.-np.array(fdict[flav.replace("1-", '')]), np.array(bin_widths), np.zeros(N))
-        c = Contribution(gr, label="%s" % (labels[i]), line_style=i+1)
+        c = Contribution(gr, label="%s" % (labels[i]), line_style=i+1, marker_style=21+i)
         contribs.append(c)
     ytitle = "%s flavour fraction" % flav
     p = Plot(contribs, what='graph', xtitle=xtitle, ytitle=ytitle, title=title, ylim=(0, 1))
