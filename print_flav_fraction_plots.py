@@ -6,6 +6,7 @@ import ROOT
 from MyStyle import My_Style
 My_Style.cd()
 import os
+import argparse
 
 # My stuff
 from comparator import Contribution, Plot, grab_obj
@@ -34,77 +35,100 @@ OUTPUT_FMT = "pdf"
 
 def do_all_flavour_fraction_plots(root_dir, plot_dir="flav_fractions", zpj_dirname="ZPlusJets_QG", dj_dirname="Dijet_QG", var_prepend="", flav_source=""):
     """Do plots of jet flavour fractions vs pT, for both Z+jets and dijets regions"""
-    
+
     pt_bins = [(0, 20), (20, 40), (40, 60), (60, 80), (80, 100), (100, 120),
                (120, 160), (160, 200), (200, 260), (260, 300), (300, 400),
-               (400, 500), (500, 600), (600, 800), (800, 1000), 
+               (400, 500), (500, 600), (600, 800), (800, 1000),
                (1000, 1400), (1400, 2000)]
 
     # Plots of all flavour fractions vs pT for a given sample/selection
-    # Z+jets
-    qgf.do_flavour_fraction_vs_pt(input_file=os.path.join(root_dir, qgc.DY_FILENAME), 
-                                  title="Z+jets selection",
-                                  dirname=zpj_dirname,
-                                  pt_bins=pt_bins,
-                                  flav_source=flav_source, var_prepend=var_prepend,
-                                  output_filename="%s/zpj_flavour_fractions.%s" % (plot_dir, OUTPUT_FMT))
+    if zpj_dirname:
+        # Z+jets
+        qgf.do_flavour_fraction_vs_pt(input_file=os.path.join(root_dir, qgc.DY_FILENAME),
+                                      title="Z+jets selection",
+                                      dirname=zpj_dirname,
+                                      pt_bins=pt_bins,
+                                      flav_source=flav_source,
+                                      var_prepend=var_prepend,
+                                      output_filename="%s/zpj_flavour_fractions.%s" % (plot_dir, OUTPUT_FMT))
+    if dj_dirname:
+        # Dijets
+        qgf.do_flavour_fraction_vs_pt(input_file=os.path.join(root_dir, qgc.QCD_FILENAME),
+                                      title="Dijet selection (both jets)",
+                                      dirname=dj_dirname,
+                                      pt_bins=pt_bins,
+                                      flav_source=flav_source,
+                                      var_prepend=var_prepend,
+                                      output_filename="%s/dj_flavour_fractions.%s" % (plot_dir, OUTPUT_FMT))
+        qgf.do_flavour_fraction_vs_pt(input_file=os.path.join(root_dir, qgc.QCD_FILENAME),
+                                      title="Dijet selection (jet 1)",
+                                      dirname=dj_dirname,
+                                      pt_bins=pt_bins,
+                                      flav_source=flav_source,
+                                      var_prepend=var_prepend,
+                                      which_jet="1",
+                                      output_filename="%s/dj_flavour_fractions_jet1.%s" % (plot_dir, OUTPUT_FMT))
+        qgf.do_flavour_fraction_vs_pt(input_file=os.path.join(root_dir, qgc.QCD_FILENAME),
+                                      title="Dijet selection (jet 2)",
+                                      dirname=dj_dirname,
+                                      pt_bins=pt_bins,
+                                      flav_source=flav_source,
+                                      var_prepend=var_prepend,
+                                      which_jet="2",
+                                      output_filename="%s/dj_flavour_fractions_jet2.%s" % (plot_dir, OUTPUT_FMT))
 
-    # Dijets
-    qgf.do_flavour_fraction_vs_pt(input_file=os.path.join(root_dir, qgc.QCD_FILENAME), 
-                                  title="Dijet selection (both jets)",
-                                  dirname=dj_dirname, 
-                                  pt_bins=pt_bins,
-                                  flav_source=flav_source, var_prepend=var_prepend,
-                                  output_filename="%s/dj_flavour_fractions.%s" % (plot_dir, OUTPUT_FMT)) 
-    qgf.do_flavour_fraction_vs_pt(input_file=os.path.join(root_dir, qgc.QCD_FILENAME), 
-                                  title="Dijet selection (jet 1)",
-                                  dirname=dj_dirname, 
-                                  pt_bins=pt_bins,
-                                  flav_source=flav_source, var_prepend=var_prepend,
-                                  which_jet="1",
-                                  output_filename="%s/dj_flavour_fractions_jet1.%s" % (plot_dir, OUTPUT_FMT)) 
-    qgf.do_flavour_fraction_vs_pt(input_file=os.path.join(root_dir, qgc.QCD_FILENAME), 
-                                  title="Dijet selection (jet 2)",
-                                  dirname=dj_dirname, 
-                                  pt_bins=pt_bins,
-                                  flav_source=flav_source, var_prepend=var_prepend,
-                                  which_jet="2",
-                                  output_filename="%s/dj_flavour_fractions_jet2.%s" % (plot_dir, OUTPUT_FMT)) 
-
-    dirnames = [dj_dirname, zpj_dirname]
-    labels = ["Dijet", "Z+jets"]
-    this_flav = "g"
-    # Compare gluon fractions across samples/selections
-    qgf.compare_flavour_fractions_vs_pt(input_files=[os.path.join(root_dir, qgc.QCD_FILENAME), os.path.join(root_dir, qgc.DY_FILENAME)],
-                                        dirnames=dirnames,
-                                        pt_bins=pt_bins,
-                                        labels=labels,
-                                        flav=this_flav,
-                                        output_filename="%s/g_flav_fraction_compare_bothjets.%s" % (plot_dir, OUTPUT_FMT),
-                                        flav_source=flav_source,
-                                        var_prepend=var_prepend)
-    qgf.compare_flavour_fractions_vs_pt(input_files=[os.path.join(root_dir, qgc.QCD_FILENAME), os.path.join(root_dir, qgc.DY_FILENAME)],
-                                        dirnames=dirnames,
-                                        pt_bins=pt_bins,
-                                        labels=labels,
-                                        flav=this_flav,
-                                        output_filename="%s/g_flav_fraction_compare_jet1.%s" % (plot_dir, OUTPUT_FMT),
-                                        flav_source=flav_source,
-                                        var_prepend=var_prepend,
-                                        which_jet="1",
-                                        xtitle="p_{T}^{jet 1} [GeV]")
-    qgf.compare_flavour_fractions_vs_pt(input_files=[os.path.join(root_dir, qgc.QCD_FILENAME), os.path.join(root_dir, qgc.DY_FILENAME)],
-                                        dirnames=dirnames,
-                                        pt_bins=pt_bins,
-                                        labels=labels,
-                                        flav=this_flav,
-                                        output_filename="%s/g_flav_fraction_compare_jet2.%s" % (plot_dir, OUTPUT_FMT),
-                                        flav_source=flav_source,
-                                        var_prepend=var_prepend,
-                                        which_jet="2",
-                                        xtitle="p_{T}^{jet 2} [GeV]")
+    if dj_dirname and zpj_dirname:
+        dirnames = [dj_dirname, zpj_dirname]
+        labels = ["Dijet", "Z+jets"]
+        this_flav = "g"
+        # Compare gluon fractions across samples/selections
+        qgf.compare_flavour_fractions_vs_pt(input_files=[os.path.join(root_dir, qgc.QCD_FILENAME), os.path.join(root_dir, qgc.DY_FILENAME)],
+                                            dirnames=dirnames,
+                                            pt_bins=pt_bins,
+                                            labels=labels,
+                                            flav=this_flav,
+                                            output_filename="%s/g_flav_fraction_compare_bothjets.%s" % (plot_dir, OUTPUT_FMT),
+                                            flav_source=flav_source,
+                                            var_prepend=var_prepend)
+        qgf.compare_flavour_fractions_vs_pt(input_files=[os.path.join(root_dir, qgc.QCD_FILENAME), os.path.join(root_dir, qgc.DY_FILENAME)],
+                                            dirnames=dirnames,
+                                            pt_bins=pt_bins,
+                                            labels=labels,
+                                            flav=this_flav,
+                                            output_filename="%s/g_flav_fraction_compare_jet1.%s" % (plot_dir, OUTPUT_FMT),
+                                            flav_source=flav_source,
+                                            var_prepend=var_prepend,
+                                            which_jet="1",
+                                            xtitle="p_{T}^{jet 1} [GeV]")
+        qgf.compare_flavour_fractions_vs_pt(input_files=[os.path.join(root_dir, qgc.QCD_FILENAME), os.path.join(root_dir, qgc.DY_FILENAME)],
+                                            dirnames=dirnames,
+                                            pt_bins=pt_bins,
+                                            labels=labels,
+                                            flav=this_flav,
+                                            output_filename="%s/g_flav_fraction_compare_jet2.%s" % (plot_dir, OUTPUT_FMT),
+                                            flav_source=flav_source,
+                                            var_prepend=var_prepend,
+                                            which_jet="2",
+                                            xtitle="p_{T}^{jet 2} [GeV]")
 
 
 if __name__ == '__main__':
-    for root_dir in sys.argv[1:]:
-        do_all_flavour_fraction_plots(root_dir, plot_dir=os.path.join(root_dir, "flav_fractions"), flav_source="genParton_")
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--dj", help="do dijet plots", action="store_true")
+    parser.add_argument("--zpj", help="do z + jets plots", action="store_true")
+    parser.add_argument("--genparton", help="Use genparton flavour instead of partonflavour", action="store_true")
+    parser.add_argument("dirs", help="Workdir(s) with ROOT files", nargs="+")
+    args = parser.parse_args()
+    for root_dir in args.dirs:
+        if args.genparton:
+            do_all_flavour_fraction_plots(root_dir, 
+                plot_dir=os.path.join(root_dir, "flav_fractions_genParton"), 
+                flav_source="genParton_",
+                zpj_dirname="ZPlusJets_QG" if args.zpj else None,
+                dj_dirname="Dijet_QG" if args.dj else None)
+        else:
+            do_all_flavour_fraction_plots(root_dir, 
+                plot_dir=os.path.join(root_dir, "flav_fractions"), 
+                flav_source="",
+                zpj_dirname="ZPlusJets_QG" if args.zpj else None,
+                dj_dirname="Dijet_QG" if args.dj else None)
