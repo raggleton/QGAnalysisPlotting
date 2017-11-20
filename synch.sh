@@ -18,12 +18,14 @@ function sync {
         GEN="Herwig"
     elif [[ "$WORKDIR" == *"_pythiaOnlyFlat"* ]]; then
         GEN="PythiaOnlyFlat"
+    elif [[ "$WORKDIR" == *"_powheg"* ]]; then
+        GEN="Powheg"
     fi
     
-    if [[ "$WORKDIR" != *"_pythiaOnlyFlat"* ]]; then
-        rsync -avzP NAF:"/nfs/dust/cms/user/aggleton/CMSSW_8_0_24_patch1/src/UHH2/QGAnalysis/Selection/$GEN/$WORKDIR/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" "$WORKDIR/"
+    if [[ "$WORKDIR" != *"_pythia"* ]] && [[ "$WORKDIR" != *"_powheg"* ]]; then
+        rsync -avzP NAF:"/nfs/dust/cms/user/aggleton/QG/CMSSW_8_0_24_patch1/src/UHH2/QGAnalysis/Selection/$GEN/$WORKDIR/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" "$WORKDIR/"
     fi
-    rsync -avzP NAF:"/nfs/dust/cms/user/aggleton/CMSSW_8_0_24_patch1/src/UHH2/QGAnalysis/Selection/$GEN/$WORKDIR/uhh2.AnalysisModuleRunner.MC.MC_QCD_.root" "$WORKDIR/"
+    rsync -avzP NAF:"/nfs/dust/cms/user/aggleton/QG/CMSSW_8_0_24_patch1/src/UHH2/QGAnalysis/Selection/$GEN/$WORKDIR/uhh2.AnalysisModuleRunner.MC.MC_QCD_.root" "$WORKDIR/"
 }
 
 for wdir in "$@";
