@@ -10,12 +10,12 @@ from collections import namedtuple
 DY_COLOUR =  632 # kRed 
 QCD_COLOUR = 867 # kAzure+7
 
-# DY_COLOUR =  880 # kViolet
+DY_COLOUR =  880 # kViolet
 # QCD_COLOUR = 600 # kBlue
 
 # You shoudl use markers as well for colourblindness
 DY_MARKER = 20
-QCD_MARKER = 21
+QCD_MARKER = 22
 
 # When comparing e.g. PU bins
 # FIXME: update for colourblindness
