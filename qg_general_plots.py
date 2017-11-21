@@ -151,7 +151,9 @@ def do_all_exclusive_plots_comparison(sources, plot_dir="plots_dy_vs_qcd",
                 if zpj_dirname:
                     h2d_dyj = grab_obj(os.path.join(source['root_dir'], qgc.DY_FILENAME),
                                        "%s/%s" % (source.get('zpj_dirname', zpj_dirname), v))
-                    dy_kwargs = dict(line_color=qgc.DY_COLOUR, fill_color=qgc.DY_COLOUR, label=qgc.DY_ZpJ_LABEL + source.get('label', ''), line_width=lw)
+                    dy_kwargs = dict(line_color=qgc.DY_COLOUR, line_width=lw, fill_color=qgc.DY_COLOUR, 
+                                     label=qgc.DY_ZpJ_LABEL + source.get('label', ''),
+                                     marker_color=qgc.DY_COLOUR, marker_style=qgc.DY_MARKER, marker_size=1.5)
                     dy_kwargs.update(source.get('style', {}))
                     dy_kwargs.update(source.get('dy_style', {}))
                     entries_normal.append((get_projection_plot(h2d_dyj, start_val, end_val), dy_kwargs))
@@ -159,7 +161,9 @@ def do_all_exclusive_plots_comparison(sources, plot_dir="plots_dy_vs_qcd",
                 if dj_dirname:
                     h2d_qcd = grab_obj(os.path.join(source['root_dir'], qgc.QCD_FILENAME),
                                        "%s/%s" % (source.get('dj_dirname', dj_dirname), v))
-                    qcd_kwargs = dict(line_color=qgc.QCD_COLOUR, fill_color=qgc.QCD_COLOUR, label=qgc.QCD_Dijet_LABEL + source.get('label', ''), line_width=lw)
+                    qcd_kwargs = dict(line_color=qgc.QCD_COLOUR, line_width=lw, fill_color=qgc.QCD_COLOUR, 
+                                      label=qgc.QCD_Dijet_LABEL + source.get('label', ''),
+                                      marker_color=qgc.QCD_COLOUR, marker_style=qgc.QCD_MARKER, marker_size=1.5)
                     qcd_kwargs.update(source.get('style', {}))
                     qcd_kwargs.update(source.get('qcd_style', {}))
                     entries_normal.append((get_projection_plot(h2d_qcd, start_val, end_val), qcd_kwargs))
@@ -171,7 +175,9 @@ def do_all_exclusive_plots_comparison(sources, plot_dir="plots_dy_vs_qcd",
                 if zpj_dirname:
                     h2d_dyj_q = grab_obj(os.path.join(source['root_dir'], qgc.DY_FILENAME),
                                          "%s/q%s" % (source.get('zpj_dirname', zpj_dirname), v))
-                    dy_kwargs_q = dict(line_color=qgc.DY_COLOUR, fill_color=qgc.DY_COLOUR, label=qgc.DY_ZpJ_QFLAV_LABEL + source.get('label', ''), line_width=lw)
+                    dy_kwargs_q = dict(line_color=qgc.DY_COLOUR, line_width=lw, fill_color=qgc.DY_COLOUR, 
+                                       label=qgc.DY_ZpJ_QFLAV_LABEL + source.get('label', ''),
+                                       marker_color=qgc.DY_COLOUR, marker_style=qgc.DY_MARKER, marker_size=1.5)
                     dy_kwargs_q.update(source.get('style', {}))
                     dy_kwargs_q.update(source.get('dy_style', {}))
                     entries_flav.append((get_projection_plot(h2d_dyj_q, start_val, end_val), dy_kwargs_q))
@@ -179,7 +185,9 @@ def do_all_exclusive_plots_comparison(sources, plot_dir="plots_dy_vs_qcd",
                 if dj_dirname:
                     h2d_qcd_g = grab_obj(os.path.join(source['root_dir'], qgc.QCD_FILENAME),
                                          "%s/g%s" % (source.get('dj_dirname', dj_dirname), v))
-                    qcd_kwargs_g = dict(line_color=qgc.QCD_COLOUR, fill_color=qgc.QCD_COLOUR, label=qgc.QCD_Dijet_GFLAV_LABEL + source.get('label', ''), line_width=lw)
+                    qcd_kwargs_g = dict(line_color=qgc.QCD_COLOUR, line_width=lw, fill_color=qgc.QCD_COLOUR, 
+                                        label=qgc.QCD_Dijet_GFLAV_LABEL + source.get('label', ''),
+                                        marker_color=qgc.QCD_COLOUR, marker_style=qgc.QCD_MARKER, marker_size=1.5)
                     qcd_kwargs_g.update(source.get('style', {}))
                     qcd_kwargs_g.update(source.get('qcd_style', {}))
                     entries_flav.append((get_projection_plot(h2d_qcd_g, start_val, end_val), qcd_kwargs_g))
