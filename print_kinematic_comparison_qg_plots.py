@@ -378,8 +378,10 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     for workdir in args.workdirs:
-        do_dijet_distributions(workdir)
-        do_dijet_distributions(workdir, "_highPt")
-        do_zpj_distributions(workdir)
-        do_zpj_distributions(workdir, "_highPt")
+        if os.path.isfile(os.path.join(workdir, qgc.QCD_FILENAME)):
+            do_dijet_distributions(workdir)
+            do_dijet_distributions(workdir, "_highPt")
+        if os.path.isfile(os.path.join(workdir, qgc.DY_FILENAME)):
+            do_zpj_distributions(workdir)
+            do_zpj_distributions(workdir, "_highPt")
 
