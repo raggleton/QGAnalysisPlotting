@@ -38,7 +38,7 @@ def make_comparison_plot_ingredients(entries, rebin=1, normalise_hist=True, **pl
         raise RuntimeError("0 contributions for this plot")
     p = Plot(conts, what="hist", subplot=conts[0], ytitle="p.d.f", legend=do_legend, **plot_kwargs)
     if do_legend:
-        p.legend.SetX1(0.55)
+        p.legend.SetX1(0.65)
         p.legend.SetY1(0.6)
     return p
 
