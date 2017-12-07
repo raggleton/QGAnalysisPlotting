@@ -33,6 +33,7 @@ THEORY_PT_BINS = [(20, 25), (40, 45), (50, 55), (60, 70), (70, 80), (80, 90), (9
 
 Angle = namedtuple("Angle", ['var', 'kappa', 'beta', 'name', "lambda_str", "colour"])
 COMMON_VARS_WITH_FLAV = [
+    Angle("jet_puppiMultiplicity", 0, 0, "PUPPI Multiplicity", "#lambda_{0}^{0} (PUPPI)", 2),
     Angle('jet_multiplicity', 0, 0, "Multiplicity", "#lambda_{0}^{0}", 2),
     Angle('jet_pTD', 2, 0, "(p_{T}^{D})^{2}", "#lambda_{0}^{2}", 418),
     Angle('jet_LHA', 1, 0.5, "LHA", "#lambda_{0.5}^{1}", 600),
