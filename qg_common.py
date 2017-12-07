@@ -19,7 +19,7 @@ QCD_MARKER = 22
 
 # When comparing e.g. PU bins
 # FIXME: update for colourblindness
-DY_COLOURS = [880, 882, 884, 871]
+DY_COLOURS = [880, 881, 884, 871]
 QCD_COLOURS = [867, 600, 853, 425]
 
 PT_BINS = [(80, 100), (100, 200), (400, 500), (1000, 2000), (80, 2000)]
