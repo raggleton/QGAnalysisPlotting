@@ -112,47 +112,6 @@ def do_all_2D_plots(root_dir, plot_dir="plots_2d", zpj_dirname="ZPlusJets_QG", d
                            renorm_axis=rn, title=qgc.QCD_Dijet_QFLAV_LABEL, rebin=rebin, xlim=xlim)
 
 
-def do_wrong_plots(root_dir, var_prepend="", plot_dir="wrong_flavs", zpj_dirname="ZPlusJets_QG", dj_dirname="Dijet_QG", pt_bins=None):
-    """Plot all the sample/selection.flavour combinations to check distributions indep of sample"""
-    pt_bins = pt_bins or qgc.PT_BINS
-    for v in ['jet_LHA', 'jet_pTD', 'jet_width', 'jet_thrust', 'jet_multiplicity']:
-        v = "%s%s_vs_pt" % (var_prepend, v)
-
-        h2d_dyj_chs = grab_obj(os.path.join(root_dir, qgc.DY_FILENAME), "%s/q%s" % (zpj_dirname, v))
-        h2d_dyj_wrong_chs = grab_obj(os.path.join(root_dir, qgc.DY_FILENAME), "%s/g%s" % (zpj_dirname, v))
-        h2d_dyj_qcd_chs = grab_obj(os.path.join(root_dir, qgc.DY_FILENAME), "%s/q%s" % (dj_dirname, v))
-        h2d_dyj_qcd_wrong_chs = grab_obj(os.path.join(root_dir, qgc.DY_FILENAME), "%s/g%s" % (dj_dirname, v))
-        h2d_qcd_chs = grab_obj(os.path.join(root_dir, qgc.QCD_FILENAME), "%s/g%s" % (dj_dirname, v))
-        h2d_qcd_wrong_chs = grab_obj(os.path.join(root_dir, qgc.QCD_FILENAME), "%s/q%s" % (dj_dirname, v))
-
-        lw = 1
-        dy_kwargs_chs = dict(line_color=qgc.DY_COLOUR, fill_color=qgc.DY_COLOUR, label=qgc.DY_ZpJ_QFLAV_LABEL, line_width=lw)
-        dy_kwargs_wrong_chs = dict(line_color=qgc.DY_COLOUR+4, fill_color=qgc.DY_COLOUR+4, label=qgc.DY_ZpJ_GFLAV_LABEL, line_width=lw, line_style=1)
-        dy_kwargs_qcd_chs = dict(line_color=ROOT.kGreen+2, fill_color=ROOT.kGreen+2, label=qgc.DY_Dijet_QFLAV_LABEL, line_width=lw, line_style=1)
-        dy_kwargs_qcd_wrong_chs = dict(line_color=ROOT.kOrange-1, fill_color=ROOT.kOrange-1, label=qgc.DY_Dijet_GFLAV_LABEL, line_width=lw, line_style=1)
-        qcd_kwargs_chs = dict(line_color=qgc.QCD_COLOUR, fill_color=qgc.QCD_COLOUR, label=qgc.QCD_Dijet_GFLAV_LABEL, line_width=lw)
-        qcd_kwargs_wrong_chs = dict(line_color=ROOT.kRed, fill_color=ROOT.kRed, label=qgc.QCD_Dijet_QFLAV_LABEL, line_width=lw, line_style=1)
-
-        rebin = 2
-        xlim = None
-        if "thrust" in v:
-            rebin = 1
-            xlim = (0, 0.5)
-
-        for (start_val, end_val) in pt_bins:
-            entries = [
-                (qgg.get_projection_plot(h2d_dyj_chs, start_val, end_val), dy_kwargs_chs),
-                (qgg.get_projection_plot(h2d_dyj_wrong_chs, start_val, end_val), dy_kwargs_wrong_chs),
-                (qgg.get_projection_plot(h2d_dyj_qcd_chs, start_val, end_val), dy_kwargs_qcd_chs),
-                (qgg.get_projection_plot(h2d_dyj_qcd_wrong_chs, start_val, end_val), dy_kwargs_qcd_wrong_chs),
-                (qgg.get_projection_plot(h2d_qcd_wrong_chs, start_val, end_val), qcd_kwargs_wrong_chs),
-                (qgg.get_projection_plot(h2d_qcd_chs, start_val, end_val), qcd_kwargs_chs),
-            ]
-
-            qgg.do_comparison_plot(entries, "%s/%s/%s_pt%dto%d_flavMatched.%s" % (root_dir, plot_dir, v, start_val, end_val, OUTPUT_FMT),
-                                   rebin=rebin, title="%d < p_{T}^{jet} < %d GeV (\"wrong\" flavours)" % (start_val, end_val), xlim=xlim)
-
-
 def do_gen_reco_comparison_plots(root_dir, var_list=None, gen_var_prepend="gen", reco_var_prepend="",
                                  plot_dir="plot_reco_gen", zpj_reco_dirname=qgc.ZPJ_RECOJET_RDIR, dj_reco_dirname=qgc.DJ_RECOJET_RDIR,
                                  zpj_gen_dirname=qgc.ZPJ_GENJET_RDIR, dj_gen_dirname=qgc.DJ_GENJET_RDIR, pt_bins=qgc.THEORY_PT_BINS, subplot_type=None):
@@ -232,9 +191,7 @@ def do_reco_plots(root_dir):
     qgg.do_all_exclusive_plots_comparison(sources=sources, var_list=qgc.COMMON_VARS_WITH_FLAV,
                                           plot_dir=os.path.join(root_dir, "plots_dy_vs_qcd"),
                                           pt_bins=qgc.THEORY_PT_BINS, subplot_type=None, 
-                                          do_flav_tagged=not is_herwig_sample(root_dir))
-    if not is_herwig_sample(root_dir):
-        do_wrong_plots(root_dir)
+                                          do_flav_tagged=True)
     do_reco_pu_comparison_plots(root_dir)
     # Separation plots
     qgd.do_angularity_delta_plots(sources, var_list=qgc.COMMON_VARS, pt_bins=qgc.THEORY_PT_BINS, 
@@ -304,10 +261,7 @@ def do_gen_plots(root_dir):
                                           zpj_dirname=qgc.ZPJ_GENJET_RDIR, dj_dirname=qgc.DJ_GENJET_RDIR,
                                           pt_bins=qgc.THEORY_PT_BINS, subplot_type=None, 
                                           do_flav_tagged=not is_herwig_sample(root_dir))
-    if not is_herwig_sample(root_dir):
-        do_wrong_plots(root_dir, var_prepend="gen", plot_dir="wrong_flavs_gen",
-                       zpj_dirname=qgc.ZPJ_GENJET_RDIR, dj_dirname=qgc.DJ_GENJET_RDIR, pt_bins=qgc.THEORY_PT_BINS)
-    
+
     do_gen_reco_comparison_plots(root_dir, var_list=qgc.COMMON_VARS, gen_var_prepend="gen", reco_var_prepend="",
                                  plot_dir="plot_reco_gen", zpj_reco_dirname=qgc.ZPJ_RECOJET_RDIR, dj_reco_dirname=qgc.DJ_RECOJET_RDIR,
                                  zpj_gen_dirname=qgc.ZPJ_GENJET_RDIR, dj_gen_dirname=qgc.DJ_GENJET_RDIR, pt_bins=qgc.THEORY_PT_BINS)
