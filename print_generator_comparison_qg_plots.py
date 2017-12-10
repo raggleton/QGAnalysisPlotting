@@ -31,36 +31,51 @@ ROOT.gStyle.SetOptStat(0)
 
 
 # Control legend labelling
-PYTHIA_LABEL = ", MG+Pythia"
-HERWIG_LABEL = ", Herwig"
+PYTHIA_LABEL = "\nMG+Pythia8 (New flavour)"
+HERWIG_LABEL = "\nHerwig++"
+HERWIG_LABEL = "\nMG+Pythia8 (GenParton)"
+# HERWIG_LABEL = "\nPythia only"
 
 # Control output format
 OUTPUT_FMT = "pdf"
 
 def do_reco_generator_comparison_plots(pythia_dir, herwig_dir, plot_dir):
     """Compare reco jets from different generators"""
-    
+    # PYTHIA_LABEL = "\nMG+Pythia8"
+    # HERWIG_LABEL = "\nHerwig++"
+    # HERWIG_LABEL = "\nPythia only"
     # Distributions
     sources = [
         {"root_dir": pythia_dir, 'label': PYTHIA_LABEL, "style": {'line_style': 1}},
-        {"root_dir": herwig_dir, 'label': HERWIG_LABEL, "style": {'line_style': 2}}
-
+        {"root_dir": herwig_dir, 'label': HERWIG_LABEL, "style": {'line_style': 2}, 
+            "dy_style": {'line_color': 632, 'marker_color': 632}, 
+            "qcd_style": {'line_color': 600, 'marker_color': 600}
+        }
     ]
+    if "pythiaOnlyFlat" not in herwig_dir:
+        qgg.do_all_exclusive_plots_comparison(sources=sources, var_list=qgc.COMMON_VARS,
+                                              plot_dir=os.path.join(plot_dir, "plots_dy_vs_qcd_compare_oldNewFlav"),
+                                              subplot_type=None, do_flav_tagged=True, pt_bins=qgc.THEORY_PT_BINS,
+                                              ofmt=OUTPUT_FMT)
+    # Do a version jsut using dijet samples for higher pT
+    for sdict in sources:
+        sdict['dy_style'] = {'label': qgc.QCD_Dijet_QFLAV_LABEL + sdict['label']}
     qgg.do_all_exclusive_plots_comparison(sources=sources, var_list=qgc.COMMON_VARS,
-                                          plot_dir=os.path.join(plot_dir, "plots_dy_vs_qcd_compare_generators"),
-                                          subplot_type=None, do_flav_tagged=False, pt_bins=qgc.THEORY_PT_BINS,
+                                          dy_filename=qgc.QCD_FILENAME, zpj_dirname=qgc.DJ_RECOJET_RDIR,
+                                          plot_dir=os.path.join(plot_dir, "plots_dy_vs_qcd_compare_generators_only_qcd"),
+                                          subplot_type=None, do_flav_tagged=True, pt_bins=qgc.THEORY_PT_BINS,
                                           ofmt=OUTPUT_FMT)
 
     # Delta plots
-    sources = [
-        {"root_dir": pythia_dir, 'label': PYTHIA_LABEL, "style": {'line_style': 1, 'line_color': ROOT.kBlack}},
-        {"root_dir": herwig_dir, 'label': HERWIG_LABEL, "style": {'line_style': 2, 'line_color': ROOT.kRed}}
+    # sources = [
+    #     {"root_dir": pythia_dir, 'label': PYTHIA_LABEL, "style": {'line_style': 1, 'line_color': ROOT.kBlack}},
+    #     {"root_dir": herwig_dir, 'label': HERWIG_LABEL, "style": {'line_style': 2, 'line_color': ROOT.kRed}}
 
-    ]
-    # qgd.do_pt_min_delta_plots(sources, var_list=qgc.COMMON_VARS)
-    qgd.do_angularity_delta_plots(sources, plot_dir=os.path.join(plot_dir, "delta_angularities_compare_generators"),
-                                  var_list=qgc.COMMON_VARS, pt_bins=qgc.THEORY_PT_BINS,
-                                  ofmt=OUTPUT_FMT)
+    # ]
+    # # qgd.do_pt_min_delta_plots(sources, var_list=qgc.COMMON_VARS)
+    # qgd.do_angularity_delta_plots(sources, plot_dir=os.path.join(plot_dir, "delta_angularities_compare_generators"),
+    #                               var_list=qgc.COMMON_VARS, pt_bins=qgc.THEORY_PT_BINS,
+    #                               ofmt=OUTPUT_FMT)
 
 
 
@@ -126,21 +141,27 @@ def do_jet_algo_generator_comparison_plots(pythia_ak4_dir, herwig_ak4_dir, pythi
 
 
 if __name__ == '__main__':
-    """
-    ALGOS = ["ak4", "ak8"]
-    PUS = ["chs", "puppi"]
+    ALGOS = ["ak4", "ak8"][0:1]
+    PUS = ["chs", "puppi"][1:2]
 
     for algo, pu, in product(ALGOS, PUS):
         SETUP = algo + pu
 
         PYTHIA_DIR = "workdir_%s_mgpythia" % SETUP
         HERWIG_DIR = "workdir_%s_herwig" % SETUP
+        PYTHIA_DIR = "workdir_%s_mgpythia_newFlav_withPtRatio_0p94_withLeptonOverlapVeto_eta2p4_ssEta_dEta1p2/" % SETUP
+        HERWIG_DIR = "workdir_%s_herwig_newFlav_withPtRatio_0p94_withLeptonOverlapVeto_eta2p4_ssEta_dEta1p2_reweight/" % SETUP
+        PYTHIA_DIR = "workdir_%s_mgpythia_newFlav_withLeptonOverlapVeto" % SETUP
+        HERWIG_DIR = "workdir_%s_herwig_newFlav_withLeptonOverlapVeto" % SETUP
+        HERWIG_DIR = "workdir_%s_mgpythia_genPartonFlav_withLeptonOverlapVeto" % SETUP
+        # HERWIG_DIR = "workdir_%s_pythiaOnlyFlat_newFlav_withLeptonOverlapVeto" % SETUP
         PLOT_DIR = HERWIG_DIR
 
         do_reco_generator_comparison_plots(PYTHIA_DIR, HERWIG_DIR, PLOT_DIR)
-        do_gen_generator_comparison_plots(PYTHIA_DIR, HERWIG_DIR, PLOT_DIR)
-    do_jet_algo_generator_comparison_plots("workdir_ak4puppi_mgpythia", 
-                                           "workdir_ak4puppi_herwig_reweight", 
-                                           "workdir_ak8puppi_mgpythia", 
-                                           "workdir_ak8puppi_herwig_reweight", 
-                                           "workdir_ak8puppi_herwig_reweight")
+        # do_gen_generator_comparison_plots(PYTHIA_DIR, HERWIG_DIR, PLOT_DIR)
+
+    # do_jet_algo_generator_comparison_plots("workdir_ak4puppi_mgpythia", 
+    #                                        "workdir_ak4puppi_herwig_reweight", 
+    #                                        "workdir_ak8puppi_mgpythia", 
+    #                                        "workdir_ak8puppi_herwig_reweight", 
+    #                                        "workdir_ak8puppi_herwig_reweight")
