@@ -204,6 +204,8 @@ def do_all_exclusive_plots_comparison(sources, plot_dir="plots_dy_vs_qcd",
             xlim = None
             if "width" in v or "thrust" in v or "pTD" in v:
                 xlim = (0, 0.5)
+            elif "multiplicity" in v.lower() and "ak4" in sources[0]['root_dir'].lower():
+                xlim = (0, 100)
 
             ylim = None
             if "flavour" in v:
