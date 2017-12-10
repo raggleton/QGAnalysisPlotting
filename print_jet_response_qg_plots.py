@@ -303,15 +303,16 @@ def do_projection_plots(root_dirs, plot_dir="response_plots", zpj_dirname="ZPlus
 
         flav_str = "_flavMatched" if flav_matched else ""
 
-        if do_plot:
+        if do_plot and len(plot_entries) > 0:
             output_filename = os.path.join(plot_dir, "jet_response_ptGen%dto%d%s.%s" % (pt_min, pt_max, flav_str, OUTPUT_FMT))
             plot = qgg.make_comparison_plot_ingredients(plot_entries, rebin=1, normalise_hist=False,
                                                     title="%d < p_{T}^{GenJet} < %d GeV" % (pt_min, pt_max),
                                                     xtitle="Response (p_{T}^{Reco} / p_{T}^{Gen})", xlim=(0.25, 1.75))
-            plot.legend.SetX1(0.65)
-            plot.legend.SetX2(0.95)
-            plot.legend.SetY1(0.5)
-            plot.legend.SetY2(0.89)
+            if plot.legend:
+                plot.legend.SetX1(0.65)
+                plot.legend.SetX2(0.95)
+                plot.legend.SetY1(0.5)
+                plot.legend.SetY2(0.89)
             plot.plot("E NOSTACK")
             max_y = plot.container.GetHistogram().GetMaximum()
             line = ROOT.TLine(1, 0, 1, max_y)
