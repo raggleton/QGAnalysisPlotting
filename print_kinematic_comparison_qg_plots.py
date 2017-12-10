@@ -344,6 +344,51 @@ def get_integral_under_ellipse(hist, ellipse):
     return integral
 
 
+
+def do_dijet_distribution_comparison(entries, output_dir, dir_append=""):
+    """Do plots comparing different jet flavs in dijet region for different entries
+
+    entries = [[root_dir, label],...]
+    """
+    dir_names = ["Dijet_Presel_gg", "Dijet_Presel_qg", "Dijet_Presel_gq", "Dijet_Presel_qq"]
+    remove_unknowns = dir_append == "_highPt"
+    dir_names = [d + dir_append for d in dir_names if not ("unknown" in d and remove_unknowns)]
+    
+    gg_col = ROOT.kRed
+    qg_col = ROOT.kGreen+2
+    gq_col = ROOT.kBlack
+    qq_col = ROOT.kBlue
+    unknown_cols = [ROOT.kOrange+1, ROOT.kOrange+4, ROOT.kPink+6, ROOT.kViolet, ROOT.kAzure+1]
+    
+    markers = [[20, 21, 22, 23], [24, 25, 26, 32]]
+
+    directories, csd = [], []
+    root_files = []   # to keep them open
+    for ind, (root_dir, label) in enumerate(entries):
+        root_file = cu.open_root_file(os.path.join(root_dir, qgc.QCD_FILENAME))
+        root_files.append(root_file)
+        directories.extend([cu.get_from_file(root_file, dn) for dn in dir_names])
+        csd_template = [
+            {"label": "gg " + label, "line_color": gg_col, "fill_color": gg_col, "marker_color": gg_col, "marker_style": markers[ind][0]},
+            {"label": "qg " + label, "line_color": qg_col, "fill_color": qg_col, "marker_color": qg_col, "marker_style": markers[ind][1]},
+            {"label": "gq " + label, "line_color": gq_col, "fill_color": gq_col, "marker_color": gq_col, "marker_style": markers[ind][2]},
+            {"label": "qq " + label, "line_color": qq_col, "fill_color": qq_col, "marker_color": qq_col, "marker_style": markers[ind][3]}
+        ]
+        csd.extend([c for c in csd_template if not ("unknown" in c['label'] and remove_unknowns)])
+
+    # Compare shapes
+    do_all_1D_projection_plots_in_dir(directories=directories, 
+                                      output_dir=os.path.join(root_dir, "Dijet_kin_comparison_normalised%s_compare" % dir_append),
+                                      components_styles_dicts=csd,
+                                      filter_noisy=False)
+    # Compare yields
+    do_all_1D_projection_plots_in_dir(directories=directories, 
+                                      output_dir=os.path.join(root_dir, "Dijet_kin_comparison_absolute%s_comapre" % dir_append),
+                                      components_styles_dicts=csd,
+                                      normalise_hists=False,
+                                      filter_noisy=False)
+
+
 def do_zpj_distributions(root_dir, dir_append=""):
     """Do plots comparing different jet flavs in z+jets region"""
     dir_names = ["ZPlusJets_Presel_q", "ZPlusJets_Presel_g", "ZPlusJets_Presel_unknown"]
@@ -390,3 +435,22 @@ if __name__ == "__main__":
             do_zpj_distributions(workdir)
             do_zpj_distributions(workdir, "_highPt")
 
+    exit()
+    
+    # Comparisons
+    # PYTHIA_OLD = "workdir_ak4chs_mgpythia_withPtRatio_0p94_withLeptonOverlapVeto_eta2p4_ssEta_dEta1p2"
+    PYTHIA_NEW = "workdir_ak4chs_mgpythia_newFlav_withPtRatio_0p94_withLeptonOverlapVeto_eta2p4_ssEta_dEta1p2"
+    # do_dijet_distribution_comparison([(PYTHIA_OLD, "genParton"), (PYTHIA_NEW, "New partonFlavour")], PYTHIA_NEW)
+    # do_dijet_distribution_comparison([(PYTHIA_OLD, "genParton"), (PYTHIA_NEW, "New partonFlavour")], PYTHIA_NEW, "_highPt")
+
+    # HERWIG = "workdir_ak4chs_herwig_newFlav_withPtRatio_0p94_withLeptonOverlapVeto_eta2p4_ssEta_dEta1p2_reweight"
+    # do_dijet_distribution_comparison([(PYTHIA_NEW, "MG+Pythia"), (HERWIG, "Herwig++")], HERWIG)
+    # do_dijet_distribution_comparison([(PYTHIA_NEW, "MG+Pythia"), (HERWIG, "Herwig++")], HERWIG, "_highPt")
+
+    # PYTHIA_ONLY = "workdir_ak4chs_pythiaOnlyFlat_newFlav_withPtRatio_0p94_withLeptonOverlapVeto_eta2p4_ssEta_dEta1p2_reweight"
+    # do_dijet_distribution_comparison([(PYTHIA_NEW, "MG+Pythia"), (PYTHIA_ONLY, "Pythia")], PYTHIA_ONLY)
+    # do_dijet_distribution_comparison([(PYTHIA_NEW, "MG+Pythia"), (PYTHIA_ONLY, "Pythia")], PYTHIA_ONLY, "_highPt")
+
+    POWHEG = "workdir_ak4chs_powheg_newFlav_withPtRatio_0p94_withLeptonOverlapVeto_eta2p4_ssEta_dEta1p2_reweight"
+    do_dijet_distribution_comparison([(PYTHIA_NEW, "MG+Pythia"), (POWHEG, "Powheg")], POWHEG)
+    do_dijet_distribution_comparison([(PYTHIA_NEW, "MG+Pythia"), (POWHEG, "Powheg")], POWHEG, "_highPt")
