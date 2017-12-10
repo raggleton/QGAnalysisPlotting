@@ -170,9 +170,9 @@ def do_all_1D_projection_plots_in_dir(directories, output_dir, components_styles
 def do_dijet_distributions(root_dir, dir_append=""):
     """Do plots comparing different jet flavs in dijet region"""
     dir_names = ["Dijet_Presel_gg", "Dijet_Presel_qg", "Dijet_Presel_gq", "Dijet_Presel_qq", 
-                 "Dijet_Presel_q_unknown", "Dijet_Presel_g_unknown",
-                 "Dijet_Presel_unknown_q", "Dijet_Presel_unknown_g",
-                 "Dijet_Presel_unknown_unknown"
+                 # "Dijet_Presel_q_unknown", "Dijet_Presel_g_unknown",
+                 # "Dijet_Presel_unknown_q", "Dijet_Presel_unknown_g",
+                 # "Dijet_Presel_unknown_unknown"
                 ]
     remove_unknowns = dir_append == "_highPt"
     dir_names = [d + dir_append for d in dir_names if not ("unknown" in d and remove_unknowns)]
@@ -189,11 +189,11 @@ def do_dijet_distributions(root_dir, dir_append=""):
         {"label": "qg", "line_color": qg_col, "fill_color": qg_col, "marker_color": qg_col, "marker_style": 21},
         {"label": "gq", "line_color": gq_col, "fill_color": gq_col, "marker_color": gq_col, "marker_style": 22},
         {"label": "qq", "line_color": qq_col, "fill_color": qq_col, "marker_color": qq_col, "marker_style": 23},
-        {"label": "1:q  2:unknown", "line_color": unknown_cols[0], "fill_color": unknown_cols[0], "marker_color": unknown_cols[0], "marker_style": 29, "marker_size": 1.3},
-        {"label": "1:g  2:unknown", "line_color": unknown_cols[1], "fill_color": unknown_cols[1], "marker_color": unknown_cols[1], "marker_style": 33, "marker_size": 1.3},
-        {"label": "1:unknown  2:q", "line_color": unknown_cols[2], "fill_color": unknown_cols[2], "marker_color": unknown_cols[2], "marker_style": 41, "marker_size": 1.3},
-        {"label": "1:unknown  2:g", "line_color": unknown_cols[3], "fill_color": unknown_cols[3], "marker_color": unknown_cols[3], "marker_style": 34, "marker_size": 1.2},
-        {"label": "1:unknown  2:unknown", "line_color": unknown_cols[4], "fill_color": unknown_cols[4], "marker_color": unknown_cols[4], "marker_style": 47, "marker_size": 1.2},
+        # {"label": "1:q  2:unknown", "line_color": unknown_cols[0], "fill_color": unknown_cols[0], "marker_color": unknown_cols[0], "marker_style": 29, "marker_size": 1.3},
+        # {"label": "1:g  2:unknown", "line_color": unknown_cols[1], "fill_color": unknown_cols[1], "marker_color": unknown_cols[1], "marker_style": 33, "marker_size": 1.3},
+        # {"label": "1:unknown  2:q", "line_color": unknown_cols[2], "fill_color": unknown_cols[2], "marker_color": unknown_cols[2], "marker_style": 41, "marker_size": 1.3},
+        # {"label": "1:unknown  2:g", "line_color": unknown_cols[3], "fill_color": unknown_cols[3], "marker_color": unknown_cols[3], "marker_style": 34, "marker_size": 1.2},
+        # {"label": "1:unknown  2:unknown", "line_color": unknown_cols[4], "fill_color": unknown_cols[4], "marker_color": unknown_cols[4], "marker_style": 47, "marker_size": 1.2},
     ]
     csd = [c for c in csd if not ("unknown" in c['label'] and remove_unknowns)]
 
