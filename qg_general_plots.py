@@ -146,7 +146,7 @@ def do_all_exclusive_plots_comparison(sources, plot_dir="plots_dy_vs_qcd",
             entries_normal, entries_flav = [], []
 
             # Get all plots
-            for source in sources:
+            for ind, source in enumerate(sources):
                 lw = 2
                 msize = 1.1
 
@@ -155,7 +155,7 @@ def do_all_exclusive_plots_comparison(sources, plot_dir="plots_dy_vs_qcd",
                                        "%s/%s" % (source.get('zpj_dirname', zpj_dirname), v))
                     dy_kwargs = dict(line_color=qgc.DY_COLOUR, line_width=lw, fill_color=qgc.DY_COLOUR, 
                                      label=qgc.DY_ZpJ_LABEL + source.get('label', ''),
-                                     marker_color=qgc.DY_COLOUR, marker_style=qgc.DY_MARKER, marker_size=msize)
+                                     marker_color=qgc.DY_COLOUR, marker_style=qgc.DY_MARKER+ind, marker_size=msize)
                     dy_kwargs.update(source.get('style', {}))
                     dy_kwargs.update(source.get('dy_style', {}))
                     entries_normal.append((get_projection_plot(h2d_dyj, start_val, end_val), dy_kwargs))
@@ -165,7 +165,7 @@ def do_all_exclusive_plots_comparison(sources, plot_dir="plots_dy_vs_qcd",
                                        "%s/%s" % (source.get('dj_dirname', dj_dirname), v))
                     qcd_kwargs = dict(line_color=qgc.QCD_COLOUR, line_width=lw, fill_color=qgc.QCD_COLOUR, 
                                       label=qgc.QCD_Dijet_LABEL + source.get('label', ''),
-                                      marker_color=qgc.QCD_COLOUR, marker_style=qgc.QCD_MARKER, marker_size=msize)
+                                      marker_color=qgc.QCD_COLOUR, marker_style=qgc.QCD_MARKER+ind, marker_size=msize)
                     qcd_kwargs.update(source.get('style', {}))
                     qcd_kwargs.update(source.get('qcd_style', {}))
                     entries_normal.append((get_projection_plot(h2d_qcd, start_val, end_val), qcd_kwargs))
@@ -179,7 +179,8 @@ def do_all_exclusive_plots_comparison(sources, plot_dir="plots_dy_vs_qcd",
                                          "%s/q%s" % (source.get('zpj_dirname', zpj_dirname), v))
                     dy_kwargs_q = dict(line_color=qgc.DY_COLOUR, line_width=lw, fill_color=qgc.DY_COLOUR, 
                                        label=qgc.DY_ZpJ_QFLAV_LABEL + source.get('label', ''),
-                                       marker_color=qgc.DY_COLOUR, marker_style=qgc.DY_MARKER, marker_size=msize)
+                                       # label=qgc.QCD_Dijet_QFLAV_LABEL + source.get('label', ''),
+                                       marker_color=qgc.DY_COLOUR, marker_style=qgc.DY_MARKER+ind, marker_size=msize)
                     dy_kwargs_q.update(source.get('style', {}))
                     dy_kwargs_q.update(source.get('dy_style', {}))
                     entries_flav.append((get_projection_plot(h2d_dyj_q, start_val, end_val), dy_kwargs_q))
@@ -189,7 +190,7 @@ def do_all_exclusive_plots_comparison(sources, plot_dir="plots_dy_vs_qcd",
                                          "%s/g%s" % (source.get('dj_dirname', dj_dirname), v))
                     qcd_kwargs_g = dict(line_color=qgc.QCD_COLOUR, line_width=lw, fill_color=qgc.QCD_COLOUR, 
                                         label=qgc.QCD_Dijet_GFLAV_LABEL + source.get('label', ''),
-                                        marker_color=qgc.QCD_COLOUR, marker_style=qgc.QCD_MARKER, marker_size=msize)
+                                        marker_color=qgc.QCD_COLOUR, marker_style=qgc.QCD_MARKER+ind, marker_size=msize)
                     qcd_kwargs_g.update(source.get('style', {}))
                     qcd_kwargs_g.update(source.get('qcd_style', {}))
                     entries_flav.append((get_projection_plot(h2d_qcd_g, start_val, end_val), qcd_kwargs_g))
