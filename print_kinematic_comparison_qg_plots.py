@@ -61,11 +61,16 @@ def do_all_1D_projection_plots_in_dir(directories, output_dir, components_styles
 
     # check all have same list of plots
     if not all(x == list_of_obj[0] for x in list_of_obj):
-        raise RuntimeError("Different number of object in the TDirectorys")
+        print "Different number of object in the TDirectorys"
+
+    common_list_of_obj = set(list_of_obj[0])
+    for l in list_of_obj[1:]:
+        common_list_of_obj = common_list_of_obj & set(l)
+
 
     pt_bins = [(20, 40), (40, 60), (60, 80), (100, 120), (160, 200), (260, 300), (500, 600), (1000, 2000)]
 
-    for obj_name in list_of_obj[0]:
+    for obj_name in common_list_of_obj:
         objs = [d.Get(obj_name) for d in directories]
         # Ignore TH1s
         if not isinstance(objs[0], (ROOT.TH2F, ROOT.TH2D, ROOT.TH2I)):
