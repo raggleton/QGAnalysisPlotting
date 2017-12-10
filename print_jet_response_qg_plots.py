@@ -259,45 +259,47 @@ def do_projection_plots(root_dirs, plot_dir="response_plots", zpj_dirname="ZPlus
                 flav_str = "q" if flav_matched else ""
                 h2d_dyj = grab_obj(os.path.join(root_dir, qgc.DY_FILENAME), "%s/%s" % (zpj_dirname, "%sjet_response_vs_genjet_pt" % (flav_str)))
                 obj = qgg.get_projection_plot(h2d_dyj, pt_min, pt_max)
-                obj.Rebin(rebin)
-                obj.Scale(1./obj.Integral())
-                col = qgc.DY_COLOURS[ind]
-                dy_reco_kwargs = dict(line_color=col, fill_color=col, line_width=lw, marker_color=col, marker_style=qgc.DY_MARKER,
-                                      label=qgc.DY_ZpJ_QFLAV_LABEL if flav_matched else qgc.DY_ZpJ_LABEL)
-                if len(root_dirs) > 1:
-                    dy_reco_kwargs['label'] += " ["+root_dir+"]"
+                if obj.Integral() > 0:
+                    obj.Rebin(rebin)
+                    obj.Scale(1./obj.Integral())
+                    col = qgc.DY_COLOURS[ind]
+                    dy_reco_kwargs = dict(line_color=col, fill_color=col, line_width=lw, marker_color=col, marker_style=qgc.DY_MARKER,
+                                          label=qgc.DY_ZpJ_QFLAV_LABEL if flav_matched else qgc.DY_ZpJ_LABEL)
+                    if len(root_dirs) > 1:
+                        dy_reco_kwargs['label'] += " ["+root_dir+"]"
 
-                if do_fits:
-                    do_gaus_fit(obj)
-                    fit = obj.GetFunction("gausFit")
-                    dy_reco_kwargs['label'] += "\n"
-                    dy_reco_kwargs['label'] += fit_results_to_str(fit)
-                    zpj_fits.append(fit)
+                    if do_fits:
+                        do_gaus_fit(obj)
+                        fit = obj.GetFunction("gausFit")
+                        dy_reco_kwargs['label'] += "\n"
+                        dy_reco_kwargs['label'] += fit_results_to_str(fit)
+                        zpj_fits.append(fit)
 
-                if do_plot:
-                    plot_entries.append((obj, dy_reco_kwargs))
+                    if do_plot:
+                        plot_entries.append((obj, dy_reco_kwargs))
 
             if dj_dirname:
                 flav_str = "g" if flav_matched else ""
                 h2d_qcd = grab_obj(os.path.join(root_dir, qgc.QCD_FILENAME), "%s/%s" % (dj_dirname, "%sjet_response_vs_genjet_pt" % (flav_str)))
                 obj = qgg.get_projection_plot(h2d_qcd, pt_min, pt_max)
-                obj.Rebin(rebin)
-                obj.Scale(1./obj.Integral())
-                col = qgc.QCD_COLOURS[ind]
-                qcd_reco_kwargs = dict(line_color=col, fill_color=col, line_width=lw, marker_color=col, marker_style=qgc.QCD_MARKER,
-                                       label=qgc.QCD_Dijet_GFLAV_LABEL if flav_matched else qgc.QCD_Dijet_LABEL)
-                if len(root_dirs) > 1:
-                    qcd_reco_kwargs['label'] += " ["+root_dir+"]"
+                if obj.Integral() > 0:
+                    obj.Rebin(rebin)
+                    obj.Scale(1./obj.Integral())
+                    col = qgc.QCD_COLOURS[ind]
+                    qcd_reco_kwargs = dict(line_color=col, fill_color=col, line_width=lw, marker_color=col, marker_style=qgc.QCD_MARKER,
+                                           label=qgc.QCD_Dijet_GFLAV_LABEL if flav_matched else qgc.QCD_Dijet_LABEL)
+                    if len(root_dirs) > 1:
+                        qcd_reco_kwargs['label'] += " ["+root_dir+"]"
 
-                if do_fits:
-                    do_gaus_fit(obj)
-                    fit = obj.GetFunction("gausFit")
-                    qcd_reco_kwargs['label'] += "\n"
-                    qcd_reco_kwargs['label'] += fit_results_to_str(fit)
-                    dj_fits.append(fit)
+                    if do_fits:
+                        do_gaus_fit(obj)
+                        fit = obj.GetFunction("gausFit")
+                        qcd_reco_kwargs['label'] += "\n"
+                        qcd_reco_kwargs['label'] += fit_results_to_str(fit)
+                        dj_fits.append(fit)
 
-                if do_plot:
-                    plot_entries.append((obj, qcd_reco_kwargs))
+                    if do_plot:
+                        plot_entries.append((obj, qcd_reco_kwargs))
 
         flav_str = "_flavMatched" if flav_matched else ""
 
