@@ -188,7 +188,10 @@ def do_gen_reco_comparison_plots(root_dir, var_list=None, gen_var_prepend="gen",
 def do_reco_plots(root_dir):
     do_all_2D_plots(root_dir)
     sources = [{"root_dir": root_dir, 'label': "", "style": {'line_style': 1}}]
-    qgg.do_all_exclusive_plots_comparison(sources=sources, var_list=qgc.COMMON_VARS_WITH_FLAV,
+    dy_filename = qgc.QCD_FILENAME if "pythiaOnlyFlat" in root_dir else qgc.DY_FILENAME
+    zpj_dirname = qgc.DJ_RECOJET_RDIR if "pythiaOnlyFlat" in root_dir else qgc.ZPJ_RECOJET_RDIR
+    qgg.do_all_exclusive_plots_comparison(sources=sources, var_list=qgc.COMMON_VARS_WITH_FLAV, 
+                                          dy_filename=dy_filename, zpj_dirname=zpj_dirname,
                                           plot_dir=os.path.join(root_dir, "plots_dy_vs_qcd"),
                                           pt_bins=qgc.THEORY_PT_BINS, subplot_type=None, 
                                           do_flav_tagged=True)
