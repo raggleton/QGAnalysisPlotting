@@ -123,6 +123,7 @@ def do_2D_plot(obj, output_filename, draw_opt="COLZ", renorm_axis=None, title=No
 
 
 def do_all_exclusive_plots_comparison(sources, plot_dir="plots_dy_vs_qcd", 
+                                      dy_filename=qgc.DY_FILENAME, qcd_filename=qgc.QCD_FILENAME,
                                       zpj_dirname="ZPlusJets_QG", dj_dirname="Dijet_QG",
                                       var_list=None, var_prepend="", pt_bins=None, 
                                       subplot_type=None, subplot_title=None, 
@@ -150,7 +151,7 @@ def do_all_exclusive_plots_comparison(sources, plot_dir="plots_dy_vs_qcd",
                 msize = 1.1
 
                 if zpj_dirname:
-                    h2d_dyj = grab_obj(os.path.join(source['root_dir'], qgc.DY_FILENAME),
+                    h2d_dyj = grab_obj(os.path.join(source['root_dir'], dy_filename),
                                        "%s/%s" % (source.get('zpj_dirname', zpj_dirname), v))
                     dy_kwargs = dict(line_color=qgc.DY_COLOUR, line_width=lw, fill_color=qgc.DY_COLOUR, 
                                      label=qgc.DY_ZpJ_LABEL + source.get('label', ''),
@@ -160,7 +161,7 @@ def do_all_exclusive_plots_comparison(sources, plot_dir="plots_dy_vs_qcd",
                     entries_normal.append((get_projection_plot(h2d_dyj, start_val, end_val), dy_kwargs))
 
                 if dj_dirname:
-                    h2d_qcd = grab_obj(os.path.join(source['root_dir'], qgc.QCD_FILENAME),
+                    h2d_qcd = grab_obj(os.path.join(source['root_dir'], qcd_filename),
                                        "%s/%s" % (source.get('dj_dirname', dj_dirname), v))
                     qcd_kwargs = dict(line_color=qgc.QCD_COLOUR, line_width=lw, fill_color=qgc.QCD_COLOUR, 
                                       label=qgc.QCD_Dijet_LABEL + source.get('label', ''),
@@ -174,7 +175,7 @@ def do_all_exclusive_plots_comparison(sources, plot_dir="plots_dy_vs_qcd",
 
                 # Flav tagged plots
                 if zpj_dirname:
-                    h2d_dyj_q = grab_obj(os.path.join(source['root_dir'], qgc.DY_FILENAME),
+                    h2d_dyj_q = grab_obj(os.path.join(source['root_dir'], dy_filename),
                                          "%s/q%s" % (source.get('zpj_dirname', zpj_dirname), v))
                     dy_kwargs_q = dict(line_color=qgc.DY_COLOUR, line_width=lw, fill_color=qgc.DY_COLOUR, 
                                        label=qgc.DY_ZpJ_QFLAV_LABEL + source.get('label', ''),
@@ -184,7 +185,7 @@ def do_all_exclusive_plots_comparison(sources, plot_dir="plots_dy_vs_qcd",
                     entries_flav.append((get_projection_plot(h2d_dyj_q, start_val, end_val), dy_kwargs_q))
 
                 if dj_dirname:
-                    h2d_qcd_g = grab_obj(os.path.join(source['root_dir'], qgc.QCD_FILENAME),
+                    h2d_qcd_g = grab_obj(os.path.join(source['root_dir'], qcd_filename),
                                          "%s/g%s" % (source.get('dj_dirname', dj_dirname), v))
                     qcd_kwargs_g = dict(line_color=qgc.QCD_COLOUR, line_width=lw, fill_color=qgc.QCD_COLOUR, 
                                         label=qgc.QCD_Dijet_GFLAV_LABEL + source.get('label', ''),
