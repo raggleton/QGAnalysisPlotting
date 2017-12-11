@@ -170,7 +170,7 @@ class Plot(object):
     def __init__(self, contributions=None, what="graph",
                  title=None, xtitle=None, ytitle=None, xlim=None, ylim=None,
                  legend=True, extend=False,
-                 subplot=None, subplot_type=None, subplot_title=None):
+                 subplot=None, subplot_type=None, subplot_title=None, subplot_limits=None):
         """
         contributions: list
             List of Contribution objects.
@@ -195,6 +195,9 @@ class Plot(object):
             all plots compared to the object provided as the argument here.
         subplot_type : str
             The method of comparison in the subplot: ratio, difference, or ddelta/dlambda
+        subplot_limits : (float, float), optional
+            Set hard limits on subplot y axis range. If None, will choose some 
+            vaguely sensible ones
         """
         self.contributions = contributions if contributions else []
         self.contributions_objs = []
@@ -223,7 +226,7 @@ class Plot(object):
         self.subplot_container = None
         self.subplot_contributions = []
         self.subplot_pad = None
-        self.subplot_ratio_lim = (0, 2)
+        self.subplot_limits = subplot_limits
         self.subplot_pad_height = 0.32
         self.subplot_pad_fudge = 0.01  # to get non-overlapping subplot axis
         self.subplot_line = None  # need this to remain visible...
@@ -465,21 +468,20 @@ class Plot(object):
                 self.subplot_container.GetXaxis().SetRangeUser(*self.xlim)
 
             if self.subplot_type == "ratio":
-                # self.subplot_container.SetMinimum(self.subplot_ratio_lim[0])  # use this, not SetRangeUser()
                 self.subplot_container.SetMinimum(0)  # use this, not SetRangeUser()
+                if self.subplot_limits:
+                    self.subplot_container.SetMinimum(self.subplot_limits[0])  # use this, not SetRangeUser()
+                    self.subplot_container.SetMaximum(self.subplot_limits[1])  # use this, not SetRangeUser()
+                else:
+                    # Make sure that the upper limit is the largest bin of the contributions,
+                    # so long as it is within 1.5 and some upper limit
+                    bin_meds = [np.max(cu.th1_to_arr(h)) for h in self.subplot_contributions]
+                    self.subplot_container.SetMaximum(min(10, max(1.5, 1.*max(bin_meds))))
                 
-                # Make sure that the upper limit is the largest bin of the contributions,
-                # so long as it is within 1.5 and some upper limit
-                bin_meds = [np.max(cu.th1_to_arr(h)) for h in self.subplot_contributions]
-                self.subplot_container.SetMaximum(min(10, max(1.5, 1.*max(bin_meds))))
-                
-                # Make sure the lower limit is the smallest bin of the contributions, 
-                # so long as it is within 0 and 0.5
-                bin_mins = [np.min(cu.th1_to_arr(h)) for h in self.subplot_contributions]
-                self.subplot_container.SetMinimum(min(0.5, min(bin_mins)))
-                
-                # self.subplot_container.SetMaximum(1.5)
-                # self.subplot_container.SetMinimum(0.5)
+                    # Make sure the lower limit is the smallest bin of the contributions, 
+                    # so long as it is within 0 and 0.5
+                    bin_mins = [np.min(cu.th1_to_arr(h)) for h in self.subplot_contributions]
+                    self.subplot_container.SetMinimum(min(0.5, min(bin_mins)))
                 
                 xax = modifier.GetXaxis()
                 self.subplot_line = ROOT.TLine(xax.GetXmin(), 1., xax.GetXmax(), 1.)
