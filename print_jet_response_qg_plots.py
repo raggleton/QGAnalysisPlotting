@@ -336,7 +336,7 @@ if __name__ == '__main__':
     if not args.comparison:
         # Do 2D plots
         for workdir in args.workdirs:
-            do_all_2D_plots(workdir, plot_dir=os.path.join(workdir, "response_2d"))
+            # do_all_2D_plots(workdir, plot_dir=os.path.join(workdir, "response_2d"))
             do_projection_plots([workdir], plot_dir=os.path.join(workdir, "response_plots"), do_fits=True)
             do_projection_plots([workdir], plot_dir=os.path.join(workdir, "response_plots"), do_fits=True, flav_matched=True)
     else:

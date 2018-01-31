@@ -72,7 +72,10 @@ def get_flavour_fractions(input_file, dirname, pt_bins, flav_source="", var_prep
 
 def compare_flavour_fractions_vs_pt(input_files, dirnames, pt_bins, labels, flav, output_filename, title="", flav_source="", var_prepend="", which_jet="both", xtitle="p_{T}^{jet} [GeV]"):
     """Plot a specified flavour fraction vs pT for several sources.
-    Each entry in input_files, dirnames, and labels corresponds to one line"""
+    Each entry in input_files, dirnames, and labels corresponds to one line
+
+    TODO: fix this - bit stupid input format
+    """
     bin_centers = [0.5*(x[0]+x[1]) for x in pt_bins]
     bin_widths = [0.5*(x[1]-x[0]) for x in pt_bins]
     info = [get_flavour_fractions(ifile, sel, pt_bins, flav_source=flav_source, var_prepend=var_prepend, which_jet=(which_jet if "Dijet" in sel else "both")) 

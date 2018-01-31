@@ -186,7 +186,7 @@ def do_gen_reco_comparison_plots(root_dir, var_list=None, gen_var_prepend="gen",
 
 
 def do_reco_plots(root_dir):
-    do_all_2D_plots(root_dir)
+    # do_all_2D_plots(root_dir)
     sources = [{"root_dir": root_dir, 'label': "", "style": {'line_style': 1}}]
     dy_filename = qgc.QCD_FILENAME if "pythiaOnlyFlat" in root_dir else qgc.DY_FILENAME
     zpj_dirname = qgc.DJ_RECOJET_RDIR if "pythiaOnlyFlat" in root_dir else qgc.ZPJ_RECOJET_RDIR
@@ -197,11 +197,11 @@ def do_reco_plots(root_dir):
                                           do_flav_tagged=True)
     do_reco_pu_comparison_plots(root_dir)
     # Separation plots
-    qgd.do_angularity_delta_plots(sources, var_list=qgc.COMMON_VARS, pt_bins=qgc.THEORY_PT_BINS, 
-                                  plot_dir=os.path.join(root_dir, 'delta_angularities'),
-                                  save_component_hists=True)
-    qgr.do_angularity_roc_plots(sources, var_list=qgc.COMMON_VARS, pt_bins=qgc.THEORY_PT_BINS,
-                                plot_dir=os.path.join(root_dir, 'roc_angularities'))
+    # qgd.do_angularity_delta_plots(sources, var_list=qgc.COMMON_VARS, pt_bins=qgc.THEORY_PT_BINS, 
+    #                               plot_dir=os.path.join(root_dir, 'delta_angularities'),
+    #                               save_component_hists=True)
+    # qgr.do_angularity_roc_plots(sources, var_list=qgc.COMMON_VARS, pt_bins=qgc.THEORY_PT_BINS,
+    #                             plot_dir=os.path.join(root_dir, 'roc_angularities'))
     
 
 
@@ -237,6 +237,7 @@ def do_reco_pu_comparison_plots(root_dir):
                                           plot_dir=os.path.join(root_dir, "plots_dy_vs_qcd_compare_pu_zpj"),
                                           pt_bins=qgc.THEORY_PT_BINS, subplot_type="ratio", subplot_title=subplot_title, 
                                           do_flav_tagged=True)
+    return
     # Separation plots
     for ind, s in enumerate(sources):
         sources[ind]['style']['line_width'] = 2
@@ -303,4 +304,4 @@ if __name__ == '__main__':
             qgc.COMMON_VARS_WITH_FLAV = qgc.COMMON_VARS[:]
 
         do_reco_plots(workdir)
-        do_gen_plots(workdir)
+        # do_gen_plots(workdir)

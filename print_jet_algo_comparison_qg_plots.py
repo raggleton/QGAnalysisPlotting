@@ -73,14 +73,15 @@ if __name__ == '__main__':
         PLOT_DIR = AK8_DIR
         
         # reco jets
-        do_jet_algo_comparison_plots(AK4_DIR, AK8_DIR, var_list=qgc.COMMON_VARS,
-                                     plot_dir=os.path.join(PLOT_DIR, "compare_jet_algo"),
-                                     subplot_type=None)
+        # do_jet_algo_comparison_plots(AK4_DIR, AK8_DIR, var_list=qgc.COMMON_VARS,
+        #                              plot_dir=os.path.join(PLOT_DIR, "compare_jet_algo"),
+        #                              subplot_type=None)
         
-        # gen jets
-        do_jet_algo_comparison_plots(AK4_DIR, AK8_DIR, 
-                                     var_list=qgc.COMMON_VARS, var_prepend="gen", 
-                                     plot_dir=os.path.join(PLOT_DIR, "compare_jet_algo_gen"),
-                                     zpj_dirname=qgc.ZPJ_GENJET_RDIR, dj_dirname=qgc.DJ_GENJET_RDIR, 
-                                     pt_bins=qgc.THEORY_PT_BINS, subplot_type=None)
+        # # gen jets
+        # do_jet_algo_comparison_plots(AK4_DIR, AK8_DIR, 
+        #                              var_list=qgc.COMMON_VARS, var_prepend="gen", 
+        #                              plot_dir=os.path.join(PLOT_DIR, "compare_jet_algo_gen"),
+        #                              zpj_dirname=qgc.ZPJ_GENJET_RDIR, dj_dirname=qgc.DJ_GENJET_RDIR, 
+        #                              pt_bins=qgc.THEORY_PT_BINS, subplot_type=None)
+
         do_delta_angularity_comparison_plots(AK4_DIR, AK8_DIR, root_dir=AK8_DIR)

@@ -55,7 +55,7 @@ def do_pythia_comparison_distribution_plots(mgpythia_dir, pythia_only_dir, plot_
                                           subplot_type="ratio", subplot_title="#splitline{Ratio wrt}{MG+Pythia}",
                                           do_flav_tagged=True,
                                           pt_bins=qgc.THEORY_PT_BINS)
-
+    return
     # gen
     sources = [
         {"root_dir": mgpythia_dir, 'label': ", Madgraph+Pythia", "style": {'line_style': 1}},
@@ -340,25 +340,30 @@ def do_component_plots(mgpythia_dir, pythia_only_dir, plot_dir):
         # ofilename = "genjet_constituent_pt_dr_box_pt%dto%d" % (jet_pt_min, jet_pt_max)
         # canv.SaveAs("%s/constituent_plots/%s.%s" % (plot_dir, ofilename, OUTPUT_FMT))
 
+        # continue
 
 
 if __name__ == '__main__':
 
-    ALGOS = ["ak4", "ak8"]
-    PUS = ["chs", "puppi"]
+    ALGOS = ["ak4", "ak8"][0:1]
+    PUS = ["chs", "puppi"][1:]
 
     for algo, pu, in product(ALGOS, PUS):
         SETUP = algo + pu
 
         MGPYTHIA_DIR = "workdir_%s_mgpythia" % SETUP
         PYTHIA_ONLY_DIR = "workdir_%s_pythiaOnlyFlat_reweight" % SETUP
+        
+        MGPYTHIA_DIR = "workdir_%s_mgpythia_newFlav_withLeptonOverlapVeto" % SETUP
+        PYTHIA_ONLY_DIR = "workdir_%s_pythiaOnlyFlat_newFlav_withLeptonOverlapVeto" % SETUP
+        
         PLOT_DIR = PYTHIA_ONLY_DIR
 
         do_pythia_comparison_distribution_plots(MGPYTHIA_DIR, PYTHIA_ONLY_DIR, PLOT_DIR)
         do_pythia_comparison_flav_fractions_plots(MGPYTHIA_DIR, PYTHIA_ONLY_DIR, PLOT_DIR, algo, pu)
 
-    SETUP = "ak4"+"puppi"
-    MGPYTHIA_DIR = "workdir_%s_mgpythia" % SETUP
-    PYTHIA_ONLY_DIR = "workdir_%s_pythiaOnlyFlat_reweight" % SETUP
-    PLOT_DIR = PYTHIA_ONLY_DIR
-    do_component_plots(MGPYTHIA_DIR, PYTHIA_ONLY_DIR, PLOT_DIR)
+    # SETUP = "ak4"+"puppi"
+    # MGPYTHIA_DIR = "workdir_%s_mgpythia" % SETUP
+    # PYTHIA_ONLY_DIR = "workdir_%s_pythiaOnlyFlat_reweight" % SETUP
+    # PLOT_DIR = PYTHIA_ONLY_DIR
+    # do_component_plots(MGPYTHIA_DIR, PYTHIA_ONLY_DIR, PLOT_DIR)

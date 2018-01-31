@@ -200,7 +200,8 @@ def do_dijet_distributions(root_dir, dir_append=""):
     # Compare shapes
     do_all_1D_projection_plots_in_dir(directories=directories, 
                                       output_dir=os.path.join(root_dir, "Dijet_kin_comparison_normalised%s" % dir_append),
-                                      components_styles_dicts=csd)
+                                      components_styles_dicts=csd,
+                                      filter_noisy=False)
     # Compare yields
     do_all_1D_projection_plots_in_dir(directories=directories, 
                                       output_dir=os.path.join(root_dir, "Dijet_kin_comparison_absolute%s" % dir_append),
@@ -221,7 +222,8 @@ def do_dijet_distributions(root_dir, dir_append=""):
     for dname in dir_names:
         output_filename = os.path.join(root_dir, "Dijet_kin_comparison_2d%s" % dir_append, "eta_jet1_eta_jet2_%s.%s" % (dname.replace("Dijet_Presel_", ""), OUTPUT_FMT))
         h2d = cu.get_from_file(root_file, "%s/eta_jet1_vs_eta_jet2" % dname)
-        h2d.Rebin2D(2, 2)
+        # h2d.Rebin2D(2, 2)
+        h2d.Rebin2D(4, 4)
         # h2d.Scale(1./h2d.Integral())
         title = dname.replace("Dijet_Presel_", "")
         vline = ROOT.TLine(0, -5, 0, 5)
