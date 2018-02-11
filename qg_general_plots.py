@@ -133,6 +133,7 @@ def do_all_exclusive_plots_comparison(sources, plot_dir="plots_dy_vs_qcd",
     Relies on QCD sample file being called uhh2.AnalysisModuleRunner.MC.MC_QCD_.root,
     and the DYJetsToLL one being called uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root
     """
+    print "Doing plot"
     var_list = var_list or qgc.COMMON_VARS_WITH_FLAV
     pt_bins = pt_bins or qgc.PT_BINS
 
@@ -216,10 +217,10 @@ def do_all_exclusive_plots_comparison(sources, plot_dir="plots_dy_vs_qcd",
             do_comparison_plot(entries_normal, "%s/ptBinned/%s_pt%dto%d.%s" % (plot_dir, v, start_val, end_val, ofmt),
                                rebin=rebin, title="%d < p_{T}^{jet} < %d GeV" % (start_val, end_val),
                                xtitle=ang.name + " (" + ang.lambda_str + ")",
-                               xlim=xlim, ylim=ylim, subplot_type=subplot_type, subplot_title=subplot_title)
+                               xlim=xlim, ylim=ylim, subplot_type=subplot_type, subplot_title=subplot_title, subplot_limits=(0, 2))
 
             if do_flav_tagged and "flavour" not in v:
                 do_comparison_plot(entries_flav, "%s/ptBinned/%s_pt%dto%d_flavMatched.%s" % (plot_dir, v, start_val, end_val, ofmt),
                                    rebin=rebin, title="%d < p_{T}^{jet} < %d GeV" % (start_val, end_val),
                                    xtitle=ang.name + " (" + ang.lambda_str + ")",
-                                   xlim=xlim, subplot_type=subplot_type, subplot_title=subplot_title)
+                                   xlim=xlim, subplot_type=subplot_type, subplot_title=subplot_title, subplot_limits=(0, 2))
