@@ -40,42 +40,52 @@ OUTPUT_FMT = "pdf"
 
 trig_info = OrderedDict()
 trig_info['HLT_PFJet40'] = {
+    'threshold': 40.,
     'prescale': 135426.215343,
     'color': ROOT.kRed
 }
 trig_info['HLT_PFJet60'] = {
+    'threshold': 60.,
     'prescale': 49891.9453547,
     'color': ROOT.kBlue
 }
 trig_info['HLT_PFJet80'] = {
+    'threshold': 80.,
     'prescale': 13120.4895678,
     'color': ROOT.kGreen+2
 }
 trig_info['HLT_PFJet140'] = {
+    'threshold': 140.,
     'prescale': 1496.44452961,
     'color': ROOT.kViolet+5
 }
 trig_info['HLT_PFJet200'] = {
+    'threshold': 200.,
     'prescale': 348.686346954,
     'color': ROOT.kOrange
 }
 trig_info['HLT_PFJet260'] = {
+    'threshold': 260.,
     'prescale': 61.0210313345,
     'color': ROOT.kTeal
 }
 trig_info['HLT_PFJet320'] = {
+    'threshold': 320.,
     'prescale': 20.446914767,
     'color': ROOT.kViolet
 }
 trig_info['HLT_PFJet400'] = {
+    'threshold': 400.,
     'prescale': 2.38456,
     'color': ROOT.kOrange-6
 }
 trig_info['HLT_PFJet450'] = {
+    'threshold': 450.,
     'prescale': 1.00010464076,
     'color': ROOT.kAzure+1
 }
 trig_info['HLT_PFJet500'] = {
+    'threshold': 500.,
     'prescale': 1.00010464076,
     'color': ROOT.kSpring-9
 }
@@ -171,11 +181,11 @@ def do_trig_plots(input_filename, output_dir, title=""):
         info['heff'].SetTitle(name)
         info['heff'].SetMaximum(1.5)
         info['heff'].SetMinimum(0)
-        info['heff'].GetXaxis().SetRangeUser(0, min(10*trig_value, 2000))
+        info['heff'].GetXaxis().SetRangeUser(0, min(10*info['threshold'], 2000))
         info['heff'].Draw()
 
         # Do fit
-        eff_fit = ROOT.TF1("eff_%s" % name, '[3]*([0] + 0.5 * (1-[0]) * (1 + erf((x-[1])/[2])))', trig_value/3., trig_value*3.)
+        eff_fit = ROOT.TF1("eff_%s" % name, '[3]*([0] + 0.5 * (1-[0]) * (1 + erf((x-[1])/[2])))', info['threshold']/3., info['threshold']*3.)
         eff_fit.SetParName(0, 'a')
         eff_fit.SetParName(1, 'mu')
         eff_fit.SetParName(2, 'sigma')
@@ -183,8 +193,8 @@ def do_trig_plots(input_filename, output_dir, title=""):
         eff_fit.SetLineColor(ROOT.kBlack)
         eff_fit.SetLineWidth(1)
         eff_fit.SetParameter('a', 0)
-        eff_fit.SetParameter('mu', trig_value)
-        eff_fit.SetParameter('sigma', trig_value/10)
+        eff_fit.SetParameter('mu', info['threshold'])
+        eff_fit.SetParameter('sigma', info['threshold']/10)
         eff_fit.SetParameter('N', 1)
         eff_fit.SetNpx(5000)
         fit_result = info['heff'].Fit(eff_fit, 'VRSEM')
