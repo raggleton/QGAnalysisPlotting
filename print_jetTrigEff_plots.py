@@ -288,6 +288,21 @@ def do_trig_plots(input_filename, output_dir, title=""):
 
         c.SaveAs(output_dir + "/eff_%s.%s" % (name, OUTPUT_FMT))
 
+    # make graph of fully efficiency pt vs threshold
+    thresholds = [info['threshold'] for info in this_trig_info.itervalues()]
+    fully_eff_pt = [info['good_eff_pt'] for info in this_trig_info.itervalues()]
+    gr = ROOT.TGraph(len(thresholds), array('d', thresholds), array('d', fully_eff_pt))
+    c = ROOT.TCanvas("cgr", "", 800, 600)
+    c.SetTicks(1, 1)
+    gr.SetTitle(";Trigger threshold [GeV];99% efficiency p_{T} [GeV]")
+    gr.SetMarkerStyle(20)
+    gr.Draw("ALP")
+    cms_text.Draw()
+    jet_text.Draw()
+    c.SaveAs(output_dir + "/fully_eff_pt_vs_threshold.%s" % OUTPUT_FMT)
+
+    return this_trig_info
+
 
 if __name__ == "__main__":
     do_these = [
