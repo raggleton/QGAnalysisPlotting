@@ -50,47 +50,56 @@ trig_info['HLT_PFJet40'] = {
 trig_info['HLT_PFJet60'] = {
     'threshold': 60.,
     'prescale': 49891.9453547,
-    'color': ROOT.kBlue
+    'color': ROOT.kBlue,
+    'fit_all': (lambda isFatJet: not isFatJet)
 }
 trig_info['HLT_PFJet80'] = {
     'threshold': 80.,
     'prescale': 13120.4895678,
-    'color': ROOT.kGreen+2
+    'color': ROOT.kGreen+2,
+    'fit_all': (lambda isFatJet: not isFatJet)
 }
 trig_info['HLT_PFJet140'] = {
     'threshold': 140.,
     'prescale': 1496.44452961,
-    'color': ROOT.kViolet+5
+    'color': ROOT.kViolet+5,
+    'fit_all': (lambda isFatJet: not isFatJet)
 }
 trig_info['HLT_PFJet200'] = {
     'threshold': 200.,
     'prescale': 348.686346954,
-    'color': ROOT.kOrange
+    'color': ROOT.kOrange,
+    'fit_all': (lambda isFatJet: not isFatJet)
 }
 trig_info['HLT_PFJet260'] = {
     'threshold': 260.,
     'prescale': 61.0210313345,
-    'color': ROOT.kTeal
+    'color': ROOT.kTeal,
+    'fit_all': (lambda isFatJet: not isFatJet)
 }
 trig_info['HLT_PFJet320'] = {
     'threshold': 320.,
     'prescale': 20.446914767,
-    'color': ROOT.kViolet
+    'color': ROOT.kViolet,
+    'fit_all': (lambda isFatJet: not isFatJet)
 }
 trig_info['HLT_PFJet400'] = {
     'threshold': 400.,
     'prescale': 2.38456,
-    'color': ROOT.kOrange-6
+    'color': ROOT.kOrange-6,
+    'fit_all': (lambda isFatJet: not isFatJet)
 }
 trig_info['HLT_PFJet450'] = {
     'threshold': 450.,
     'prescale': 1.00010464076,
-    'color': ROOT.kAzure+1
+    'color': ROOT.kAzure+1,
+    'fit_all': (lambda isFatJet: False) 
 }
 trig_info['HLT_PFJet500'] = {
     'threshold': 500.,
     'prescale': 1.00010464076,
-    'color': ROOT.kSpring-8
+    'color': ROOT.kSpring-8,
+    'fit_all': (lambda isFatJet: False)
 }
 
 
@@ -140,6 +149,8 @@ def do_trig_plots(input_filename, output_dir, title=""):
 
     f = ROOT.TFile(input_filename)
     dir_name = "PFJet"
+
+    is_fat_jet = "AK8" in input_filename.upper()
 
     # Get singlemu hist
     h_all = f.Get(dir_name + "/pt_vs_eta_all")
@@ -243,7 +254,9 @@ def do_trig_plots(input_filename, output_dir, title=""):
         info['heff'].Draw()
 
         # Do fit
-        eff_fit = ROOT.TF1("eff_%s" % name, '[3]*([0] + 0.5 * (1-[0]) * (1 + erf((x-[1])/[2])))', info['threshold']/3., info['threshold']*3.)
+        lower_threshold = info['threshold']/3.
+        higher_threshold = info['threshold']*3.
+        eff_fit = ROOT.TF1("eff_%s" % name, '[3]*([0] + 0.5 * (1-[0]) * (1 + erf((x-[1])/[2])))', lower_threshold, higher_threshold)
         eff_fit.SetParName(0, 'a')
         eff_fit.SetParName(1, 'mu')
         eff_fit.SetParName(2, 'sigma')
@@ -260,6 +273,14 @@ def do_trig_plots(input_filename, output_dir, title=""):
 
         ROOT.gPad.Modified()
         ROOT.gPad.Update()
+
+        # Update fit by increasing lower limit to really capture the high efficiency region
+        if not info.get("fit_all", lambda x: True)(is_fat_jet):
+            fit_factor = 0.4 if is_fat_jet else 0.75
+            eff_fit.SetRange(eff_fit.GetX(fit_factor*eff_fit.GetParameter("N")), higher_threshold*1.)
+            fit_result = info['heff'].Fit(eff_fit, 'RSEM')
+            ROOT.gPad.Modified()
+            ROOT.gPad.Update()
 
         # Draw fit stats
         stats_box = info['heff'].FindObject("stats")
