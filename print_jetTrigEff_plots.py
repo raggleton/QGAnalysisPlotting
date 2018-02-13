@@ -214,10 +214,12 @@ def do_trig_plots(input_filename, output_dir, title=""):
         stats_box.SetY2NDC(0.88)
 
         # Add in info about 99% relative efficiency
-        good_eff = eff_fit.GetX(0.99*eff_fit.GetParameter("N"))
+        good_eff = 0.99 * eff_fit.GetParameter("N")
+        good_eff_pt = eff_fit.GetX(good_eff)
+        info['good_eff_pt'] = good_eff_pt
         eff_text = ROOT.TPaveText(0.63, 0.65, 0.88, 0.73, "NDC")
         eff_text.AddText("#epsilon = 0.99 #times %.3f" % eff_fit.GetParameter("N"))
-        eff_text.AddText("@ p_{T} = %3.f GeV" % good_eff)
+        eff_text.AddText("@ p_{T} = %3.f GeV" % good_eff_pt)
         eff_text.SetFillStyle(0)
         eff_text.SetBorderSize(0)
         eff_text.SetTextAlign(ROOT.kHAlignLeft + ROOT.kVAlignBottom)
