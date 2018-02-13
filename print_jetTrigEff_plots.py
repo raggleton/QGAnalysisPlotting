@@ -102,6 +102,7 @@ trig_info['HLT_PFJet500'] = {
     'fit_all': (lambda isFatJet: False)
 }
 
+all_results = OrderedDict()
 
 def do_custom_rebin(hist, newname, lower_limit, factor):
     """Makes a rebinned histogram above lower_limit by grouping together bins with given factor"""
@@ -332,11 +333,38 @@ def do_trig_plots(input_filename, output_dir, title=""):
 if __name__ == "__main__":
     do_these = [
         ('workdir_ak4chs_jettrig/uhh2.AnalysisModuleRunner.DATA.Data_SingleMu_JetTrig.root', 'AK4 CHS'),
-        ('workdir_ak8chs_jettrig/uhh2.AnalysisModuleRunner.DATA.Data_SingleMu_JetTrig.root', 'AK8 CHS'),
         ('workdir_ak4puppi_jettrig/uhh2.AnalysisModuleRunner.DATA.Data_SingleMu_JetTrig.root', 'AK4 PUPPI'),
+        ('workdir_ak8chs_jettrig/uhh2.AnalysisModuleRunner.DATA.Data_SingleMu_JetTrig.root', 'AK8 CHS'),
         ('workdir_ak8puppi_jettrig/uhh2.AnalysisModuleRunner.DATA.Data_SingleMu_JetTrig.root', 'AK8 PUPPI'),
     ]
 
     for filename, title in do_these:
-        do_trig_plots(filename, os.path.dirname(filename), title)
+        results = do_trig_plots(filename, os.path.dirname(filename), title)
+        all_results[title] = results
 
+    mg = ROOT.TMultiGraph()
+    c = ROOT.TCanvas("cmg", "", 800, 600)
+    c.SetTicks(1, 1)
+    leg = ROOT.TLegend(0.7, 0.2, 0.88, 0.38)
+    colors = [ROOT.kBlack, ROOT.kBlue, ROOT.kRed, ROOT.kOrange+1]
+    for ind, (name, result) in enumerate(all_results.iteritems()):
+        thresholds = [info['threshold'] for info in result.itervalues()]
+        fully_eff_pt = [info['good_eff_pt'] for info in result.itervalues()]
+        g = ROOT.TGraph(len(thresholds), array('d', thresholds), array('d', fully_eff_pt))
+        g.SetMarkerColor(colors[ind])
+        g.SetMarkerStyle(20+ind)
+        g.SetLineColor(colors[ind])
+        mg.Add(g)
+        leg.AddEntry(g, name, "LP")
+    mg.SetTitle(";Trigger threshold [GeV];99% efficiency p_{T} [GeV]")
+    mg.Draw("ALP")
+    leg.Draw()
+    cms_text = ROOT.TPaveText(0.14, 0.9, 0.4, 0.92, "NDC")
+    cms_text.AddText("CMS Preliminary 35.864 fb^{-1}")
+    cms_text.SetFillStyle(0)
+    cms_text.SetBorderSize(0)
+    cms_text.SetTextAlign(ROOT.kHAlignLeft + ROOT.kVAlignBottom)
+    cms_text.SetTextFont(63)
+    cms_text.SetTextSize(18)
+    cms_text.Draw()
+    c.SaveAs("comparingTriggers.%s" % OUTPUT_FMT)
