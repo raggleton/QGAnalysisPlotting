@@ -106,6 +106,9 @@ trig_info['HLT_PFJet500'] = {
 def do_custom_rebin(hist, newname, lower_limit, factor):
     """Makes a rebinned histogram above lower_limit by grouping together bins with given factor"""
     print "custom rebin:", lower_limit, factor
+    if factor == 1:
+        return hist.Clone(newname)
+
     nbins = hist.GetNbinsX()
     bins = [hist.GetBinLowEdge(i) for i in range(1, nbins+2)]
 
