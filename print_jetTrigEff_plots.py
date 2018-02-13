@@ -255,8 +255,8 @@ def do_trig_plots(input_filename, output_dir, title=""):
         eff_fit.SetParameter('sigma', info['threshold']/10)
         eff_fit.SetParameter('N', 1)
         eff_fit.SetNpx(5000)
-        fit_result = info['heff'].Fit(eff_fit, 'VRSEM')
-        info['heff'].Draw()
+        fit_result = info['heff'].Fit(eff_fit, 'RSEM')
+        info['heff'].Draw("")
 
         ROOT.gPad.Modified()
         ROOT.gPad.Update()
