@@ -158,32 +158,33 @@ def do_trig_plots(input_filename, output_dir, title=""):
     h_all_pt.SetFillColor(17)
     h_all_pt.SetLineColor(17)
 
-    for name in trig_info:
+    for name, info in trig_info.iteritems():
         # for each trig, jet 2d pt vs eta hist, project into 1D pt distribution
         # then create efficiency hist using single mu hist
-        rebin_factor = 4 if trig_info[name]['threshold'] > 100 else 1
+        rebin_factor = 4 if info['threshold'] > 100 else 1  # rough rebinning across all pt
         h2d = f.Get(dir_name + "/pt_vs_eta_%s_v*" % name)
-        trig_info[name]['h2d'] = h2d
-        trig_info[name]['hpt'] = h2d.ProjectionX(name+"PT", eta_min_bin, eta_max_bin)
-        trig_info[name]['hpt'].Sumw2()
-        trig_info[name]['hpt'].Scale(trig_info[name]['prescale']/trig_info.values()[-1]['prescale'])  # normalise it
-        trig_info[name]['hpt'].SetLineColor(trig_info[name]['color'])
-        trig_info[name]['hpt'].SetMarkerColor(trig_info[name]['color'])
-        trig_info[name]['hpt'].Rebin(rebin_factor)
+        info['h2d'] = h2d
+        info['hpt'] = h2d.ProjectionX(name+"PT", eta_min_bin, eta_max_bin)
+        info['hpt'].Sumw2()
+        info['hpt'].Scale(info['prescale']/trig_info.values()[-1]['prescale'])  # normalise it
+        info['hpt'].SetLineColor(info['color'])
+        info['hpt'].SetMarkerColor(info['color'])
         
-        # rebin the jet pt hist
+        this_hpt = info['hpt'].Clone(info['hpt'].GetName()+"Clone").Rebin(rebin_factor)
+        
+        # rebin the jet pt hist at higher pt where it plateaus
         higher_pt_rebin_factor = 5
-        hpt_rebin = do_custom_rebin(trig_info[name]['hpt'], trig_info[name]['hpt'].GetName()+"CustomRebin", trig_info[name]['threshold'] * 1.5, higher_pt_rebin_factor)
+        this_hpt_rebin = do_custom_rebin(this_hpt, this_hpt.GetName()+"CustomRebin", info['threshold'] * 1.5, higher_pt_rebin_factor)
         
         # rebin the muon pt hist in same way
         this_h_all_pt = h_all_pt.Clone(h_all_pt.GetName()+name)
         this_h_all_pt.Rebin(rebin_factor)
-        h_all_pt_rebin = do_custom_rebin(this_h_all_pt, this_h_all_pt.GetName()+"CustomRebin", trig_info[name]['threshold'] * 1.5, higher_pt_rebin_factor)
+        h_all_pt_rebin = do_custom_rebin(this_h_all_pt, this_h_all_pt.GetName()+"CustomRebin", info['threshold'] * 1.5, higher_pt_rebin_factor)
         
-        trig_info[name]['heff'] = hpt_rebin.Clone(hpt_rebin.GetName() + "Eff")
-        trig_info[name]['heff'].Divide(h_all_pt_rebin)
-        trig_info[name]['heff'].SetTitle(trig_info[name]['heff'].GetTitle()+";Leading jet p_{T} [GeV];#epsilon")
-        # trig_info[name]['heff'] = ROOT.TEfficiency(trig_info[name]['hpt'], h_all_pt)  # cant use as > 1 due to prescaling
+        info['heff'] = this_hpt_rebin.Clone(this_hpt_rebin.GetName() + "Eff")
+        info['heff'].Divide(h_all_pt_rebin)
+        info['heff'].SetTitle(info['heff'].GetTitle()+";Leading jet p_{T} [GeV];#epsilon")
+        # info['heff'] = ROOT.TEfficiency(info['hpt'], h_all_pt)  # cant use as > 1 due to prescaling
 
     # return
     # plot pt distributions
@@ -206,10 +207,11 @@ def do_trig_plots(input_filename, output_dir, title=""):
     jet_text.SetTextFont(63)
     jet_text.SetTextSize(18)
 
-    hst.Add(h_all_pt)
+    rebin_factor = 4
+    hst.Add(h_all_pt.Rebin(rebin_factor))
     leg.AddEntry(h_all_pt, "HLT_IsoMu24 || HLT_IsoTkMu24" , "F")
     for name, info in trig_info.iteritems():
-        hst.Add(info['hpt'])
+        hst.Add(info['hpt'].Rebin(rebin_factor))
         leg.AddEntry(info['hpt'], name, "L")
 
 
