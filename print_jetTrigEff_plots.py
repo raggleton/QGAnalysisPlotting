@@ -10,6 +10,7 @@ from MyStyle import My_Style
 My_Style.cd()
 import os
 from collections import OrderedDict
+import sys
 
 # My stuff
 from comparator import Contribution, Plot, grab_obj
@@ -80,17 +81,21 @@ trig_info['HLT_PFJet500'] = {
 }
 
 
-if __name__ == "__main__":
-    f = ROOT.TFile("uhh2.AnalysisModuleRunner.DATA.Data_SingleMu_JetTrig.root")
+def do_trig_plots(input_filename, output_dir):
+    f = ROOT.TFile(input_filename)
     dir_name = "PFJet"
-    h_all = f.Get(dir_name + "/pt_vs_eta_all")
+    
     rebin_factor = 2
+
+    # Get singlemu hist
+    h_all = f.Get(dir_name + "/pt_vs_eta_all")
     h_all_pt = h_all.ProjectionX("allPT").Rebin(rebin_factor)
-    # h_all_pt.SetLineWidth(2)
-    # h_all_pt.SetLineStyle(3)
     h_all_pt.SetFillColor(17)
     h_all_pt.SetLineColor(17)
+
     for name in trig_info:
+        # for each trig, jet 2d pt vs eta hist, project into 1D pt distribution
+        # then create efficiency hist using single mu hist
         h2d = f.Get(dir_name + "/pt_vs_eta_%s_v*" % name)
         trig_info[name]['h2d'] = h2d
         trig_info[name]['hpt'] = h2d.ProjectionX(name+"PT")
@@ -104,15 +109,16 @@ if __name__ == "__main__":
         trig_info[name]['heff'].SetTitle(trig_info[name]['heff'].GetTitle()+";Leading jet p_{T} [GeV];#epsilon")
         # trig_info[name]['heff'] = ROOT.TEfficiency(trig_info[name]['hpt'], h_all_pt)  # cant use as > 1 due to prescaling
 
+    # plot pt distributions
     hst = ROOT.THStack("hst", ";Jet p_{T} [GeV];N")
     leg = ROOT.TLegend(0.5, 0.5, 0.88, 0.88)
-    text = ROOT.TPaveText(0.6, 0.9, 0.9, 0.92, "NDC")
-    text.AddText("CMS Preliminary 35.864 fb^{-1}")
-    text.SetFillStyle(0)
-    text.SetBorderSize(0)
-    text.SetTextAlign(ROOT.kHAlignRight + ROOT.kVAlignBottom)
-    text.SetTextFont(63)
-    text.SetTextSize(18)
+    cms_text = ROOT.TPaveText(0.6, 0.9, 0.9, 0.92, "NDC")
+    cms_text.AddText("CMS Preliminary 35.864 fb^{-1}")
+    cms_text.SetFillStyle(0)
+    cms_text.SetBorderSize(0)
+    cms_text.SetTextAlign(ROOT.kHAlignRight + ROOT.kVAlignBottom)
+    cms_text.SetTextFont(63)
+    cms_text.SetTextSize(18)
     hst.Add(h_all_pt)
     leg.AddEntry(h_all_pt, "HLT_IsoMu24 || HLT_IsoTkMu24" , "F")
     for name, info in trig_info.iteritems():
@@ -126,11 +132,11 @@ if __name__ == "__main__":
     # hst.GetXaxis().SetRangeUser(0, 600)
     hst.SetMinimum(10**-1)
     leg.Draw()
-    text.Draw()
+    cms_text.Draw()
     c.SetLogy()
-    c.SaveAs("pt_trig.%s" % (OUTPUT_FMT))
+    c.SaveAs(output_dir + "/pt_trig.%s" % (OUTPUT_FMT))
 
-    # Print effs
+    # plot effs
     for name, info in trig_info.iteritems():
         c = ROOT.TCanvas("ceff"+name, "", 800, 600)
         c.SetTicks(1, 1)
@@ -154,7 +160,7 @@ if __name__ == "__main__":
         eff_fit.SetLineWidth(1)
         eff_fit.SetParameter('a', 0)
         eff_fit.SetParameter('mu', trig_value)
-        eff_fit.SetParameter('sigma', trig_value/20)
+        eff_fit.SetParameter('sigma', trig_value/10)
         eff_fit.SetParameter('N', 1)
         eff_fit.SetNpx(5000)
         fit_result = info['heff'].Fit(eff_fit, 'VRSEM')
@@ -177,11 +183,17 @@ if __name__ == "__main__":
         good_eff = eff_fit.GetX(0.99*eff_fit.GetParameter("N"))
         eff_text = ROOT.TPaveText(0.63, 0.65, 0.88, 0.73, "NDC")
         eff_text.AddText("#epsilon = 0.99 #times %.3f" % eff_fit.GetParameter("N"))
-        eff_text.AddText("@ p_{T} = %3f GeV" % good_eff)
+        eff_text.AddText("@ p_{T} = %3.f GeV" % good_eff)
         eff_text.SetFillStyle(0)
         eff_text.SetBorderSize(0)
         eff_text.SetTextAlign(ROOT.kHAlignLeft + ROOT.kVAlignBottom)
         eff_text.Draw()
+        cms_text.Draw()
 
-        c.SaveAs("eff_%s.%s" % (name, OUTPUT_FMT))
+        c.SaveAs(output_dir + "/eff_%s.%s" % (name, OUTPUT_FMT))
+
+
+if __name__ == "__main__":
+    for filename in sys.argv[1:]:
+        do_trig_plots(filename, os.path.dirname(filename))
 
