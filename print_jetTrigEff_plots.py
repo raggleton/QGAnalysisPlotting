@@ -13,15 +13,16 @@ from collections import OrderedDict
 import sys
 from array import array
 from bisect import bisect_left
+from copy import deepcopy
 
 # My stuff
-from comparator import Contribution, Plot, grab_obj
-import qg_common as qgc
-import qg_general_plots as qgg
+# from comparator import Contribution, Plot, grab_obj
+# import qg_common as qgc
+# import qg_general_plots as qgg
 
 # For debugging
-import sys
-import tracers
+# import sys
+# import tracers
 # sys.settrace(tracers.trace_calls)
 # sys.settrace(tracers.trace_calls_detail)
 # sys.settrace(tracers.trace_calls_and_returns)
@@ -98,7 +99,7 @@ def do_custom_rebin(hist, newname, lower_limit, factor):
     print "custom rebin:", lower_limit, factor
     nbins = hist.GetNbinsX()
     bins = [hist.GetBinLowEdge(i) for i in range(1, nbins+2)]
-    
+
     # figure out sensible lower_limit if not in list of bin edges
     if lower_limit not in bins:
         print 'WARNING: lower_limit not found in bin edges'
@@ -115,7 +116,7 @@ def do_custom_rebin(hist, newname, lower_limit, factor):
         else:
             lower_limit = higher
         print "Adjusted lower_limit to nearest value =", lower_limit
-    
+
     # ensure integer multiple of factor bins to be regrouped
     rebin_remainder = (nbins-bins.index(lower_limit)) % factor
     if rebin_remainder != 0:
@@ -158,7 +159,8 @@ def do_trig_plots(input_filename, output_dir, title=""):
     h_all_pt.SetFillColor(17)
     h_all_pt.SetLineColor(17)
 
-    for name, info in trig_info.iteritems():
+    this_trig_info = deepcopy(trig_info)
+    for name, info in this_trig_info.iteritems():
         # for each trig, jet 2d pt vs eta hist, project into 1D pt distribution
         # then create efficiency hist using single mu hist
         rebin_factor = 4 if info['threshold'] > 100 else 1  # rough rebinning across all pt
@@ -166,22 +168,22 @@ def do_trig_plots(input_filename, output_dir, title=""):
         info['h2d'] = h2d
         info['hpt'] = h2d.ProjectionX(name+"PT", eta_min_bin, eta_max_bin)
         info['hpt'].Sumw2()
-        info['hpt'].Scale(info['prescale']/trig_info.values()[-1]['prescale'])  # normalise it
+        info['hpt'].Scale(info['prescale']/this_trig_info.values()[-1]['prescale'])  # normalise it
         info['hpt'].SetLineColor(info['color'])
         info['hpt'].SetMarkerColor(info['color'])
-        
+
         this_hpt = info['hpt'].Clone(info['hpt'].GetName()+"Clone").Rebin(rebin_factor)
-        
+
         # rebin the jet pt hist at higher pt where it plateaus
         higher_pt_rebin_factor = 5
-        higher_pt_rebin_limit = info['threshold'] * 1.3
+        higher_pt_rebin_limit = info['threshold'] * 1.4
         this_hpt_rebin = do_custom_rebin(this_hpt, this_hpt.GetName()+"CustomRebin", higher_pt_rebin_limit, higher_pt_rebin_factor)
-        
+
         # rebin the muon pt hist in same way
         this_h_all_pt = h_all_pt.Clone(h_all_pt.GetName()+name)
         this_h_all_pt.Rebin(rebin_factor)
         h_all_pt_rebin = do_custom_rebin(this_h_all_pt, this_h_all_pt.GetName()+"CustomRebin", higher_pt_rebin_limit, higher_pt_rebin_factor)
-        
+
         info['heff'] = this_hpt_rebin.Clone(this_hpt_rebin.GetName() + "Eff")
         info['heff'].Divide(h_all_pt_rebin)
         info['heff'].SetTitle(info['heff'].GetTitle()+";Leading jet p_{T} [GeV];#epsilon")
@@ -211,7 +213,7 @@ def do_trig_plots(input_filename, output_dir, title=""):
     rebin_factor = 4
     hst.Add(h_all_pt.Rebin(rebin_factor))
     leg.AddEntry(h_all_pt, "HLT_IsoMu24 || HLT_IsoTkMu24" , "F")
-    for name, info in trig_info.iteritems():
+    for name, info in this_trig_info.iteritems():
         hst.Add(info['hpt'].Rebin(rebin_factor))
         leg.AddEntry(info['hpt'], name, "L")
 
@@ -228,7 +230,7 @@ def do_trig_plots(input_filename, output_dir, title=""):
     c.SaveAs(output_dir + "/pt_trig.%s" % (OUTPUT_FMT))
 
     # plot effs
-    for name, info in trig_info.iteritems():
+    for name, info in this_trig_info.iteritems():
         c = ROOT.TCanvas("ceff"+name, "", 800, 600)
         c.SetTicks(1, 1)
         # c.SetLogy()
