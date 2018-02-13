@@ -199,7 +199,8 @@ def do_trig_plots(input_filename, output_dir, title=""):
         h_all_pt_rebin = do_custom_rebin(this_h_all_pt, this_h_all_pt.GetName()+"CustomRebin", higher_pt_rebin_limit, higher_pt_rebin_factor)
 
         info['heff'] = this_hpt_rebin.Clone(this_hpt_rebin.GetName() + "Eff")
-        info['heff'].Divide(h_all_pt_rebin)
+        info['heff'].Sumw2()
+        info['heff'].Divide(info['heff'], h_all_pt_rebin, 1, 1, "B")
         info['heff'].SetTitle(info['heff'].GetTitle()+";Leading jet p_{T} [GeV];#epsilon")
         # info['heff'] = ROOT.TEfficiency(info['hpt'], h_all_pt)  # cant use as > 1 due to prescaling
 
