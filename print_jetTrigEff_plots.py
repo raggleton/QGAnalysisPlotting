@@ -177,7 +177,7 @@ def do_trig_plots(input_filename, output_dir, title=""):
     for name, info in this_trig_info.iteritems():
         # for each trig, jet 2d pt vs eta hist, project into 1D pt distribution
         # then create efficiency hist using single mu hist
-        rebin_factor = 4 if info['threshold'] > 100 else 1  # rough rebinning across all pt
+        rebin_factor = 2 if info['threshold'] > 100 else 2  # rough rebinning across all pt
         h2d = f.Get(dir_name + "/pt_vs_eta_%s_v*" % name)
         info['h2d'] = h2d
         info['hpt'] = h2d.ProjectionX(name+"PT", eta_min_bin, eta_max_bin)
@@ -189,7 +189,7 @@ def do_trig_plots(input_filename, output_dir, title=""):
         this_hpt = info['hpt'].Clone(info['hpt'].GetName()+"Clone").Rebin(rebin_factor)
 
         # rebin the jet pt hist at higher pt where it plateaus
-        higher_pt_rebin_factor = 5
+        higher_pt_rebin_factor = 10
         higher_pt_rebin_limit = info['threshold'] * 1.4
         this_hpt_rebin = do_custom_rebin(this_hpt, this_hpt.GetName()+"CustomRebin", higher_pt_rebin_limit, higher_pt_rebin_factor)
 
@@ -224,16 +224,16 @@ def do_trig_plots(input_filename, output_dir, title=""):
     jet_text.SetTextFont(63)
     jet_text.SetTextSize(18)
 
-    rebin_factor = 4
+    rebin_factor = 5
     hst.Add(h_all_pt.Rebin(rebin_factor))
     leg.AddEntry(h_all_pt, "HLT_IsoMu24 || HLT_IsoTkMu24" , "F")
     for name, info in this_trig_info.iteritems():
         hst.Add(info['hpt'].Rebin(rebin_factor))
         leg.AddEntry(info['hpt'], name, "L")
 
-
     c = ROOT.TCanvas("c1", "", 800, 600)
     c.SetTicks(1, 1)
+    # c.SetLogx()
     hst.Draw("HISTE NOSTACK")
     # hst.GetXaxis().SetRangeUser(0, 600)
     hst.SetMinimum(10**-1)
@@ -253,7 +253,7 @@ def do_trig_plots(input_filename, output_dir, title=""):
         info['heff'].SetTitle(name)
         info['heff'].SetMaximum(1.5)
         info['heff'].SetMinimum(0)
-        info['heff'].GetXaxis().SetRangeUser(0, min(10*info['threshold'], 2000))
+        info['heff'].GetXaxis().SetRangeUser(0, min(6*info['threshold'], 2000))
         info['heff'].Draw()
 
         # Do fit
