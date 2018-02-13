@@ -11,6 +11,8 @@ My_Style.cd()
 import os
 from collections import OrderedDict
 import sys
+from array import array
+from bisect import bisect_left
 
 # My stuff
 from comparator import Contribution, Plot, grab_obj
@@ -91,14 +93,52 @@ trig_info['HLT_PFJet500'] = {
 }
 
 
+def do_custom_rebin(hist, newname, lower_limit, factor):
+    """Makes a rebinned histogram above lower_limit by grouping together bins with given factor"""
+    print "custom rebin:", lower_limit, factor
+    nbins = hist.GetNbinsX()
+    bins = [hist.GetBinLowEdge(i) for i in range(1, nbins+2)]
+    
+    # figure out sensible lower_limit if not in list of bin edges
+    if lower_limit not in bins:
+        print 'WARNING: lower_limit not found in bin edges'
+        # find the closest bin edge to the desired value
+        ind = bisect_left(bins, lower_limit)
+        if ind == 0:
+            lower_limit = bins[0]
+        if ind == len(bins):
+            lower_limit = bins[-1]
+        lower = bins[ind-1]
+        higher = bins[ind]
+        if (lower_limit-lower) < (higher - lower_limit):
+            lower_limit = lower
+        else:
+            lower_limit = higher
+        print "Adjusted lower_limit to nearest value =", lower_limit
+    
+    # ensure integer multiple of factor bins to be regrouped
+    rebin_remainder = (nbins-bins.index(lower_limit)) % factor
+    if rebin_remainder != 0:
+        print "WARNING: factor must be a divisor with no remainder. nbins: ", nbins-bins.index(lower_limit), "factor:", factor
+        lower_limit = bins[bins.index(lower_limit)+rebin_remainder]
+        print "Will adjust lower_limit to higher value to make this so. New lower_limit = ", lower_limit
+
+    lower_limit_ind = bins.index(lower_limit)
+    # original bins at low x
+    new_bins = bins[:lower_limit_ind]
+    # regrouped bins at higher x
+    new_bins += [bins[i] for i in range(lower_limit_ind, nbins+2, factor)]
+    hnew = hist.Rebin(len(new_bins)-1, newname, array('d', new_bins))
+    return hnew
+
+
 def do_trig_plots(input_filename, output_dir, title=""):
+    """Do efficiencies and fits for all triggers"""
     if not os.path.isfile(input_filename):
         raise IOError("No input file", input_filename)
 
     f = ROOT.TFile(input_filename)
     dir_name = "PFJet"
-
-    rebin_factor = 2
 
     # Get singlemu hist
     h_all = f.Get(dir_name + "/pt_vs_eta_all")
@@ -113,7 +153,7 @@ def do_trig_plots(input_filename, output_dir, title=""):
     if yax.GetBinLowEdge(eta_max_bin) == eta_max:
         eta_max_bin -= 1
 
-    h_all_pt = h_all.ProjectionX("allPT", eta_min_bin, eta_max_bin).Rebin(rebin_factor)
+    h_all_pt = h_all.ProjectionX("allPT", eta_min_bin, eta_max_bin)
     h_all_pt.Sumw2()
     h_all_pt.SetFillColor(17)
     h_all_pt.SetLineColor(17)
@@ -121,6 +161,7 @@ def do_trig_plots(input_filename, output_dir, title=""):
     for name in trig_info:
         # for each trig, jet 2d pt vs eta hist, project into 1D pt distribution
         # then create efficiency hist using single mu hist
+        rebin_factor = 4 if trig_info[name]['threshold'] > 100 else 1
         h2d = f.Get(dir_name + "/pt_vs_eta_%s_v*" % name)
         trig_info[name]['h2d'] = h2d
         trig_info[name]['hpt'] = h2d.ProjectionX(name+"PT", eta_min_bin, eta_max_bin)
@@ -129,11 +170,22 @@ def do_trig_plots(input_filename, output_dir, title=""):
         trig_info[name]['hpt'].SetLineColor(trig_info[name]['color'])
         trig_info[name]['hpt'].SetMarkerColor(trig_info[name]['color'])
         trig_info[name]['hpt'].Rebin(rebin_factor)
-        trig_info[name]['heff'] = trig_info[name]['hpt'].Clone(trig_info[name]['hpt'].GetName() + "Eff")
-        trig_info[name]['heff'].Divide(h_all_pt)
+        
+        # rebin the jet pt hist
+        higher_pt_rebin_factor = 5
+        hpt_rebin = do_custom_rebin(trig_info[name]['hpt'], trig_info[name]['hpt'].GetName()+"CustomRebin", trig_info[name]['threshold'] * 1.5, higher_pt_rebin_factor)
+        
+        # rebin the muon pt hist in same way
+        this_h_all_pt = h_all_pt.Clone(h_all_pt.GetName()+name)
+        this_h_all_pt.Rebin(rebin_factor)
+        h_all_pt_rebin = do_custom_rebin(this_h_all_pt, this_h_all_pt.GetName()+"CustomRebin", trig_info[name]['threshold'] * 1.5, higher_pt_rebin_factor)
+        
+        trig_info[name]['heff'] = hpt_rebin.Clone(hpt_rebin.GetName() + "Eff")
+        trig_info[name]['heff'].Divide(h_all_pt_rebin)
         trig_info[name]['heff'].SetTitle(trig_info[name]['heff'].GetTitle()+";Leading jet p_{T} [GeV];#epsilon")
         # trig_info[name]['heff'] = ROOT.TEfficiency(trig_info[name]['hpt'], h_all_pt)  # cant use as > 1 due to prescaling
 
+    # return
     # plot pt distributions
     hst = ROOT.THStack("hst", ";Jet p_{T} [GeV];N")
     leg = ROOT.TLegend(0.5, 0.5, 0.88, 0.88)
