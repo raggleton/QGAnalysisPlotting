@@ -174,12 +174,13 @@ def do_trig_plots(input_filename, output_dir, title=""):
         
         # rebin the jet pt hist at higher pt where it plateaus
         higher_pt_rebin_factor = 5
-        this_hpt_rebin = do_custom_rebin(this_hpt, this_hpt.GetName()+"CustomRebin", info['threshold'] * 1.5, higher_pt_rebin_factor)
+        higher_pt_rebin_limit = info['threshold'] * 1.3
+        this_hpt_rebin = do_custom_rebin(this_hpt, this_hpt.GetName()+"CustomRebin", higher_pt_rebin_limit, higher_pt_rebin_factor)
         
         # rebin the muon pt hist in same way
         this_h_all_pt = h_all_pt.Clone(h_all_pt.GetName()+name)
         this_h_all_pt.Rebin(rebin_factor)
-        h_all_pt_rebin = do_custom_rebin(this_h_all_pt, this_h_all_pt.GetName()+"CustomRebin", info['threshold'] * 1.5, higher_pt_rebin_factor)
+        h_all_pt_rebin = do_custom_rebin(this_h_all_pt, this_h_all_pt.GetName()+"CustomRebin", higher_pt_rebin_limit, higher_pt_rebin_factor)
         
         info['heff'] = this_hpt_rebin.Clone(this_hpt_rebin.GetName() + "Eff")
         info['heff'].Divide(h_all_pt_rebin)
