@@ -114,6 +114,7 @@ def do_trig_plots(input_filename, output_dir, title=""):
         eta_max_bin -= 1
 
     h_all_pt = h_all.ProjectionX("allPT", eta_min_bin, eta_max_bin).Rebin(rebin_factor)
+    h_all_pt.Sumw2()
     h_all_pt.SetFillColor(17)
     h_all_pt.SetLineColor(17)
 
