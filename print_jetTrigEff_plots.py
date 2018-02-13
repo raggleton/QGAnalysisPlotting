@@ -84,12 +84,23 @@ trig_info['HLT_PFJet500'] = {
 def do_trig_plots(input_filename, output_dir):
     f = ROOT.TFile(input_filename)
     dir_name = "PFJet"
-    
+
     rebin_factor = 2
 
     # Get singlemu hist
     h_all = f.Get(dir_name + "/pt_vs_eta_all")
-    h_all_pt = h_all.ProjectionX("allPT").Rebin(rebin_factor)
+
+    # Figure out bins for eta edges
+    eta_min_bin, eta_max_bin = 0, h_all.GetNbinsY()+1
+    yax = h_all.GetYaxis()
+    eta_min, eta_max = -2.4, 2.4
+    eta_min_bin = yax.FindBin(eta_min)
+    eta_max_bin = yax.FindBin(eta_max)
+    # don't want to include the upper bin if the value is at the low edge
+    if yax.GetBinLowEdge(eta_max_bin) == eta_max:
+        eta_max_bin -= 1
+
+    h_all_pt = h_all.ProjectionX("allPT", eta_min_bin, eta_max_bin).Rebin(rebin_factor)
     h_all_pt.SetFillColor(17)
     h_all_pt.SetLineColor(17)
 
@@ -98,7 +109,7 @@ def do_trig_plots(input_filename, output_dir):
         # then create efficiency hist using single mu hist
         h2d = f.Get(dir_name + "/pt_vs_eta_%s_v*" % name)
         trig_info[name]['h2d'] = h2d
-        trig_info[name]['hpt'] = h2d.ProjectionX(name+"PT")
+        trig_info[name]['hpt'] = h2d.ProjectionX(name+"PT", eta_min_bin, eta_max_bin)
         trig_info[name]['hpt'].Sumw2()
         trig_info[name]['hpt'].Scale(trig_info[name]['prescale']/trig_info.values()[-1]['prescale'])  # normalise it
         trig_info[name]['hpt'].SetLineColor(trig_info[name]['color'])
@@ -112,13 +123,23 @@ def do_trig_plots(input_filename, output_dir):
     # plot pt distributions
     hst = ROOT.THStack("hst", ";Jet p_{T} [GeV];N")
     leg = ROOT.TLegend(0.5, 0.5, 0.88, 0.88)
-    cms_text = ROOT.TPaveText(0.6, 0.9, 0.9, 0.92, "NDC")
+
+    cms_text = ROOT.TPaveText(0.14, 0.9, 0.4, 0.92, "NDC")
     cms_text.AddText("CMS Preliminary 35.864 fb^{-1}")
     cms_text.SetFillStyle(0)
     cms_text.SetBorderSize(0)
-    cms_text.SetTextAlign(ROOT.kHAlignRight + ROOT.kVAlignBottom)
+    cms_text.SetTextAlign(ROOT.kHAlignLeft + ROOT.kVAlignBottom)
     cms_text.SetTextFont(63)
     cms_text.SetTextSize(18)
+
+    jet_text = ROOT.TPaveText(0.6, 0.9, 0.9, 0.92, "NDC")
+    jet_text.AddText("AK4 CHS")
+    jet_text.SetFillStyle(0)
+    jet_text.SetBorderSize(0)
+    jet_text.SetTextAlign(ROOT.kHAlignRight + ROOT.kVAlignBottom)
+    jet_text.SetTextFont(63)
+    jet_text.SetTextSize(18)
+
     hst.Add(h_all_pt)
     leg.AddEntry(h_all_pt, "HLT_IsoMu24 || HLT_IsoTkMu24" , "F")
     for name, info in trig_info.iteritems():
@@ -133,6 +154,7 @@ def do_trig_plots(input_filename, output_dir):
     hst.SetMinimum(10**-1)
     leg.Draw()
     cms_text.Draw()
+    jet_text.Draw()
     c.SetLogy()
     c.SaveAs(output_dir + "/pt_trig.%s" % (OUTPUT_FMT))
 
@@ -142,7 +164,7 @@ def do_trig_plots(input_filename, output_dir):
         c.SetTicks(1, 1)
         # c.SetLogy()
         trig_value = float(name.replace("HLT_PFJet", ''))
-        
+
         info['heff'].SetMarkerStyle(22)
         info['heff'].SetTitle(name)
         info['heff'].SetMaximum(1.5)
@@ -188,7 +210,9 @@ def do_trig_plots(input_filename, output_dir):
         eff_text.SetBorderSize(0)
         eff_text.SetTextAlign(ROOT.kHAlignLeft + ROOT.kVAlignBottom)
         eff_text.Draw()
+
         cms_text.Draw()
+        jet_text.Draw()
 
         c.SaveAs(output_dir + "/eff_%s.%s" % (name, OUTPUT_FMT))
 
