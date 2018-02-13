@@ -89,7 +89,7 @@ trig_info['HLT_PFJet450'] = {
 trig_info['HLT_PFJet500'] = {
     'threshold': 500.,
     'prescale': 1.00010464076,
-    'color': ROOT.kSpring-9
+    'color': ROOT.kSpring-8
 }
 
 
