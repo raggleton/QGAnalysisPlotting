@@ -81,7 +81,10 @@ trig_info['HLT_PFJet500'] = {
 }
 
 
-def do_trig_plots(input_filename, output_dir):
+def do_trig_plots(input_filename, output_dir, title=""):
+    if not os.path.isfile(input_filename):
+        raise IOError("No input file", input_filename)
+
     f = ROOT.TFile(input_filename)
     dir_name = "PFJet"
 
@@ -133,7 +136,7 @@ def do_trig_plots(input_filename, output_dir):
     cms_text.SetTextSize(18)
 
     jet_text = ROOT.TPaveText(0.6, 0.9, 0.9, 0.92, "NDC")
-    jet_text.AddText("AK4 CHS")
+    jet_text.AddText(title)
     jet_text.SetFillStyle(0)
     jet_text.SetBorderSize(0)
     jet_text.SetTextAlign(ROOT.kHAlignRight + ROOT.kVAlignBottom)
@@ -163,7 +166,6 @@ def do_trig_plots(input_filename, output_dir):
         c = ROOT.TCanvas("ceff"+name, "", 800, 600)
         c.SetTicks(1, 1)
         # c.SetLogy()
-        trig_value = float(name.replace("HLT_PFJet", ''))
 
         info['heff'].SetMarkerStyle(22)
         info['heff'].SetTitle(name)
@@ -218,6 +220,13 @@ def do_trig_plots(input_filename, output_dir):
 
 
 if __name__ == "__main__":
-    for filename in sys.argv[1:]:
-        do_trig_plots(filename, os.path.dirname(filename))
+    do_these = [
+        ('workdir_ak4chs_jettrig/uhh2.AnalysisModuleRunner.DATA.Data_SingleMu_JetTrig.root', 'AK4 CHS'),
+        ('workdir_ak8chs_jettrig/uhh2.AnalysisModuleRunner.DATA.Data_SingleMu_JetTrig.root', 'AK8 CHS'),
+        ('workdir_ak4puppi_jettrig/uhh2.AnalysisModuleRunner.DATA.Data_SingleMu_JetTrig.root', 'AK4 PUPPI'),
+        ('workdir_ak8puppi_jettrig/uhh2.AnalysisModuleRunner.DATA.Data_SingleMu_JetTrig.root', 'AK8 PUPPI'),
+    ]
+
+    for filename, title in do_these:
+        do_trig_plots(filename, os.path.dirname(filename), title)
 
