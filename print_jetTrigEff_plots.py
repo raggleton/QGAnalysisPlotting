@@ -346,14 +346,7 @@ def do_trig_plots(input_filename, output_dir, title=""):
     return this_trig_info
 
 
-if __name__ == "__main__":
-    do_these = [
-        ('workdir_ak4chs_jettrig/uhh2.AnalysisModuleRunner.DATA.Data_SingleMu_JetTrig.root', 'AK4 CHS'),
-        ('workdir_ak4puppi_jettrig/uhh2.AnalysisModuleRunner.DATA.Data_SingleMu_JetTrig.root', 'AK4 PUPPI'),
-        ('workdir_ak8chs_jettrig/uhh2.AnalysisModuleRunner.DATA.Data_SingleMu_JetTrig.root', 'AK8 CHS'),
-        ('workdir_ak8puppi_jettrig/uhh2.AnalysisModuleRunner.DATA.Data_SingleMu_JetTrig.root', 'AK8 PUPPI'),
-    ]
-
+def do_plots_and_comparisons(inputs):
     for filename, title in do_these:
         results = do_trig_plots(filename, os.path.dirname(filename), title)
         all_results[title] = results
@@ -384,3 +377,13 @@ if __name__ == "__main__":
     cms_text.SetTextSize(18)
     cms_text.Draw()
     c.SaveAs("comparingTriggers.%s" % OUTPUT_FMT)
+
+
+if __name__ == "__main__":
+    do_these = [
+        ('workdir_ak4chs_jettrig/uhh2.AnalysisModuleRunner.DATA.Data_SingleMu_JetTrig.root', 'AK4 CHS'),
+        ('workdir_ak4puppi_jettrig/uhh2.AnalysisModuleRunner.DATA.Data_SingleMu_JetTrig.root', 'AK4 PUPPI'),
+        ('workdir_ak8chs_jettrig/uhh2.AnalysisModuleRunner.DATA.Data_SingleMu_JetTrig.root', 'AK8 CHS'),
+        ('workdir_ak8puppi_jettrig/uhh2.AnalysisModuleRunner.DATA.Data_SingleMu_JetTrig.root', 'AK8 PUPPI'),
+    ]
+    do_plots_and_comparisons(do_these)
