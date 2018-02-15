@@ -146,7 +146,7 @@ def do_custom_rebin(hist, newname, lower_limit, factor):
     return hnew
 
 
-def do_trig_plots(input_filename, output_dir, title=""):
+def do_trig_plots(input_filename, output_dir, title="", eta_min=-2.4, eta_max=2.4, append=""):
     """Do efficiencies and fits for all triggers"""
     if not os.path.isfile(input_filename):
         raise IOError("No input file", input_filename)
@@ -162,7 +162,7 @@ def do_trig_plots(input_filename, output_dir, title=""):
     # Figure out bins for eta edges
     eta_min_bin, eta_max_bin = 0, h_all.GetNbinsY()+1
     yax = h_all.GetYaxis()
-    eta_min, eta_max = -2.4, 2.4
+
     eta_min_bin = yax.FindBin(eta_min)
     eta_max_bin = yax.FindBin(eta_max)
     # don't want to include the upper bin if the value is at the low edge
@@ -202,12 +202,13 @@ def do_trig_plots(input_filename, output_dir, title=""):
         info['heff'] = this_hpt_rebin.Clone(this_hpt_rebin.GetName() + "Eff")
         info['heff'].Sumw2()
         info['heff'].Divide(info['heff'], h_all_pt_rebin, 1, 1, "B")
-        info['heff'].SetTitle(info['heff'].GetTitle()+";Leading jet p_{T} [GeV];#epsilon")
+        new_title = info['heff'].GetTitle().replace("_v*", "")+" "+append
+        info['heff'].SetTitle(new_title+";Leading jet p_{T} [GeV];#epsilon")
         # info['heff'] = ROOT.TEfficiency(info['hpt'], h_all_pt)  # cant use as > 1 due to prescaling
 
     # return
     # plot pt distributions
-    hst = ROOT.THStack("hst", ";Jet p_{T} [GeV];N")
+    hst = ROOT.THStack("hst", append+";Jet p_{T} [GeV];N")
     leg = ROOT.TLegend(0.5, 0.5, 0.88, 0.88)
 
     cms_text = ROOT.TPaveText(0.14, 0.9, 0.4, 0.92, "NDC")
@@ -243,7 +244,7 @@ def do_trig_plots(input_filename, output_dir, title=""):
     cms_text.Draw()
     jet_text.Draw()
     c.SetLogy()
-    c.SaveAs(output_dir + "/pt_trig.%s" % (OUTPUT_FMT))
+    c.SaveAs(output_dir + "/pt_trig_%s.%s" % (append, OUTPUT_FMT))
 
     # plot effs
     for name, info in this_trig_info.iteritems():
@@ -252,7 +253,7 @@ def do_trig_plots(input_filename, output_dir, title=""):
         # c.SetLogy()
 
         info['heff'].SetMarkerStyle(22)
-        info['heff'].SetTitle(name)
+        # info['heff'].SetTitle(name)
         info['heff'].SetMaximum(1.5)
         info['heff'].SetMinimum(0)
         info['heff'].GetXaxis().SetRangeUser(0, min(6*info['threshold'], 2000))
@@ -312,7 +313,7 @@ def do_trig_plots(input_filename, output_dir, title=""):
         cms_text.Draw()
         jet_text.Draw()
 
-        c.SaveAs(output_dir + "/eff_%s.%s" % (name, OUTPUT_FMT))
+        c.SaveAs(output_dir + "/eff_%s_%s.%s" % (name, append, OUTPUT_FMT))
 
     # make graph of fully efficiency pt vs threshold
     thresholds = [info['threshold'] for info in this_trig_info.itervalues()]
@@ -341,42 +342,48 @@ def do_trig_plots(input_filename, output_dir, title=""):
     stats_box.SetY2NDC(0.38)
     cms_text.Draw()
     jet_text.Draw()
-    c.SaveAs(output_dir + "/fully_eff_pt_vs_threshold.%s" % OUTPUT_FMT)
+    c.SaveAs(output_dir + "/fully_eff_pt_vs_threshold_%s.%s" % (append, OUTPUT_FMT))
 
     return this_trig_info
 
 
 def do_plots_and_comparisons(inputs):
-    for filename, title in do_these:
-        results = do_trig_plots(filename, os.path.dirname(filename), title)
-        all_results[title] = results
+    regions = (
+        [-2.4, -1.6, "endcapMinus"],
+        [1.6, 2.4, "endcapPlus"],
+        [-1.6, 1.6, "barrel"]
+    )
+    for eta_min, eta_max, append in regions:
+        for filename, title in do_these:
+            results = do_trig_plots(filename, os.path.dirname(filename), title, eta_min, eta_max, append)
+            all_results[title] = results
 
-    mg = ROOT.TMultiGraph()
-    c = ROOT.TCanvas("cmg", "", 800, 600)
-    c.SetTicks(1, 1)
-    leg = ROOT.TLegend(0.7, 0.2, 0.88, 0.38)
-    colors = [ROOT.kBlack, ROOT.kBlue, ROOT.kRed, ROOT.kOrange+1]
-    for ind, (name, result) in enumerate(all_results.iteritems()):
-        thresholds = [info['threshold'] for info in result.itervalues()]
-        fully_eff_pt = [info['good_eff_pt'] for info in result.itervalues()]
-        g = ROOT.TGraph(len(thresholds), array('d', thresholds), array('d', fully_eff_pt))
-        g.SetMarkerColor(colors[ind])
-        g.SetMarkerStyle(20+ind)
-        g.SetLineColor(colors[ind])
-        mg.Add(g)
-        leg.AddEntry(g, name, "LP")
-    mg.SetTitle(";Trigger threshold [GeV];99% efficiency p_{T} [GeV]")
-    mg.Draw("ALP")
-    leg.Draw()
-    cms_text = ROOT.TPaveText(0.14, 0.9, 0.4, 0.92, "NDC")
-    cms_text.AddText("CMS Preliminary 35.864 fb^{-1}")
-    cms_text.SetFillStyle(0)
-    cms_text.SetBorderSize(0)
-    cms_text.SetTextAlign(ROOT.kHAlignLeft + ROOT.kVAlignBottom)
-    cms_text.SetTextFont(63)
-    cms_text.SetTextSize(18)
-    cms_text.Draw()
-    c.SaveAs("comparingTriggers.%s" % OUTPUT_FMT)
+        mg = ROOT.TMultiGraph()
+        c = ROOT.TCanvas("cmg"+append, "", 800, 600)
+        c.SetTicks(1, 1)
+        leg = ROOT.TLegend(0.7, 0.2, 0.88, 0.38)
+        colors = [ROOT.kBlack, ROOT.kBlue, ROOT.kRed, ROOT.kOrange+1]
+        for ind, (name, result) in enumerate(all_results.iteritems()):
+            thresholds = [info['threshold'] for info in result.itervalues()]
+            fully_eff_pt = [info['good_eff_pt'] for info in result.itervalues()]
+            g = ROOT.TGraph(len(thresholds), array('d', thresholds), array('d', fully_eff_pt))
+            g.SetMarkerColor(colors[ind])
+            g.SetMarkerStyle(20+ind)
+            g.SetLineColor(colors[ind])
+            mg.Add(g)
+            leg.AddEntry(g, name, "LP")
+        mg.SetTitle(";Trigger threshold [GeV];99% efficiency p_{T} [GeV]")
+        mg.Draw("ALP")
+        leg.Draw()
+        cms_text = ROOT.TPaveText(0.14, 0.9, 0.4, 0.92, "NDC")
+        cms_text.AddText("CMS Preliminary 35.864 fb^{-1}")
+        cms_text.SetFillStyle(0)
+        cms_text.SetBorderSize(0)
+        cms_text.SetTextAlign(ROOT.kHAlignLeft + ROOT.kVAlignBottom)
+        cms_text.SetTextFont(63)
+        cms_text.SetTextSize(18)
+        cms_text.Draw()
+        c.SaveAs("comparingTriggers_%s.%s" % (append, OUTPUT_FMT))
 
 
 if __name__ == "__main__":
