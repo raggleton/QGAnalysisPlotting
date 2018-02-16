@@ -95,12 +95,12 @@ trig_info['HLT_PFJet450'] = {
     'color': ROOT.kAzure+1,
     'fit_all': (lambda isFatJet: False) 
 }
-trig_info['HLT_PFJet500'] = {
-    'threshold': 500.,
-    'prescale': 1.00010464076,
-    'color': ROOT.kSpring-8,
-    'fit_all': (lambda isFatJet: False)
-}
+# trig_info['HLT_PFJet500'] = {
+#     'threshold': 500.,
+#     'prescale': 1.00010464076,
+#     'color': ROOT.kSpring-8,
+#     'fit_all': (lambda isFatJet: False)
+# }
 
 all_results = OrderedDict()
 
