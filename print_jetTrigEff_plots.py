@@ -95,18 +95,18 @@ trig_info['HLT_PFJet450'] = {
     'color': ROOT.kAzure+1,
     'fit_all': (lambda isFatJet: False) 
 }
-# trig_info['HLT_PFJet500'] = {
-#     'threshold': 500.,
-#     'prescale': 1.00010464076,
-#     'color': ROOT.kSpring-8,
-#     'fit_all': (lambda isFatJet: False)
-# }
+trig_info['HLT_PFJet500'] = {
+    'threshold': 500.,
+    'prescale': 1.00010464076,
+    'color': ROOT.kSpring-8,
+    'fit_all': (lambda isFatJet: False)
+}
 
 all_results = OrderedDict()
 
 def do_custom_rebin(hist, newname, lower_limit, factor):
     """Makes a rebinned histogram above lower_limit by grouping together bins with given factor"""
-    print "custom rebin:", lower_limit, factor
+    print("custom rebin:", lower_limit, factor)
     if factor == 1:
         return hist.Clone(newname)
 
@@ -115,7 +115,7 @@ def do_custom_rebin(hist, newname, lower_limit, factor):
 
     # figure out sensible lower_limit if not in list of bin edges
     if lower_limit not in bins:
-        print 'WARNING: lower_limit not found in bin edges'
+        print('WARNING: lower_limit not found in bin edges')
         # find the closest bin edge to the desired value
         ind = bisect_left(bins, lower_limit)
         if ind == 0:
@@ -128,14 +128,14 @@ def do_custom_rebin(hist, newname, lower_limit, factor):
             lower_limit = lower
         else:
             lower_limit = higher
-        print "Adjusted lower_limit to nearest value =", lower_limit
+        print("Adjusted lower_limit to nearest value =", lower_limit)
 
     # ensure integer multiple of factor bins to be regrouped
     rebin_remainder = (nbins-bins.index(lower_limit)) % factor
     if rebin_remainder != 0:
-        print "WARNING: factor must be a divisor with no remainder. nbins: ", nbins-bins.index(lower_limit), "factor:", factor
+        print("WARNING: factor must be a divisor with no remainder. nbins: ", nbins-bins.index(lower_limit), "factor:", factor)
         lower_limit = bins[bins.index(lower_limit)+rebin_remainder]
-        print "Will adjust lower_limit to higher value to make this so. New lower_limit = ", lower_limit
+        print("Will adjust lower_limit to higher value to make this so. New lower_limit = ", lower_limit)
 
     lower_limit_ind = bins.index(lower_limit)
     # original bins at low x
@@ -183,7 +183,7 @@ def do_trig_plots(input_filename, output_dir, title="", eta_min=-2.4, eta_max=2.
         info['h2d'] = h2d
         info['hpt'] = h2d.ProjectionX(name+"PT", eta_min_bin, eta_max_bin)
         info['hpt'].Sumw2()
-        info['hpt'].Scale(info['prescale']/this_trig_info.values()[-1]['prescale'])  # normalise it
+        info['hpt'].Scale(info['prescale']/list(this_trig_info.values())[-1]['prescale'])  # normalise it
         info['hpt'].SetLineColor(info['color'])
         info['hpt'].SetMarkerColor(info['color'])
 
