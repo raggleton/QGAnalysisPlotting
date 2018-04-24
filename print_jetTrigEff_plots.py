@@ -85,7 +85,7 @@ trig_info['HLT_PFJet320'] = {
 }
 trig_info['HLT_PFJet400'] = {
     'threshold': 400.,
-    'prescale': 2.38456,
+    'prescale': 3*2.38456,
     'color': ROOT.kOrange-6,
     'fit_all': (lambda isFatJet: not isFatJet)
 }
