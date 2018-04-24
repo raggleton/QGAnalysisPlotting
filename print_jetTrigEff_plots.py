@@ -146,13 +146,13 @@ def do_custom_rebin(hist, newname, lower_limit, factor):
     return hnew
 
 
-def do_trig_plots(input_filename, output_dir, title="", eta_min=-2.4, eta_max=2.4, append=""):
+def do_trig_plots_vs_singlemu(input_filename, output_dir, title="", eta_min=-2.4, eta_max=2.4, append=""):
     """Do efficiencies and fits for all triggers"""
     if not os.path.isfile(input_filename):
         raise IOError("No input file", input_filename)
 
     f = ROOT.TFile(input_filename)
-    dir_name = "PFJet"
+    dir_name = "SingleMuRef"
 
     is_fat_jet = "AK8" in input_filename.upper()
 
@@ -244,7 +244,7 @@ def do_trig_plots(input_filename, output_dir, title="", eta_min=-2.4, eta_max=2.
     cms_text.Draw()
     jet_text.Draw()
     c.SetLogy()
-    c.SaveAs(output_dir + "/pt_trig_%s.%s" % (append, OUTPUT_FMT))
+    c.SaveAs(output_dir + "/pt_trig_%s_new.%s" % (append, OUTPUT_FMT))
 
     # plot effs
     for name, info in this_trig_info.iteritems():
@@ -313,77 +313,338 @@ def do_trig_plots(input_filename, output_dir, title="", eta_min=-2.4, eta_max=2.
         cms_text.Draw()
         jet_text.Draw()
 
-        c.SaveAs(output_dir + "/eff_%s_%s.%s" % (name, append, OUTPUT_FMT))
+        c.SaveAs(output_dir + "/eff_%s_%s_new.%s" % (name, append, OUTPUT_FMT))
 
     # make graph of fully efficiency pt vs threshold
-    thresholds = [info['threshold'] for info in this_trig_info.itervalues()]
-    fully_eff_pt = [info['good_eff_pt'] for info in this_trig_info.itervalues()]
-    gr = ROOT.TGraph(len(thresholds), array('d', thresholds), array('d', fully_eff_pt))
-    c = ROOT.TCanvas("cgr", "", 800, 600)
-    c.SetTicks(1, 1)
-    gr.SetTitle(";Trigger threshold [GeV];99% efficiency p_{T} [GeV]")
-    gr.SetMarkerStyle(20)
-    # do a pol1 fit
-    thres_fit = ROOT.TF1("f1", "pol1", thresholds[0], thresholds[-1])
-    thres_fit.SetLineColor(ROOT.kRed)
-    thres_fit.SetLineWidth(1)
-    thres_fit.SetLineStyle(2)
-    status = gr.Fit(thres_fit, "RSE")
-    gr.Draw("ALP")
-    c.Modified()
-    c.Update()
-    stats_box = gr.FindObject("stats")
-    stats_box.SetFillColor(ROOT.kWhite)
-    stats_box.SetBorderSize(0)
-    stats_box.SetFillStyle(0)
-    stats_box.SetX1NDC(0.62)
-    stats_box.SetX2NDC(0.88)
-    stats_box.SetY1NDC(0.25)
-    stats_box.SetY2NDC(0.38)
-    cms_text.Draw()
-    jet_text.Draw()
-    c.SaveAs(output_dir + "/fully_eff_pt_vs_threshold_%s.%s" % (append, OUTPUT_FMT))
+    # thresholds = [info['threshold'] for info in this_trig_info.itervalues()]
+    # fully_eff_pt = [info['good_eff_pt'] for info in this_trig_info.itervalues()]
+    # gr = ROOT.TGraph(len(thresholds), array('d', thresholds), array('d', fully_eff_pt))
+    # c = ROOT.TCanvas("cgr", "", 800, 600)
+    # c.SetTicks(1, 1)
+    # gr.SetTitle(";Trigger threshold [GeV];99% efficiency p_{T} [GeV]")
+    # gr.SetMarkerStyle(20)
+    # # do a pol1 fit
+    # thres_fit = ROOT.TF1("f1", "pol1", thresholds[0], thresholds[-1])
+    # thres_fit.SetLineColor(ROOT.kRed)
+    # thres_fit.SetLineWidth(1)
+    # thres_fit.SetLineStyle(2)
+    # status = gr.Fit(thres_fit, "RSE")
+    # gr.Draw("ALP")
+    # c.Modified()
+    # c.Update()
+    # stats_box = gr.FindObject("stats")
+    # stats_box.SetFillColor(ROOT.kWhite)
+    # stats_box.SetBorderSize(0)
+    # stats_box.SetFillStyle(0)
+    # stats_box.SetX1NDC(0.62)
+    # stats_box.SetX2NDC(0.88)
+    # stats_box.SetY1NDC(0.25)
+    # stats_box.SetY2NDC(0.38)
+    # cms_text.Draw()
+    # jet_text.Draw()
+    # c.SaveAs(output_dir + "/fully_eff_pt_vs_threshold_%s.%s" % (append, OUTPUT_FMT))
 
     return this_trig_info
 
 
-def do_plots_and_comparisons(inputs):
+def do_trig_plots_vs_prevjet(input_filename, output_dir, title="", eta_min=-2.4, eta_max=2.4, append=""):
+    """Do efficiencies and fits for all triggers"""
+    if not os.path.isfile(input_filename):
+        raise IOError("No input file", input_filename)
+
+    f = ROOT.TFile(input_filename)
+
+    is_fat_jet = "AK8" in input_filename.upper()
+
+    this_trig_info = deepcopy(trig_info)
+
+    for denom_name, num_name in zip(list(this_trig_info.keys())[:-1], list(this_trig_info.keys())[1:]):
+        denom_dict = this_trig_info[denom_name]
+        num_dict = this_trig_info[num_name]
+        print("Doing", num_name, "against", denom_name)
+
+        # for each trig, jet 2d pt vs eta hist, project into 1D pt distribution
+        # then create efficiency hist using previous jet hist hist
+        rebin_factor = 2 if num_dict['threshold'] > 100 else 2  # rough rebinning across all pt
+        # rebin_factor = 1
+
+        # denominator
+        dir_name = denom_name+"_v*Ref"
+        h2d_denom = f.Get(dir_name + "/pt_vs_eta_all")
+        
+        # Figure out bins for eta edges
+        eta_min_bin, eta_max_bin = 0, h2d_denom.GetNbinsY()+1
+        yax = h2d_denom.GetYaxis()
+
+        eta_min_bin = yax.FindBin(eta_min)
+        eta_max_bin = yax.FindBin(eta_max)
+        # don't want to include the upper bin if the value is at the low edge
+        if yax.GetBinLowEdge(eta_max_bin) == eta_max:
+            eta_max_bin -= 1
+        
+        last_prescale = float(list(this_trig_info.values())[-1]['prescale'])
+
+        hpt_denom = h2d_denom.ProjectionX(denom_name+"PT", eta_min_bin, eta_max_bin)
+        hpt_denom.Sumw2()
+        hpt_denom.Scale(denom_dict['prescale']/last_prescale)  # normalise it
+        hpt_denom.SetLineColor(num_dict['color'])
+        hpt_denom.SetMarkerColor(num_dict['color'])
+        denom_dict['hpt'] = hpt_denom
+
+        this_hpt_denom = hpt_denom.Clone(hpt_denom.GetName()+"Clone").Rebin(rebin_factor)
+
+        # rebin the jet pt hist at higher pt where it plateaus
+        higher_pt_rebin_factor = 10
+        higher_pt_rebin_limit = num_dict['threshold'] * 1.4
+        this_hpt_denom_rebin = do_custom_rebin(this_hpt_denom, this_hpt_denom.GetName()+"CustomRebin", higher_pt_rebin_limit, higher_pt_rebin_factor)
+        # this_hpt_denom_rebin = this_hpt_denom
+
+        # numerator (next trig)
+        h2d_num = f.Get(dir_name + "/pt_vs_eta_%s_v*" % num_name)
+        hpt_num = h2d_num.ProjectionX(num_name+"PTCond"+dir_name, eta_min_bin, eta_max_bin)
+        hpt_num.Sumw2()
+
+        hpt_num.Scale(num_dict['prescale']/last_prescale)  # normalise it
+        hpt_num.SetLineColor(num_dict['color'])
+        hpt_num.SetMarkerColor(num_dict['color'])
+        num_dict['hpt_cond'] = hpt_num
+        # if 'hpt' not in this_trig_info[num_name]:
+        #     this_trig_info[num_name]['hpt'] = hpt_num
+        # else:
+            # print('already done hpt')
+
+        this_hpt_num = hpt_num.Clone(hpt_num.GetName()+"Clone").Rebin(rebin_factor)
+
+        # rebin the jet pt hist at higher pt where it plateaus
+        this_hpt_num_rebin = do_custom_rebin(this_hpt_num, this_hpt_num.GetName()+"CustomRebin", higher_pt_rebin_limit, higher_pt_rebin_factor)
+        # this_hpt_num_rebin = this_hpt_num
+
+        num_dict['heff'] = this_hpt_num_rebin.Clone(this_hpt_num_rebin.GetName() + "Eff")
+        num_dict['heff'].Sumw2()
+        # num_dict['grEff'] = ROOT.TGraphAsymmErrors(this_hpt_num_rebin, this_hpt_denom_rebin)
+        
+        print("Creating efficiency from", num_dict['heff'].GetName(), "and", this_hpt_denom_rebin.GetName())
+        num_dict['heff'].Divide(num_dict['heff'], this_hpt_denom_rebin, 1, 1, "B")
+        new_title = num_dict['heff'].GetTitle().replace("_v*", "")+" "+append
+        num_dict['heff'].SetTitle(new_title+";Leading jet p_{T} [GeV];#epsilon")
+        
+        # new_title = num_dict['grEff'].GetTitle().replace("_v*", "")+" "+append
+        # num_dict['grEff'].SetTitle(new_title+";Leading jet p_{T} [GeV];#epsilon")
+
+    # return
+    # plot pt distributions
+    hst = ROOT.THStack("hst", append+";Jet p_{T} [GeV];N")
+    leg = ROOT.TLegend(0.5, 0.5, 0.88, 0.88)
+
+    cms_text = ROOT.TPaveText(0.14, 0.9, 0.4, 0.92, "NDC")
+    cms_text.AddText("CMS Preliminary 35.864 fb^{-1}")
+    cms_text.SetFillStyle(0)
+    cms_text.SetBorderSize(0)
+    cms_text.SetTextAlign(ROOT.kHAlignLeft + ROOT.kVAlignBottom)
+    cms_text.SetTextFont(63)
+    cms_text.SetTextSize(18)
+
+    jet_text = ROOT.TPaveText(0.6, 0.9, 0.9, 0.92, "NDC")
+    jet_text.AddText(title)
+    jet_text.SetFillStyle(0)
+    jet_text.SetBorderSize(0)
+    jet_text.SetTextAlign(ROOT.kHAlignRight + ROOT.kVAlignBottom)
+    jet_text.SetTextFont(63)
+    jet_text.SetTextSize(18)
+
+    rebin_factor = 5
+    for name, info in this_trig_info.items():
+        print(info)
+        if 'hpt' in info:
+            hst.Add(info['hpt'].Rebin(rebin_factor))
+            leg.AddEntry(info['hpt'], name, "L")
+
+    c = ROOT.TCanvas("c1", "", 800, 600)
+    c.SetTicks(1, 1)
+    hst.Draw("HISTE NOSTACK")
+    # hst.GetXaxis().SetRangeUser(0, 600)
+    hst.SetMinimum(10**2)
+    leg.Draw()
+    cms_text.Draw()
+    jet_text.Draw()
+    c.SetLogy()
+    c.SaveAs(output_dir + "/pt_trig_%s_prevJet.%s" % (append, OUTPUT_FMT))
+
+    c_cond = ROOT.TCanvas("c1_cond", "", 800, 600)
+    hst_cond = ROOT.THStack("hst_cond", append+";Jet p_{T} [GeV];N")
+    leg = ROOT.TLegend(0.5, 0.5, 0.88, 0.88)
+    rebin_factor = 5
+    for name, info in this_trig_info.items():
+        print(info)
+        if 'hpt_cond' in info:
+            hst_cond.Add(info['hpt_cond'].Rebin(rebin_factor))
+            leg.AddEntry(info['hpt_cond'], name, "L")
+
+    c_cond.SetTicks(1, 1)
+    hst_cond.Draw("HISTE NOSTACK")
+    # hst_cond.GetXaxis().SetRangeUser(0, 600)
+    hst_cond.SetMinimum(10**2)
+    leg.Draw()
+    cms_text.Draw()
+    jet_text.Draw()
+    c_cond.SetLogy()
+    c_cond.SaveAs(output_dir + "/pt_trig_%s_prevJet_cond.%s" % (append, OUTPUT_FMT))
+
+
+    return
+
+    # plot effs
+    for ind, (name, info) in enumerate(this_trig_info.items()):
+        # skip first trigger as no previous one to compare to
+        if ind == 0:
+            continue
+
+        c = ROOT.TCanvas("ceff"+name, "", 800, 600)
+        c.SetTicks(1, 1)
+        c.SetLogy()
+
+        info['heff'].SetMarkerStyle(22)
+        # info['heff'].SetTitle(name)
+        # info['heff'].SetMaximum(1.5)
+        # info['heff'].SetMinimum(0)
+        info['heff'].GetXaxis().SetRangeUser(0, min(6*info['threshold'], 2000))
+        info['heff'].Draw()
+        # info['grEff'].Draw()
+
+        # Do fit
+        lower_threshold = info['threshold']/2.
+        higher_threshold = info['threshold']*3.
+        eff_fit = ROOT.TF1("eff_%s" % name, '[3]*([0] + 0.5 * (1-[0]) * (1 + erf((x-[1])/[2])))', lower_threshold, higher_threshold)
+        eff_fit.SetParName(0, 'a')
+        eff_fit.SetParName(1, 'mu')
+        eff_fit.SetParLimits(1, lower_threshold, higher_threshold)  # enforce +ve parameter values
+        eff_fit.SetParName(2, 'sigma')
+        eff_fit.SetParLimits(2, 5, 500)
+        eff_fit.SetParName(3, 'N')
+        eff_fit.SetParLimits(3, 0.00001, 100)
+        eff_fit.SetLineColor(ROOT.kBlack)
+        eff_fit.SetLineWidth(1)
+        eff_fit.SetParameter('a', 0)
+        eff_fit.SetParameter('mu', info['threshold'])
+        eff_fit.SetParameter('sigma', info['threshold']/10)
+        eff_fit.SetParameter('N', 1)
+        eff_fit.SetNpx(5000)
+        fit_result = info['heff'].Fit(eff_fit, 'RSE')
+        info['heff'].Draw("")
+
+        ROOT.gPad.Modified()
+        ROOT.gPad.Update()
+
+        # # Update fit by increasing lower limit to really capture the high efficiency region
+        # # if not info.get("fit_all", lambda x: True)(is_fat_jet):
+        fit_factor = 0.4 if is_fat_jet else 0.4
+        eff_fit.SetRange(eff_fit.GetX(fit_factor*eff_fit.GetParameter("N")), higher_threshold*1.)
+        fit_result = info['heff'].Fit(eff_fit, 'RSEM')
+        ROOT.gPad.Modified()
+        ROOT.gPad.Update()
+
+        # Draw fit stats
+        stats_box = info['heff'].FindObject("stats")
+        stats_box.SetFillColor(ROOT.kWhite)
+        stats_box.SetBorderSize(0)
+        stats_box.SetFillStyle(0)
+        stats_box.SetX1NDC(0.62)
+        stats_box.SetX2NDC(0.88)
+        stats_box.SetY1NDC(0.75)
+        stats_box.SetY2NDC(0.88)
+
+        # Add in info about 99% relative efficiency
+        good_eff = 0.99 * eff_fit.GetParameter("N")
+        good_eff_pt = eff_fit.GetX(good_eff)
+        info['good_eff_pt'] = good_eff_pt
+        eff_text = ROOT.TPaveText(0.63, 0.65, 0.88, 0.73, "NDC")
+        eff_text.AddText("#epsilon = 0.99 #times %.3f" % eff_fit.GetParameter("N"))
+        eff_text.AddText("@ p_{T} = %3.f GeV" % good_eff_pt)
+        eff_text.SetFillStyle(0)
+        eff_text.SetBorderSize(0)
+        eff_text.SetTextAlign(ROOT.kHAlignLeft + ROOT.kVAlignBottom)
+        eff_text.Draw()
+
+        cms_text.Draw()
+        jet_text.Draw()
+
+        c.SaveAs(output_dir + "/eff_prevJet_%s_%s.%s" % (name, append, OUTPUT_FMT))
+
+    # make graph of fully efficiency pt vs threshold
+    # thresholds = [info['threshold'] for info in this_trig_info.itervalues()]
+    # fully_eff_pt = [info['good_eff_pt'] for info in this_trig_info.itervalues()]
+    # gr = ROOT.TGraph(len(thresholds), array('d', thresholds), array('d', fully_eff_pt))
+    # c = ROOT.TCanvas("cgr", "", 800, 600)
+    # c.SetTicks(1, 1)
+    # gr.SetTitle(";Trigger threshold [GeV];99% efficiency p_{T} [GeV]")
+    # gr.SetMarkerStyle(20)
+    # # do a pol1 fit
+    # thres_fit = ROOT.TF1("f1", "pol1", thresholds[0], thresholds[-1])
+    # thres_fit.SetLineColor(ROOT.kRed)
+    # thres_fit.SetLineWidth(1)
+    # thres_fit.SetLineStyle(2)
+    # status = gr.Fit(thres_fit, "RSE")
+    # gr.Draw("ALP")
+    # c.Modified()
+    # c.Update()
+    # stats_box = gr.FindObject("stats")
+    # stats_box.SetFillColor(ROOT.kWhite)
+    # stats_box.SetBorderSize(0)
+    # stats_box.SetFillStyle(0)
+    # stats_box.SetX1NDC(0.62)
+    # stats_box.SetX2NDC(0.88)
+    # stats_box.SetY1NDC(0.25)
+    # stats_box.SetY2NDC(0.38)
+    # cms_text.Draw()
+    # jet_text.Draw()
+    # c.SaveAs(output_dir + "/fully_eff_prevJet_pt_vs_threshold_%s.%s" % (append, OUTPUT_FMT))
+
+    return this_trig_info
+
+
+def do_plots_and_comparisons(inputs, vs="SingleMu"):
     regions = (
-        [-2.4, -1.6, "endcapMinus"],
-        [1.6, 2.4, "endcapPlus"],
-        [-1.6, 1.6, "barrel"]
+        [-4.7, 4.7, "all"],
+        # [-2.4, 2.4, "center"],
+        # [-2.4, -1.6, "endcapMinus"],
+        # [1.6, 2.4, "endcapPlus"],
+        # [-1.6, 1.6, "barrel"]
     )
     for eta_min, eta_max, append in regions:
         for filename, title in do_these:
-            results = do_trig_plots(filename, os.path.dirname(filename), title, eta_min, eta_max, append)
-            all_results[title] = results
+            if vs == "SingleMu": 
+                results = do_trig_plots_vs_singlemu(filename, os.path.dirname(filename), title, eta_min, eta_max, append)
+                all_results[title] = results
+            elif vs == "PrevJet":
+                results = do_trig_plots_vs_prevjet(filename, os.path.dirname(filename), title, eta_min, eta_max, append)
+                all_results[title] = results
 
-        mg = ROOT.TMultiGraph()
-        c = ROOT.TCanvas("cmg"+append, "", 800, 600)
-        c.SetTicks(1, 1)
-        leg = ROOT.TLegend(0.7, 0.2, 0.88, 0.38)
-        colors = [ROOT.kBlack, ROOT.kBlue, ROOT.kRed, ROOT.kOrange+1]
-        for ind, (name, result) in enumerate(all_results.iteritems()):
-            thresholds = [info['threshold'] for info in result.itervalues()]
-            fully_eff_pt = [info['good_eff_pt'] for info in result.itervalues()]
-            g = ROOT.TGraph(len(thresholds), array('d', thresholds), array('d', fully_eff_pt))
-            g.SetMarkerColor(colors[ind])
-            g.SetMarkerStyle(20+ind)
-            g.SetLineColor(colors[ind])
-            mg.Add(g)
-            leg.AddEntry(g, name, "LP")
-        mg.SetTitle(";Trigger threshold [GeV];99% efficiency p_{T} [GeV]")
-        mg.Draw("ALP")
-        leg.Draw()
-        cms_text = ROOT.TPaveText(0.14, 0.9, 0.4, 0.92, "NDC")
-        cms_text.AddText("CMS Preliminary 35.864 fb^{-1}")
-        cms_text.SetFillStyle(0)
-        cms_text.SetBorderSize(0)
-        cms_text.SetTextAlign(ROOT.kHAlignLeft + ROOT.kVAlignBottom)
-        cms_text.SetTextFont(63)
-        cms_text.SetTextSize(18)
-        cms_text.Draw()
-        c.SaveAs("comparingTriggers_%s.%s" % (append, OUTPUT_FMT))
+        # mg = ROOT.TMultiGraph()
+        # c = ROOT.TCanvas("cmg"+append, "", 800, 600)
+        # c.SetTicks(1, 1)
+        # leg = ROOT.TLegend(0.7, 0.2, 0.88, 0.38)
+        # colors = [ROOT.kBlack, ROOT.kBlue, ROOT.kRed, ROOT.kOrange+1]
+        # for ind, (name, result) in enumerate(all_results.iteritems()):
+        #     thresholds = [info['threshold'] for info in result.itervalues()]
+        #     fully_eff_pt = [info['good_eff_pt'] for info in result.itervalues()]
+        #     g = ROOT.TGraph(len(thresholds), array('d', thresholds), array('d', fully_eff_pt))
+        #     g.SetMarkerColor(colors[ind])
+        #     g.SetMarkerStyle(20+ind)
+        #     g.SetLineColor(colors[ind])
+        #     mg.Add(g)
+        #     leg.AddEntry(g, name, "LP")
+        # mg.SetTitle(";Trigger threshold [GeV];99% efficiency p_{T} [GeV]")
+        # mg.Draw("ALP")
+        # leg.Draw()
+        # cms_text = ROOT.TPaveText(0.14, 0.9, 0.4, 0.92, "NDC")
+        # cms_text.AddText("CMS Preliminary 35.864 fb^{-1}")
+        # cms_text.SetFillStyle(0)
+        # cms_text.SetBorderSize(0)
+        # cms_text.SetTextAlign(ROOT.kHAlignLeft + ROOT.kVAlignBottom)
+        # cms_text.SetTextFont(63)
+        # cms_text.SetTextSize(18)
+        # cms_text.Draw()
+        # c.SaveAs("comparingTriggers_%s.%s" % (append, OUTPUT_FMT))
 
 
 if __name__ == "__main__":
@@ -393,4 +654,11 @@ if __name__ == "__main__":
         ('workdir_ak8chs_jettrig/uhh2.AnalysisModuleRunner.DATA.Data_SingleMu_JetTrig.root', 'AK8 CHS'),
         ('workdir_ak8puppi_jettrig/uhh2.AnalysisModuleRunner.DATA.Data_SingleMu_JetTrig.root', 'AK8 PUPPI'),
     ]
-    do_plots_and_comparisons(do_these)
+    do_these = [
+        ('workdir_ak4chs_jettrig/uhh2.AnalysisModuleRunner.DATA.Data_JetHT.root', 'AK4 CHS'),
+        # ('workdir_ak4puppi_jettrig/uhh2.AnalysisModuleRunner.DATA.Data_JetHT.root', 'AK4 PUPPI'),
+        # ('workdir_ak8chs_jettrig/uhh2.AnalysisModuleRunner.DATA.Data_JetHT.root', 'AK8 CHS'),
+        # ('workdir_ak8puppi_jettrig/uhh2.AnalysisModuleRunner.DATA.Data_JetHT.root', 'AK8 PUPPI'),
+    ]
+    # do_plots_and_comparisons(do_these, vs="SingleMu")
+    do_plots_and_comparisons(do_these, vs="PrevJet")
