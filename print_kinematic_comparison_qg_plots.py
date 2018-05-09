@@ -42,16 +42,20 @@ def get_list_of_obj(directory):
     return [x.GetName() for x in key_list]
 
 
-def do_all_1D_projection_plots_in_dir(directories, output_dir, components_styles_dicts=None, 
-                                      draw_opts="NOSTACK HISTE", do_ratio=True, 
-                                      normalise_hists=True, filter_noisy=True):
+def do_all_1D_projection_plots_in_dir(directories, output_dir, components_styles_dicts=None,
+                                      draw_opts="NOSTACK HISTE", do_ratio=True,
+                                      normalise_hists=True, filter_noisy=True,
+                                      find_best_purity=False, signal_mask=None):
     """
     Given a set of TDirs, loop over all 2D hists, do projection hists for chosen bins, and plot all TDir contributions on a canvas for comparison.
 
-    components_styles_dicts should be a list of style dicts, one for each directory/contribution to a plot. 
+    components_styles_dicts should be a list of style dicts, one for each directory/contribution to a plot.
     This should include label for this component.
 
     filter_noisy aims to remove low stats/large error components that muddle things up
+
+    find_best_purity aism to find cut for best purity.
+    signal_mask should be a list of bools to specify which directories are signal
     """
     if len(directories) != len(components_styles_dicts):
         raise IndexError("Need same number of style dicts and directories")
@@ -76,13 +80,17 @@ def do_all_1D_projection_plots_in_dir(directories, output_dir, components_styles
         if not isinstance(objs[0], (ROOT.TH2F, ROOT.TH2D, ROOT.TH2I)):
             print obj_name, "is not a TH2"
             continue
-        
+
         if "flav" in obj_name:
             continue
 
-        if obj_name in ['eta_jet1_vs_eta_jet2', 'phi_jet1_vs_pt_jet1', 'phi_jet2_vs_pt_jet1', 
-                        'reliso_mu1_vs_pt_jet1', 'reliso_mu2_vs_pt_jet1', 'dphi_mumu_jet1_vs_pt_jet1', 
-                        'dphi_mumu_vs_pt_jet1', 'pt_jet1_z_pt_jet2_z_ratio']:
+        if obj_name in [
+                        # 'eta_jet1_vs_eta_jet2',
+                        'phi_jet1_vs_pt_jet1', 'phi_jet2_vs_pt_jet1',
+                        'reliso_mu1_vs_pt_jet1', 'reliso_mu2_vs_pt_jet1',
+                        'dphi_mumu_jet1_vs_pt_jet1',
+                        'dphi_mumu_vs_pt_jet1',
+                        'pt_jet1_z_pt_jet2_z_ratio']:
             continue
 
         for pt_min, pt_max in pt_bins:
@@ -90,28 +98,34 @@ def do_all_1D_projection_plots_in_dir(directories, output_dir, components_styles
             rebin = 1
             # exceptions...why didn't i pick the same number of bins...
             do_not_rebin = any([
-                "n_jets" in obj_name, 
-                "n_mu" in obj_name, 
-                "met_sig" in obj_name, 
-                obj_name.startswith('dphi_mumu'), 
-                obj_name.startswith('pt_jet3_frac'), 
+                "n_jets" in obj_name,
+                "n_mu" in obj_name,
+                "met_sig" in obj_name,
+                obj_name.startswith('dphi_mumu'),
+                obj_name.startswith('pt_jet3_frac'),
                 obj_name.startswith('pt_jet1_jet2_ratio'),
-                obj_name.startswith('pt_jet2_z_ratio')
+                obj_name.startswith('pt_jet1_z_ratio'),
+                obj_name.startswith('pt_jet2_z_ratio'),
+                obj_name.startswith('dphi_jet1_z_vs_pt_jet1'),
+                # obj_name.startswith('m_jj'),
             ])
             if not do_not_rebin:
                 if objs[0].GetNbinsX() % 5 == 0:
                     rebin = 5
                 elif objs[0].GetNbinsX() % 4 == 0:
-                    rebin = 4
+                    rebin = 2
                 elif objs[0].GetNbinsX() % 3 == 0:
                     rebin = 3
-            contributions = [Contribution(qgg.get_projection_plot(ob, pt_min, pt_max), 
-                                          normalise_hist=normalise_hists, rebin_hist=rebin, **csd) 
-                             for ob, csd in zip(objs, components_styles_dicts)]
+            if obj_name.startswith("m_jj"):
+                rebin = 2
+            hists = [qgg.get_projection_plot(ob, pt_min, pt_max) for ob in objs]
+            # need the clone in here as unnormalised hists are used for purity/eff scans
+            contributions = [Contribution(hist.Clone(hist.GetName()+"Clone"), normalise_hist=normalise_hists, rebin_hist=rebin, **csd)
+                             for hist, csd in zip(hists, components_styles_dicts)]
 
             if len(contributions) == 0:
                 continue
-            # Ignore empty objs
+            # Ignore if all empty objs
             total_entries = sum(c.obj.GetEntries() for c in contributions)
             if total_entries == 0:
                 continue
@@ -139,37 +153,180 @@ def do_all_1D_projection_plots_in_dir(directories, output_dir, components_styles
                         mean_errs.append(9999999)
                         max_over_mean_errs.append(9999999)
                         rel_err_vars.append(9999999)
-                        
+
                 ref_mean_err = np.median(mean_errs)
                 ref_rel_err_var = np.median(rel_err_vars)
                 # print '-'*20
                 # print 'mean mean err', ref_mean_err
                 # print 'mean var', ref_rel_err_var
-                contributions = [cont for cont, merr, rev, mom 
-                                 in zip(contributions, mean_errs, rel_err_vars, max_over_mean_errs) 
+                contributions = [cont for cont, merr, rev, mom
+                                 in zip(contributions, mean_errs, rel_err_vars, max_over_mean_errs)
                                  if (merr < 2.5*ref_mean_err) and (rev < 5*ref_rel_err_var or mom<5)]
+
+            purity_text = ROOT.TPaveText(0.6, 0.4, 0.95, 0.6, "NDC")
+            purity_text.SetFillColor(ROOT.kWhite)
+            purity_text.SetFillStyle(0)
+            purity_text.SetLineWidth(0)
+            purity_text.SetTextAlign(ROOT.kHAlignLeft+ROOT.kVAlignTop)
+
+            if find_best_purity:
+                if not signal_mask:
+                    raise RuntimeError("Need signal_mask to find purity")
+                if len(signal_mask) != len(directories):
+                    raise RuntimeError("signal_mask must be same length as directories")
+
+                signal_hists = [h for h, mask in zip(hists, signal_mask) if mask]
+                bkg_hists = [h for h, mask in zip(hists, signal_mask) if not mask]
+
+                signal_hist = signal_hists[0].Clone("Signal")
+                if len(signal_hists) > 1:
+                    for h in signal_hists[1:]:
+                        signal_hist.Add(h)
+
+                bkg_hist = bkg_hists[0].Clone("Background")
+                if len(bkg_hists) > 1:
+                    for h in bkg_hists[1:]:
+                        bkg_hist.Add(h)
+
+                signal = signal_hist.Integral()
+                bkg = bkg_hist.Integral()
+                starting_purity = 1. * signal / (signal+bkg)
+                starting_purity_x_eff = starting_purity
+
+                signal_cumul = signal_hist.GetCumulative()
+                bkg_cumul = bkg_hist.GetCumulative()
+
+                best_purity = starting_purity
+                best_purity_x_eff = 1*starting_purity
+                best_purity_x_eff = 0
+                purity_cut_value, purity_cut_type, purity_bin_ind = None, None, None
+                purity_x_eff_cut_value, purity_x_eff_cut_type, purity_x_eff_bin_ind = None, None, None
+
+                purity_x_effs_1, cut_vals_1 = [], []
+                purity_x_effs_2, cut_vals_2 = [], []
+
+                puritys_1, effs_1 = [], []
+                puritys_2, effs_2 = [], []
+
+                total_s = signal_hist.Integral()
+                # try cut lower than X, see if any cut improves upon starting purity
+                for i in range(1, signal_cumul.GetNbinsX()+1):
+                    s = signal_cumul.GetBinContent(i)
+                    b = bkg_cumul.GetBinContent(i)
+                    if s == 0 and b == 0:
+                        this_purity = 0
+                        this_purity_x_eff = 0
+                    else:
+                        this_purity = s / (s+b)
+                        if s > total_s*1.00001:
+                            raise RuntimeError("s = %f, total_s = %f, something terribly wrong" % (s, total_s))
+                        this_eff = s/total_s
+                        this_purity_x_eff = this_eff * this_purity
+                        cut_vals_1.append(signal_cumul.GetBinLowEdge(i+1))
+                        purity_x_effs_1.append(this_purity_x_eff)
+                        effs_1.append(this_eff)
+                        puritys_1.append(this_purity)
+
+                    # print "this_purity =", this_purity
+                    if this_purity > best_purity:
+                        purity_cut_type = "<"
+                        purity_bin_ind = i
+                        purity_cut_value = signal_cumul.GetBinLowEdge(i+1)
+                        best_purity = this_purity
+                    if this_purity_x_eff > best_purity_x_eff:
+                        best_purity_x_eff = this_purity_x_eff
+                        purity_x_eff_cut_type = "<"
+                        purity_x_eff_bin_ind = i
+                        purity_x_eff_cut_value = signal_cumul.GetBinLowEdge(i+1)
+
+                # try cut below, see if any cut improves upon starting purity
+                signal_cumul_rev = signal_hist.GetCumulative(False)
+                bkg_cumul_rev = bkg_hist.GetCumulative(False)
+                for i in range(1, signal_cumul_rev.GetNbinsX()+1):
+                    s = signal_cumul_rev.GetBinContent(i)
+                    b = bkg_cumul_rev.GetBinContent(i)
+                    if s == 0 and b == 0:
+                        this_purity = 0
+                        this_eff = 0
+                    else:
+                        this_purity = s / (s+b)
+                        if s > total_s*1.00001:
+                            raise RuntimeError("s = %f, total_s = %f, something terribly wrong" % (s, total_s))
+                        this_eff = (s / total_s)
+                        this_purity_x_eff = this_eff * this_purity
+                        cut_vals_2.append(signal_cumul_rev.GetBinLowEdge(i+1))
+                        purity_x_effs_2.append(this_purity_x_eff)
+                        effs_2.append(this_eff)
+                        puritys_2.append(this_purity)
+
+                    # print "this_purity =", this_purity
+                    if this_purity > best_purity:
+                        purity_cut_type = ">"
+                        purity_bin_ind = i
+                        purity_cut_value = signal_cumul_rev.GetBinLowEdge(i)
+                        best_purity = this_purity
+                    if this_purity_x_eff > best_purity_x_eff:
+                        best_purity_x_eff = this_purity_x_eff
+                        purity_x_eff_cut_type = ">"
+                        purity_x_eff_bin_ind = i
+                        purity_x_eff_cut_value = signal_cumul_rev.GetBinLowEdge(i+1)
+
+                c = ROOT.TCanvas("ctmp", "", 600, 600)
+                c.SetTicks(1, 1)
+                gr = ROOT.TGraph(len(purity_x_effs_1), array('d', cut_vals_1), array('d', purity_x_effs_1))
+                gr.SetMarkerStyle(22)
+                gr2 = ROOT.TGraph(len(purity_x_effs_2), array('d', cut_vals_2), array('d', purity_x_effs_2))
+                gr2.SetMarkerStyle(23)
+                gr2.SetMarkerColor(ROOT.kBlue)
+                mg = ROOT.TMultiGraph("mg", ";Cut value;Purity #times Efficiency")
+                mg.Add(gr)
+                mg.Add(gr2)
+                mg.Draw("AP")
+                c.SaveAs(os.path.join(output_dir, obj_name+"pt%dto%d_purity_x_eff.%s" % (pt_min, pt_max, OUTPUT_FMT)))
+
+                gr = ROOT.TGraph(len(puritys_1), array('d', effs_1), array('d', puritys_1))
+                gr.SetMarkerStyle(22)
+                gr2 = ROOT.TGraph(len(puritys_2), array('d', effs_2), array('d', puritys_2))
+                gr2.SetMarkerStyle(23)
+                gr2.SetMarkerColor(ROOT.kBlue)
+                mg = ROOT.TMultiGraph("mg2", ";efficiency;purity")
+                mg.Add(gr)
+                mg.Add(gr2)
+                mg.Draw("ALP")
+                c.SaveAs(os.path.join(output_dir, obj_name+"pt%dto%d_purity_vs_eff.%s" % (pt_min, pt_max, OUTPUT_FMT)))
+
+                if best_purity == starting_purity:
+                    purity_text.AddText("Best purity (%.3f) with no cut" % best_purity)
+                else:
+                    purity_text.AddText("No cut purity = %.3f" % (starting_purity))
+                    purity_text.AddText("Best purity (%.3f) with %s %.3g" % (best_purity, purity_cut_type, purity_cut_value))
+                if best_purity_x_eff == starting_purity_x_eff:
+                    purity_text.AddText("Best purity * eff (%.3f) with no cut" % best_purity_x_eff)
+                else:
+                    purity_text.AddText("No cut purity * eff = %.3f" % (starting_purity_x_eff))
+                    purity_text.AddText("Best purity * eff (%.3f) with cut %s %.3g" % (best_purity_x_eff, purity_x_eff_cut_type, purity_x_eff_cut_value))
 
             ylim = None
             # if "pt_jet" in obj_name and "ratio" not in obj_name and "frac" not in obj_name:
             #     ylim = [1E-9, 1E-1]
             title = "%d < p_{T}^{jet 1} < %d GeV" % (pt_min, pt_max)
-            p = Plot(contributions, what='hist', ytitle="p.d.f." if normalise_hists else "N", 
+            p = Plot(contributions, what='hist', ytitle="p.d.f." if normalise_hists else "N",
                      title=title,
-                     subplot_type="ratio" if do_ratio else None, 
+                     subplot_type="ratio" if do_ratio else None,
                      subplot_title="#splitline{Ratio wrt}{%s}" % contributions[0].label,
                      subplot=contributions[0], ylim=ylim)
             p.legend.SetX1(0.7)
             p.legend.SetX2(0.9)
             p.plot(draw_opts)
-            # EURGH FIXME
-            # if "pt_jet" in obj_name and "ratio" not in obj_name and "frac" not in obj_name:
-            #     p.set_logy()
+            p.main_pad.cd()
+            if find_best_purity:
+                purity_text.Draw("SAME")
             p.save(os.path.join(output_dir, obj_name+"_pt%dto%d.%s" % (pt_min, pt_max, OUTPUT_FMT)))
 
 
 def do_dijet_distributions(root_dir, dir_append=""):
     """Do plots comparing different jet flavs in dijet region"""
-    dir_names = ["Dijet_Presel_gg", "Dijet_Presel_qg", "Dijet_Presel_gq", "Dijet_Presel_qq", 
+    dir_names = ["Dijet_Presel_gg", "Dijet_Presel_qg", "Dijet_Presel_gq", "Dijet_Presel_qq",
                  # "Dijet_Presel_q_unknown", "Dijet_Presel_g_unknown",
                  # "Dijet_Presel_unknown_q", "Dijet_Presel_unknown_g",
                  # "Dijet_Presel_unknown_unknown"
@@ -177,7 +334,7 @@ def do_dijet_distributions(root_dir, dir_append=""):
     remove_unknowns = dir_append == "_highPt"
     dir_names = [d + dir_append for d in dir_names if not ("unknown" in d and remove_unknowns)]
     root_file = cu.open_root_file(os.path.join(root_dir, qgc.QCD_FILENAME))
-    
+
     directories = [cu.get_from_file(root_file, dn) for dn in dir_names]
     gg_col = ROOT.kRed
     qg_col = ROOT.kGreen+2
@@ -198,16 +355,20 @@ def do_dijet_distributions(root_dir, dir_append=""):
     csd = [c for c in csd if not ("unknown" in c['label'] and remove_unknowns)]
 
     # Compare shapes
-    do_all_1D_projection_plots_in_dir(directories=directories, 
+    do_all_1D_projection_plots_in_dir(directories=directories,
                                       output_dir=os.path.join(root_dir, "Dijet_kin_comparison_normalised%s" % dir_append),
                                       components_styles_dicts=csd,
-                                      filter_noisy=False)
+                                      filter_noisy=False,
+                                      find_best_purity=True,
+                                      signal_mask=[True, True, False, False])
     # Compare yields
-    do_all_1D_projection_plots_in_dir(directories=directories, 
+    do_all_1D_projection_plots_in_dir(directories=directories,
                                       output_dir=os.path.join(root_dir, "Dijet_kin_comparison_absolute%s" % dir_append),
                                       components_styles_dicts=csd,
                                       normalise_hists=False,
-                                      filter_noisy=False)
+                                      filter_noisy=False,
+                                      find_best_purity=True,
+                                      signal_mask=[True, True, False, False])
 
     # do jet1 vs jet2 flav
     output_filename = os.path.join(root_dir, "Dijet_kin_comparison_2d", "flav_jet1_jet2%s.%s" % (dir_append, OUTPUT_FMT))
@@ -215,7 +376,7 @@ def do_dijet_distributions(root_dir, dir_append=""):
     if h2d.Integral() > 0:
         h2d.Scale(1./h2d.Integral())
         qgg.do_2D_plot(h2d, output_filename, draw_opt="COLZ", logz=True, zlim=[1E-4, 1])
-    
+
     # do jet1 vs jet2 eta
     ellipse_eff_dict = {}
     deta_eff_dict = {}
@@ -246,15 +407,15 @@ def do_dijet_distributions(root_dir, dir_append=""):
         ellipse_eff_dict[dname] = effs
         """
         qgg.do_2D_plot(h2d, output_filename, draw_opt="COLZ", logz=False, title=title, other_things_to_draw=lines)
-        qgg.do_2D_plot(h2d, output_filename.replace(".%s" % OUTPUT_FMT, "_logZ.%s" % OUTPUT_FMT), 
+        qgg.do_2D_plot(h2d, output_filename.replace(".%s" % OUTPUT_FMT, "_logZ.%s" % OUTPUT_FMT),
                        draw_opt="COLZ", logz=True, title=title, other_things_to_draw=lines)
-        """ 
+        """
         effs = []
         for ind, deta in enumerate(np.arange(0.1, 2.5, 0.1), 1):
             integral = get_integral_under_deta(h2d, deta)
             effs.append(integral)
         deta_eff_dict[dname] = effs
-        """ 
+        """
 
     """
     output_filename = os.path.join(root_dir, "Dijet_kin_comparison_2d", "ellipse_roc_jet2.%s" % OUTPUT_FMT)
@@ -266,7 +427,7 @@ def do_dijet_distributions(root_dir, dir_append=""):
 
 def do_roc_plot(eff_dict, output_filename):
     """Turn dict of efficiencies into ROC plot
-    
+
     Parameters
     ----------
     eff_dict : TYPE
@@ -315,14 +476,14 @@ def get_integral_under_deta(hist, deta):
 
 def get_integral_under_ellipse(hist, ellipse):
     """Get integral of 2d hist under ellipse
-    
+
     Parameters
     ----------
     hist : TH2
         Description
     ellipse : Tellipse
         Description
-    
+
     Returns
     -------
     float
@@ -355,13 +516,13 @@ def do_dijet_distribution_comparison(entries, output_dir, dir_append=""):
     dir_names = ["Dijet_Presel_gg", "Dijet_Presel_qg", "Dijet_Presel_gq", "Dijet_Presel_qq"]
     remove_unknowns = dir_append == "_highPt"
     dir_names = [d + dir_append for d in dir_names if not ("unknown" in d and remove_unknowns)]
-    
+
     gg_col = ROOT.kRed
     qg_col = ROOT.kGreen+2
     gq_col = ROOT.kBlack
     qq_col = ROOT.kBlue
     unknown_cols = [ROOT.kOrange+1, ROOT.kOrange+4, ROOT.kPink+6, ROOT.kViolet, ROOT.kAzure+1]
-    
+
     markers = [[20, 21, 22, 23], [24, 25, 26, 32]]
 
     directories, csd = [], []
@@ -379,12 +540,12 @@ def do_dijet_distribution_comparison(entries, output_dir, dir_append=""):
         csd.extend([c for c in csd_template if not ("unknown" in c['label'] and remove_unknowns)])
 
     # Compare shapes
-    do_all_1D_projection_plots_in_dir(directories=directories, 
+    do_all_1D_projection_plots_in_dir(directories=directories,
                                       output_dir=os.path.join(root_dir, "Dijet_kin_comparison_normalised%s_compare" % dir_append),
                                       components_styles_dicts=csd,
                                       filter_noisy=False)
     # Compare yields
-    do_all_1D_projection_plots_in_dir(directories=directories, 
+    do_all_1D_projection_plots_in_dir(directories=directories,
                                       output_dir=os.path.join(root_dir, "Dijet_kin_comparison_absolute%s_comapre" % dir_append),
                                       components_styles_dicts=csd,
                                       normalise_hists=False,
@@ -393,7 +554,7 @@ def do_dijet_distribution_comparison(entries, output_dir, dir_append=""):
 
 def do_zpj_distributions(root_dir, dir_append=""):
     """Do plots comparing different jet flavs in z+jets region"""
-    dir_names = ["ZPlusJets_Presel_q", "ZPlusJets_Presel_g", "ZPlusJets_Presel_unknown"]
+    dir_names = ["ZPlusJets_Presel_q", "ZPlusJets_Presel_g", "ZPlusJets_Presel_unknown"][:2]
     dir_names = [d+dir_append for d in dir_names]
     root_file = cu.open_root_file(os.path.join(root_dir, qgc.DY_FILENAME))
     directories = [cu.get_from_file(root_file, dn) for dn in dir_names]
@@ -404,25 +565,29 @@ def do_zpj_distributions(root_dir, dir_append=""):
         {"label": "q", "line_color": q_col, "fill_color": q_col, "marker_color": q_col, "marker_style": 20},
         {"label": "g", "line_color": g_col, "fill_color": g_col, "marker_color": g_col, "marker_style": 21},
         {"label": "unknown", "line_color": unknown_col, "fill_color": unknown_col, "marker_color": unknown_col, "marker_style": 22}
-    ]
+    ][:2]
     # Compare shapes
-    do_all_1D_projection_plots_in_dir(directories=directories, 
+    do_all_1D_projection_plots_in_dir(directories=directories,
                                       output_dir=os.path.join(root_dir, "ZpJ_kin_comparison_normalised%s" % dir_append),
-                                      components_styles_dicts=csd)
+                                      components_styles_dicts=csd,
+                                      find_best_purity=True,
+                                      signal_mask=[True, False])
     # Compare yields
-    do_all_1D_projection_plots_in_dir(directories=directories, 
+    do_all_1D_projection_plots_in_dir(directories=directories,
                                       output_dir=os.path.join(root_dir, "ZpJ_kin_comparison_absolute%s" % dir_append),
                                       components_styles_dicts=csd,
                                       normalise_hists=False,
-                                      filter_noisy=False)
-    
+                                      filter_noisy=False,
+                                      find_best_purity=True,
+                                      signal_mask=[True, False])
+
     for dname in dir_names:
         output_filename = os.path.join(root_dir, "ZpJ_kin_comparison_2d%s" % dir_append, "pt_jet1_z_pt_jet2_z_ratio_%s.%s" % (dname.replace("ZPlusJets_Presel_", ""), OUTPUT_FMT))
         h2d = cu.get_from_file(root_file, "%s/pt_jet1_z_pt_jet2_z_ratio" % dname)
         # h2d.Scale(1./h2d.Integral())
         title = dname.replace("ZPlusJets_Presel_", "")
         qgg.do_2D_plot(h2d, output_filename, draw_opt="COLZ", logz=False, title=title)
-        qgg.do_2D_plot(h2d, output_filename.replace(".%s" % OUTPUT_FMT, "_logZ.%s" % OUTPUT_FMT), 
+        qgg.do_2D_plot(h2d, output_filename.replace(".%s" % OUTPUT_FMT, "_logZ.%s" % OUTPUT_FMT),
                        draw_opt="COLZ", logz=True, title=title)
 
 if __name__ == "__main__":
@@ -435,10 +600,10 @@ if __name__ == "__main__":
             do_dijet_distributions(workdir, "_highPt")
         if os.path.isfile(os.path.join(workdir, qgc.DY_FILENAME)):
             do_zpj_distributions(workdir)
-            do_zpj_distributions(workdir, "_highPt")
+            # do_zpj_distributions(workdir, "_highPt")
 
     exit()
-    
+
     # Comparisons
     # PYTHIA_OLD = "workdir_ak4chs_mgpythia_withPtRatio_0p94_withLeptonOverlapVeto_eta2p4_ssEta_dEta1p2"
     PYTHIA_NEW = "workdir_ak4chs_mgpythia_newFlav_withPtRatio_0p94_withLeptonOverlapVeto_eta2p4_ssEta_dEta1p2"
