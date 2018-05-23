@@ -409,9 +409,10 @@ class Plot(object):
         if not self.ytitle:
             self.ytitle = self.contributions_objs[0].GetYaxis().GetTitle()
 
-        modifier.SetTitle("%s;%s;%s" % (self.title, self.xtitle, self.ytitle))
+        modifier.SetTitle(";%s;%s" % (self.xtitle, self.ytitle))
 
         for ob in self.contributions_objs:
+            # who knows which actually sets the thing?
             ob.GetXaxis().SetTitle(self.xtitle)
             ob.GetXaxis().SetTitle(self.ytitle)
 
@@ -436,6 +437,24 @@ class Plot(object):
             self._style_legend()
             self.legend.Draw()
 
+
+        # Add CMS text
+        self.canvas.cd()
+        cms_latex = ROOT.TLatex()
+        cms_latex.SetTextAlign(ROOT.kHAlignLeft + ROOT.kVAlignBottom)
+        cms_latex.SetTextFont(42)
+        cms_latex.SetTextSize(0.035)
+        cms_latex.DrawLatex(0.14, 0.93, "#font[62]{CMS}#font[52]{ Preliminary}")
+        cms_latex.SetTextAlign(ROOT.kHAlignRight + ROOT.kVAlignBottom)
+        cms_latex.DrawLatex(0.95, 0.93, " 35.9 fb^{-1} (13 TeV)")
+
+        text_latex = ROOT.TLatex()
+        text_latex.SetTextAlign(ROOT.kHAlignLeft + ROOT.kVAlignTop)
+        text_latex.SetTextFont(42)
+        text_latex.SetTextSize(0.03)
+        text_latex.DrawLatex(0.18, 0.88, self.title)
+
+        # Do subplot
         if self.subplot:
             self._rescale_plot_labels(modifier, 1-self.subplot_pad_height)
 
