@@ -5,15 +5,16 @@ from collections import namedtuple
 
 
 # Purple & blue look ~ same to red-green colourblind people
-# (V.Dark blue & light pruple do look a bit diff)
+# (V.Dark blue & light purple do look a bit diff)
 # Red and blue does look different
-DY_COLOUR =  632 # kRed 
+DY_COLOUR =  880 # kViolet
 QCD_COLOUR = 867 # kAzure+7
 
-DY_COLOUR =  880 # kViolet
-# QCD_COLOUR = 600 # kBlue
+SINGLE_MU_COLOUR =  884 # kViolet+1
+JETHT_COLOUR = 600 # kBlue
+ZB_COLOUR = 416 # kGreen
 
-# You shoudl use markers as well for colourblindness
+# You should use markers as well for colourblindness
 DY_MARKER = 20
 QCD_MARKER = 22
 
@@ -23,6 +24,7 @@ DY_COLOURS = [880, 881, 884, 871]
 QCD_COLOURS = [867, 600, 853, 425]
 
 PT_BINS = [(80, 100), (100, 200), (400, 500), (1000, 2000), (80, 2000)]
+PT_BINS = [(80, 100), (100, 120), (200, 250), (400, 500), (1000, 2000), (80, 2000)]
 THEORY_PT_BINS = [(100, 200), (400, 500), (1000, 2000), (80, 2000)]
 THEORY_PT_BINS = [(100, 200), (200, 300), (300, 400), (400, 500), (500, 600), (600, 800), (800, 1000), (1000, 2000), (80, 2000)]
 # THEORY_PT_BINS = [(20, 40), (40, 60), (60, 80), (80, 100), (100, 120),
@@ -65,6 +67,11 @@ QCD_Dijet_GEN_LABEL = "QCD, Dijet selection\n(GenJets)"
 QCD_Dijet_QFLAV_LABEL = "QCD, Dijet selection\n(uds-matched)"
 QCD_Dijet_GFLAV_LABEL = "QCD, Dijet selection\n(g-matched)"
 
+SINGLE_MU_LABEL = "SingleMu, Z+jets selection"
+JETHT_LABEL = "JetHT, Dijet selection"
+ZB_LABEL = "ZeroBias, Dijet selection"
+JETHT_ZB_LABEL = "JetHT+ZeroBias, Dijet selection"
+
 # Dirs in ROOT files
 ZPJ_RECOJET_RDIR = "ZPlusJets_QG"
 DJ_RECOJET_RDIR = "Dijet_QG"
@@ -74,6 +81,10 @@ DJ_GENJET_RDIR = "Dijet_genjet"
 # Common filenames
 DY_FILENAME = "uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root"
 QCD_FILENAME = "uhh2.AnalysisModuleRunner.MC.MC_QCD_.root"
+QCD_PYTHIA_ONLY_FILENAME = "uhh2.AnalysisModuleRunner.MC.MC_PYTHIA-QCD_.root"
+SINGLE_MU_FILENAME = "uhh2.AnalysisModuleRunner.DATA.Data_SingleMu.root"
+JETHT_FILENAME = "uhh2.AnalysisModuleRunner.DATA.Data_JetHT.root"
+ZB_FILENAME = "uhh2.AnalysisModuleRunner.DATA.Data_ZeroBias.root"
 
 
 def get_parser():
