@@ -493,7 +493,7 @@ class Plot(object):
                     # Make sure that the upper limit is the largest bin of the contributions,
                     # so long as it is within 1.5 and some upper limit
                     bin_meds = [np.max(cu.th1_to_arr(h)) for h in self.subplot_contributions]
-                    self.subplot_container.SetMaximum(min(10, max(1.5, 1.*max(bin_meds))))
+                    self.subplot_container.SetMaximum(min(2.5, max(1.5, 1.*max(bin_meds))))
                 
                     # Make sure the lower limit is the smallest bin of the contributions, 
                     # so long as it is within 0 and 0.5
