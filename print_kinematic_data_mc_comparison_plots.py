@@ -63,7 +63,8 @@ def do_1D_plot(hists, output_filename, components_styles_dicts=None,
     if logy:
         ylim = [0.5*min_val, 10*max_val]
     else:
-        ylim = [0.5*min_val, 1.5*max_val]
+        # ylim = [0.5*min_val, 1.5*max_val]
+        ylim = [0, 1.5*max_val]
     p = Plot(contributions, what='hist', 
              ytitle="p.d.f." if normalise_hists else "N", 
              title=title,
@@ -87,6 +88,7 @@ def do_1D_plot(hists, output_filename, components_styles_dicts=None,
 def do_all_1D_projection_plots_in_dir(directories, output_dir, components_styles_dicts=None, 
                                       draw_opts="NOSTACK HISTE", do_ratio=True, 
                                       normalise_hists=True,
+                                      jet_config_str="",
                                       signal_mask=None):
     """
     Given a set of TDirs, loop over all 2D hists, do projection hists for chosen bins, and plot all TDir contributions on a canvas for comparison.
@@ -138,7 +140,8 @@ def do_all_1D_projection_plots_in_dir(directories, output_dir, components_styles
         # Ignore TH1s
         if not isinstance(objs[0], (ROOT.TH2F, ROOT.TH2D, ROOT.TH2I)):
             do_1D_plot(objs, components_styles_dicts=components_styles_dicts, 
-                       draw_opts=draw_opts, do_ratio=do_ratio, normalise_hists=normalise_hists, logy=True, 
+                       draw_opts=draw_opts, do_ratio=do_ratio, normalise_hists=normalise_hists, logy=True,
+                       title=jet_config_str,
                        output_filename=os.path.join(output_dir, obj_name+".%s" % (OUTPUT_FMT)))
         else:
 
@@ -174,7 +177,7 @@ def do_all_1D_projection_plots_in_dir(directories, output_dir, components_styles
                 do_1D_plot(hists, components_styles_dicts=components_styles_dicts, 
                            draw_opts=draw_opts, do_ratio=do_ratio, 
                            normalise_hists=normalise_hists, logy=False,
-                           title="%d < p_{T}^{jet 1} < %d GeV" % (pt_min, pt_max),
+                           title="#splitline{%s}{%d < p_{T}^{jet 1} < %d GeV}" % (jet_config_str, pt_min, pt_max),
                            output_filename=os.path.join(output_dir, obj_name+"_pt%dto%d.%s" % (pt_min, pt_max, OUTPUT_FMT)))
 
 
@@ -193,16 +196,19 @@ def do_dijet_distributions(root_dir):
         {"label": "JetHT + ZeroBias Data", "line_color": data_col, "fill_color": data_col, "marker_color": data_col, "marker_style": 22, "fill_style": 0},
         {"label": "ZeroBias Data", "line_color": zb_col, "fill_color": zb_col, "marker_color": zb_col, "marker_style": 23, "fill_style": 0},
     ]
+    jet_config_str = qgc.extract_jet_config(os.path.basename(os.path.abspath(root_dir)))
 
     # Compare shapes
     do_all_1D_projection_plots_in_dir(directories=directories, 
                                       output_dir=os.path.join(root_dir, "Dijet_data_mc_kin_comparison_normalised"),
-                                      components_styles_dicts=csd)
+                                      components_styles_dicts=csd,
+                                      jet_config_str=jet_config_str)
                                       
     # Compare yields
     do_all_1D_projection_plots_in_dir(directories=directories, 
                                       output_dir=os.path.join(root_dir, "Dijet_data_mc_kin_comparison_absolute"),
                                       components_styles_dicts=csd,
+                                      jet_config_str=jet_config_str,
                                       normalise_hists=False)
 
 
