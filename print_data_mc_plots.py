@@ -69,23 +69,28 @@ def do_plots(root_dir):
                                     label=qgc.DY_ZpJ_LABEL)
                 entries.append((qgp.get_projection_plot(h2d_dyj_mc, start_val, end_val), dy_kwargs_mc))
 
-                h2d_qcd_mc = grab_obj(os.path.join(source['root_dir'], qgc.QCD_FILENAME), "%s/%s" % (dj_dirname, v))
+                # h2d_qcd_mc = grab_obj(os.path.join(source['root_dir'], qgc.QCD_FILENAME), "%s/%s" % (dj_dirname, v))
+                h2d_qcd_mc = grab_obj(os.path.join(source['root_dir'], qgc.QCD_PYTHIA_ONLY_FILENAME), "%s/%s" % (dj_dirname, v))
                 qcd_kwargs_mc = dict(line_color=qgc.QCD_COLOUR, line_width=lw, fill_color=qgc.QCD_COLOUR,
                                      marker_color=qgc.QCD_COLOUR, marker_style=qgc.QCD_MARKER+ind, marker_size=0,
                                      label=qgc.QCD_Dijet_LABEL)
+                h2d_qcd_mc.Scale(35860)
                 entries.append((qgp.get_projection_plot(h2d_qcd_mc, start_val, end_val), qcd_kwargs_mc))
 
                 # Data sources
                 h2d_dyj_data = grab_obj(os.path.join(source['root_dir'], qgc.SINGLE_MU_FILENAME), "%s/%s" % (zpj_dirname, v))
-                dy_kwargs_data = dict(line_color=qgc.SINGLE_MU_COLOUR, line_width=0, fill_color=qgc.SINGLE_MU_COLOUR,
+                dy_kwargs_data = dict(line_color=qgc.SINGLE_MU_COLOUR, line_width=1, fill_color=qgc.SINGLE_MU_COLOUR,
                                       marker_color=qgc.SINGLE_MU_COLOUR, marker_style=qgc.DY_MARKER+ind, marker_size=msize,
                                       label=qgc.SINGLE_MU_LABEL)
                 entries.append((qgp.get_projection_plot(h2d_dyj_data, start_val, end_val), dy_kwargs_data))
 
                 h2d_qcd_data = grab_obj(os.path.join(source['root_dir'], qgc.JETHT_FILENAME), "%s/%s" % (dj_dirname, v))
-                qcd_kwargs_data = dict(line_color=qgc.JETHT_COLOUR, line_width=0, fill_color=qgc.JETHT_COLOUR,
+                h2d_zb_data = grab_obj(os.path.join(source['root_dir'], qgc.ZB_FILENAME), "%s/%s" % (dj_dirname, v))
+                h2d_zb_data.Scale(1235009.27580634)
+                h2d_qcd_data.Add(h2d_zb_data)
+                qcd_kwargs_data = dict(line_color=qgc.JETHT_COLOUR, line_width=1, fill_color=qgc.JETHT_COLOUR,
                                        marker_color=qgc.JETHT_COLOUR, marker_style=qgc.QCD_MARKER+ind, marker_size=msize,
-                                       label=qgc.JETHT_LABEL)
+                                       label=qgc.JETHT_ZB_LABEL)
                 entries.append((qgp.get_projection_plot(h2d_qcd_data, start_val, end_val), qcd_kwargs_data))
 
             rebin = 2
