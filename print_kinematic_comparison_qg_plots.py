@@ -110,11 +110,11 @@ def do_all_1D_projection_plots_in_dir(directories, output_dir, components_styles
                 # obj_name.startswith('m_jj'),
             ])
             if not do_not_rebin:
-                if objs[0].GetNbinsX() % 5 == 0:
+                if objs[0].GetNbinsX() % 5 == 0 and objs[0].GetNbinsX() >= 100:
                     rebin = 5
-                elif objs[0].GetNbinsX() % 4 == 0:
+                elif objs[0].GetNbinsX() % 4 == 0 and objs[0].GetNbinsX() >= 80:
                     rebin = 2
-                elif objs[0].GetNbinsX() % 3 == 0:
+                elif objs[0].GetNbinsX() % 3 == 0 and objs[0].GetNbinsX() >= 60:
                     rebin = 3
             if obj_name.startswith("m_jj"):
                 rebin = 2
