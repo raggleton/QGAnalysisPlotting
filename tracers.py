@@ -11,9 +11,9 @@ def trace_calls(frame, event, arg):
     caller = frame.f_back
     caller_line_no = caller.f_lineno
     caller_filename = caller.f_code.co_filename
-    print 'Call to %s on line %s of %s from line %s of %s' % \
+    print('Call to %s on line %s of %s from line %s of %s' % \
         (func_name, func_line_no, func_filename,
-         caller_line_no, caller_filename)
+         caller_line_no, caller_filename))
     return
 
 def trace_calls_and_returns(frame, event, arg):
@@ -25,10 +25,10 @@ def trace_calls_and_returns(frame, event, arg):
     line_no = frame.f_lineno
     filename = co.co_filename
     if event == 'call':
-        print 'Call to %s on line %s of %s' % (func_name, line_no, filename)
+        print('Call to %s on line %s of %s' % (func_name, line_no, filename))
         return trace_calls_and_returns
     elif event == 'return':
-        print '%s => %s' % (func_name, arg)
+        print('%s => %s' % (func_name, arg))
     return
 
 def trace_lines(frame, event, arg):
@@ -38,7 +38,7 @@ def trace_lines(frame, event, arg):
     func_name = co.co_name
     line_no = frame.f_lineno
     filename = co.co_filename
-    print '  %s line %s' % (func_name, line_no)
+    print('  %s line %s' % (func_name, line_no))
 
 TRACE_FUNCS = ['plot']
 
@@ -52,7 +52,7 @@ def trace_calls_detail(frame, event, arg):
         return
     line_no = frame.f_lineno
     filename = co.co_filename
-    print 'Call to %s on line %s of %s' % (func_name, line_no, filename)
+    print('Call to %s on line %s of %s' % (func_name, line_no, filename))
     # if func_name in TRACE_FUNCS:
         # Trace into this function
     return trace_lines

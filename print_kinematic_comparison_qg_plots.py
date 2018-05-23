@@ -61,11 +61,11 @@ def do_all_1D_projection_plots_in_dir(directories, output_dir, components_styles
         raise IndexError("Need same number of style dicts and directories")
 
     list_of_obj = [get_list_of_obj(d) for d in directories]
-    print list_of_obj[0]
+    print(list_of_obj[0])
 
     # check all have same list of plots
     if not all(x == list_of_obj[0] for x in list_of_obj):
-        print "Different number of object in the TDirectorys"
+        print("Different number of object in the TDirectorys")
 
     common_list_of_obj = set(list_of_obj[0])
     for l in list_of_obj[1:]:
@@ -78,7 +78,7 @@ def do_all_1D_projection_plots_in_dir(directories, output_dir, components_styles
         objs = [d.Get(obj_name) for d in directories]
         # Ignore TH1s
         if not isinstance(objs[0], (ROOT.TH2F, ROOT.TH2D, ROOT.TH2I)):
-            print obj_name, "is not a TH2"
+            print(obj_name, "is not a TH2")
             continue
 
         if "flav" in obj_name:
@@ -94,7 +94,7 @@ def do_all_1D_projection_plots_in_dir(directories, output_dir, components_styles
             continue
 
         for pt_min, pt_max in pt_bins:
-            # print pt_min, pt_max
+            # print(pt_min, pt_max)
             rebin = 1
             # exceptions...why didn't i pick the same number of bins...
             do_not_rebin = any([
@@ -143,11 +143,11 @@ def do_all_1D_projection_plots_in_dir(directories, output_dir, components_styles
                         mean_errs.append(np.mean(errs))
                         max_over_mean_errs.append(np.max(errs) / np.mean(errs))
                         rel_err_vars.append(np.std(errs) / np.mean(errs))
-                        # print "obj", cont.label
-                        # print 'mean errs', np.mean(errs)
-                        # print 'rel max err', np.max(errs) / np.mean(errs)
-                        # print 'stddev err', np.std(errs)
-                        # print 'rel std dev err', np.std(errs) / np.mean(errs)
+                        # print("obj", cont.label)
+                        # print('mean errs', np.mean(errs))
+                        # print('rel max err', np.max(errs) / np.mean(errs))
+                        # print('stddev err', np.std(errs))
+                        # print('rel std dev err', np.std(errs) / np.mean(errs))
                     else:
                         # Dud values if 0 entries
                         mean_errs.append(9999999)
@@ -156,9 +156,9 @@ def do_all_1D_projection_plots_in_dir(directories, output_dir, components_styles
 
                 ref_mean_err = np.median(mean_errs)
                 ref_rel_err_var = np.median(rel_err_vars)
-                # print '-'*20
-                # print 'mean mean err', ref_mean_err
-                # print 'mean var', ref_rel_err_var
+                # print('-'*20)
+                # print('mean mean err', ref_mean_err)
+                # print('mean var', ref_rel_err_var)
                 contributions = [cont for cont, merr, rev, mom
                                  in zip(contributions, mean_errs, rel_err_vars, max_over_mean_errs)
                                  if (merr < 2.5*ref_mean_err) and (rev < 5*ref_rel_err_var or mom<5)]
@@ -227,7 +227,7 @@ def do_all_1D_projection_plots_in_dir(directories, output_dir, components_styles
                         effs_1.append(this_eff)
                         puritys_1.append(this_purity)
 
-                    # print "this_purity =", this_purity
+                    # print("this_purity =", this_purity)
                     if this_purity > best_purity:
                         purity_cut_type = "<"
                         purity_bin_ind = i
@@ -259,7 +259,7 @@ def do_all_1D_projection_plots_in_dir(directories, output_dir, components_styles
                         effs_2.append(this_eff)
                         puritys_2.append(this_purity)
 
-                    # print "this_purity =", this_purity
+                    # print("this_purity =", this_purity)
                     if this_purity > best_purity:
                         purity_cut_type = ">"
                         purity_bin_ind = i
@@ -392,14 +392,14 @@ def do_dijet_distributions(root_dir, dir_append=""):
         hline = ROOT.TLine(-5, 0, 5, 0)
         hline.SetLineStyle(2)
         lines = [hline, vline]
-        print dname
+        print(dname)
         """
         # Do ellipse efficiencies for diff size ellipses
         effs = []
         for ind, factor in enumerate(np.arange(0.1, 2.2, 0.1), 1):
             ellipse = ROOT.TEllipse(0, 0, factor*1.7*np.sqrt(2), factor*1*np.sqrt(2), 0, 360, 45)
             integral = get_integral_under_ellipse(h2d, ellipse)
-            print "Fraction under ellipse with factor", factor, " = ", integral / h2d.Integral()
+            print("Fraction under ellipse with factor", factor, " = ", integral / h2d.Integral())
             ellipse.SetFillStyle(0)
             ellipse.SetLineStyle(ind)
             lines.append(ellipse)
@@ -439,7 +439,7 @@ def do_roc_plot(eff_dict, output_filename):
     bkg_effs = [0] * len(eff_dict.values()[0])
     for k, v in eff_dict.iteritems():
         if k.replace("Dijet_Presel_", "").lstrip("_unknown_").lstrip("_q").startswith("g"):
-            print k
+            print(k)
             for ind, eff in enumerate(v):
                 signal_effs[ind] += eff
         else:
@@ -450,8 +450,8 @@ def do_roc_plot(eff_dict, output_filename):
         total = s + b
         signal_effs[ind] /= total
         bkg_effs[ind] /= total
-    print signal_effs
-    print bkg_effs
+    print(signal_effs)
+    print(bkg_effs)
 
     gr = ROOT.TGraph(len(signal_effs), array('d', bkg_effs), array('d', signal_effs))
     cont = Contribution(gr, marker_style=21)

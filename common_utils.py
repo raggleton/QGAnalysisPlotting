@@ -94,7 +94,7 @@ def exists_in_file(tfile, obj_name):
 def get_from_file(tfile, obj_name, info=False):
     """Get some object from ROOT TFile with checks."""
     if info:
-        print "Getting %s" % obj_name
+        print("Getting %s" % obj_name)
     if not exists_in_file(tfile, obj_name):
         raise IOError("Can't get object named %s from %s" % (obj_name, tfile.GetName()))
     else:

@@ -133,7 +133,6 @@ def do_all_exclusive_plots_comparison(sources, plot_dir="plots_dy_vs_qcd",
     Relies on QCD sample file being called uhh2.AnalysisModuleRunner.MC.MC_QCD_.root,
     and the DYJetsToLL one being called uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root
     """
-    print "Doing plot"
     var_list = var_list or qgc.COMMON_VARS_WITH_FLAV
     pt_bins = pt_bins or qgc.PT_BINS
 

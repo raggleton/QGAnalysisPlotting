@@ -66,9 +66,6 @@ class MultiFunc(object):
         if y_max < y_min:
             raise Exception("MultiFunc: y_min > y_max")
 
-        print x_min, x_max
-        print y_min, y_max
-
         self.funcs[0].GetXaxis().SetRangeUser(x_min * 0.95, x_max * 1.05)
         self.funcs[0].GetYaxis().SetRangeUser(y_min * 0.95, y_max * 1.05)
 
@@ -82,6 +79,7 @@ def grab_obj(file_name, obj_name):
     # TODO: checks!
     input_file = cu.open_root_file(file_name)
     obj = cu.get_from_file(input_file, obj_name)
+    # print("Getting", obj_name, "from", file_name)
     if isinstance(obj, (ROOT.TH1, ROOT.TGraph)):
         obj.SetDirectory(0)  # Ownership kludge
         input_file.Close()
@@ -362,7 +360,7 @@ class Plot(object):
             if "SAME" in draw_opts:
                 self.canvas = ROOT.gPad
                 self.canvas.cd()
-                print "Using existing canvas", self.canvas.GetName()
+                # print("Using existing canvas", self.canvas.GetName())
             else:
                 self.canvas = ROOT.TCanvas(ROOT.TUUID().AsString(), "", *self.default_canvas_size)
                 self.canvas.SetTicks(1, 1)
