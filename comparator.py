@@ -379,7 +379,7 @@ class Plot(object):
                     self.subplot_pad.SetTicks(1, 1)
                     self.subplot_pad.SetFillColor(0)
                     self.subplot_pad.SetFillStyle(0)
-                    self.subplot_pad.SetTopMargin(2*self.subplot_pad_fudge)
+                    self.subplot_pad.SetTopMargin(4*self.subplot_pad_fudge)
                     self.subplot_pad.SetRightMargin(right_margin)
                     self.subplot_pad.SetBottomMargin(0.35)
                     self.canvas.cd()

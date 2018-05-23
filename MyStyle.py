@@ -6,6 +6,8 @@ ROOT.gROOT.SetBatch(1)
 ROOT.TH1.SetDefaultSumw2()
 ROOT.gStyle.SetOptStat(0)
 
+ROOT.TGaxis.SetExponentOffset(-0.075, 0.00, "y")
+
 My_Style = ROOT.TStyle("myStyle", "Blah")
 
 # For the canvas:
@@ -64,7 +66,7 @@ My_Style.SetTitleSize(0.04, "XYZ")
 # My_Style.SetTitleXSize(Float_t size = 0.02) # Another way to set the size?
 # My_Style.SetTitleYSize(Float_t size = 0.02)
 My_Style.SetTitleXOffset(1.05)
-My_Style.SetTitleYOffset(1.4)
+My_Style.SetTitleYOffset(1.5)
 
 # For the statistics box:
 My_Style.SetOptFile(0)
