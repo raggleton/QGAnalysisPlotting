@@ -99,3 +99,19 @@ def get_parser():
                         'Several dirs can be specified here, separated by a space.')
     parser.add_argument("-o", "--output", help="Directory to put output plot dirs into", default=None)
     return parser
+
+
+def extract_jet_config(workdir):
+    """Return jet algo/PUS from dir name"""
+    import re
+    res = re.search(r"(ak|ca)([0-9])(chs|puppi)?", workdir, flags=re.IGNORECASE)
+    if res:
+        algo = res.groups()[0]
+        r = res.groups()[1]
+        pus = ""
+        if len(res.groups()) == 3:
+            pus = res.groups()[2]
+        return "%s%s %s" % (algo.upper(), r, pus.upper())
+    else:
+        print("Couldn't decypher jet algo")
+        return ""
