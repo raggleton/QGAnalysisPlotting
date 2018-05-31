@@ -364,14 +364,14 @@ class Plot(object):
             else:
                 self.canvas = ROOT.TCanvas(ROOT.TUUID().AsString(), "", *self.default_canvas_size)
                 self.canvas.SetTicks(1, 1)
-                right_margin = 0.03
+                # right_margin = 0.03
                 if self.subplot:
                     self.main_pad = ROOT.TPad("main_pad", "", 0, self.subplot_pad_height+self.subplot_pad_fudge, 1, 1)
                     ROOT.SetOwnership(self.main_pad, False)
                     self.main_pad.SetTicks(1, 1)
                     self.main_pad.SetBottomMargin(2*self.subplot_pad_fudge)
                     self.main_pad.SetTopMargin(0.12)
-                    self.main_pad.SetRightMargin(right_margin)
+                    # self.main_pad.SetRightMargin(right_margin)
                     self.canvas.cd()
                     self.main_pad.Draw()
                     self.subplot_pad = ROOT.TPad("subplot_pad", "", 0, 0, 1, self.subplot_pad_height-self.subplot_pad_fudge)
@@ -380,7 +380,7 @@ class Plot(object):
                     self.subplot_pad.SetFillColor(0)
                     self.subplot_pad.SetFillStyle(0)
                     self.subplot_pad.SetTopMargin(4*self.subplot_pad_fudge)
-                    self.subplot_pad.SetRightMargin(right_margin)
+                    # self.subplot_pad.SetRightMargin(right_margin)
                     self.subplot_pad.SetBottomMargin(0.35)
                     self.canvas.cd()
                     self.subplot_pad.Draw()
