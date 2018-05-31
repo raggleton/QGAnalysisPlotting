@@ -224,19 +224,19 @@ def do_zpj_distributions(root_dir):
         {"label": "DYJetsToLL MC", "line_color": mc_col, "fill_color": mc_col, "marker_color": mc_col, "marker_style": 20, "fill_style": 0},
         {"label": "SingleMu Data", "line_color": data_col, "fill_color": data_col, "marker_color": data_col, "marker_style": 21, "fill_style": 0},
     ]
-
+    jet_config_str = qgc.extract_jet_config(os.path.basename(os.path.abspath(root_dir)))
     # Compare shapes
     do_all_1D_projection_plots_in_dir(directories=directories, 
                                       output_dir=os.path.join(root_dir, "ZPlusJets_data_mc_kin_comparison_normalised"),
-                                      components_styles_dicts=csd,
-                                      filter_noisy=False)
+                                      jet_config_str=jet_config_str,
+                                      components_styles_dicts=csd)
                                       
     # Compare yields
     do_all_1D_projection_plots_in_dir(directories=directories, 
                                       output_dir=os.path.join(root_dir, "ZPlusJets_data_mc_kin_comparison_absolute"),
                                       components_styles_dicts=csd,
-                                      normalise_hists=False,
-                                      filter_noisy=False)
+                                      jet_config_str=jet_config_str,
+                                      normalise_hists=False)
 
 
 if __name__ == "__main__":
