@@ -6,7 +6,7 @@ ROOT.gROOT.SetBatch(1)
 ROOT.TH1.SetDefaultSumw2()
 ROOT.gStyle.SetOptStat(0)
 
-ROOT.TGaxis.SetExponentOffset(-0.075, 0.00, "y")
+ROOT.TGaxis.SetExponentOffset(-0.075, 0.01, "y")
 
 My_Style = ROOT.TStyle("myStyle", "Blah")
 
@@ -41,7 +41,7 @@ My_Style.SetFrameLineWidth(1)
 # My_Style.SetPadTopMargin(0.05)
 My_Style.SetPadBottomMargin(0.13)
 My_Style.SetPadLeftMargin(0.14)
-# My_Style.SetPadRightMargin(0.08)
+My_Style.SetPadRightMargin(0.04)
 
 # For the Global title:
 # My_Style.SetOptTitle(0)
