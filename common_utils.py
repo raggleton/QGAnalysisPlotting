@@ -146,10 +146,12 @@ def get_exey(graph):
 def th2_to_arr(h):
     """Convert TH2 to 2D numpy array"""
     arr = np.zeros((h.GetNbinsX(), h.GetNbinsY()))
+    err_arr = np.zeros((h.GetNbinsX(), h.GetNbinsY()))
     for x_ind in range(1, h.GetNbinsX() + 1):
         for y_ind in range(1, h.GetNbinsY() + 1):
             arr[x_ind-1][y_ind-1] = h.GetBinContent(x_ind, y_ind)
-    return arr
+            err_arr[x_ind-1][y_ind-1] = h.GetBinError(x_ind, y_ind)
+    return arr, err_arr
 
 
 def make_normalised_TH2(hist, norm_axis, recolour=True):
@@ -161,25 +163,34 @@ def make_normalised_TH2(hist, norm_axis, recolour=True):
 
     # easiest way to cope with x or y is to just get a 2D matrix of values,
     # can then do transpose if necessary
-    arr = th2_to_arr(hist)
+    arr, err_arr = th2_to_arr(hist)
 
     if norm_axis == 'Y':
         arr = arr.T
+        err_arr = err_arr.T
     if recolour:
         # can set so the maximum in each bin is the same,
         # scale other bins accordingly
         # this retain the colour scheme for each set of bins
         for ind, xbin in enumerate(arr):
             if xbin.max() > 0:
-                arr[ind] = xbin / xbin.max()
+                factor = xbin.max()
+                arr[ind] = xbin / factor
+                err_arr[ind] = err_arr[ind] / factor
     else:
         # alternatively, can rescale so sum over bins = 1
         for ind, xbin in enumerate(arr):
             if xbin.sum() != 0:
-                arr[ind] = xbin / xbin.sum()
+                factor = xbin.sum()
+                print("factor:", factor)
+                arr[ind] = xbin / factor
+                print(err_arr[ind])
+                err_arr[ind] /= factor
+                print(err_arr[ind])
 
     if norm_axis == 'Y':
         arr = arr.T
+        err_arr = err_arr.T
 
     # Create new hist object - MUST do it this way to get Z range correct
     new_histname = hist.GetName() + "_norm" + norm_axis
@@ -194,12 +205,13 @@ def make_normalised_TH2(hist, norm_axis, recolour=True):
     for x_ind, x_arr in enumerate(arr, 1):
         for y_ind, val in enumerate(x_arr, 1):
             hnew.SetBinContent(x_ind, y_ind, val)
+            hnew.SetBinError(x_ind, y_ind, err_arr[x_ind-1][y_ind-1])
 #     hnew.SetAxisRange(0.5, 1., 'Z')
     return hnew
 
 
 def th1_to_arr(hist):
-    return np.array([hist.GetBinContent(i) for i in range(1, hist.GetNbinsX()+1)])
+    return np.array([hist.GetBinContent(i) for i in range(1, hist.GetNbinsX()+1)]), np.array([hist.GetBinError(i) for i in range(1, hist.GetNbinsX()+1)])
 
 
 def get_list_of_element_names(thing):
