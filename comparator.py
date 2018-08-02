@@ -318,9 +318,29 @@ class Plot(object):
 
     def set_logx(self, state=True):
         self.main_pad.SetLogx(int(state))
+        if self.subplot_pad:
+            self.subplot_pad.SetLogx(int(state))
+        if self.container:
+            ax = self.container.GetXaxis()
+            if ax:
+                ax.SetMoreLogLabels()
+        if self.subplot_container:
+            ax = self.subplot_container.GetXaxis()
+            if ax:
+                ax.SetMoreLogLabels()
 
     def set_logy(self, state=True):
         self.main_pad.SetLogy(int(state))
+        if self.subplot_pad:
+            self.subplot_pad.SetLogy(int(state))
+        if self.container:
+            ax = self.container.GetYaxis()
+            if ax:
+                ax.SetMoreLogLabels()
+        if self.subplot_container:
+            ax = self.subplot_container.GetYaxis()
+            if ax:
+                ax.SetMoreLogLabels()
 
     def set_logz(self, state=True):
         self.main_pad.SetLogz(int(state))
