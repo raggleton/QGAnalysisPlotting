@@ -335,7 +335,7 @@ def do_dijet_distributions(root_dir, dir_append=""):
     dir_names = [d + dir_append for d in dir_names if not ("unknown" in d and remove_unknowns)]
     root_file = cu.open_root_file(os.path.join(root_dir, qgc.QCD_FILENAME))
 
-    directories = [cu.get_from_file(root_file, dn) for dn in dir_names]
+    directories = [cu.get_from_tfile(root_file, dn) for dn in dir_names]
     gg_col = ROOT.kRed
     qg_col = ROOT.kGreen+2
     gq_col = ROOT.kBlack
@@ -372,7 +372,7 @@ def do_dijet_distributions(root_dir, dir_append=""):
 
     # do jet1 vs jet2 flav
     output_filename = os.path.join(root_dir, "Dijet_kin_comparison_2d", "flav_jet1_jet2%s.%s" % (dir_append, OUTPUT_FMT))
-    h2d = cu.get_from_file(root_file, "Dijet_Presel%s/flav_jet1_jet2" % dir_append)
+    h2d = cu.get_from_tfile(root_file, "Dijet_Presel%s/flav_jet1_jet2" % dir_append)
     if h2d.Integral() > 0:
         h2d.Scale(1./h2d.Integral())
         qgg.do_2D_plot(h2d, output_filename, draw_opt="COLZ", logz=True, zlim=[1E-4, 1])
@@ -382,7 +382,7 @@ def do_dijet_distributions(root_dir, dir_append=""):
     deta_eff_dict = {}
     for dname in dir_names:
         output_filename = os.path.join(root_dir, "Dijet_kin_comparison_2d%s" % dir_append, "eta_jet1_eta_jet2_%s.%s" % (dname.replace("Dijet_Presel_", ""), OUTPUT_FMT))
-        h2d = cu.get_from_file(root_file, "%s/eta_jet1_vs_eta_jet2" % dname)
+        h2d = cu.get_from_tfile(root_file, "%s/eta_jet1_vs_eta_jet2" % dname)
         # h2d.Rebin2D(2, 2)
         h2d.Rebin2D(4, 4)
         # h2d.Scale(1./h2d.Integral())
@@ -530,7 +530,7 @@ def do_dijet_distribution_comparison(entries, output_dir, dir_append=""):
     for ind, (root_dir, label) in enumerate(entries):
         root_file = cu.open_root_file(os.path.join(root_dir, qgc.QCD_FILENAME))
         root_files.append(root_file)
-        directories.extend([cu.get_from_file(root_file, dn) for dn in dir_names])
+        directories.extend([cu.get_from_tfile(root_file, dn) for dn in dir_names])
         csd_template = [
             {"label": "gg " + label, "line_color": gg_col, "fill_color": gg_col, "marker_color": gg_col, "marker_style": markers[ind][0]},
             {"label": "qg " + label, "line_color": qg_col, "fill_color": qg_col, "marker_color": qg_col, "marker_style": markers[ind][1]},
@@ -557,7 +557,7 @@ def do_zpj_distributions(root_dir, dir_append=""):
     dir_names = ["ZPlusJets_Presel_q", "ZPlusJets_Presel_g", "ZPlusJets_Presel_unknown"][:2]
     dir_names = [d+dir_append for d in dir_names]
     root_file = cu.open_root_file(os.path.join(root_dir, qgc.DY_FILENAME))
-    directories = [cu.get_from_file(root_file, dn) for dn in dir_names]
+    directories = [cu.get_from_tfile(root_file, dn) for dn in dir_names]
     g_col = ROOT.kRed
     q_col = ROOT.kBlue
     unknown_col = ROOT.kViolet
@@ -583,7 +583,7 @@ def do_zpj_distributions(root_dir, dir_append=""):
 
     for dname in dir_names:
         output_filename = os.path.join(root_dir, "ZpJ_kin_comparison_2d%s" % dir_append, "pt_jet1_z_pt_jet2_z_ratio_%s.%s" % (dname.replace("ZPlusJets_Presel_", ""), OUTPUT_FMT))
-        h2d = cu.get_from_file(root_file, "%s/pt_jet1_z_pt_jet2_z_ratio" % dname)
+        h2d = cu.get_from_tfile(root_file, "%s/pt_jet1_z_pt_jet2_z_ratio" % dname)
         # h2d.Scale(1./h2d.Integral())
         title = dname.replace("ZPlusJets_Presel_", "")
         qgg.do_2D_plot(h2d, output_filename, draw_opt="COLZ", logz=False, title=title)
