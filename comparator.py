@@ -515,12 +515,19 @@ class Plot(object):
                 else:
                     # Make sure that the upper limit is the largest bin of the contributions,
                     # so long as it is within 1.5 and some upper limit
-                    bin_meds = [np.max(cu.th1_to_arr(h)) for h in self.subplot_contributions]
-                    self.subplot_container.SetMaximum(min(2.5, max(1.5, 1.*max(bin_meds))))
+                    harrays = [cu.th1_to_arr(h)[0] for h in self.subplot_contributions]
+                    try:
+                        bin_maxs = [np.max(arr[np.nonzero(arr)]) for arr in harrays]
+                    except ValueError:
+                        bin_maxs = [0]
+                    self.subplot_container.SetMaximum(min(2.5, max(1.5, 1.*max(bin_maxs))))
                 
                     # Make sure the lower limit is the smallest bin of the contributions, 
                     # so long as it is within 0 and 0.5
-                    bin_mins = [np.min(cu.th1_to_arr(h)) for h in self.subplot_contributions]
+                    try:
+                        bin_mins = [np.min(arr[np.nonzero(arr)]) for arr in harrays]
+                    except ValueError:
+                        bin_mins = [0]
                     self.subplot_container.SetMinimum(min(0.5, min(bin_mins)))
                 
                 xax = modifier.GetXaxis()
