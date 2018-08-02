@@ -384,7 +384,7 @@ class Plot(object):
             else:
                 self.canvas = ROOT.TCanvas(ROOT.TUUID().AsString(), "", *self.default_canvas_size)
                 self.canvas.SetTicks(1, 1)
-                # right_margin = 0.03
+                right_margin = 0.03
                 if self.subplot:
                     self.main_pad = ROOT.TPad("main_pad", "", 0, self.subplot_pad_height+self.subplot_pad_fudge, 1, 1)
                     ROOT.SetOwnership(self.main_pad, False)
@@ -501,7 +501,7 @@ class Plot(object):
             self.subplot_container.SetTitle(";%s;%s" % (self.xtitle, self.subplot_title))
 
             self._rescale_plot_labels(self.subplot_container, self.subplot_pad_height)
-            self.subplot_container.GetXaxis().SetTitleOffset(self.subplot_container.GetXaxis().GetTitleOffset()*2.8)
+            self.subplot_container.GetXaxis().SetTitleOffset(self.subplot_container.GetXaxis().GetTitleOffset()*3)
             self.subplot_container.GetYaxis().SetNdivisions(505)
 
             if self.xlim:
