@@ -370,7 +370,7 @@ class Plot(object):
             elif self.plot_what in ['function']:
                 draw_opts = ""
             elif self.plot_what == "hist":
-                draw_opts = ""
+                draw_opts = "NOSTACK"
 
         # Need a canvas before drawing
         # If we have "SAME" then we want to draw this Plot object
