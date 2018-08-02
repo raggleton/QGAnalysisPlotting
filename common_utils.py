@@ -91,7 +91,7 @@ def exists_in_file(tfile, obj_name):
     return True
 
 
-def get_from_file(tfile, obj_name, info=False):
+def get_from_tfile(tfile, obj_name, info=False):
     """Get some object from ROOT TFile with checks."""
     if info:
         print("Getting %s" % obj_name)
@@ -99,6 +99,18 @@ def get_from_file(tfile, obj_name, info=False):
         raise IOError("Can't get object named %s from %s" % (obj_name, tfile.GetName()))
     else:
         return tfile.Get(obj_name)
+
+
+def grab_obj_from_file(file_name, obj_name):
+    """Get object names obj_name from ROOT file file_name"""
+    input_file = open_root_file(file_name)
+    obj = get_from_tfile(input_file, obj_name)
+    if isinstance(obj, (ROOT.TH1)):
+        obj.SetDirectory(0)  # Ownership kludge
+        input_file.Close()
+        return obj.Clone(get_unique_str())
+    else:
+        return obj
 
 
 def check_exp(n):
@@ -189,3 +201,18 @@ def make_normalised_TH2(hist, norm_axis, recolour=True):
 def th1_to_arr(hist):
     return np.array([hist.GetBinContent(i) for i in range(1, hist.GetNbinsX()+1)])
 
+
+def get_list_of_element_names(thing):
+    """Get list of key names for given thing in a ROOT file"""
+    return [x.GetName() for x in thing.GetListOfKeys()]
+
+
+def get_list_of_objects_in_dir(filename, dirname):
+    """Get list of elements in a TDirectory"""
+    f = open_root_file(filename)  # need to keep this in memory otherwise the get_list... segfaults
+    d = get_from_tfile(f, dirname)
+    return get_list_of_element_names(d)
+
+
+def get_unique_str():
+    return ROOT.TUUID().AsString()
