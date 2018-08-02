@@ -8,9 +8,11 @@ from collections import namedtuple
 # (V.Dark blue & light purple do look a bit diff)
 # Red and blue does look different
 DY_COLOUR =  880 # kViolet
+DY_COLOUR =  628 # kViolet
 QCD_COLOUR = 867 # kAzure+7
 
 SINGLE_MU_COLOUR =  884 # kViolet+1
+SINGLE_MU_COLOUR =  634 # kViolet+1
 JETHT_COLOUR = 600 # kBlue
 ZB_COLOUR = 416 # kGreen
 
@@ -21,15 +23,15 @@ QCD_MARKER = 22
 # When comparing e.g. PU bins
 # FIXME: update for colourblindness
 DY_COLOURS = [880, 881, 884, 871]
-QCD_COLOURS = [867, 600, 853, 425]
+QCD_COLOURS = [867, 600, 853, 870]
 
 PT_BINS = [(80, 100), (100, 200), (400, 500), (1000, 2000), (80, 2000)]
 PT_BINS = [(80, 100), (100, 120), (200, 250), (400, 500), (1000, 2000), (80, 2000)]
 THEORY_PT_BINS = [(100, 200), (400, 500), (1000, 2000), (80, 2000)]
 THEORY_PT_BINS = [(100, 200), (200, 300), (300, 400), (400, 500), (500, 600), (600, 800), (800, 1000), (1000, 2000), (80, 2000)]
 # THEORY_PT_BINS = [(20, 40), (40, 60), (60, 80), (80, 100), (100, 120),
-THEORY_PT_BINS = [(20, 25), (40, 45), (50, 55), (60, 70), (70, 80), (80, 90), (90, 100), (100, 120),
-                  (120, 160), (160, 200), (200, 220), (280, 300), (300, 400), (400, 410),
+THEORY_PT_BINS = [(20, 25), (40, 50), (50, 55), (60, 70), (70, 80), (80, 90), (90, 100), (100, 120),
+                  (120, 160), (160, 200), (200, 220), (280, 300), (300, 350), (400, 410),
                   (400, 500), (500, 600), (500, 550), (600, 800), (800, 1000),
                   (1000, 1400), (1400, 2000)]
 
@@ -85,7 +87,7 @@ QCD_PYTHIA_ONLY_FILENAME = "uhh2.AnalysisModuleRunner.MC.MC_PYTHIA-QCD_.root"
 SINGLE_MU_FILENAME = "uhh2.AnalysisModuleRunner.DATA.Data_SingleMu.root"
 JETHT_FILENAME = "uhh2.AnalysisModuleRunner.DATA.Data_JetHT.root"
 ZB_FILENAME = "uhh2.AnalysisModuleRunner.DATA.Data_ZeroBias.root"
-
+ZPJ_ALL_FILENAME = "uhh2.AnalysisModuleRunner.MC.MC_MGPYTHIA_DYJetsToLL_M-50_HT-All.root"
 
 def get_parser():
     """Return a parser to loop over several input dirs"""
