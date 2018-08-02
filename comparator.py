@@ -78,7 +78,7 @@ def grab_obj(file_name, obj_name):
     """Get object names obj_name from ROOT file file_name"""
     # TODO: checks!
     input_file = cu.open_root_file(file_name)
-    obj = cu.get_from_file(input_file, obj_name)
+    obj = cu.get_from_tfile(input_file, obj_name)
     # print("Getting", obj_name, "from", file_name)
     if isinstance(obj, (ROOT.TH1, ROOT.TGraph)):
         obj.SetDirectory(0)  # Ownership kludge
