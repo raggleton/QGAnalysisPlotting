@@ -525,6 +525,8 @@ class Plot(object):
                 
                 xax = modifier.GetXaxis()
                 self.subplot_line = ROOT.TLine(xax.GetXmin(), 1., xax.GetXmax(), 1.)
+                if self.xlim:
+                    self.subplot_line = ROOT.TLine(self.xlim[0], 1., self.xlim[1], 1.)
                 self.subplot_line.SetLineStyle(2)
                 self.subplot_line.SetLineWidth(2)
                 self.subplot_line.SetLineColor(ROOT.kBlack)
