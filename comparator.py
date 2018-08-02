@@ -472,7 +472,10 @@ class Plot(object):
         text_latex.SetTextAlign(ROOT.kHAlignLeft + ROOT.kVAlignTop)
         text_latex.SetTextFont(42)
         text_latex.SetTextSize(0.03)
-        text_latex.DrawLatex(0.18, 0.88, self.title)
+        if self.subplot:
+            text_latex.DrawLatex(0.18, 0.9, self.title)
+        else:
+            text_latex.DrawLatex(0.18, 0.85, self.title)
 
         # Do subplot
         if self.subplot:
