@@ -169,7 +169,7 @@ def do_trig_plots_vs_singlemu(input_filename, output_dir, title="", eta_min=-2.4
     if yax.GetBinLowEdge(eta_max_bin) == eta_max:
         eta_max_bin -= 1
 
-    h_all_pt = h_all.ProjectionX("allPT", eta_min_bin, eta_max_bin)
+    h_all_pt = h_all.ProjectionX("allPT", eta_min_bin, eta_max_bin, "e")
     h_all_pt.Sumw2()
     h_all_pt.SetFillColor(17)
     h_all_pt.SetLineColor(17)
@@ -181,7 +181,7 @@ def do_trig_plots_vs_singlemu(input_filename, output_dir, title="", eta_min=-2.4
         rebin_factor = 2 if info['threshold'] > 100 else 2  # rough rebinning across all pt
         h2d = f.Get(dir_name + "/pt_vs_eta_%s_v*" % name)
         info['h2d'] = h2d
-        info['hpt'] = h2d.ProjectionX(name+"PT", eta_min_bin, eta_max_bin)
+        info['hpt'] = h2d.ProjectionX(name+"PT", eta_min_bin, eta_max_bin, "e")
         info['hpt'].Sumw2()
         info['hpt'].Scale(info['prescale']/list(this_trig_info.values())[-1]['prescale'])  # normalise it
         info['hpt'].SetLineColor(info['color'])
@@ -384,7 +384,7 @@ def do_trig_plots_vs_prevjet(input_filename, output_dir, title="", eta_min=-2.4,
         
         last_prescale = float(list(this_trig_info.values())[-1]['prescale'])
 
-        hpt_denom = h2d_denom.ProjectionX(denom_name+"PT", eta_min_bin, eta_max_bin)
+        hpt_denom = h2d_denom.ProjectionX(denom_name, eta_min_bin, eta_max_bin, "e")
         hpt_denom.Sumw2()
         hpt_denom.Scale(denom_dict['prescale']/last_prescale)  # normalise it
         hpt_denom.SetLineColor(num_dict['color'])
@@ -401,7 +401,7 @@ def do_trig_plots_vs_prevjet(input_filename, output_dir, title="", eta_min=-2.4,
 
         # numerator (next trig)
         h2d_num = f.Get(dir_name + "/pt_vs_eta_%s_v*" % num_name)
-        hpt_num = h2d_num.ProjectionX(num_name+"PTCond"+dir_name, eta_min_bin, eta_max_bin)
+        hpt_num = h2d_num.ProjectionX(num_name+"And"+denom_name, eta_min_bin, eta_max_bin, "e")
         hpt_num.Sumw2()
 
         hpt_num.Scale(num_dict['prescale']/last_prescale)  # normalise it
