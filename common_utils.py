@@ -182,11 +182,8 @@ def make_normalised_TH2(hist, norm_axis, recolour=True):
         for ind, xbin in enumerate(arr):
             if xbin.sum() != 0:
                 factor = xbin.sum()
-                print("factor:", factor)
                 arr[ind] = xbin / factor
-                print(err_arr[ind])
                 err_arr[ind] /= factor
-                print(err_arr[ind])
 
     if norm_axis == 'Y':
         arr = arr.T
