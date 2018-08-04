@@ -42,67 +42,81 @@ OUTPUT_FMT = "pdf"
 
 
 trig_info = OrderedDict()
+
 trig_info['HLT_PFJet40'] = {
     'threshold': 40.,
-    'prescale': 135426.215343,
+    'prescale': 0,
+    'lumi': 264313.95,
     'color': ROOT.kRed
 }
 trig_info['HLT_PFJet60'] = {
     'threshold': 60.,
-    'prescale': 49891.9453547,
+    'prescale': 0,
+    'lumi': 718756.331,
     'color': ROOT.kBlue,
     'fit_all': (lambda isFatJet: not isFatJet)
 }
 trig_info['HLT_PFJet80'] = {
     'threshold': 80.,
-    'prescale': 13120.4895678,
+    'prescale': 0,
+    'lumi': 2727537.612,
     'color': ROOT.kGreen+2,
     'fit_all': (lambda isFatJet: not isFatJet)
 }
 trig_info['HLT_PFJet140'] = {
     'threshold': 140.,
-    'prescale': 1496.44452961,
+    'prescale': 0,
+    'lumi': 23949596.439,
     'color': ROOT.kViolet+5,
     'fit_all': (lambda isFatJet: not isFatJet)
 }
 trig_info['HLT_PFJet200'] = {
     'threshold': 200.,
-    'prescale': 348.686346954,
+    'prescale': 0,
+    'lumi': 102671470.596,
     'color': ROOT.kOrange,
     'fit_all': (lambda isFatJet: not isFatJet)
 }
 trig_info['HLT_PFJet260'] = {
     'threshold': 260.,
-    'prescale': 61.0210313345,
+    'prescale': 0,
+    'lumi': 587533374.608,
     'color': ROOT.kTeal,
     'fit_all': (lambda isFatJet: not isFatJet)
 }
 trig_info['HLT_PFJet320'] = {
     'threshold': 320.,
-    'prescale': 20.446914767,
+    'prescale': 0,
+    'lumi': 1753875063.756,
     'color': ROOT.kViolet,
     'fit_all': (lambda isFatJet: not isFatJet)
 }
 trig_info['HLT_PFJet400'] = {
     'threshold': 400.,
-    'prescale': 3*2.38456,
+    'prescale': 0,
+    'lumi': 5139581289.335,
     'color': ROOT.kOrange-6,
     'fit_all': (lambda isFatJet: not isFatJet)
 }
 trig_info['HLT_PFJet450'] = {
     'threshold': 450.,
-    'prescale': 1.00010464076,
+    'prescale': 0,
+    'lumi': 35918219492.947,
     'color': ROOT.kAzure+1,
     'fit_all': (lambda isFatJet: False) 
 }
 trig_info['HLT_PFJet500'] = {
     'threshold': 500.,
-    'prescale': 1.00010464076,
+    'prescale': 0,
+    'lumi': 35918219492.947,
     'color': ROOT.kSpring-8,
     'fit_all': (lambda isFatJet: False)
 }
 
-all_results = OrderedDict()
+total_lumi = trig_info['HLT_PFJet500']['lumi']
+for trig_name in trig_info:
+    trig_info[trig_name]['prescale'] = total_lumi / trig_info[trig_name]['lumi']
+
 
 def do_custom_rebin(hist, newname, lower_limit, factor):
     """Makes a rebinned histogram above lower_limit by grouping together bins with given factor"""
@@ -358,17 +372,11 @@ def do_trig_plots_vs_prevjet(input_filename, output_dir, title="", eta_min=-2.4,
 
     this_trig_info = deepcopy(trig_info)
 
+    # first, get the denominator hists for each trigger, ie use plain fire HLT_PFX
     for denom_name, num_name in zip(list(this_trig_info.keys())[:-1], list(this_trig_info.keys())[1:]):
-        denom_dict = this_trig_info[denom_name]
-        num_dict = this_trig_info[num_name]
-        print("Doing", num_name, "against", denom_name)
+        # num_dict = this_trig_info[num_name]
+        denom_dict = this_trig_info[denom_name]        
 
-        # for each trig, jet 2d pt vs eta hist, project into 1D pt distribution
-        # then create efficiency hist using previous jet hist hist
-        rebin_factor = 2 if num_dict['threshold'] > 100 else 2  # rough rebinning across all pt
-        # rebin_factor = 1
-
-        # denominator
         dir_name = denom_name+"_v*Ref"
         h2d_denom = f.Get(dir_name + "/pt_vs_eta_all")
         
@@ -382,57 +390,126 @@ def do_trig_plots_vs_prevjet(input_filename, output_dir, title="", eta_min=-2.4,
         if yax.GetBinLowEdge(eta_max_bin) == eta_max:
             eta_max_bin -= 1
         
-        last_prescale = float(list(this_trig_info.values())[-1]['prescale'])
-
         hpt_denom = h2d_denom.ProjectionX(denom_name, eta_min_bin, eta_max_bin, "e")
         hpt_denom.Sumw2()
-        hpt_denom.Scale(denom_dict['prescale']/last_prescale)  # normalise it
-        hpt_denom.SetLineColor(num_dict['color'])
-        hpt_denom.SetMarkerColor(num_dict['color'])
-        denom_dict['hpt'] = hpt_denom
+        print(denom_dict['threshold'], denom_dict['prescale'] )
+        hpt_denom.Scale(denom_dict['prescale'])  
+        hpt_denom.Rebin(4)  
 
-        this_hpt_denom = hpt_denom.Clone(hpt_denom.GetName()+"Clone").Rebin(rebin_factor)
+        hpt_denom.SetLineColor(denom_dict['color'])
+        hpt_denom.SetMarkerColor(denom_dict['color'])
+        this_trig_info[denom_name]['hpt'] = hpt_denom
 
-        # rebin the jet pt hist at higher pt where it plateaus
-        higher_pt_rebin_factor = 10
-        higher_pt_rebin_limit = num_dict['threshold'] * 1.4
-        this_hpt_denom_rebin = do_custom_rebin(this_hpt_denom, this_hpt_denom.GetName()+"CustomRebin", higher_pt_rebin_limit, higher_pt_rebin_factor)
-        # this_hpt_denom_rebin = this_hpt_denom
+    # now we can do the conditional hists
+    for denom_name, num_name in zip(list(this_trig_info.keys())[:-1], list(this_trig_info.keys())[1:]):
+        num_dict = this_trig_info[num_name]
+        denom_dict = this_trig_info[denom_name]        
 
-        # numerator (next trig)
+        dir_name = denom_name+"_v*Ref"
+        print(dir_name)
         h2d_num = f.Get(dir_name + "/pt_vs_eta_%s_v*" % num_name)
         hpt_num = h2d_num.ProjectionX(num_name+"And"+denom_name, eta_min_bin, eta_max_bin, "e")
         hpt_num.Sumw2()
-
-        hpt_num.Scale(num_dict['prescale']/last_prescale)  # normalise it
         hpt_num.SetLineColor(num_dict['color'])
         hpt_num.SetMarkerColor(num_dict['color'])
+
+        print('Scaling', hpt_num.GetName(), "by", denom_dict['prescale'], "*", num_dict['prescale'])
+        hpt_num.Scale(denom_dict['prescale']*num_dict['prescale'])
+        hpt_num.Rebin(4)
+
         num_dict['hpt_cond'] = hpt_num
-        # if 'hpt' not in this_trig_info[num_name]:
-        #     this_trig_info[num_name]['hpt'] = hpt_num
-        # else:
-            # print('already done hpt')
 
-        this_hpt_num = hpt_num.Clone(hpt_num.GetName()+"Clone").Rebin(rebin_factor)
-
-        # rebin the jet pt hist at higher pt where it plateaus
-        this_hpt_num_rebin = do_custom_rebin(this_hpt_num, this_hpt_num.GetName()+"CustomRebin", higher_pt_rebin_limit, higher_pt_rebin_factor)
-        # this_hpt_num_rebin = this_hpt_num
-
-        num_dict['heff'] = this_hpt_num_rebin.Clone(this_hpt_num_rebin.GetName() + "Eff")
+        num_dict['heff'] = hpt_num.Clone(hpt_num.GetName() + "Eff")
         num_dict['heff'].Sumw2()
         # num_dict['grEff'] = ROOT.TGraphAsymmErrors(this_hpt_num_rebin, this_hpt_denom_rebin)
         
+        this_hpt_denom_rebin = denom_dict['hpt']
+
         print("Creating efficiency from", num_dict['heff'].GetName(), "and", this_hpt_denom_rebin.GetName())
         num_dict['heff'].Divide(num_dict['heff'], this_hpt_denom_rebin, 1, 1, "B")
-        new_title = num_dict['heff'].GetTitle().replace("_v*", "")+" "+append
+        new_title = num_dict['heff'].GetTitle().replace("_v*", "")+" relative to "+denom_name.replace("_v*", "")+" ["+append+"]"
         num_dict['heff'].SetTitle(new_title+";Leading jet p_{T} [GeV];#epsilon")
+
+
+    # for denom_name, num_name in zip(list(this_trig_info.keys())[:-1], list(this_trig_info.keys())[1:]):
+    #     denom_dict = this_trig_info[denom_name]
+    #     num_dict = this_trig_info[num_name]
+    #     print("Doing", num_name, "against", denom_name)
+
+    #     # for each trig, jet 2d pt vs eta hist, project into 1D pt distribution
+    #     # then create efficiency hist using previous jet hist hist
+    #     rebin_factor = 2 if num_dict['threshold'] > 100 else 2  # rough rebinning across all pt
+    #     rebin_factor = 1
+
+    #     # denominator
+    #     # ------------------------
+    #     dir_name = denom_name+"_v*Ref"
+    #     h2d_denom = f.Get(dir_name + "/pt_vs_eta_all")
+        
+    #     # Figure out bins for eta edges
+    #     eta_min_bin, eta_max_bin = 0, h2d_denom.GetNbinsY()+1
+    #     yax = h2d_denom.GetYaxis()
+
+    #     eta_min_bin = yax.FindBin(eta_min)
+    #     eta_max_bin = yax.FindBin(eta_max)
+    #     # don't want to include the upper bin if the value is at the low edge
+    #     if yax.GetBinLowEdge(eta_max_bin) == eta_max:
+    #         eta_max_bin -= 1
+        
+    #     # last_prescale = float(list(this_trig_info.values())[-1]['prescale'])
+        
+    #     total_lumi = list(trig_info.values())[-1]['lumi']
+
+    #     hpt_denom = h2d_denom.ProjectionX(denom_name, eta_min_bin, eta_max_bin, "e")
+    #     hpt_denom.Sumw2()
+    #     # scale up to account for prescale, assumes last trigger is unprescaled
+    #     hpt_denom.Scale(total_lumi / denom_dict['lumi'])  
+    #     hpt_denom.SetLineColor(num_dict['color'])
+    #     hpt_denom.SetMarkerColor(num_dict['color'])
+    #     denom_dict['hpt'] = hpt_denom
+
+    #     this_hpt_denom = hpt_denom.Clone(hpt_denom.GetName()+"Clone").Rebin(rebin_factor)
+
+    #     # rebin the jet pt hist at higher pt where it plateaus
+    #     # higher_pt_rebin_factor = 10
+    #     # higher_pt_rebin_limit = num_dict['threshold'] * 1.4
+    #     # this_hpt_denom_rebin = do_custom_rebin(this_hpt_denom, this_hpt_denom.GetName()+"CustomRebin", higher_pt_rebin_limit, higher_pt_rebin_factor)
+    #     this_hpt_denom_rebin = this_hpt_denom
+
+    #     # numerator (next trigger)
+    #     # ------------------------
+    #     h2d_num = f.Get(dir_name + "/pt_vs_eta_%s_v*" % num_name)
+    #     hpt_num = h2d_num.ProjectionX(num_name+"And"+denom_name, eta_min_bin, eta_max_bin, "e")
+    #     hpt_num.Sumw2()
+    #     # hpt_num.Scale((num_dict['prescale']/last_prescale)/denom_dict['prescale'])  # normalise it
+    #     # hpt_num.Scale(num_dict['prescale']/denom_dict['prescale'])  # normalise it
+    #     # hpt_num.Scale(total_lumi / num_dict['lumi'])  # normalise it
+    #     hpt_num.Scale((total_lumi / denom_dict['lumi']))  # normalise it
+    #     hpt_num.SetLineColor(num_dict['color'])
+    #     hpt_num.SetMarkerColor(num_dict['color'])
+    #     num_dict['hpt_cond'] = hpt_num
+
+    #     this_hpt_num = hpt_num.Clone(hpt_num.GetName()+"Clone").Rebin(rebin_factor)
+
+    #     # rebin the jet pt hist at higher pt where it plateaus
+    #     # this_hpt_num_rebin = do_custom_rebin(this_hpt_num, this_hpt_num.GetName()+"CustomRebin", higher_pt_rebin_limit, higher_pt_rebin_factor)
+    #     this_hpt_num_rebin = this_hpt_num
+
+    #     num_dict['heff'] = this_hpt_num_rebin.Clone(this_hpt_num_rebin.GetName() + "Eff")
+    #     num_dict['heff'].Sumw2()
+    #     # num_dict['grEff'] = ROOT.TGraphAsymmErrors(this_hpt_num_rebin, this_hpt_denom_rebin)
+        
+    #     print("Creating efficiency from", num_dict['heff'].GetName(), "and", this_hpt_denom_rebin.GetName())
+    #     num_dict['heff'].Divide(num_dict['heff'], this_hpt_denom_rebin, 1, 1, "B")
+    #     new_title = num_dict['heff'].GetTitle().replace("_v*", "")+" relative to "+denom_name.replace("_v*", "")+" ["+append+"]"
+    #     num_dict['heff'].SetTitle(new_title+";Leading jet p_{T} [GeV];#epsilon")
         
         # new_title = num_dict['grEff'].GetTitle().replace("_v*", "")+" "+append
         # num_dict['grEff'].SetTitle(new_title+";Leading jet p_{T} [GeV];#epsilon")
 
     # return
-    # plot pt distributions
+    
+    # plot pt distribution of normal triggers
     hst = ROOT.THStack("hst", append+";Jet p_{T} [GeV];N")
     leg = ROOT.TLegend(0.5, 0.5, 0.88, 0.88)
 
@@ -452,7 +529,7 @@ def do_trig_plots_vs_prevjet(input_filename, output_dir, title="", eta_min=-2.4,
     jet_text.SetTextFont(63)
     jet_text.SetTextSize(18)
 
-    rebin_factor = 5
+    rebin_factor = 1
     for name, info in this_trig_info.items():
         print(info)
         if 'hpt' in info:
@@ -470,15 +547,20 @@ def do_trig_plots_vs_prevjet(input_filename, output_dir, title="", eta_min=-2.4,
     c.SetLogy()
     c.SaveAs(output_dir + "/pt_trig_%s_prevJet.%s" % (append, OUTPUT_FMT))
 
+    # plot pt distribution of conditional triggers
     c_cond = ROOT.TCanvas("c1_cond", "", 800, 600)
     hst_cond = ROOT.THStack("hst_cond", append+";Jet p_{T} [GeV];N")
     leg = ROOT.TLegend(0.5, 0.5, 0.88, 0.88)
-    rebin_factor = 5
     for name, info in this_trig_info.items():
-        print(info)
+        # print(info)
         if 'hpt_cond' in info:
+            # info['hpt_cond'].SetLineStyle(2)
             hst_cond.Add(info['hpt_cond'].Rebin(rebin_factor))
-            leg.AddEntry(info['hpt_cond'], name, "L")
+            leg.AddEntry(info['hpt_cond'], info['hpt_cond'].GetName(), "L")
+        
+        # if 'hpt' in info:
+            # hst_cond.Add(info['hpt']) #.Rebin(rebin_factor))
+            # leg.AddEntry(info['hpt'], info['hpt'].GetName(), "L")
 
     c_cond.SetTicks(1, 1)
     hst_cond.Draw("HISTE NOSTACK")
@@ -491,7 +573,7 @@ def do_trig_plots_vs_prevjet(input_filename, output_dir, title="", eta_min=-2.4,
     c_cond.SaveAs(output_dir + "/pt_trig_%s_prevJet_cond.%s" % (append, OUTPUT_FMT))
 
 
-    return
+    # return
 
     # plot effs
     for ind, (name, info) in enumerate(this_trig_info.items()):
@@ -503,7 +585,7 @@ def do_trig_plots_vs_prevjet(input_filename, output_dir, title="", eta_min=-2.4,
         c.SetTicks(1, 1)
         c.SetLogy()
 
-        info['heff'].SetMarkerStyle(22)
+        info['heff'].SetMarkerStyle(20)
         # info['heff'].SetTitle(name)
         # info['heff'].SetMaximum(1.5)
         # info['heff'].SetMinimum(0)
@@ -529,7 +611,7 @@ def do_trig_plots_vs_prevjet(input_filename, output_dir, title="", eta_min=-2.4,
         eff_fit.SetParameter('sigma', info['threshold']/10)
         eff_fit.SetParameter('N', 1)
         eff_fit.SetNpx(5000)
-        fit_result = info['heff'].Fit(eff_fit, 'RSE')
+        fit_result = info['heff'].Fit(eff_fit, 'RSEQ')
         info['heff'].Draw("")
 
         ROOT.gPad.Modified()
@@ -539,7 +621,7 @@ def do_trig_plots_vs_prevjet(input_filename, output_dir, title="", eta_min=-2.4,
         # # if not info.get("fit_all", lambda x: True)(is_fat_jet):
         fit_factor = 0.4 if is_fat_jet else 0.4
         eff_fit.SetRange(eff_fit.GetX(fit_factor*eff_fit.GetParameter("N")), higher_threshold*1.)
-        fit_result = info['heff'].Fit(eff_fit, 'RSEM')
+        fit_result = info['heff'].Fit(eff_fit, 'RSEMQ')
         ROOT.gPad.Modified()
         ROOT.gPad.Update()
 
@@ -610,6 +692,7 @@ def do_plots_and_comparisons(inputs, vs="SingleMu"):
         # [1.6, 2.4, "endcapPlus"],
         # [-1.6, 1.6, "barrel"]
     )
+    all_results = OrderedDict()
     for eta_min, eta_max, append in regions:
         for filename, title in do_these:
             if vs == "SingleMu": 
@@ -654,11 +737,11 @@ if __name__ == "__main__":
         ('workdir_ak8chs_jettrig/uhh2.AnalysisModuleRunner.DATA.Data_SingleMu_JetTrig.root', 'AK8 CHS'),
         ('workdir_ak8puppi_jettrig/uhh2.AnalysisModuleRunner.DATA.Data_SingleMu_JetTrig.root', 'AK8 PUPPI'),
     ]
+    # do_plots_and_comparisons(do_these, vs="SingleMu")
     do_these = [
         ('workdir_ak4chs_jettrig/uhh2.AnalysisModuleRunner.DATA.Data_JetHT.root', 'AK4 CHS'),
-        # ('workdir_ak4puppi_jettrig/uhh2.AnalysisModuleRunner.DATA.Data_JetHT.root', 'AK4 PUPPI'),
+        ('workdir_ak4puppi_jettrig/uhh2.AnalysisModuleRunner.DATA.Data_JetHT.root', 'AK4 PUPPI'),
         # ('workdir_ak8chs_jettrig/uhh2.AnalysisModuleRunner.DATA.Data_JetHT.root', 'AK8 CHS'),
-        # ('workdir_ak8puppi_jettrig/uhh2.AnalysisModuleRunner.DATA.Data_JetHT.root', 'AK8 PUPPI'),
+        ('workdir_ak8puppi_jettrig/uhh2.AnalysisModuleRunner.DATA.Data_JetHT.root', 'AK8 PUPPI'),
     ]
-    # do_plots_and_comparisons(do_these, vs="SingleMu")
     do_plots_and_comparisons(do_these, vs="PrevJet")
