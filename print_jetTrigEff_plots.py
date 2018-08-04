@@ -121,7 +121,7 @@ for trig_name in trig_info:
 
 def do_custom_rebin(hist, newname, lower_limit, factor):
     """Makes a rebinned histogram above lower_limit by grouping together bins with given factor"""
-    print("custom rebin:", lower_limit, factor)
+    # print("custom rebin:", lower_limit, factor)
     if factor == 1:
         return hist.Clone(newname)
 
@@ -130,7 +130,7 @@ def do_custom_rebin(hist, newname, lower_limit, factor):
 
     # figure out sensible lower_limit if not in list of bin edges
     if lower_limit not in bins:
-        print('WARNING: lower_limit not found in bin edges')
+        # print('WARNING: lower_limit not found in bin edges')
         # find the closest bin edge to the desired value
         ind = bisect_left(bins, lower_limit)
         if ind == 0:
@@ -143,14 +143,14 @@ def do_custom_rebin(hist, newname, lower_limit, factor):
             lower_limit = lower
         else:
             lower_limit = higher
-        print("Adjusted lower_limit to nearest value =", lower_limit)
+        # print("Adjusted lower_limit to nearest value =", lower_limit)
 
     # ensure integer multiple of factor bins to be regrouped
     rebin_remainder = (nbins-bins.index(lower_limit)) % factor
     if rebin_remainder != 0:
-        print("WARNING: factor must be a divisor with no remainder. nbins: ", nbins-bins.index(lower_limit), "factor:", factor)
+        # print("WARNING: factor must be a divisor with no remainder. nbins: ", nbins-bins.index(lower_limit), "factor:", factor)
         lower_limit = bins[bins.index(lower_limit)+rebin_remainder]
-        print("Will adjust lower_limit to higher value to make this so. New lower_limit = ", lower_limit)
+        # print("Will adjust lower_limit to higher value to make this so. New lower_limit = ", lower_limit)
 
     lower_limit_ind = bins.index(lower_limit)
     # original bins at low x
@@ -401,7 +401,7 @@ def do_trig_plots_vs_prevjet(input_filename, output_dir, title="", eta_min=-2.4,
     for denom_name, num_name in zip(list(this_trig_info.keys())[:-1], list(this_trig_info.keys())[1:]):
         num_dict = this_trig_info[num_name]
         denom_dict = this_trig_info[denom_name]        
-        print("Creating efficiency hist from", num_name, "and", denom_name)
+        # print("Creating efficiency hist from", num_name, "and", denom_name)
 
         hpt_num = num_dict['hpt']
         hpt_denom = denom_dict['hpt']
@@ -464,7 +464,7 @@ def do_trig_plots_vs_prevjet(input_filename, output_dir, title="", eta_min=-2.4,
         c.SetTicks(1, 1)
         # c.SetLogy()
 
-        print("Printing heff for", name)
+        # print("Printing heff for", name)
 
         info['heff'].SetMarkerStyle(20)
         info['heff'].SetMaximum(1.6)
@@ -534,7 +534,7 @@ def do_trig_plots_vs_prevjet(input_filename, output_dir, title="", eta_min=-2.4,
 
         c.SaveAs(output_dir + "/eff_prevJet_%s_%s.%s" % (name, append, OUTPUT_FMT))
 
-    print(this_trig_info)
+    # print(this_trig_info)
     # make graph of fully efficiency pt vs threshold
     thresholds = [info['threshold'] for info in list(this_trig_info.values())[1:]]
     fully_eff_pt = [info['good_eff_pt'] for info in list(this_trig_info.values())[1:]]
@@ -549,7 +549,7 @@ def do_trig_plots_vs_prevjet(input_filename, output_dir, title="", eta_min=-2.4,
     thres_fit.SetLineColor(ROOT.kRed)
     thres_fit.SetLineWidth(1)
     thres_fit.SetLineStyle(2)
-    status = gr.Fit(thres_fit, "RSE")
+    status = gr.Fit(thres_fit, "RSEQ")
     gr.Draw("AP")
     c.Modified()
     c.Update()
@@ -565,53 +565,88 @@ def do_trig_plots_vs_prevjet(input_filename, output_dir, title="", eta_min=-2.4,
     jet_text.Draw()
     c.SaveAs(output_dir + "/fully_eff_prevJet_pt_vs_threshold_%s.%s" % (append, OUTPUT_FMT))
 
+    # print(this_trig_info)
     return this_trig_info
+
+
+def print_results(title, results_dict):
+    print(title)
+    N = 20
+    print('-'*N)
+    for name, info in results_dict.items():
+        print(name, ": %.1f" % info.get('good_eff_pt', -1))
+    print('-'*N)
+
+
+def do_comparison_graph(all_results, binning, output_dirs):
+    if isinstance(output_dirs, str):
+        output_dirs = [output_dirs]*len(binning)
+    for bin_name, odir in zip(binning, output_dirs):
+        mg = ROOT.TMultiGraph()
+        c = ROOT.TCanvas("cmg"+cu.get_unique_str(), "", 800, 600)
+        c.SetTicks(1, 1)
+        leg = ROOT.TLegend(0.65, 0.2, 0.92, 0.42)
+        colors = [ROOT.kBlack, ROOT.kBlue, ROOT.kRed, ROOT.kOrange+1, ROOT.kGreen+2]
+        
+        counter = 0
+        for name, result in all_results.items():
+            if bin_name not in name:
+                continue
+            thresholds = [info['threshold'] for k, info in result.items() if 'PFJet40' not in k]
+            fully_eff_pt = [info['good_eff_pt'] for k, info in result.items() if 'PFJet40' not in k]
+            g = ROOT.TGraph(len(thresholds), array('d', thresholds), array('d', fully_eff_pt))
+            g.SetMarkerColor(colors[counter])
+            g.SetMarkerStyle(20+counter)
+            g.SetLineColor(colors[counter])
+            mg.Add(g)
+            leg.AddEntry(g, name, "LP")
+            counter += 1
+        
+        mg.SetTitle(";Trigger threshold [GeV];99% efficiency p_{T} [GeV]")
+        mg.Draw("ALP")
+        leg.Draw()
+        cms_text = ROOT.TPaveText(0.14, 0.9, 0.4, 0.92, "NDC")
+        cms_text.AddText("CMS Preliminary %.3f fb^{-1}" % (total_lumi / 1e9))
+        cms_text.SetFillStyle(0)
+        cms_text.SetBorderSize(0)
+        cms_text.SetTextAlign(ROOT.kHAlignLeft + ROOT.kVAlignBottom)
+        cms_text.SetTextFont(63)
+        cms_text.SetTextSize(18)
+        cms_text.Draw()
+        c.SaveAs(odir+"/comparingTriggers_%s.%s" % (bin_name.replace(" ", "_"), OUTPUT_FMT))
+
 
 
 def do_plots_and_comparisons(inputs, vs="SingleMu"):
     regions = (
-        [-4.7, 4.7, "all_eta"],
+        # [-4.7, 4.7, "all_eta"],
         [-2.4, 2.4, "center"],
-        [-2.4, -1.6, "endcapMinus"],
-        [1.6, 2.4, "endcapPlus"],
-        [-1.6, 1.6, "barrel"]
+        [-2.4, -1.6, "endcap_minus"],
+        [1.6, 2.4, "endcap_plus"],
+        [-1.6, 1.6, "barrel"],
     )
     all_results = OrderedDict()
-    for eta_min, eta_max, append in regions:
-        for filename, title in do_these:
+    for filename, title in inputs:
+        for eta_min, eta_max, append in regions:
+            this_title = title+" ["+append+"]"
             if vs == "SingleMu": 
                 results = do_trig_plots_vs_singlemu(filename, os.path.dirname(filename), title, eta_min, eta_max, append)
-                all_results[title] = results
             elif vs == "PrevJet":
                 results = do_trig_plots_vs_prevjet(filename, os.path.dirname(filename), title, eta_min, eta_max, append)
-                all_results[title] = results
+            all_results[this_title] = results
+        
+    for name, entry in all_results.items():
+        print_results(name, entry)
+    
+    # Compare different jet type for given eta region
+    do_comparison_graph(all_results, 
+                        binning=[r[2] for r in regions], 
+                        output_dirs=os.path.dirname(inputs[0][0]))
 
-        # mg = ROOT.TMultiGraph()
-        # c = ROOT.TCanvas("cmg"+append, "", 800, 600)
-        # c.SetTicks(1, 1)
-        # leg = ROOT.TLegend(0.7, 0.2, 0.88, 0.38)
-        # colors = [ROOT.kBlack, ROOT.kBlue, ROOT.kRed, ROOT.kOrange+1]
-        # for ind, (name, result) in enumerate(all_results.iteritems()):
-        #     thresholds = [info['threshold'] for info in result.itervalues()]
-        #     fully_eff_pt = [info['good_eff_pt'] for info in result.itervalues()]
-        #     g = ROOT.TGraph(len(thresholds), array('d', thresholds), array('d', fully_eff_pt))
-        #     g.SetMarkerColor(colors[ind])
-        #     g.SetMarkerStyle(20+ind)
-        #     g.SetLineColor(colors[ind])
-        #     mg.Add(g)
-        #     leg.AddEntry(g, name, "LP")
-        # mg.SetTitle(";Trigger threshold [GeV];99% efficiency p_{T} [GeV]")
-        # mg.Draw("ALP")
-        # leg.Draw()
-        # cms_text = ROOT.TPaveText(0.14, 0.9, 0.4, 0.92, "NDC")
-        # cms_text.AddText("CMS Preliminary 35.864 fb^{-1}")
-        # cms_text.SetFillStyle(0)
-        # cms_text.SetBorderSize(0)
-        # cms_text.SetTextAlign(ROOT.kHAlignLeft + ROOT.kVAlignBottom)
-        # cms_text.SetTextFont(63)
-        # cms_text.SetTextSize(18)
-        # cms_text.Draw()
-        # c.SaveAs("comparingTriggers_%s.%s" % (append, OUTPUT_FMT))
+    # Compare different eta region for given jet type
+    do_comparison_graph(all_results,
+                        binning=[i[1] for i in inputs], 
+                        output_dirs=[os.path.dirname(i[0]) for i in inputs])
 
 
 if __name__ == "__main__":
@@ -623,9 +658,9 @@ if __name__ == "__main__":
     ]
     # do_plots_and_comparisons(do_these, vs="SingleMu")
     do_these = [
-        ('workdir_ak4chs_jettrig/uhh2.AnalysisModuleRunner.DATA.Data_JetHT.root', 'AK4 CHS'),
+        # ('workdir_ak4chs_jettrig/uhh2.AnalysisModuleRunner.DATA.Data_JetHT.root', 'AK4 CHS'),
         ('workdir_ak4puppi_jettrig/uhh2.AnalysisModuleRunner.DATA.Data_JetHT.root', 'AK4 PUPPI'),
-        ('workdir_ak8chs_jettrig/uhh2.AnalysisModuleRunner.DATA.Data_JetHT.root', 'AK8 CHS'),
+        # ('workdir_ak8chs_jettrig/uhh2.AnalysisModuleRunner.DATA.Data_JetHT.root', 'AK8 CHS'),
         ('workdir_ak8puppi_jettrig/uhh2.AnalysisModuleRunner.DATA.Data_JetHT.root', 'AK8 PUPPI'),
     ]
     do_plots_and_comparisons(do_these, vs="PrevJet")
