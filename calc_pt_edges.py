@@ -11,31 +11,28 @@ from math import log
 # AK4
 print("Doing AK4")
 edges = [
-50,
-65,
-88,
-109,
-180,
-250,
-318,
-388,
-479,
-535,
+88.0,
+114.0,
+180.0,
+254.0,
+318.0,
+390.0,
+481.0,
+539.0,
 ]
 
 # AK8
-# print("Doing AK8")
-# edges = [
-# 91,
-# 112,
-# 135,
-# 215,
-# 290,
-# 359,
-# 433,
-# 533,
-# 580
-# ]
+print("Doing AK8")
+edges = [
+120.0,
+148.0,
+233.0,
+326.0,
+405.0,
+477.0,
+# 574.0,
+614.0,
+]
 
 # fractional bin width cannot be below this
 # lambda so you can do it as a function of pt
@@ -61,6 +58,9 @@ for low, high in zip(edges[:-1], edges[1:]):
     this_bin_edges = [round(low*pow(smallest_multiplier, i)) for i in range(0, N_bins+1)]
     all_bins += this_bin_edges
     print("multiplier: %.3f" % smallest_multiplier, "gives", N_bins, "bins:", this_bin_edges, compromise_str)
+
+while all_bins[-1] < 10000:
+    all_bins.append(round(all_bins[-1] * 1.3))
 
 # set cos I'm lazy and didnt filter out repeats
 print("All bins:", sorted(list(set(all_bins))))
