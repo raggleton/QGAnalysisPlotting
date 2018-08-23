@@ -49,7 +49,7 @@ def do_pt_response_plot(tdir, plot_dir):
     h2d_renorm_y.Draw("COLZ TEXT")
     xax = h2d_renorm_y.GetXaxis()
     upper_lim = h2d_renorm_y.GetXaxis().GetBinUpEdge(h2d_renorm_y.GetXaxis().GetLast())
-    # upper_lim = 5000
+    upper_lim = 5000
     title_offset = 1.5
     h2d_renorm_y.SetTitleOffset(title_offset, 'X')
     xax.SetRangeUser(10, upper_lim)
@@ -79,7 +79,7 @@ def do_pt_response_plot(tdir, plot_dir):
 
     xax = h2d_renorm_x.GetXaxis()
     upper_lim = h2d_renorm_x.GetXaxis().GetBinUpEdge(h2d_renorm_x.GetXaxis().GetLast())
-    # upper_lim = 5000
+    upper_lim = 5000
     title_offset = 1.5
     h2d_renorm_x.SetTitleOffset(title_offset, 'X')
     xax.SetRangeUser(10, upper_lim)
@@ -183,7 +183,7 @@ def do_jet_index_plots(tdir, plot_dir):
         if not plot_name.startswith(stem):
             continue
         h2d = cu.get_from_tfile(tdir, plot_name)
-        h2d.SetTitle(h2d.GetTitle() + " GeV")
+        h2d.SetTitle(h2d.GetTitle())
         renorm_h2d = cu.make_normalised_TH2(h2d, 'X', recolour=False)
         # renorm_h2d = h2d
         canv = ROOT.TCanvas(cu.get_unique_str(), "", 800, 600)
