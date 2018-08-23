@@ -115,8 +115,80 @@ trig_info['HLT_PFJet450'] = {
 # }
 
 total_lumi = trig_info['HLT_PFJet450']['lumi']
+
+# trig_info = OrderedDict()
+# trig_info['HLT_AK8PFJet40'] = {
+#     'threshold': 40.,
+#     'prescale': 0,
+#     'lumi': 49176.854,
+#     'color': ROOT.kRed
+# }
+# trig_info['HLT_AK8PFJet60'] = {
+#     'threshold': 60.,
+#     'prescale': 0,
+#     'lumi': 324768.681,
+#     'color': ROOT.kBlue,
+#     'fit_all': (lambda isFatJet: not isFatJet)
+# }
+# trig_info['HLT_AK8PFJet80'] = {
+#     'threshold': 80.,
+#     'prescale': 0,
+#     'lumi': 994563.916,
+#     'color': ROOT.kGreen+2,
+#     'fit_all': (lambda isFatJet: not isFatJet)
+# }
+# trig_info['HLT_AK8PFJet140'] = {
+#     'threshold': 140.,
+#     'prescale': 0,
+#     'lumi': 10005654.493,
+#     'color': ROOT.kViolet+5,
+#     'fit_all': (lambda isFatJet: not isFatJet)
+# }
+# trig_info['HLT_AK8PFJet200'] = {
+#     'threshold': 200.,
+#     'prescale': 0,
+#     'lumi': 84893034.092,
+#     'color': ROOT.kOrange,
+#     'fit_all': (lambda isFatJet: not isFatJet)
+# }
+# trig_info['HLT_AK8PFJet260'] = {
+#     'threshold': 260.,
+#     'prescale': 0,
+#     'lumi': 512841061.578,
+#     'color': ROOT.kTeal,
+#     'fit_all': (lambda isFatJet: not isFatJet)
+# }
+# trig_info['HLT_AK8PFJet320'] = {
+#     'threshold': 320.,
+#     'prescale': 0,
+#     'lumi': 1510155111.062,
+#     'color': ROOT.kViolet,
+#     'fit_all': (lambda isFatJet: not isFatJet)
+# }
+# trig_info['HLT_AK8PFJet400'] = {
+#     'threshold': 400.,
+#     'prescale': 0,
+#     'lumi': 4544785568.903,
+#     'color': ROOT.kOrange-6,
+#     'fit_all': (lambda isFatJet: not isFatJet)
+# }
+# trig_info['HLT_AK8PFJet450'] = {
+#     'threshold': 450.,
+#     'prescale': 0,
+#     'lumi': 33182262109.421,
+#     'color': ROOT.kAzure+1,
+#     'fit_all': (lambda isFatJet: False)
+# }
+
+# total_lumi = trig_info['HLT_AK8PFJet450']['lumi']
+
 for trig_name in trig_info:
     trig_info[trig_name]['prescale'] = total_lumi / trig_info[trig_name]['lumi']
+for trig_name in trig_info:
+    print(trig_name, "lumi =", trig_info[trig_name]['lumi'])
+for trig_name in trig_info:
+    print(trig_name, "prescale =", trig_info[trig_name]['prescale'])
+
 
 
 def do_custom_rebin(hist, newname, lower_limit, factor):
@@ -161,16 +233,15 @@ def do_custom_rebin(hist, newname, lower_limit, factor):
     return hnew
 
 
-def do_trig_plots_vs_zerobias(input_filename, output_dir, title="", eta_min=-2.4, eta_max=2.4, append=""):
+def do_trig_plots_vs_zerobias(zb_input_filename, jetht_input_filename, output_dir, title="", eta_min=-2.4, eta_max=2.4, append=""):
     """Do efficiencies and fits for all triggers"""
-
-    f = cu.open_root_file(input_filename)
+    f_zb = cu.open_root_file(zb_input_filename)
     dir_name = "ZeroBiasRef"
 
-    is_fat_jet = "AK8" in input_filename.upper()
+    is_fat_jet = "AK8" in zb_input_filename.upper()
 
     # Get singlemu hist
-    h_all = cu.get_from_tfile(f, dir_name + "/pt_vs_eta_all")
+    h_all = cu.get_from_tfile(f_zb, dir_name + "/pt_vs_eta_all")
 
     # Figure out bins for eta edges
     eta_min_bin, eta_max_bin = 0, h_all.GetNbinsY()+1
@@ -186,8 +257,9 @@ def do_trig_plots_vs_zerobias(input_filename, output_dir, title="", eta_min=-2.4
     h_all_pt.Sumw2()
     h_all_pt.SetFillColor(17)
     h_all_pt.SetLineColor(17)
-    h_all_pt.Scale(total_lumi / 29048.362)  # to account for prescale
+    h_all_pt.Scale((total_lumi / 29048.362)*1)  # to account for prescale
 
+    f_jetht = cu.open_root_file(jetht_input_filename)
     this_trig_info = deepcopy(trig_info)
     for name, info in this_trig_info.items():
         # for each trig, jet 2d pt vs eta hist, project into 1D pt distribution
@@ -195,7 +267,7 @@ def do_trig_plots_vs_zerobias(input_filename, output_dir, title="", eta_min=-2.4
         rebin_factor = 2 if info['threshold'] > 100 else 2  # rough rebinning across all pt
         rebin_factor = 1
         # h2d = f.Get(dir_name + "/pt_vs_eta_%s_v*" % name)
-        h2d = f.Get(name+"_v*Ref"  + "/pt_vs_eta_all")
+        h2d = f_jetht.Get(name+"_v*Ref"  + "/pt_vs_eta_all")
         info['h2d'] = h2d
         info['hpt'] = h2d.ProjectionX(name+"PT", eta_min_bin, eta_max_bin, "e")
         info['hpt'].Sumw2()
@@ -336,34 +408,34 @@ def do_trig_plots_vs_zerobias(input_filename, output_dir, title="", eta_min=-2.4
         c.SaveAs(output_dir + "/eff_%s_%s_zerobias.%s" % (name, append, OUTPUT_FMT))
 
     # make graph of fully efficiency pt vs threshold
-    thresholds = [info['threshold'] for info in list(this_trig_info.values())[1:]]
-    fully_eff_pt = [info['good_eff_pt'] for info in list(this_trig_info.values())[1:]]
-    fully_eff_pt_errors = [info['good_eff_pt_err'] for info in list(this_trig_info.values())[1:]]
-    gr = ROOT.TGraphErrors(len(thresholds), array('d', thresholds), array('d', fully_eff_pt), array('d', [0]*len(thresholds)), array('d', fully_eff_pt_errors))
-    c = ROOT.TCanvas("cgr", "", 800, 600)
-    c.SetTicks(1, 1)
-    gr.SetTitle(";Trigger threshold [GeV];99% efficiency p_{T} [GeV]")
-    gr.SetMarkerStyle(20)
-    # # do a pol1 fit
-    thres_fit = ROOT.TF1("f1", "pol1", thresholds[0], thresholds[-1])
-    thres_fit.SetLineColor(ROOT.kRed)
-    thres_fit.SetLineWidth(1)
-    thres_fit.SetLineStyle(2)
-    status = gr.Fit(thres_fit, "RSEQ")
-    gr.Draw("AP")
-    c.Modified()
-    c.Update()
-    stats_box = gr.FindObject("stats")
-    stats_box.SetFillColor(ROOT.kWhite)
-    stats_box.SetBorderSize(0)
-    stats_box.SetFillStyle(0)
-    stats_box.SetX1NDC(0.62)
-    stats_box.SetX2NDC(0.88)
-    stats_box.SetY1NDC(0.25)
-    stats_box.SetY2NDC(0.38)
-    cms_text.Draw()
-    jet_text.Draw()
-    c.SaveAs(output_dir + "/fully_eff_zerobias_pt_vs_threshold_%s.%s" % (append, OUTPUT_FMT))
+    # thresholds = [info['threshold'] for info in list(this_trig_info.values())[1:]]
+    # fully_eff_pt = [info['good_eff_pt'] for info in list(this_trig_info.values())[1:]]
+    # fully_eff_pt_errors = [info['good_eff_pt_err'] for info in list(this_trig_info.values())[1:]]
+    # gr = ROOT.TGraphErrors(len(thresholds), array('d', thresholds), array('d', fully_eff_pt), array('d', [0]*len(thresholds)), array('d', fully_eff_pt_errors))
+    # c = ROOT.TCanvas("cgr", "", 800, 600)
+    # c.SetTicks(1, 1)
+    # gr.SetTitle(";Trigger threshold [GeV];99% efficiency p_{T} [GeV]")
+    # gr.SetMarkerStyle(20)
+    # # # do a pol1 fit
+    # thres_fit = ROOT.TF1("f1", "pol1", thresholds[0], thresholds[-1])
+    # thres_fit.SetLineColor(ROOT.kRed)
+    # thres_fit.SetLineWidth(1)
+    # thres_fit.SetLineStyle(2)
+    # status = gr.Fit(thres_fit, "RSEQ")
+    # gr.Draw("AP")
+    # c.Modified()
+    # c.Update()
+    # stats_box = gr.FindObject("stats")
+    # stats_box.SetFillColor(ROOT.kWhite)
+    # stats_box.SetBorderSize(0)
+    # stats_box.SetFillStyle(0)
+    # stats_box.SetX1NDC(0.62)
+    # stats_box.SetX2NDC(0.88)
+    # stats_box.SetY1NDC(0.25)
+    # stats_box.SetY2NDC(0.38)
+    # cms_text.Draw()
+    # jet_text.Draw()
+    # c.SaveAs(output_dir + "/fully_eff_zerobias_pt_vs_threshold_%s.%s" % (append, OUTPUT_FMT))
 
 
     return this_trig_info
@@ -852,9 +924,9 @@ def do_plots_and_comparisons(inputs, vs="SingleMu"):
     regions = (
         # [-4.7, 4.7, "all_eta"],
         [-2.4, 2.4, "center"],
-        [-2.4, -1.4, "endcap_minus"],
-        [1.4, 2.4, "endcap_plus"],
-        [-1.4, 1.4, "barrel"],
+        # [-2.4, -1.4, "endcap_minus"],
+        # [1.4, 2.4, "endcap_plus"],
+        # [-1.4, 1.4, "barrel"],
     )
     all_results = OrderedDict()
     for filename, title in inputs:
@@ -893,16 +965,34 @@ if __name__ == "__main__":
 
     do_these = [
         # ('workdir_ak4chs_jettrig/uhh2.AnalysisModuleRunner.DATA.Data_JetHT.root', 'AK4 CHS'),
-        ('workdir_ak4puppi_jettrig/uhh2.AnalysisModuleRunner.DATA.Data_JetHT.root', 'AK4 PUPPI'),
+        # ('workdir_ak4puppi_jettrig/uhh2.AnalysisModuleRunner.DATA.Data_JetHT.root', 'AK4 PUPPI'),
         # ('workdir_ak4puppi_jettrig_noLepCleaning/uhh2.AnalysisModuleRunner.DATA.Data_JetHT.root', 'AK4 PUPPI'),
         # ('workdir_ak8chs_jettrig/uhh2.AnalysisModuleRunner.DATA.Data_JetHT.root', 'AK8 CHS'),
-        ('workdir_ak8puppi_jettrig/uhh2.AnalysisModuleRunner.DATA.Data_JetHT.root', 'AK8 PUPPI'),
+        # ('workdir_ak8puppi_jettrig/uhh2.AnalysisModuleRunner.DATA.Data_JetHT.root', 'AK8 PUPPI'),
+        ('workdir_ak8puppi_jettrig_withAK8trig/uhh2.AnalysisModuleRunner.DATA.Data_JetHT.root', 'AK8 PUPPI'),
     ]
-    do_plots_and_comparisons(do_these, vs="PrevJet")
+    # do_plots_and_comparisons(do_these, vs="PrevJet")
     do_these = [
         # ('workdir_ak4chs_jettrig/uhh2.AnalysisModuleRunner.DATA.Data_JetHT.root', 'AK4 CHS'),
-        ('workdir_ak4puppi_jettrig/uhh2.AnalysisModuleRunner.DATA.Data_ZeroBias.root', 'AK4 PUPPI'),
+        # ('workdir_ak4puppi_jettrig/uhh2.AnalysisModuleRunner.DATA.Data_ZeroBias.root', 'AK4 PUPPI'),
         # ('workdir_ak8chs_jettrig/uhh2.AnalysisModuleRunner.DATA.Data_JetHT.root', 'AK8 CHS'),
-        # ('workdir_ak8puppi_jettrig/uhh2.AnalysisModuleRunner.DATA.Data_JetHT.root', 'AK8 PUPPI'),
+        ('workdir_ak8puppi_jettrig/uhh2.AnalysisModuleRunner.DATA.Data_ZeroBias.root', 'AK8 PUPPI'),
+        # ('workdir_ak8puppi_jettrig_withAK8trig/uhh2.AnalysisModuleRunner.DATA.Data_ZeroBias.root', 'AK8 PUPPI'),
     ]
     # do_plots_and_comparisons(do_these, vs="ZeroBias")
+    
+    results = do_trig_plots_vs_zerobias(
+        'workdir_ak8puppi_jettrig/uhh2.AnalysisModuleRunner.DATA.Data_ZeroBias.root', 
+        'workdir_ak8puppi_jettrig_withAK8trig/uhh2.AnalysisModuleRunner.DATA.Data_JetHT.root', 
+        'workdir_ak8puppi_jettrig', 
+        "AK8 PUPPI", 
+        -2.4, 2.4, 
+        "center")
+
+    # results = do_trig_plots_vs_zerobias(
+    #     'workdir_ak8puppi_jettrig_withAK8trig/uhh2.AnalysisModuleRunner.DATA.Data_ZeroBias.root', 
+    #     'workdir_ak8puppi_jettrig_withAK8trig/uhh2.AnalysisModuleRunner.DATA.Data_JetHT.root', 
+    #     'workdir_ak8puppi_jettrig_withAK8trig', 
+    #     "AK8 PUPPI", 
+    #     -2.4, 2.4, 
+    #     "center")
