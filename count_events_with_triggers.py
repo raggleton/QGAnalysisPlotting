@@ -8,9 +8,6 @@ My_Style.cd()
 import os
 from collections import OrderedDict
 import sys
-from array import array
-from bisect import bisect_left
-from copy import deepcopy
 
 # My stuff
 import common_utils as cu
