@@ -250,14 +250,7 @@ def do_counting(zb_input_file, jetht_input_file, trig_info, eta_min=-2.4, eta_ma
 
     # Now make a cumulative histogram of all triggers, need to convert to
     # single TH1 first though from THStack
-    htotal = None
-    hists = hst.GetHists()
-    for h in hists:
-        if htotal is None:
-            htotal = h.Clone("total")
-        else:
-            htotal.Add(h)
-
+    htotal = cu.thstack_to_th1(hst)
     cumul = htotal.GetCumulative()
     cumul.SetTitle(title+" (cumulative);Leading jet p_{T} [GeV];N")
     c.Clear()
