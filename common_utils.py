@@ -225,3 +225,15 @@ def get_list_of_objects_in_dir(filename, dirname):
 
 def get_unique_str():
     return ROOT.TUUID().AsString()
+
+
+def thstack_to_th1(hst):
+    """Add all hists in a THStack into one TH1"""
+    htotal = None
+    hists = hst.GetHists()
+    for h in hists:
+        if htotal is None:
+            htotal = h.Clone(get_unique_str())
+        else:
+            htotal.Add(h)
+    return htotal
