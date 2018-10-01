@@ -173,18 +173,26 @@ def make_normalised_TH2(hist, norm_axis, recolour=True, do_errors=False):
         # can set so the maximum in each bin is the same,
         # scale other bins accordingly
         # this retain the colour scheme for each set of bins
-        for ind, xbin in enumerate(arr):
-            if xbin.max() > 0:
-                factor = xbin.max()
-                arr[ind] = xbin / factor
-                err_arr[ind] = err_arr[ind] / factor
+        maxes = arr.max(axis=1)
+        maxesT = maxes[:, None]
+        arr = np.divide(arr, maxesT, where=maxesT!=0, out=np.zeros_like(arr))
+        err_arr = np.divide(err_arr, maxesT, where=maxesT!=0, out=np.zeros_like(arr))
+        # for ind, xbin in enumerate(arr):
+        #     if xbin.max() > 0:
+        #         factor = xbin.max()
+        #         arr[ind] = xbin / factor
+        #         err_arr[ind] = err_arr[ind] / factor
     else:
         # alternatively, can rescale so sum over bins = 1
         for ind, xbin in enumerate(arr):
-            if xbin.sum() != 0:
-                factor = xbin.sum()
-                arr[ind] = xbin / factor
-                err_arr[ind] /= factor
+            summed = arr.sum(axis=1)
+            summedT = summed[:, None]
+            arr = np.divide(arr, summedT, where=summedT!=0, out=np.zeros_like(arr))
+            err_arr = np.divide(err_arr, summedT, where=summedT!=0, out=np.zeros_like(arr))
+            # if xbin.sum() != 0:
+            #     factor = xbin.sum()
+            #     arr[ind] = xbin / factor
+            #     err_arr[ind] /= factor
 
     if norm_axis == 'Y':
         arr = arr.T
