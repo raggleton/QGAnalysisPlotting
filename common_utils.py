@@ -143,18 +143,19 @@ def get_exey(graph):
     return xarr, yarr
 
 
-def th2_to_arr(h):
+def th2_to_arr(h, do_errors=False):
     """Convert TH2 to 2D numpy array"""
     arr = np.zeros((h.GetNbinsX(), h.GetNbinsY()))
     err_arr = np.zeros((h.GetNbinsX(), h.GetNbinsY()))
     for x_ind in range(1, h.GetNbinsX() + 1):
         for y_ind in range(1, h.GetNbinsY() + 1):
             arr[x_ind-1][y_ind-1] = h.GetBinContent(x_ind, y_ind)
-            err_arr[x_ind-1][y_ind-1] = h.GetBinError(x_ind, y_ind)
+            if do_errors:
+                err_arr[x_ind-1][y_ind-1] = h.GetBinError(x_ind, y_ind)
     return arr, err_arr
 
 
-def make_normalised_TH2(hist, norm_axis, recolour=True):
+def make_normalised_TH2(hist, norm_axis, recolour=True, do_errors=False):
     norm_axis = norm_axis.upper()
     possible_opts = ['X', 'Y']
     if norm_axis not in possible_opts:
@@ -163,7 +164,7 @@ def make_normalised_TH2(hist, norm_axis, recolour=True):
 
     # easiest way to cope with x or y is to just get a 2D matrix of values,
     # can then do transpose if necessary
-    arr, err_arr = th2_to_arr(hist)
+    arr, err_arr = th2_to_arr(hist, do_errors)
 
     if norm_axis == 'Y':
         arr = arr.T
@@ -202,7 +203,8 @@ def make_normalised_TH2(hist, norm_axis, recolour=True):
     for x_ind, x_arr in enumerate(arr, 1):
         for y_ind, val in enumerate(x_arr, 1):
             hnew.SetBinContent(x_ind, y_ind, val)
-            hnew.SetBinError(x_ind, y_ind, err_arr[x_ind-1][y_ind-1])
+            if do_errors:
+                hnew.SetBinError(x_ind, y_ind, err_arr[x_ind-1][y_ind-1])
 #     hnew.SetAxisRange(0.5, 1., 'Z')
     return hnew
 
