@@ -14,9 +14,7 @@ import os
 from comparator import Contribution, Plot, grab_obj
 import qg_common as qgc
 import qg_general_plots as qgp
-import qg_flavour_plots as qgf
-import qg_delta_plots as qgd
-import qg_roc_plots as qgr
+import common_utils as cu
 
 # For debugging
 import sys
@@ -170,9 +168,11 @@ def do_plots(root_dir):
                 ylim = None
 
             plot_dir = os.path.join(root_dir, "plots_dy_vs_qcd_mc_vs_data")
+            radius, pus = cu.get_jet_config_from_dirname(root_dir)
+            jet_str = "AK%s PF %s" % (radius.upper(), pus.upper())
             qgp.do_comparison_plot(entries, "%s/ptBinned/%s_pt%dto%d.%s" % (plot_dir, v, start_val, end_val, OUTPUT_FMT),
                                    rebin=rebin,
-                                   title="%d < p_{T}^{jet} < %d GeV\nAK4 PF PUPPI" % (start_val, end_val),
+                                   title="%d < p_{T}^{jet} < %d GeV\n%s" % (start_val, end_val, jet_str),
                                    xtitle=ang.name + " (" + ang.lambda_str + ")",
                                    xlim=xlim, ylim=ylim,
                                    subplot_type=None,
@@ -182,7 +182,7 @@ def do_plots(root_dir):
             qgp.do_comparison_plot(dijet_entries, 
                                    "%s/ptBinned/%s_pt%dto%d_dijet.%s" % (plot_dir, v, start_val, end_val, OUTPUT_FMT),
                                    rebin=rebin,
-                                   title="%d < p_{T}^{jet} < %d GeV\nAK4 PF PUPPI" % (start_val, end_val),
+                                   title="%d < p_{T}^{jet} < %d GeV\n%s" % (start_val, end_val, jet_str),
                                    xtitle=ang.name + " (" + ang.lambda_str + ")",
                                    xlim=xlim, ylim=ylim,
                                    subplot_type=None,
@@ -192,7 +192,7 @@ def do_plots(root_dir):
             qgp.do_comparison_plot(zpj_entries,
                                    "%s/ptBinned/%s_pt%dto%d_zpj.%s" % (plot_dir, v, start_val, end_val, OUTPUT_FMT),
                                    rebin=rebin,
-                                   title="%d < p_{T}^{jet} < %d GeV\nAK4 PF PUPPI" % (start_val, end_val),
+                                   title="%d < p_{T}^{jet} < %d GeV\n%s" % (start_val, end_val, jet_str),
                                    xtitle=ang.name + " (" + ang.lambda_str + ")",
                                    xlim=xlim, ylim=ylim,
                                    subplot_type=None,

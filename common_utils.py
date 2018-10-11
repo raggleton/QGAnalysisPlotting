@@ -1,6 +1,7 @@
 """Set of common functions that are used in loads of scripts."""
 
 
+import re
 import ROOT
 import os
 from subprocess import call
@@ -251,7 +252,7 @@ def thstack_to_th1(hst):
 
 
 def get_hist_mean_rel_error(hist):
-    """Get maximum relative error from histogram bins (i.e. error / contents)
+    """Get average relative error from histogram bins (i.e. error / contents)
     
     Parameters
     ----------
@@ -261,7 +262,7 @@ def get_hist_mean_rel_error(hist):
     Returns
     -------
     float
-        Maximum relative error
+        average relative error
     """
     nbins = hist.GetNbinsX()
     contents = np.array([hist.GetBinContent(i) for i in range(1, nbins+1)])
@@ -275,3 +276,33 @@ def get_hist_mean_rel_error(hist):
     rel_err[np.isinf(rel_err)] = 0.
     rel_err[np.isnan(rel_err)] = 0.
     return np.average(rel_err)
+
+
+def get_jet_config_from_dirname(dirname):
+    """Get jet configuration from string
+    
+    Parameters
+    ----------
+    dirname : str
+        Description
+    
+    Returns
+    -------
+    (str, str)
+        jet radius and PUS
+    
+    Raises
+    ------
+    RuntimeError
+        If it can't find it
+    """
+
+    m = re.search(r'ak([\d]+)(chs|puppi)', dirname.lower())
+    if m and len(m.groups()) == 2:
+        return m.groups()
+    else:
+        print("dirname:", dirname)
+        if m:
+            print(m)
+        raise RuntimeError("cannot determine jet config from dirname %s" % dirname)
+
