@@ -88,16 +88,20 @@ DJ_GENJET_RDIR = "Dijet_genjet"
 # Common filenames
 DY_FILENAME = "uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root"
 QCD_FILENAME = "uhh2.AnalysisModuleRunner.MC.MC_QCD_.root"
-QCD_PYTHIA_ONLY_FILENAME = "uhh2.AnalysisModuleRunner.MC.MC_PYTHIA-QCD_.root"
+QCD_PYTHIA_ONLY_FILENAME = "uhh2.AnalysisModuleRunner.MC.MC_PYTHIA-QCD.root"
+QCD_HERWIG_FILENAME = "uhh2.AnalysisModuleRunner.MC.MC_HERWIG_QCD_.root"
+DY_HERWIG_FILENAME = "uhh2.AnalysisModuleRunner.MC.MC_HERWIG_DYJetsToLL_.root"
+DY_MG_HERWIG_FILENAME = "uhh2.AnalysisModuleRunner.MC.MC_MG_HERWIG_DYJetsToLL_.root"
 SINGLE_MU_FILENAME = "uhh2.AnalysisModuleRunner.DATA.Data_SingleMu.root"
 JETHT_FILENAME = "uhh2.AnalysisModuleRunner.DATA.Data_JetHT.root"
 ZB_FILENAME = "uhh2.AnalysisModuleRunner.DATA.Data_ZeroBias.root"
+JETHT_ZB_FILENAME = "uhh2.AnalysisModuleRunner.DATA.Data_JetHT_ZeroBias.root"
 ZPJ_ALL_FILENAME = "uhh2.AnalysisModuleRunner.MC.MC_MGPYTHIA_DYJetsToLL_M-50_HT-All.root"
 
 def get_parser():
     """Return a parser to loop over several input dirs"""
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('workdirs', 
+    parser.add_argument('workdirs',
                         nargs='+',
                         help='Workdir(s) with ROOT files to process. '
                         'Each directory must have ROOT files '
