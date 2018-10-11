@@ -146,24 +146,25 @@ def do_plots(root_dir):
 
 
             rebin = 2
-            if "multiplicity" in v:
-                rebin = 2
-            elif "flavour" in v or "thrust" in v or 'pTD' in v:
+            v_lower = v.lower()
+            if "multiplicity" in v_lower:
+                rebin = 1
+            elif "flavour" in v_lower or "thrust" in v_lower or 'ptd' in v_lower:
                 rebin = 1
 
             xlim = None
-            if "width" in v or "pTD" in v:
+            if "width" in v_lower or "ptd" in v_lower:
                 xlim = (0, 0.75)
-            elif"thrust" in v:
+            elif"thrust" in v_lower:
                 xlim = (0, 0.5)
-            elif "multiplicity" in v.lower() and "ak4" in sources[0]['root_dir'].lower():
+            elif "multiplicity" in v_lower and "ak4" in sources[0]['root_dir'].lower():
                 xlim = (0, 100)
                 xlim = (0, 80)
 
             ylim = None
-            if "flavour" in v:
+            if "flavour" in v_lower:
                 ylim = (0, 1)
-            elif "LHA" in v:
+            elif "lha" in v_lower:
                 ylim = (0, 5)
                 ylim = None
 
