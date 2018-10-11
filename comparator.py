@@ -151,7 +151,8 @@ class Contribution(object):
         if rebin_hist and rebin_hist != 1:
             self.obj.Rebin(rebin_hist) # Does this handle 2D hists?
         if normalise_hist and obj.Integral() != 0:
-            self.obj.Scale(1./(obj.GetBinWidth(1) * obj.Integral()))
+            # self.obj.Scale(1./(obj.GetBinWidth(1) * obj.Integral()))
+            self.obj.Scale(1./(obj.Integral()))
         if isinstance(self.obj, ROOT.TH1) or isinstance(self.obj, ROOT.TH2):
             self.obj.SetDirectory(0)
 
