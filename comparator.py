@@ -472,10 +472,22 @@ class Plot(object):
         cms_latex.SetTextAlign(ROOT.kHAlignLeft + ROOT.kVAlignBottom)
         cms_latex.SetTextFont(42)
         cms_latex.SetTextSize(0.035)
-        cms_latex.DrawLatex(0.14, 0.93, "#font[62]{CMS}#font[52]{ Preliminary}")
+        latex_height = 0.91
+        # cms_latex.DrawLatex(0.14, latex_height, "#font[62]{CMS}#font[52]{ Preliminary}")
+        cms_latex.DrawLatex(0.14, latex_height, "#font[62]{CMS}#font[52]{ Preliminary}")
+        # cms_latex.DrawLatex(0.14, latex_height, "#font[62]{CMS}#font[52]{ Preliminary Simulation}")
+        # cms_latex.DrawLatex(0.14, latex_height, "#font[62]{CMS}")
         cms_latex.SetTextAlign(ROOT.kHAlignRight + ROOT.kVAlignBottom)
-        cms_latex.DrawLatex(0.95, 0.93, " 35.9 fb^{-1} (13 TeV)")
+        cms_latex.DrawLatex(0.97, latex_height, " 35.9 fb^{-1} (13 TeV)")
 
+        # lumi_latex = ROOT.TLatex()
+        # lumi_latex.SetTextAlign(ROOT.kHAlignRight + ROOT.kVAlignBottom)
+        # lumi_latex.SetTextFont(42)
+        # lumi_latex.SetTextSize(0.035)
+        # lumi_latex.DrawLatex(0.97, 0.93, "35.9 fb^{-1} (13 TeV)")
+        # lumi_latex.SetTextAlign(ROOT.kHAlignRight + ROOT.kVAlignBottom)
+        # lumi_latex.DrawLatex(0.95, 0.93, " 35.9 fb^{-1} (13 TeV)")
+ 
         text_latex = ROOT.TLatex()
         text_latex.SetTextAlign(ROOT.kHAlignLeft + ROOT.kVAlignTop)
         text_latex.SetTextFont(42)
@@ -483,7 +495,10 @@ class Plot(object):
         if self.subplot:
             text_latex.DrawLatex(0.18, 0.9, self.title)
         else:
-            text_latex.DrawLatex(0.18, 0.85, self.title)
+            start_y = 0.87 
+            diff_y = 0.07
+            for ind, line in enumerate(self.title.split('\n')):
+                text_latex.DrawLatex(0.18, start_y - (ind*diff_y), line)
 
         # Do subplot
         if self.subplot:
