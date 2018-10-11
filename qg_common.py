@@ -3,16 +3,17 @@
 import argparse
 from collections import namedtuple
 
+# Use ints for ROOT colours as importing ROOT seems OTT
 
 # Purple & blue look ~ same to red-green colourblind people
 # (V.Dark blue & light purple do look a bit diff)
 # Red and blue does look different
-DY_COLOUR =  880 # kViolet
+# DY_COLOUR =  880 # kViolet
 DY_COLOUR =  628 # kViolet
 QCD_COLOUR = 867 # kAzure+7
 
-SINGLE_MU_COLOUR =  884 # kViolet+1
-SINGLE_MU_COLOUR =  634 # kViolet+1
+# SINGLE_MU_COLOUR =  884 # kViolet+3
+SINGLE_MU_COLOUR =  634
 JETHT_COLOUR = 600 # kBlue
 ZB_COLOUR = 416 # kGreen
 
@@ -22,7 +23,8 @@ QCD_MARKER = 22
 
 # When comparing e.g. PU bins
 # FIXME: update for colourblindness
-DY_COLOURS = [880, 881, 884, 871]
+# DY_COLOURS = [880, 881, 884, 873]
+DY_COLOURS = [880, 881, 797, 902]
 QCD_COLOURS = [867, 600, 853, 870]
 
 PT_BINS = [(80, 100), (100, 200), (400, 500), (1000, 2000), (80, 2000)]
