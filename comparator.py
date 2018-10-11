@@ -94,7 +94,7 @@ class Contribution(object):
                  line_width=1, line_color=ROOT.kRed, line_style=1,
                  fill_color=ROOT.kRed, fill_style=0,
                  marker_size=1, marker_color=ROOT.kRed, marker_style=1,
-                 normalise_hist=False, rebin_hist=None):
+                 normalise_hist=False, rebin_hist=None, subplot=None):
         """
         obj : TH1, TGraph, ...
             Object to be plotted
@@ -120,6 +120,8 @@ class Contribution(object):
             If a histogram, normalise so integral = 1
         rebin_hist : int, None
             If a histogram, specify the number of bins to be grouped together.
+        subplot : ROOT.TObject
+            Object to use for subplot, if there is one
         """
         self.obj = obj
         self.label = label or ""
@@ -131,6 +133,7 @@ class Contribution(object):
         self.marker_size = marker_size
         self.marker_color = marker_color
         self.marker_style = marker_style
+        self.subplot = subplot
 
         self.obj.SetLineWidth(self.line_width)
         self.obj.SetLineColor(self.line_color)
@@ -282,20 +285,39 @@ class Plot(object):
 
 
             # Add contributions for the subplot
-            if self.subplot:
-                subplot_obj = self.subplot.obj.Clone()
-                if contrib != self.subplot:
+            if self.subplot_type:
+                if self.subplot:
+                    # Use one reference object for all entries
+                    subplot_obj = self.subplot.obj.Clone()
+                    if contrib != self.subplot:
+                        new_hist = contrib.obj.Clone()
+                        if (self.subplot_type == "ratio"):
+                            new_hist.Divide(subplot_obj)
+                        elif (self.subplot_type == "diff"):
+                            new_hist.Add(subplot_obj, -1.)
+                        elif (self.subplot_type == "ddelta"):
+                            # Do the differntial delta spectrum, see 1704.03878
+                            new_hist.Add(subplot_obj, -1.)
+                            new_hist.Multiply(new_hist)
+                            sum_hist = contrib.obj.Clone()
+                            sum_hist.Add(subplot_obj)
+                            new_hist.Divide(sum_hist)
+                            new_hist.Scale(0.5)
+                        self.subplot_container.Add(new_hist)
+                        self.subplot_contributions.append(new_hist)
+                elif contrib.subplot is not None:
                     new_hist = contrib.obj.Clone()
+                    ref_obj = contrib['subplot']
                     if (self.subplot_type == "ratio"):
-                        new_hist.Divide(subplot_obj)
+                        new_hist.Divide(ref_obj)
                     elif (self.subplot_type == "diff"):
-                        new_hist.Add(subplot_obj, -1.)
+                        new_hist.Add(ref_obj, -1.)
                     elif (self.subplot_type == "ddelta"):
                         # Do the differntial delta spectrum, see 1704.03878
-                        new_hist.Add(subplot_obj, -1.)
+                        new_hist.Add(ref_obj, -1.)
                         new_hist.Multiply(new_hist)
                         sum_hist = contrib.obj.Clone()
-                        sum_hist.Add(subplot_obj)
+                        sum_hist.Add(ref_obj)
                         new_hist.Divide(sum_hist)
                         new_hist.Scale(0.5)
                     self.subplot_container.Add(new_hist)
