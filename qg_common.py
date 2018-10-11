@@ -54,30 +54,30 @@ COMMON_VARS_WITH_FLAV = [
 
 COMMON_VARS = COMMON_VARS_WITH_FLAV[:-2]
 
-DY_ZpJ_LABEL = "DY+j, Z+jets selection"
-DY_ZpJ_GEN_LABEL = "DY+j, Z+jets selection\n(GenJets)"
-DY_ZpJ_QFLAV_LABEL = "DY+j, Z+jets selection\n(uds-matched)"
-DY_ZpJ_GFLAV_LABEL = "DY+j, Z+jets selection\n(g-matched)"
+DY_ZpJ_LABEL = "DY+jets, Z+jets region"
+DY_ZpJ_GEN_LABEL = "DY+jets, Z+jets region\n(GenJets)"
+DY_ZpJ_QFLAV_LABEL = "DY+jets, Z+jets region\n(uds-matched)"
+DY_ZpJ_GFLAV_LABEL = "DY+jets, Z+jets region\n(g-matched)"
 
-DY_Dijet_LABEL = "DY+j, Dijet selection"
-DY_Dijet_GEN_LABEL = "DY+j, Dijet selection\n(GenJets)"
-DY_Dijet_QFLAV_LABEL = "DY+j, Dijet selection\n(uds-matched)"
-DY_Dijet_GFLAV_LABEL = "DY+j, Dijet selection\n(g-matched)"
+DY_Dijet_LABEL = "DY+jets, Dijet region"
+DY_Dijet_GEN_LABEL = "DY+jets, Dijet region\n(GenJets)"
+DY_Dijet_QFLAV_LABEL = "DY+jets, Dijet region\n(uds-matched)"
+DY_Dijet_GFLAV_LABEL = "DY+jets, Dijet region\n(g-matched)"
 
-QCD_ZpJ_LABEL = "QCD, Z+jets selection"
-QCD_ZpJ_GEN_LABEL = "QCD, Z+jets selection\n(GenJets)"
-QCD_ZpJ_QFLAV_LABEL = "QCD, Z+jets selection\n(uds-matched)"
-QCD_ZpJ_GFLAV_LABEL = "QCD, Z+jets selection\n(g-matched)"
+QCD_ZpJ_LABEL = "QCD, Z+jets region"
+QCD_ZpJ_GEN_LABEL = "QCD, Z+jets region\n(GenJets)"
+QCD_ZpJ_QFLAV_LABEL = "QCD, Z+jets region\n(uds-matched)"
+QCD_ZpJ_GFLAV_LABEL = "QCD, Z+jets region\n(g-matched)"
 
-QCD_Dijet_LABEL = "QCD, Dijet selection"
-QCD_Dijet_GEN_LABEL = "QCD, Dijet selection\n(GenJets)"
-QCD_Dijet_QFLAV_LABEL = "QCD, Dijet selection\n(uds-matched)"
-QCD_Dijet_GFLAV_LABEL = "QCD, Dijet selection\n(g-matched)"
+QCD_Dijet_LABEL = "QCD, Dijet region"
+QCD_Dijet_GEN_LABEL = "QCD, Dijet region\n(GenJets)"
+QCD_Dijet_QFLAV_LABEL = "QCD, Dijet region\n(uds-matched)"
+QCD_Dijet_GFLAV_LABEL = "QCD, Dijet region\n(g-matched)"
 
-SINGLE_MU_LABEL = "SingleMu, Z+jets selection"
-JETHT_LABEL = "JetHT, Dijet selection"
-ZB_LABEL = "ZeroBias, Dijet selection"
-JETHT_ZB_LABEL = "JetHT+ZeroBias, Dijet selection"
+SINGLE_MU_LABEL = "SingleMu, Z+jets region"
+JETHT_LABEL = "JetHT, Dijet region"
+ZB_LABEL = "ZeroBias, Dijet region"
+JETHT_ZB_LABEL = "JetHT+ZeroBias, Dijet region"
 
 # Dirs in ROOT files
 ZPJ_RECOJET_RDIR = "ZPlusJets_QG"
