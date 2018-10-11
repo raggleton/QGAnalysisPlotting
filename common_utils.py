@@ -248,3 +248,30 @@ def thstack_to_th1(hst):
         else:
             htotal.Add(h)
     return htotal
+
+
+def get_hist_mean_rel_error(hist):
+    """Get maximum relative error from histogram bins (i.e. error / contents)
+    
+    Parameters
+    ----------
+    hist : ROOT.TH1 (or descendents)
+        Description
+    
+    Returns
+    -------
+    float
+        Maximum relative error
+    """
+    nbins = hist.GetNbinsX()
+    contents = np.array([hist.GetBinContent(i) for i in range(1, nbins+1)])
+    errors = np.array([hist.GetBinError(i) for i in range(1, nbins+1)])
+    # only care about bins with something in them
+    mask = contents > 0
+    # if no bins have any contents, just return 0
+    if not mask.any():
+        return 0.
+    rel_err = np.divide(errors[mask], contents[mask])
+    rel_err[np.isinf(rel_err)] = 0.
+    rel_err[np.isnan(rel_err)] = 0.
+    return np.average(rel_err)
