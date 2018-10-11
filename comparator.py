@@ -448,6 +448,13 @@ class Plot(object):
             modifier.GetYaxis().SetRangeUser(*self.ylim)
             modifier.SetMinimum(self.ylim[0])  # use this, not SetRangeUser()
             modifier.SetMaximum(self.ylim[1])
+        else:
+            # add some padding
+            self.canvas.Update()
+            # urgh why doesnt THStack.GetMaximum() return the actual maximum
+            # GetYaxis().GetXmax() doesnt work either
+            ymax = max([o.GetMaximum() for o in self.contributions_objs])
+            modifier.SetMaximum(ymax * 1.35)  # TODO different for log and lin scales
 
         # Draw it again to update
         if self.plot_what == "graph":
