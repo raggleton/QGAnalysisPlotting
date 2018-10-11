@@ -26,13 +26,37 @@ ROOT.TH1.SetDefaultSumw2()
 ROOT.gStyle.SetOptStat(0)
 
 
-def make_comparison_plot_ingredients(entries, rebin=1, normalise_hist=True, **plot_kwargs):
-    """Make the Plot object for a comparison plot. User can then add other elements to the plot.
+def make_comparison_plot_ingredients(entries, rebin=1, normalise_hist=True, mean_rel_error=1.0, **plot_kwargs):
+    """Make the Plot object for a comparison plot. 
 
-    entries : list of 2-tuples, with (object, dict), where the dict is a set of kwargs passed to the Contribution object
-    plot_kwargs : any other kwargs to be passed to the Plot object ctor
+    User can then add other elements to the plot.
+    
+    Parameters
+    ----------
+    entries : list[(object, dict)]
+        List of ROOT object & it's configuration dict, where the dict is a set of kwargs passed to the Contribution object
+    rebin : int, optional
+        Rebin factor
+    normalise_hist : bool, optional
+        Normalise each histogram's integral to unity
+    mean_rel_error : float, optional
+        Remove contributions that have a 
+    **plot_kwargs
+        Any other kwargs to be passed to the Plot object contructor
+    
+    Returns
+    -------
+    Plot
+        Plot object to be modified, plotted, etc
+    
+    Raises
+    ------
+    RuntimeError
+        If there are 0 contributions
     """
-    conts = [Contribution(ent[0], normalise_hist=normalise_hist, rebin_hist=rebin, **ent[1]) for ent in entries]
+    conts = [Contribution(ent[0], normalise_hist=normalise_hist, rebin_hist=rebin, **ent[1]) 
+             for ent in entries
+             if cu.get_hist_mean_rel_error(ent[0]) < mean_rel_error]
     do_legend = len(conts) > 1
     if len(conts) == 0:
         raise RuntimeError("0 contributions for this plot")
@@ -49,7 +73,7 @@ def do_comparison_plot(entries, output_filename, rebin=1, **plot_kwargs):
     entries : list of 2-tuples, with (object, dict), where the dict is a set of kwargs passed to the Contribution object
     plot_kwargs : any other kwargs to be passed to the Plot object ctor
     """
-    p = make_comparison_plot_ingredients(entries, rebin, **plot_kwargs)
+    p = make_comparison_plot_ingredients(entries, rebin=rebin, mean_rel_error=0.5, **plot_kwargs)
     draw_opt = "NOSTACK HISTE"
     p.plot(draw_opt)
     # p.container.SetMaximum(min(5, p.container.GetMaximum()))
