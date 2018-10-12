@@ -97,13 +97,24 @@ def do_1D_plot(hists, output_filename, components_styles_dicts=None,
     p = Plot(contributions, what='hist', 
              ytitle="p.d.f." if normalise_hists else "N", 
              title=title,
+             xlim=xlim,
+             ylim=ylim,
              subplot_type="ratio" if do_ratio else None, 
-             subplot_title="MC / Data", xlim=xlim,
-             subplot=contributions[0], ylim=ylim)
-    p.legend.SetX1(0.55)
-    # p.legend.SetX2(0.95)
-    p.legend.SetY1(0.7)
-    p.legend.SetY2(0.85)
+             subplot_title="MC / Data", 
+             subplot=contributions[0],
+             subplot_limits=(0.5, 1.5),
+             )
+    # p.legend.SetX1(0.55)
+    # # p.legend.SetX2(0.95)
+    # p.legend.SetY1(0.7)
+    # p.legend.SetY2(0.85)
+    p.legend.SetX1(0.5)
+    p.legend.SetX2(0.97)
+    if len(contributions) > 4:
+        p.legend.SetY1(0.6)
+    else:
+        p.legend.SetY1(0.7)
+    p.legend.SetY2(0.9)
     p.plot(draw_opts)
     p.main_pad.cd()
 
