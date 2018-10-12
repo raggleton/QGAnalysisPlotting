@@ -158,7 +158,7 @@ def do_all_1D_projection_plots_in_dir(directories, output_dir, components_styles
 
     # pt_bins = [(20, 40), (40, 60), (60, 80), (100, 120), (160, 200), (260, 300), (500, 600), (1000, 2000)]
     pt_bins = [(30, 40), (40, 60), (70, 80), (80, 90), (90, 100), (100, 120), (160, 200), (200, 250), (250, 300), (300, 350), (400, 500), (500, 600), (1000, 2000)]
-
+    pt_bins = qgc.PT_BINS
     if zb_first:
         components_styles_dicts = components_styles_dicts[1:]
 
