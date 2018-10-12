@@ -228,7 +228,7 @@ def do_all_1D_projection_plots_in_dir(directories, output_dir, components_styles
                 if bin_by == "ave":
                     title = "#splitline{%s}{%d < #LT p_{T}^{jet} #GT < %d GeV}" % (jet_config_str, pt_min, pt_max)
                 elif bin_by == "Z":
-                    title = "#splitline{%s}{%d < p_{T}^{Z} < %d GeV}" % (jet_config_str, pt_min, pt_max),
+                    title = "#splitline{%s}{%d < p_{T}^{Z} < %d GeV}" % (jet_config_str, pt_min, pt_max)
 
                 do_1D_plot(hists, components_styles_dicts=components_styles_dicts, 
                            draw_opts=draw_opts, do_ratio=do_ratio, 
