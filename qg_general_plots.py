@@ -6,6 +6,7 @@ from MyStyle import My_Style
 My_Style.cd()
 import bisect
 import os
+from array import array
 
 # My stuff
 from comparator import Contribution, Plot, grab_obj
@@ -259,3 +260,63 @@ def do_all_exclusive_plots_comparison(sources, plot_dir="plots_dy_vs_qcd",
                                    rebin=rebin, title="%d < p_{T}^{jet} < %d GeV" % (start_val, end_val),
                                    xtitle=ang.name + " (" + ang.lambda_str + ")",
                                    xlim=xlim, subplot_type=subplot_type, subplot_title=subplot_title, subplot_limits=(0, 2))
+
+
+
+def transpose_2d_hist(hist):
+    hnew = ROOT.TH2D(hist.GetName()+"transpose", 
+                     ";".join([hist.GetTitle(), hist.GetYaxis().GetTitle(), hist.GetXaxis().GetTitle()]),
+                     hist.GetNbinsY(), hist.GetYaxis().GetXmin(), hist.GetYaxis().GetXmax(),
+                     hist.GetNbinsX(), hist.GetXaxis().GetXmin(), hist.GetXaxis().GetXmax()
+                     )
+    for i in range(1, hist.GetNbinsX()+1):
+        for j in range(1, hist.GetNbinsY()+1):
+            hnew.SetBinContent(j, i, hist.GetBinContent(i, j))
+            hnew.SetBinError(j, i, hist.GetBinError(i, j))
+    return hnew
+
+
+def do_box_plot(entries, output_filename, xlim=None, ylim=None, transpose=False):
+    """Create box n whickers plot from 2D hists
+    
+    Parameters
+    ----------
+    entries : list[(TH2, dict)]
+        Description
+    output_filename : str
+        Output filename
+    """
+    hists2d = []  # keep references alive
+    canv = ROOT.TCanvas("", "", 800, 800)
+    canv.SetTicks(1, 1)
+    leg = ROOT.TLegend(0.5, 0.7, 0.92, 0.88)
+    for ind, ent in enumerate(entries[:]):
+        rebin_hist = ent[0]
+        if transpose:
+            rebin_hist = transpose_2d_hist(rebin_hist)
+        hists2d.append(rebin_hist)
+        rebin_hist.SetBarWidth(0.1)
+        offset = 0.11
+        half = (int) (len(entries) / 2)
+        factor = -1 if transpose else 1
+        rebin_hist.SetBarOffset(factor * (half * offset - (ind * 0.11)))
+        
+        rebin_hist.SetLineColor(ent[1]['line_color'])
+        
+        rebin_hist.SetFillColor(ent[1]['line_color'])
+        rebin_hist.SetFillStyle(0)
+        
+        if xlim and len(xlim) == 2:
+            rebin_hist.SetAxisRange(xlim[0], xlim[1], 'X')
+        if ylim and len(ylim) == 2:
+            rebin_hist.SetAxisRange(ylim[0], ylim[1], 'Y')
+        
+        leg.AddEntry(rebin_hist, ent[1]['label'], "LP")
+        ax = "X" if transpose else "Y"
+        draw_opt = "CANDLE"+ax+"(00011311)"
+        if ind > 0:
+            draw_opt += "SAME"
+        rebin_hist.Draw(draw_opt)
+    leg.Draw()
+    canv.SaveAs(output_filename)
+
