@@ -328,7 +328,7 @@ class Plot(object):
         self.legend.SetFillStyle(0)
 
     def _rescale_plot_labels(self, container, factor):
-        # What a pile of wank, why does ROOT scale all these sizes?
+        # What a pile of poop, why does ROOT scale all these sizes?
         container.GetXaxis().SetLabelSize(container.GetXaxis().GetLabelSize()/factor)
         container.GetXaxis().SetTitleSize(container.GetXaxis().GetTitleSize()/factor)
         container.GetXaxis().SetTitleOffset(container.GetXaxis().GetTitleOffset()*factor)  # doesn't seem to work?
@@ -487,7 +487,9 @@ class Plot(object):
         # Plot legend
         if self.do_legend:
             self._style_legend()
+            self.canvas.cd()
             self.legend.Draw()
+            self.main_pad.cd()
 
 
         # Add CMS text
@@ -516,13 +518,10 @@ class Plot(object):
         text_latex.SetTextAlign(ROOT.kHAlignLeft + ROOT.kVAlignTop)
         text_latex.SetTextFont(42)
         text_latex.SetTextSize(0.03)
-        if self.subplot:
-            text_latex.DrawLatex(0.18, 0.9, self.title)
-        else:
-            start_y = 0.87 
-            diff_y = 0.07
-            for ind, line in enumerate(self.title.split('\n')):
-                text_latex.DrawLatex(0.18, start_y - (ind*diff_y), line)
+        start_y = 0.87 
+        diff_y = 0.07
+        for ind, line in enumerate(self.title.split('\n')):
+            text_latex.DrawLatex(0.18, start_y - (ind*diff_y), line)
 
         # Do subplot
         if self.subplot:
