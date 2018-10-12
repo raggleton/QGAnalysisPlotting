@@ -307,7 +307,7 @@ class Plot(object):
                         self.subplot_contributions.append(new_hist)
                 elif contrib.subplot is not None:
                     new_hist = contrib.obj.Clone()
-                    ref_obj = contrib['subplot']
+                    ref_obj = contrib.subplot
                     if (self.subplot_type == "ratio"):
                         new_hist.Divide(ref_obj)
                     elif (self.subplot_type == "diff"):
