@@ -13,26 +13,39 @@ print("Doing AK4")
 edges = [
 88.0,
 114.0,
-180.0,
+185.0,
 254.0,
-318.0,
+320.0,
 390.0,
 481.0,
 539.0,
 ]
 
 # AK8
-print("Doing AK8")
-edges = [
-120.0,
-148.0,
-233.0,
-326.0,
-405.0,
-477.0,
-# 574.0,
-614.0,
-]
+# print("Doing AK8")
+# edges = [
+# 120.0,
+# 148.0,
+# 233.0,
+# 326.0,
+# 405.0,
+# 477.0,
+# # 574.0,
+# 614.0,
+# ]
+
+# print("Doing AK8 specialised")
+# edges = [
+# 68,
+# 88,
+# 129,
+# 185,
+# 252,
+# 320,
+# 390,
+# 479,
+# 536
+# ]
 
 # fractional bin width cannot be below this
 # lambda so you can do it as a function of pt

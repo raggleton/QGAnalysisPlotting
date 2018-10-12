@@ -84,7 +84,7 @@ normal_trig_info['HLT_PFJet450'] = {
 ak8_trig_info = OrderedDict()
 ak8_trig_info['HLT_AK8PFJet40'] = {
     'nominal_threshold': 40.,
-    'actual_threshold': 70.,
+    'actual_threshold': 68.,
     'lumi': 49176.854,
     'color': ROOT.kRed
 }
@@ -108,7 +108,7 @@ ak8_trig_info['HLT_AK8PFJet140'] = {
 }
 ak8_trig_info['HLT_AK8PFJet200'] = {
     'nominal_threshold': 200.,
-    'actual_threshold': 252.,
+    'actual_threshold': 254.,
     'lumi': 84893034.092,
     'color': ROOT.kOrange,
 }
@@ -120,19 +120,19 @@ ak8_trig_info['HLT_AK8PFJet260'] = {
 }
 ak8_trig_info['HLT_AK8PFJet320'] = {
     'nominal_threshold': 320.,
-    'actual_threshold': 390.,
+    'actual_threshold': 400.,
     'lumi': 1510155111.062,
     'color': ROOT.kViolet,
 }
 ak8_trig_info['HLT_AK8PFJet400'] = {
     'nominal_threshold': 400.,
-    'actual_threshold': 479.,
+    'actual_threshold': 488.,
     'lumi': 4544785568.903,
     'color': ROOT.kOrange-6,
 }
 ak8_trig_info['HLT_AK8PFJet450'] = {
     'nominal_threshold': 450.,
-    'actual_threshold': 536.,
+    'actual_threshold': 601.,
     'lumi': 33182262109.421,
     'color': ROOT.kAzure+1,
 }
@@ -295,18 +295,18 @@ if __name__ == "__main__":
     jetht_file = cu.open_root_file('workdir_ak8puppi_jettrig_withAK8trig/uhh2.AnalysisModuleRunner.DATA.Data_JetHT.root')
 
     # count for normal triggers
-    cumul_normal = do_counting(zb_file, jetht_file, normal_trig_info, -2.4, 2.4, "AK8PUPPI + HLT_PFJet*", "workdir_ak8puppi_jettrig_withAK8trig/ak8puppi_normaltrig.pdf")
+    cumul_normal = do_counting(zb_file, jetht_file, normal_trig_info, -2.4, 2.4, "AK8PUPPI + HLT_PFJet*", "workdir_ak8puppi_jettrig_withAK8trig/ak8puppi_normaltrig_ak8specific.pdf")
     cumul_normal.SetLineColor(ROOT.kBlue)
     cumul_normal.SetLineStyle(2)
 
     # count for AK8 specific triggers
-    cumul_ak8 = do_counting(zb_file, jetht_file, ak8_trig_info, -2.4, 2.4, "AK8PUPPI + HLT_AK8PFJet*", "workdir_ak8puppi_jettrig_withAK8trig/ak8puppi_ak8trig.pdf")
+    cumul_ak8 = do_counting(zb_file, jetht_file, ak8_trig_info, -2.4, 2.4, "AK8PUPPI + HLT_AK8PFJet*", "workdir_ak8puppi_jettrig_withAK8trig/ak8puppi_ak8trig_ak8specific.pdf")
 
     print_cumulative_comparison([
             [cumul_normal, "HLT_PFJet*"],
             [cumul_ak8, "HLT_AK8PFJet*"]
         ],
-        output_filename="workdir_ak8puppi_jettrig_withAK8trig/compare_cumul.pdf"
+        output_filename="workdir_ak8puppi_jettrig_withAK8trig/compare_cumul_ak8specific.pdf"
     )
 
     zb_file.Close()
