@@ -276,6 +276,18 @@ def transpose_2d_hist(hist):
     return hnew
 
 
+def rescale_plot_labels(container, factor):
+    # What a pile of poop, why does ROOT scale all these sizes?
+    container.GetXaxis().SetLabelSize(container.GetXaxis().GetLabelSize()/factor)
+    container.GetXaxis().SetTitleSize(container.GetXaxis().GetTitleSize()/factor)
+    container.GetXaxis().SetTitleOffset(container.GetXaxis().GetTitleOffset()*factor)  # doesn't seem to work?
+    container.GetXaxis().SetTickLength(container.GetXaxis().GetTickLength()/factor)
+
+    container.GetYaxis().SetLabelSize(container.GetYaxis().GetLabelSize()/factor)
+    container.GetYaxis().SetTitleSize(container.GetYaxis().GetTitleSize()/factor)
+    container.GetYaxis().SetTitleOffset(container.GetYaxis().GetTitleOffset()*factor)
+
+
 def do_box_plot(entries, output_filename, xlim=None, ylim=None, transpose=False):
     """Create box n whickers plot from 2D hists
     
@@ -287,19 +299,106 @@ def do_box_plot(entries, output_filename, xlim=None, ylim=None, transpose=False)
         Output filename
     """
     hists2d = []  # keep references alive
-    canv = ROOT.TCanvas("", "", 800, 800)
-    canv.SetTicks(1, 1)
+    canvas = ROOT.TCanvas(cu.get_unique_str(), "", 800, 800)
+    canvas.SetTicks(1, 1)
+    right_margin = 0.03
+    top_margin = 0.1
+    subplot_pad_height = 0.32
+    subplot_pad_fudge = 0.01  # to get non-overlapping subplot axis
+    subplot_type = 'ratio'
+    # subplot_type = None
+    if subplot_type:
+        main_pad = ROOT.TPad("main_pad", "", 0, subplot_pad_height+subplot_pad_fudge, 1, 1)
+        ROOT.SetOwnership(main_pad, False)
+        main_pad.SetTicks(1, 1)
+        main_pad.SetBottomMargin(2*subplot_pad_fudge)
+        main_pad.SetTopMargin(top_margin / (1-subplot_pad_height))
+        main_pad.SetRightMargin(right_margin / (1-subplot_pad_height))
+        canvas.cd()
+        main_pad.Draw()
+        subplot_pad = ROOT.TPad("subplot_pad", "", 0, 0, 1, subplot_pad_height-subplot_pad_fudge)
+        ROOT.SetOwnership(subplot_pad, False)
+        subplot_pad.SetTicks(1, 1)
+        subplot_pad.SetFillColor(0)
+        subplot_pad.SetFillStyle(0)
+        subplot_pad.SetTopMargin(4*subplot_pad_fudge)
+        # subplot_pad.SetRightMargin(right_margin)
+        subplot_pad.SetBottomMargin(0.35)
+        canvas.cd()
+        subplot_pad.Draw()
+    else:
+        main_pad = ROOT.TPad("main_pad", "", 0, 0, 1, 1)
+        ROOT.SetOwnership(main_pad, False)
+        main_pad.SetRightMargin(right_margin)
+        main_pad.SetTopMargin(top_margin)
+        main_pad.SetTicks(1, 1)
+        main_pad.Draw()
+
     leg = ROOT.TLegend(0.5, 0.7, 0.92, 0.88)
+    
+    main_pad.cd()
+
+    median_hists = []
+    lower_hists = []
+    upper_hists = []
+
+    quantiles = array('d', [0.25, 0.5, 0.75])
+
     for ind, ent in enumerate(entries[:]):
+        quantile_values = array('d', [0., 0., 0.])
+
+        # rebin_hist = ent[0].RebinX(20, cu.get_unique_str())
+        # rebin_hist = ent[0].RebinX(20)
         rebin_hist = ent[0]
         if transpose:
             rebin_hist = transpose_2d_hist(rebin_hist)
-        hists2d.append(rebin_hist)
+
+        median_hist = ROOT.TH1D("mean_%d" % ind, 
+                               "", 
+                               rebin_hist.GetNbinsX(), 
+                               rebin_hist.GetXaxis().GetBinLowEdge(1), 
+                               rebin_hist.GetXaxis().GetBinLowEdge(rebin_hist.GetNbinsX()+1))
+        lower_hist = ROOT.TH1D("lower_%d" % ind, 
+                               "", 
+                               rebin_hist.GetNbinsX(), 
+                               rebin_hist.GetXaxis().GetBinLowEdge(1), 
+                               rebin_hist.GetXaxis().GetBinLowEdge(rebin_hist.GetNbinsX()+1))
+        upper_hist = ROOT.TH1D("upper_%d" % ind, 
+                               "", 
+                               rebin_hist.GetNbinsX(), 
+                               rebin_hist.GetXaxis().GetBinLowEdge(1), 
+                               rebin_hist.GetXaxis().GetBinLowEdge(rebin_hist.GetNbinsX()+1))
+        
+        for i in range(1, rebin_hist.GetNbinsX()):
+            projection = rebin_hist.ProjectionY("_py%s"%cu.get_unique_str(), i, i+1)
+            projection.GetQuantiles(len(quantiles), quantile_values, quantiles)
+            median_hist.SetBinContent(i, quantile_values[1])
+            lower_hist.SetBinContent(i, quantile_values[0])
+            upper_hist.SetBinContent(i, quantile_values[2])
+
+        median_hist.SetLineColor(ent[1]['line_color'])
+        median_hist.SetFillColor(ent[1]['line_color'])
+        median_hist.SetFillStyle(0)
+        median_hists.append(median_hist)        
+
+        lower_hist.SetLineColor(ent[1]['line_color'])
+        lower_hist.SetLineStyle(2)
+        lower_hist.SetFillColor(ent[1]['line_color'])
+        lower_hist.SetFillStyle(0)
+        lower_hists.append(lower_hist)
+
+        upper_hist.SetLineColor(ent[1]['line_color'])
+        upper_hist.SetLineStyle(3)
+        upper_hist.SetFillColor(ent[1]['line_color'])
+        upper_hist.SetFillStyle(0)
+        upper_hists.append(upper_hist)
+
+
         rebin_hist.SetBarWidth(0.1)
-        offset = 0.11
+        offset = 0.011
         half = (int) (len(entries) / 2)
         factor = -1 if transpose else 1
-        rebin_hist.SetBarOffset(factor * (half * offset - (ind * 0.11)))
+        rebin_hist.SetBarOffset(factor * (half * offset - (ind * offset)))
         
         rebin_hist.SetLineColor(ent[1]['line_color'])
         
@@ -317,6 +416,77 @@ def do_box_plot(entries, output_filename, xlim=None, ylim=None, transpose=False)
         if ind > 0:
             draw_opt += "SAME"
         rebin_hist.Draw(draw_opt)
+        hists2d.append(rebin_hist)
+    
+    canvas.cd()
     leg.Draw()
-    canv.SaveAs(output_filename)
+    cms_latex = ROOT.TLatex()
+    cms_latex.SetTextAlign(ROOT.kHAlignLeft + ROOT.kVAlignBottom)
+    cms_latex.SetTextFont(42)
+    cms_latex.SetTextSize(0.035)
+    latex_height = 0.92
+    # cms_latex.DrawLatex(0.14, latex_height, "#font[62]{CMS}#font[52]{ Preliminary}")
+    cms_latex.DrawLatexNDC(0.14, latex_height, "#font[62]{CMS}#font[52]{ Preliminary}")
+    # cms_latex.DrawLatex(0.14, latex_height, "#font[62]{CMS}#font[52]{ Preliminary Simulation}")
+    # cms_latex.DrawLatex(0.14, latex_height, "#font[62]{CMS}")
+    cms_latex.SetTextAlign(ROOT.kHAlignRight + ROOT.kVAlignBottom)
+    cms_latex.DrawLatexNDC(0.97, latex_height, " 35.9 fb^{-1} (13 TeV)")
+    
+    subplot_title = None
+    subplot_pad.cd()
+    ratio_hst = ROOT.THStack("hst", ";"+hists2d[0].GetXaxis().GetTitle()+";#splitline{Ratio of median}{(MC / Data)}")
+    ratio_hst = ROOT.THStack("hst", ";"+hists2d[0].GetXaxis().GetTitle()+";#splitline{Ratio of quantiles}{(MC / Data)}")
+    if subplot_type:
+        # # Get rid of main plot x axis labels
+        # modifier.GetHistogram().GetXaxis().SetLabelSize(0)
+        # modifier.GetXaxis().SetLabelSize(0)
+        # modifier.GetHistogram().GetXaxis().SetTitleSize(0)
+        # modifier.GetXaxis().SetTitleSize(0)
+
+
+        if len(median_hists) > 1:
+            for qh in median_hists[1:]:
+                qh.Divide(median_hists[0])
+                ratio_hst.Add(qh)
+    
+            for qh in lower_hists[1:]:
+                qh.Divide(lower_hists[0])
+                ratio_hst.Add(qh)
+
+            for qh in upper_hists[1:]:
+                qh.Divide(upper_hists[0])
+                ratio_hst.Add(qh)
+            ratio_hst.Draw("NOSTACK HIST")
+
+        # subplot_container.Draw(draw_opts)
+
+        # if subplot_title == None:
+        #     if (subplot_type == "ratio"):
+        #         subplot_title = "#splitline{Ratio vs}{%s}" % (subplot.label)
+        #     elif (subplot_type == "diff"):
+        #         subplot_title = "#splitline{Difference}{vs %s}" % (subplot.label)
+        #     elif (subplot_type == "ddelta"):
+        #         subplot_title = "d#Delta/d#lambda"
+        
+        # ratio_hst.SetTitle(";%s;%s" % (xtitle, subplot_title))
+
+
+        # if xlim:
+            ratio_hst.GetXaxis().SetRangeUser(0, 320)
+
+            ratio_hst.SetMinimum(0.9)  # use this, not SetRangeUser()
+            ratio_hst.SetMaximum(1.1)  # use this, not SetRangeUser()
+
+            xax = ratio_hst.GetXaxis()
+            subplot_line = ROOT.TLine(0, 1., 320, 1.)
+            subplot_line.SetLineStyle(4)
+            subplot_line.SetLineWidth(1)
+            subplot_line.SetLineColor(ROOT.kBlack)
+            subplot_line.Draw()
+            
+            rescale_plot_labels(ratio_hst, subplot_pad_height)
+            ratio_hst.GetXaxis().SetTitleOffset(ratio_hst.GetXaxis().GetTitleOffset()*3)
+            ratio_hst.GetYaxis().SetNdivisions(505)
+
+    canvas.SaveAs(output_filename)
 
