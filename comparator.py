@@ -264,6 +264,8 @@ class Plot(object):
                 if (contrib.obj.GetListOfFunctions().GetSize() > 0):
                     contrib.obj.GetListOfFunctions().Remove(contrib.obj.GetListOfFunctions().At(0))
             else:
+                if isinstance(contrib.obj, ROOT.TH1) and contrib.obj.GetEntries() == 0:
+                    continue
                 # if drawing function, extend range as per user's request
                 if self.do_extend:
                     if self.plot_what == 'function':
