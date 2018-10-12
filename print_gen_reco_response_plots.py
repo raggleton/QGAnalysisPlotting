@@ -20,8 +20,8 @@ ROOT.gStyle.SetOptFit(1)
 
 # My stuff
 from comparator import Contribution, Plot
-# import qg_common as qgc
-# import qg_general_plots as qgg
+import qg_common as qgc
+import qg_general_plots as qgg
 import common_utils as cu
 
 ROOT.gStyle.SetPaintTextFormat(".3f")
@@ -113,9 +113,10 @@ def do_migration_summary_plot(h2d_renorm_x, h2d_renorm_y, xlabel, output_filenam
     plot.save(output_filename)
 
 
-def do_response_plot(tdir, plot_dir, var_name, xlabel, log_var=False, rebin=1):
+def do_response_plot(tdir, plot_dir, var_name, xlabel, log_var=False, rebin=1, do_resolution_plots=True):
     """Do 2D plots of genjet pt vs recojet pt"""
-    h2d = cu.get_from_tfile(tdir, "%s_response" % var_name)
+    h2d_orig = cu.get_from_tfile(tdir, "%s_response" % var_name)
+    h2d = h2d_orig.Clone(cu.get_unique_str())
     h2d.RebinX(rebin)
     h2d.RebinY(rebin)
 
@@ -187,9 +188,17 @@ def do_response_plot(tdir, plot_dir, var_name, xlabel, log_var=False, rebin=1):
     # Now do plot of purity, etc
     do_migration_summary_plot(h2d_renorm_x,
                               h2d_renorm_y,
-                              xlabel,
-                              os.path.join(plot_dir, '%s_migration_summary.%s' % (var_name, OUTPUT_FMT)),
-                              log_var)
+                              xlabel=xlabel,
+                              output_filename=os.path.join(plot_dir, '%s_migration_summary.%s' % (var_name, OUTPUT_FMT)),
+                              log_var=log_var)
+
+    # Do resolution plots
+    if do_resolution_plots:
+        make_resolution_plots(h2d_orig, 
+                              xlabel=xlabel,
+                              output_filename=os.path.join(plot_dir, '%s_resolution_summary.%s' % (var_name, OUTPUT_FMT)),
+                              do_fit=False,
+                              log_var=log_var)
 
 
 def do_jet_index_plots(tdir, plot_dir):
@@ -262,11 +271,127 @@ def do_pt_transfer_plot(tdir, plot_dir):
     plot.save(os.path.join(plot_dir, 'pt_migration_factors.%s' % (OUTPUT_FMT)))
 
 
+def determine_fit_range(hist):
+    """Determine lower & upper limit of fit range
+    
+    Parameters
+    ----------
+    hist : TH1
+        Description
+    
+    Returns
+    -------
+    tuple
+        (lower limit, upper limit)
+    """
+    # mean = hist.GetMean()
+    mean = hist.GetBinCenter(hist.GetMaximumBin())
+    rms = hist.GetRMS()
+    multiplier = 1.5
+    return (mean - multiplier*rms, mean + multiplier*rms)
+
+
+def do_gaus_fit(hist):
+    """Do a Gaussian fit to histogram
+
+    Parameters
+    ----------
+    hist : TH1
+        Histogram to fit to
+    """
+    func_name = hist.GetName()+"_f1"
+    func_name = "gausFit"
+    fit_range = determine_fit_range(hist)
+    func = ROOT.TF1(func_name, "gaus", fit_range[0], fit_range[1])
+    # func.SetParameters(hist.GetMaximum(), hist.GetMean(), hist.GetRMS())
+    fit_result = hist.Fit(func_name, "ERSQ", "L")
+    # print("fit result:", int(fit_result))
+
+
+def fit_results_to_str(fit):
+    """Turn fit results into str, lines split by \n
+    
+    Parameters
+    ----------
+    fit : TF1
+        Description
+    
+    Returns
+    -------
+    str
+        Description
+    
+    """
+    parts = []
+    chi2 = fit.GetChisquare()
+    ndf = fit.GetNDF()
+    if ndf > 0:
+        parts.append("chi2/ndof: %.3e/%d = %.3e" % (chi2, ndf, chi2/ndf))
+    else:
+        parts.append("chi2/ndof: %.3e/0 = Inf" % (chi2))
+    parts.append("prob: %.3e" % fit.GetProb())
+    for i in range(fit.GetNpar()):
+        parts.append("%s: %.3e #pm %.3e" % (fit.GetParName(i), fit.GetParameter(i), fit.GetParError(i)))
+    return "\n".join(parts)
+
+
+def make_resolution_plots(h2d, xlabel, output_filename, do_fit=True, log_var=False):
+    ax = h2d.GetXaxis()
+    bin_edges = [ax.GetBinLowEdge(i) for i in range(1, ax.GetNbins()+1)]
+    
+    bin_centers, sigmas, sigmas_unc = [], [], []
+    rel_sigmas, rel_sigmas_unc = [], []
+    # bin_centers = [ax.GetBinCenter(i) for i in range(1, ax.GetNbins()+1)]
+
+    for var_min, var_max in zip(bin_edges[:-1], bin_edges[1:]):
+        h_projection = qgg.get_projection_plot(h2d, var_min, var_max, cut_axis='x')
+        if h_projection.GetEffectiveEntries() < 20:
+            continue
+        # h_projection.Rebin(rebin)
+        h_projection.Scale(1./h_projection.Integral())
+
+        bin_centers.append(0.5*(var_max+var_min))
+        if do_fit:
+            do_gaus_fit(h_projection)
+            fit = h_projection.GetFunction("gausFit")
+            # label += "\n"
+            # label += fit_results_to_str(fit)
+            # bin_centers.append(fit.GetParameter(1))
+            sigmas.append(fit.GetParameter(2))
+            rel_sigmas.append(fit.GetParameter(2)/bin_centers[-1])
+            sigmas_unc.append(fit.GetParError(2))
+            rel_sigmas_unc.append(fit.GetParError(2)/bin_centers[-1])
+        else:
+            sigmas.append(h_projection.GetRMS())
+            rel_sigmas.append(h_projection.GetRMS()/bin_centers[-1])
+            sigmas_unc.append(h_projection.GetRMSError())
+            rel_sigmas_unc.append(h_projection.GetRMSError()/bin_centers[-1])
+
+    gr = ROOT.TGraphErrors(len(bin_centers), array('d', bin_centers), array('d', sigmas), array('d', [0]*len(bin_centers)), array('d', sigmas_unc))
+    gr_cont = Contribution(gr, label="")
+    ylabel = "#sigma" if do_fit else "RMS"
+    plot = Plot([gr_cont], what='graph', xtitle=xlabel, ytitle=ylabel, xlim=[bin_edges[0], bin_edges[-1]], ylim=[0, max(sigmas)*1.2], legend=False)
+    plot.plot()
+    if log_var:
+        plot.set_logx()
+    plot.save(output_filename)
+
+    gr_rel = ROOT.TGraphErrors(len(bin_centers), array('d', bin_centers), array('d', rel_sigmas), array('d', [0]*len(bin_centers)), array('d', rel_sigmas_unc))
+    gr_rel_cont = Contribution(gr_rel, label="")
+    ylabel = "Relative #sigma" if do_fit else "Relative RMS"
+    plot = Plot([gr_rel_cont], what='graph', xtitle=xlabel, ytitle=ylabel, xlim=[bin_edges[0], bin_edges[-1]], ylim=[min(rel_sigmas)/1.2, max(rel_sigmas)*1.2], legend=False)
+    plot.plot()
+    plot.set_logy()
+    if log_var:
+        plot.set_logx()
+    plot.save(output_filename.replace(".%s" % OUTPUT_FMT, "_relative.%s" % OUTPUT_FMT))
+
+
 def do_response_plots(in_file, plot_dir, do_these=None):
     tfile = cu.open_root_file(in_file)
     for full_var_name, xlabel, log_var, rebin in do_these:
         mydir, myvar = full_var_name.split("/")
-        do_response_plot(tfile.Get(mydir), plot_dir=plot_dir, var_name=myvar, xlabel=xlabel, log_var=log_var, rebin=rebin)
+        do_response_plot(tfile.Get(mydir), plot_dir=plot_dir, var_name=myvar, xlabel=xlabel, log_var=log_var, rebin=rebin, do_resolution_plots=True)
 
         # do_jet_index_plots(tfile.Get(mydir), plot_dir=plot_dir)
 
