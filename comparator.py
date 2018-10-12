@@ -524,7 +524,7 @@ class Plot(object):
             text_latex.DrawLatex(0.18, start_y - (ind*diff_y), line)
 
         # Do subplot
-        if self.subplot:
+        if self.subplot_type:
             self._rescale_plot_labels(modifier, 1-self.subplot_pad_height)
 
             # Get rid of main plot x axis labels
