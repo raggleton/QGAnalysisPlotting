@@ -81,11 +81,15 @@ def do_comparison_plot(entries, output_filename, rebin=1, **plot_kwargs):
     entries : list of 2-tuples, with (object, dict), where the dict is a set of kwargs passed to the Contribution object
     plot_kwargs : any other kwargs to be passed to the Plot object ctor
     """
-    p = make_comparison_plot_ingredients(entries, rebin=rebin, mean_rel_error=0.5, **plot_kwargs)
-    draw_opt = "NOSTACK HISTE"
-    p.plot(draw_opt)
-    # p.container.SetMaximum(min(5, p.container.GetMaximum()))
-    p.save(output_filename)
+    try:
+        p = make_comparison_plot_ingredients(entries, rebin=rebin, mean_rel_error=0.4, **plot_kwargs)
+        draw_opt = "NOSTACK HISTE"
+        p.plot(draw_opt)
+        # p.container.SetMaximum(min(5, p.container.GetMaximum()))
+        p.save(output_filename)
+    except RuntimeError as e:
+        print("Skipping")
+        print(e)
 
 
 def get_projection_plot(h2d, start_val, end_val, cut_axis='y'):
