@@ -56,11 +56,14 @@ def make_comparison_plot_ingredients(entries, rebin=1, normalise_hist=True, mean
     """
     conts = [Contribution(ent[0], normalise_hist=normalise_hist, rebin_hist=rebin, **ent[1]) 
              for ent in entries
-             if cu.get_hist_mean_rel_error(ent[0]) < mean_rel_error]
+             if cu.get_hist_mean_rel_error(ent[0]) < mean_rel_error and ent[0].Integral() > 0]
     do_legend = len(conts) > 1
     if len(conts) == 0:
         raise RuntimeError("0 contributions for this plot")
-    p = Plot(conts, what="hist", subplot=conts[0], ytitle="p.d.f", legend=do_legend, **plot_kwargs)
+    do_subplot = any(c.subplot for c in conts)
+    if (len(conts) == 1 or not do_subplot) and "subplot_type" in plot_kwargs:
+        plot_kwargs['subplot_type'] = None
+    p = Plot(conts, what="hist", ytitle="p.d.f", legend=do_legend, **plot_kwargs)
     if do_legend:
         p.legend.SetX1(0.5)
         p.legend.SetX2(0.97)
