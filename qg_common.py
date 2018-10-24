@@ -126,7 +126,7 @@ def get_parser():
 def extract_jet_config(workdir):
     """Return jet algo/PUS from dir name"""
     import re
-    res = re.search(r"(ak|ca)([0-9])(chs|puppi)?", workdir, flags=re.IGNORECASE)
+    res = re.search(r"(ak|ca)([0-9]+)(chs|puppi)?", workdir, flags=re.IGNORECASE)
     if res:
         algo = res.groups()[0]
         r = res.groups()[1]
