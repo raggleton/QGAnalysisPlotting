@@ -548,9 +548,6 @@ class Plot(object):
             
             self.subplot_container.SetTitle(";%s;%s" % (self.xtitle, self.subplot_title))
 
-            self._rescale_plot_labels(self.subplot_container, self.subplot_pad_height)
-            self.subplot_container.GetXaxis().SetTitleOffset(self.subplot_container.GetXaxis().GetTitleOffset()*3)
-            self.subplot_container.GetYaxis().SetNdivisions(505)
 
             if self.xlim:
                 self.subplot_container.GetXaxis().SetRangeUser(*self.xlim)
@@ -586,6 +583,10 @@ class Plot(object):
                 self.subplot_line.SetLineWidth(2)
                 self.subplot_line.SetLineColor(ROOT.kBlack)
                 self.subplot_line.Draw()
+            
+            self._rescale_plot_labels(self.subplot_container, self.subplot_pad_height)
+            self.subplot_container.GetXaxis().SetTitleOffset(self.subplot_container.GetXaxis().GetTitleOffset()*3)
+            self.subplot_container.GetYaxis().SetNdivisions(505)
 
             self.subplot_pad.Update()
             self.canvas.Update()
