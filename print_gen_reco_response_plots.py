@@ -416,13 +416,16 @@ if __name__ == "__main__":
 
         if "QCD" in in_file:
             do_these = [
-                ("Dijet_tighter/pt_jet", "p_{T}^{Gen} [GeV]", True, 1),
+                # ("Dijet_tighter/pt_jet", "p_{T}^{Gen} [GeV]", True, 1),
                 ("Dijet_QG_tighter/jet_puppiMultiplicity", "PUPPI Multiplicity (#lambda_{0}^{0} (PUPPI))", False, 5),
                 ("Dijet_QG_tighter/jet_multiplicity", "Multiplicity (#lambda_{0}^{0})", False, 5),
-                ("Dijet_QG_tighter/jet_LHA", "LHA (#lambda_{0.5}^{1} (PUPPI))", False, 10),
+                ("Dijet_QG_tighter/jet_LHA", "LHA (#lambda_{0.5}^{1})", False, 2),
+                ("Dijet_QG_tighter/jet_pTD", "p_{T}^{D} (#lambda_{0}^{2})", False, 2),
+                ("Dijet_QG_tighter/jet_width", "Width (#lambda_{1}^{1})", False, 2),
+                ("Dijet_QG_tighter/jet_thrust", "Thrust (#lambda_{2}^{1})", False, 2),
             ]
 
         if "DYJetsToLL" in in_file:
             pass
-        
+
         do_response_plots(in_file, plot_dir=plot_dir, do_these=do_these)
