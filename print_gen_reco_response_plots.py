@@ -9,6 +9,7 @@ import argparse
 import os
 from itertools import product
 from array import array
+from math import sqrt
 
 import ROOT
 ROOT.PyConfig.IgnoreCommandLineOptions = True
@@ -30,7 +31,7 @@ ROOT.gStyle.SetPaintTextFormat(".3f")
 OUTPUT_FMT = "pdf"
 
 
-def do_migration_summary_plot(h2d_renorm_x, h2d_renorm_y, xlabel, output_filename, log_var=False):
+def make_migration_summary_plot(h2d_renorm_x, h2d_renorm_y, xlabel, output_filename, log_var=False):
     stability_values, stability_errs = [], []
     xfer_down_values, xfer_down_errs = [], []
     xfer_down2_values, xfer_down2_errs = [], []
@@ -113,12 +114,12 @@ def do_migration_summary_plot(h2d_renorm_x, h2d_renorm_y, xlabel, output_filenam
     plot.save(output_filename)
 
 
-def do_response_plot(tdir, plot_dir, var_name, xlabel, log_var=False, rebin=1, do_resolution_plots=True):
+def do_response_plot(tdir, plot_dir, var_name, xlabel, log_var=False, rebinx=1, rebiny=1, do_migration_summary_plots=True, do_resolution_plots=True, save_response_hists=False):
     """Do 2D plots of genjet pt vs recojet pt"""
-    h2d_orig = cu.get_from_tfile(tdir, "%s_response" % var_name)
+    h2d_orig = cu.get_from_tfile(tdir, var_name)
     h2d = h2d_orig.Clone(cu.get_unique_str())
-    h2d.RebinX(rebin)
-    h2d.RebinY(rebin)
+    h2d.RebinX(rebinx)
+    h2d.RebinY(rebiny)
 
     #  renorm by row (reco bins)
     h2d_renorm_y = cu.make_normalised_TH2(h2d, 'Y', recolour=False, do_errors=True)
@@ -138,25 +139,26 @@ def do_response_plot(tdir, plot_dir, var_name, xlabel, log_var=False, rebin=1, d
     h2d_renorm_y.Draw(draw_opt)
     xax = h2d_renorm_y.GetXaxis()
     upper_lim = h2d_renorm_y.GetXaxis().GetBinUpEdge(h2d_renorm_y.GetXaxis().GetLast())
+    print(upper_lim)
     # upper_lim = 5000
     title_offset = 1.5
     h2d_renorm_y.SetTitleOffset(title_offset, 'X')
-    xax.SetRangeUser(0, upper_lim)
+    # xax.SetRangeUser(0, upper_lim)
     xax.SetMoreLogLabels()
 
     yax = h2d_renorm_y.GetYaxis()
     h2d_renorm_y.SetTitleOffset(title_offset*1.15, 'Y')
-    yax.SetRangeUser(0, upper_lim)
+    # yax.SetRangeUser(0, upper_lim)
     yax.SetMoreLogLabels()
     canv.Update()
 
     plot_dir = os.path.join(plot_dir, tdir.GetName())
     cu.check_dir_exists_create(plot_dir)
-    canv.SaveAs(os.path.join(plot_dir, "%s_response_renormY_linZ.%s" % (var_name, OUTPUT_FMT)))
+    canv.SaveAs(os.path.join(plot_dir, "%s_renormY_linZ.%s" % (var_name, OUTPUT_FMT)))
     canv.SetLogz()
     h2d_renorm_y.SetMaximum(1)
     h2d_renorm_y.SetMinimum(1E-3)
-    canv.SaveAs(os.path.join(plot_dir, "%s_response_renormY_logZ.%s" % (var_name, OUTPUT_FMT)))
+    canv.SaveAs(os.path.join(plot_dir, "%s_renormY_logZ.%s" % (var_name, OUTPUT_FMT)))
 
     # renorm by column (gen bins)
     canv.Clear()
@@ -171,34 +173,65 @@ def do_response_plot(tdir, plot_dir, var_name, xlabel, log_var=False, rebin=1, d
     # upper_lim = 5000
     title_offset = 1.5
     h2d_renorm_x.SetTitleOffset(title_offset, 'X')
-    xax.SetRangeUser(0, upper_lim)
+    # xax.SetRangeUser(0, upper_lim)
     xax.SetMoreLogLabels()
 
     yax = h2d_renorm_x.GetYaxis()
     h2d_renorm_x.SetTitleOffset(title_offset*1.15, 'Y')
-    yax.SetRangeUser(0, upper_lim)
+    # yax.SetRangeUser(0, upper_lim)
     yax.SetMoreLogLabels()
     canv.Update()
-    canv.SaveAs(os.path.join(plot_dir, "%s_response_renormX_linZ.%s" % (var_name, OUTPUT_FMT)))
+    canv.SaveAs(os.path.join(plot_dir, "%s_renormX_linZ.%s" % (var_name, OUTPUT_FMT)))
     canv.SetLogz()
     h2d_renorm_x.SetMaximum(1)
     h2d_renorm_x.SetMinimum(1E-3)
-    canv.SaveAs(os.path.join(plot_dir, "%s_response_renormX_logZ.%s" % (var_name, OUTPUT_FMT)))
+    canv.SaveAs(os.path.join(plot_dir, "%s_renormX_logZ.%s" % (var_name, OUTPUT_FMT)))
 
     # Now do plot of purity, etc
-    do_migration_summary_plot(h2d_renorm_x,
-                              h2d_renorm_y,
-                              xlabel=xlabel,
-                              output_filename=os.path.join(plot_dir, '%s_migration_summary.%s' % (var_name, OUTPUT_FMT)),
-                              log_var=log_var)
+    if do_migration_summary_plots:
+        make_migration_summary_plot(h2d_renorm_x,
+                                    h2d_renorm_y,
+                                    xlabel=xlabel,
+                                    output_filename=os.path.join(plot_dir, '%s_migration_summary.%s' % (var_name, OUTPUT_FMT)),
+                                    log_var=log_var)
 
     # Do resolution plots
     if do_resolution_plots:
-        make_resolution_plots(h2d_orig, 
-                              xlabel=xlabel,
-                              output_filename=os.path.join(plot_dir, '%s_resolution_summary.%s' % (var_name, OUTPUT_FMT)),
-                              do_fit=False,
-                              log_var=log_var)
+        res_rms, rel_res_rms = make_resolution_plots(h2d_orig,
+                                                     xlabel=xlabel,
+                                                     output_filename=os.path.join(plot_dir, '%s_resolution_summary_rms.%s' % (var_name, OUTPUT_FMT)),
+                                                     do_fit=False,
+                                                     do_rms=True,
+                                                     log_var=log_var,
+                                                     save_response_hists=False)
+
+        res_quantiles, rel_res_quantiles = make_resolution_plots(h2d_orig,
+                                                                 xlabel=xlabel,
+                                                                 output_filename=os.path.join(plot_dir, '%s_resolution_summary_quantiles.%s' % (var_name, OUTPUT_FMT)),
+                                                                 do_fit=False,
+                                                                 do_rms=False,
+                                                                 quantiles=None,  # auto determine
+                                                                 log_var=log_var,
+                                                                 save_response_hists=save_response_hists)
+
+        # compare RMS and quantile results
+        conts = [
+            Contribution(res_rms, label="#sqrt{RMS} #pm #frac{#sqrt{#delta RMS}}{#LT %s #GT}" % (xlabel), line_color=ROOT.kRed, marker_color=ROOT.kRed),
+            Contribution(res_quantiles, label="68% quantile", line_color=ROOT.kBlue, marker_color=ROOT.kBlue)
+        ]
+        ylabel = "#frac{#sigma(RECO/GEN)}{GEN}" if "_rel_" in var_name else "#frac{#sigma(RECO)}{GEN}"
+        res_plot = Plot(conts, what='graph',
+                        xtitle=xlabel,
+                        ytitle=ylabel,
+                        legend=True,
+                        ylim=[0, 3]
+                        )
+        res_plot.legend.SetX1(0.5)
+        res_plot.legend.SetX2(0.9)
+        res_plot.legend.SetY1(0.7)
+        res_plot.legend.SetY2(0.85)
+        res_plot.plot('ALP')
+        res_plot.save(os.path.join(plot_dir, '%s_resolution_rms_vs_quantiles.%s' % (var_name, OUTPUT_FMT)))
 
 
 def do_jet_index_plots(tdir, plot_dir):
@@ -273,12 +306,12 @@ def do_pt_transfer_plot(tdir, plot_dir):
 
 def determine_fit_range(hist):
     """Determine lower & upper limit of fit range
-    
+
     Parameters
     ----------
     hist : TH1
         Description
-    
+
     Returns
     -------
     tuple
@@ -310,17 +343,17 @@ def do_gaus_fit(hist):
 
 def fit_results_to_str(fit):
     """Turn fit results into str, lines split by \n
-    
+
     Parameters
     ----------
     fit : TF1
         Description
-    
+
     Returns
     -------
     str
         Description
-    
+
     """
     parts = []
     chi2 = fit.GetChisquare()
@@ -335,10 +368,16 @@ def fit_results_to_str(fit):
     return "\n".join(parts)
 
 
-def make_resolution_plots(h2d, xlabel, output_filename, do_fit=True, log_var=False):
+def make_resolution_plots(h2d, xlabel, output_filename, do_fit=True, do_rms=True, quantiles=None, log_var=False, save_response_hists=False):
+    """Make graph of resolution vs variables.
+
+    Also optionally save all input histograms to file.
+    """
+    one_sigma = 0.682689
+    quantiles = quantiles or [0.5*(1-one_sigma), 1 - 0.5*(1-one_sigma)]
     ax = h2d.GetXaxis()
     bin_edges = [ax.GetBinLowEdge(i) for i in range(1, ax.GetNbins()+1)]
-    
+
     bin_centers, sigmas, sigmas_unc = [], [], []
     rel_sigmas, rel_sigmas_unc = [], []
     # bin_centers = [ax.GetBinCenter(i) for i in range(1, ax.GetNbins()+1)]
@@ -362,14 +401,44 @@ def make_resolution_plots(h2d, xlabel, output_filename, do_fit=True, log_var=Fal
             sigmas_unc.append(fit.GetParError(2))
             rel_sigmas_unc.append(fit.GetParError(2)/bin_centers[-1])
         else:
-            sigmas.append(h_projection.GetRMS())
-            rel_sigmas.append(h_projection.GetRMS()/bin_centers[-1])
-            sigmas_unc.append(h_projection.GetRMSError())
-            rel_sigmas_unc.append(h_projection.GetRMSError()/bin_centers[-1])
+            if do_rms:
+                sigmas.append(sqrt(h_projection.GetRMS()))
+                rel_sigmas.append(sqrt(h_projection.GetRMS())/bin_centers[-1])
+                sigmas_unc.append(sqrt(h_projection.GetRMSError()))
+                rel_sigmas_unc.append(sqrt(h_projection.GetRMSError())/bin_centers[-1])
+            elif quantiles:
+                if len(quantiles) != 2:
+                    raise RuntimeError("Need 2 quantiles")
+                q = array('d', quantiles)
+                results = array('d', [0.]*len(quantiles))
+                h_projection.GetQuantiles(len(quantiles), results, q)
+                sigmas.append(results[1] - results[0])
+                sigmas_unc.append(0)
+                rel_sigmas.append((results[1] - results[0])/bin_centers[-1])
+                rel_sigmas_unc.append(0)
+            else:
+                raise RuntimeError("Need either do_fit, do_rms, or 2-tuple in quantiles")
+
+
+        if save_response_hists:
+            xlabel =  h_projection.GetXaxis().GetTitle()
+            cont = Contribution(h_projection, label="GEN: %g-%g" % (var_min, var_max))
+            p = Plot([cont], what='hist')
+            p.plot('HISTE')
+            rsp_filename = os.path.abspath(output_filename.replace(".%s" % OUTPUT_FMT, "_hist%gto%g.%s" % (var_min, var_max, OUTPUT_FMT)))
+            rsp_dir = os.path.dirname(rsp_filename)
+            rsp_file = os.path.basename(rsp_filename)
+            p.save(os.path.join(rsp_dir, "responseHists", rsp_file))
 
     gr = ROOT.TGraphErrors(len(bin_centers), array('d', bin_centers), array('d', sigmas), array('d', [0]*len(bin_centers)), array('d', sigmas_unc))
     gr_cont = Contribution(gr, label="")
-    ylabel = "#sigma" if do_fit else "RMS"
+    ylabel = ""
+    if do_fit:
+        ylabel = "Fit #sigma"
+    elif do_rms:
+        ylabel = "#sqrt{RMS}"
+    elif quantiles:
+        ylabel = "Central %g" % one_sigma
     plot = Plot([gr_cont], what='graph', xtitle=xlabel, ytitle=ylabel, xlim=[bin_edges[0], bin_edges[-1]], ylim=[0, max(sigmas)*1.2], legend=False)
     plot.plot()
     if log_var:
@@ -378,7 +447,7 @@ def make_resolution_plots(h2d, xlabel, output_filename, do_fit=True, log_var=Fal
 
     gr_rel = ROOT.TGraphErrors(len(bin_centers), array('d', bin_centers), array('d', rel_sigmas), array('d', [0]*len(bin_centers)), array('d', rel_sigmas_unc))
     gr_rel_cont = Contribution(gr_rel, label="")
-    ylabel = "Relative #sigma" if do_fit else "Relative RMS"
+    ylabel = "Relative %s" % ylabel
     plot = Plot([gr_rel_cont], what='graph', xtitle=xlabel, ytitle=ylabel, xlim=[bin_edges[0], bin_edges[-1]], ylim=[min(rel_sigmas)/1.2, max(rel_sigmas)*1.2], legend=False)
     plot.plot()
     plot.set_logy()
@@ -386,12 +455,40 @@ def make_resolution_plots(h2d, xlabel, output_filename, do_fit=True, log_var=Fal
         plot.set_logx()
     plot.save(output_filename.replace(".%s" % OUTPUT_FMT, "_relative.%s" % OUTPUT_FMT))
 
+    return gr, gr_rel
+
 
 def do_response_plots(in_file, plot_dir, do_these=None):
     tfile = cu.open_root_file(in_file)
     for full_var_name, xlabel, log_var, rebin in do_these:
         mydir, myvar = full_var_name.split("/")
-        do_response_plot(tfile.Get(mydir), plot_dir=plot_dir, var_name=myvar, xlabel=xlabel, log_var=log_var, rebin=rebin, do_resolution_plots=True)
+        # reco vs gen
+        do_response_plot(tfile.Get(mydir),
+            plot_dir=plot_dir,
+            var_name=myvar+"_response",
+            xlabel=xlabel,
+            log_var=log_var,
+            rebinx=rebin,
+            rebiny=rebin,
+            do_migration_summary_plots=True,
+            do_resolution_plots=True,
+            save_response_hists=False
+        )
+
+        rebiny = 10 if "multiplicity" in myvar.lower() else 5
+
+        # relative respone (reco/gen) on y axis
+        do_response_plot(tfile.Get(mydir),
+            plot_dir=plot_dir,
+            var_name=myvar+"_rel_response",
+            xlabel=xlabel,
+            log_var=log_var,
+            rebinx=rebin,
+            rebiny=rebiny,
+            do_migration_summary_plots=False,
+            do_resolution_plots=True,
+            save_response_hists=True
+        )
 
         # do_jet_index_plots(tfile.Get(mydir), plot_dir=plot_dir)
 
