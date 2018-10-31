@@ -33,7 +33,8 @@ ROOT.gStyle.SetPaintTextFormat(".3f")
 OUTPUT_FMT = "pdf"
 
 
-def calc_variable_binning(h2d, plot_dir):
+def calc_variable_binning(h2d, plot_dir, metric):
+    metric = metric.lower()
     this_h2d = h2d.Clone(h2d.GetName()+"Clone")
     this_h2d.Rebin2D(2, 2)
     reco_bin_edges = cu.get_bin_edges(this_h2d, 'Y')
@@ -69,9 +70,12 @@ def calc_variable_binning(h2d, plot_dir):
                 counter += 1
                 continue
 
+        # Rough way to find width of distribution
         mean = hproj.GetMean()
         width = sqrt(hproj.GetRMS())
 
+        # if metric == "gausfit":
+        # Fit the distribution to actually find the width
         peak = hproj.GetBinCenter(hproj.GetMaximumBin())
         fit_mod = 1
         fgaus = ROOT.TF1("fgaus", "gaus", peak-fit_mod*hproj.GetRMS(), peak+fit_mod*hproj.GetRMS());
@@ -99,17 +103,29 @@ def calc_variable_binning(h2d, plot_dir):
                 continue
 
         # Ideal bin edges
-        factor = 0.6
+        factor = 0.85
         ideal_lower_edge = max(0, mean - (factor * width))
         ideal_upper_edge = mean + (factor * width)
+
+        if metric == "quantile":
+            desired_width = 0.85
+            quantiles = array('d', [(1-desired_width)/2., 1-((1-desired_width))])
+            values = array('d', [0, 0])
+            hproj.GetQuantiles(len(quantiles), values, quantiles)
+            quantile_ideal_lower_edge, quantile_ideal_upper_edge = values
+            ideal_upper_edge = max(quantile_ideal_upper_edge, ideal_upper_edge)
+
         print("Ideal bin:", ideal_lower_edge, ideal_upper_edge)
 
         if bin_start == 0 and ideal_lower_edge > 0:
             # We need an extra bin to accommodate the region between 0 and the low edge
-            print("bin_start", bin_start, "bin_end", bin_end, "mean", mean, "width", width, "lower_edge", ideal_lower_edge)
-            print("WARNING, lower_edge > 0, adding an extra bin")
+            # print("bin_start", bin_start, "bin_end", bin_end, "mean", mean, "width", width, "lower_edge", ideal_lower_edge)
+            # print("WARNING, lower_edge > 0, adding an extra bin")
 
-            new_bin_end = bisect.bisect_right(reco_bin_edges, ideal_lower_edge)
+            # new_bin_end = bisect.bisect_right(reco_bin_edges, ideal_lower_edge)
+
+            # Absorb the region 0 - ideal_lower_edge into this bin
+            new_bin_end = bisect.bisect_right(reco_bin_edges, ideal_upper_edge)
             upper_edge = reco_bin_edges[new_bin_end]
             bins.append((0, upper_edge))
             print("Adding bin", bins[-1])
@@ -118,7 +134,6 @@ def calc_variable_binning(h2d, plot_dir):
             hproj.Draw()
             output_filename = os.path.join(plot_dir, h2d.GetName() + "_bin%dto%d.%s" % (bin_start, new_bin_end, OUTPUT_FMT))
             c.SaveAs(output_filename)
-
 
             bin_start = new_bin_end
             bin_end = bin_start + 1
@@ -219,6 +234,10 @@ if __name__ == "__main__":
                         help='Input ROOT files to process. '
                         'Several dirs can be specified here, separated by a space.')
     parser.add_argument("-o", "--output", help="Directory to put output plot dirs into", default=None)
+    acceptable_metrics = ['gausfit', 'quantile']
+    parser.add_argument("--metric", help="Metric for deciding bin width.",
+                        default=acceptable_metrics[0],
+                        choices=acceptable_metrics)
     args = parser.parse_args()
 
     for in_file in args.input:
@@ -285,10 +304,12 @@ if __name__ == "__main__":
             tfile = cu.open_root_file(in_file)
             h2d_orig = cu.get_from_tfile(tfile, full_var_name)
 
-            new_binning = calc_variable_binning(h2d_orig, plot_dir)
+            # metric = "gausfit"
+            # metric = "quantile"
+            new_binning = calc_variable_binning(h2d_orig, plot_dir, args.metric)
             h2d_rebin = make_rebinned_plot(h2d_orig, new_binning)
 
-            canv = ROOT.TCanvas("c"+cu.get_unique_str(), "", 800, 600)
+            canv = ROOT.TCanvas("c"+cu.get_unique_str(), "", 700, 600)
             canv.SetTicks(1, 1)
             if var_dict.get("log", False):
                 canv.SetLogx()
@@ -307,11 +328,11 @@ if __name__ == "__main__":
             if not os.path.isdir(output_dir):
                 os.makedirs(output_dir)
             canv.SaveAs(output_filename)
-            
+
             canv.SetLogz()
             output_filename = os.path.join(plot_dir, var_dict['name']+"_rebinned_logZ.%s" % (OUTPUT_FMT))
             canv.SaveAs(output_filename)
-            
+
             # renorm by row
             canv.SetLogz(0)
             h2d_renorm_y = cu.make_normalised_TH2(h2d_rebin, 'Y', recolour=False, do_errors=False)
