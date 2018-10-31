@@ -101,7 +101,7 @@ def get_projection_plot(h2d, start_val, end_val, cut_axis='y'):
         axis = h2d.GetXaxis()
     else:
         raise RuntimeError("cut_axis must be x or y")
-    bin_edges = [axis.GetBinLowEdge(i) for i in range(1, axis.GetNbins()+1)]
+    bin_edges = [axis.GetBinLowEdge(i) for i in range(1, axis.GetNbins()+2)]
     bin_start = bisect.bisect_right(bin_edges, start_val)
     bin_end = bisect.bisect_right(bin_edges, end_val)
     if cut_axis == "y":

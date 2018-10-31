@@ -306,3 +306,13 @@ def get_jet_config_from_dirname(dirname):
             print(m)
         raise RuntimeError("cannot determine jet config from dirname %s" % dirname)
 
+
+def get_bin_edges(hist, axis):
+    """Get array of bin edges from hist. Must specify which axis to use."""
+    axis = axis.lower()
+    if axis not in ['x', 'y']:
+        raise RuntimeError("get_bin_edges axis must be x or y")
+    ax = hist.GetXaxis() if axis == "x" else hist.GetYaxis()
+    bins = [ax.GetBinLowEdge(i) for i in range(1, ax.GetNbins()+2)]
+    return bins
+
