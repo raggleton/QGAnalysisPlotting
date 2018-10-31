@@ -55,7 +55,7 @@ def calc_variable_binning(h2d, plot_dir, metric):
             bins.append((reco_bin_edges[bin_start], reco_bin_edges[-1]))
             break
 
-        hproj = this_h2d.ProjectionX(cu.get_unique_str(), bin_start, bin_end, "eo")
+        hproj = this_h2d.ProjectionX(h2d.GetName()+"_%d_%d" % (bin_start, bin_end), bin_start, bin_end, "eo")
 
         if hproj.GetEntries() < 100:
             # assume we're at the high end of the scale
