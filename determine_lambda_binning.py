@@ -307,7 +307,7 @@ if __name__ == "__main__":
             # metric = "gausfit"
             # metric = "quantile"
             new_binning = calc_variable_binning(h2d_orig, plot_dir, args.metric)
-            h2d_rebin = make_rebinned_plot(h2d_orig, new_binning)
+            h2d_rebin = make_rebinned_plot(h2d_orig, new_binning, False)
 
             canv = ROOT.TCanvas("c"+cu.get_unique_str(), "", 700, 600)
             canv.SetTicks(1, 1)
