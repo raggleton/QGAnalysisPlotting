@@ -84,7 +84,7 @@ def calc_variable_binning(h2d, plot_dir, metric):
         fgaus.SetParameter('sigma', width)
         fgaus.SetLineColor(ROOT.kRed)
         fgaus.SetLineWidth(1)
-        fit_res = hproj.Fit("fgaus", "QMSR")
+        fit_res = hproj.Fit("fgaus", "QSR")
         if fit_res.Status() == 0:
             mean = fit_res.Parameter(1)
             width = fit_res.Parameter(2)
