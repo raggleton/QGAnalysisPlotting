@@ -153,10 +153,10 @@ def calc_variable_binning(h2d, plot_dir, metric):
             upper_edge = reco_bin_edges[new_bin_end]
             bins.append((lower_edge, upper_edge))
             print("Adding bin", bins[-1])
-            
+
             c = ROOT.TCanvas("c"+cu.get_unique_str(), "", 800, 600)
             hproj.Draw()
-            output_filename = os.path.join(plot_dir, h2d.GetName() + "_bin%dto%d.%s" % (bin_start, bin_end, OUTPUT_FMT))
+            output_filename = os.path.join(plot_dir, h2d.GetName() + "_bin%dto%d.%s" % (bin_start, new_bin_end, OUTPUT_FMT))
             c.SaveAs(output_filename)
 
             if (upper_edge == reco_bin_edges[-1]):
