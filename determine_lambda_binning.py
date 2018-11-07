@@ -36,7 +36,7 @@ OUTPUT_FMT = "pdf"
 def calc_variable_binning(h2d, plot_dir, metric):
     metric = metric.lower()
     this_h2d = h2d.Clone(h2d.GetName()+"Clone")
-    this_h2d.Rebin2D(2, 2)
+    # this_h2d.Rebin2D(2, 2)
     reco_bin_edges = cu.get_bin_edges(this_h2d, 'Y')
     gen_bin_edges = cu.get_bin_edges(this_h2d, 'X')
     print(reco_bin_edges)
