@@ -172,7 +172,8 @@ class Plot(object):
     def __init__(self, contributions=None, what="graph",
                  title=None, xtitle=None, ytitle=None, xlim=None, ylim=None,
                  legend=True, extend=False,
-                 subplot=None, subplot_type=None, subplot_title=None, subplot_limits=None):
+                 subplot=None, subplot_type=None, subplot_title=None, subplot_limits=None,
+                 has_data=True):
         """
         contributions: list
             List of Contribution objects.
@@ -233,6 +234,8 @@ class Plot(object):
         self.subplot_pad_fudge = 0.01  # to get non-overlapping subplot axis
         self.subplot_line = None  # need this to remain visible...
         self.subplot_title = subplot_title
+        self.is_preliminary = True
+        self.has_data = has_data
 
     def add_contribution(self, *contribution):
         """Add Contribution to Plot. Can be single item or list."""
@@ -502,8 +505,11 @@ class Plot(object):
         cms_latex.SetTextSize(0.035)
         latex_height = 0.91
         # cms_latex.DrawLatex(0.14, latex_height, "#font[62]{CMS}#font[52]{ Preliminary}")
-        cms_latex.DrawLatex(0.14, latex_height, "#font[62]{CMS}#font[52]{ Preliminary}")
-        # cms_latex.DrawLatex(0.14, latex_height, "#font[62]{CMS}#font[52]{ Preliminary Simulation}")
+        if self.is_preliminary:
+            if self.has_data:
+                cms_latex.DrawLatex(0.14, latex_height, "#font[62]{CMS}#font[52]{ Preliminary}")
+            else:
+                cms_latex.DrawLatex(0.14, latex_height, "#font[62]{CMS}#font[52]{ Preliminary Simulation}")
         # cms_latex.DrawLatex(0.14, latex_height, "#font[62]{CMS}")
         cms_latex.SetTextAlign(ROOT.kHAlignRight + ROOT.kVAlignBottom)
         cms_latex.DrawLatex(0.97, latex_height, " 35.9 fb^{-1} (13 TeV)")
