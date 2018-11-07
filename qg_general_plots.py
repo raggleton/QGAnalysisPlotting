@@ -490,3 +490,86 @@ def do_box_plot(entries, output_filename, xlim=None, ylim=None, transpose=False)
 
     canvas.SaveAs(output_filename)
 
+
+def make_migration_summary_plot(h2d_renorm_x, h2d_renorm_y, xlabel, output_filename, log_var=False):
+    stability_values, stability_errs = [], []
+    xfer_down_values, xfer_down_errs = [], []
+    xfer_down2_values, xfer_down2_errs = [], []
+    xfer_up_values, xfer_up_errs = [], []
+    xfer_up2_values, xfer_up2_errs = [], []
+
+    binning = [h2d_renorm_x.GetXaxis().GetBinLowEdge(bin_ind) for bin_ind in range(1, h2d_renorm_x.GetNbinsX()+2)]
+
+    n_bins = len(binning) - 1
+    label = ";%s;Fraction" % xlabel
+    hist_purity = ROOT.TH1F("purity"+cu.get_unique_str(), xlabel, n_bins, array('d', binning))
+    hist_stability = ROOT.TH1F("stability"+cu.get_unique_str(), xlabel, n_bins, array('d', binning))
+    hist_xfer_down = ROOT.TH1F("xfer_down"+cu.get_unique_str(), xlabel, n_bins, array('d', binning))
+    hist_xfer_down2 = ROOT.TH1F("xfer_down2"+cu.get_unique_str(), xlabel, n_bins, array('d', binning))
+    hist_xfer_down3 = ROOT.TH1F("xfer_down3"+cu.get_unique_str(), xlabel, n_bins, array('d', binning))
+    hist_xfer_up = ROOT.TH1F("xfer_up"+cu.get_unique_str(), xlabel, n_bins, array('d', binning))
+    hist_xfer_up2 = ROOT.TH1F("xfer_up2"+cu.get_unique_str(), xlabel, n_bins, array('d', binning))
+    hist_xfer_up3 = ROOT.TH1F("xfer_up3"+cu.get_unique_str(), xlabel, n_bins, array('d', binning))
+
+    for bin_ind in range(1, h2d_renorm_x.GetNbinsX()+1):
+        hist_purity.SetBinContent(bin_ind, h2d_renorm_y.GetBinContent(bin_ind, bin_ind))
+        hist_purity.SetBinError(bin_ind, h2d_renorm_y.GetBinError(bin_ind, bin_ind))
+
+        hist_stability.SetBinContent(bin_ind, h2d_renorm_x.GetBinContent(bin_ind, bin_ind))
+        hist_stability.SetBinError(bin_ind, h2d_renorm_x.GetBinError(bin_ind, bin_ind))
+
+        hist_xfer_down.SetBinContent(bin_ind, h2d_renorm_x.GetBinContent(bin_ind, bin_ind-1))
+        hist_xfer_down.SetBinError(bin_ind, h2d_renorm_x.GetBinError(bin_ind, bin_ind-1))
+        hist_xfer_down2.SetBinContent(bin_ind, h2d_renorm_x.GetBinContent(bin_ind, bin_ind-2))
+        hist_xfer_down2.SetBinError(bin_ind, h2d_renorm_x.GetBinError(bin_ind, bin_ind-2))
+        hist_xfer_down3.SetBinContent(bin_ind, h2d_renorm_x.GetBinContent(bin_ind, bin_ind-3))
+        hist_xfer_down3.SetBinError(bin_ind, h2d_renorm_x.GetBinError(bin_ind, bin_ind-3))
+
+        hist_xfer_up.SetBinContent(bin_ind, h2d_renorm_x.GetBinContent(bin_ind, bin_ind+1))
+        hist_xfer_up.SetBinError(bin_ind, h2d_renorm_x.GetBinError(bin_ind, bin_ind+1))
+        hist_xfer_up2.SetBinContent(bin_ind, h2d_renorm_x.GetBinContent(bin_ind, bin_ind+2))
+        hist_xfer_up2.SetBinError(bin_ind, h2d_renorm_x.GetBinError(bin_ind, bin_ind+2))
+        hist_xfer_up3.SetBinContent(bin_ind, h2d_renorm_x.GetBinContent(bin_ind, bin_ind+3))
+        hist_xfer_up3.SetBinError(bin_ind, h2d_renorm_x.GetBinError(bin_ind, bin_ind+3))
+
+    # col_purity = ROOT.kViolet-3
+    # col_purity = ROOT.kOrange-3
+    col_purity = ROOT.kGreen+1
+    col_stability = ROOT.kBlack
+    col_xfer_down = ROOT.kRed
+    col_xfer_down2 = ROOT.kMagenta
+    col_xfer_down3 = ROOT.kGreen
+    col_xfer_up = ROOT.kBlue-4
+    col_xfer_up2 = ROOT.kAzure+8
+    col_xfer_up3 = ROOT.kOrange
+    contributions = [
+        Contribution(hist_purity, label="Purity (gen in right bin)", line_color=col_purity, marker_color=col_purity),
+        Contribution(hist_stability, label="Stability (reco in right bin)", line_color=col_stability, marker_color=col_stability),
+        Contribution(hist_xfer_down, label="1 lower reco bin", line_color=col_xfer_down, marker_color=col_xfer_down),
+        Contribution(hist_xfer_down2, label="2 lower reco bin", line_color=col_xfer_down2, marker_color=col_xfer_down2),
+        # Contribution(hist_xfer_down3, label="3 lower reco bin", line_color=col_xfer_down3, marker_color=col_xfer_down3),
+        Contribution(hist_xfer_up, label="1 higher reco bin", line_color=col_xfer_up, marker_color=col_xfer_up),
+        Contribution(hist_xfer_up2, label="2 higher reco bin", line_color=col_xfer_up2, marker_color=col_xfer_up2),
+        # Contribution(hist_xfer_up3, label="3 higher reco bin", line_color=col_xfer_up3, marker_color=col_xfer_up3),
+    ]
+    xlim = [binning[0], binning[-1]]
+    plot = Plot(contributions, what='hist', xlim=xlim, ylim=[1e-3, 2], xtitle=xlabel, has_data=False)
+    y1 = 0.15
+    plot.legend.SetX1(0.5)
+    plot.legend.SetY1(y1)
+    plot.legend.SetY2(y1+0.25)
+    plot.plot("NOSTACK HISTE")
+    plot.legend.SetFillStyle(1001)
+    plot.legend.SetFillColorAlpha(ROOT.kWhite, 0.75)
+    if log_var:
+        plot.set_logx()
+    plot.set_logy()
+    plot.main_pad.cd()
+    lines = []
+    for val in [1, 0.5, 1e-1, 1e-2, 1e-3]:
+        line = ROOT.TLine(xlim[0], val, xlim[1], val)
+        line.SetLineStyle(2)
+        line.SetLineColor(ROOT.kGray+2)
+        lines.append(line)
+        line.Draw("same")
+    plot.save(output_filename)
