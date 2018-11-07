@@ -215,16 +215,19 @@ def rebin_2d_hist(h2d, new_binning_x, new_binning_y):
     return new_hist
 
 
-def make_rebinned_plot(h2d, new_binning):
+def make_rebinned_plot(h2d, new_binning, use_half_width_y=False):
     # define reco binning as being half of gen binning
-    reco_binning = []
-    reco_bin_edges = cu.get_bin_edges(h2d, 'Y')
-    for s, e in new_binning:
-        ideal_mid = (s+e)/2.
-        mid = reco_bin_edges[bisect.bisect_left(reco_bin_edges, ideal_mid)]
-        reco_binning.append((s, mid))
-        reco_binning.append((mid, e))
-    return rebin_2d_hist(h2d, new_binning, reco_binning)
+    if use_half_width_y:
+        reco_binning = []
+        reco_bin_edges = cu.get_bin_edges(h2d, 'Y')
+        for s, e in new_binning:
+            ideal_mid = (s+e)/2.
+            mid = reco_bin_edges[bisect.bisect_left(reco_bin_edges, ideal_mid)]
+            reco_binning.append((s, mid))
+            reco_binning.append((mid, e))
+        return rebin_2d_hist(h2d, new_binning, reco_binning)
+    else:
+        return rebin_2d_hist(h2d, new_binning, new_binning)
 
 
 if __name__ == "__main__":
@@ -307,7 +310,7 @@ if __name__ == "__main__":
             # metric = "gausfit"
             # metric = "quantile"
             new_binning = calc_variable_binning(h2d_orig, plot_dir, args.metric)
-            h2d_rebin = make_rebinned_plot(h2d_orig, new_binning, False)
+            h2d_rebin = make_rebinned_plot(h2d_orig, new_binning, use_half_width_y=False)
 
             canv = ROOT.TCanvas("c"+cu.get_unique_str(), "", 700, 600)
             canv.SetTicks(1, 1)
