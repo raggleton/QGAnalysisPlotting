@@ -109,12 +109,16 @@ def calc_variable_binning(h2d, plot_dir, metric):
         ideal_upper_edge = mean + (factor * width)
 
         if metric == "quantile":
-            desired_width = 0.85
-            quantiles = array('d', [(1-desired_width)/2., 1-((1-desired_width))])
-            values = array('d', [0, 0])
+            desired_width = 0.7
+            quantiles = array('d', [(1-desired_width)/2., 1-((1-desired_width)), 0.5])
+            values = array('d', [0, 0, 0])
             hproj.GetQuantiles(len(quantiles), values, quantiles)
-            quantile_ideal_lower_edge, quantile_ideal_upper_edge = values
-            ideal_upper_edge = max(quantile_ideal_upper_edge, ideal_upper_edge)
+            quantile_ideal_lower_edge, quantile_ideal_upper_edge, median = values
+            # ideal_upper_edge = max(quantile_ideal_upper_edge, ideal_upper_edge)
+            bin_mid = 0.5*(reco_bin_edges[bin_start]+reco_bin_edges[bin_start])
+            quantile_width = values[1] - values[0]
+            # ideal_upper_edge =  bin_mid + (quantile_width * bin_mid / median)
+            ideal_upper_edge =  reco_bin_edges[bin_start] + (quantile_width * bin_mid / median)
 
         print("Ideal bin:", ideal_lower_edge, ideal_upper_edge)
 
@@ -145,7 +149,9 @@ def calc_variable_binning(h2d, plot_dir, metric):
             new_bin_end = bisect.bisect_right(reco_bin_edges, ideal_upper_edge)
 
             if new_bin_end == bin_start:
-                raise RuntimeError("new_bin_end == bin_start, got stuck")
+                # raise RuntimeError("new_bin_end == bin_start, got stuck")
+                print("new_bin_end == bin_start, got stuck, increasing by 1")
+                new_bin_end += 1
 
             if new_bin_end >= len(reco_bin_edges):
                 new_bin_end = len(reco_bin_edges)-1
