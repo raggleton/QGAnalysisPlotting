@@ -336,9 +336,11 @@ if __name__ == "__main__":
             # renorm by row
             canv.SetLogz(0)
             h2d_renorm_y = cu.make_normalised_TH2(h2d_rebin, 'Y', recolour=False, do_errors=False)
+            marker_size = 0.8
             h2d_renorm_y.SetMarkerSize(0.5)
+            h2d_renorm_y.SetMarkerSize(marker_size)
             h2d_renorm_y.SetMaximum(1)
-            draw_opt = "COLZ TEXT"
+            draw_opt = "COLZ TEXT45"
             h2d_renorm_y.Draw(draw_opt)
             xtitle_offset = 1.5
             h2d_renorm_y.SetTitleOffset(xtitle_offset, 'X')
@@ -358,6 +360,7 @@ if __name__ == "__main__":
             canv.SetLogz(0)
             h2d_renorm_x = cu.make_normalised_TH2(h2d_rebin, 'X', recolour=False, do_errors=False)
             h2d_renorm_x.SetMarkerSize(0.5)
+            h2d_renorm_x.SetMarkerSize(marker_size)
             h2d_renorm_x.SetMaximum(1)
             h2d_renorm_x.Draw(draw_opt)
 
