@@ -11,6 +11,7 @@ from itertools import product
 from array import array
 from math import sqrt
 import bisect
+import numpy as np
 
 
 import ROOT
@@ -172,6 +173,69 @@ def calc_variable_binning(h2d, plot_dir, metric):
     return bins
 
 
+
+def renorm(arr2d, axis):
+    # create version where each axis summed to 1
+    # use where and out args to ensure nans are made into 0s
+    summed = arr2d.sum(axis=axis, keepdims=True)
+    return np.divide(arr2d, summed, where=summed!=0, out=np.zeros_like(arr2d))
+
+
+def concat_row(arr2d, row_ind):
+    # concat row row_ind + row_ind+1
+    nrows, ncols = arr2d.shape
+    if row_ind > nrows - 2:
+        raise RuntimeError("Cannot concat row [%d] as only %d rows in matrix" % (row_ind, nrows))
+    arr2d_new = np.zeros(shape=(nrows-1, ncols), dtype=float)
+    new_row = arr2d[row_ind] + arr2d[row_ind+1]
+    arr2d_new[row_ind] = new_row
+    # fill in new matrix
+    if row_ind > 0:
+        # do that bit before the new row
+        arr2d_new[:row_ind, ] = arr2d[:row_ind, ]
+    if row_ind < nrows - 2:
+        arr2d_new[row_ind+1:, :] = arr2d[row_ind+2:, :]
+    return arr2d_new
+
+
+def calc_variable_binning_other(h2d):
+    arr2d, _ = cu.th2_to_arr(h2d)
+    reco_bin_edges = cu.get_bin_edges(h2d, 'Y')
+    gen_bin_edges = cu.get_bin_edges(h2d, 'X')
+
+    new_bin_edges = np.array(reco_bin_edges).reshape(1, len(reco_bin_edges))
+
+    # assumes both axes have same dimension!
+    bin_ind = 0
+    counter = 0  # safety measure
+    while bin_ind < len(arr2d)-1 and counter < 10000:
+        counter += 1
+        arr2d_renormx = renorm(arr2d, axis=0)
+        arr2d_renormy = renorm(arr2d, axis=1)
+        purity = arr2d_renormy[bin_ind][bin_ind]
+        stability = arr2d_renormx[bin_ind][bin_ind]
+        if purity > 0.4 and stability > 0.4:
+            print("found bin")
+            print("bin_ind:", bin_ind, "purity: %.3f" % purity, "stability: %.3f" % stability)
+            bin_ind += 1
+            continue
+        else:
+            print("combining bin", bin_ind, "/", len(arr2d))
+            # combine rows & columns (use transpose for latter)
+            arr2d = concat_row(arr2d, bin_ind)
+            arr2d = concat_row(arr2d.T, bin_ind).T
+            new_bin_edges = np.delete(new_bin_edges, bin_ind+1)  # keep track of new binning
+            continue
+
+    # keep [1] to be same as next [0], otherwise you lose a bin later when
+    # making the rebinned TH2
+    these_bins = [list(x) for x in zip(new_bin_edges[:-1], new_bin_edges[1:])]
+    # manual hack for last bin
+    these_bins[-1][1] = reco_bin_edges[-1]
+    print(these_bins)
+    return these_bins
+
+
 def rebin_2d_hist(h2d, new_binning_x, new_binning_y):
     bin_edges_x = [b[0] for b in new_binning_x]
     bin_edges_x.append(new_binning_x[-1][1])
@@ -309,7 +373,11 @@ if __name__ == "__main__":
 
             # metric = "gausfit"
             # metric = "quantile"
-            new_binning = calc_variable_binning(h2d_orig, plot_dir, args.metric)
+            # new_binning = calc_variable_binning(h2d_orig, plot_dir, args.metric)
+
+            new_binning = calc_variable_binning_other(h2d_orig)
+
+
             h2d_rebin = make_rebinned_plot(h2d_orig, new_binning, use_half_width_y=False)
 
             canv = ROOT.TCanvas("c"+cu.get_unique_str(), "", 700, 600)
