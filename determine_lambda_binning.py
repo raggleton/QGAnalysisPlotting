@@ -393,6 +393,10 @@ if __name__ == "__main__":
             ytitle_offset = xtitle_offset * 1.1
             h2d_rebin.SetTitleOffset(xtitle_offset, 'X')
             h2d_rebin.SetTitleOffset(ytitle_offset, 'Y')
+            h2d_rebin.SetMinimum(1E-3)
+            if var_dict.get('log', False):
+                h2d_rebin.GetXaxis().SetLimits(1, 150)
+                h2d_rebin.GetYaxis().SetLimits(1, 150)
             h2d_rebin.Draw("COLZ")
             output_filename = os.path.join(plot_dir, var_dict['name']+"_rebinned.%s" % (OUTPUT_FMT))
             output_dir = os.path.dirname(output_filename)
@@ -408,10 +412,10 @@ if __name__ == "__main__":
             canv.SetLogz(0)
             h2d_renorm_y = cu.make_normalised_TH2(h2d_rebin, 'Y', recolour=False, do_errors=False)
             marker_size = 0.8
-            h2d_renorm_y.SetMarkerSize(0.5)
             h2d_renorm_y.SetMarkerSize(marker_size)
             h2d_renorm_y.SetMaximum(1)
             draw_opt = "COLZ TEXT45"
+            h2d_renorm_y.SetMinimum(1E-3)
             h2d_renorm_y.Draw(draw_opt)
             xtitle_offset = 1.5
             h2d_renorm_y.SetTitleOffset(xtitle_offset, 'X')
@@ -430,9 +434,9 @@ if __name__ == "__main__":
             canv.Clear()
             canv.SetLogz(0)
             h2d_renorm_x = cu.make_normalised_TH2(h2d_rebin, 'X', recolour=False, do_errors=False)
-            h2d_renorm_x.SetMarkerSize(0.5)
             h2d_renorm_x.SetMarkerSize(marker_size)
             h2d_renorm_x.SetMaximum(1)
+            h2d_renorm_x.SetMinimum(1E-3)
             h2d_renorm_x.Draw(draw_opt)
 
             h2d_renorm_x.SetTitleOffset(xtitle_offset, 'X')
