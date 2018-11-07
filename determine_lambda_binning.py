@@ -372,3 +372,7 @@ if __name__ == "__main__":
             h2d_renorm_x.SetMaximum(1)
             h2d_renorm_x.SetMinimum(1E-3)
             canv.SaveAs(os.path.join(plot_dir, "%s_rebinned_renormX_logZ.%s" % (var_dict['name'], OUTPUT_FMT)))
+
+            # Plot migrations
+            output_filename = os.path.join(plot_dir, "%s_migration_summary.%s" % (var_dict['name'], OUTPUT_FMT))
+            qgg.make_migration_summary_plot(h2d_renorm_x, h2d_renorm_y, var_dict['var_label'], output_filename)
