@@ -199,7 +199,7 @@ class Plot(object):
         subplot_type : str
             The method of comparison in the subplot: ratio, difference, or ddelta/dlambda
         subplot_limits : (float, float), optional
-            Set hard limits on subplot y axis range. If None, will choose some 
+            Set hard limits on subplot y axis range. If None, will choose some
             vaguely sensible ones
         """
         self.contributions = contributions if contributions else []
@@ -218,7 +218,8 @@ class Plot(object):
         self.do_extend = extend
         self.container = None
         self.canvas = None
-        self.default_canvas_size = (800, 800)
+        self.default_canvas_size = (600, 800)
+        # self.default_canvas_size = (800, 600)
         self.main_pad = None
         self.subplot = subplot
         if subplot_type and subplot_type not in ['ratio', 'diff', "ddelta"]:
@@ -333,7 +334,7 @@ class Plot(object):
         self.legend.SetFillStyle(0)
 
     def _rescale_plot_labels(self, container, factor):
-        # What a pile of poop, why does ROOT scale all these sizes?
+        # Eurgh, why does ROOT scale all these sizes?
         container.GetXaxis().SetLabelSize(container.GetXaxis().GetLabelSize()/factor)
         container.GetXaxis().SetTitleSize(container.GetXaxis().GetTitleSize()/factor)
         container.GetXaxis().SetTitleOffset(container.GetXaxis().GetTitleOffset()*factor)  # doesn't seem to work?
@@ -521,12 +522,12 @@ class Plot(object):
         # lumi_latex.DrawLatex(0.97, 0.93, "35.9 fb^{-1} (13 TeV)")
         # lumi_latex.SetTextAlign(ROOT.kHAlignRight + ROOT.kVAlignBottom)
         # lumi_latex.DrawLatex(0.95, 0.93, " 35.9 fb^{-1} (13 TeV)")
- 
+
         text_latex = ROOT.TLatex()
         text_latex.SetTextAlign(ROOT.kHAlignLeft + ROOT.kVAlignTop)
         text_latex.SetTextFont(42)
         text_latex.SetTextSize(0.03)
-        start_y = 0.87 
+        start_y = 0.87
         diff_y = 0.07
         for ind, line in enumerate(self.title.split('\n')):
             text_latex.DrawLatex(0.18, start_y - (ind*diff_y), line)
@@ -551,7 +552,7 @@ class Plot(object):
                     self.subplot_title = "#splitline{Difference}{vs %s}" % (self.subplot.label)
                 elif (self.subplot_type == "ddelta"):
                     self.subplot_title = "d#Delta/d#lambda"
-            
+
             self.subplot_container.SetTitle(";%s;%s" % (self.xtitle, self.subplot_title))
 
 
@@ -572,15 +573,15 @@ class Plot(object):
                     except ValueError:
                         bin_maxs = [0]
                     self.subplot_container.SetMaximum(min(2.5, max(1.5, 1.*max(bin_maxs))))
-                
-                    # Make sure the lower limit is the smallest bin of the contributions, 
+
+                    # Make sure the lower limit is the smallest bin of the contributions,
                     # so long as it is within 0 and 0.5
                     try:
                         bin_mins = [np.min(arr[np.nonzero(arr)]) for arr in harrays]
                     except ValueError:
                         bin_mins = [0]
                     self.subplot_container.SetMinimum(min(0.5, min(bin_mins)))
-                
+
                 xax = modifier.GetXaxis()
                 self.subplot_line = ROOT.TLine(xax.GetXmin(), 1., xax.GetXmax(), 1.)
                 if self.xlim:
@@ -589,7 +590,7 @@ class Plot(object):
                 self.subplot_line.SetLineWidth(2)
                 self.subplot_line.SetLineColor(ROOT.kBlack)
                 self.subplot_line.Draw()
-            
+
             self._rescale_plot_labels(self.subplot_container, self.subplot_pad_height)
             self.subplot_container.GetXaxis().SetTitleOffset(self.subplot_container.GetXaxis().GetTitleOffset()*3)
             self.subplot_container.GetYaxis().SetNdivisions(505)

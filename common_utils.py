@@ -96,7 +96,7 @@ def get_from_tfile(tfile, obj_name, info=False):
     """Get some object from ROOT TFile with checks."""
     if info:
         print("Getting %s" % obj_name)
-    obj = tfile.Get(obj_name) 
+    obj = tfile.Get(obj_name)
     if obj == None:
         raise IOError("No object named %s in %s" % (obj_name, tfile.GetName()))
     else:
@@ -253,12 +253,12 @@ def thstack_to_th1(hst):
 
 def get_hist_mean_rel_error(hist):
     """Get average relative error from histogram bins (i.e. error / contents)
-    
+
     Parameters
     ----------
     hist : ROOT.TH1 (or descendents)
         Description
-    
+
     Returns
     -------
     float
@@ -280,17 +280,17 @@ def get_hist_mean_rel_error(hist):
 
 def get_jet_config_from_dirname(dirname):
     """Get jet configuration from string
-    
+
     Parameters
     ----------
     dirname : str
         Description
-    
+
     Returns
     -------
     (str, str)
         jet radius and PUS
-    
+
     Raises
     ------
     RuntimeError
