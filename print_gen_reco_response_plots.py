@@ -38,9 +38,9 @@ def do_response_plot(tdir, plot_dir, var_name, xlabel, log_var=False, rebinx=1, 
     h2d.RebinX(rebinx)
     h2d.RebinY(rebiny)
 
-    #  renorm by row (reco bins)
-    h2d_renorm_y = cu.make_normalised_TH2(h2d, 'Y', recolour=False, do_errors=True)
     canv = ROOT.TCanvas(cu.get_unique_str(), "", 800, 600)
+    draw_opt = "COLZ TEXT"
+    draw_opt = "COLZ"
     pad = ROOT.gPad
     pad.SetBottomMargin(0.12)
     pad.SetLeftMargin(0.13)
@@ -49,13 +49,36 @@ def do_response_plot(tdir, plot_dir, var_name, xlabel, log_var=False, rebinx=1, 
     if log_var:
         canv.SetLogx()
         canv.SetLogy()
+
+    # un normalised
+    h2d.Draw(draw_opt)
+    xax = h2d.GetXaxis()
+    upper_lim = xax.GetBinUpEdge(xax.GetLast())
+    # print(upper_lim)
+    # upper_lim = 5000
+    title_offset = 1.5
+    h2d.SetTitleOffset(title_offset, 'X')
+    xax.SetMoreLogLabels()
+
+    yax = h2d.GetYaxis()
+    h2d.SetTitleOffset(title_offset*1.15, 'Y')
+    yax.SetMoreLogLabels()
+    canv.Update()
+
+    plot_dir = os.path.join(plot_dir, tdir.GetName())
+    cu.check_dir_exists_create(plot_dir)
+    canv.SaveAs(os.path.join(plot_dir, "%s_linZ.%s" % (var_name, OUTPUT_FMT)))
+    canv.SetLogz()
+    canv.SaveAs(os.path.join(plot_dir, "%s_logZ.%s" % (var_name, OUTPUT_FMT)))
+
+    #  renorm by row (reco bins)
+    canv.SetLogz(0)
+    h2d_renorm_y = cu.make_normalised_TH2(h2d, 'Y', recolour=False, do_errors=True)
     h2d_renorm_y.SetMarkerSize(0.5)
     h2d_renorm_y.SetMaximum(1)
-    draw_opt = "COLZ TEXT"
-    draw_opt = "COLZ"
     h2d_renorm_y.Draw(draw_opt)
     xax = h2d_renorm_y.GetXaxis()
-    upper_lim = h2d_renorm_y.GetXaxis().GetBinUpEdge(h2d_renorm_y.GetXaxis().GetLast())
+    upper_lim = xax.GetBinUpEdge(xax.GetLast())
     print(upper_lim)
     # upper_lim = 5000
     title_offset = 1.5
@@ -69,8 +92,6 @@ def do_response_plot(tdir, plot_dir, var_name, xlabel, log_var=False, rebinx=1, 
     yax.SetMoreLogLabels()
     canv.Update()
 
-    plot_dir = os.path.join(plot_dir, tdir.GetName())
-    cu.check_dir_exists_create(plot_dir)
     canv.SaveAs(os.path.join(plot_dir, "%s_renormY_linZ.%s" % (var_name, OUTPUT_FMT)))
     canv.SetLogz()
     h2d_renorm_y.SetMaximum(1)
@@ -86,7 +107,7 @@ def do_response_plot(tdir, plot_dir, var_name, xlabel, log_var=False, rebinx=1, 
     h2d_renorm_x.Draw(draw_opt)
 
     xax = h2d_renorm_x.GetXaxis()
-    upper_lim = h2d_renorm_x.GetXaxis().GetBinUpEdge(h2d_renorm_x.GetXaxis().GetLast())
+    upper_lim = xax.GetBinUpEdge(xax.GetLast())
     # upper_lim = 5000
     title_offset = 1.5
     h2d_renorm_x.SetTitleOffset(title_offset, 'X')
@@ -431,13 +452,20 @@ if __name__ == "__main__":
         if "QCD" in in_file:
             do_these = [
                 # ("Dijet_tighter/pt_jet", "p_{T}^{Gen} [GeV]", True, 1),
-                ("Dijet_QG_tighter/jet_puppiMultiplicity", "PUPPI Multiplicity (#lambda_{0}^{0} (PUPPI))", False, 5),
-                ("Dijet_QG_tighter/jet_multiplicity", "Multiplicity (#lambda_{0}^{0})", False, 5),
-                ("Dijet_QG_tighter/jet_LHA", "LHA (#lambda_{0.5}^{1})", False, 2),
+                # ("Dijet_QG_tighter/jet_puppiMultiplicity", "PUPPI Multiplicity (#lambda_{0}^{0} (PUPPI))", False, 5),
+                # ("Dijet_QG_tighter/jet_multiplicity", "Multiplicity (#lambda_{0}^{0})", False, 5),
+                ("Dijet_QG_tighter/jet_LHA", "LHA (#lambda_{0.5}^{1})", False, 1),
                 ("Dijet_QG_tighter/jet_pTD", "p_{T}^{D} (#lambda_{0}^{2})", False, 2),
                 ("Dijet_QG_tighter/jet_width", "Width (#lambda_{1}^{1})", False, 2),
                 ("Dijet_QG_tighter/jet_thrust", "Thrust (#lambda_{2}^{1})", False, 2),
-            ]
+
+                ("Dijet_QG_tighter/jet_puppiMultiplicity_charged", "PUPPI Multiplicity (#lambda_{0}^{0} (PUPPI)) [charged]", False, 5),
+                # ("Dijet_QG_tighter/jet_multiplicity_charged", "Multiplicity (#lambda_{0}^{0}) [charged only]", False, 5),
+                ("Dijet_QG_tighter/jet_LHA_charged", "LHA (#lambda_{0.5}^{1}) [charged only]", False, 2),
+                ("Dijet_QG_tighter/jet_pTD_charged", "p_{T}^{D} (#lambda_{0}^{2}) [charged only]", False, 2),
+                ("Dijet_QG_tighter/jet_width_charged", "Width (#lambda_{1}^{1}) [charged only]", False, 2),
+                ("Dijet_QG_tighter/jet_thrust_charged", "Thrust (#lambda_{2}^{1}) [charged only]", False, 2),
+            ][:1]
 
         if "DYJetsToLL" in in_file:
             pass
