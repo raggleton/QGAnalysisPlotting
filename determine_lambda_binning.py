@@ -19,13 +19,12 @@ ROOT.PyConfig.IgnoreCommandLineOptions = True
 ROOT.gROOT.SetBatch(1)
 ROOT.TH1.SetDefaultSumw2()
 # ROOT.gStyle.SetOptStat(0)
-# ROOT.gStyle.SetOptFit(1)
+ROOT.gStyle.SetOptFit(1111)
 
 
 # My stuff
-from comparator import Contribution, Plot
-import qg_common as qgc
 import qg_general_plots as qgg
+from comparator import Contribution, Plot
 import common_utils as cu
 
 ROOT.gStyle.SetPaintTextFormat(".3f")
@@ -90,8 +89,11 @@ def calc_variable_binning(h2d, plot_dir, metric):
             mean = fit_res.Parameter(1)
             width = fit_res.Parameter(2)
 
-        print("Mean:", mean, "width:", width, "fit" if fit_res.Status() == 0 else "Raw")
+        print("Mean: %.3f" % mean, "width: %.3f" % width, "[fit]" if fit_res.Status() == 0 else "[raw]")
 
+        # if bin_end == len(reco_bin_edges)-1:
+        #     # deal with last bin
+        #     bins.append((reco_bin_edges[bin_start], reco_bin_edges[-1]))
 
         if mean < reco_bin_edges[bin_start]:
             if bin_end == len(reco_bin_edges)-1:
@@ -248,6 +250,9 @@ def rebin_2d_hist(h2d, new_binning_x, new_binning_y):
 
     bin_edges_y = [b[0] for b in new_binning_y]
     bin_edges_y.append(new_binning_y[-1][1])
+
+    print("rebin_2d_hist, new axes:", bin_edges_x, bin_edges_y)
+
     new_hist = ROOT.TH2D(
         h2d.GetName()+"Rebin",
         ';'.join([h2d.GetTitle(), h2d.GetXaxis().GetTitle(), h2d.GetYaxis().GetTitle()]),
@@ -272,7 +277,7 @@ def rebin_2d_hist(h2d, new_binning_x, new_binning_y):
             # TODO handle error - reset to sqrt(N)?
             for xind_orig, xbin_orig in enumerate(bins_x_orig[:-1], 1):
                 for yind_orig, ybin_orig in enumerate(bins_y_orig[:-1], 1):
-                    if (xbin_orig >= xbin[0] and xbin_orig < xbin[1] and 
+                    if (xbin_orig >= xbin[0] and xbin_orig < xbin[1] and
                         ybin_orig >= ybin[0] and ybin_orig < ybin[1]):
                         new_bin_content += h2d.GetBinContent(xind_orig, yind_orig)
                         # print("For new bin", xbin, ybin, "using contents from", xbin_orig, bins_x_orig[xind_orig], ybin_orig, bins_y_orig[yind_orig])
@@ -300,6 +305,83 @@ def make_rebinned_plot(h2d, new_binning, use_half_width_y=False):
         return rebin_2d_hist(h2d, new_binning, new_binning)
 
 
+def make_plots(h2d, var_dict, plot_dir):
+    canv = ROOT.TCanvas("c"+cu.get_unique_str(), "", 700, 600)
+    canv.SetTicks(1, 1)
+    if var_dict.get("log", False):
+        canv.SetLogx()
+        canv.SetLogy()
+    pad = ROOT.gPad
+    pad.SetBottomMargin(0.12)
+    pad.SetLeftMargin(0.13)
+    pad.SetRightMargin(0.12)
+    xtitle_offset = 1.4
+    ytitle_offset = xtitle_offset * 1.1
+    h2d.SetTitleOffset(xtitle_offset, 'X')
+    h2d.SetTitleOffset(ytitle_offset, 'Y')
+    h2d.SetMinimum(1E-3)
+    if var_dict.get('log', False):
+        h2d.GetXaxis().SetLimits(1, 150)
+        h2d.GetYaxis().SetLimits(1, 150)
+    h2d.Draw("COLZ")
+    output_filename = os.path.join(plot_dir, var_dict['name']+"_rebinned.%s" % (OUTPUT_FMT))
+    output_dir = os.path.dirname(output_filename)
+    if not os.path.isdir(output_dir):
+        os.makedirs(output_dir)
+    canv.SaveAs(output_filename)
+
+    canv.SetLogz()
+    output_filename = os.path.join(plot_dir, var_dict['name']+"_rebinned_logZ.%s" % (OUTPUT_FMT))
+    canv.SaveAs(output_filename)
+
+    # renorm by row
+    canv.SetLogz(0)
+    h2d_renorm_y = cu.make_normalised_TH2(h2d, 'Y', recolour=False, do_errors=False)
+    marker_size = 0.8
+    h2d_renorm_y.SetMarkerSize(marker_size)
+    h2d_renorm_y.SetMaximum(1)
+    draw_opt = "COLZ TEXT45"
+    h2d_renorm_y.SetMinimum(1E-3)
+    h2d_renorm_y.Draw(draw_opt)
+    xtitle_offset = 1.5
+    h2d_renorm_y.SetTitleOffset(xtitle_offset, 'X')
+
+    yax = h2d_renorm_y.GetYaxis()
+    h2d_renorm_y.SetTitleOffset(ytitle_offset, 'Y')
+    canv.Update()
+
+    canv.SaveAs(os.path.join(plot_dir, "%s_rebinned_renormY_linZ.%s" % (var_dict['name'], OUTPUT_FMT)))
+    canv.SetLogz()
+    h2d_renorm_y.SetMaximum(1)
+    h2d_renorm_y.SetMinimum(1E-3)
+    canv.SaveAs(os.path.join(plot_dir, "%s_rebinned_renormY_logZ.%s" % (var_dict['name'], OUTPUT_FMT)))
+
+    # renorm by column
+    canv.Clear()
+    canv.SetLogz(0)
+    h2d_renorm_x = cu.make_normalised_TH2(h2d, 'X', recolour=False, do_errors=False)
+    h2d_renorm_x.SetMarkerSize(marker_size)
+    h2d_renorm_x.SetMaximum(1)
+    h2d_renorm_x.SetMinimum(1E-3)
+    h2d_renorm_x.Draw(draw_opt)
+
+    h2d_renorm_x.SetTitleOffset(xtitle_offset, 'X')
+
+    yax = h2d_renorm_x.GetYaxis()
+    h2d_renorm_x.SetTitleOffset(ytitle_offset, 'Y')
+    yax.SetMoreLogLabels()
+    canv.Update()
+    canv.SaveAs(os.path.join(plot_dir, "%s_rebinned_renormX_linZ.%s" % (var_dict['name'], OUTPUT_FMT)))
+    canv.SetLogz()
+    h2d_renorm_x.SetMaximum(1)
+    h2d_renorm_x.SetMinimum(1E-3)
+    canv.SaveAs(os.path.join(plot_dir, "%s_rebinned_renormX_logZ.%s" % (var_dict['name'], OUTPUT_FMT)))
+
+    # Plot migrations
+    output_filename = os.path.join(plot_dir, "%s_migration_summary.%s" % (var_dict['name'], OUTPUT_FMT))
+    qgg.make_migration_summary_plot(h2d_renorm_x, h2d_renorm_y, var_dict['var_label'], output_filename)
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('input',
@@ -307,6 +389,8 @@ if __name__ == "__main__":
                         help='Input ROOT files to process. '
                         'Several dirs can be specified here, separated by a space.')
     parser.add_argument("-o", "--output", help="Directory to put output plot dirs into", default=None)
+    parser.add_argument("--rebinThisInput", help="Apply", default=None, action="append")
+    parser.add_argument("--rebinThisLabel", help="Label", default=None, action="append")
     acceptable_metrics = ['gausfit', 'quantile']
     parser.add_argument("--metric", help="Metric for deciding bin width.",
                         default=acceptable_metrics[0],
@@ -341,28 +425,28 @@ if __name__ == "__main__":
                 "var_label": "Thrust (#lambda_{2}^{1})"
             },
             # charged vars
-            {
-                "name": "Dijet_QG_tighter/jet_puppiMultiplicity_charged",
-                "var_label": "PUPPI Multiplicity (#lambda_{0}^{0} (PUPPI)) [charged]",
-                "log": True,
-            },
-            {
-                "name": "Dijet_QG_tighter/jet_LHA_charged",
-                "var_label": "LHA (#lambda_{0.5}^{1}) [charged only]"
-            },
-            {
-                "name": "Dijet_QG_tighter/jet_pTD_charged",
-                "var_label": "p_{T}^{D} (#lambda_{0}^{2}) [charged only]"
-            },
-            {
-                "name": "Dijet_QG_tighter/jet_width_charged",
-                "var_label": "Width (#lambda_{1}^{1}) [charged only]"
-            },
-            {
-                "name": "Dijet_QG_tighter/jet_thrust_charged",
-                "var_label": "Thrust (#lambda_{2}^{1}) [charged only]"
-            },
-        ][:2]
+            # {
+            #     "name": "Dijet_QG_tighter/jet_puppiMultiplicity_charged",
+            #     "var_label": "PUPPI Multiplicity (#lambda_{0}^{0} (PUPPI)) [charged]",
+            #     "log": True,
+            # },
+            # {
+            #     "name": "Dijet_QG_tighter/jet_LHA_charged",
+            #     "var_label": "LHA (#lambda_{0.5}^{1}) [charged only]"
+            # },
+            # {
+            #     "name": "Dijet_QG_tighter/jet_pTD_charged",
+            #     "var_label": "p_{T}^{D} (#lambda_{0}^{2}) [charged only]"
+            # },
+            # {
+            #     "name": "Dijet_QG_tighter/jet_width_charged",
+            #     "var_label": "Width (#lambda_{1}^{1}) [charged only]"
+            # },
+            # {
+            #     "name": "Dijet_QG_tighter/jet_thrust_charged",
+            #     "var_label": "Thrust (#lambda_{2}^{1}) [charged only]"
+            # },
+        ][:]
 
         for var_dict in do_these:
             do_rel_response = False
@@ -383,80 +467,55 @@ if __name__ == "__main__":
 
             new_binning = calc_variable_binning_other(h2d_orig)
 
-
             h2d_rebin = make_rebinned_plot(h2d_orig, new_binning, use_half_width_y=False)
 
-            canv = ROOT.TCanvas("c"+cu.get_unique_str(), "", 700, 600)
-            canv.SetTicks(1, 1)
-            if var_dict.get("log", False):
-                canv.SetLogx()
-                canv.SetLogy()
-            pad = ROOT.gPad
-            pad.SetBottomMargin(0.12)
-            pad.SetLeftMargin(0.13)
-            pad.SetRightMargin(0.12)
-            xtitle_offset = 1.4
-            ytitle_offset = xtitle_offset * 1.1
-            h2d_rebin.SetTitleOffset(xtitle_offset, 'X')
-            h2d_rebin.SetTitleOffset(ytitle_offset, 'Y')
-            h2d_rebin.SetMinimum(1E-3)
-            if var_dict.get('log', False):
-                h2d_rebin.GetXaxis().SetLimits(1, 150)
-                h2d_rebin.GetYaxis().SetLimits(1, 150)
-            h2d_rebin.Draw("COLZ")
-            output_filename = os.path.join(plot_dir, var_dict['name']+"_rebinned.%s" % (OUTPUT_FMT))
-            output_dir = os.path.dirname(output_filename)
-            if not os.path.isdir(output_dir):
-                os.makedirs(output_dir)
-            canv.SaveAs(output_filename)
-
-            canv.SetLogz()
-            output_filename = os.path.join(plot_dir, var_dict['name']+"_rebinned_logZ.%s" % (OUTPUT_FMT))
-            canv.SaveAs(output_filename)
-
-            # renorm by row
-            canv.SetLogz(0)
-            h2d_renorm_y = cu.make_normalised_TH2(h2d_rebin, 'Y', recolour=False, do_errors=False)
-            marker_size = 0.8
-            h2d_renorm_y.SetMarkerSize(marker_size)
-            h2d_renorm_y.SetMaximum(1)
-            draw_opt = "COLZ TEXT45"
-            h2d_renorm_y.SetMinimum(1E-3)
-            h2d_renorm_y.Draw(draw_opt)
-            xtitle_offset = 1.5
-            h2d_renorm_y.SetTitleOffset(xtitle_offset, 'X')
-
-            yax = h2d_renorm_y.GetYaxis()
-            h2d_renorm_y.SetTitleOffset(ytitle_offset, 'Y')
-            canv.Update()
-
-            canv.SaveAs(os.path.join(plot_dir, "%s_rebinned_renormY_linZ.%s" % (var_dict['name'], OUTPUT_FMT)))
-            canv.SetLogz()
-            h2d_renorm_y.SetMaximum(1)
-            h2d_renorm_y.SetMinimum(1E-3)
-            canv.SaveAs(os.path.join(plot_dir, "%s_rebinned_renormY_logZ.%s" % (var_dict['name'], OUTPUT_FMT)))
-
-            # renorm by column
-            canv.Clear()
-            canv.SetLogz(0)
+            make_plots(h2d_rebin, var_dict, plot_dir)
+            
             h2d_renorm_x = cu.make_normalised_TH2(h2d_rebin, 'X', recolour=False, do_errors=False)
-            h2d_renorm_x.SetMarkerSize(marker_size)
-            h2d_renorm_x.SetMaximum(1)
-            h2d_renorm_x.SetMinimum(1E-3)
-            h2d_renorm_x.Draw(draw_opt)
+            h2d_renorm_y = cu.make_normalised_TH2(h2d_rebin, 'Y', recolour=False, do_errors=False)
+            contributions = qgg.migration_plot_components(h2d_renorm_x, h2d_renorm_y, var_dict['var_label'])
 
-            h2d_renorm_x.SetTitleOffset(xtitle_offset, 'X')
+            for ind, (other_input, other_label) in enumerate(zip(args.rebinThisInput, args.rebinThisLabel)):
+                print(other_label)
+                tfile_other = cu.open_root_file(other_input)
+                h2d_other = cu.get_from_tfile(tfile_other, full_var_name)
+                h2d_rebin_other = make_rebinned_plot(h2d_other, new_binning, use_half_width_y=False)
+                make_plots(h2d_rebin_other, var_dict, plot_dir+"_"+other_label)
+            
+                h2d_renorm_x_other = cu.make_normalised_TH2(h2d_rebin_other, 'X', recolour=False, do_errors=False)
+                h2d_renorm_y_other = cu.make_normalised_TH2(h2d_rebin_other, 'Y', recolour=False, do_errors=False)
+                contributions_other = qgg.migration_plot_components(h2d_renorm_x_other, h2d_renorm_y_other, var_dict['var_label'])
+                for c in contributions_other:
+                    c.obj.SetLineStyle(ind+2)
+                    c.label += " [%s]" % other_label
+                contributions.extend(contributions_other)
 
-            yax = h2d_renorm_x.GetYaxis()
-            h2d_renorm_x.SetTitleOffset(ytitle_offset, 'Y')
-            yax.SetMoreLogLabels()
-            canv.Update()
-            canv.SaveAs(os.path.join(plot_dir, "%s_rebinned_renormX_linZ.%s" % (var_dict['name'], OUTPUT_FMT)))
-            canv.SetLogz()
-            h2d_renorm_x.SetMaximum(1)
-            h2d_renorm_x.SetMinimum(1E-3)
-            canv.SaveAs(os.path.join(plot_dir, "%s_rebinned_renormX_logZ.%s" % (var_dict['name'], OUTPUT_FMT)))
-
-            # Plot migrations
-            output_filename = os.path.join(plot_dir, "%s_migration_summary.%s" % (var_dict['name'], OUTPUT_FMT))
-            qgg.make_migration_summary_plot(h2d_renorm_x, h2d_renorm_y, var_dict['var_label'], output_filename)
+            if len(args.rebinThisInput) > 0:
+                binning = [h2d_renorm_x.GetXaxis().GetBinLowEdge(bin_ind) for bin_ind in range(1, h2d_renorm_x.GetNbinsX()+2)]
+                xlim = [binning[0], binning[-1]]
+                # plot = Plot(contributions, what='hist', xlim=xlim, ylim=[1e-3, 2], xtitle=var_dict['var_label'], has_data=False)
+                plot = Plot(contributions, what='hist', xlim=xlim, ylim=[0, 1.25], xtitle=var_dict['var_label'], has_data=False)
+                y1 = 0.15
+                y1 = 0.65
+                plot.legend.SetNColumns(len(args.rebinThisInput)+1)
+                plot.legend.SetX1(0.15)
+                plot.legend.SetX2(0.95)
+                plot.legend.SetY1(y1)
+                plot.legend.SetY2(y1+0.25)
+                plot.legend.SetTextSize(0.015)
+                plot.plot("NOSTACK HISTE")
+                plot.legend.SetFillStyle(1001)
+                plot.legend.SetFillColorAlpha(ROOT.kWhite, 0.75)
+                if var_dict.get('log', None):
+                    plot.set_logx()
+                # plot.set_logy()
+                plot.main_pad.cd()
+                lines = []
+                # for val in [1, 0.5, 1e-1, 1e-2, 1e-3]:
+                #     line = ROOT.TLine(xlim[0], val, xlim[1], val)
+                #     line.SetLineStyle(2)
+                #     line.SetLineColor(ROOT.kGray+2)
+                #     lines.append(line)
+                #     line.Draw("same")
+                output_filename = os.path.join(plot_dir, "%s_combined_migration_summary.%s" % (var_dict['name'], OUTPUT_FMT))
+                plot.save(output_filename)
