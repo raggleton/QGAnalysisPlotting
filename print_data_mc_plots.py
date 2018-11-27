@@ -168,13 +168,13 @@ def do_plots(root_dir):
             rebin = 2
             v_lower = v.lower()
             if "multiplicity" in v_lower:
-                rebin = 1
+                rebin = 2
             elif "flavour" in v_lower or "thrust" in v_lower or 'ptd' in v_lower:
                 rebin = 1
 
             xlim = None
             if "width" in v_lower or "ptd" in v_lower:
-                xlim = (0, 0.75)
+                xlim = (0, 1)
             elif"thrust" in v_lower:
                 xlim = (0, 0.5)
             elif "multiplicity" in v_lower and "ak4" in sources[0]['root_dir'].lower():
