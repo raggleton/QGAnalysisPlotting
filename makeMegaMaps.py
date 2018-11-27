@@ -39,7 +39,7 @@ ROOT.gStyle.SetOptFit()
 # ROOT.gStyle.SetStatColor()
 
 # Control plot output format
-OUTPUT_FMT = "pdf"
+OUTPUT_FMT = "png"
 
 
 def make_mega_maps(filename, var):
@@ -83,22 +83,22 @@ def make_mega_maps(filename, var):
     canv.SaveAs(os.path.join(os.path.dirname(filename), "mega_map_%s.%s" % (var, OUTPUT_FMT)))
 
     canv.Clear()
-    h_renormx = cu.make_normalised_TH2(h_mega, "X", True)
+    h_renormx = cu.make_normalised_TH2(h_mega, "X", False)
     h_renormx.Draw("COLZ")
     # h_renormx.SetMinimum()
     canv.SaveAs(os.path.join(os.path.dirname(filename), "mega_map_%s_renormX.%s" % (var, OUTPUT_FMT)))
     del h_renormx
 
-    canv.Clear()
-    h_renormy = cu.make_normalised_TH2(h_mega, "Y", True)
-    h_renormy.Draw("COLZ")
-    # h_renormx.SetMinimum()
-    canv.SaveAs(os.path.join(os.path.dirname(filename), "mega_map_%s_renormY.%s" % (var, OUTPUT_FMT)))
+    # canv.Clear()
+    # h_renormy = cu.make_normalised_TH2(h_mega, "Y", False)
+    # h_renormy.Draw("COLZ")
+    # # h_renormx.SetMinimum()
+    # canv.SaveAs(os.path.join(os.path.dirname(filename), "mega_map_%s_renormY.%s" % (var, OUTPUT_FMT)))
 
     rootfile.Close()
 
 
 if __name__ == "__main__":
-    make_mega_maps("workdir_ak4puppi_pythia_newFlav_binByAve_trigBinningBetter_jetAsymCut_multResponse/uhh2.AnalysisModuleRunner.MC.MC_PYTHIA-QCD.root", "multiplicity")
+    # make_mega_maps("workdir_ak4puppi_pythia_newFlav_binByAve_trigBinningBetter_jetAsymCut_multResponse/uhh2.AnalysisModuleRunner.MC.MC_PYTHIA-QCD.root", "multiplicity")
     make_mega_maps("workdir_ak4puppi_pythia_newFlav_binByAve_trigBinningBetter_jetAsymCut_multResponse/uhh2.AnalysisModuleRunner.MC.MC_PYTHIA-QCD.root", "puppiMultiplicity")
     make_mega_maps("workdir_ak4puppi_pythia_newFlav_binByAve_trigBinningBetter_jetAsymCut_multResponse/uhh2.AnalysisModuleRunner.MC.MC_PYTHIA-QCD.root", "lha")
