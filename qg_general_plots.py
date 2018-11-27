@@ -491,7 +491,7 @@ def do_box_plot(entries, output_filename, xlim=None, ylim=None, transpose=False)
     canvas.SaveAs(output_filename)
 
 
-def make_migration_summary_plot(h2d_renorm_x, h2d_renorm_y, xlabel, output_filename, log_var=False):
+def migration_plot_components(h2d_renorm_x, h2d_renorm_y, xlabel):
     stability_values, stability_errs = [], []
     xfer_down_values, xfer_down_errs = [], []
     xfer_down2_values, xfer_down2_errs = [], []
@@ -543,15 +543,21 @@ def make_migration_summary_plot(h2d_renorm_x, h2d_renorm_y, xlabel, output_filen
     col_xfer_up2 = ROOT.kAzure+8
     col_xfer_up3 = ROOT.kOrange
     contributions = [
-        Contribution(hist_purity, label="Purity (gen in right bin)", line_color=col_purity, marker_color=col_purity),
-        Contribution(hist_stability, label="Stability (reco in right bin)", line_color=col_stability, marker_color=col_stability),
-        Contribution(hist_xfer_down, label="1 lower reco bin", line_color=col_xfer_down, marker_color=col_xfer_down),
-        Contribution(hist_xfer_down2, label="2 lower reco bin", line_color=col_xfer_down2, marker_color=col_xfer_down2),
+        Contribution(hist_purity, label="Purity (gen right)", line_color=col_purity, marker_color=col_purity),
+        Contribution(hist_stability, label="Stability (reco right)", line_color=col_stability, marker_color=col_stability),
+        Contribution(hist_xfer_down, label="-1 reco bin", line_color=col_xfer_down, marker_color=col_xfer_down),
+        Contribution(hist_xfer_down2, label="-2 reco bin", line_color=col_xfer_down2, marker_color=col_xfer_down2),
         # Contribution(hist_xfer_down3, label="3 lower reco bin", line_color=col_xfer_down3, marker_color=col_xfer_down3),
-        Contribution(hist_xfer_up, label="1 higher reco bin", line_color=col_xfer_up, marker_color=col_xfer_up),
-        Contribution(hist_xfer_up2, label="2 higher reco bin", line_color=col_xfer_up2, marker_color=col_xfer_up2),
+        Contribution(hist_xfer_up, label="+1 reco bin", line_color=col_xfer_up, marker_color=col_xfer_up),
+        Contribution(hist_xfer_up2, label="+2 reco bin", line_color=col_xfer_up2, marker_color=col_xfer_up2),
         # Contribution(hist_xfer_up3, label="3 higher reco bin", line_color=col_xfer_up3, marker_color=col_xfer_up3),
     ]
+    return contributions
+
+
+def make_migration_summary_plot(h2d_renorm_x, h2d_renorm_y, xlabel, output_filename, log_var=False):
+    contributions = migration_plot_components(h2d_renorm_x, h2d_renorm_y, xlabel)
+    binning = [h2d_renorm_x.GetXaxis().GetBinLowEdge(bin_ind) for bin_ind in range(1, h2d_renorm_x.GetNbinsX()+2)]
     xlim = [binning[0], binning[-1]]
     plot = Plot(contributions, what='hist', xlim=xlim, ylim=[1e-3, 2], xtitle=xlabel, has_data=False)
     y1 = 0.15
