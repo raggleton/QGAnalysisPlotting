@@ -15,7 +15,7 @@ QCD_COLOUR = 867 # kAzure+7
 # SINGLE_MU_COLOUR =  884 # kViolet+3
 SINGLE_MU_COLOUR =  634
 JETHT_COLOUR = 600 # kBlue
-ZB_COLOUR = 416 # kGreen
+ZB_COLOUR = 416+1 # kGreen+1
 
 # You should use markers as well for colourblindness
 DY_MARKER = 20
