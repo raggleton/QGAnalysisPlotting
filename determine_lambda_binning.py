@@ -389,8 +389,8 @@ if __name__ == "__main__":
                         help='Input ROOT files to process. '
                         'Several dirs can be specified here, separated by a space.')
     parser.add_argument("-o", "--output", help="Directory to put output plot dirs into", default=None)
-    parser.add_argument("--rebinThisInput", help="Apply", default=None, action="append")
-    parser.add_argument("--rebinThisLabel", help="Label", default=None, action="append")
+    parser.add_argument("--rebinThisInput", help="Apply new binning to these input file(s)", default=None, action="append")
+    parser.add_argument("--rebinThisLabel", help="Labels for files to be rebinned", default=None, action="append")
     acceptable_metrics = ['gausfit', 'quantile']
     parser.add_argument("--metric", help="Metric for deciding bin width.",
                         default=acceptable_metrics[0],
@@ -475,22 +475,22 @@ if __name__ == "__main__":
             h2d_renorm_y = cu.make_normalised_TH2(h2d_rebin, 'Y', recolour=False, do_errors=False)
             contributions = qgg.migration_plot_components(h2d_renorm_x, h2d_renorm_y, var_dict['var_label'])
 
-            for ind, (other_input, other_label) in enumerate(zip(args.rebinThisInput, args.rebinThisLabel)):
-                print(other_label)
-                tfile_other = cu.open_root_file(other_input)
-                h2d_other = cu.get_from_tfile(tfile_other, full_var_name)
-                h2d_rebin_other = make_rebinned_plot(h2d_other, new_binning, use_half_width_y=False)
-                make_plots(h2d_rebin_other, var_dict, plot_dir+"_"+other_label)
-            
-                h2d_renorm_x_other = cu.make_normalised_TH2(h2d_rebin_other, 'X', recolour=False, do_errors=False)
-                h2d_renorm_y_other = cu.make_normalised_TH2(h2d_rebin_other, 'Y', recolour=False, do_errors=False)
-                contributions_other = qgg.migration_plot_components(h2d_renorm_x_other, h2d_renorm_y_other, var_dict['var_label'])
-                for c in contributions_other:
-                    c.obj.SetLineStyle(ind+2)
-                    c.label += " [%s]" % other_label
-                contributions.extend(contributions_other)
-
-            if len(args.rebinThisInput) > 0:
+            if args.rebinThisInput and len(args.rebinThisInput) > 0:
+                for ind, (other_input, other_label) in enumerate(zip(args.rebinThisInput, args.rebinThisLabel)):
+                    print(other_label)
+                    tfile_other = cu.open_root_file(other_input)
+                    h2d_other = cu.get_from_tfile(tfile_other, full_var_name)
+                    h2d_rebin_other = make_rebinned_plot(h2d_other, new_binning, use_half_width_y=False)
+                    make_plots(h2d_rebin_other, var_dict, plot_dir=plot_dir+"_"+other_label, append="rebinned", plot_migrations=True)
+                
+                    h2d_renorm_x_other = cu.make_normalised_TH2(h2d_rebin_other, 'X', recolour=False, do_errors=False)
+                    h2d_renorm_y_other = cu.make_normalised_TH2(h2d_rebin_other, 'Y', recolour=False, do_errors=False)
+                    contributions_other = qgg.migration_plot_components(h2d_renorm_x_other, h2d_renorm_y_other, var_dict['var_label'])
+                    for c in contributions_other:
+                        c.obj.SetLineStyle(ind+2)
+                        c.label += " [%s]" % other_label
+                    contributions.extend(contributions_other)
+                
                 binning = [h2d_renorm_x.GetXaxis().GetBinLowEdge(bin_ind) for bin_ind in range(1, h2d_renorm_x.GetNbinsX()+2)]
                 xlim = [binning[0], binning[-1]]
                 # plot = Plot(contributions, what='hist', xlim=xlim, ylim=[1e-3, 2], xtitle=var_dict['var_label'], has_data=False)
