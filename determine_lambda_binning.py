@@ -305,7 +305,7 @@ def make_rebinned_plot(h2d, new_binning, use_half_width_y=False):
         return rebin_2d_hist(h2d, new_binning, new_binning)
 
 
-def make_plots(h2d, var_dict, plot_dir):
+def make_plots(h2d, var_dict, plot_dir, append="", plot_migrations=True):
     canv = ROOT.TCanvas("c"+cu.get_unique_str(), "", 700, 600)
     canv.SetTicks(1, 1)
     if var_dict.get("log", False):
@@ -323,15 +323,17 @@ def make_plots(h2d, var_dict, plot_dir):
     if var_dict.get('log', False):
         h2d.GetXaxis().SetLimits(1, 150)
         h2d.GetYaxis().SetLimits(1, 150)
+    if "title" in var_dict:
+        h2d.SetTitle(var_dict['title'])
     h2d.Draw("COLZ")
-    output_filename = os.path.join(plot_dir, var_dict['name']+"_rebinned.%s" % (OUTPUT_FMT))
+    output_filename = os.path.join(plot_dir, var_dict['name']+"_%s.%s" % (append, OUTPUT_FMT))
     output_dir = os.path.dirname(output_filename)
     if not os.path.isdir(output_dir):
         os.makedirs(output_dir)
     canv.SaveAs(output_filename)
 
     canv.SetLogz()
-    output_filename = os.path.join(plot_dir, var_dict['name']+"_rebinned_logZ.%s" % (OUTPUT_FMT))
+    output_filename = os.path.join(plot_dir, var_dict['name']+"_%s_logZ.%s" % (append, OUTPUT_FMT))
     canv.SaveAs(output_filename)
 
     # renorm by row
@@ -340,7 +342,9 @@ def make_plots(h2d, var_dict, plot_dir):
     marker_size = 0.8
     h2d_renorm_y.SetMarkerSize(marker_size)
     h2d_renorm_y.SetMaximum(1)
-    draw_opt = "COLZ TEXT45"
+    draw_opt = "COLZ"
+    if plot_migrations:
+        draw_opt += " TEXT45"
     h2d_renorm_y.SetMinimum(1E-3)
     h2d_renorm_y.Draw(draw_opt)
     xtitle_offset = 1.5
@@ -350,11 +354,11 @@ def make_plots(h2d, var_dict, plot_dir):
     h2d_renorm_y.SetTitleOffset(ytitle_offset, 'Y')
     canv.Update()
 
-    canv.SaveAs(os.path.join(plot_dir, "%s_rebinned_renormY_linZ.%s" % (var_dict['name'], OUTPUT_FMT)))
+    canv.SaveAs(os.path.join(plot_dir, "%s_%s_renormY_linZ.%s" % (var_dict['name'], append, OUTPUT_FMT)))
     canv.SetLogz()
     h2d_renorm_y.SetMaximum(1)
     h2d_renorm_y.SetMinimum(1E-3)
-    canv.SaveAs(os.path.join(plot_dir, "%s_rebinned_renormY_logZ.%s" % (var_dict['name'], OUTPUT_FMT)))
+    canv.SaveAs(os.path.join(plot_dir, "%s_%s_renormY_logZ.%s" % (var_dict['name'], append, OUTPUT_FMT)))
 
     # renorm by column
     canv.Clear()
@@ -371,15 +375,16 @@ def make_plots(h2d, var_dict, plot_dir):
     h2d_renorm_x.SetTitleOffset(ytitle_offset, 'Y')
     yax.SetMoreLogLabels()
     canv.Update()
-    canv.SaveAs(os.path.join(plot_dir, "%s_rebinned_renormX_linZ.%s" % (var_dict['name'], OUTPUT_FMT)))
+    canv.SaveAs(os.path.join(plot_dir, "%s_%s_renormX_linZ.%s" % (var_dict['name'], append, OUTPUT_FMT)))
     canv.SetLogz()
     h2d_renorm_x.SetMaximum(1)
     h2d_renorm_x.SetMinimum(1E-3)
-    canv.SaveAs(os.path.join(plot_dir, "%s_rebinned_renormX_logZ.%s" % (var_dict['name'], OUTPUT_FMT)))
+    canv.SaveAs(os.path.join(plot_dir, "%s_%s_renormX_logZ.%s" % (var_dict['name'], append, OUTPUT_FMT)))
 
     # Plot migrations
-    output_filename = os.path.join(plot_dir, "%s_migration_summary.%s" % (var_dict['name'], OUTPUT_FMT))
-    qgg.make_migration_summary_plot(h2d_renorm_x, h2d_renorm_y, var_dict['var_label'], output_filename)
+    if plot_migrations:
+        output_filename = os.path.join(plot_dir, "%s_migration_summary.%s" % (var_dict['name'], OUTPUT_FMT))
+        qgg.make_migration_summary_plot(h2d_renorm_x, h2d_renorm_y, var_dict['var_label'], output_filename)
 
 
 if __name__ == "__main__":
@@ -460,6 +465,8 @@ if __name__ == "__main__":
 
             tfile = cu.open_root_file(in_file)
             h2d_orig = cu.get_from_tfile(tfile, full_var_name)
+            
+            make_plots(h2d_orig, var_dict, plot_dir=plot_dir, append="orig", plot_migrations=False)
 
             # metric = "gausfit"
             # metric = "quantile"
@@ -469,7 +476,7 @@ if __name__ == "__main__":
 
             h2d_rebin = make_rebinned_plot(h2d_orig, new_binning, use_half_width_y=False)
 
-            make_plots(h2d_rebin, var_dict, plot_dir)
+            make_plots(h2d_rebin, var_dict, plot_dir=plot_dir, append="rebinned", plot_migrations=True)
             
             h2d_renorm_x = cu.make_normalised_TH2(h2d_rebin, 'X', recolour=False, do_errors=False)
             h2d_renorm_y = cu.make_normalised_TH2(h2d_rebin, 'Y', recolour=False, do_errors=False)
