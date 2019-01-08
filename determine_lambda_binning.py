@@ -223,12 +223,12 @@ def calc_variable_binning_other(h2d):
         purity = arr2d_renormy[bin_ind][bin_ind]
         stability = arr2d_renormx[bin_ind][bin_ind]
         if purity > 0.4 and stability > 0.4:
-            print("found bin")
+            # print("found bin")
             print("bin_ind:", bin_ind, "purity: %.3f" % purity, "stability: %.3f" % stability)
             bin_ind += 1
             continue
         else:
-            print("combining bin", bin_ind, "/", len(arr2d))
+            # print("combining bin", bin_ind, "/", len(arr2d))
             # combine rows & columns (use transpose for latter)
             arr2d = concat_row(arr2d, bin_ind)
             arr2d = concat_row(arr2d.T, bin_ind).T
@@ -428,6 +428,59 @@ if __name__ == "__main__":
             {
                 "name": "Dijet_QG_tighter/jet_thrust",
                 "var_label": "Thrust (#lambda_{2}^{1})"
+            },
+            # Try separate low & high pT plots
+            {
+                "name": "Dijet_QG_tighter/jet_puppiMultiplicity_lowPt",
+                "var_label": "PUPPI Multiplicity (#lambda_{0}^{0} (PUPPI))",
+                "title": "p_{T}^{jet} < 250 GeV",
+                "log": True,
+            },
+            {
+                "name": "Dijet_QG_tighter/jet_LHA_lowPt",
+                "var_label": "LHA (#lambda_{0.5}^{1})",
+                "title": "p_{T}^{jet} < 250 GeV",
+            },
+            {
+                "name": "Dijet_QG_tighter/jet_pTD_lowPt",
+                "var_label": "p_{T}^{D} (#lambda_{0}^{2})",
+                "title": "p_{T}^{jet} < 250 GeV",
+            },
+            {
+                "name": "Dijet_QG_tighter/jet_width_lowPt",
+                "var_label": "Width (#lambda_{1}^{1})",
+                "title": "p_{T}^{jet} < 250 GeV",
+            },
+            {
+                "name": "Dijet_QG_tighter/jet_thrust_lowPt",
+                "var_label": "Thrust (#lambda_{2}^{1})",
+                "title": "p_{T}^{jet} < 250 GeV",
+            },
+            {
+                "name": "Dijet_QG_tighter/jet_puppiMultiplicity_highPt",
+                "var_label": "PUPPI Multiplicity (#lambda_{0}^{0} (PUPPI))",
+                "title": "p_{T}^{jet} > 250 GeV",
+                "log": True,
+            },
+            {
+                "name": "Dijet_QG_tighter/jet_LHA_highPt",
+                "var_label": "LHA (#lambda_{0.5}^{1})",
+                "title": "p_{T}^{jet} > 250 GeV"
+            },
+            {
+                "name": "Dijet_QG_tighter/jet_pTD_highPt",
+                "var_label": "p_{T}^{D} (#lambda_{0}^{2})",
+                "title": "p_{T}^{jet} > 250 GeV"
+            },
+            {
+                "name": "Dijet_QG_tighter/jet_width_highPt",
+                "var_label": "Width (#lambda_{1}^{1})",
+                "title": "p_{T}^{jet} > 250 GeV"
+            },
+            {
+                "name": "Dijet_QG_tighter/jet_thrust_highPt",
+                "var_label": "Thrust (#lambda_{2}^{1})",
+                "title": "p_{T}^{jet} > 250 GeV"
             },
             # charged vars
             # {
