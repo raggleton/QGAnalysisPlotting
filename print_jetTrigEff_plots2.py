@@ -981,15 +981,15 @@ if __name__ == "__main__":
     # ]
     # do_plots_and_comparisons(do_these, vs="SingleMu")
 
-    do_these = [
-        ('workdir_ak4puppi_jettrig/uhh2.AnalysisModuleRunner.DATA.Data_JetHT.root', 'AK4 PUPPI'),
-        ('workdir_ak8puppi_jettrig_withAK8trig/uhh2.AnalysisModuleRunner.DATA.Data_JetHT.root', 'AK8 PUPPI'),
-    ]
-    do_plots_and_comparisons(do_these, vs="PrevJet")
+    # do_these = [
+    #     ('workdir_ak4puppi_jettrig/uhh2.AnalysisModuleRunner.DATA.Data_JetHT.root', 'AK4 PUPPI'),
+    #     ('workdir_ak8puppi_jettrig_withAK8trig/uhh2.AnalysisModuleRunner.DATA.Data_JetHT.root', 'AK8 PUPPI'),
+    # ]
+    # do_plots_and_comparisons(do_these, vs="PrevJet")
 
     do_these = [
-        ('workdir_ak4puppi_jettrig_withAK8trig_V11JEC/uhh2.AnalysisModuleRunner.DATA.Data_JetHT.root', 'AK4 PUPPI'),
-        ('workdir_ak8puppi_jettrig_withAK8trig_V11JEC/uhh2.AnalysisModuleRunner.DATA.Data_JetHT.root', 'AK8 PUPPI'),
+        ('workdir_ak4puppi_jettrig_withAK8trig_V11JEC_JER/uhh2.AnalysisModuleRunner.DATA.Data_JetHT.root', 'AK4 PUPPI'),
+        ('workdir_ak8puppi_jettrig_withAK8trig_V11JEC_JER/uhh2.AnalysisModuleRunner.DATA.Data_JetHT.root', 'AK8 PUPPI'),
     ]
     do_plots_and_comparisons(do_these, vs="PrevJet")
     
@@ -1002,34 +1002,34 @@ if __name__ == "__main__":
     # ]
     # do_plots_and_comparisons(do_these, vs="ZeroBias")
     
+    # results = do_trig_plots_vs_zerobias(
+    #     'workdir_ak4puppi_jettrig/uhh2.AnalysisModuleRunner.DATA.Data_ZeroBias.root', 
+    #     'workdir_ak4puppi_jettrig/uhh2.AnalysisModuleRunner.DATA.Data_JetHT.root', 
+    #     'workdir_ak4puppi_jettrig', 
+    #     "AK4 PUPPI", 
+    #     -2.4, 2.4, 
+    #     "center")
+
+    # results = do_trig_plots_vs_zerobias(
+    #     'workdir_ak8puppi_jettrig_withAK8trig/uhh2.AnalysisModuleRunner.DATA.Data_ZeroBias.root', 
+    #     'workdir_ak8puppi_jettrig_withAK8trig/uhh2.AnalysisModuleRunner.DATA.Data_JetHT.root', 
+    #     'workdir_ak8puppi_jettrig_withAK8trig', 
+    #     "AK8 PUPPI", 
+    #     -2.4, 2.4, 
+    #     "center")
+
     results = do_trig_plots_vs_zerobias(
-        'workdir_ak4puppi_jettrig/uhh2.AnalysisModuleRunner.DATA.Data_ZeroBias.root', 
-        'workdir_ak4puppi_jettrig/uhh2.AnalysisModuleRunner.DATA.Data_JetHT.root', 
-        'workdir_ak4puppi_jettrig', 
+        'workdir_ak4puppi_jettrig_withAK8trig_V11JEC_JER/uhh2.AnalysisModuleRunner.DATA.Data_ZeroBias.root', 
+        'workdir_ak4puppi_jettrig_withAK8trig_V11JEC_JER/uhh2.AnalysisModuleRunner.DATA.Data_JetHT.root', 
+        'workdir_ak4puppi_jettrig_withAK8trig_V11JEC_JER', 
         "AK4 PUPPI", 
         -2.4, 2.4, 
         "center")
 
     results = do_trig_plots_vs_zerobias(
-        'workdir_ak8puppi_jettrig_withAK8trig/uhh2.AnalysisModuleRunner.DATA.Data_ZeroBias.root', 
-        'workdir_ak8puppi_jettrig_withAK8trig/uhh2.AnalysisModuleRunner.DATA.Data_JetHT.root', 
-        'workdir_ak8puppi_jettrig_withAK8trig', 
-        "AK8 PUPPI", 
-        -2.4, 2.4, 
-        "center")
-
-    results = do_trig_plots_vs_zerobias(
-        'workdir_ak4puppi_jettrig_withAK8trig_V11JEC/uhh2.AnalysisModuleRunner.DATA.Data_ZeroBias.root', 
-        'workdir_ak4puppi_jettrig_withAK8trig_V11JEC/uhh2.AnalysisModuleRunner.DATA.Data_JetHT.root', 
-        'workdir_ak4puppi_jettrig_withAK8trig_V11JEC', 
-        "AK4 PUPPI", 
-        -2.4, 2.4, 
-        "center")
-
-    results = do_trig_plots_vs_zerobias(
-        'workdir_ak8puppi_jettrig_withAK8trig_V11JEC/uhh2.AnalysisModuleRunner.DATA.Data_ZeroBias.root', 
-        'workdir_ak8puppi_jettrig_withAK8trig_V11JEC/uhh2.AnalysisModuleRunner.DATA.Data_JetHT.root', 
-        'workdir_ak8puppi_jettrig_withAK8trig_V11JEC', 
+        'workdir_ak8puppi_jettrig_withAK8trig_V11JEC_JER/uhh2.AnalysisModuleRunner.DATA.Data_ZeroBias.root', 
+        'workdir_ak8puppi_jettrig_withAK8trig_V11JEC_JER/uhh2.AnalysisModuleRunner.DATA.Data_JetHT.root', 
+        'workdir_ak8puppi_jettrig_withAK8trig_V11JEC_JER', 
         "AK8 PUPPI", 
         -2.4, 2.4, 
         "center")
