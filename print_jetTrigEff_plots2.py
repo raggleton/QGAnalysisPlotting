@@ -304,6 +304,7 @@ def do_trig_plots_vs_zerobias(zb_input_filename, jetht_input_filename, output_di
         # info['heff'] = ROOT.TEfficiency(info['hpt'], h_all_pt)  # cant use as > 1 due to prescaling
 
     # return
+    outf = ROOT.TFile(output_dir + "/zb_plots.root", "RECREATE")
     # plot pt distributions
     hst = ROOT.THStack("hst", append+";Jet p_{T} [GeV];N")
     leg = ROOT.TLegend(0.5, 0.5, 0.88, 0.88)
@@ -331,7 +332,7 @@ def do_trig_plots_vs_zerobias(zb_input_filename, jetht_input_filename, output_di
         hst.Add(info['hpt'].Rebin(rebin_factor))
         leg.AddEntry(info['hpt'], name, "L")
 
-    c = ROOT.TCanvas("c1", "", 800, 600)
+    c = ROOT.TCanvas("cPtSpectrum", "", 800, 600)
     c.SetTicks(1, 1)
     # c.SetLogx()
     hst.Draw("HISTE NOSTACK")
@@ -342,6 +343,7 @@ def do_trig_plots_vs_zerobias(zb_input_filename, jetht_input_filename, output_di
     jet_text.Draw()
     c.SetLogy()
     c.SaveAs(output_dir + "/pt_trig_%s_zerobias.%s" % (append, OUTPUT_FMT))
+    c.Write()
 
     # plot effs
     for name, info in this_trig_info.items():
@@ -359,7 +361,7 @@ def do_trig_plots_vs_zerobias(zb_input_filename, jetht_input_filename, output_di
         # Do fit
         lower_threshold = info['threshold']/3.
         higher_threshold = info['threshold']*3.
-        lower_threshold = info['threshold']/1.2
+        lower_threshold = info['threshold']/1.4
         higher_threshold = info['threshold']*4.
         eff_fit = ROOT.TF1("eff_%s" % name, '[3]*([0] + 0.5 * (1-[0]) * (1 + erf((x-[1])/[2])))', lower_threshold, higher_threshold)
         eff_fit.SetParName(0, 'a')
@@ -414,6 +416,7 @@ def do_trig_plots_vs_zerobias(zb_input_filename, jetht_input_filename, output_di
         jet_text.Draw()
 
         c.SaveAs(output_dir + "/eff_%s_%s_zerobias.%s" % (name, append, OUTPUT_FMT))
+        c.Write()
 
     # make graph of fully efficiency pt vs threshold
     # thresholds = [info['threshold'] for info in list(this_trig_info.values())[1:]]
@@ -445,7 +448,7 @@ def do_trig_plots_vs_zerobias(zb_input_filename, jetht_input_filename, output_di
     # jet_text.Draw()
     # c.SaveAs(output_dir + "/fully_eff_zerobias_pt_vs_threshold_%s.%s" % (append, OUTPUT_FMT))
 
-
+    outf.Close()
     return this_trig_info
 
 
@@ -716,6 +719,7 @@ def do_trig_plots_vs_prevjet(input_filename, output_dir, title="", eta_min=-2.4,
         heff.SetTitle(new_title+";Leading jet p_{T} [GeV];Efficiency #epsilon")
         num_dict['heff'] = heff
 
+    outf = ROOT.TFile(output_dir + "/jetht_plots.root", "RECREATE")
     # plot pt distributions of triggers
     hst = ROOT.THStack("hst", append.replace("_", " ")+";Jet p_{T} [GeV];N")
     leg = ROOT.TLegend(0.5, 0.5, 0.88, 0.88)
@@ -742,7 +746,7 @@ def do_trig_plots_vs_prevjet(input_filename, output_dir, title="", eta_min=-2.4,
             hst.Add(info['hpt'].Rebin(rebin_factor))
             leg.AddEntry(info['hpt'], name, "L")
 
-    c = ROOT.TCanvas("c1", "", 800, 600)
+    c = ROOT.TCanvas("cPtSpectrum", "", 800, 600)
     c.SetTicks(1, 1)
     hst.Draw("HISTE NOSTACK")
     hst.SetMinimum(10**2)
@@ -751,6 +755,7 @@ def do_trig_plots_vs_prevjet(input_filename, output_dir, title="", eta_min=-2.4,
     jet_text.Draw()
     c.SetLogy()
     c.SaveAs(output_dir + "/pt_trig_%s.%s" % (append, OUTPUT_FMT))
+    c.Write()
 
     # plot effs, do fitting
     for ind, (name, info) in enumerate(list(this_trig_info.items())[1:]):
@@ -771,7 +776,7 @@ def do_trig_plots_vs_prevjet(input_filename, output_dir, title="", eta_min=-2.4,
         # info['grEff'].Draw()
 
         # Do fit
-        lower_threshold = info['threshold']*1.2
+        # lower_threshold = info['threshold']*1.2
         lower_threshold = info['threshold']/1.2
         higher_threshold = info['threshold']*5.
         eff_fit = ROOT.TF1("eff_%s" % name, '[3]*([0] + 0.5 * (1-[0]) * (1 + erf((x-[1])/[2])))', lower_threshold, higher_threshold)
@@ -781,17 +786,17 @@ def do_trig_plots_vs_prevjet(input_filename, output_dir, title="", eta_min=-2.4,
         eff_fit.SetParName(2, 'sigma')
         eff_fit.SetParName(3, 'N')
         # set parameter limits
-        eff_fit.SetParLimits(1, lower_threshold, higher_threshold)  # enforce +ve parameter values
-        eff_fit.SetParLimits(1, 1, 1000)  # enforce +ve parameter values
-        eff_fit.SetParLimits(2, 20, 500)
+        eff_fit.SetParLimits(1, lower_threshold, info['threshold']*2)
+        # eff_fit.SetParLimits(1, 1, 1000)  # enforce +ve parameter values
+        eff_fit.SetParLimits(2, 20, 90)
         # eff_fit.SetParLimits(3, 0.00001, 100)
-        eff_fit.SetParLimits(3, 0.9, 1.1)
+        eff_fit.SetParLimits(3, 0.8, 1.2)
         eff_fit.SetLineColor(ROOT.kBlack)
         eff_fit.SetLineWidth(1)
         # Set starting values
         eff_fit.SetParameter('a', 0)
         eff_fit.SetParameter('mu', info['threshold'])
-        eff_fit.SetParameter('sigma', info['threshold']/10)
+        eff_fit.SetParameter('sigma', info['threshold']/5)
         eff_fit.SetParameter('N', 1)
         eff_fit.SetNpx(5000)
         fit_result = info['heff'].Fit(eff_fit, 'RSEQ')
@@ -804,6 +809,8 @@ def do_trig_plots_vs_prevjet(input_filename, output_dir, title="", eta_min=-2.4,
         # # if not info.get("fit_all", lambda x: True)(is_fat_jet):
         fit_factor = 0.8 if is_fat_jet else 0.9
         fit_factor = 0.95 if is_fat_jet else 0.9
+        if info['threshold'] < 200:
+            fit_factor -= 0.1
         eff_fit.SetRange(eff_fit.GetX(fit_factor*eff_fit.GetParameter("N")), higher_threshold*1.)
         fit_result = info['heff'].Fit(eff_fit, 'RSEMQ')
         ROOT.gPad.Modified()
@@ -836,6 +843,7 @@ def do_trig_plots_vs_prevjet(input_filename, output_dir, title="", eta_min=-2.4,
         jet_text.Draw()
 
         c.SaveAs(output_dir + "/eff_prevJet_%s_%s.%s" % (name, append, OUTPUT_FMT))
+        c.Write()
 
     # print(this_trig_info)
     # make graph of fully efficiency pt vs threshold
@@ -867,6 +875,7 @@ def do_trig_plots_vs_prevjet(input_filename, output_dir, title="", eta_min=-2.4,
     cms_text.Draw()
     jet_text.Draw()
     c.SaveAs(output_dir + "/fully_eff_prevJet_pt_vs_threshold_%s.%s" % (append, OUTPUT_FMT))
+    c.Write()
 
     # save to root file
     fout = cu.open_root_file(output_dir + "/eff_hists_%s.root" % (append), "RECREATE")
@@ -876,6 +885,7 @@ def do_trig_plots_vs_prevjet(input_filename, output_dir, title="", eta_min=-2.4,
         if info.get('heff', None):
             info['heff'].Write()
 
+    outf.Close()
     # print(this_trig_info)
     return this_trig_info
 
