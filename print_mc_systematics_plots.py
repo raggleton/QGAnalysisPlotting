@@ -40,7 +40,9 @@ OUTPUT_FMT = "pdf"
 TOTAL_LUMI = 35918
 
 
-def do_plots(nominal_dir, plot_dir, neutral_hadron_shift_up_dir=None, neutral_hadron_shift_down_dir=None):
+def do_plots(nominal_dir, herwig_dir, plot_dir,
+             syst_up_dir=None, syst_up_label="",
+             syst_down_dir=None, syst_down_label=""):
     # QG variable plots
     pt_bins = qgc.PT_BINS
     # pt_bins = qgc.THEORY_PT_BINS
@@ -51,17 +53,19 @@ def do_plots(nominal_dir, plot_dir, neutral_hadron_shift_up_dir=None, neutral_ha
 
     rebin_dict = {
         "jet_puppiMultiplicity": [0.0, 6.0, 9.0, 12.0, 18.0, 150.0],
-        'jet_multiplicity': [0.0, 6.0, 9.0, 12.0, 18.0, 150.0],
+        # 'jet_multiplicity': [0.0, 6.0, 9.0, 12.0, 18.0, 150.0],
         'jet_pTD': [0.0, 0.1, 0.13, 0.17, 0.23, 0.33, 0.51, 0.85, 1.0],
         'jet_LHA': [0.0, 0.29, 0.37, 0.44, 0.5, 0.56, 0.62, 0.68, 0.75, 1.0],
         'jet_width': [0.0, 0.12, 0.18, 0.24, 0.3, 0.36, 0.43, 0.51, 1.0],
         'jet_thrust': [0.0, 0.04, 0.08, 0.12, 0.17, 0.24, 0.33, 1.0],
     }
 
-    for ang in var_list[:]:
+    for ang in var_list:
+        if ang.var not in rebin_dict:
+            continue
 
         v = "%s%s_vs_pt" % (var_prepend, ang.var)
-        
+
         for pt_ind, (start_val, end_val) in enumerate(pt_bins[:]):
             dijet_entries = []
             # Get all plots
@@ -79,29 +83,40 @@ def do_plots(nominal_dir, plot_dir, neutral_hadron_shift_up_dir=None, neutral_ha
             nominal_hist = qgp.get_projection_plot(h2d_qcd_mc, start_val, end_val)
             dijet_entries.append((nominal_hist, qcd_kwargs_mc))
 
-            # NEUTRAL SHIFT UP
-            col = qgc.QCD_COLOURS[2]
-            h2d_qcd_mc2 = grab_obj(os.path.join(neutral_hadron_shift_up_dir, qgc.QCD_PYTHIA_ONLY_FILENAME), "%s/%s" % (dj_dirname, v))
-            qcd_kwargs_mc2 = dict(line_color=col, line_width=lw, fill_color=col,
-                                 marker_color=col, marker_style=qgc.QCD_MARKER, marker_size=0,
-                                 label=qgc.QCD_Dijet_LABEL + " [Neutral Hadron Shift Up]", subplot=nominal_hist)
-            dijet_entries.append((qgp.get_projection_plot(h2d_qcd_mc2, start_val, end_val), qcd_kwargs_mc2))
-            
-            # NEUTRAL SHIFT DOWN
-            col2 = qgc.QCD_COLOURS[3]
-            h2d_qcd_mc3 = grab_obj(os.path.join(neutral_hadron_shift_down_dir, qgc.QCD_PYTHIA_ONLY_FILENAME), "%s/%s" % (dj_dirname, v))
-            qcd_kwargs_mc3 = dict(line_color=col2, line_width=lw, fill_color=col2,
-                                 marker_color=col2, marker_style=qgc.QCD_MARKER, marker_size=0,
-                                 label=qgc.QCD_Dijet_LABEL + " [Neutral Hadron Shift Down]", subplot=nominal_hist)
-            # h2d_qcd_mc3.Scale(TOTAL_LUMI)
-            dijet_entries.append((qgp.get_projection_plot(h2d_qcd_mc3, start_val, end_val), qcd_kwargs_mc3))
+            # HERWIG MC
+            if herwig_dir:
+                h2d_herwig_qcd_mc = grab_obj(os.path.join(herwig_dir, qgc.QCD_HERWIG_FILENAME), "%s/%s" % (dj_dirname, v))
+                colh = qgc.ZB_COLOUR
+                qcd_herwig_kwargs_mc = dict(line_color=colh, line_width=lw, fill_color=colh,
+                                     marker_color=colh, marker_style=qgc.QCD_MARKER, marker_size=0,
+                                     label=qgc.QCD_Dijet_LABEL + " [Herwig++]", subplot=nominal_hist)
+                dijet_entries.append((qgp.get_projection_plot(h2d_herwig_qcd_mc, start_val, end_val), qcd_herwig_kwargs_mc))
 
-            rebin = 2
+            # SHIFT UP
+            if syst_up_dir:
+                col = qgc.QCD_COLOURS[2]
+                h2d_qcd_mc2 = grab_obj(os.path.join(syst_up_dir, qgc.QCD_PYTHIA_ONLY_FILENAME), "%s/%s" % (dj_dirname, v))
+                qcd_kwargs_mc2 = dict(line_color=col, line_width=lw, fill_color=col,
+                                     marker_color=col, marker_style=qgc.QCD_MARKER, marker_size=0,
+                                     label=qgc.QCD_Dijet_LABEL + " [" + syst_up_label + "]", subplot=nominal_hist)
+                dijet_entries.append((qgp.get_projection_plot(h2d_qcd_mc2, start_val, end_val), qcd_kwargs_mc2))
+
+            # SHIFT DOWN
+            if syst_down_dir:
+                col2 = qgc.QCD_COLOURS[3]
+                h2d_qcd_mc3 = grab_obj(os.path.join(syst_down_dir, qgc.QCD_PYTHIA_ONLY_FILENAME), "%s/%s" % (dj_dirname, v))
+                qcd_kwargs_mc3 = dict(line_color=col2, line_width=lw, fill_color=col2,
+                                     marker_color=col2, marker_style=qgc.QCD_MARKER, marker_size=0,
+                                     label=qgc.QCD_Dijet_LABEL + " [" + syst_down_label + "]", subplot=nominal_hist)
+                # h2d_qcd_mc3.Scale(TOTAL_LUMI)
+                dijet_entries.append((qgp.get_projection_plot(h2d_qcd_mc3, start_val, end_val), qcd_kwargs_mc3))
+
+            rebin = 5
             v_lower = v.lower()
             if "multiplicity" in v_lower:
                 rebin = 2
-            elif "flavour" in v_lower or "thrust" in v_lower or 'ptd' in v_lower:
-                rebin = 1
+            elif "flavour" in v_lower or "thrust" in v_lower:
+                rebin = 2
             elif "ptd" in v_lower:
                 rebin = 5
 
@@ -141,7 +156,7 @@ def do_plots(nominal_dir, plot_dir, neutral_hadron_shift_up_dir=None, neutral_ha
                     new_kwargs['subplot'] = rebin_hist_norminal
                 dijet_entries_rebin.append((rebin_hist, new_kwargs))
 
-            qgp.do_comparison_plot(dijet_entries, 
+            qgp.do_comparison_plot(dijet_entries,
                                    "%s/ptBinned/%s_pt%dto%d_dijet.%s" % (plot_dir, v, start_val, end_val, OUTPUT_FMT),
                                    rebin=rebin,
                                    title="%d < p_{T}^{jet} < %d GeV\n%s" % (start_val, end_val, jet_str),
@@ -151,8 +166,8 @@ def do_plots(nominal_dir, plot_dir, neutral_hadron_shift_up_dir=None, neutral_ha
                                    subplot_title=subplot_title,
                                    subplot_limits=subplot_limits,
                                    has_data=False)
-            
-            qgp.do_comparison_plot(dijet_entries_rebin, 
+
+            qgp.do_comparison_plot(dijet_entries_rebin,
                                    "%s/ptBinned/%s_pt%dto%d_dijet_rebin.%s" % (plot_dir, v, start_val, end_val, OUTPUT_FMT),
                                    title="%d < p_{T}^{jet} < %d GeV\n%s" % (start_val, end_val, jet_str),
                                    xtitle=ang.name + " (" + ang.lambda_str + ")",
@@ -162,20 +177,76 @@ def do_plots(nominal_dir, plot_dir, neutral_hadron_shift_up_dir=None, neutral_ha
                                    subplot_limits=subplot_limits,
                                    has_data=False)
 
-       
+
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--nominal", 
+    parser.add_argument("--nominal",
                         help="Directory name for nominal files")
-    parser.add_argument("--neutralHadronShiftUp",
+    parser.add_argument("--herwig",
+                        help="Directory name for nominal Herwig files for comparison",
+                        default=None)
+    parser.add_argument("--neutralHadronUp",
                         help="Directory name for neutral hadron scale shift up files",
                         default=None)
-    parser.add_argument("--neutralHadronShiftDown",
+    parser.add_argument("--neutralHadronDown",
                         help="Directory name for neutral hadron scale shift down files",
+                        default=None)
+    parser.add_argument("--photonUp",
+                        help="Directory name for photon scale shift up files",
+                        default=None)
+    parser.add_argument("--photonDown",
+                        help="Directory name for photon scale shift down files",
+                        default=None)
+    parser.add_argument("--jesUp",
+                        help="Directory name for jes scale shift up files",
+                        default=None)
+    parser.add_argument("--jesDown",
+                        help="Directory name for jes scale shift down files",
+                        default=None)
+    parser.add_argument("--jerUp",
+                        help="Directory name for jer shift up files",
+                        default=None)
+    parser.add_argument("--jerDown",
+                        help="Directory name for jer shift down files",
+                        default=None)
+    parser.add_argument("--pileupUp",
+                        help="Directory name for pileup scale shift up files",
+                        default=None)
+    parser.add_argument("--pileupDown",
+                        help="Directory name for pileup scale shift down files",
                         default=None)
     parser.add_argument("--outputDir", help="Directory for output file")
     args = parser.parse_args()
-    do_plots(args.nominal, args.outputDir, args.neutralHadronShiftUp, args.neutralHadronShiftDown)
+
+    if args.neutralHadronUp and args.neutralHadronDown:
+        do_plots(args.nominal, args.herwig,
+                 os.path.join(args.outputDir, 'neutralHadron'),
+                 args.neutralHadronUp, "Neutral hadron energy scale up",
+                 args.neutralHadronDown, "Neutral hadron energy scale down")
+
+    if args.photonUp and args.photonDown:
+        do_plots(args.nominal, args.herwig,
+                 os.path.join(args.outputDir, 'photon'),
+                 args.photonUp, "Photon energy scale up",
+                 args.photonDown, "Photon energy scale down")
+
+    if args.jesUp and args.jesDown:
+        do_plots(args.nominal, args.herwig,
+                 os.path.join(args.outputDir, 'jes'),
+                 args.jesUp, "Jet energy scale up",
+                 args.jesDown, "Jet energy scale down")
+
+    if args.jerUp and args.jerDown:
+        do_plots(args.nominal, args.herwig,
+                 os.path.join(args.outputDir, 'jer'),
+                 args.jerUp, "Jet energy resolution up",
+                 args.jerDown, "Jet energy resolution down")
+
+    if args.pileupUp and args.pileupDown:
+        do_plots(args.nominal, args.herwig,
+                 os.path.join(args.outputDir, 'pileup'),
+                 args.pileupUp, "Pileup up",
+                 args.pileupDown, "Pileup down")
 
