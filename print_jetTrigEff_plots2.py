@@ -216,6 +216,7 @@ def do_custom_rebin(hist, newname, lower_limit, factor):
             lower_limit = bins[0]
         if ind == len(bins):
             lower_limit = bins[-1]
+            ind -= 1
         lower = bins[ind-1]
         higher = bins[ind]
         if (lower_limit-lower) < (higher - lower_limit):
