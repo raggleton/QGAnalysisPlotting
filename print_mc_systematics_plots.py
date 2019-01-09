@@ -40,9 +40,10 @@ OUTPUT_FMT = "pdf"
 TOTAL_LUMI = 35918
 
 
-def do_plots(nominal_dir, herwig_dir, plot_dir,
+def do_plots(nominal_dir, herwig_dir, output_dir,
              syst_up_dir=None, syst_up_label="",
              syst_down_dir=None, syst_down_label=""):
+    
     # QG variable plots
     pt_bins = qgc.PT_BINS
     # pt_bins = qgc.THEORY_PT_BINS
@@ -66,8 +67,12 @@ def do_plots(nominal_dir, herwig_dir, plot_dir,
             # DIJET REGION
             ####################
 
+            main_filename = qgc.QCD_FILENAME
+            # main_filename = qgc.QCD_PYTHIA_ONLY_FILENAME
+            herwig_filename = qgc.QCD_HERWIG_FILENAME
+            
             # NOMINAL MC
-            h2d_qcd_mc = grab_obj(os.path.join(nominal_dir, qgc.QCD_PYTHIA_ONLY_FILENAME), "%s/%s" % (dj_dirname, v))
+            h2d_qcd_mc = grab_obj(os.path.join(nominal_dir, main_filename), "%s/%s" % (plot_dirname, v))
             qcd_kwargs_mc = dict(line_color=qgc.QCD_COLOUR, line_width=lw, fill_color=qgc.QCD_COLOUR,
                                  marker_color=qgc.QCD_COLOUR, marker_style=qgc.QCD_MARKER, marker_size=0,
                                  label=qgc.QCD_Dijet_LABEL + " [nominal]")
@@ -76,7 +81,7 @@ def do_plots(nominal_dir, herwig_dir, plot_dir,
 
             # HERWIG MC
             if herwig_dir:
-                h2d_herwig_qcd_mc = grab_obj(os.path.join(herwig_dir, qgc.QCD_HERWIG_FILENAME), "%s/%s" % (dj_dirname, v))
+                h2d_herwig_qcd_mc = grab_obj(os.path.join(herwig_dir, herwig_filename), "%s/%s" % (plot_dirname, v))
                 colh = qgc.ZB_COLOUR
                 qcd_herwig_kwargs_mc = dict(line_color=colh, line_width=lw, fill_color=colh,
                                      marker_color=colh, marker_style=qgc.QCD_MARKER, marker_size=0,
@@ -86,7 +91,7 @@ def do_plots(nominal_dir, herwig_dir, plot_dir,
             # SHIFT UP
             if syst_up_dir:
                 col = qgc.QCD_COLOURS[2]
-                h2d_qcd_mc2 = grab_obj(os.path.join(syst_up_dir, qgc.QCD_PYTHIA_ONLY_FILENAME), "%s/%s" % (dj_dirname, v))
+                h2d_qcd_mc2 = grab_obj(os.path.join(syst_up_dir, main_filename), "%s/%s" % (plot_dirname, v))
                 qcd_kwargs_mc2 = dict(line_color=col, line_width=lw, fill_color=col,
                                      marker_color=col, marker_style=qgc.QCD_MARKER, marker_size=0,
                                      label=qgc.QCD_Dijet_LABEL + " [" + syst_up_label + "]", subplot=nominal_hist)
@@ -95,13 +100,14 @@ def do_plots(nominal_dir, herwig_dir, plot_dir,
             # SHIFT DOWN
             if syst_down_dir:
                 col2 = qgc.QCD_COLOURS[3]
-                h2d_qcd_mc3 = grab_obj(os.path.join(syst_down_dir, qgc.QCD_PYTHIA_ONLY_FILENAME), "%s/%s" % (dj_dirname, v))
+                h2d_qcd_mc3 = grab_obj(os.path.join(syst_down_dir, main_filename), "%s/%s" % (plot_dirname, v))
                 qcd_kwargs_mc3 = dict(line_color=col2, line_width=lw, fill_color=col2,
                                      marker_color=col2, marker_style=qgc.QCD_MARKER, marker_size=0,
                                      label=qgc.QCD_Dijet_LABEL + " [" + syst_down_label + "]", subplot=nominal_hist)
-                # h2d_qcd_mc3.Scale(TOTAL_LUMI)
                 dijet_entries.append((qgp.get_projection_plot(h2d_qcd_mc3, start_val, end_val), qcd_kwargs_mc3))
 
+            # rebin here only affects constant bin width plots
+            # other set of plots uses binning structure defined at the top
             rebin = 5
             v_lower = v.lower()
             if "multiplicity" in v_lower:
@@ -148,7 +154,7 @@ def do_plots(nominal_dir, herwig_dir, plot_dir,
                 dijet_entries_rebin.append((rebin_hist, new_kwargs))
 
             qgp.do_comparison_plot(dijet_entries,
-                                   "%s/ptBinned/%s_pt%dto%d_dijet.%s" % (plot_dir, v, start_val, end_val, OUTPUT_FMT),
+                                   "%s/ptBinned/%s_pt%dto%d_dijet.%s" % (output_dir, v, start_val, end_val, OUTPUT_FMT),
                                    rebin=rebin,
                                    title="%d < p_{T}^{jet} < %d GeV\n%s" % (start_val, end_val, jet_str),
                                    xtitle=ang.name + " (" + ang.lambda_str + ")",
@@ -159,7 +165,7 @@ def do_plots(nominal_dir, herwig_dir, plot_dir,
                                    has_data=False)
 
             qgp.do_comparison_plot(dijet_entries_rebin,
-                                   "%s/ptBinned/%s_pt%dto%d_dijet_rebin.%s" % (plot_dir, v, start_val, end_val, OUTPUT_FMT),
+                                   "%s/ptBinned/%s_pt%dto%d_dijet_rebin.%s" % (output_dir, v, start_val, end_val, OUTPUT_FMT),
                                    title="%d < p_{T}^{jet} < %d GeV\n%s" % (start_val, end_val, jet_str),
                                    xtitle=ang.name + " (" + ang.lambda_str + ")",
                                    xlim=xlim, ylim=ylim,
