@@ -49,19 +49,10 @@ def do_plots(nominal_dir, herwig_dir, plot_dir,
     var_list = qgc.COMMON_VARS
     var_prepend = ""
 
-    dj_dirname = "Dijet_QG_tighter"
-
-    rebin_dict = {
-        "jet_puppiMultiplicity": [0.0, 6.0, 9.0, 12.0, 18.0, 150.0],
-        # 'jet_multiplicity': [0.0, 6.0, 9.0, 12.0, 18.0, 150.0],
-        'jet_pTD': [0.0, 0.1, 0.13, 0.17, 0.23, 0.33, 0.51, 0.85, 1.0],
-        'jet_LHA': [0.0, 0.29, 0.37, 0.44, 0.5, 0.56, 0.62, 0.68, 0.75, 1.0],
-        'jet_width': [0.0, 0.12, 0.18, 0.24, 0.3, 0.36, 0.43, 0.51, 1.0],
-        'jet_thrust': [0.0, 0.04, 0.08, 0.12, 0.17, 0.24, 0.33, 1.0],
-    }
+    plot_dirname = "Dijet_QG_tighter"
 
     for ang in var_list:
-        if ang.var not in rebin_dict:
+        if ang.var not in qgc.ANGLE_REBIN_DICT:
             continue
 
         v = "%s%s_vs_pt" % (var_prepend, ang.var)
@@ -145,7 +136,7 @@ def do_plots(nominal_dir, herwig_dir, plot_dir,
             subplot_limits = (0.9, 1.1)
 
             dijet_entries_rebin = []
-            this_rebins = rebin_dict[ang.var]
+            this_rebins = qgc.ANGLE_REBIN_DICT[ang.var]
             rebin_hist_norminal = None
             for hist, kwargs in dijet_entries:
                 rebin_hist = hist.Rebin(len(this_rebins)-1, hist.GetName()+"Rebin", array('d', this_rebins))
