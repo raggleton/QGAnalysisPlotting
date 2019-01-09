@@ -496,7 +496,51 @@ if __name__ == "__main__":
                 ("Dijet_QG_tighter/jet_thrust_charged_highPt", "Thrust (#lambda_{2}^{1}) [charged only]", False, 2),
             ][:]
 
-        if "DYJetsToLL" in in_file:
-            pass
+        if "dyjetstoll" in in_file.lower():
+           do_these = [
+                ("ZPlusJets_QG/jet_puppiMultiplicity", "PUPPI Multiplicity (#lambda_{0}^{0} (PUPPI))", False, 5),
+                # ("ZPlusJets_QG/jet_multiplicity", "Multiplicity (#lambda_{0}^{0})", False, 5),
+                ("ZPlusJets_QG/jet_LHA", "LHA (#lambda_{0.5}^{1})", False, 1),
+                ("ZPlusJets_QG/jet_pTD", "p_{T}^{D} (#lambda_{0}^{2})", False, 2),
+                ("ZPlusJets_QG/jet_width", "Width (#lambda_{1}^{1})", False, 2),
+                ("ZPlusJets_QG/jet_thrust", "Thrust (#lambda_{2}^{1})", False, 2),
+
+                ("ZPlusJets_QG/jet_puppiMultiplicity_charged", "PUPPI Multiplicity (#lambda_{0}^{0} (PUPPI)) [charged]", False, 5),
+                # ("ZPlusJets_QG/jet_multiplicity_charged", "Multiplicity (#lambda_{0}^{0}) [charged only]", False, 5),
+                ("ZPlusJets_QG/jet_LHA_charged", "LHA (#lambda_{0.5}^{1}) [charged only]", False, 2),
+                ("ZPlusJets_QG/jet_pTD_charged", "p_{T}^{D} (#lambda_{0}^{2}) [charged only]", False, 2),
+                ("ZPlusJets_QG/jet_width_charged", "Width (#lambda_{1}^{1}) [charged only]", False, 2),
+                ("ZPlusJets_QG/jet_thrust_charged", "Thrust (#lambda_{2}^{1}) [charged only]", False, 2),
+            ][:]
+            do_these = [
+                ("ZPlusJets_QG/jet_puppiMultiplicity_lowPt", "PUPPI Multiplicity (#lambda_{0}^{0} (PUPPI))", False, 5),
+                # ("ZPlusJets_QG/jet_multiplicity", "Multiplicity (#lambda_{0}^{0})", False, 5),
+                ("ZPlusJets_QG/jet_LHA_lowPt", "LHA (#lambda_{0.5}^{1})", False, 1),
+                ("ZPlusJets_QG/jet_pTD_lowPt", "p_{T}^{D} (#lambda_{0}^{2})", False, 2),
+                ("ZPlusJets_QG/jet_width_lowPt", "Width (#lambda_{1}^{1})", False, 2),
+                ("ZPlusJets_QG/jet_thrust_lowPt", "Thrust (#lambda_{2}^{1})", False, 2),
+
+                ("ZPlusJets_QG/jet_puppiMultiplicity_charged_lowPt", "PUPPI Multiplicity (#lambda_{0}^{0} (PUPPI)) [charged]", False, 5),
+                # ("ZPlusJets_QG/jet_multiplicity_charged", "Multiplicity (#lambda_{0}^{0}) [charged only]", False, 5),
+                ("ZPlusJets_QG/jet_LHA_charged_lowPt", "LHA (#lambda_{0.5}^{1}) [charged only]", False, 2),
+                ("ZPlusJets_QG/jet_pTD_charged_lowPt", "p_{T}^{D} (#lambda_{0}^{2}) [charged only]", False, 2),
+                ("ZPlusJets_QG/jet_width_charged_lowPt", "Width (#lambda_{1}^{1}) [charged only]", False, 2),
+                ("ZPlusJets_QG/jet_thrust_charged_lowPt", "Thrust (#lambda_{2}^{1}) [charged only]", False, 2),
+            # ][:]
+            # do_these = [
+                ("ZPlusJets_QG/jet_puppiMultiplicity_highPt", "PUPPI Multiplicity (#lambda_{0}^{0} (PUPPI))", False, 5),
+                # ("ZPlusJets_QG/jet_multiplicity", "Multiplicity (#lambda_{0}^{0})", False, 5),
+                ("ZPlusJets_QG/jet_LHA_highPt", "LHA (#lambda_{0.5}^{1})", False, 1),
+                ("ZPlusJets_QG/jet_pTD_highPt", "p_{T}^{D} (#lambda_{0}^{2})", False, 2),
+                ("ZPlusJets_QG/jet_width_highPt", "Width (#lambda_{1}^{1})", False, 2),
+                ("ZPlusJets_QG/jet_thrust_highPt", "Thrust (#lambda_{2}^{1})", False, 2),
+
+                ("ZPlusJets_QG/jet_puppiMultiplicity_charged_highPt", "PUPPI Multiplicity (#lambda_{0}^{0} (PUPPI)) [charged]", False, 5),
+                # ("ZPlusJets_QG/jet_multiplicity_charged", "Multiplicity (#lambda_{0}^{0}) [charged only]", False, 5),
+                ("ZPlusJets_QG/jet_LHA_charged_highPt", "LHA (#lambda_{0.5}^{1}) [charged only]", False, 2),
+                ("ZPlusJets_QG/jet_pTD_charged_highPt", "p_{T}^{D} (#lambda_{0}^{2}) [charged only]", False, 2),
+                ("ZPlusJets_QG/jet_width_charged_highPt", "Width (#lambda_{1}^{1}) [charged only]", False, 2),
+                ("ZPlusJets_QG/jet_thrust_charged_highPt", "Thrust (#lambda_{2}^{1}) [charged only]", False, 2),
+            ][:]
 
         do_response_plots(in_file, plot_dir=plot_dir, do_these=do_these)
