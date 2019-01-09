@@ -207,6 +207,7 @@ def concat_row(arr2d, row_ind):
 
 
 def calc_variable_binning_other(h2d):
+    """here we just keep combining neighbouring bins until we reach desired purity & stability"""
     arr2d, _ = cu.th2_to_arr(h2d)
     reco_bin_edges = cu.get_bin_edges(h2d, 'Y')
     gen_bin_edges = cu.get_bin_edges(h2d, 'X')
@@ -394,6 +395,7 @@ if __name__ == "__main__":
                         help='Input ROOT files to process. '
                         'Several dirs can be specified here, separated by a space.')
     parser.add_argument("-o", "--output", help="Directory to put output plot dirs into", default=None)
+    # followint useful for systematic comparisons of migrations (I think)
     parser.add_argument("--rebinThisInput", help="Apply new binning to these input file(s)", default=None, action="append")
     parser.add_argument("--rebinThisLabel", help="Labels for files to be rebinned", default=None, action="append")
     acceptable_metrics = ['gausfit', 'quantile']
@@ -406,105 +408,113 @@ if __name__ == "__main__":
         default_plot_dir = os.path.join(os.path.dirname(in_file), "rebinning_"+os.path.splitext(os.path.basename(in_file))[0])
         plot_dir = args.output if args.output else default_plot_dir
         # cu.check_dir_exists_create(plot_dir)
+        
+        plot_folder_name = None
+        if "qcd" in in_file.lower():
+            plot_folder_name = "Dijet_QG_tighter"
 
+        if "dyjetstoll" in in_file.lower():
+            plot_folder_name = "ZPlusJets_QG"
+        
         do_these = [
             {
-                "name": "Dijet_QG_tighter/jet_puppiMultiplicity",
+                "name": "%s/jet_puppiMultiplicity" % (plot_folder_name),
                 "var_label": "PUPPI Multiplicity (#lambda_{0}^{0} (PUPPI))",
                 "log": True,
             },
             {
-                "name": "Dijet_QG_tighter/jet_LHA",
+                "name": "%s/jet_LHA" % (plot_folder_name),
                 "var_label": "LHA (#lambda_{0.5}^{1})"
             },
             {
-                "name": "Dijet_QG_tighter/jet_pTD",
+                "name": "%s/jet_pTD" % (plot_folder_name),
                 "var_label": "p_{T}^{D} (#lambda_{0}^{2})"
             },
             {
-                "name": "Dijet_QG_tighter/jet_width",
+                "name": "%s/jet_width" % (plot_folder_name),
                 "var_label": "Width (#lambda_{1}^{1})"
             },
             {
-                "name": "Dijet_QG_tighter/jet_thrust",
+                "name": "%s/jet_thrust" % (plot_folder_name),
                 "var_label": "Thrust (#lambda_{2}^{1})"
             },
             # Try separate low & high pT plots
             {
-                "name": "Dijet_QG_tighter/jet_puppiMultiplicity_lowPt",
+                "name": "%s/jet_puppiMultiplicity_lowPt" % (plot_folder_name),
                 "var_label": "PUPPI Multiplicity (#lambda_{0}^{0} (PUPPI))",
                 "title": "p_{T}^{jet} < 250 GeV",
                 "log": True,
             },
             {
-                "name": "Dijet_QG_tighter/jet_LHA_lowPt",
+                "name": "%s/jet_LHA_lowPt" % (plot_folder_name),
                 "var_label": "LHA (#lambda_{0.5}^{1})",
                 "title": "p_{T}^{jet} < 250 GeV",
             },
             {
-                "name": "Dijet_QG_tighter/jet_pTD_lowPt",
+                "name": "%s/jet_pTD_lowPt" % (plot_folder_name),
                 "var_label": "p_{T}^{D} (#lambda_{0}^{2})",
                 "title": "p_{T}^{jet} < 250 GeV",
             },
             {
-                "name": "Dijet_QG_tighter/jet_width_lowPt",
+                "name": "%s/jet_width_lowPt" % (plot_folder_name),
                 "var_label": "Width (#lambda_{1}^{1})",
                 "title": "p_{T}^{jet} < 250 GeV",
             },
             {
-                "name": "Dijet_QG_tighter/jet_thrust_lowPt",
+                "name": "%s/jet_thrust_lowPt" % (plot_folder_name),
                 "var_label": "Thrust (#lambda_{2}^{1})",
                 "title": "p_{T}^{jet} < 250 GeV",
             },
             {
-                "name": "Dijet_QG_tighter/jet_puppiMultiplicity_highPt",
+                "name": "%s/jet_puppiMultiplicity_highPt" % (plot_folder_name),
                 "var_label": "PUPPI Multiplicity (#lambda_{0}^{0} (PUPPI))",
                 "title": "p_{T}^{jet} > 250 GeV",
                 "log": True,
             },
             {
-                "name": "Dijet_QG_tighter/jet_LHA_highPt",
+                "name": "%s/jet_LHA_highPt" % (plot_folder_name),
                 "var_label": "LHA (#lambda_{0.5}^{1})",
                 "title": "p_{T}^{jet} > 250 GeV"
             },
             {
-                "name": "Dijet_QG_tighter/jet_pTD_highPt",
+                "name": "%s/jet_pTD_highPt" % (plot_folder_name),
                 "var_label": "p_{T}^{D} (#lambda_{0}^{2})",
                 "title": "p_{T}^{jet} > 250 GeV"
             },
             {
-                "name": "Dijet_QG_tighter/jet_width_highPt",
+                "name": "%s/jet_width_highPt" % (plot_folder_name),
                 "var_label": "Width (#lambda_{1}^{1})",
                 "title": "p_{T}^{jet} > 250 GeV"
             },
             {
-                "name": "Dijet_QG_tighter/jet_thrust_highPt",
+                "name": "%s/jet_thrust_highPt" % (plot_folder_name),
                 "var_label": "Thrust (#lambda_{2}^{1})",
                 "title": "p_{T}^{jet} > 250 GeV"
             },
             # charged vars
             # {
-            #     "name": "Dijet_QG_tighter/jet_puppiMultiplicity_charged",
+            #     "name": "%s/jet_puppiMultiplicity_charged" % (plot_folder_name),
             #     "var_label": "PUPPI Multiplicity (#lambda_{0}^{0} (PUPPI)) [charged]",
             #     "log": True,
             # },
             # {
-            #     "name": "Dijet_QG_tighter/jet_LHA_charged",
+            #     "name": "%s/jet_LHA_charged" % (plot_folder_name),
             #     "var_label": "LHA (#lambda_{0.5}^{1}) [charged only]"
             # },
             # {
-            #     "name": "Dijet_QG_tighter/jet_pTD_charged",
+            #     "name": "%s/jet_pTD_charged" % (plot_folder_name),
             #     "var_label": "p_{T}^{D} (#lambda_{0}^{2}) [charged only]"
             # },
             # {
-            #     "name": "Dijet_QG_tighter/jet_width_charged",
+            #     "name": "%s/jet_width_charged" % (plot_folder_name),
             #     "var_label": "Width (#lambda_{1}^{1}) [charged only]"
             # },
             # {
-            #     "name": "Dijet_QG_tighter/jet_thrust_charged",
+            #     "name": "%s/jet_thrust_charged" % (plot_folder_name),
             #     "var_label": "Thrust (#lambda_{2}^{1}) [charged only]"
             # },
         ][:]
+
 
         for var_dict in do_these:
             do_rel_response = False
