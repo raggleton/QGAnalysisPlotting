@@ -308,7 +308,7 @@ def make_rebinned_plot(h2d, new_binning, use_half_width_y=False):
 
 
 def make_plots(h2d, var_dict, plot_dir, append="", plot_migrations=True):
-    """Plot a 2D hist, with copies renormalised by row and by column. 
+    """Plot a 2D hist, with copies renormalised by row and by column.
     Also optionally plot migrations as 1D plot.
     """
     canv = ROOT.TCanvas("c"+cu.get_unique_str(), "", 700, 600)
@@ -395,214 +395,227 @@ def make_plots(h2d, var_dict, plot_dir, append="", plot_migrations=True):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('input',
-                        nargs='+',
-                        help='Input ROOT files to process. '
+                        help='Input ROOT file to process.'
                         'Several dirs can be specified here, separated by a space.')
-    parser.add_argument("-o", "--output", help="Directory to put output plot dirs into", default=None)
+    parser.add_argument("--outputDir",
+                        help="Directory to put output plot dirs into",
+                        default=None)
+    parser.add_argument("--outputFile",
+                        help="Output ROOT file for rebinned 2D hists",
+                        default=None)
     # followint useful for systematic comparisons of migrations (I think)
-    parser.add_argument("--rebinThisInput", help="Apply new binning to these input file(s)", default=None, action="append")
-    parser.add_argument("--rebinThisLabel", help="Labels for files to be rebinned", default=None, action="append")
+    parser.add_argument("--rebinThisInput",
+                        help="Apply new binning to these input file(s)",
+                        default=None,
+                        action="append")
+    parser.add_argument("--rebinThisLabel",
+                        help="Labels for files to be rebinned. Must match entry in --rebinThisInput.",
+                        default=None,
+                        action="append")
+    parser.add_argument("--rebinThisOutputFile",
+                        help="Output ROOT file for rebinned 2D hists. Must match entry in --rebinThisInput.",
+                        default=None,
+                        action="append")
     acceptable_metrics = ['gausfit', 'quantile']
-    parser.add_argument("--metric", help="Metric for deciding bin width.",
+    parser.add_argument("--metric",
+                        help="Metric for deciding bin width.",
                         default=acceptable_metrics[0],
                         choices=acceptable_metrics)
     args = parser.parse_args()
 
-    for in_file in args.input:
-        default_plot_dir = os.path.join(os.path.dirname(in_file), "rebinning_"+os.path.splitext(os.path.basename(in_file))[0])
-        plot_dir = args.output if args.output else default_plot_dir
-        # cu.check_dir_exists_create(plot_dir)
+    default_plot_dir = os.path.join(os.path.dirname(args.input), "rebinning_"+os.path.splitext(os.path.basename(args.input))[0])
+    plot_dir = args.outputDir if args.outputDir else default_plot_dir
 
-        plot_folder_name = None
-        if "qcd" in in_file.lower():
-            plot_folder_name = "Dijet_QG_tighter"
+    source_plot_dir_name = None
+    if "qcd" in args.input.lower():
+        source_plot_dir_name = "Dijet_QG_tighter"
 
-        if "dyjetstoll" in in_file.lower():
-            plot_folder_name = "ZPlusJets_QG"
+    if "dyjetstoll" in args.input.lower():
+        source_plot_dir_name = "ZPlusJets_QG"
 
-        do_these = [
-            {
-                "name": "%s/jet_puppiMultiplicity" % (plot_folder_name),
-                "var_label": "PUPPI Multiplicity (#lambda_{0}^{0} (PUPPI))",
-                "log": True,
-            },
-            {
-                "name": "%s/jet_LHA" % (plot_folder_name),
-                "var_label": "LHA (#lambda_{0.5}^{1})"
-            },
-            {
-                "name": "%s/jet_pTD" % (plot_folder_name),
-                "var_label": "p_{T}^{D} (#lambda_{0}^{2})"
-            },
-            {
-                "name": "%s/jet_width" % (plot_folder_name),
-                "var_label": "Width (#lambda_{1}^{1})"
-            },
-            {
-                "name": "%s/jet_thrust" % (plot_folder_name),
-                "var_label": "Thrust (#lambda_{2}^{1})"
-            },
-            # Try separate low & high pT plots
-            {
-                "name": "%s/jet_puppiMultiplicity_lowPt" % (plot_folder_name),
-                "var_label": "PUPPI Multiplicity (#lambda_{0}^{0} (PUPPI))",
-                "title": "p_{T}^{jet} < 250 GeV",
-                "log": True,
-            },
-            {
-                "name": "%s/jet_LHA_lowPt" % (plot_folder_name),
-                "var_label": "LHA (#lambda_{0.5}^{1})",
-                "title": "p_{T}^{jet} < 250 GeV",
-            },
-            {
-                "name": "%s/jet_pTD_lowPt" % (plot_folder_name),
-                "var_label": "p_{T}^{D} (#lambda_{0}^{2})",
-                "title": "p_{T}^{jet} < 250 GeV",
-            },
-            {
-                "name": "%s/jet_width_lowPt" % (plot_folder_name),
-                "var_label": "Width (#lambda_{1}^{1})",
-                "title": "p_{T}^{jet} < 250 GeV",
-            },
-            {
-                "name": "%s/jet_thrust_lowPt" % (plot_folder_name),
-                "var_label": "Thrust (#lambda_{2}^{1})",
-                "title": "p_{T}^{jet} < 250 GeV",
-            },
-            {
-                "name": "%s/jet_puppiMultiplicity_highPt" % (plot_folder_name),
-                "var_label": "PUPPI Multiplicity (#lambda_{0}^{0} (PUPPI))",
-                "title": "p_{T}^{jet} > 250 GeV",
-                "log": True,
-            },
-            {
-                "name": "%s/jet_LHA_highPt" % (plot_folder_name),
-                "var_label": "LHA (#lambda_{0.5}^{1})",
-                "title": "p_{T}^{jet} > 250 GeV"
-            },
-            {
-                "name": "%s/jet_pTD_highPt" % (plot_folder_name),
-                "var_label": "p_{T}^{D} (#lambda_{0}^{2})",
-                "title": "p_{T}^{jet} > 250 GeV"
-            },
-            {
-                "name": "%s/jet_width_highPt" % (plot_folder_name),
-                "var_label": "Width (#lambda_{1}^{1})",
-                "title": "p_{T}^{jet} > 250 GeV"
-            },
-            {
-                "name": "%s/jet_thrust_highPt" % (plot_folder_name),
-                "var_label": "Thrust (#lambda_{2}^{1})",
-                "title": "p_{T}^{jet} > 250 GeV"
-            },
-            # charged vars
-            # {
-            #     "name": "%s/jet_puppiMultiplicity_charged" % (plot_folder_name),
-            #     "var_label": "PUPPI Multiplicity (#lambda_{0}^{0} (PUPPI)) [charged]",
-            #     "log": True,
-            # },
-            # {
-            #     "name": "%s/jet_LHA_charged" % (plot_folder_name),
-            #     "var_label": "LHA (#lambda_{0.5}^{1}) [charged only]"
-            # },
-            # {
-            #     "name": "%s/jet_pTD_charged" % (plot_folder_name),
-            #     "var_label": "p_{T}^{D} (#lambda_{0}^{2}) [charged only]"
-            # },
-            # {
-            #     "name": "%s/jet_width_charged" % (plot_folder_name),
-            #     "var_label": "Width (#lambda_{1}^{1}) [charged only]"
-            # },
-            # {
-            #     "name": "%s/jet_thrust_charged" % (plot_folder_name),
-            #     "var_label": "Thrust (#lambda_{2}^{1}) [charged only]"
-            # },
-        ][:]
+    do_these = [
+        {
+            "name": "%s/jet_puppiMultiplicity" % (source_plot_dir_name),
+            "var_label": "PUPPI Multiplicity (#lambda_{0}^{0} (PUPPI))",
+            "log": True,
+        },
+        {
+            "name": "%s/jet_LHA" % (source_plot_dir_name),
+            "var_label": "LHA (#lambda_{0.5}^{1})"
+        },
+        {
+            "name": "%s/jet_pTD" % (source_plot_dir_name),
+            "var_label": "p_{T}^{D} (#lambda_{0}^{2})"
+        },
+        {
+            "name": "%s/jet_width" % (source_plot_dir_name),
+            "var_label": "Width (#lambda_{1}^{1})"
+        },
+        {
+            "name": "%s/jet_thrust" % (source_plot_dir_name),
+            "var_label": "Thrust (#lambda_{2}^{1})"
+        },
+        # Try separate low & high pT plots
+        {
+            "name": "%s/jet_puppiMultiplicity_lowPt" % (source_plot_dir_name),
+            "var_label": "PUPPI Multiplicity (#lambda_{0}^{0} (PUPPI))",
+            "title": "p_{T}^{jet} < 250 GeV",
+            "log": True,
+        },
+        {
+            "name": "%s/jet_LHA_lowPt" % (source_plot_dir_name),
+            "var_label": "LHA (#lambda_{0.5}^{1})",
+            "title": "p_{T}^{jet} < 250 GeV",
+        },
+        {
+            "name": "%s/jet_pTD_lowPt" % (source_plot_dir_name),
+            "var_label": "p_{T}^{D} (#lambda_{0}^{2})",
+            "title": "p_{T}^{jet} < 250 GeV",
+        },
+        {
+            "name": "%s/jet_width_lowPt" % (source_plot_dir_name),
+            "var_label": "Width (#lambda_{1}^{1})",
+            "title": "p_{T}^{jet} < 250 GeV",
+        },
+        {
+            "name": "%s/jet_thrust_lowPt" % (source_plot_dir_name),
+            "var_label": "Thrust (#lambda_{2}^{1})",
+            "title": "p_{T}^{jet} < 250 GeV",
+        },
+        {
+            "name": "%s/jet_puppiMultiplicity_highPt" % (source_plot_dir_name),
+            "var_label": "PUPPI Multiplicity (#lambda_{0}^{0} (PUPPI))",
+            "title": "p_{T}^{jet} > 250 GeV",
+            "log": True,
+        },
+        {
+            "name": "%s/jet_LHA_highPt" % (source_plot_dir_name),
+            "var_label": "LHA (#lambda_{0.5}^{1})",
+            "title": "p_{T}^{jet} > 250 GeV"
+        },
+        {
+            "name": "%s/jet_pTD_highPt" % (source_plot_dir_name),
+            "var_label": "p_{T}^{D} (#lambda_{0}^{2})",
+            "title": "p_{T}^{jet} > 250 GeV"
+        },
+        {
+            "name": "%s/jet_width_highPt" % (source_plot_dir_name),
+            "var_label": "Width (#lambda_{1}^{1})",
+            "title": "p_{T}^{jet} > 250 GeV"
+        },
+        {
+            "name": "%s/jet_thrust_highPt" % (source_plot_dir_name),
+            "var_label": "Thrust (#lambda_{2}^{1})",
+            "title": "p_{T}^{jet} > 250 GeV"
+        },
+        # charged vars
+        # {
+        #     "name": "%s/jet_puppiMultiplicity_charged" % (source_plot_dir_name),
+        #     "var_label": "PUPPI Multiplicity (#lambda_{0}^{0} (PUPPI)) [charged]",
+        #     "log": True,
+        # },
+        # {
+        #     "name": "%s/jet_LHA_charged" % (source_plot_dir_name),
+        #     "var_label": "LHA (#lambda_{0.5}^{1}) [charged only]"
+        # },
+        # {
+        #     "name": "%s/jet_pTD_charged" % (source_plot_dir_name),
+        #     "var_label": "p_{T}^{D} (#lambda_{0}^{2}) [charged only]"
+        # },
+        # {
+        #     "name": "%s/jet_width_charged" % (source_plot_dir_name),
+        #     "var_label": "Width (#lambda_{1}^{1}) [charged only]"
+        # },
+        # {
+        #     "name": "%s/jet_thrust_charged" % (source_plot_dir_name),
+        #     "var_label": "Thrust (#lambda_{2}^{1}) [charged only]"
+        # },
+    ][:]
 
-        rebin_results_dict = OrderedDict()
+    rebin_results_dict = OrderedDict()
 
-        for var_dict in do_these:
-            do_rel_response = False
-            full_var_name = var_dict['name']
-            if do_rel_response:
-                full_var_name += "_rel_response"
-            else:
-                full_var_name += "_response"
+    for var_dict in do_these:
+        do_rel_response = False
+        full_var_name = var_dict['name']
+        if do_rel_response:
+            full_var_name += "_rel_response"
+        else:
+            full_var_name += "_response"
 
-                print(full_var_name)
+            print(full_var_name)
 
-            tfile = cu.open_root_file(in_file)
-            h2d_orig = cu.get_from_tfile(tfile, full_var_name)
+        tfile = cu.open_root_file(args.input)
+        h2d_orig = cu.get_from_tfile(tfile, full_var_name)
 
-            make_plots(h2d_orig, var_dict, plot_dir=plot_dir, append="orig", plot_migrations=False)
+        make_plots(h2d_orig, var_dict, plot_dir=plot_dir, append="orig", plot_migrations=False)
 
-            # metric = "gausfit"
-            # metric = "quantile"
-            # new_binning = calc_variable_binning(h2d_orig, plot_dir, args.metric)
+        # metric = "gausfit"
+        # metric = "quantile"
+        # new_binning = calc_variable_binning(h2d_orig, plot_dir, args.metric)
 
-            new_binning = calc_variable_binning_other(h2d_orig)
-            rebin_results_dict[var_dict['name']] = new_binning
+        new_binning = calc_variable_binning_other(h2d_orig)
+        rebin_results_dict[var_dict['name']] = new_binning
 
-            h2d_rebin = make_rebinned_plot(h2d_orig, new_binning, use_half_width_y=False)
+        h2d_rebin = make_rebinned_plot(h2d_orig, new_binning, use_half_width_y=False)
 
-            make_plots(h2d_rebin, var_dict, plot_dir=plot_dir, append="rebinned", plot_migrations=True)
+        make_plots(h2d_rebin, var_dict, plot_dir=plot_dir, append="rebinned", plot_migrations=True)
 
-            h2d_renorm_x = cu.make_normalised_TH2(h2d_rebin, 'X', recolour=False, do_errors=False)
-            h2d_renorm_y = cu.make_normalised_TH2(h2d_rebin, 'Y', recolour=False, do_errors=False)
-            contributions = qgg.migration_plot_components(h2d_renorm_x, h2d_renorm_y, var_dict['var_label'])
+        h2d_renorm_x = cu.make_normalised_TH2(h2d_rebin, 'X', recolour=False, do_errors=False)
+        h2d_renorm_y = cu.make_normalised_TH2(h2d_rebin, 'Y', recolour=False, do_errors=False)
+        contributions = qgg.migration_plot_components(h2d_renorm_x, h2d_renorm_y, var_dict['var_label'])
 
-            # Now rebin any other input files with the same hist using the new binning
-            if args.rebinThisInput and len(args.rebinThisInput) > 0:
-                for ind, (other_input, other_label) in enumerate(zip(args.rebinThisInput, args.rebinThisLabel)):
-                    print(other_label)
-                    tfile_other = cu.open_root_file(other_input)
-                    h2d_other = cu.get_from_tfile(tfile_other, full_var_name)
-                    h2d_rebin_other = make_rebinned_plot(h2d_other, new_binning, use_half_width_y=False)
-                    make_plots(h2d_rebin_other, var_dict, plot_dir=plot_dir+"_"+other_label, append="rebinned", plot_migrations=True)
+        # Now rebin any other input files with the same hist using the new binning
+        if args.rebinThisInput and len(args.rebinThisInput) > 0:
+            for ind, (other_input, other_label) in enumerate(zip(args.rebinThisInput, args.rebinThisLabel)):
+                print(other_label)
+                tfile_other = cu.open_root_file(other_input)
+                h2d_other = cu.get_from_tfile(tfile_other, full_var_name)
+                h2d_rebin_other = make_rebinned_plot(h2d_other, new_binning, use_half_width_y=False)
+                make_plots(h2d_rebin_other, var_dict, plot_dir=plot_dir+"_"+other_label, append="rebinned", plot_migrations=True)
 
-                    h2d_renorm_x_other = cu.make_normalised_TH2(h2d_rebin_other, 'X', recolour=False, do_errors=False)
-                    h2d_renorm_y_other = cu.make_normalised_TH2(h2d_rebin_other, 'Y', recolour=False, do_errors=False)
-                    contributions_other = qgg.migration_plot_components(h2d_renorm_x_other, h2d_renorm_y_other, var_dict['var_label'])
-                    for c in contributions_other:
-                        c.obj.SetLineStyle(ind+2)
-                        c.label += " [%s]" % other_label
-                    contributions.extend(contributions_other)
+                h2d_renorm_x_other = cu.make_normalised_TH2(h2d_rebin_other, 'X', recolour=False, do_errors=False)
+                h2d_renorm_y_other = cu.make_normalised_TH2(h2d_rebin_other, 'Y', recolour=False, do_errors=False)
+                contributions_other = qgg.migration_plot_components(h2d_renorm_x_other, h2d_renorm_y_other, var_dict['var_label'])
+                for c in contributions_other:
+                    c.obj.SetLineStyle(ind+2)
+                    c.label += " [%s]" % other_label
+                contributions.extend(contributions_other)
 
-                binning = [h2d_renorm_x.GetXaxis().GetBinLowEdge(bin_ind) for bin_ind in range(1, h2d_renorm_x.GetNbinsX()+2)]
-                xlim = [binning[0], binning[-1]]
-                # plot = Plot(contributions, what='hist', xlim=xlim, ylim=[1e-3, 2], xtitle=var_dict['var_label'], has_data=False)
-                plot = Plot(contributions, what='hist', xlim=xlim, ylim=[0, 1.25], xtitle=var_dict['var_label'], has_data=False)
-                y1 = 0.15
-                y1 = 0.65
-                plot.legend.SetNColumns(len(args.rebinThisInput)+1)
-                plot.legend.SetX1(0.15)
-                plot.legend.SetX2(0.95)
-                plot.legend.SetY1(y1)
-                plot.legend.SetY2(y1+0.25)
-                plot.legend.SetTextSize(0.015)
-                plot.plot("NOSTACK HISTE")
-                plot.legend.SetFillStyle(1001)
-                plot.legend.SetFillColorAlpha(ROOT.kWhite, 0.75)
-                if var_dict.get('log', None):
-                    plot.set_logx()
-                # plot.set_logy()
-                plot.main_pad.cd()
-                lines = []
-                # for val in [1, 0.5, 1e-1, 1e-2, 1e-3]:
-                #     line = ROOT.TLine(xlim[0], val, xlim[1], val)
-                #     line.SetLineStyle(2)
-                #     line.SetLineColor(ROOT.kGray+2)
-                #     lines.append(line)
-                #     line.Draw("same")
-                output_filename = os.path.join(plot_dir, "%s_combined_migration_summary.%s" % (var_dict['name'], OUTPUT_FMT))
-                plot.save(output_filename)
+            binning = [h2d_renorm_x.GetXaxis().GetBinLowEdge(bin_ind) for bin_ind in range(1, h2d_renorm_x.GetNbinsX()+2)]
+            xlim = [binning[0], binning[-1]]
+            # plot = Plot(contributions, what='hist', xlim=xlim, ylim=[1e-3, 2], xtitle=var_dict['var_label'], has_data=False)
+            plot = Plot(contributions, what='hist', xlim=xlim, ylim=[0, 1.25], xtitle=var_dict['var_label'], has_data=False)
+            y1 = 0.15
+            y1 = 0.65
+            plot.legend.SetNColumns(len(args.rebinThisInput)+1)
+            plot.legend.SetX1(0.15)
+            plot.legend.SetX2(0.95)
+            plot.legend.SetY1(y1)
+            plot.legend.SetY2(y1+0.25)
+            plot.legend.SetTextSize(0.015)
+            plot.plot("NOSTACK HISTE")
+            plot.legend.SetFillStyle(1001)
+            plot.legend.SetFillColorAlpha(ROOT.kWhite, 0.75)
+            if var_dict.get('log', None):
+                plot.set_logx()
+            # plot.set_logy()
+            plot.main_pad.cd()
+            lines = []
+            # for val in [1, 0.5, 1e-1, 1e-2, 1e-3]:
+            #     line = ROOT.TLine(xlim[0], val, xlim[1], val)
+            #     line.SetLineStyle(2)
+            #     line.SetLineColor(ROOT.kGray+2)
+            #     lines.append(line)
+            #     line.Draw("same")
+            output_filename = os.path.join(plot_dir, "%s_combined_migration_summary.%s" % (var_dict['name'], OUTPUT_FMT))
+            plot.save(output_filename)
 
-        # Save new binning to txt file
-        output_txt = os.path.splitext(in_file)[0] + ".txt"
-        parts = os.path.split(output_txt)
-        output_txt = os.path.join(parts[0], 'binning_'+parts[1])
-        with open(output_txt, 'w') as fout:
-            for k, v in rebin_results_dict.items():
-                fout.write("%s: %s\n" % (k, v))
+    # Save new binning to txt file
+    output_txt = os.path.splitext(args.input)[0] + ".txt"
+    parts = os.path.split(output_txt)
+    output_txt = os.path.join(parts[0], 'binning_'+parts[1])
+    with open(output_txt, 'w') as fout:
+        for k, v in rebin_results_dict.items():
+            fout.write("%s: %s\n" % (k, v))
 
-        print("saved new binning to", output_txt)
+    print("saved new binning to", output_txt)
