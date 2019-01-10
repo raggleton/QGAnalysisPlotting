@@ -562,12 +562,14 @@ if __name__ == "__main__":
         rebin_results_dict[var_dict['name']] = new_binning
 
         h2d_rebin = make_rebinned_plot(h2d_orig, new_binning, use_half_width_y=False)
-        output_tfile.WriteTObject(h2d_rebin)
 
         make_plots(h2d_rebin, var_dict, plot_dir=plot_dir, append="rebinned", plot_migrations=True)
 
         h2d_renorm_x = cu.make_normalised_TH2(h2d_rebin, 'X', recolour=False, do_errors=False)
+        output_tfile.WriteTObject(h2d_renorm_x)  # we want renormalised by col for doing folding
+        
         h2d_renorm_y = cu.make_normalised_TH2(h2d_rebin, 'Y', recolour=False, do_errors=False)
+
         contributions = qgg.migration_plot_components(h2d_renorm_x, h2d_renorm_y, var_dict['var_label'])
 
         # Now rebin any other input files with the same hist using the new binning
@@ -583,11 +585,11 @@ if __name__ == "__main__":
                 
                 h2d_other = cu.get_from_tfile(tfile_other, full_var_name)
                 h2d_rebin_other = make_rebinned_plot(h2d_other, new_binning, use_half_width_y=False)
-                tfile_other_out.WriteTObject(h2d_rebin_other)
 
                 make_plots(h2d_rebin_other, var_dict, plot_dir=plot_dir+"_"+other_label, append="rebinned", plot_migrations=True)
 
                 h2d_renorm_x_other = cu.make_normalised_TH2(h2d_rebin_other, 'X', recolour=False, do_errors=False)
+                tfile_other_out.WriteTObject(h2d_renorm_x_other)
                 h2d_renorm_y_other = cu.make_normalised_TH2(h2d_rebin_other, 'Y', recolour=False, do_errors=False)
                 contributions_other = qgg.migration_plot_components(h2d_renorm_x_other, h2d_renorm_y_other, var_dict['var_label'])
                 for c in contributions_other:
