@@ -12,6 +12,7 @@ from array import array
 from math import sqrt
 import bisect
 import numpy as np
+from collections import OrderedDict
 
 
 import ROOT
@@ -408,14 +409,14 @@ if __name__ == "__main__":
         default_plot_dir = os.path.join(os.path.dirname(in_file), "rebinning_"+os.path.splitext(os.path.basename(in_file))[0])
         plot_dir = args.output if args.output else default_plot_dir
         # cu.check_dir_exists_create(plot_dir)
-        
+
         plot_folder_name = None
         if "qcd" in in_file.lower():
             plot_folder_name = "Dijet_QG_tighter"
 
         if "dyjetstoll" in in_file.lower():
             plot_folder_name = "ZPlusJets_QG"
-        
+
         do_these = [
             {
                 "name": "%s/jet_puppiMultiplicity" % (plot_folder_name),
@@ -515,6 +516,7 @@ if __name__ == "__main__":
             # },
         ][:]
 
+        rebin_results_dict = OrderedDict()
 
         for var_dict in do_these:
             do_rel_response = False
@@ -528,7 +530,7 @@ if __name__ == "__main__":
 
             tfile = cu.open_root_file(in_file)
             h2d_orig = cu.get_from_tfile(tfile, full_var_name)
-            
+
             make_plots(h2d_orig, var_dict, plot_dir=plot_dir, append="orig", plot_migrations=False)
 
             # metric = "gausfit"
@@ -536,11 +538,12 @@ if __name__ == "__main__":
             # new_binning = calc_variable_binning(h2d_orig, plot_dir, args.metric)
 
             new_binning = calc_variable_binning_other(h2d_orig)
+            rebin_results_dict[var_dict['name']] = new_binning
 
             h2d_rebin = make_rebinned_plot(h2d_orig, new_binning, use_half_width_y=False)
 
             make_plots(h2d_rebin, var_dict, plot_dir=plot_dir, append="rebinned", plot_migrations=True)
-            
+
             h2d_renorm_x = cu.make_normalised_TH2(h2d_rebin, 'X', recolour=False, do_errors=False)
             h2d_renorm_y = cu.make_normalised_TH2(h2d_rebin, 'Y', recolour=False, do_errors=False)
             contributions = qgg.migration_plot_components(h2d_renorm_x, h2d_renorm_y, var_dict['var_label'])
@@ -552,7 +555,7 @@ if __name__ == "__main__":
                     h2d_other = cu.get_from_tfile(tfile_other, full_var_name)
                     h2d_rebin_other = make_rebinned_plot(h2d_other, new_binning, use_half_width_y=False)
                     make_plots(h2d_rebin_other, var_dict, plot_dir=plot_dir+"_"+other_label, append="rebinned", plot_migrations=True)
-                
+
                     h2d_renorm_x_other = cu.make_normalised_TH2(h2d_rebin_other, 'X', recolour=False, do_errors=False)
                     h2d_renorm_y_other = cu.make_normalised_TH2(h2d_rebin_other, 'Y', recolour=False, do_errors=False)
                     contributions_other = qgg.migration_plot_components(h2d_renorm_x_other, h2d_renorm_y_other, var_dict['var_label'])
@@ -560,7 +563,7 @@ if __name__ == "__main__":
                         c.obj.SetLineStyle(ind+2)
                         c.label += " [%s]" % other_label
                     contributions.extend(contributions_other)
-                
+
                 binning = [h2d_renorm_x.GetXaxis().GetBinLowEdge(bin_ind) for bin_ind in range(1, h2d_renorm_x.GetNbinsX()+2)]
                 xlim = [binning[0], binning[-1]]
                 # plot = Plot(contributions, what='hist', xlim=xlim, ylim=[1e-3, 2], xtitle=var_dict['var_label'], has_data=False)
@@ -589,3 +592,13 @@ if __name__ == "__main__":
                 #     line.Draw("same")
                 output_filename = os.path.join(plot_dir, "%s_combined_migration_summary.%s" % (var_dict['name'], OUTPUT_FMT))
                 plot.save(output_filename)
+
+        # Save new binning to txt file
+        output_txt = os.path.splitext(in_file)[0] + ".txt"
+        parts = os.path.split(output_txt)
+        output_txt = os.path.join(parts[0], 'binning_'+parts[1])
+        with open(output_txt, 'w') as fout:
+            for k, v in rebin_results_dict.items():
+                fout.write("%s: %s\n" % (k, v))
+
+        print("saved new binning to", output_txt)
