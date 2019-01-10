@@ -423,8 +423,13 @@ if __name__ == "__main__":
                         choices=acceptable_metrics)
     args = parser.parse_args()
 
-    default_plot_dir = os.path.join(os.path.dirname(args.input), "rebinning_"+os.path.splitext(os.path.basename(args.input))[0])
+    input_dir, input_basename = os.path.split(args.input)
+    default_plot_dir = os.path.join(input_dir, "rebinning_"+os.path.splitext(input_basename)[0])
     plot_dir = args.outputDir if args.outputDir else default_plot_dir
+
+    default_output_root_filename = os.path.join(input_dir, "rebinned_" + input_basename)
+    output_root_filename = args.outputFile if args.outputFile else default_output_root_filename
+    output_tfile = cu.open_root_file(output_root_filename, 'RECREATE')
 
     source_plot_dir_name = None
     if "qcd" in args.input.lower():
@@ -557,6 +562,7 @@ if __name__ == "__main__":
         rebin_results_dict[var_dict['name']] = new_binning
 
         h2d_rebin = make_rebinned_plot(h2d_orig, new_binning, use_half_width_y=False)
+        output_tfile.WriteTObject(h2d_rebin)
 
         make_plots(h2d_rebin, var_dict, plot_dir=plot_dir, append="rebinned", plot_migrations=True)
 
@@ -566,11 +572,15 @@ if __name__ == "__main__":
 
         # Now rebin any other input files with the same hist using the new binning
         if args.rebinThisInput and len(args.rebinThisInput) > 0:
-            for ind, (other_input, other_label) in enumerate(zip(args.rebinThisInput, args.rebinThisLabel)):
+            for ind, (other_input, other_label, other_output_filename) in enumerate(zip(args.rebinThisInput, args.rebinThisLabel, args.rebinThisOutputFile)):
                 print(other_label)
                 tfile_other = cu.open_root_file(other_input)
+                tfile_other_out = cu.open_root_file(other_output_filename, 'RECREATE')
+                
                 h2d_other = cu.get_from_tfile(tfile_other, full_var_name)
                 h2d_rebin_other = make_rebinned_plot(h2d_other, new_binning, use_half_width_y=False)
+                tfile_other_out.WriteTObject(h2d_rebin_other)
+
                 make_plots(h2d_rebin_other, var_dict, plot_dir=plot_dir+"_"+other_label, append="rebinned", plot_migrations=True)
 
                 h2d_renorm_x_other = cu.make_normalised_TH2(h2d_rebin_other, 'X', recolour=False, do_errors=False)
@@ -580,6 +590,7 @@ if __name__ == "__main__":
                     c.obj.SetLineStyle(ind+2)
                     c.label += " [%s]" % other_label
                 contributions.extend(contributions_other)
+                tfile_other_out.Close()
 
             binning = [h2d_renorm_x.GetXaxis().GetBinLowEdge(bin_ind) for bin_ind in range(1, h2d_renorm_x.GetNbinsX()+2)]
             xlim = [binning[0], binning[-1]]
@@ -610,12 +621,16 @@ if __name__ == "__main__":
             output_filename = os.path.join(plot_dir, "%s_combined_migration_summary.%s" % (var_dict['name'], OUTPUT_FMT))
             plot.save(output_filename)
 
+    output_tfile.Close()
+
     # Save new binning to txt file
     output_txt = os.path.splitext(args.input)[0] + ".txt"
     parts = os.path.split(output_txt)
-    output_txt = os.path.join(parts[0], 'binning_'+parts[1])
+    output_txt = os.path.join(input_dir, 'binning_'+parts[1])
     with open(output_txt, 'w') as fout:
         for k, v in rebin_results_dict.items():
             fout.write("%s: %s\n" % (k, v))
 
     print("saved new binning to", output_txt)
+    print("saved rebinned 2D hists to", output_root_filename)
+
