@@ -572,6 +572,10 @@ if __name__ == "__main__":
 
         # Now rebin any other input files with the same hist using the new binning
         if args.rebinThisInput and len(args.rebinThisInput) > 0:
+            lens = [len(x) for x in [args.rebinThisInput, args.rebinThisLabel, args.rebinThisOutputFile]]
+            if any(l != lens[0] for l in lens[1:]):
+                raise RuntimeError("Number of --rebinThisInput, --rebinThisLabel, --rebinThisOutputFile should be the same - need one of each per extra input file")
+            
             for ind, (other_input, other_label, other_output_filename) in enumerate(zip(args.rebinThisInput, args.rebinThisLabel, args.rebinThisOutputFile)):
                 print(other_label)
                 tfile_other = cu.open_root_file(other_input)
