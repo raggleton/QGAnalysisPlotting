@@ -3,6 +3,8 @@
 """Print main QG plots for a given sample.
 
 Any other plots comparing more than one sample should go into its own script!
+
+USe addZeroBiasJetHT.py first to sum jetht and zerobias
 """
 
 import ROOT
@@ -50,12 +52,16 @@ def do_plots(root_dir):
     dj_dirname = "Dijet_QG_tighter"
 
     for ang in var_list[:]:
-
+        # if "ptd" not in ang.var.lower():
+        #     continue
         v = "%s%s_vs_pt" % (var_prepend, ang.var)
         zpj_2d_entries = []
         dijet_2d_entries = []
         
-        for pt_ind, (start_val, end_val) in enumerate(pt_bins[1:6]):
+        zpj_1d_entries = []
+        dijet_1d_entries = []
+
+        for pt_ind, (start_val, end_val) in enumerate(pt_bins):
             entries = []
             dijet_entries = []
             zpj_entries = []
@@ -63,7 +69,7 @@ def do_plots(root_dir):
             for ind, source in enumerate(sources):
                 lw = 2
                 msize = 1.1
-                data_line_width = lw
+                data_line_width = 0
 
                 ####################
                 # Z+JETS REGION
@@ -76,7 +82,7 @@ def do_plots(root_dir):
                                       label=qgc.SINGLE_MU_LABEL)
                 zpj_data_hist = qgp.get_projection_plot(h2d_dyj_data, start_val, end_val)
                 entries.append((zpj_data_hist, dy_kwargs_data))
-                zpj_entries.append((qgp.get_projection_plot(h2d_dyj_data, start_val, end_val), dy_kwargs_data))
+                zpj_entries.append((zpj_data_hist, dy_kwargs_data))
                 if pt_ind == 0:
                     zpj_2d_entries.append((h2d_dyj_data, dy_kwargs_data))
 
@@ -165,12 +171,17 @@ def do_plots(root_dir):
                 if pt_ind == 0:
                     dijet_2d_entries.append((h2d_qcd_mc3, qcd_kwargs_mc3))
 
+            zpj_1d_entries.append(zpj_entries)
+            dijet_1d_entries.append(dijet_entries)
+
             rebin = 2
             v_lower = v.lower()
             if "multiplicity" in v_lower:
                 rebin = 2
-            elif "flavour" in v_lower or "thrust" in v_lower or 'ptd' in v_lower:
+            elif "flavour" in v_lower or "thrust" in v_lower:
                 rebin = 1
+            elif 'ptd' in v_lower:
+                rebin = 2
 
             xlim = None
             if "width" in v_lower or "ptd" in v_lower:
@@ -178,8 +189,10 @@ def do_plots(root_dir):
             elif"thrust" in v_lower:
                 xlim = (0, 0.5)
             elif "multiplicity" in v_lower and "ak4" in sources[0]['root_dir'].lower():
-                xlim = (0, 100)
-                xlim = (0, 80)
+                if end_val <= 150:
+                    xlim = (0, 50)
+                else:
+                    xlim = (0, 80)
 
             ylim = None
             if "flavour" in v_lower:
@@ -193,52 +206,70 @@ def do_plots(root_dir):
             jet_str = "AK%s PF %s" % (radius.upper(), pus.upper())
             subplot_title = "MC / Data"
             subplot_limits = (0.5, 1.5)
-            qgp.do_comparison_plot(entries, 
-                                   "%s/ptBinned/%s_pt%dto%d.%s" % (plot_dir, v, start_val, end_val, OUTPUT_FMT),
-                                   rebin=rebin,
-                                   title="%d < p_{T}^{jet} < %d GeV\n%s" % (start_val, end_val, jet_str),
-                                   xtitle=ang.name + " (" + ang.lambda_str + ")",
-                                   xlim=xlim, ylim=ylim,
-                                   subplot_type='ratio',
-                                   subplot_title=subplot_title,
-                                   subplot_limits=subplot_limits)
-
-            qgp.do_comparison_plot(dijet_entries, 
-                                   "%s/ptBinned/%s_pt%dto%d_dijet.%s" % (plot_dir, v, start_val, end_val, OUTPUT_FMT),
-                                   rebin=rebin,
-                                   title="%d < p_{T}^{jet} < %d GeV\n%s" % (start_val, end_val, jet_str),
-                                   xtitle=ang.name + " (" + ang.lambda_str + ")",
-                                   xlim=xlim, ylim=ylim,
-                                   subplot_type='ratio',
-                                   subplot_title=subplot_title,
-                                   subplot_limits=subplot_limits)
-
-            qgp.do_comparison_plot(zpj_entries,
-                                   "%s/ptBinned/%s_pt%dto%d_zpj.%s" % (plot_dir, v, start_val, end_val, OUTPUT_FMT),
-                                   rebin=rebin,
-                                   title="%d < p_{T}^{jet} < %d GeV\n%s" % (start_val, end_val, jet_str),
-                                   xtitle=ang.name + " (" + ang.lambda_str + ")",
-                                   xlim=xlim, ylim=ylim,
-                                   subplot_type='ratio',
-                                   subplot_title=subplot_title,
-                                   subplot_limits=subplot_limits)
+            # dj+zpj
+            # qgp.do_comparison_plot(entries, 
+            #                        "%s/ptBinned/%s_pt%dto%d.%s" % (plot_dir, v, start_val, end_val, OUTPUT_FMT),
+            #                        rebin=rebin,
+            #                        title="%d < p_{T}^{jet} < %d GeV\n%s" % (start_val, end_val, jet_str),
+            #                        xtitle=ang.name + " (" + ang.lambda_str + ")",
+            #                        xlim=xlim, ylim=ylim,
+            #                        subplot_type='ratio',
+            #                        subplot_title=subplot_title,
+            #                        subplot_limits=subplot_limits)
+            # # dj only
+            # qgp.do_comparison_plot(dijet_entries, 
+            #                        "%s/ptBinned/%s_pt%dto%d_dijet.%s" % (plot_dir, v, start_val, end_val, OUTPUT_FMT),
+            #                        rebin=rebin,
+            #                        title="%d < p_{T}^{jet} < %d GeV\n%s" % (start_val, end_val, jet_str),
+            #                        xtitle=ang.name + " (" + ang.lambda_str + ")",
+            #                        xlim=xlim, ylim=ylim,
+            #                        subplot_type='ratio',
+            #                        subplot_title=subplot_title,
+            #                        subplot_limits=subplot_limits)
+            # # zpj only
+            # qgp.do_comparison_plot(zpj_entries,
+            #                        "%s/ptBinned/%s_pt%dto%d_zpj.%s" % (plot_dir, v, start_val, end_val, OUTPUT_FMT),
+            #                        rebin=rebin,
+            #                        title="%d < p_{T}^{jet} < %d GeV\n%s" % (start_val, end_val, jet_str),
+            #                        xtitle=ang.name + " (" + ang.lambda_str + ")",
+            #                        xlim=xlim, ylim=ylim,
+            #                        subplot_type='ratio',
+            #                        subplot_title=subplot_title,
+            #                        subplot_limits=subplot_limits)
         
-        xlim = None
+        ylim = None
         if "width" in v_lower or "ptd" in v_lower:
-            xlim = (0, 0.75)
+            ylim = (0, 0.4)
         elif"thrust" in v_lower:
-            xlim = (0, 0.5)
+            ylim = (0, 0.5)
         elif "multiplicity" in v_lower and "ak4" in sources[0]['root_dir'].lower():
-            xlim = (0, 100)
-            xlim = (0, 80)
-
-        qgp.do_box_plot(dijet_2d_entries,
-                        "%s/ptBinned/%s_box_dijet.%s" % (plot_dir, v, OUTPUT_FMT),
-                        ylim=xlim, xlim=(0, 300), transpose=True)
+            ylim = (0, 100)
+            ylim = (0, 80)
+            if end_val < 150:
+                ylim = (0, 50)
+        ylim=None
+        # qgp.do_box_plot(dijet_2d_entries,
+        #                 "%s/ptBinned/%s_box_dijet.%s" % (plot_dir, v, OUTPUT_FMT),
+        #                 ylim=ylim, xlim=(0, 300), transpose=True)
         
-        qgp.do_box_plot(zpj_2d_entries,
-                        "%s/ptBinned/%s_box_zpj.%s" % (plot_dir, v, OUTPUT_FMT),
-                        ylim=xlim, xlim=(0, 300), transpose=True)
+        # skip first entries as low pt bin
+        marker = ""
+        if "_" in ang.name or "^" in ang.name:
+            marker = "$"
+        var_label = marker + ang.name + marker + "\n$%s$" % ang.lambda_str
+        qgp.do_box_plot_mpl(dijet_1d_entries[3:], pt_bins[3:],
+                            "%s/ptBinned/%s_box_dijet_mpl.%s" % (plot_dir, v, OUTPUT_FMT),
+                            var_label=var_label,
+                            ylim=ylim, xlim=(50, 1000), region_title="dijet")
+
+        qgp.do_box_plot_mpl(zpj_1d_entries[3:], pt_bins[3:],
+                            "%s/ptBinned/%s_box_zpj_mpl.%s" % (plot_dir, v, OUTPUT_FMT),
+                            var_label=var_label,
+                            ylim=ylim, xlim=(50, 326), region_title="Z+jets")
+        
+        # qgp.do_box_plot(zpj_2d_entries,
+        #                 "%s/ptBinned/%s_box_zpj.%s" % (plot_dir, v, OUTPUT_FMT),
+        #                 ylim=ylim, xlim=(0, 300), transpose=True)
 
 
 if __name__ == "__main__":

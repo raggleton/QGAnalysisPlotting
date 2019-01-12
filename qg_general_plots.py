@@ -13,6 +13,17 @@ from comparator import Contribution, Plot, grab_obj
 import common_utils as cu
 import qg_common as qgc
 
+import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib as mpl
+import matplotlib.ticker as plticker
+import matplotlib.patches as patches
+
+
+mpl.rcParams['font.size'] = 18
+mpl.rcParams["font.family"] = "arial"
+
+
 # For debugging
 import sys
 import tracers
@@ -28,10 +39,10 @@ ROOT.gStyle.SetOptStat(0)
 
 
 def make_comparison_plot_ingredients(entries, rebin=1, normalise_hist=True, mean_rel_error=1.0, **plot_kwargs):
-    """Make the Plot object for a comparison plot. 
+    """Make the Plot object for a comparison plot.
 
     User can then add other elements to the plot.
-    
+
     Parameters
     ----------
     entries : list[(object, dict)]
@@ -41,21 +52,22 @@ def make_comparison_plot_ingredients(entries, rebin=1, normalise_hist=True, mean
     normalise_hist : bool, optional
         Normalise each histogram's integral to unity
     mean_rel_error : float, optional
-        Remove contributions that have a 
+        Remove contributions that have a mean realtive error more than this value
+        mean realtive error = mean of all the error/bin contents
     **plot_kwargs
         Any other kwargs to be passed to the Plot object contructor
-    
+
     Returns
     -------
     Plot
         Plot object to be modified, plotted, etc
-    
+
     Raises
     ------
     RuntimeError
         If there are 0 contributions
     """
-    conts = [Contribution(ent[0], normalise_hist=normalise_hist, rebin_hist=rebin, **ent[1]) 
+    conts = [Contribution(ent[0].Clone(), normalise_hist=normalise_hist, rebin_hist=rebin, **ent[1])
              for ent in entries
              if cu.get_hist_mean_rel_error(ent[0]) < mean_rel_error and ent[0].Integral() > 0]
     do_legend = len(conts) > 1
@@ -67,12 +79,12 @@ def make_comparison_plot_ingredients(entries, rebin=1, normalise_hist=True, mean
     p = Plot(conts, what="hist", ytitle="p.d.f", legend=do_legend, **plot_kwargs)
     if do_legend:
         p.legend.SetX1(0.5)
-        p.legend.SetX2(0.97)
+        p.legend.SetX2(1.02)
         if len(entries) > 4:
             p.legend.SetY1(0.6)
         else:
-            p.legend.SetY1(0.7)
-        p.legend.SetY2(0.9)
+            p.legend.SetY1(0.65)
+        p.legend.SetY2(0.88)
     return p
 
 
@@ -87,6 +99,9 @@ def do_comparison_plot(entries, output_filename, rebin=1, **plot_kwargs):
         draw_opt = "NOSTACK HISTE"
         p.plot(draw_opt)
         # p.container.SetMaximum(min(5, p.container.GetMaximum()))
+        dirname = os.path.dirname(output_filename)
+        if not os.path.isdir(dirname):
+            os.makedirs(dirname)
         p.save(output_filename)
     except RuntimeError as e:
         print("Skipping")
@@ -159,11 +174,11 @@ def do_2D_plot(obj, output_filename, draw_opt="COLZ", renorm_axis=None, title=No
     canvas.SaveAs(output_filename)
 
 
-def do_all_exclusive_plots_comparison(sources, plot_dir="plots_dy_vs_qcd", 
+def do_all_exclusive_plots_comparison(sources, plot_dir="plots_dy_vs_qcd",
                                       dy_filename=qgc.DY_FILENAME, qcd_filename=qgc.QCD_FILENAME,
                                       zpj_dirname="ZPlusJets_QG", dj_dirname="Dijet_QG",
-                                      var_list=None, var_prepend="", pt_bins=None, 
-                                      subplot_type=None, subplot_title=None, 
+                                      var_list=None, var_prepend="", pt_bins=None,
+                                      subplot_type=None, subplot_title=None,
                                       do_flav_tagged=True, ofmt="pdf"):
     """Do 1D plots, comparing various sources. For each source plots DY & QCD samples. If zpj_dirname or dj_dirname blank, not plotted.
 
@@ -190,7 +205,7 @@ def do_all_exclusive_plots_comparison(sources, plot_dir="plots_dy_vs_qcd",
                 if zpj_dirname:
                     h2d_dyj = grab_obj(os.path.join(source['root_dir'], dy_filename),
                                        "%s/%s" % (source.get('zpj_dirname', zpj_dirname), v))
-                    dy_kwargs = dict(line_color=qgc.DY_COLOUR, line_width=lw, fill_color=qgc.DY_COLOUR, 
+                    dy_kwargs = dict(line_color=qgc.DY_COLOUR, line_width=lw, fill_color=qgc.DY_COLOUR,
                                      label=qgc.DY_ZpJ_LABEL + source.get('label', ''),
                                      marker_color=qgc.DY_COLOUR, marker_style=qgc.DY_MARKER+ind, marker_size=msize)
                     dy_kwargs.update(source.get('style', {}))
@@ -200,7 +215,7 @@ def do_all_exclusive_plots_comparison(sources, plot_dir="plots_dy_vs_qcd",
                 if dj_dirname:
                     h2d_qcd = grab_obj(os.path.join(source['root_dir'], qcd_filename),
                                        "%s/%s" % (source.get('dj_dirname', dj_dirname), v))
-                    qcd_kwargs = dict(line_color=qgc.QCD_COLOUR, line_width=lw, fill_color=qgc.QCD_COLOUR, 
+                    qcd_kwargs = dict(line_color=qgc.QCD_COLOUR, line_width=lw, fill_color=qgc.QCD_COLOUR,
                                       label=qgc.QCD_Dijet_LABEL + source.get('label', ''),
                                       marker_color=qgc.QCD_COLOUR, marker_style=qgc.QCD_MARKER+ind, marker_size=msize)
                     qcd_kwargs.update(source.get('style', {}))
@@ -214,7 +229,7 @@ def do_all_exclusive_plots_comparison(sources, plot_dir="plots_dy_vs_qcd",
                 if zpj_dirname:
                     h2d_dyj_q = grab_obj(os.path.join(source['root_dir'], dy_filename),
                                          "%s/q%s" % (source.get('zpj_dirname', zpj_dirname), v))
-                    dy_kwargs_q = dict(line_color=qgc.DY_COLOUR, line_width=lw, fill_color=qgc.DY_COLOUR, 
+                    dy_kwargs_q = dict(line_color=qgc.DY_COLOUR, line_width=lw, fill_color=qgc.DY_COLOUR,
                                        label=qgc.DY_ZpJ_QFLAV_LABEL + source.get('label', ''),
                                        # label=qgc.QCD_Dijet_QFLAV_LABEL + source.get('label', ''),
                                        marker_color=qgc.DY_COLOUR, marker_style=qgc.DY_MARKER+ind, marker_size=msize)
@@ -225,7 +240,7 @@ def do_all_exclusive_plots_comparison(sources, plot_dir="plots_dy_vs_qcd",
                 if dj_dirname:
                     h2d_qcd_g = grab_obj(os.path.join(source['root_dir'], qcd_filename),
                                          "%s/g%s" % (source.get('dj_dirname', dj_dirname), v))
-                    qcd_kwargs_g = dict(line_color=qgc.QCD_COLOUR, line_width=lw, fill_color=qgc.QCD_COLOUR, 
+                    qcd_kwargs_g = dict(line_color=qgc.QCD_COLOUR, line_width=lw, fill_color=qgc.QCD_COLOUR,
                                         label=qgc.QCD_Dijet_GFLAV_LABEL + source.get('label', ''),
                                         marker_color=qgc.QCD_COLOUR, marker_style=qgc.QCD_MARKER+ind, marker_size=msize)
                     qcd_kwargs_g.update(source.get('style', {}))
@@ -264,7 +279,7 @@ def do_all_exclusive_plots_comparison(sources, plot_dir="plots_dy_vs_qcd",
 
 
 def transpose_2d_hist(hist):
-    hnew = ROOT.TH2D(hist.GetName()+"transpose", 
+    hnew = ROOT.TH2D(hist.GetName()+"transpose",
                      ";".join([hist.GetTitle(), hist.GetYaxis().GetTitle(), hist.GetXaxis().GetTitle()]),
                      hist.GetNbinsY(), hist.GetYaxis().GetXmin(), hist.GetYaxis().GetXmax(),
                      hist.GetNbinsX(), hist.GetXaxis().GetXmin(), hist.GetXaxis().GetXmax()
@@ -290,7 +305,7 @@ def rescale_plot_labels(container, factor):
 
 def do_box_plot(entries, output_filename, xlim=None, ylim=None, transpose=False):
     """Create box n whickers plot from 2D hists
-    
+
     Parameters
     ----------
     entries : list[(TH2, dict)]
@@ -335,7 +350,7 @@ def do_box_plot(entries, output_filename, xlim=None, ylim=None, transpose=False)
         main_pad.Draw()
 
     leg = ROOT.TLegend(0.5, 0.7, 0.92, 0.88)
-    
+
     main_pad.cd()
 
     median_hists = []
@@ -353,22 +368,22 @@ def do_box_plot(entries, output_filename, xlim=None, ylim=None, transpose=False)
         if transpose:
             rebin_hist = transpose_2d_hist(rebin_hist)
 
-        median_hist = ROOT.TH1D("mean_%d" % ind, 
-                               "", 
-                               rebin_hist.GetNbinsX(), 
-                               rebin_hist.GetXaxis().GetBinLowEdge(1), 
+        median_hist = ROOT.TH1D("mean_%d" % ind,
+                               "",
+                               rebin_hist.GetNbinsX(),
+                               rebin_hist.GetXaxis().GetBinLowEdge(1),
                                rebin_hist.GetXaxis().GetBinLowEdge(rebin_hist.GetNbinsX()+1))
-        lower_hist = ROOT.TH1D("lower_%d" % ind, 
-                               "", 
-                               rebin_hist.GetNbinsX(), 
-                               rebin_hist.GetXaxis().GetBinLowEdge(1), 
+        lower_hist = ROOT.TH1D("lower_%d" % ind,
+                               "",
+                               rebin_hist.GetNbinsX(),
+                               rebin_hist.GetXaxis().GetBinLowEdge(1),
                                rebin_hist.GetXaxis().GetBinLowEdge(rebin_hist.GetNbinsX()+1))
-        upper_hist = ROOT.TH1D("upper_%d" % ind, 
-                               "", 
-                               rebin_hist.GetNbinsX(), 
-                               rebin_hist.GetXaxis().GetBinLowEdge(1), 
+        upper_hist = ROOT.TH1D("upper_%d" % ind,
+                               "",
+                               rebin_hist.GetNbinsX(),
+                               rebin_hist.GetXaxis().GetBinLowEdge(1),
                                rebin_hist.GetXaxis().GetBinLowEdge(rebin_hist.GetNbinsX()+1))
-        
+
         for i in range(1, rebin_hist.GetNbinsX()):
             projection = rebin_hist.ProjectionY("_py%s"%cu.get_unique_str(), i, i+1)
             projection.GetQuantiles(len(quantiles), quantile_values, quantiles)
@@ -379,7 +394,7 @@ def do_box_plot(entries, output_filename, xlim=None, ylim=None, transpose=False)
         median_hist.SetLineColor(ent[1]['line_color'])
         median_hist.SetFillColor(ent[1]['line_color'])
         median_hist.SetFillStyle(0)
-        median_hists.append(median_hist)        
+        median_hists.append(median_hist)
 
         lower_hist.SetLineColor(ent[1]['line_color'])
         lower_hist.SetLineStyle(2)
@@ -399,17 +414,17 @@ def do_box_plot(entries, output_filename, xlim=None, ylim=None, transpose=False)
         half = (int) (len(entries) / 2)
         factor = -1 if transpose else 1
         rebin_hist.SetBarOffset(factor * (half * offset - (ind * offset)))
-        
+
         rebin_hist.SetLineColor(ent[1]['line_color'])
-        
+
         rebin_hist.SetFillColor(ent[1]['line_color'])
         rebin_hist.SetFillStyle(0)
-        
+
         if xlim and len(xlim) == 2:
             rebin_hist.SetAxisRange(xlim[0], xlim[1], 'X')
         if ylim and len(ylim) == 2:
             rebin_hist.SetAxisRange(ylim[0], ylim[1], 'Y')
-        
+
         leg.AddEntry(rebin_hist, ent[1]['label'], "LP")
         ax = "X" if transpose else "Y"
         draw_opt = "CANDLE"+ax+"(00011311)"
@@ -417,7 +432,7 @@ def do_box_plot(entries, output_filename, xlim=None, ylim=None, transpose=False)
             draw_opt += "SAME"
         rebin_hist.Draw(draw_opt)
         hists2d.append(rebin_hist)
-    
+
     canvas.cd()
     leg.Draw()
     cms_latex = ROOT.TLatex()
@@ -431,7 +446,7 @@ def do_box_plot(entries, output_filename, xlim=None, ylim=None, transpose=False)
     # cms_latex.DrawLatex(0.14, latex_height, "#font[62]{CMS}")
     cms_latex.SetTextAlign(ROOT.kHAlignRight + ROOT.kVAlignBottom)
     cms_latex.DrawLatexNDC(0.97, latex_height, " 35.9 fb^{-1} (13 TeV)")
-    
+
     subplot_title = None
     subplot_pad.cd()
     ratio_hst = ROOT.THStack("hst", ";"+hists2d[0].GetXaxis().GetTitle()+";#splitline{Ratio of median}{(MC / Data)}")
@@ -448,7 +463,7 @@ def do_box_plot(entries, output_filename, xlim=None, ylim=None, transpose=False)
             for qh in median_hists[1:]:
                 qh.Divide(median_hists[0])
                 ratio_hst.Add(qh)
-    
+
             for qh in lower_hists[1:]:
                 qh.Divide(lower_hists[0])
                 ratio_hst.Add(qh)
@@ -467,7 +482,7 @@ def do_box_plot(entries, output_filename, xlim=None, ylim=None, transpose=False)
         #         subplot_title = "#splitline{Difference}{vs %s}" % (subplot.label)
         #     elif (subplot_type == "ddelta"):
         #         subplot_title = "d#Delta/d#lambda"
-        
+
         # ratio_hst.SetTitle(";%s;%s" % (xtitle, subplot_title))
 
 
@@ -483,12 +498,234 @@ def do_box_plot(entries, output_filename, xlim=None, ylim=None, transpose=False)
             subplot_line.SetLineWidth(1)
             subplot_line.SetLineColor(ROOT.kBlack)
             subplot_line.Draw()
-            
+
             rescale_plot_labels(ratio_hst, subplot_pad_height)
             ratio_hst.GetXaxis().SetTitleOffset(ratio_hst.GetXaxis().GetTitleOffset()*3)
             ratio_hst.GetYaxis().SetNdivisions(505)
 
     canvas.SaveAs(output_filename)
+
+
+def extract_sample_name(label):
+    parts = label.split("[")
+    new_label = parts[-1]
+    new_label = new_label.replace("]", "")
+    return new_label
+
+
+def do_box_plot_mpl(entries, bins, output_filename, var_label="", xlim=None, ylim=None, region_title=""):
+    """Create box n whickers plot from 1D hists using matplotlib
+
+    Parameters
+    ----------
+    entries : list[list[(TH1, dict)]]
+        Description
+    output_filename : str
+        Output filename
+    """
+    # Get the statistics from our 1D hists
+    # entries is a list, where each element corresponds to a pt bin
+    # each element is itself a list, with different entries for the different datasets being compared
+
+    quantiles = array('d', [0.25, 0.5, 0.75])
+
+    lower_quants = []
+    median_quants = []
+    upper_quants = []
+
+    # only do the bins we need, otherwise axis limits go awry
+    if xlim:
+        bins = [b for b in bins if b[1] <= xlim[1]]
+
+    for ind, bin_entry in enumerate(entries):
+        if ind == len(bins):
+            break
+        this_lower = []
+        this_median = []
+        this_upper = []
+        for entry in bin_entry:
+            quantile_values = array('d', [0., 0., 0.])
+            hist = entry[0]
+            if cu.get_hist_mean_rel_error(hist) < 0.4:
+                hist.GetQuantiles(len(quantiles), quantile_values, quantiles)
+                this_lower.append(quantile_values[0])
+                this_median.append(quantile_values[1])
+                this_upper.append(quantile_values[2])
+            else:
+                this_lower.append(np.nan)
+                this_median.append(np.nan)
+                this_upper.append(np.nan)
+        lower_quants.append(this_lower)
+        median_quants.append(this_median)
+        upper_quants.append(this_upper)
+
+    # convert to numpy array to maniuplate easier
+    lower_quants = np.array(lower_quants)
+    median_quants = np.array(median_quants)
+    upper_quants = np.array(upper_quants)
+
+    # Do all plot - start by setting up figure
+    fig, axes = plt.subplots(nrows=3, ncols=1, figsize=(16, 8), sharex=True)
+    plt.subplots_adjust(left=0.1, right=0.78, top=0.9, hspace=0.1)
+
+    n_datasets = len(entries[0])
+    bin_widths = [(x[1]-x[0])/(n_datasets) for x in bins]
+
+    # Convert ROOT colors to hex for matplotlib
+    cols = []
+    for ind, entry in enumerate(entries[0]):
+        cols.append(ROOT.gROOT.GetColor(entry[1]['line_color']).AsHexString())
+
+    # main plot
+    plot_objs = []
+    # loop over datasets
+    for ind, entry in enumerate(entries[0]):  # assumes all are in 0th element!
+        bxpstats = []
+        for med, low, upper in zip(median_quants[:,ind], lower_quants[:,ind], upper_quants[:,ind]):
+            bxpstats.append({
+                "med": med,
+                "q1": low,
+                "q3": upper,
+                "whislo": low,
+                "whishi": upper,
+            })
+        boxprops = {
+            "color": cols[ind],
+            "linewidth": 2,
+        }
+        x_pos = [(x[0] + (0.5+ind)*binw) for x, binw in zip(bins, bin_widths)]
+        # DO NOT USE axes[0,0], get indexerror
+        # Make boxplot
+        things = axes[0].bxp(bxpstats, positions=x_pos, widths=bin_widths,
+                            vert=True, showfliers=False, medianprops=boxprops,
+                            boxprops=boxprops, showcaps=False)
+
+        # Explicitly set the label and store for the legend
+        things['boxes'][0].set_label(extract_sample_name(entry[1]['label']).split(',')[0])
+        plot_objs.append(things['boxes'][0])
+
+        # loc = plticker.LogLocator(base=10.0, subs=(1.0, 2.0, 5.0))
+        # axes[1].xaxis.set_major_locator(loc)
+        # axes[0].xaxis.set_minor_locator(loc)
+        # axes[0].set_ylim(bottom=0)
+
+    leg_loc = (1.05, 0.1)
+    labels = [e[1]['label'] for e in entries[0]]
+    axes[0].legend(handles=plot_objs, loc=leg_loc, fancybox=False, edgecolor='white')
+
+    plt.xscale('log')
+
+    # convert from ROOTism to latex
+    new_var_label = var_label.replace("#", "\\")
+    axes[0].set_ylabel('%s' % new_var_label)
+    axes[-1].set_xlabel('$p_{T}^{jet}$ [GeV]')
+
+    axes[0].set_xlim(*xlim)
+    if ylim:
+        axes[0].set_ylim(*ylim)
+    if axes[0].get_ylim()[0] > 0:
+        axes[0].set_ylim(bottom=0)
+
+    axes[-1].set_xlim(*xlim)
+
+    # subplot - ratio of medians
+    ref_data = None
+    x_pos = [0.5*sum(x) for x in bins]
+    bin_widths = [0.5*(x[1]-x[0]) for x in bins]
+    markers = ['x', 'o', 'd', '^']
+    for ind, entry in enumerate(entries[0]):
+        if ind == 0:
+            ref_data = median_quants[:, ind]
+        else:
+            this_data = median_quants[:, ind] / ref_data
+            axes[1].errorbar(x_pos, this_data, xerr=bin_widths,
+                             marker=markers[ind],
+                             label=extract_sample_name(entry[1]['label']),
+                             color=cols[ind],
+                             linewidth=0, elinewidth=2)
+    axes[1].axhline(1.0, color='gray', linestyle='dashed')
+    axes[1].set_ylabel("Ratio of medians\n(MC / Data)")
+    ylim = axes[1].get_ylim()
+    lim = 2
+    if ylim[1] > lim:
+        axes[1].set_ylim(top=lim)
+
+    # subplot - ratio of lower/upper quantiles
+    # ref_data_lower = None
+    # ref_data_upper = None
+    # for ind, entry in enumerate(entries[0]):
+    #     if ind == 0:
+    #         ref_data_lower = lower_quants[:, ind]
+    #         ref_data_upper = upper_quants[:, ind]
+    #     else:
+    #         this_data_lower = lower_quants[:, ind] / ref_data_lower
+    #         this_data_upper = upper_quants[:, ind] / ref_data_upper
+    #         axes[2].errorbar(x_pos, this_data_lower, xerr=bin_widths,
+    #                          marker=markers[ind],
+    #                          label=extract_sample_name(entry[1]['label']) + " [25%]",
+    #                          color=cols[ind],
+    #                          linewidth=0, elinewidth=2)
+
+    #         axes[2].errorbar(x_pos, this_data_upper, xerr=bin_widths,
+    #                          marker=markers[ind],
+    #                          label=extract_sample_name(entry[1]['label']) + " [75%]",
+    #                          color=cols[ind],
+    #                          linewidth=0, elinewidth=2, linestyle='dashed', markerfacecolor='white')
+    # ylim = axes[2].get_ylim()
+    # lim = 2
+    # if ylim[1] > lim:
+    #     axes[2].set_ylim(top=lim)
+    # axes[2].axhline(1.0, color='gray', linestyle='dashed')
+    # axes[2].set_ylabel("Ratio of upper\n& lower quantiles\n(MC / Data)")
+    # axes[2].legend(loc=leg_loc, fancybox=False)
+
+    # Subplot - ratio of width (75%-25%)
+    ref_data = None
+    for ind, entry in enumerate(entries[0]):
+        if ind == 0:
+            ref_data = upper_quants[:, ind]-lower_quants[:, ind]
+        else:
+            this_data = (upper_quants[:, ind]-lower_quants[:, ind]) / ref_data
+            axes[2].errorbar(x_pos, this_data, xerr=bin_widths,
+                             marker=markers[ind],
+                             label=extract_sample_name(entry[1]['label']),
+                             color=cols[ind],
+                             linewidth=0, elinewidth=2)
+
+    ylim = axes[2].get_ylim()
+    lim = 2
+    if ylim[1] > lim:
+        axes[2].set_ylim(top=lim)
+    axes[2].axhline(1.0, color='gray', linestyle='dashed')
+    axes[2].set_ylabel("Ratio of central\n50% quantile width\n(MC / Data)")
+    # axes[2].legend(loc=leg_loc, fancybox=False)
+
+
+    axes[0].set_title("25%, 50%, 75% quantiles for {} region".format(region_title), pad=40)
+
+    # Draw bin delineators
+    for ax in axes.flat:
+        ax.tick_params(axis='x', which='major', direction='in', top=True, bottom=True, length=10)
+        ax.tick_params(axis='x', which='minor', direction='in', top=True, bottom=True, length=7)
+        ax.tick_params(axis='y', which='major', direction='in', left=True, right=True, length=10)
+        ax.tick_params(axis='y', which='minor', direction='in', left=True, right=True, length=7)
+
+        this_ylim = ax.get_ylim()
+        for ind, this_bin in enumerate(bins):
+            # if xlim and this_bin[1] < xlim[0]:
+            #     continue
+            # if xlim and this_bin[0] > xlim[1]:
+            #     continue
+            # if ind % 2 == 0:
+            #     continue
+            # ax.add_patch(patches.Rectangle(
+            #                         (this_bin[1], this_ylim[0]),
+            #                         width=this_bin[1]-this_bin[0],
+            #                         height=this_ylim[1]-this_ylim[0],
+            #                         color='lightgray', zorder=-9999999
+            #                         ))
+            ax.axvline(this_bin[0], color='lightgray', linestyle='dashed')
+    plt.savefig(output_filename)
 
 
 def migration_plot_components(h2d_renorm_x, h2d_renorm_y, xlabel):
