@@ -67,7 +67,7 @@ def make_comparison_plot_ingredients(entries, rebin=1, normalise_hist=True, mean
     RuntimeError
         If there are 0 contributions
     """
-    conts = [Contribution(ent[0].Clone(), normalise_hist=normalise_hist, rebin_hist=rebin, **ent[1])
+    conts = [Contribution(ent[0], normalise_hist=normalise_hist, rebin_hist=rebin, **ent[1])
              for ent in entries
              if cu.get_hist_mean_rel_error(ent[0]) < mean_rel_error and ent[0].Integral() > 0]
     do_legend = len(conts) > 1
