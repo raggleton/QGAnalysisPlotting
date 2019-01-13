@@ -26,6 +26,7 @@ QCD_MARKER = 22
 # DY_COLOURS = [880, 881, 884, 873]
 DY_COLOURS = [880, 881, 797, 902]
 QCD_COLOURS = [867, 600, 853, 870]
+QCD_COLOURS = [867, 600, 853, 882]
 
 PT_BINS = [(80, 100), (100, 200), (400, 500), (1000, 2000), (80, 2000)]
 PT_BINS = [(80, 100), (100, 120), (200, 250), (400, 500), (1000, 2000), (80, 2000)]
@@ -37,25 +38,25 @@ THEORY_PT_BINS = [(20, 25), (40, 50), (50, 55), (60, 70), (70, 80), (80, 90), (9
                   (400, 500), (500, 600), (500, 550), (600, 800), (800, 1000),
                   (1000, 1400), (1400, 2000)]
 PT_BINS = [
-(29,38), (38,50), (50,65), (65,88), (88,120), (120,150), (150,186), (186,254), 
+(0, 29), (29,38), (38,50), (50,65), (65,88), (88,120), (120,150), (150,186), (186,254), 
 (254,326), (326,408), (408,481), (481,614), (614,800), (800,1000), (1000,1300), 
 (1300,1700), (1700,2200), (2200,3000), (3000,4000), (4000,5000), (5000,10000),
 ]
 
-PT_BINS = [
-(29,38), (38,50), (50,65), (65,88), (88,114), (114,145), (145,180), (180,254), 
-(254,318), (318,400), (400,500), (500,625), (625,800), (800,1000), (1000,1300), 
-(1300,1700), (1700,2200), (2200,3000), (3000,4000), (4000,5000), (5000,10000),
-]
+# PT_BINS = [
+# (29,38), (38,50), (50,65), (65,88), (88,114), (114,145), (145,180), (180,254), 
+# (254,318), (318,400), (400,500), (500,625), (625,800), (800,1000), (1000,1300), 
+# (1300,1700), (1700,2200), (2200,3000), (3000,4000), (4000,5000), (5000,10000),
+# ]
 
 Angle = namedtuple("Angle", ['var', 'kappa', 'beta', 'name', "lambda_str", "colour"])
 COMMON_VARS_WITH_FLAV = [
     Angle("jet_puppiMultiplicity", 0, 0, "PUPPI Multiplicity", "#lambda_{0}^{0} (PUPPI)", 2),
-    Angle('jet_multiplicity', 0, 0, "Multiplicity", "#lambda_{0}^{0}", 2),
     Angle('jet_pTD', 2, 0, "(p_{T}^{D})^{2}", "#lambda_{0}^{2}", 418),
     Angle('jet_LHA', 1, 0.5, "LHA", "#lambda_{0.5}^{1}", 600),
     Angle('jet_width', 1, 1, "Width", "#lambda_{1}^{1}", 861),
     Angle('jet_thrust', 1, 2, "Thrust", "#lambda_{2}^{1}", 617),
+    Angle('jet_multiplicity', 0, 0, "Multiplicity", "#lambda_{0}^{0}", 2),  # leave last as we don't want it in our RIVET numbering
     Angle('jet_flavour', 0, 0, "Flavour", "PDGID", 7),
     Angle("jet_genParton_flavour", 0, 0, "Flavour", "PDGID", 8)
 ]
@@ -72,27 +73,27 @@ ANGLE_REBIN_DICT = {
 }
 
 
-DY_ZpJ_LABEL = "DY+jets, Z+jets region"
-DY_ZpJ_GEN_LABEL = "DY+jets, Z+jets region\n(GenJets)"
-DY_ZpJ_QFLAV_LABEL = "DY+jets, Z+jets region\n(uds-matched)"
-DY_ZpJ_GFLAV_LABEL = "DY+jets, Z+jets region\n(g-matched)"
+DY_ZpJ_LABEL = "DY+jets, Z+j region"
+DY_ZpJ_GEN_LABEL = "DY+jets, Z+j region\n(GenJets)"
+DY_ZpJ_QFLAV_LABEL = "DY+jets, Z+j region\n(uds-matched)"
+DY_ZpJ_GFLAV_LABEL = "DY+jets, Z+j region\n(g-matched)"
 
 DY_Dijet_LABEL = "DY+jets, Dijet region"
 DY_Dijet_GEN_LABEL = "DY+jets, Dijet region\n(GenJets)"
 DY_Dijet_QFLAV_LABEL = "DY+jets, Dijet region\n(uds-matched)"
 DY_Dijet_GFLAV_LABEL = "DY+jets, Dijet region\n(g-matched)"
 
-QCD_ZpJ_LABEL = "QCD, Z+jets region"
-QCD_ZpJ_GEN_LABEL = "QCD, Z+jets region\n(GenJets)"
-QCD_ZpJ_QFLAV_LABEL = "QCD, Z+jets region\n(uds-matched)"
-QCD_ZpJ_GFLAV_LABEL = "QCD, Z+jets region\n(g-matched)"
+QCD_ZpJ_LABEL = "QCD, Z+j region"
+QCD_ZpJ_GEN_LABEL = "QCD, Z+j region\n(GenJets)"
+QCD_ZpJ_QFLAV_LABEL = "QCD, Z+j region\n(uds-matched)"
+QCD_ZpJ_GFLAV_LABEL = "QCD, Z+j region\n(g-matched)"
 
 QCD_Dijet_LABEL = "QCD, Dijet region"
 QCD_Dijet_GEN_LABEL = "QCD, Dijet region\n(GenJets)"
 QCD_Dijet_QFLAV_LABEL = "QCD, Dijet region\n(uds-matched)"
 QCD_Dijet_GFLAV_LABEL = "QCD, Dijet region\n(g-matched)"
 
-SINGLE_MU_LABEL = "SingleMu, Z+jets region"
+SINGLE_MU_LABEL = "SingleMu, Z+j region"
 JETHT_LABEL = "JetHT, Dijet region"
 ZB_LABEL = "ZeroBias, Dijet region"
 JETHT_ZB_LABEL = "JetHT+ZeroBias, Dijet region"
