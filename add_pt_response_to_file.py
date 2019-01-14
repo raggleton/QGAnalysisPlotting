@@ -29,6 +29,8 @@ if __name__ == '__main__':
 
     hist = cu.grab_obj_from_file(args.input, "%s/pt_jet_response" % (args.inputDir))
     hist.SetName("pt_jet_response")
+    hist_rebin = cu.make_normalised_TH2(hist, 'X', recolour=False, do_errors=False)
+    hist_rebin.SetName("pt_jet_response")
     outf = cu.open_root_file(args.output, "UPDATE")
-    hist.Write()
+    hist_rebin.Write()
     outf.Close()
