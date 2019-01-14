@@ -565,6 +565,7 @@ if __name__ == "__main__":
 
         make_plots(h2d_rebin, var_dict, plot_dir=plot_dir, append="rebinned", plot_migrations=True)
 
+        # Cache renormed plots here for migration plots
         h2d_renorm_x = cu.make_normalised_TH2(h2d_rebin, 'X', recolour=False, do_errors=False)
         output_tfile.WriteTObject(h2d_renorm_x)  # we want renormalised by col for doing folding
         
@@ -586,7 +587,7 @@ if __name__ == "__main__":
                 h2d_other = cu.get_from_tfile(tfile_other, full_var_name)
                 h2d_rebin_other = make_rebinned_plot(h2d_other, new_binning, use_half_width_y=False)
 
-                make_plots(h2d_rebin_other, var_dict, plot_dir=plot_dir+"_"+other_label, append="rebinned", plot_migrations=True)
+                make_plots(h2d_rebin_other, var_dict, plot_dir=plot_dir+"_"+other_label.replace(" ", "_"), append="rebinned", plot_migrations=True)
 
                 h2d_renorm_x_other = cu.make_normalised_TH2(h2d_rebin_other, 'X', recolour=False, do_errors=False)
                 tfile_other_out.WriteTObject(h2d_renorm_x_other)
