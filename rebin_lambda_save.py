@@ -33,8 +33,11 @@ YODA_PLOT_TEMPLATE = """BEGIN PLOT /CMS_2018_PAS_SMP_18_QGX/{plotname}
 Title=$\sqrt{{s}} = 13$ TeV, $\mathcal{{L}}_{{\mathrm{{int}}}} = 35.9~\mathrm{{fb}}^{{-1}}$, Dijet selection, {title}
 XLabel={xlabel}
 YLabel={ylabel}
-XMin=0
-LegendXPos=0.8
+XMin={xmin}
+XMax={xmax}
+LogX={logx}
+LogY={logy}
+LegendXPos=0.65
 LegendYPos=0.9
 Legend=1
 ErrorBands=1
@@ -93,14 +96,17 @@ def make_1D_rebin_hists(input_filename, plot_dirname, output_filename):
             # create yoda plot info
             xlabel = "%s $(%s)$" % (ang.name, ang.lambda_str.replace("#", "\\"))
             title_str = "$%d < p_{T}^{jet} < %d$ GeV" % (start_val, end_val)
-            this_plot_info = YODA_PLOT_TEMPLATE.format(plotname=yoda_name, xlabel=xlabel, title=title_str, ylabel="p.d.f")
+            xmax = 1
+            if "multiplicity" in ang.var.lower():
+                xmax = 50
+            this_plot_info = YODA_PLOT_TEMPLATE.format(plotname=yoda_name, xlabel=xlabel, title=title_str, ylabel="p.d.f", logx=0, logy=0, xmax=xmax, xmin=0)
             plot_file.write(this_plot_info)
 
     # Add in pt hist
     h_pt = cu.get_from_tfile(in_f, "Dijet_tighter/pt_jet_response_binning")
     pt_name = "d01-x20-y01"
     h_pt.SetName(pt_name)
-    this_plot_info = YODA_PLOT_TEMPLATE.format(plotname=pt_name, xlabel="$\langle p_{T}^{j}\\rangle$ GeV", title="", ylabel="N")
+    this_plot_info = YODA_PLOT_TEMPLATE.format(plotname=pt_name, xlabel="$\langle p_{T}^{j}\\rangle$ GeV", title="", ylabel="N", logy=1, logx=1, xmin=10, xmax=1000)
     plot_file.write(this_plot_info)
     out_f.WriteTObject(h_pt)
 
