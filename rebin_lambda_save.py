@@ -74,6 +74,8 @@ def make_1D_rebin_hists(input_filename, plot_dirname, output_filename):
 
         var_prepend = ""
         obj_name = "%s%s_vs_pt" % (var_prepend, ang.var)
+        if var_prepend == "gen" and "multiplicity" in ang.var.lower():
+            obj_name = obj_name.replace("puppiMultiplicity", "multiplicity")
         h2d = cu.get_from_tfile(in_f, "%s/%s" % (plot_dirname, obj_name))
 
         for pt_ind, (start_val, end_val) in enumerate(qgc.PT_BINS):
@@ -86,10 +88,10 @@ def make_1D_rebin_hists(input_filename, plot_dirname, output_filename):
             if rebin_hist.Integral() > 0:
                 rebin_hist.Scale(1./rebin_hist.Integral())
             # Divide bin contents by bin width
-            # for bin_ind in range(1, rebin_hist.GetNbinsX()+1):
-            #     val = rebin_hist.GetBinContent(bin_ind)
-            #     width = rebin_hist.GetBinWidth(bin_ind)
-            #     rebin_hist.SetBinContent(bin_ind, val/width)
+            for bin_ind in range(1, rebin_hist.GetNbinsX()+1):
+                val = rebin_hist.GetBinContent(bin_ind)
+                width = rebin_hist.GetBinWidth(bin_ind)
+                rebin_hist.SetBinContent(bin_ind, val/width)
             
             out_f.WriteTObject(rebin_hist)  # saves faffing with cd()
 
