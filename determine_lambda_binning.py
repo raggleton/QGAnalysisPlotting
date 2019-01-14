@@ -572,6 +572,8 @@ if __name__ == "__main__":
         h2d_renorm_y = cu.make_normalised_TH2(h2d_rebin, 'Y', recolour=False, do_errors=False)
 
         contributions = qgg.migration_plot_components(h2d_renorm_x, h2d_renorm_y, var_dict['var_label'])
+        for c in contributions:
+            c.line_width = 2
 
         # Now rebin any other input files with the same hist using the new binning
         if args.rebinThisInput and len(args.rebinThisInput) > 0:
@@ -593,16 +595,21 @@ if __name__ == "__main__":
                 tfile_other_out.WriteTObject(h2d_renorm_x_other)
                 h2d_renorm_y_other = cu.make_normalised_TH2(h2d_rebin_other, 'Y', recolour=False, do_errors=False)
                 contributions_other = qgg.migration_plot_components(h2d_renorm_x_other, h2d_renorm_y_other, var_dict['var_label'])
-                for c in contributions_other:
+                for ind, c in enumerate(contributions_other):
                     c.obj.SetLineStyle(ind+2)
                     c.label += " [%s]" % other_label
+                    c.line_width = 2
+                    c.subplot = contributions[ind].obj
                 contributions.extend(contributions_other)
                 tfile_other_out.Close()
 
             binning = [h2d_renorm_x.GetXaxis().GetBinLowEdge(bin_ind) for bin_ind in range(1, h2d_renorm_x.GetNbinsX()+2)]
             xlim = [binning[0], binning[-1]]
             # plot = Plot(contributions, what='hist', xlim=xlim, ylim=[1e-3, 2], xtitle=var_dict['var_label'], has_data=False)
-            plot = Plot(contributions, what='hist', xlim=xlim, ylim=[0, 1.25], xtitle=var_dict['var_label'], has_data=False)
+            plot = Plot(contributions, what='hist', xlim=xlim, ylim=[0, 1.25], 
+                        xtitle=var_dict['var_label'], has_data=False, 
+                        subplot_type='ratio', subplot_title='Syst / nominal', 
+                        subplot_limits=[0.9, 1.1])
             y1 = 0.15
             y1 = 0.65
             plot.legend.SetNColumns(len(args.rebinThisInput)+1)
@@ -627,6 +634,24 @@ if __name__ == "__main__":
             #     line.Draw("same")
             output_filename = os.path.join(plot_dir, "%s_combined_migration_summary.%s" % (var_dict['name'], OUTPUT_FMT))
             plot.save(output_filename)
+
+            # Do another version where you plot the relative difference wrt nominal for each bin
+                # Contribution(hist_purity, label="Purity (gen right)", line_color=col_purity, marker_color=col_purity),
+                # Contribution(hist_stability, label="Stability (reco right)", line_color=col_stability, marker_color=col_stability),
+                # Contribution(hist_xfer_down, label="-1 reco bin", line_color=col_xfer_down, marker_color=col_xfer_down),
+                # Contribution(hist_xfer_down2, label="-2 reco bin", line_color=col_xfer_down2, marker_color=col_xfer_down2),
+                # # Contribution(hist_xfer_down3, label="3 lower reco bin", line_color=col_xfer_down3, marker_color=col_xfer_down3),
+                # Contribution(hist_xfer_up, label="+1 reco bin", line_color=col_xfer_up, marker_color=col_xfer_up),
+                # Contribution(hist_xfer_up2,
+            # new_contributions = []
+            # ref_cont = contributions[0]
+            # for cont in contributions[1:]:
+            #     new_cont = deepcopy(cont)
+            #     for ref, var in zip(ref_cont, cont):
+            #         new_obj = var.obj.Clone()
+            #         new_obj.Divide(ref)
+
+
 
     output_tfile.Close()
 
