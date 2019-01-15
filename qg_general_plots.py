@@ -618,7 +618,7 @@ def do_box_plot_mpl(entries, bins, output_filename, var_label="", xlim=None, yli
     # convert from ROOTism to latex
     new_var_label = var_label.replace("#", "\\")
     axes[0].set_ylabel('%s' % new_var_label)
-    axes[-1].set_xlabel('$p_{T}^{jet}$ [GeV]')
+    axes[-1].set_xlabel('$p_{T}^{\mathrm{jet}}$ [GeV]')
 
     axes[0].set_xlim(*xlim)
     if ylim:
