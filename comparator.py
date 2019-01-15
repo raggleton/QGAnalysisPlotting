@@ -484,7 +484,7 @@ class Plot(object):
             # urgh why doesnt THStack.GetMaximum() return the actual maximum
             # GetYaxis().GetXmax() doesnt work either
             ymax = max([o.GetMaximum() for o in self.contributions_objs])
-            modifier.SetMaximum(ymax * 1.35)  # TODO different for log and lin scales
+            modifier.SetMaximum(ymax * 1.5)  # TODO different for log and lin scales
 
         # Draw it again to update
         if self.plot_what == "graph":
