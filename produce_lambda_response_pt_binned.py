@@ -268,21 +268,21 @@ if __name__ == "__main__":
     parser.add_argument('input',
                         help='Input ROOT file to process.'
                         'Several dirs can be specified here, separated by a space.')
-    parser.add_argument("--outputDir",
+    parser.add_argument("--output_dir",
                         help="Directory to put output plot dirs into",
                         default=None)
-    # parser.add_argument("--outputFile",
-    #                     help="Output ROOT file for rebinned 2D hists",
-    #                     default=None)
+    parser.add_argument("--outputFile",
+                        help="Output ROOT file for rebinned 2D hists",
+                        default=None)
     args = parser.parse_args()
 
     input_dir, input_basename = os.path.split(args.input)
     default_plot_dir = os.path.join(input_dir, "rebinning_"+os.path.splitext(input_basename)[0])
     plot_dir = args.outputDir if args.outputDir else default_plot_dir
 
-    # default_output_root_filename = os.path.join(input_dir, "rebinned_" + input_basename)
-    # output_root_filename = args.outputFile if args.outputFile else default_output_root_filename
-    # output_tfile = cu.open_root_file(output_root_filename, 'RECREATE')
+    default_output_root_filename = os.path.join(input_dir, "rebinned_" + input_basename)
+    output_root_filename = args.outputFile if args.outputFile else default_output_root_filename
+    output_tfile = cu.open_root_file(output_root_filename, 'RECREATE')
 
     source_plot_dir_name = None
     if "qcd" in args.input.lower():
@@ -369,6 +369,8 @@ if __name__ == "__main__":
             new_title = title.split(",")[title_part].strip()
             this_var_dict['title'] = new_title
             make_plots(summed_hist, this_var_dict, plot_dir=plot_dir, append="orig", plot_migrations=False)
+
+            output_tfile.WriteTObject(summed_hist)
     
         # new_binning = calc_variable_binning_other(h2d_orig)
         # rebin_results_dict[var_dict['name']] = new_binning
@@ -385,7 +387,7 @@ if __name__ == "__main__":
         # contributions = qgg.migration_plot_components(h2d_renorm_x, h2d_renorm_y, var_dict['var_label'])
 
 
-    # output_tfile.Close()
+    output_tfile.Close()
 
     # # Save new binning to txt file
     # output_txt = os.path.splitext(args.input)[0] + ".txt"
