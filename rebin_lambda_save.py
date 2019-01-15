@@ -79,7 +79,7 @@ def make_1D_rebin_hists(input_filename, plot_dirname, output_filename):
         h2d = cu.get_from_tfile(in_f, "%s/%s" % (plot_dirname, obj_name))
 
         for pt_ind, (start_val, end_val) in enumerate(qgc.PT_BINS):
-            hist = qgp.get_projection_plot(h2d, start_val, end_val)
+            hist = qgp.get_projection_plot(h2d, start_val, end_val, 'y')  # y cos lambda is on x axis
             this_rebins = qgc.ANGLE_REBIN_DICT[ang.var]
             # new_name = "%s_Pt%sto%d" % (ang.var, start_val, end_val)
             yoda_name = create_yoda_hist_name(plot_dirname, ang.var, (start_val, end_val))
