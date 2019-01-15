@@ -989,8 +989,8 @@ if __name__ == "__main__":
     # do_plots_and_comparisons(do_these, vs="PrevJet")
 
     do_these = [
-        ('workdir_ak4puppi_jettrig_withAK8trig_V11JEC_JER/uhh2.AnalysisModuleRunner.DATA.Data_JetHT.root', 'AK4 PUPPI'),
-        ('workdir_ak8puppi_jettrig_withAK8trig_V11JEC_JER/uhh2.AnalysisModuleRunner.DATA.Data_JetHT.root', 'AK8 PUPPI'),
+        ('workdir_ak4puppi_jettrig_withAK8trig_V11JEC_JER_fixtrig/uhh2.AnalysisModuleRunner.DATA.Data_JetHT.root', 'AK4 PUPPI'),
+        ('workdir_ak8puppi_jettrig_withAK8trig_V11JEC_JER_fixtrig/uhh2.AnalysisModuleRunner.DATA.Data_JetHT.root', 'AK8 PUPPI'),
     ]
     do_plots_and_comparisons(do_these, vs="PrevJet")
     
@@ -1020,17 +1020,17 @@ if __name__ == "__main__":
     #     "center")
 
     results = do_trig_plots_vs_zerobias(
-        'workdir_ak4puppi_jettrig_withAK8trig_V11JEC_JER/uhh2.AnalysisModuleRunner.DATA.Data_ZeroBias.root', 
-        'workdir_ak4puppi_jettrig_withAK8trig_V11JEC_JER/uhh2.AnalysisModuleRunner.DATA.Data_JetHT.root', 
-        'workdir_ak4puppi_jettrig_withAK8trig_V11JEC_JER', 
+        'workdir_ak4puppi_jettrig_withAK8trig_V11JEC_JER_fixtrig/uhh2.AnalysisModuleRunner.DATA.Data_ZeroBias.root', 
+        'workdir_ak4puppi_jettrig_withAK8trig_V11JEC_JER_fixtrig/uhh2.AnalysisModuleRunner.DATA.Data_JetHT.root', 
+        'workdir_ak4puppi_jettrig_withAK8trig_V11JEC_JER_fixtrig', 
         "AK4 PUPPI", 
         -2.4, 2.4, 
         "center")
 
     results = do_trig_plots_vs_zerobias(
-        'workdir_ak8puppi_jettrig_withAK8trig_V11JEC_JER/uhh2.AnalysisModuleRunner.DATA.Data_ZeroBias.root', 
-        'workdir_ak8puppi_jettrig_withAK8trig_V11JEC_JER/uhh2.AnalysisModuleRunner.DATA.Data_JetHT.root', 
-        'workdir_ak8puppi_jettrig_withAK8trig_V11JEC_JER', 
+        'workdir_ak8puppi_jettrig_withAK8trig_V11JEC_JER_fixtrig/uhh2.AnalysisModuleRunner.DATA.Data_ZeroBias.root', 
+        'workdir_ak8puppi_jettrig_withAK8trig_V11JEC_JER_fixtrig/uhh2.AnalysisModuleRunner.DATA.Data_JetHT.root', 
+        'workdir_ak8puppi_jettrig_withAK8trig_V11JEC_JER_fixtrig', 
         "AK8 PUPPI", 
         -2.4, 2.4, 
         "center")
