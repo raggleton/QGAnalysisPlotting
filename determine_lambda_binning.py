@@ -395,8 +395,7 @@ def make_plots(h2d, var_dict, plot_dir, append="", plot_migrations=True):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('input',
-                        help='Input ROOT file to process.'
-                        'Several dirs can be specified here, separated by a space.')
+                        help='Input ROOT file to process.')
     parser.add_argument("--outputDir",
                         help="Directory to put output plot dirs into",
                         default=None)
@@ -572,8 +571,6 @@ if __name__ == "__main__":
         h2d_renorm_y = cu.make_normalised_TH2(h2d_rebin, 'Y', recolour=False, do_errors=False)
 
         contributions = qgg.migration_plot_components(h2d_renorm_x, h2d_renorm_y, var_dict['var_label'])
-        for c in contributions:
-            c.line_width = 2
 
         # Now rebin any other input files with the same hist using the new binning
         if args.rebinThisInput and len(args.rebinThisInput) > 0:
@@ -598,10 +595,13 @@ if __name__ == "__main__":
                 for ind, c in enumerate(contributions_other):
                     c.obj.SetLineStyle(ind+2)
                     c.label += " [%s]" % other_label
-                    c.line_width = 2
                     c.subplot = contributions[ind].obj
                 contributions.extend(contributions_other)
                 tfile_other_out.Close()
+
+
+            for c in contributions:
+                c.obj.SetLineWidth(2)
 
             binning = [h2d_renorm_x.GetXaxis().GetBinLowEdge(bin_ind) for bin_ind in range(1, h2d_renorm_x.GetNbinsX()+2)]
             xlim = [binning[0], binning[-1]]

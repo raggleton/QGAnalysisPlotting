@@ -794,6 +794,8 @@ def migration_plot_components(h2d_renorm_x, h2d_renorm_y, xlabel):
 
 def make_migration_summary_plot(h2d_renorm_x, h2d_renorm_y, xlabel, output_filename, log_var=False):
     contributions = migration_plot_components(h2d_renorm_x, h2d_renorm_y, xlabel)
+    for c in contributions:
+        c.obj.SetLineWidth(2)
     binning = [h2d_renorm_x.GetXaxis().GetBinLowEdge(bin_ind) for bin_ind in range(1, h2d_renorm_x.GetNbinsX()+2)]
     xlim = [binning[0], binning[-1]]
     plot = Plot(contributions, what='hist', xlim=xlim, ylim=[1e-3, 2], xtitle=xlabel, has_data=False)
