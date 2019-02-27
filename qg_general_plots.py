@@ -79,11 +79,11 @@ def make_comparison_plot_ingredients(entries, rebin=1, normalise_hist=True, mean
     p = Plot(conts, what="hist", ytitle="p.d.f", legend=do_legend, **plot_kwargs)
     if do_legend:
         p.legend.SetX1(0.5)
-        p.legend.SetX2(1.02)
+        p.legend.SetX2(0.95)
         if len(entries) > 4:
             p.legend.SetY1(0.6)
         else:
-            p.legend.SetY1(0.65)
+            p.legend.SetY1(0.68)
         p.legend.SetY2(0.88)
     return p
 
