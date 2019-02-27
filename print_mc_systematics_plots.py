@@ -41,8 +41,12 @@ TOTAL_LUMI = 35918
 
 
 def do_plots(nominal_dir, herwig_dir, output_dir,
-             syst_up_dir=None, syst_up_label="",
-             syst_down_dir=None, syst_down_label=""):
+             syst_ups=None, syst_downs=None):
+    """
+    nominal_dir is without any systematic
+    herwig_dir is the herwig directory for comparison
+    syst_ups and sys_downs are lists of (dirname, label) to add to the plot
+    """
     
     # QG variable plots
     pt_bins = qgc.PT_BINS
@@ -89,22 +93,24 @@ def do_plots(nominal_dir, herwig_dir, output_dir,
                 dijet_entries.append((qgp.get_projection_plot(h2d_herwig_qcd_mc, start_val, end_val), qcd_herwig_kwargs_mc))
 
             # SHIFT UP
-            if syst_up_dir:
-                col = qgc.QCD_COLOURS[2]
-                h2d_qcd_mc2 = grab_obj(os.path.join(syst_up_dir, main_filename), "%s/%s" % (plot_dirname, v))
-                qcd_kwargs_mc2 = dict(line_color=col, line_width=lw, fill_color=col,
-                                     marker_color=col, marker_style=qgc.QCD_MARKER, marker_size=0,
-                                     label=qgc.QCD_Dijet_LABEL + " [" + syst_up_label + "]", subplot=nominal_hist)
-                dijet_entries.append((qgp.get_projection_plot(h2d_qcd_mc2, start_val, end_val), qcd_kwargs_mc2))
+            if syst_ups:
+                for ind, (syst_up_dir, syst_up_label) in enumerate(syst_ups):
+                    col = qgc.QCD_COLOURS[1+ind]
+                    h2d_qcd_mc2 = grab_obj(os.path.join(syst_up_dir, main_filename), "%s/%s" % (plot_dirname, v))
+                    qcd_kwargs_mc2 = dict(line_color=col, line_width=lw, fill_color=col, line_style=ind+1,
+                                          marker_color=col, marker_style=qgc.QCD_MARKER, marker_size=0,
+                                          label=qgc.QCD_Dijet_LABEL + " [" + syst_up_label + "]", subplot=nominal_hist)
+                    dijet_entries.append((qgp.get_projection_plot(h2d_qcd_mc2, start_val, end_val), qcd_kwargs_mc2))
 
             # SHIFT DOWN
-            if syst_down_dir:
-                col2 = qgc.QCD_COLOURS[3]
-                h2d_qcd_mc3 = grab_obj(os.path.join(syst_down_dir, main_filename), "%s/%s" % (plot_dirname, v))
-                qcd_kwargs_mc3 = dict(line_color=col2, line_width=lw, fill_color=col2,
-                                     marker_color=col2, marker_style=qgc.QCD_MARKER, marker_size=0,
-                                     label=qgc.QCD_Dijet_LABEL + " [" + syst_down_label + "]", subplot=nominal_hist)
-                dijet_entries.append((qgp.get_projection_plot(h2d_qcd_mc3, start_val, end_val), qcd_kwargs_mc3))
+            if syst_downs:
+                for ind, (syst_down_dir, syst_down_label) in enumerate(syst_downs):
+                    col2 = qgc.DY_COLOURS[1+ind]
+                    h2d_qcd_mc3 = grab_obj(os.path.join(syst_down_dir, main_filename), "%s/%s" % (plot_dirname, v))
+                    qcd_kwargs_mc3 = dict(line_color=col2, line_width=lw, fill_color=col2, line_style=ind+1,
+                                          marker_color=col2, marker_style=qgc.QCD_MARKER, marker_size=0,
+                                          label=qgc.QCD_Dijet_LABEL + " [" + syst_down_label + "]", subplot=nominal_hist)
+                    dijet_entries.append((qgp.get_projection_plot(h2d_qcd_mc3, start_val, end_val), qcd_kwargs_mc3))
 
             # rebin here only affects constant bin width plots
             # other set of plots uses binning structure defined at the top
@@ -214,36 +220,76 @@ if __name__ == "__main__":
     parser.add_argument("--pileupDown",
                         help="Directory name for pileup scale shift down files",
                         default=None)
+    
+    parser.add_argument("--murUp",
+                        help="Directory name for muR scale shift up files",
+                        default=None)
+    parser.add_argument("--murDown",
+                        help="Directory name for muR scale shift down files",
+                        default=None)
+    parser.add_argument("--mufUp",
+                        help="Directory name for muF scale shift up files",
+                        default=None)
+    parser.add_argument("--mufDown",
+                        help="Directory name for muF scale shift down files",
+                        default=None)
+    parser.add_argument("--murUpMufUp",
+                        help="Directory name for muF + muR scale shift up files",
+                        default=None)
+    parser.add_argument("--murDownMufDown",
+                        help="Directory name for muF + muR scale shift down files",
+                        default=None)
+
     parser.add_argument("--outputDir", help="Directory for output file")
     args = parser.parse_args()
 
     if args.neutralHadronUp and args.neutralHadronDown:
         do_plots(args.nominal, args.herwig,
                  os.path.join(args.outputDir, 'neutralHadron'),
-                 args.neutralHadronUp, "Neutral hadron energy scale up",
-                 args.neutralHadronDown, "Neutral hadron energy scale down")
+                 syst_ups=[(args.neutralHadronUp, "Neutral hadron energy scale up")],
+                 sys_downs=[(args.neutralHadronDown, "Neutral hadron energy scale down")]
+                 )
 
     if args.photonUp and args.photonDown:
         do_plots(args.nominal, args.herwig,
                  os.path.join(args.outputDir, 'photon'),
-                 args.photonUp, "Photon energy scale up",
-                 args.photonDown, "Photon energy scale down")
+                 syst_ups=[(args.photonUp, "Photon energy scale up")],
+                 sys_downs=[(args.photonDown, "Photon energy scale down")]
+                 )
 
     if args.jesUp and args.jesDown:
         do_plots(args.nominal, args.herwig,
                  os.path.join(args.outputDir, 'jes'),
-                 args.jesUp, "Jet energy scale up",
-                 args.jesDown, "Jet energy scale down")
+                 syst_ups=[(args.jesUp, "Jet energy scale up")],
+                 sys_downs=[(args.jesDown, "Jet energy scale down")]
+                 )
 
     if args.jerUp and args.jerDown:
         do_plots(args.nominal, args.herwig,
                  os.path.join(args.outputDir, 'jer'),
-                 args.jerUp, "Jet energy resolution up",
-                 args.jerDown, "Jet energy resolution down")
+                 syst_ups=[(args.jerUp, "Jet energy resolution up")],
+                 sys_downs=[(args.jerDown, "Jet energy resolution down")]
+                 )
 
     if args.pileupUp and args.pileupDown:
         do_plots(args.nominal, args.herwig,
                  os.path.join(args.outputDir, 'pileup'),
-                 args.pileupUp, "Pileup up",
-                 args.pileupDown, "Pileup down")
+                 syst_ups=[(args.pileupUp, "Pileup up")],
+                 sys_downs=[(args.pileupDown, "Pileup down")]
+                 )
 
+    if args.murUp and args.murDown and args.mufUp and args.mufDown and args.murUpMufUp and args.murDownMufDown:
+    # if args.murUpMufUp and args.murDownMufDown:
+        do_plots(args.nominal, args.herwig,
+                 os.path.join(args.outputDir, 'scale'),
+                 syst_ups=[
+                     (args.murUp, "#mu_{R} up"),
+                     (args.mufUp, "#mu_{F} up"),
+                     (args.murUpMufUp, "#mu_{R} & #mu_{F} up"),
+                 ],
+                 syst_downs=[
+                     (args.murDown, "#mu_{R} down"),
+                     (args.mufDown, "#mu_{F} down"),
+                     (args.murDownMufDown, "#mu_{R} & #mu_{F} down"),
+                 ]
+                 )
