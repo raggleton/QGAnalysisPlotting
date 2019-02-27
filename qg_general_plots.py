@@ -528,6 +528,7 @@ def do_box_plot_mpl(entries, bins, output_filename, var_label="", xlim=None, yli
     # each element is itself a list, with different entries for the different datasets being compared
 
     quantiles = array('d', [0.25, 0.5, 0.75])
+    quantiles = array('d', [0.16, 0.5, 0.84])
 
     lower_quants = []
     median_quants = []
@@ -697,11 +698,11 @@ def do_box_plot_mpl(entries, bins, output_filename, var_label="", xlim=None, yli
     if ylim[1] > lim:
         axes[2].set_ylim(top=lim)
     axes[2].axhline(1.0, color='gray', linestyle='dashed')
-    axes[2].set_ylabel("Ratio of central\n50% quantile width\n(MC / Data)")
+    axes[2].set_ylabel("Ratio of central\n%d% quantile width\n(MC / Data)" % (100*(quantiles[-1] - quantiles[0])))
     # axes[2].legend(loc=leg_loc, fancybox=False)
 
-
-    axes[0].set_title("25%, 50%, 75% quantiles for {} region".format(region_title), pad=40)
+    quantiles_str = ", ".join(["%d%%" % (100*q) for q in quantiles])
+    axes[0].set_title("{} quantiles for {} region".format(quantiles_str, region_title), pad=35)
 
     # Draw bin delineators
     for ax in axes.flat:
