@@ -97,7 +97,7 @@ class MyUnfolder(object):
                                          scanresults,
                                          scan_mode,
                                          "generatordistribution",
-                                         axisSteering,
+                                         self.axisSteering,
                                          lCurve,
                                          LogTauX,
                                          LogTauY)
@@ -239,9 +239,9 @@ class MyUnfolder(object):
         print("( " + str(self.unfolder.GetChi2A()) + " + " + str(self.unfolder.GetChi2L()) + ") / " + str(self.unfolder.GetNdf()))
         print("Tau : ", tau)
         print("Tau : ", self.unfolder.GetTau())
-        self.unfolded = self.unfolder.GetOutput("unfolded", "", "generator", self.axisSteering, False)
+        self.unfolded = self.unfolder.GetOutput("unfolded" + cu.get_unique_str(), "", "generator", self.axisSteering, False)
         # FIXME: do errors properly, not nullptr
-        self.unfolded_2d = self.generator_binning.ExtractHistogram("unfolded2D", self.unfolded, ROOT.MakeNullPointer(ROOT.TH2), True, self.axisSteering)
+        self.unfolded_2d = self.generator_binning.ExtractHistogram("unfolded2D" + cu.get_unique_str(), self.unfolded, ROOT.MakeNullPointer(ROOT.TH2), True, self.axisSteering)
         return self.unfolded
 
     def get_unfolded_var_hist_pt_binned(self, ibin_pt):
@@ -302,54 +302,76 @@ if __name__ == "__main__":
     input_jetht_tfile = cu.open_root_file("workdir_ak4puppi_data_newFlav_withAllResponses_jetAsymCut_chargedResp_pt1Constituents_V11JEC_JER_tUnfold/uhh2.AnalysisModuleRunner.DATA.Data_JetHTZeroBias.root")
     input_singlemu_tfile = cu.open_root_file("workdir_ak4puppi_data_newFlav_withAllResponses_jetAsymCut_chargedResp_pt1Constituents_V11JEC_JER_tUnfold/uhh2.AnalysisModuleRunner.DATA.Data_SingleMu.root")
 
-    # for region in ["Dijet", "ZPlusJets"]:
-        # for variable in qgc.COMMON_VARS:
-
-
-    hist_mc_gen_reco_map_LHA = cu.get_from_tfile(input_mc_qcd_tfile, "Dijet_QG_tighter/histLHAGenRecnew")
-    hist_mc_reco_LHA = cu.get_from_tfile(input_mc_qcd_tfile, "Dijet_QG_tighter/histLHAReconew")
-    hist_mc_gen_LHA = cu.get_from_tfile(input_mc_qcd_tfile, "Dijet_QG_tighter/histLHATruthnew")
-
-    lha_bin_edges = np.array([0.0, 0.29, 0.37, 0.44, 0.5, 0.56, 0.62, 0.68, 0.75, 1.0])
-    lha_bin_edges_coarse = np.array([0.0, 0.37, 0.5, 0.62, 0.75, 1.0])
+    regions = [
+        {
+            "name": "Dijet",
+            "dirname": "Dijet_QG_tighter",
+            "label": "Dijet",
+            "data_tfile": input_jetht_tfile,
+            "mc_tfile": input_mc_qcd_tfile,
+        },
+        {
+            "name": "ZPlusJets",
+            "dirname": "ZPlusJets_QG",
+            "label": "Z+jets",
+            "data_tfile": input_singlemu_tfile,
+            "mc_tfile": input_mc_dy_tfile,
+        },
+    ]
 
     pt_bin_edges = np.array([0, 29, 38, 50, 65, 88, 120, 150, 186, 254, 326, 408, 481, 614, 800, 1000, 1300, 1700, 2200, 3000, 4000, 5000, 10000], dtype='d')
     pt_bin_edges_coarse = np.array([0, 29, 50, 88, 150, 254, 408, 614, 1000, 1700, 3000, 5000, 10000], dtype='d')
 
-    unfolder_LHA = MyUnfolder(response_map=hist_mc_gen_reco_map_LHA,
-                              variable_bin_edges=lha_bin_edges,
-                              variable_bin_edges_coarse=lha_bin_edges_coarse,
-                              variable_name="LHA",
-                              pt_bin_edges=pt_bin_edges,
-                              pt_bin_edges_coarse=pt_bin_edges_coarse,
-                              orientation=ROOT.TUnfold.kHistMapOutputHoriz,
-                              constraintMode=ROOT.TUnfold.kEConstraintArea,
-                              regMode=ROOT.TUnfold.kRegModeCurvature,
-                              densityFlags=ROOT.TUnfoldDensity.kDensityModeBinWidth,
-                              axisSteering='*[b]')
-    unfolder_LHA.setInput(hist_mc_reco_LHA)
-    # tau = unfolder_LHA.doScanL()
-    tau = 0
-    unfolded = unfolder_LHA.doUnfolding(tau)
-    plot_simple_unfolded(unfolded, hist_mc_reco_LHA, hist_mc_gen_LHA, "unfolded_LHA.%s" % (OUTPUT_FMT))
-    # unfolder_LHA.plot_()
+    output_dir = "unfolding"
+    cu.check_dir_exists_create(output_dir)
 
-    for ibin_pt in range(1, len(pt_bin_edges_coarse)):
-        unfolded_LHA_bin = unfolder_LHA.get_unfolded_var_hist_pt_binned(ibin_pt)
-        gen_LHA_bin = unfolded_LHA_bin.Clone(cu.get_unique_str())
-        entries = [
-            Contribution(gen_LHA_bin, label="Generator",
-                         line_color=ROOT.kBlue, line_width=2,
-                         marker_color=ROOT.kBlue),
-            Contribution(unfolded_LHA_bin, label="Unfolded",
-                         line_color=ROOT.kRed, line_width=0,
-                         marker_color=ROOT.kRed, marker_style=20,
-                         subplot=gen_LHA_bin),
-        ]
-        plot = Plot(entries, "hist", title=unfolded_LHA_bin.GetTitle(), subplot_type='ratio', subplot_title='Unfolded / gen')
-        plot.legend.SetY1(0.75)
-        plot.legend.SetY2(0.9)
-        plot.plot("NOSTACK HISTE")
-        plot.save("unfolded_LHA_bin_%d.pdf" % (ibin_pt))
+    for region in regions[:]:
+        for angle in qgc.COMMON_VARS[:]:
+
+            angle_bin_edges = qgc.VAR_REBIN_DICT[angle.var]['fine']
+            angle_bin_edges_coarse = qgc.VAR_REBIN_DICT[angle.var]['coarse']
+            angle_shortname = angle.var.replace("jet_", "")
+
+            hist_data_reco = cu.get_from_tfile(region['data_tfile'], "%s/hist_%s_reco_new" % (region['dirname'], angle_shortname))
+            hist_mc_reco = cu.get_from_tfile(region['mc_tfile'], "%s/hist_%s_reco_new" % (region['dirname'], angle_shortname))
+            hist_mc_gen = cu.get_from_tfile(region['mc_tfile'], "%s/hist_%s_truth_new" % (region['dirname'], angle_shortname))
+            hist_mc_gen_reco_map = cu.get_from_tfile(region['mc_tfile'], "%s/tu_%s_GenReco_new" % (region['dirname'], angle_shortname))
+
+            unfolder = MyUnfolder(response_map=hist_mc_gen_reco_map,
+                                  variable_bin_edges=angle_bin_edges,
+                                  variable_bin_edges_coarse=angle_bin_edges_coarse,
+                                  variable_name=angle.name,
+                                  pt_bin_edges=pt_bin_edges,
+                                  pt_bin_edges_coarse=pt_bin_edges_coarse,
+                                  orientation=ROOT.TUnfold.kHistMapOutputHoriz,
+                                  constraintMode=ROOT.TUnfold.kEConstraintArea,
+                                  regMode=ROOT.TUnfold.kRegModeCurvature,
+                                  densityFlags=ROOT.TUnfoldDensity.kDensityModeBinWidth,
+                                  axisSteering='*[b]')
+            unfolder.setInput(hist_data_reco)
+            # tau = unfolder.doScanL()
+            # tau = unfolder.doScanTau()
+            tau = 0
+            unfolded = unfolder.doUnfolding(tau)
+            plot_simple_unfolded(unfolded, hist_data_reco, hist_mc_gen, "%s/unfolded_%s_%s.%s" % (output_dir, region['name'], angle.var, OUTPUT_FMT))
+
+            for ibin_pt in range(1, len(pt_bin_edges_coarse)-1):
+                unfolded_hist_bin = unfolder.get_unfolded_var_hist_pt_binned(ibin_pt)
+                gen_hist_bin = unfolded_hist_bin.Clone(cu.get_unique_str())
+                entries = [
+                    Contribution(gen_hist_bin, label="Generator",
+                                 line_color=ROOT.kBlue, line_width=2,
+                                 marker_color=ROOT.kBlue),
+                    Contribution(unfolded_hist_bin, label="Unfolded",
+                                 line_color=ROOT.kRed, line_width=0,
+                                 marker_color=ROOT.kRed, marker_style=20,
+                                 subplot=gen_hist_bin),
+                ]
+                plot = Plot(entries, "hist", title="%s region\n%s" % (region['label'], unfolded_hist_bin.GetTitle()), subplot_type='ratio', subplot_title='Unfolded / gen')
+                plot.legend.SetY1(0.75)
+                plot.legend.SetY2(0.9)
+                # plot.plot("NOSTACK HISTE")
+                plot.plot()
+                plot.save("%s/unfolded_%s_%s_bin_%d.%s" % (output_dir, region['name'], angle.var, ibin_pt, OUTPUT_FMT))
 
 
