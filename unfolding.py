@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-"""Use TUnfold init"""
+"""Use TUnfold it all"""
 
 from __future__ import print_function
 
@@ -13,9 +13,13 @@ import math
 
 import ROOT
 from MyStyle import My_Style
+from comparator import Contribution, Plot
 My_Style.cd()
 
 import common_utils as cu
+import qg_common as qgc
+import qg_general_plots as qgp
+
 
 ROOT.PyConfig.IgnoreCommandLineOptions = True
 ROOT.gROOT.SetBatch(1)
@@ -71,12 +75,14 @@ class MyUnfolder(object):
                                             self.generator_binning, self.detector_binning,
                                             "generatordistribution", axisSteering)
 
+        self.unfolded = None  # for later
+
     def setInput(self, hist):
         self.unfolder.SetInput(hist)
 
     def doScanTau(self, n_scan=300, scan_mode=ROOT.TUnfoldDensity.kEScanTauRhoMax):
         """Figure out best tau by scanning tau curve"""
-        
+
         # Graphs to save output from scan over tau
         scanresults = ROOT.MakeNullPointer(ROOT.TSpline)
         lCurve = ROOT.MakeNullPointer(ROOT.TGraph)
@@ -233,43 +239,76 @@ class MyUnfolder(object):
         print("( " + str(self.unfolder.GetChi2A()) + " + " + str(self.unfolder.GetChi2L()) + ") / " + str(self.unfolder.GetNdf()))
         print("Tau : ", tau)
         print("Tau : ", self.unfolder.GetTau())
-        bias = self.unfolder.GetBias("bias1")
-        unfolded = self.unfolder.GetOutput("unfolded", "", "generator", self.axisSteering, False)
-        return unfolded, bias
-    
+        self.unfolded = self.unfolder.GetOutput("unfolded", "", "generator", self.axisSteering, False)
+        # FIXME: do errors properly, not nullptr
+        self.unfolded_2d = self.generator_binning.ExtractHistogram("unfolded2D", self.unfolded, ROOT.MakeNullPointer(ROOT.TH2), True, self.axisSteering)
+        return self.unfolded
+
+    def get_unfolded_var_hist_pt_binned(self, ibin_pt):
+        """Get 1D histogram of our unfolded variable for a given pT bin
+
+        Parameters
+        ----------
+        ibin_pt : int
+            pT bin #
+        """
+        h_2d = self.unfolded_2d
+        ax_y = h_2d.GetYaxis()
+        pt_low = ax_y.GetBinLowEdge(ibin_pt)
+        pt_high = ax_y.GetBinLowEdge(ibin_pt+1)
+        hname = "h_unfolded_%d" % (ibin_pt)
+        h_1d = h_2d.ProjectionX(hname, ibin_pt, ibin_pt+1)
+        h_1d.SetName(hname)
+        h_1d.SetTitle("%g < p_{T}^{Gen} < %g GeV;%s;N" % (pt_low, pt_high, self.variable_name))
+        return h_1d
+
 
 def plot_simple_unfolded(unfolded, reco, gen, output_filename):
+    """Simple plot of unfolded, reco, gen, by bin number (ie non physical axes)"""
     canv_unfold = ROOT.TCanvas(cu.get_unique_str(), "", 800, 600)
     canv_unfold.SetLogy()
     canv_unfold.SetTicks(1, 1)
     leg = ROOT.TLegend(0.7, 0.7, 0.88, 0.88)
     hst = ROOT.THStack("hst", ";Bin Number;N")
 
-    unfolded.SetLineColor(ROOT.kRed)
-    hst.Add(unfolded)
-    leg.AddEntry(unfolded, "Unfolded", "L")
-
     gen.SetLineColor(ROOT.kBlue)
     hst.Add(gen)
     leg.AddEntry(gen, "Gen", "L")
+
+    unfolded.SetLineColor(ROOT.kRed)
+    unfolded.SetLineWidth(0)
+    unfolded.SetMarkerColor(ROOT.kRed)
+    unfolded.SetMarkerSize(0.6)
+    unfolded.SetMarkerStyle(20)
+    hst.Add(unfolded)
+    leg.AddEntry(unfolded, "Unfolded", "LP")
 
     reco.SetLineColor(ROOT.kGreen+2)
     hst.Add(reco)
     leg.AddEntry(reco, "Reco", "L")
 
-    hst.Draw("NOSTACK HIST")
+    hst.Draw("NOSTACK HISTE")
     leg.Draw()
+    hst.SetMinimum(1E-6)
+    hst.SetMaximum(1E12)
     canv_unfold.Draw()
     canv_unfold.SaveAs(output_filename)
 
 
 
 if __name__ == "__main__":
-    input_mc_tfile = cu.open_root_file("workdir_ak4puppi_pythia_newFlav_withAllResponses_jetAsymCut_chargedResp_pt1Constituents_V11JEC_JER_tUnfoldLHA/uhh2.AnalysisModuleRunner.MC.MC_PYTHIA-QCD.root")
-    # hist_data =
-    hist_mc_gen_reco_map_LHA = cu.get_from_tfile(input_mc_tfile, "Dijet_QG_tighter/histLHAGenRecnew")
-    hist_mc_reco_LHA = cu.get_from_tfile(input_mc_tfile, "Dijet_QG_tighter/histLHAReconew")
-    hist_mc_gen_LHA = cu.get_from_tfile(input_mc_tfile, "Dijet_QG_tighter/histLHATruthnew")
+    input_mc_qcd_tfile = cu.open_root_file("workdir_ak4puppi_mgpythia_newFlav_withAllResponses_jetAsymCut_chargedResp_pt1Constituents_V11JEC_JER_tUnfold/uhh2.AnalysisModuleRunner.MC.MC_QCD.root")
+    input_mc_dy_tfile = cu.open_root_file("workdir_ak4puppi_mgpythia_newFlav_withAllResponses_jetAsymCut_chargedResp_pt1Constituents_V11JEC_JER_tUnfold/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL.root")
+    input_jetht_tfile = cu.open_root_file("workdir_ak4puppi_data_newFlav_withAllResponses_jetAsymCut_chargedResp_pt1Constituents_V11JEC_JER_tUnfold/uhh2.AnalysisModuleRunner.DATA.Data_JetHTZeroBias.root")
+    input_singlemu_tfile = cu.open_root_file("workdir_ak4puppi_data_newFlav_withAllResponses_jetAsymCut_chargedResp_pt1Constituents_V11JEC_JER_tUnfold/uhh2.AnalysisModuleRunner.DATA.Data_SingleMu.root")
+
+    # for region in ["Dijet", "ZPlusJets"]:
+        # for variable in qgc.COMMON_VARS:
+
+
+    hist_mc_gen_reco_map_LHA = cu.get_from_tfile(input_mc_qcd_tfile, "Dijet_QG_tighter/histLHAGenRecnew")
+    hist_mc_reco_LHA = cu.get_from_tfile(input_mc_qcd_tfile, "Dijet_QG_tighter/histLHAReconew")
+    hist_mc_gen_LHA = cu.get_from_tfile(input_mc_qcd_tfile, "Dijet_QG_tighter/histLHATruthnew")
 
     lha_bin_edges = np.array([0.0, 0.29, 0.37, 0.44, 0.5, 0.56, 0.62, 0.68, 0.75, 1.0])
     lha_bin_edges_coarse = np.array([0.0, 0.37, 0.5, 0.62, 0.75, 1.0])
@@ -291,7 +330,26 @@ if __name__ == "__main__":
     unfolder_LHA.setInput(hist_mc_reco_LHA)
     # tau = unfolder_LHA.doScanL()
     tau = 0
-    unfolded, bias = unfolder_LHA.doUnfolding(tau)
+    unfolded = unfolder_LHA.doUnfolding(tau)
     plot_simple_unfolded(unfolded, hist_mc_reco_LHA, hist_mc_gen_LHA, "unfolded_LHA.%s" % (OUTPUT_FMT))
+    # unfolder_LHA.plot_()
 
-   
+    for ibin_pt in range(1, len(pt_bin_edges_coarse)):
+        unfolded_LHA_bin = unfolder_LHA.get_unfolded_var_hist_pt_binned(ibin_pt)
+        gen_LHA_bin = unfolded_LHA_bin.Clone(cu.get_unique_str())
+        entries = [
+            Contribution(gen_LHA_bin, label="Generator",
+                         line_color=ROOT.kBlue, line_width=2,
+                         marker_color=ROOT.kBlue),
+            Contribution(unfolded_LHA_bin, label="Unfolded",
+                         line_color=ROOT.kRed, line_width=0,
+                         marker_color=ROOT.kRed, marker_style=20,
+                         subplot=gen_LHA_bin),
+        ]
+        plot = Plot(entries, "hist", title=unfolded_LHA_bin.GetTitle(), subplot_type='ratio', subplot_title='Unfolded / gen')
+        plot.legend.SetY1(0.75)
+        plot.legend.SetY2(0.9)
+        plot.plot("NOSTACK HISTE")
+        plot.save("unfolded_LHA_bin_%d.pdf" % (ibin_pt))
+
+
