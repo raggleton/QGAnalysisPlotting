@@ -12,7 +12,7 @@ from __future__ import print_function
 import os
 import sys
 import argparse
-from array import array
+import array
 import numpy as np
 import math
 
@@ -228,7 +228,7 @@ class MyUnfolder(object):
         bestLcurve.Draw("")
         bestLogTauLogChi2.Draw("* same")
         bestLcurve.GetXaxis().SetTitle("log_{10}(L_{1})")
-        bestLcurve.GetYaxis().SetTitle("log_{10}(#frac{L_{2}}{#tau^2})")  # frac{Theory}{Unfolded MC}
+        bestLcurve.GetYaxis().SetTitle("log_{10}(#frac{L_{2}}{#tau^{2}})")  # frac{Theory}{Unfolded MC}
 
         bestLcurve.SetTitle("Optimization of Regularization Parameter, #tau : Scan of L Curve")
 
@@ -296,6 +296,85 @@ class MyUnfolder(object):
             print("Bin:", bin_num, this_val, pt_bins[ibin_pt], "=", hist1d.GetBinContent(bin_num), "+-", hist1d.GetBinError(bin_num))
         return h
 
+    def draw_response_matrix(self, region_name, output_filename):
+        canv = ROOT.TCanvas(cu.get_unique_str(), "", 800, 600)
+        canv.SetTicks(1, 1)
+        canv.SetLogz()
+        canv.SetRightMargin(1.5)
+        canv.SetLeftMargin(0.9)
+        rsp_map = self.response_map.Clone(cu.get_unique_str())
+        rsp_map.SetTitle("Response matrix, %s region, %s;Generator Bin;Reconstructed Bin" % (region_name, self.variable_name))
+        rsp_map.GetYaxis().SetTitleOffset(1.5)
+        rsp_map.GetXaxis().SetTitleOffset(1.5)
+        rsp_map.Draw("COLZ")
+        canv.SaveAs(output_filename)
+
+    def draw_probability_matrix(self, region_name, output_filename):
+        canv = ROOT.TCanvas(cu.get_unique_str(), "", 800, 600)
+        canv.SetTicks(1, 1)
+        canv.SetLogz()
+        canv.SetRightMargin(1.5)
+        canv.SetLeftMargin(0.9)
+        title = "Probability map, %s region, %s" % (region_name, self.variable_name)
+        prob_map = self.unfolder.GetProbabilityMatrix(cu.get_unique_str(), title).Clone(cu.get_unique_str())
+        prob_map.GetYaxis().SetTitleOffset(1.5)
+        prob_map.GetXaxis().SetTitleOffset(1.5)
+        prob_map.Draw("COLZ")
+        canv.SaveAs(output_filename)
+
+    def draw_error_matrix(self, region_name, output_filename):
+        canv = ROOT.TCanvas(cu.get_unique_str(), "", 800, 600)
+        canv.SetTicks(1, 1)
+        canv.SetLogz()
+        canv.SetRightMargin(1.5)
+        canv.SetLeftMargin(0.9)
+        title = "Error matrix, %s region, %s;Generator bin; Generator bin" % (region_name, self.variable_name)
+        err_map = self.unfolder.GetEmatrixTotal(cu.get_unique_str(), title).Clone(cu.get_unique_str())
+        err_map.GetYaxis().SetTitleOffset(1.5)
+        err_map.GetXaxis().SetTitleOffset(1.5)
+        err_map.Draw("COLZ")
+        canv.SaveAs(output_filename)
+
+    def draw_correlation_matrix(self, region_name, output_filename):
+        # MyPalette = [0]*100
+        # Red = array.array('d', [0., 0.0, 1.0, 1.0, 1.0])
+        # Green = array.array('d', [0., 0.0, 0.0, 1.0, 1.0])
+        # Blue = array.array('d', [0., 1.0, 0.0, 0.0, 1.0])
+        # Length = array.array('d', [0., .25, .50, .75, 1.0])
+        # FI = ROOT.TColor.CreateGradientColorTable(5, Length, Red, Green, Blue, 100)
+        # for i in range(100):
+        #     MyPalette[i] = FI+i
+        # ROOT.gStyle.SetPalette(100, MyPalette)
+
+        NRGBs = 3
+        NCont = 99
+        stops = [ 0.00, 0.53, 1.00 ]
+        red = [ 0.00, 1.00, 1.00]
+        green = [ 0.00, 1.00, 0.00 ]
+        blue = [ 1.00, 1.00, 0.00 ]
+        stopsArray = array.array('d', stops)
+        redArray = array.array('d', red)
+        greenArray = array.array('d', green)
+        blueArray = array.array('d', blue)
+        ROOT.TColor.CreateGradientColorTable(NRGBs, stopsArray, redArray, greenArray, blueArray, NCont)
+
+        canv = ROOT.TCanvas(cu.get_unique_str(), "", 800, 600)
+        canv.SetTicks(1, 1)
+        # canv.SetLogz()
+        canv.SetRightMargin(1.5)
+        canv.SetLeftMargin(0.9)
+        title = "Correlation map, %s region, %s;Generator Bin;Generator Bin" % (region_name, self.variable_name)
+        corr_map = self.unfolder.GetRhoIJtotal(cu.get_unique_str(), title).Clone(cu.get_unique_str())
+        corr_map.GetYaxis().SetTitleOffset(1.5)
+        corr_map.GetXaxis().SetTitleOffset(1.5)
+        # ROOT.gStyle.SetPalette(ROOT.kLightTemperature)
+        corr_map.SetMinimum(-1)
+        corr_map.SetMaximum(1)
+        corr_map.Draw("COLZ0")
+        canv.SaveAs(output_filename)
+        ROOT.gStyle.SetPalette(ROOT.kBird)
+
+
 
 def plot_simple_unfolded(unfolded, reco, gen, output_filename, title=""):
     """Simple plot of unfolded, reco, gen, by bin number (ie non physical axes)"""
@@ -308,7 +387,7 @@ def plot_simple_unfolded(unfolded, reco, gen, output_filename, title=""):
     reco.SetLineColor(ROOT.kGreen+2)
     hst.Add(reco)
     leg.AddEntry(reco, "Reco", "L")
-    
+
     gen.SetLineColor(ROOT.kBlue)
     hst.Add(gen)
     leg.AddEntry(gen, "Gen", "L")
@@ -361,7 +440,7 @@ if __name__ == "__main__":
 
     jet_algo = "AK4 PF PUPPI"
 
-    for region in regions[:1]:
+    for region in regions[:]:
         for angle in qgc.COMMON_VARS[:]:
 
             angle_bin_edges = qgc.VAR_REBIN_DICT[angle.var]['fine']
@@ -388,20 +467,33 @@ if __name__ == "__main__":
             # tau = unfolder.doScanL()
             # tau = unfolder.doScanTau()
             tau = 0
+
+            # Do unfolding!
             unfolded_1d, unfolded_2d = unfolder.doUnfolding(tau)
-            plot_simple_unfolded(unfolded=unfolded_1d, 
-                                 reco=hist_data_reco, 
-                                 gen=hist_mc_gen, 
-                                 output_filename="%s/unfolded_%s_%s.%s" % (output_dir, region['name'], angle.var, OUTPUT_FMT), 
+            
+            # Draw unified unfolded distributions
+            plot_simple_unfolded(unfolded=unfolded_1d,
+                                 reco=hist_data_reco,
+                                 gen=hist_mc_gen,
+                                 output_filename="%s/unfolded_%s_%s.%s" % (output_dir, region['name'], angle.var, OUTPUT_FMT),
                                  title="%s region, %s" % (region['label'], angle.name))
+            
             c = ROOT.TCanvas("c" ,"", 800, 600)
             c.SetTicks(1, 1)
             c.SetLogy()
             c.SetLogz()
             unfolded_2d.SetTitle("%s;%s;p_{T} [GeV]" % (region['name'], angle.name))
             unfolded_2d.Draw("COLZ TEXTE")
-            c.SaveAs("%s/unfolded_%s_%s_2d.pdf" % (output_dir, region['name'], angle.var))
+            c.SaveAs("%s/unfolded_%s_%s_2d.%s" % (output_dir, region['name'], angle.var, OUTPUT_FMT))
 
+            # Draw matrices
+            unfolder.draw_response_matrix(region['name'], "%s/response_map_%s_%s.%s" % (output_dir, region['name'], angle.var, OUTPUT_FMT))
+            unfolder.draw_probability_matrix(region['name'], "%s/probability_map_%s_%s.%s" % (output_dir, region['name'], angle.var, OUTPUT_FMT))
+            unfolder.draw_correlation_matrix(region['name'], "%s/corr_map_%s_%s.%s" % (output_dir, region['name'], angle.var, OUTPUT_FMT))
+            unfolder.draw_error_matrix(region['name'], "%s/err_map_%s_%s.%s" % (output_dir, region['name'], angle.var, OUTPUT_FMT))
+            
+            continue
+            # continue
             for ibin_pt in range(1, len(pt_bin_edges_coarse)-1):
                 # gen_hist_bin = unfolder.get_var_hist_pt_binned(unfolder.unfolded_1d, ibin_pt, "generator")
                 gen_hist_bin = unfolder.get_var_hist_pt_binned(hist_mc_gen, ibin_pt, "generator")
@@ -429,8 +521,8 @@ if __name__ == "__main__":
                             subplot_type='ratio', subplot_title='Unfolded / gen')
                 plot.legend.SetY1(0.75)
                 plot.legend.SetY2(0.9)
-                # plot.plot("NOSTACK HISTE")
-                plot.plot()
+                plot.plot("NOSTACK HISTE")
+                # plot.plot()
                 plot.save("%s/unfolded_%s_%s_bin_%d.%s" % (output_dir, region['name'], angle.var, ibin_pt, OUTPUT_FMT))
 
 
