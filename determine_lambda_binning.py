@@ -415,11 +415,11 @@ if __name__ == "__main__":
                         help="Output ROOT file for rebinned 2D hists. Must match entry in --rebinThisInput.",
                         default=None,
                         action="append")
-    acceptable_metrics = ['gausfit', 'quantile']
-    parser.add_argument("--metric",
-                        help="Metric for deciding bin width.",
-                        default=acceptable_metrics[0],
-                        choices=acceptable_metrics)
+    # acceptable_metrics = ['gausfit', 'quantile']
+    # parser.add_argument("--metric",
+    #                     help="Metric for deciding bin width.",
+    #                     default=acceptable_metrics[0],
+    #                     choices=acceptable_metrics)
     args = parser.parse_args()
 
     input_dir, input_basename = os.path.split(args.input)
@@ -428,6 +428,7 @@ if __name__ == "__main__":
 
     default_output_root_filename = os.path.join(input_dir, "rebinned_" + input_basename)
     output_root_filename = args.outputFile if args.outputFile else default_output_root_filename
+    cu.check_dir_exists_create(os.path.dirname(os.path.abspath(output_root_filename)))
     output_tfile = cu.open_root_file(output_root_filename, 'RECREATE')
 
     source_plot_dir_name = None
