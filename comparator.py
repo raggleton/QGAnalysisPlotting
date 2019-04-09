@@ -572,6 +572,8 @@ class Plot(object):
                         bin_maxs = [np.max(arr[np.nonzero(arr)]) for arr in harrays]
                     except ValueError:
                         bin_maxs = [0]
+                    if len(bin_maxs) == 0:
+                        bin_maxs = [0]
                     self.subplot_container.SetMaximum(min(2.5, max(1.5, 1.*max(bin_maxs))))
 
                     # Make sure the lower limit is the smallest bin of the contributions,
@@ -579,6 +581,8 @@ class Plot(object):
                     try:
                         bin_mins = [np.min(arr[np.nonzero(arr)]) for arr in harrays]
                     except ValueError:
+                        bin_mins = [0]
+                    if len(bin_mins) == 0:
                         bin_mins = [0]
                     self.subplot_container.SetMinimum(min(0.5, min(bin_mins)))
 
