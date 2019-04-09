@@ -437,6 +437,10 @@ if __name__ == "__main__":
     if "dyjetstoll" in args.input.lower():
         source_plot_dir_name = "ZPlusJets_QG"
 
+    low_pt_cut = 30
+    mid_pt_cut = 100
+    high_pt_cut = 250
+
     do_these = [
         {
             "name": "%s/jet_puppiMultiplicity" % (source_plot_dir_name),
@@ -459,58 +463,87 @@ if __name__ == "__main__":
             "name": "%s/jet_thrust" % (source_plot_dir_name),
             "var_label": "Thrust (#lambda_{2}^{1})"
         },
-        # Try separate low & high pT plots
+        # Try separate low, mid. & high pT plots
+        # Low pt (pT>30)
         {
             "name": "%s/jet_puppiMultiplicity_lowPt" % (source_plot_dir_name),
             "var_label": "PUPPI Multiplicity (#lambda_{0}^{0} (PUPPI))",
-            "title": "p_{T}^{jet} < 250 GeV",
+            "title": "p_{T}^{jet} < %d GeV" % (low_pt_cut),
             "log": True,
         },
         {
             "name": "%s/jet_LHA_lowPt" % (source_plot_dir_name),
             "var_label": "LHA (#lambda_{0.5}^{1})",
-            "title": "p_{T}^{jet} < 250 GeV",
+            "title": "p_{T}^{jet} < %d GeV" % (low_pt_cut),
         },
         {
             "name": "%s/jet_pTD_lowPt" % (source_plot_dir_name),
             "var_label": "p_{T}^{D} (#lambda_{0}^{2})",
-            "title": "p_{T}^{jet} < 250 GeV",
+            "title": "p_{T}^{jet} < %d GeV" % (low_pt_cut),
         },
         {
             "name": "%s/jet_width_lowPt" % (source_plot_dir_name),
             "var_label": "Width (#lambda_{1}^{1})",
-            "title": "p_{T}^{jet} < 250 GeV",
+            "title": "p_{T}^{jet} < %d GeV" % (low_pt_cut),
         },
         {
             "name": "%s/jet_thrust_lowPt" % (source_plot_dir_name),
             "var_label": "Thrust (#lambda_{2}^{1})",
-            "title": "p_{T}^{jet} < 250 GeV",
+            "title": "p_{T}^{jet} < %d GeV" % (low_pt_cut),
         },
+        # Mid pt (pT>100)
+        {
+            "name": "%s/jet_puppiMultiplicity_midPt" % (source_plot_dir_name),
+            "var_label": "PUPPI Multiplicity (#lambda_{0}^{0} (PUPPI))",
+            "title": "p_{T}^{jet} > %d GeV" % (mid_pt_cut),
+            "log": True,
+        },
+        {
+            "name": "%s/jet_LHA_midPt" % (source_plot_dir_name),
+            "var_label": "LHA (#lambda_{0.5}^{1})",
+            "title": "p_{T}^{jet} > %d GeV" % (mid_pt_cut)
+        },
+        {
+            "name": "%s/jet_pTD_midPt" % (source_plot_dir_name),
+            "var_label": "p_{T}^{D} (#lambda_{0}^{2})",
+            "title": "p_{T}^{jet} > %d GeV" % (mid_pt_cut)
+        },
+        {
+            "name": "%s/jet_width_midPt" % (source_plot_dir_name),
+            "var_label": "Width (#lambda_{1}^{1})",
+            "title": "p_{T}^{jet} > %d GeV" % (mid_pt_cut)
+        },
+        {
+            "name": "%s/jet_thrust_midPt" % (source_plot_dir_name),
+            "var_label": "Thrust (#lambda_{2}^{1})",
+            "title": "p_{T}^{jet} > %d GeV" % (mid_pt_cut)
+        },
+        # High pt (pt>250)
         {
             "name": "%s/jet_puppiMultiplicity_highPt" % (source_plot_dir_name),
             "var_label": "PUPPI Multiplicity (#lambda_{0}^{0} (PUPPI))",
-            "title": "p_{T}^{jet} > 250 GeV",
+            "title": "p_{T}^{jet} > %d GeV" % (high_pt_cut),
             "log": True,
         },
         {
             "name": "%s/jet_LHA_highPt" % (source_plot_dir_name),
             "var_label": "LHA (#lambda_{0.5}^{1})",
-            "title": "p_{T}^{jet} > 250 GeV"
+            "title": "p_{T}^{jet} > %d GeV" % (high_pt_cut)
         },
         {
             "name": "%s/jet_pTD_highPt" % (source_plot_dir_name),
             "var_label": "p_{T}^{D} (#lambda_{0}^{2})",
-            "title": "p_{T}^{jet} > 250 GeV"
+            "title": "p_{T}^{jet} > %d GeV" % (high_pt_cut)
         },
         {
             "name": "%s/jet_width_highPt" % (source_plot_dir_name),
             "var_label": "Width (#lambda_{1}^{1})",
-            "title": "p_{T}^{jet} > 250 GeV"
+            "title": "p_{T}^{jet} > %d GeV" % (high_pt_cut)
         },
         {
             "name": "%s/jet_thrust_highPt" % (source_plot_dir_name),
             "var_label": "Thrust (#lambda_{2}^{1})",
-            "title": "p_{T}^{jet} > 250 GeV"
+            "title": "p_{T}^{jet} > %d GeV" % (high_pt_cut)
         },
         # charged vars
         # {
