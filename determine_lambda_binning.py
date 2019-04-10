@@ -326,9 +326,12 @@ def make_rebinned_2d_hist(h2d, new_binning, use_half_width_y=False):
         return rebin_2d_hist(h2d, new_binning, new_binning)
 
 
-def make_plots(h2d, var_dict, plot_dir, append="", plot_migrations=True):
+def make_plots(h2d, var_dict, plot_dir, append="", 
+               plot_migrations=True, plot_reco=True, plot_gen=True):
     """Plot a 2D hist, with copies renormalised by row and by column.
-    Also optionally plot migrations as 1D plot.
+    
+    Also optionally plot migrations as 1D plot, 
+    as well as 1D projections for reco (y) & gen (x)
     """
     # Plot original 2D map, no renormalizing by axis
     canv = ROOT.TCanvas("c"+cu.get_unique_str(), "", 700, 600)
@@ -414,6 +417,30 @@ def make_plots(h2d, var_dict, plot_dir, append="", plot_migrations=True):
                                         xlabel=var_dict['var_label'], 
                                         output_filename=output_filename, 
                                         title=var_dict.get('title', ''))
+
+    if plot_reco or plot_gen:
+        conts = []
+        if plot_reco:
+            h_reco = h2d.ProjectionY(cu.get_unique_str(), 0, -1, "e")
+            conts.append(Contribution(h_reco, label="Reco", normalise_hist=True,
+                                      line_color=ROOT.kRed, line_width=2))
+        if plot_gen:
+            h_gen = h2d.ProjectionX(cu.get_unique_str(), 0, -1, "e")
+            conts.append(Contribution(h_gen, label="Gen", normalise_hist=True, 
+                                      line_color=ROOT.kBlue, line_width=2))
+        
+        plot = Plot(conts, what='hist', has_data=False,
+                    title=var_dict.get('title', ''), 
+                    xtitle=var_dict['var_label'], ytitle='p.d.f.')
+        plot.plot("NOSTACK HISTE")
+        bits = []
+        if plot_reco:
+            bits.append("reco")
+        if plot_gen:
+            bits.append("gen")
+        content = "_".join(bits)
+        output_filename = os.path.join(plot_dir, "%s_%s_1d_%s.%s" % (var_dict['name'], append, content, OUTPUT_FMT))
+        plot.save(output_filename)
 
 
 if __name__ == "__main__":
@@ -530,7 +557,8 @@ if __name__ == "__main__":
 
             # Plot with new binning
             # ---------------------
-            make_plots(h2d_rebin, var_dict, plot_dir=plot_dir, append="rebinned", plot_migrations=True)
+            make_plots(h2d_rebin, var_dict, plot_dir=plot_dir, append="rebinned", 
+                       plot_migrations=True, plot_reco=True, plot_gen=True)
 
             # Cache renormed plots here for migration plots
             h2d_renorm_x = cu.make_normalised_TH2(h2d_rebin, 'X', recolour=False, do_errors=False)
