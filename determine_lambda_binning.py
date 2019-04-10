@@ -408,7 +408,7 @@ def make_plots(h2d, var_dict, plot_dir, append="", plot_migrations=True):
 
     # Plot migrations as 1D hists
     if plot_migrations:
-        output_filename = os.path.join(plot_dir, "%s_migration_summary.%s" % (var_dict['name'], OUTPUT_FMT))
+        output_filename = os.path.join(plot_dir, "%s_%s_migration_summary.%s" % (var_dict['name'], append, OUTPUT_FMT))
         qgg.make_migration_summary_plot(h2d_renorm_x=h2d_renorm_x, 
                                         h2d_renorm_y=h2d_renorm_y, 
                                         xlabel=var_dict['var_label'], 
