@@ -426,7 +426,7 @@ if __name__ == "__main__":
     parser.add_argument("--outputFile",
                         help="Output ROOT file for rebinned 2D hists",
                         default=None)
-    # followint useful for systematic comparisons of migrations (I think)
+    # following useful for comparisons of migrations for systematics
     parser.add_argument("--rebinThisInput",
                         help="Apply new binning to these input file(s)",
                         default=None,
@@ -520,7 +520,8 @@ if __name__ == "__main__":
 
             # Calculate new binning
             # ---------------------
-            new_binning = calc_variable_binning_purity_stability(h2d_orig)
+            goal = 0.4
+            new_binning = calc_variable_binning_purity_stability(h2d_orig, purity_goal=goal, stability_goal=goal)
             rebin_results_dict[var_dict['name']] = new_binning
 
             # Rebin 2D heatmap
