@@ -812,7 +812,7 @@ def make_migration_summary_plot(h2d_renorm_x, h2d_renorm_y, xlabel, output_filen
     plot.set_logy()
     plot.main_pad.cd()
     lines = []
-    for val in [1, 0.5, 1e-1, 1e-2, 1e-3]:
+    for val in [1, 0.5, 0.4, 1e-1, 1e-2, 1e-3]:
         line = ROOT.TLine(xlim[0], val, xlim[1], val)
         line.SetLineStyle(2)
         line.SetLineColor(ROOT.kGray+2)
