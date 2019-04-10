@@ -109,6 +109,8 @@ def do_comparison_plot(entries, output_filename, rebin=1, **plot_kwargs):
 
 
 def get_projection_plot(h2d, start_val, end_val, cut_axis='y'):
+    """Get projection plot from h2d, only covering form start_val to end_val
+    on the other axis (specified by cut_axis)"""
     cut_axis = cut_axis.lower()
     if cut_axis == "y":
         axis = h2d.GetYaxis()
