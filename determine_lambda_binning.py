@@ -207,8 +207,8 @@ def concat_row(arr2d, row_ind):
     return arr2d_new
 
 
-def calc_variable_binning_other(h2d):
-    """here we just keep combining neighbouring bins until we reach desired purity & stability"""
+def calc_variable_binning_purity_stability(h2d, purity_goal=0.4, stability_goal=0.4):
+    """Determine binning by combining neighbouring bins until we reach desired purity & stability"""
     arr2d, _ = cu.th2_to_arr(h2d)
     reco_bin_edges = cu.get_bin_edges(h2d, 'Y')
     gen_bin_edges = cu.get_bin_edges(h2d, 'X')
@@ -224,7 +224,7 @@ def calc_variable_binning_other(h2d):
         arr2d_renormy = renorm(arr2d, axis=1)
         purity = arr2d_renormy[bin_ind][bin_ind]
         stability = arr2d_renormx[bin_ind][bin_ind]
-        if purity > 0.4 and stability > 0.4:
+        if purity > purity_goal and stability > stability_goal:
             # print("found bin")
             print("bin_ind:", bin_ind, "purity: %.3f" % purity, "stability: %.3f" % stability)
             bin_ind += 1
@@ -469,28 +469,28 @@ if __name__ == "__main__":
         {
             "name": "%s/jet_puppiMultiplicity_lowPt" % (source_plot_dir_name),
             "var_label": "PUPPI Multiplicity (#lambda_{0}^{0} (PUPPI))",
-            "title": "p_{T}^{jet} < %d GeV" % (low_pt_cut),
+            "title": "p_{T}^{jet} > %d GeV" % (low_pt_cut),
             "log": True,
         },
         {
             "name": "%s/jet_LHA_lowPt" % (source_plot_dir_name),
             "var_label": "LHA (#lambda_{0.5}^{1})",
-            "title": "p_{T}^{jet} < %d GeV" % (low_pt_cut),
+            "title": "p_{T}^{jet} > %d GeV" % (low_pt_cut),
         },
         {
             "name": "%s/jet_pTD_lowPt" % (source_plot_dir_name),
             "var_label": "p_{T}^{D} (#lambda_{0}^{2})",
-            "title": "p_{T}^{jet} < %d GeV" % (low_pt_cut),
+            "title": "p_{T}^{jet} > %d GeV" % (low_pt_cut),
         },
         {
             "name": "%s/jet_width_lowPt" % (source_plot_dir_name),
             "var_label": "Width (#lambda_{1}^{1})",
-            "title": "p_{T}^{jet} < %d GeV" % (low_pt_cut),
+            "title": "p_{T}^{jet} > %d GeV" % (low_pt_cut),
         },
         {
             "name": "%s/jet_thrust_lowPt" % (source_plot_dir_name),
             "var_label": "Thrust (#lambda_{2}^{1})",
-            "title": "p_{T}^{jet} < %d GeV" % (low_pt_cut),
+            "title": "p_{T}^{jet} > %d GeV" % (low_pt_cut),
         },
         # Mid pt (pT>100)
         {
@@ -591,7 +591,7 @@ if __name__ == "__main__":
         # metric = "quantile"
         # new_binning = calc_variable_binning(h2d_orig, plot_dir, args.metric)
 
-        new_binning = calc_variable_binning_other(h2d_orig)
+        new_binning = calc_variable_binning_purity_stability(h2d_orig)
         rebin_results_dict[var_dict['name']] = new_binning
 
         h2d_rebin = make_rebinned_plot(h2d_orig, new_binning, use_half_width_y=False)
