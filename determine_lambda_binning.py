@@ -661,9 +661,6 @@ if __name__ == "__main__":
                            append="rebinned_for%s" % (reference_pt_region), 
                            plot_migrations=True)
 
-
-
-
     output_tfile.Close()
     input_tfile.Close()
 
@@ -671,7 +668,7 @@ if __name__ == "__main__":
     # ----------------------------
     output_txt = os.path.splitext(args.input)[0] + ".txt"
     parts = os.path.split(output_txt)
-    output_txt = os.path.join(input_dir, 'binning_'+parts[1])
+    output_txt = os.path.join(args.outputDir, 'binning_'+parts[1])
     with open(output_txt, 'w') as fout:
         for k, v in rebin_results_dict.items():
             fout.write("%s: %s\n" % (k, v))
