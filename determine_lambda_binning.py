@@ -466,6 +466,10 @@ if __name__ == "__main__":
                         help="Output ROOT file for rebinned 2D hists. Must match entry in --rebinThisInput.",
                         default=None,
                         action="append")
+    parser.add_argument("--target",
+                        help="Target purity & stability as a fraction",
+                        default=0.4, 
+                        type=float)
     # acceptable_metrics = ['gausfit', 'quantile']
     # parser.add_argument("--metric",
     #                     help="Metric for deciding bin width.",
@@ -547,7 +551,8 @@ if __name__ == "__main__":
 
             # Calculate new binning
             # ---------------------
-            goal = 0.4
+            # goal = 0.5
+            goal = args.target
             new_binning = calc_variable_binning_purity_stability(h2d_orig, purity_goal=goal, stability_goal=goal)
             rebin_results_dict[var_dict['name']] = new_binning
 
