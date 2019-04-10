@@ -42,8 +42,8 @@ class MyUnfolder(object):
 
     def __init__(self,
                  response_map,  # 2D GEN-RECO heatmap
-                 variable_bin_edges, # for e.g. ptD, LHA
-                 variable_bin_edges_coarse,
+                 variable_bin_edges_fine, # 'variable' refers to e.g. ptD, LHA
+                 variable_bin_edges_coarse, # fine for detector binnig, coarse for generator (final) binning
                  variable_name,
                  pt_bin_edges,
                  pt_bin_edges_coarse,
@@ -56,8 +56,8 @@ class MyUnfolder(object):
         self.response_map = response_map
         self.variable_name = variable_name
 
-        self.variable_bin_edges = variable_bin_edges
-        self.nbins_variable = len(variable_bin_edges)-1
+        self.variable_bin_edges_fine = variable_bin_edges_fine
+        self.nbins_variable_fine = len(variable_bin_edges_fine)-1
         self.variable_bin_edges_coarse = variable_bin_edges_coarse
         self.nbins_variable_coarse = len(variable_bin_edges_coarse)-1
         self.pt_bin_edges = pt_bin_edges
@@ -69,7 +69,7 @@ class MyUnfolder(object):
         # you will have untold pain and suffering!
         self.detector_binning = ROOT.TUnfoldBinning("detector")
         detector_distribution = self.detector_binning.AddBinning("detectordistribution")
-        detector_distribution.AddAxis(self.variable_name, self.nbins_variable, self.variable_bin_edges, False, False)
+        detector_distribution.AddAxis(self.variable_name, self.nbins_variable_fine, self.variable_bin_edges_fine, False, False)
         detector_distribution.AddAxis("pt", self.nbins_pt, self.pt_bin_edges, False, True)
 
         self.generator_binning = ROOT.TUnfoldBinning("generator")
@@ -432,8 +432,12 @@ if __name__ == "__main__":
         },
     ]
 
-    pt_bin_edges = np.array([0, 29, 38, 50, 65, 88, 120, 150, 186, 254, 326, 408, 481, 614, 800, 1000, 1300, 1700, 2200, 3000, 4000, 5000, 10000], dtype='d')
-    pt_bin_edges_coarse = np.array([0, 29, 50, 88, 150, 254, 408, 614, 1000, 1700, 3000, 5000, 10000], dtype='d')
+    pt_bin_edges_coarse = np.array([15, 23, 30, 38, 50, 65, 88, 120, 150, 186, 254, 326, 408, 481, 614, 800, 1000, 1500, 2000, 10000], dtype='d')
+    pt_bin_edges_fine = cu.construct_fine_binning(pt_bin_edges_coarse)
+
+    # z+jets needs lower last ultrawide bin
+    pt_bin_edges_coarse_zpj = np.array([15, 23, 30, 38, 50, 65, 88, 120, 150, 186, 254, 326, 408, 481, 614, 800, 10000], dtype='d')
+    pt_bin_edges_fine_zpj = cu.construct_fine_binning(pt_bin_edges_coarse_zpj)
 
     output_dir = "unfolding"
     cu.check_dir_exists_create(output_dir)
@@ -441,9 +445,13 @@ if __name__ == "__main__":
     jet_algo = "AK4 PF PUPPI"
 
     for region in regions[:]:
+
+        this_pt_bin_edges_coarse = pt_bin_edges_coarse_zpj if "ZPlusJets" in region['name'] else pt_bin_edges_coarse
+        this_pt_bin_edges_fine = pt_bin_edges_fine_zpj if "ZPlusJets" in region['name'] else pt_bin_edges_fine
+
         for angle in qgc.COMMON_VARS[:]:
 
-            angle_bin_edges = qgc.VAR_REBIN_DICT[angle.var]['fine']
+            angle_bin_edges_fine = qgc.VAR_REBIN_DICT[angle.var]['fine']
             angle_bin_edges_coarse = qgc.VAR_REBIN_DICT[angle.var]['coarse']
             angle_shortname = angle.var.replace("jet_", "")
 
@@ -453,11 +461,11 @@ if __name__ == "__main__":
             hist_mc_gen_reco_map = cu.get_from_tfile(region['mc_tfile'], "%s/tu_%s_GenReco_new" % (region['dirname'], angle_shortname))
 
             unfolder = MyUnfolder(response_map=hist_mc_gen_reco_map,
-                                  variable_bin_edges=angle_bin_edges,
+                                  variable_bin_edges_fine=angle_bin_edges_fine,
                                   variable_bin_edges_coarse=angle_bin_edges_coarse,
                                   variable_name=angle.name,
-                                  pt_bin_edges=pt_bin_edges,
-                                  pt_bin_edges_coarse=pt_bin_edges_coarse,
+                                  pt_bin_edges=this_pt_bin_edges_fine,
+                                  pt_bin_edges_coarse=this_pt_bin_edges_coarse,
                                   orientation=ROOT.TUnfold.kHistMapOutputHoriz,
                                   constraintMode=ROOT.TUnfold.kEConstraintArea,
                                   regMode=ROOT.TUnfold.kRegModeCurvature,
@@ -494,7 +502,7 @@ if __name__ == "__main__":
             
             continue
             # continue
-            for ibin_pt in range(1, len(pt_bin_edges_coarse)-1):
+            for ibin_pt in range(1, len(this_pt_bin_edges_coarse)-1):
                 # gen_hist_bin = unfolder.get_var_hist_pt_binned(unfolder.unfolded_1d, ibin_pt, "generator")
                 gen_hist_bin = unfolder.get_var_hist_pt_binned(hist_mc_gen, ibin_pt, "generator")
                 # unfolded_hist_bin = unfolder.get_unfolded_var_hist_pt_binned(ibin_pt)  # gives diff answer?!
@@ -515,7 +523,7 @@ if __name__ == "__main__":
                     print("Skipping 0 entries in", region['name'], angle.var, ibin_pt)
                     continue
                 # plot = Plot(entries, "hist", title="%s region\n%s" % (region['label'], unfolded_hist_bin.GetTitle()), subplot_type='ratio', subplot_title='Unfolded / gen')
-                title = "%s\n%s region\n%g < p_{T}^{Gen} < %g GeV" % (jet_algo, region['label'], pt_bin_edges_coarse[ibin_pt], pt_bin_edges_coarse[ibin_pt+1])
+                title = "%s\n%s region\n%g < p_{T}^{Gen} < %g GeV" % (jet_algo, region['label'], this_pt_bin_edges_coarse[ibin_pt], this_pt_bin_edges_coarse[ibin_pt+1])
                 plot = Plot(entries, "hist", title=title,
                             xtitle=angle.name, ytitle='p.d.f.',
                             subplot_type='ratio', subplot_title='Unfolded / gen')
