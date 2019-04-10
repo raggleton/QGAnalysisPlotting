@@ -1,11 +1,16 @@
 #!/usr/bin/env python
 
-"""Figure out binnining for lambda variables based on width, etc"""
+"""Figure out optimial binning for lambda variables. 
+
+Currently uses minimum required purity & stability in response matrix.
+
+Can also rebin other inputs according to the binning scheme from the main input.
+"""
 
 
 import argparse
-# from MyStyle import My_Style
-# My_Style.cd()
+from MyStyle import My_Style
+My_Style.cd()
 import os
 from itertools import product
 from array import array
@@ -25,6 +30,7 @@ ROOT.gStyle.SetOptFit(1111)
 
 # My stuff
 import qg_general_plots as qgg
+import qg_common as qgc
 from comparator import Contribution, Plot
 import common_utils as cu
 
@@ -182,7 +188,6 @@ def calc_variable_binning(h2d, plot_dir, metric):
     return bins
 
 
-
 def renorm(arr2d, axis):
     # create version where each axis summed to 1
     # use where and out args to ensure nans are made into 0s
@@ -247,6 +252,11 @@ def calc_variable_binning_purity_stability(h2d, purity_goal=0.4, stability_goal=
 
 
 def rebin_2d_hist(h2d, new_binning_x, new_binning_y):
+    """Rebin a 2D histogram according to specific bin edges for x & y axes
+
+    new_binning_x, new_binning_y are lists of tuple pairs of bin edges
+    e.g. [(0, 1), (1, 4), (4, 10)]
+    """
     bin_edges_x = [b[0] for b in new_binning_x]
     bin_edges_x.append(new_binning_x[-1][1])
 
@@ -292,9 +302,18 @@ def rebin_2d_hist(h2d, new_binning_x, new_binning_y):
     return new_hist
 
 
-def make_rebinned_plot(h2d, new_binning, use_half_width_y=False):
-    # define reco binning as being half of gen binning
+def make_rebinned_2d_hist(h2d, new_binning, use_half_width_y=False):
+    """Rebin 2D histogram using new binning.
+    
+    new_binning is list of tuple pairs of bin edges
+    e.g. [(0, 1), (1, 4), (4, 10)]
+    
+    If use_half_width_y=False, uses new_binning for both x (gen) & y (reco) axes
+    If True, creates bins that are half the width of new_binning for
+    the y axes (reco)
+    """
     if use_half_width_y:
+        # create half width bins from new_binning
         reco_binning = []
         reco_bin_edges = cu.get_bin_edges(h2d, 'Y')
         for s, e in new_binning:
@@ -311,6 +330,7 @@ def make_plots(h2d, var_dict, plot_dir, append="", plot_migrations=True):
     """Plot a 2D hist, with copies renormalised by row and by column.
     Also optionally plot migrations as 1D plot.
     """
+    # Plot original 2D map, no renormalizing by axis
     canv = ROOT.TCanvas("c"+cu.get_unique_str(), "", 700, 600)
     canv.SetTicks(1, 1)
     if var_dict.get("log", False):
@@ -341,7 +361,7 @@ def make_plots(h2d, var_dict, plot_dir, append="", plot_migrations=True):
     output_filename = os.path.join(plot_dir, var_dict['name']+"_%s_logZ.%s" % (append, OUTPUT_FMT))
     canv.SaveAs(output_filename)
 
-    # renorm by row
+    # Plot 2D map, renormalized by row
     canv.SetLogz(0)
     h2d_renorm_y = cu.make_normalised_TH2(h2d, 'Y', recolour=False, do_errors=False)
     marker_size = 0.8
@@ -365,7 +385,7 @@ def make_plots(h2d, var_dict, plot_dir, append="", plot_migrations=True):
     h2d_renorm_y.SetMinimum(1E-3)
     canv.SaveAs(os.path.join(plot_dir, "%s_%s_renormY_logZ.%s" % (var_dict['name'], append, OUTPUT_FMT)))
 
-    # renorm by column
+    # Plot 2D map, renormalized by column
     canv.Clear()
     canv.SetLogz(0)
     h2d_renorm_x = cu.make_normalised_TH2(h2d, 'X', recolour=False, do_errors=False)
@@ -386,10 +406,14 @@ def make_plots(h2d, var_dict, plot_dir, append="", plot_migrations=True):
     h2d_renorm_x.SetMinimum(1E-3)
     canv.SaveAs(os.path.join(plot_dir, "%s_%s_renormX_logZ.%s" % (var_dict['name'], append, OUTPUT_FMT)))
 
-    # Plot migrations
+    # Plot migrations as 1D hists
     if plot_migrations:
         output_filename = os.path.join(plot_dir, "%s_migration_summary.%s" % (var_dict['name'], OUTPUT_FMT))
-        qgg.make_migration_summary_plot(h2d_renorm_x, h2d_renorm_y, var_dict['var_label'], output_filename)
+        qgg.make_migration_summary_plot(h2d_renorm_x=h2d_renorm_x, 
+                                        h2d_renorm_y=h2d_renorm_y, 
+                                        xlabel=var_dict['var_label'], 
+                                        output_filename=output_filename, 
+                                        title=var_dict.get('title', ''))
 
 
 if __name__ == "__main__":
@@ -438,258 +462,165 @@ if __name__ == "__main__":
     if "dyjetstoll" in args.input.lower():
         source_plot_dir_name = "ZPlusJets_QG"
 
-    low_pt_cut = 30
-    mid_pt_cut = 100
-    high_pt_cut = 250
-
-    do_these = [
-        {
-            "name": "%s/jet_puppiMultiplicity" % (source_plot_dir_name),
-            "var_label": "PUPPI Multiplicity (#lambda_{0}^{0} (PUPPI))",
-            "log": True,
-        },
-        {
-            "name": "%s/jet_LHA" % (source_plot_dir_name),
-            "var_label": "LHA (#lambda_{0.5}^{1})"
-        },
-        {
-            "name": "%s/jet_pTD" % (source_plot_dir_name),
-            "var_label": "p_{T}^{D} (#lambda_{0}^{2})"
-        },
-        {
-            "name": "%s/jet_width" % (source_plot_dir_name),
-            "var_label": "Width (#lambda_{1}^{1})"
-        },
-        {
-            "name": "%s/jet_thrust" % (source_plot_dir_name),
-            "var_label": "Thrust (#lambda_{2}^{1})"
-        },
-        # Try separate low, mid. & high pT plots
-        # Low pt (pT>30)
-        {
-            "name": "%s/jet_puppiMultiplicity_lowPt" % (source_plot_dir_name),
-            "var_label": "PUPPI Multiplicity (#lambda_{0}^{0} (PUPPI))",
-            "title": "p_{T}^{jet} > %d GeV" % (low_pt_cut),
-            "log": True,
-        },
-        {
-            "name": "%s/jet_LHA_lowPt" % (source_plot_dir_name),
-            "var_label": "LHA (#lambda_{0.5}^{1})",
-            "title": "p_{T}^{jet} > %d GeV" % (low_pt_cut),
-        },
-        {
-            "name": "%s/jet_pTD_lowPt" % (source_plot_dir_name),
-            "var_label": "p_{T}^{D} (#lambda_{0}^{2})",
-            "title": "p_{T}^{jet} > %d GeV" % (low_pt_cut),
-        },
-        {
-            "name": "%s/jet_width_lowPt" % (source_plot_dir_name),
-            "var_label": "Width (#lambda_{1}^{1})",
-            "title": "p_{T}^{jet} > %d GeV" % (low_pt_cut),
-        },
-        {
-            "name": "%s/jet_thrust_lowPt" % (source_plot_dir_name),
-            "var_label": "Thrust (#lambda_{2}^{1})",
-            "title": "p_{T}^{jet} > %d GeV" % (low_pt_cut),
-        },
-        # Mid pt (pT>100)
-        {
-            "name": "%s/jet_puppiMultiplicity_midPt" % (source_plot_dir_name),
-            "var_label": "PUPPI Multiplicity (#lambda_{0}^{0} (PUPPI))",
-            "title": "p_{T}^{jet} > %d GeV" % (mid_pt_cut),
-            "log": True,
-        },
-        {
-            "name": "%s/jet_LHA_midPt" % (source_plot_dir_name),
-            "var_label": "LHA (#lambda_{0.5}^{1})",
-            "title": "p_{T}^{jet} > %d GeV" % (mid_pt_cut)
-        },
-        {
-            "name": "%s/jet_pTD_midPt" % (source_plot_dir_name),
-            "var_label": "p_{T}^{D} (#lambda_{0}^{2})",
-            "title": "p_{T}^{jet} > %d GeV" % (mid_pt_cut)
-        },
-        {
-            "name": "%s/jet_width_midPt" % (source_plot_dir_name),
-            "var_label": "Width (#lambda_{1}^{1})",
-            "title": "p_{T}^{jet} > %d GeV" % (mid_pt_cut)
-        },
-        {
-            "name": "%s/jet_thrust_midPt" % (source_plot_dir_name),
-            "var_label": "Thrust (#lambda_{2}^{1})",
-            "title": "p_{T}^{jet} > %d GeV" % (mid_pt_cut)
-        },
-        # High pt (pt>250)
-        {
-            "name": "%s/jet_puppiMultiplicity_highPt" % (source_plot_dir_name),
-            "var_label": "PUPPI Multiplicity (#lambda_{0}^{0} (PUPPI))",
-            "title": "p_{T}^{jet} > %d GeV" % (high_pt_cut),
-            "log": True,
-        },
-        {
-            "name": "%s/jet_LHA_highPt" % (source_plot_dir_name),
-            "var_label": "LHA (#lambda_{0.5}^{1})",
-            "title": "p_{T}^{jet} > %d GeV" % (high_pt_cut)
-        },
-        {
-            "name": "%s/jet_pTD_highPt" % (source_plot_dir_name),
-            "var_label": "p_{T}^{D} (#lambda_{0}^{2})",
-            "title": "p_{T}^{jet} > %d GeV" % (high_pt_cut)
-        },
-        {
-            "name": "%s/jet_width_highPt" % (source_plot_dir_name),
-            "var_label": "Width (#lambda_{1}^{1})",
-            "title": "p_{T}^{jet} > %d GeV" % (high_pt_cut)
-        },
-        {
-            "name": "%s/jet_thrust_highPt" % (source_plot_dir_name),
-            "var_label": "Thrust (#lambda_{2}^{1})",
-            "title": "p_{T}^{jet} > %d GeV" % (high_pt_cut)
-        },
-        # charged vars
-        # {
-        #     "name": "%s/jet_puppiMultiplicity_charged" % (source_plot_dir_name),
-        #     "var_label": "PUPPI Multiplicity (#lambda_{0}^{0} (PUPPI)) [charged]",
-        #     "log": True,
-        # },
-        # {
-        #     "name": "%s/jet_LHA_charged" % (source_plot_dir_name),
-        #     "var_label": "LHA (#lambda_{0.5}^{1}) [charged only]"
-        # },
-        # {
-        #     "name": "%s/jet_pTD_charged" % (source_plot_dir_name),
-        #     "var_label": "p_{T}^{D} (#lambda_{0}^{2}) [charged only]"
-        # },
-        # {
-        #     "name": "%s/jet_width_charged" % (source_plot_dir_name),
-        #     "var_label": "Width (#lambda_{1}^{1}) [charged only]"
-        # },
-        # {
-        #     "name": "%s/jet_thrust_charged" % (source_plot_dir_name),
-        #     "var_label": "Thrust (#lambda_{2}^{1}) [charged only]"
-        # },
-    ][:]
-
     rebin_results_dict = OrderedDict()
 
-    for var_dict in do_these:
-        do_rel_response = False
-        full_var_name = var_dict['name']
-        if do_rel_response:
-            full_var_name += "_rel_response"
-        else:
-            full_var_name += "_response"
+    pt_regions = [
+        {
+            "append": "",
+            "title": "p_{T}^{Reco} > 30 GeV",
+        },
+        {
+            "append": "_lowPt",
+            "title": "30 < p_{T}^{Reco} < 100 GeV",
+        },
+        {
+            "append": "_midPt",
+            "title": "100 < p_{T}^{Reco} < 250 GeV",
+        },
+        {
+            "append": "_highPt",
+            "title": "p_{T}^{Reco} > 250 GeV",
+        },
+    ]
+
+    input_tfile = cu.open_root_file(args.input)
+
+    for angle in qgc.COMMON_VARS[:1]:
+        for pt_region_dict in pt_regions[:1]:
+            
+            var_dict = {
+                "name": "%s/%s%s" % (source_plot_dir_name, angle.var, pt_region_dict['append']),
+                "var_label": "%s (%s)" % (angle.name, angle.lambda_str),
+                "title": pt_region_dict['title'],
+            }
+            
+            do_rel_response = False  # Use relative response instead - only makes sense with quantiles/gaussian fit?
+            full_var_name = var_dict['name']
+            if do_rel_response:
+                full_var_name += "_rel_response"
+            else:
+                full_var_name += "_response"
 
             print(full_var_name)
 
-        tfile = cu.open_root_file(args.input)
-        h2d_orig = cu.get_from_tfile(tfile, full_var_name)
+            h2d_orig = cu.get_from_tfile(input_tfile, full_var_name)
 
-        make_plots(h2d_orig, var_dict, plot_dir=plot_dir, append="orig", plot_migrations=False)
+            # Make plots with original fine equidistant binning
+            # -------------------------------------------------
+            make_plots(h2d_orig, var_dict, plot_dir=plot_dir, append="orig", plot_migrations=False)
 
-        # metric = "gausfit"
-        # metric = "quantile"
-        # new_binning = calc_variable_binning(h2d_orig, plot_dir, args.metric)
+            # metric = "gausfit"
+            # metric = "quantile"
+            # new_binning = calc_variable_binning(h2d_orig, plot_dir, args.metric)
 
-        new_binning = calc_variable_binning_purity_stability(h2d_orig)
-        rebin_results_dict[var_dict['name']] = new_binning
+            # Calculate new binning
+            # ---------------------
+            new_binning = calc_variable_binning_purity_stability(h2d_orig)
+            rebin_results_dict[var_dict['name']] = new_binning
 
-        h2d_rebin = make_rebinned_plot(h2d_orig, new_binning, use_half_width_y=False)
+            h2d_rebin = make_rebinned_2d_hist(h2d_orig, new_binning, use_half_width_y=False)
 
-        make_plots(h2d_rebin, var_dict, plot_dir=plot_dir, append="rebinned", plot_migrations=True)
+            # Plot with new binning
+            # ---------------------
+            make_plots(h2d_rebin, var_dict, plot_dir=plot_dir, append="rebinned", plot_migrations=True)
 
-        # Cache renormed plots here for migration plots
-        h2d_renorm_x = cu.make_normalised_TH2(h2d_rebin, 'X', recolour=False, do_errors=False)
-        output_tfile.WriteTObject(h2d_renorm_x)  # we want renormalised by col for doing folding
-        
-        h2d_renorm_y = cu.make_normalised_TH2(h2d_rebin, 'Y', recolour=False, do_errors=False)
-
-        contributions = qgg.migration_plot_components(h2d_renorm_x, h2d_renorm_y, var_dict['var_label'])
-
-        # Now rebin any other input files with the same hist using the new binning
-        if args.rebinThisInput and len(args.rebinThisInput) > 0:
-            lens = [len(x) for x in [args.rebinThisInput, args.rebinThisLabel, args.rebinThisOutputFile]]
-            if any(l != lens[0] for l in lens[1:]):
-                raise RuntimeError("Number of --rebinThisInput, --rebinThisLabel, --rebinThisOutputFile should be the same - need one of each per extra input file")
+            # Cache renormed plots here for migration plots
+            h2d_renorm_x = cu.make_normalised_TH2(h2d_rebin, 'X', recolour=False, do_errors=False)
+            output_tfile.WriteTObject(h2d_renorm_x)  # we want renormalised by col for doing folding
             
-            for ind, (other_input, other_label, other_output_filename) in enumerate(zip(args.rebinThisInput, args.rebinThisLabel, args.rebinThisOutputFile)):
-                print(other_label)
-                tfile_other = cu.open_root_file(other_input)
-                tfile_other_out = cu.open_root_file(other_output_filename, 'RECREATE')
+            h2d_renorm_y = cu.make_normalised_TH2(h2d_rebin, 'Y', recolour=False, do_errors=False)
+            output_tfile.WriteTObject(h2d_renorm_y)  # save anyway for completeness
+
+            # Now rebin any other input files with the same hist using the new binning
+            # ------------------------------------------------------------------------
+            if args.rebinThisInput and len(args.rebinThisInput) > 0:
+                contributions = qgg.migration_plot_components(h2d_renorm_x, h2d_renorm_y, var_dict['var_label'])
+
+                lens = [len(x) for x in [args.rebinThisInput, args.rebinThisLabel, args.rebinThisOutputFile]]
+                if any(l != lens[0] for l in lens[1:]):
+                    raise RuntimeError("Number of --rebinThisInput, --rebinThisLabel, --rebinThisOutputFile should be the same - need one of each per extra input file")
                 
-                h2d_other = cu.get_from_tfile(tfile_other, full_var_name)
-                h2d_rebin_other = make_rebinned_plot(h2d_other, new_binning, use_half_width_y=False)
+                for ind, (other_input, other_label, other_output_filename) in enumerate(zip(args.rebinThisInput, args.rebinThisLabel, args.rebinThisOutputFile)):
+                    print(other_label)
+                    tfile_other = cu.open_root_file(other_input)
+                    tfile_other_out = cu.open_root_file(other_output_filename, 'RECREATE')
+                    
+                    h2d_other = cu.get_from_tfile(tfile_other, full_var_name)
+                    h2d_rebin_other = make_rebinned_2d_hist(h2d_other, new_binning, use_half_width_y=False)
 
-                make_plots(h2d_rebin_other, var_dict, plot_dir=plot_dir+"_"+other_label.replace(" ", "_"), append="rebinned", plot_migrations=True)
+                    make_plots(h2d_rebin_other, var_dict, plot_dir=plot_dir+"_"+other_label.replace(" ", "_"), append="rebinned", plot_migrations=True)
 
-                h2d_renorm_x_other = cu.make_normalised_TH2(h2d_rebin_other, 'X', recolour=False, do_errors=False)
-                tfile_other_out.WriteTObject(h2d_renorm_x_other)
-                h2d_renorm_y_other = cu.make_normalised_TH2(h2d_rebin_other, 'Y', recolour=False, do_errors=False)
-                contributions_other = qgg.migration_plot_components(h2d_renorm_x_other, h2d_renorm_y_other, var_dict['var_label'])
-                for ind, c in enumerate(contributions_other):
-                    c.obj.SetLineStyle(ind+2)
-                    c.label += " [%s]" % other_label
-                    c.subplot = contributions[ind].obj
-                contributions.extend(contributions_other)
-                tfile_other_out.Close()
+                    h2d_renorm_x_other = cu.make_normalised_TH2(h2d_rebin_other, 'X', recolour=False, do_errors=False)
+                    tfile_other_out.WriteTObject(h2d_renorm_x_other)
+                    h2d_renorm_y_other = cu.make_normalised_TH2(h2d_rebin_other, 'Y', recolour=False, do_errors=False)
+                    contributions_other = qgg.migration_plot_components(h2d_renorm_x_other, h2d_renorm_y_other, var_dict['var_label'])
+                    for ind, c in enumerate(contributions_other):
+                        c.obj.SetLineStyle(ind+2)
+                        c.label += " [%s]" % other_label
+                        c.subplot = contributions[ind].obj
+                    contributions.extend(contributions_other)
+                    tfile_other_out.Close()
 
+                # Plot all these rebinned extra inputs alongside the main map
+                # -----------------------------------------------------------
+                for c in contributions:
+                    c.obj.SetLineWidth(2)
 
-            for c in contributions:
-                c.obj.SetLineWidth(2)
+                binning = [h2d_renorm_x.GetXaxis().GetBinLowEdge(bin_ind) for bin_ind in range(1, h2d_renorm_x.GetNbinsX()+2)]
+                xlim = [binning[0], binning[-1]]
 
-            binning = [h2d_renorm_x.GetXaxis().GetBinLowEdge(bin_ind) for bin_ind in range(1, h2d_renorm_x.GetNbinsX()+2)]
-            xlim = [binning[0], binning[-1]]
-            # plot = Plot(contributions, what='hist', xlim=xlim, ylim=[1e-3, 2], xtitle=var_dict['var_label'], has_data=False)
-            plot = Plot(contributions, what='hist', xlim=xlim, ylim=[0, 1.25], 
-                        xtitle=var_dict['var_label'], has_data=False, 
-                        subplot_type='ratio', subplot_title='Syst / nominal', 
-                        subplot_limits=[0.9, 1.1])
-            y1 = 0.15
-            y1 = 0.65
-            plot.legend.SetNColumns(len(args.rebinThisInput)+1)
-            plot.legend.SetX1(0.15)
-            plot.legend.SetX2(0.95)
-            plot.legend.SetY1(y1)
-            plot.legend.SetY2(y1+0.25)
-            plot.legend.SetTextSize(0.015)
-            plot.plot("NOSTACK HISTE")
-            plot.legend.SetFillStyle(1001)
-            plot.legend.SetFillColorAlpha(ROOT.kWhite, 0.75)
-            if var_dict.get('log', None):
-                plot.set_logx()
-            # plot.set_logy()
-            plot.main_pad.cd()
-            lines = []
-            # for val in [1, 0.5, 1e-1, 1e-2, 1e-3]:
-            #     line = ROOT.TLine(xlim[0], val, xlim[1], val)
-            #     line.SetLineStyle(2)
-            #     line.SetLineColor(ROOT.kGray+2)
-            #     lines.append(line)
-            #     line.Draw("same")
-            output_filename = os.path.join(plot_dir, "%s_combined_migration_summary.%s" % (var_dict['name'], OUTPUT_FMT))
-            plot.save(output_filename)
+                # plot = Plot(contributions, what='hist', xlim=xlim, ylim=[1e-3, 2], xtitle=var_dict['var_label'], has_data=False)
+                plot = Plot(contributions, what='hist', xlim=xlim, ylim=[0, 1.25], 
+                            xtitle=var_dict['var_label'], has_data=False, 
+                            subplot_type='ratio', subplot_title='Syst / nominal', 
+                            subplot_limits=[0.9, 1.1])
+                y1 = 0.15
+                y1 = 0.65
+                plot.legend.SetNColumns(len(args.rebinThisInput)+1)
+                plot.legend.SetX1(0.15)
+                plot.legend.SetX2(0.95)
+                plot.legend.SetY1(y1)
+                plot.legend.SetY2(y1+0.25)
+                plot.legend.SetTextSize(0.015)
+                plot.plot("NOSTACK HISTE")
+                plot.legend.SetFillStyle(1001)
+                plot.legend.SetFillColorAlpha(ROOT.kWhite, 0.75)
+                if var_dict.get('log', None):
+                    plot.set_logx()
+                # plot.set_logy()
+                plot.main_pad.cd()
+                lines = []
+                # Boundary lines
+                # for val in [1, 0.5, 1e-1, 1e-2, 1e-3]:
+                #     line = ROOT.TLine(xlim[0], val, xlim[1], val)
+                #     line.SetLineStyle(2)
+                #     line.SetLineColor(ROOT.kGray+2)
+                #     lines.append(line)
+                #     line.Draw("same")
+                output_filename = os.path.join(plot_dir, "%s_combined_migration_summary.%s" % (var_dict['name'], OUTPUT_FMT))
+                plot.save(output_filename)
 
-            # Do another version where you plot the relative difference wrt nominal for each bin
-                # Contribution(hist_purity, label="Purity (gen right)", line_color=col_purity, marker_color=col_purity),
-                # Contribution(hist_stability, label="Stability (reco right)", line_color=col_stability, marker_color=col_stability),
-                # Contribution(hist_xfer_down, label="-1 reco bin", line_color=col_xfer_down, marker_color=col_xfer_down),
-                # Contribution(hist_xfer_down2, label="-2 reco bin", line_color=col_xfer_down2, marker_color=col_xfer_down2),
-                # # Contribution(hist_xfer_down3, label="3 lower reco bin", line_color=col_xfer_down3, marker_color=col_xfer_down3),
-                # Contribution(hist_xfer_up, label="+1 reco bin", line_color=col_xfer_up, marker_color=col_xfer_up),
-                # Contribution(hist_xfer_up2,
-            # new_contributions = []
-            # ref_cont = contributions[0]
-            # for cont in contributions[1:]:
-            #     new_cont = deepcopy(cont)
-            #     for ref, var in zip(ref_cont, cont):
-            #         new_obj = var.obj.Clone()
-            #         new_obj.Divide(ref)
-
-
+                # Do another version where you plot the relative difference wrt nominal for each bin
+                    # Contribution(hist_purity, label="Purity (gen right)", line_color=col_purity, marker_color=col_purity),
+                    # Contribution(hist_stability, label="Stability (reco right)", line_color=col_stability, marker_color=col_stability),
+                    # Contribution(hist_xfer_down, label="-1 reco bin", line_color=col_xfer_down, marker_color=col_xfer_down),
+                    # Contribution(hist_xfer_down2, label="-2 reco bin", line_color=col_xfer_down2, marker_color=col_xfer_down2),
+                    # # Contribution(hist_xfer_down3, label="3 lower reco bin", line_color=col_xfer_down3, marker_color=col_xfer_down3),
+                    # Contribution(hist_xfer_up, label="+1 reco bin", line_color=col_xfer_up, marker_color=col_xfer_up),
+                    # Contribution(hist_xfer_up2,
+                # new_contributions = []
+                # ref_cont = contributions[0]
+                # for cont in contributions[1:]:
+                #     new_cont = deepcopy(cont)
+                #     for ref, var in zip(ref_cont, cont):
+                #         new_obj = var.obj.Clone()
+                #         new_obj.Divide(ref)
 
     output_tfile.Close()
+    input_tfile.Close()
 
     # Save new binning to txt file
+    # ----------------------------
     output_txt = os.path.splitext(args.input)[0] + ".txt"
     parts = os.path.split(output_txt)
     output_txt = os.path.join(input_dir, 'binning_'+parts[1])
