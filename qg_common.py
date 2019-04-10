@@ -1,5 +1,6 @@
 """Common vars for doing QG plots"""
 
+import numpy as np
 import argparse
 from collections import namedtuple
 
@@ -37,15 +38,27 @@ THEORY_PT_BINS = [(20, 25), (40, 50), (50, 55), (60, 70), (70, 80), (80, 90), (9
                   (120, 160), (160, 200), (200, 220), (280, 300), (300, 350), (400, 410),
                   (400, 500), (500, 600), (500, 550), (600, 800), (800, 1000),
                   (1000, 1400), (1400, 2000)]
+# PT_BINS = [
+# (0, 29), (29,38), (38,50), (50,65), (65,88), (88,120), (120,150), (150,186), (186,254),
+# (254,326), (326,408), (408,481), (481,614), (614,800), (800,1000), (1000,1300),
+# (1300,1700), (1700,2200), (2200,3000), (3000,4000), (4000,5000), (5000,10000),
+# ]
+
 PT_BINS = [
-(0, 29), (29,38), (38,50), (50,65), (65,88), (88,120), (120,150), (150,186), (186,254), 
-(254,326), (326,408), (408,481), (481,614), (614,800), (800,1000), (1000,1300), 
-(1300,1700), (1700,2200), (2200,3000), (3000,4000), (4000,5000), (5000,10000),
+(15, 23), (23, 30), (30, 38), (38, 50), (50, 65), (65, 88), (88, 120), (120, 150), 
+(150, 186), (186, 254), (254, 326), (326, 408), (408, 481), (481, 614), (614, 800), 
+(800, 1000), (1000, 1500), (1500, 2000), (2000, 10000) 
+]
+
+PT_BINS_ZPJ = [
+(15, 23), (23, 30), (30, 38), (38, 50), (50, 65), (65, 88), (88, 120), (120, 150), 
+(150, 186), (186, 254), (254, 326), (326, 408), (408, 481), (481, 614), (614, 800), 
+(800, 10000) 
 ]
 
 # PT_BINS = [
-# (29,38), (38,50), (50,65), (65,88), (88,114), (114,145), (145,180), (180,254), 
-# (254,318), (318,400), (400,500), (500,625), (625,800), (800,1000), (1000,1300), 
+# (29,38), (38,50), (50,65), (65,88), (88,114), (114,145), (145,180), (180,254),
+# (254,318), (318,400), (400,500), (500,625), (625,800), (800,1000), (1000,1300),
 # (1300,1700), (1700,2200), (2200,3000), (3000,4000), (4000,5000), (5000,10000),
 # ]
 
@@ -56,7 +69,7 @@ COMMON_VARS_WITH_FLAV = [
     Angle('jet_LHA', 1, 0.5, "LHA", "#lambda_{0.5}^{1}", 600),
     Angle('jet_width', 1, 1, "Width", "#lambda_{1}^{1}", 861),
     Angle('jet_thrust', 1, 2, "Thrust", "#lambda_{2}^{1}", 617),
-    Angle('jet_multiplicity', 0, 0, "Multiplicity", "#lambda_{0}^{0}", 2),  # leave last as we don't want it in our RIVET numbering
+    # Angle('jet_multiplicity', 0, 0, "Multiplicity", "#lambda_{0}^{0}", 2),  # leave last as we don't want it in our RIVET numbering
     Angle('jet_flavour', 0, 0, "Flavour", "PDGID", 7),
     Angle("jet_genParton_flavour", 0, 0, "Flavour", "PDGID", 8)
 ]
@@ -71,6 +84,51 @@ ANGLE_REBIN_DICT = {
     'jet_width': [0.0, 0.12, 0.18, 0.24, 0.3, 0.36, 0.43, 0.51, 1.0],
     'jet_thrust': [0.0, 0.04, 0.08, 0.12, 0.17, 0.24, 0.33, 1.0],
 }
+
+
+VAR_REBIN_DICT = {
+    'jet_multiplicity': {
+        'coarse': np.array([1, 7, 10, 13, 19, 25, 35, 50, 75, 100, 150], dtype='d'),
+        'fine': None
+    },
+    'jet_puppiMultiplicity': {
+        'coarse': np.array([1, 7, 10, 13, 19, 25, 35, 50, 75, 100, 150], dtype='d'),
+        'fine': None
+    },
+    'jet_pTD': {
+        'coarse': np.array([0.0, 0.09, 0.12, 0.16, 0.21, 0.29, 0.43, 0.7, 1.0], dtype='d'),
+        'fine': None
+    },
+    'jet_LHA': {
+        'coarse': np.array([0.0, 0.29, 0.37, 0.44, 0.5, 0.56, 0.62, 0.68, 0.75, 1.0], dtype='d'),
+        'fine': None
+    },
+    'jet_width': {
+        'coarse': np.array([0.0, 0.11, 0.17, 0.23, 0.29, 0.35, 0.42, 0.6, 1.0], dtype='d'),
+        'fine': None
+    },
+    'jet_thrust': {
+        'coarse': np.array([0.0, 0.04, 0.08, 0.12, 0.17, 0.24, 0.33, 0.66, 1.0], dtype='d'),
+        'fine': None
+    },
+}
+
+
+def construct_fine_binning(coarse_bin_edges):
+    fine_bin_edges = []
+    for x, y in zip(coarse_bin_edges[:-1], coarse_bin_edges[1:]):
+        fine_bin_edges.append(x)
+        fine_bin_edges.append(0.5*(x+y))
+    fine_bin_edges.append(coarse_bin_edges[-1])
+    return np.array(fine_bin_edges, dtype='d')
+
+# Construct fine binning from splitting coarser bins
+# Coarser bins dervied from determine_lambda_binning.py
+for angle_name, angle_dict in VAR_REBIN_DICT.items():
+    if angle_dict['fine'] is None:
+        angle_dict['fine'] = construct_fine_binning(angle_dict['coarse'])
+    VAR_REBIN_DICT[angle_name] = angle_dict
+
 
 
 DY_ZpJ_LABEL = "DY+jets, Z+j region"
