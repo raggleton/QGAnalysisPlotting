@@ -485,8 +485,11 @@ if __name__ == "__main__":
 
     input_tfile = cu.open_root_file(args.input)
 
-    for angle in qgc.COMMON_VARS[:1]:
-        for pt_region_dict in pt_regions[:1]:
+    for angle in qgc.COMMON_VARS[:]:
+
+        response_maps_dict = {} # store 2D maps for later
+
+        for pt_region_dict in pt_regions[:]:
             
             var_dict = {
                 "name": "%s/%s%s" % (source_plot_dir_name, angle.var, pt_region_dict['append']),
@@ -508,7 +511,9 @@ if __name__ == "__main__":
             # Make plots with original fine equidistant binning
             # -------------------------------------------------
             make_plots(h2d_orig, var_dict, plot_dir=plot_dir, append="orig", plot_migrations=False)
-
+            
+            response_maps_dict[var_dict['name']] = h2d_orig
+            
             # metric = "gausfit"
             # metric = "quantile"
             # new_binning = calc_variable_binning(h2d_orig, plot_dir, args.metric)
@@ -518,6 +523,8 @@ if __name__ == "__main__":
             new_binning = calc_variable_binning_purity_stability(h2d_orig)
             rebin_results_dict[var_dict['name']] = new_binning
 
+            # Rebin 2D heatmap
+            # ----------------
             h2d_rebin = make_rebinned_2d_hist(h2d_orig, new_binning, use_half_width_y=False)
 
             # Plot with new binning
@@ -527,9 +534,11 @@ if __name__ == "__main__":
             # Cache renormed plots here for migration plots
             h2d_renorm_x = cu.make_normalised_TH2(h2d_rebin, 'X', recolour=False, do_errors=False)
             output_tfile.WriteTObject(h2d_renorm_x)  # we want renormalised by col for doing folding
+            response_maps_dict[var_dict['name']+"_renormX"] = h2d_renorm_x
             
             h2d_renorm_y = cu.make_normalised_TH2(h2d_rebin, 'Y', recolour=False, do_errors=False)
             output_tfile.WriteTObject(h2d_renorm_y)  # save anyway for completeness
+            response_maps_dict[var_dict['name']+"_renormY"] = h2d_renorm_y
 
             # Now rebin any other input files with the same hist using the new binning
             # ------------------------------------------------------------------------
@@ -615,6 +624,45 @@ if __name__ == "__main__":
                 #     for ref, var in zip(ref_cont, cont):
                 #         new_obj = var.obj.Clone()
                 #         new_obj.Divide(ref)
+
+        # Apply binning scheme dervied from one pT region to others
+        # ---------------------------------------------------------
+        rebin_other_pt_regions = True
+        if rebin_other_pt_regions:
+            reference_pt_region = "_midPt"  # correspond to 'append' key in a dict
+            
+            this_pt_dict = [x for x in pt_regions if x['append'] == reference_pt_region][0]
+
+            # God this is awful, such disconnect between rebinning, names, hists
+            
+            # First find rebinning scheme
+            reference_binning = None
+            for hname, h2d in response_maps_dict.items():
+                if "_renorm" in hname:
+                    continue
+                if reference_pt_region in hname:
+                    reference_binning = rebin_results_dict[hname]
+                    break
+
+            if not reference_binning:
+                raise RuntimeError("Something went wrong looking up reference_binning")
+
+            # Now rebin all other 2D hists
+            for hname, h2d in response_maps_dict.items():
+                if reference_pt_region in hname or "_renorm" in hname:
+                    continue
+                h2d_rebin = make_rebinned_2d_hist(h2d, reference_binning, use_half_width_y=False)
+                var_dict = {
+                    "name": hname,
+                    "var_label": "%s (%s)" % (angle.name, angle.lambda_str),
+                    "title": h2d.GetTitle() + " (rebinned for %s)" % this_pt_dict['title'],
+                }
+                make_plots(h2d_rebin, var_dict, plot_dir=plot_dir, 
+                           append="rebinned_for%s" % (reference_pt_region), 
+                           plot_migrations=True)
+
+
+
 
     output_tfile.Close()
     input_tfile.Close()
