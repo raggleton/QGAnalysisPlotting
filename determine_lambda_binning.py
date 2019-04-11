@@ -352,7 +352,7 @@ def make_plots(h2d, var_dict, plot_dir, append="",
         h2d.GetXaxis().SetLimits(1, 150)
         h2d.GetYaxis().SetLimits(1, 150)
     if "title" in var_dict:
-        h2d.SetTitle(var_dict['title'])
+        h2d.SetTitle(var_dict['title'].replace("\n", ", "))
     h2d.Draw("COLZ")
     output_filename = os.path.join(plot_dir, var_dict['name']+"_%s.%s" % (append, OUTPUT_FMT))
     output_dir = os.path.dirname(output_filename)
@@ -487,11 +487,15 @@ if __name__ == "__main__":
     output_tfile = cu.open_root_file(output_root_filename, 'RECREATE')
 
     source_plot_dir_name = None
+    region_label = None
     if "qcd" in args.input.lower():
         source_plot_dir_name = "Dijet_QG_tighter"
-
-    if "dyjetstoll" in args.input.lower():
+        region_label = qgc.QCD_Dijet_LABEL
+    elif "dyjetstoll" in args.input.lower():
         source_plot_dir_name = "ZPlusJets_QG"
+        region_label = qgc.DY_ZpJ_LABEL
+    else:
+        raise RuntimeError("No idea which region we're using")
 
     rebin_results_dict = OrderedDict()
 
@@ -525,7 +529,7 @@ if __name__ == "__main__":
             var_dict = {
                 "name": "%s/%s%s" % (source_plot_dir_name, angle.var, pt_region_dict['append']),
                 "var_label": "%s (%s)" % (angle.name, angle.lambda_str),
-                "title": pt_region_dict['title'],
+                "title": "%s\n%s" % (region_label, pt_region_dict['title']),
             }
             
             do_rel_response = False  # Use relative response instead - only makes sense with quantiles/gaussian fit?
