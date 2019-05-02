@@ -801,7 +801,7 @@ def make_migration_summary_plot(h2d_renorm_x, h2d_renorm_y, xlabel, output_filen
         c.obj.SetLineWidth(2)
     binning = [h2d_renorm_x.GetXaxis().GetBinLowEdge(bin_ind) for bin_ind in range(1, h2d_renorm_x.GetNbinsX()+2)]
     xlim = [binning[0], binning[-1]]
-    plot = Plot(contributions, what='hist', xlim=xlim, ylim=[1e-3, 2], xtitle=xlabel, has_data=False, title=title)
+    plot = Plot(contributions, what='hist', xlim=xlim, ylim=[5e-3, 5], xtitle=xlabel, has_data=False, title=title)
     y1 = 0.15
     plot.legend.SetX1(0.5)
     plot.legend.SetY1(y1)
@@ -814,7 +814,7 @@ def make_migration_summary_plot(h2d_renorm_x, h2d_renorm_y, xlabel, output_filen
     plot.set_logy()
     plot.main_pad.cd()
     lines = []
-    for val in [1, 0.5, 0.4, 1e-1, 1e-2, 1e-3]:
+    for val in [1, 0.5, 0.4, 1e-1, 1e-2]:
         line = ROOT.TLine(xlim[0], val, xlim[1], val)
         line.SetLineStyle(2)
         line.SetLineColor(ROOT.kGray+2)
