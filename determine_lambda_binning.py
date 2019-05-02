@@ -666,8 +666,8 @@ if __name__ == "__main__":
         # Apply binning scheme dervied from one pT region to others
         # ---------------------------------------------------------
         rebin_other_pt_regions = True
+        reference_pt_region = "_midPt"  # correspond to 'append' key in a dict
         if rebin_other_pt_regions:
-            reference_pt_region = "_midPt"  # correspond to 'append' key in a dict
             
             this_pt_dict = [x for x in pt_regions if x['append'] == reference_pt_region][0]
 
@@ -693,11 +693,104 @@ if __name__ == "__main__":
                 var_dict = {
                     "name": hname,
                     "var_label": "%s (%s)" % (angle.name, angle.lambda_str),
-                    "title": h2d.GetTitle() + " (rebinned for %s)" % this_pt_dict['title'],
+                    "title": h2d.GetTitle() + "\n(rebinned for %s)" % this_pt_dict['title'],
                 }
                 make_plots(h2d_rebin, var_dict, plot_dir=plot_dir, 
                            append="rebinned_for%s" % (reference_pt_region), 
                            plot_migrations=True)
+
+            # Now rebin any other input files with the same hist using the new binning
+            # ------------------------------------------------------------------------
+            if args.rebinThisInput and len(args.rebinThisInput) > 0:
+                # contributions = qgg.migration_plot_components(h2d_renorm_x, h2d_renorm_y, var_dict['var_label'])
+                
+                lens = [len(x) for x in [args.rebinThisInput, args.rebinThisLabel, args.rebinThisOutputFile]]
+                if any(l != lens[0] for l in lens[1:]):
+                    raise RuntimeError("Number of --rebinThisInput, --rebinThisLabel, --rebinThisOutputFile should be the same - need one of each per extra input file")
+
+
+                for pt_region_dict in pt_regions[:]:
+                    
+                    var_dict = {
+                        "name": "%s/%s%s" % (source_plot_dir_name, angle.var, pt_region_dict['append']),
+                        "var_label": "%s (%s)" % (angle.name, angle.lambda_str),
+                        "title": "%s\n%s\n(rebinned for %s)" % (region_label, pt_region_dict['title'], this_pt_dict['title']),
+                    }
+                    contributions = []
+                    
+                    full_var_name = var_dict['name']
+                    if do_rel_response:
+                        full_var_name += "_rel_response"
+                    else:
+                        full_var_name += "_response"
+                    
+                    print(var_dict)
+
+                    for ind, (other_input, other_label, other_output_filename) in enumerate(zip(args.rebinThisInput, args.rebinThisLabel, args.rebinThisOutputFile)):
+                        print(other_label)
+                        tfile_other = cu.open_root_file(other_input)
+                        tfile_other_out = cu.open_root_file(other_output_filename, 'RECREATE')
+                        
+                        h2d_other = cu.get_from_tfile(tfile_other, full_var_name)
+                        h2d_rebin_other = make_rebinned_2d_hist(h2d_other, reference_binning, use_half_width_y=False)
+                        print(h2d_other)
+                        print(h2d_rebin_other)
+                        # make_plots(h2d_rebin_other, var_dict, plot_dir=plot_dir+"_"+other_label.replace(" ", "_"), append="rebinned", plot_migrations=True)
+
+                        h2d_renorm_x_other = cu.make_normalised_TH2(h2d_rebin_other, 'X', recolour=False, do_errors=False)
+                        tfile_other_out.WriteTObject(h2d_renorm_x_other)
+                        h2d_renorm_y_other = cu.make_normalised_TH2(h2d_rebin_other, 'Y', recolour=False, do_errors=False)
+                        contributions_other = qgg.migration_plot_components(h2d_renorm_x_other, h2d_renorm_y_other, var_dict['var_label'])
+                        for ind, c in enumerate(contributions_other):
+                            # c.obj.SetLineStyle(ind+2)
+                            c.label += " [%s]" % other_label
+                            # c.subplot = contributions[ind].obj
+                        contributions.extend(contributions_other)
+                        tfile_other_out.Close()
+
+                    # Plot all these rebinned extra inputs alongside the main map
+                    # -----------------------------------------------------------
+                    for c in contributions:
+                        c.obj.SetLineWidth(2)
+
+                    binning = [contributions[0].obj.GetXaxis().GetBinLowEdge(bin_ind) for bin_ind in range(1, contributions[0].obj.GetNbinsX()+2)]
+                    xlim = [binning[0], binning[-1]]
+                    # xlim = None
+
+                    # plot = Plot(contributions, what='hist', xlim=xlim, ylim=[1e-3, 2], xtitle=var_dict['var_label'], has_data=False)
+                    # plot = Plot(contributions, what='hist', xlim=xlim, ylim=[0, 1.25], 
+                    plot = Plot(contributions, what='hist', xlim=xlim, ylim=[5e-3, 5], 
+                                xtitle=var_dict['var_label'], has_data=False, 
+                                title=var_dict['title'],
+                                # subplot_type='ratio', subplot_title='Syst / nominal', 
+                                # subplot_limits=[0.9, 1.1])
+                                )
+                    y1 = 0.15
+                    y1 = 0.65
+                    plot.legend.SetNColumns(len(args.rebinThisInput)+1)
+                    y1 = 0.15
+                    plot.legend.SetX1(0.5)
+                    plot.legend.SetY1(y1)
+                    plot.legend.SetY2(y1+0.25)
+                    plot.legend.SetTextSize(0.015)
+                    plot.plot("NOSTACK HISTE")
+                    plot.legend.SetFillStyle(1001)
+                    plot.legend.SetFillColorAlpha(ROOT.kWhite, 0.75)
+                    if var_dict.get('log', None):
+                        plot.set_logx()
+                    plot.set_logy()
+                    plot.main_pad.cd()
+                    lines = []
+                    # Boundary lines
+                    for val in [1, 0.5, 1e-1, 1e-2]:
+                        line = ROOT.TLine(xlim[0], val, xlim[1], val)
+                        line.SetLineStyle(2)
+                        line.SetLineColor(ROOT.kGray+2)
+                        lines.append(line)
+                        line.Draw("same")
+                    output_filename = os.path.join(plot_dir+"_"+other_label.replace(" ", "_"), "%s_combined_migration_summary_rebinned_for%s.%s" % (var_dict['name'], reference_pt_region, OUTPUT_FMT))
+                    plot.save(output_filename)
+
 
     output_tfile.Close()
     input_tfile.Close()
