@@ -751,7 +751,10 @@ if __name__ == "__main__":
                         h2d_rebin_other = make_rebinned_2d_hist(h2d_other, reference_binning, use_half_width_y=False)
                         print(h2d_other)
                         print(h2d_rebin_other)
-                        # make_plots(h2d_rebin_other, var_dict, plot_dir=plot_dir+"_"+other_label.replace(" ", "_"), append="rebinned", plot_migrations=True)
+          
+                        this_var_dict = deepcopy(var_dict)
+                        this_var_dict['title'] += "\n[%s]" % other_label
+                        make_plots(h2d_rebin_other, this_var_dict, plot_dir=plot_dir+"_"+other_label.replace(" ", "_"), append="rebinned_for%s" % (reference_pt_region), plot_migrations=True)
 
                         h2d_renorm_x_other = cu.make_normalised_TH2(h2d_rebin_other, 'X', recolour=False, do_errors=False)
                         tfile_other_out.WriteTObject(h2d_renorm_x_other)
