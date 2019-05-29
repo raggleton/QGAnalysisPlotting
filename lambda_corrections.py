@@ -69,13 +69,13 @@ def get_corrections(h2d_response, h2d_rel_response, metric):
         h_response.SetName("%g - %g" % (bin_low, bin_high))
         h_response.SetTitle("%g - %g" % (bin_low, bin_high))
 
-        reco_value, reco_err = get_hist_metric(h_reco, "rawmean")
-        response_value, response_err = get_hist_metric(h_response, metric)
         if h_reco.GetEntries() < 10 or h_response.GetEntries() < 10:
             continue
+        reco_value, reco_err = get_hist_metric(h_reco, "rawmean")
+        response_value, response_err = get_hist_metric(h_response, metric)
         if response_value > 0:
             corr = 1./response_value
-            corr_err = response_err / (corr ** 2)
+            corr_err = response_err / (response_value ** 2)
         else:
             raise RuntimeError("response_value for %g-%g is <= 0" % (bin_low, bin_high))
         x_values.append([reco_value, reco_err])
