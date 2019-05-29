@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-"""Figure out optimial binning for lambda variables. 
+"""Figure out optimial binning for lambda variables.
 
 Currently uses minimum required purity & stability in response matrix.
 
@@ -18,6 +18,7 @@ from math import sqrt
 import bisect
 import numpy as np
 from collections import OrderedDict
+from copy import deepcopy
 
 
 import ROOT
@@ -304,10 +305,10 @@ def rebin_2d_hist(h2d, new_binning_x, new_binning_y):
 
 def make_rebinned_2d_hist(h2d, new_binning, use_half_width_y=False):
     """Rebin 2D histogram using new binning.
-    
+
     new_binning is list of tuple pairs of bin edges
     e.g. [(0, 1), (1, 4), (4, 10)]
-    
+
     If use_half_width_y=False, uses new_binning for both x (gen) & y (reco) axes
     If True, creates bins that are half the width of new_binning for
     the y axes (reco)
@@ -326,11 +327,11 @@ def make_rebinned_2d_hist(h2d, new_binning, use_half_width_y=False):
         return rebin_2d_hist(h2d, new_binning, new_binning)
 
 
-def make_plots(h2d, var_dict, plot_dir, append="", 
+def make_plots(h2d, var_dict, plot_dir, append="",
                plot_migrations=True, plot_reco=True, plot_gen=True):
     """Plot a 2D hist, with copies renormalised by row and by column.
-    
-    Also optionally plot migrations as 1D plot, 
+
+    Also optionally plot migrations as 1D plot,
     as well as 1D projections for reco (y) & gen (x)
     """
     # Plot original 2D map, no renormalizing by axis
@@ -412,10 +413,10 @@ def make_plots(h2d, var_dict, plot_dir, append="",
     # Plot migrations as 1D hists
     if plot_migrations:
         output_filename = os.path.join(plot_dir, "%s_%s_migration_summary.%s" % (var_dict['name'], append, OUTPUT_FMT))
-        qgg.make_migration_summary_plot(h2d_renorm_x=h2d_renorm_x, 
-                                        h2d_renorm_y=h2d_renorm_y, 
-                                        xlabel=var_dict['var_label'], 
-                                        output_filename=output_filename, 
+        qgg.make_migration_summary_plot(h2d_renorm_x=h2d_renorm_x,
+                                        h2d_renorm_y=h2d_renorm_y,
+                                        xlabel=var_dict['var_label'],
+                                        output_filename=output_filename,
                                         title=var_dict.get('title', ''))
 
     if plot_reco or plot_gen:
@@ -426,11 +427,11 @@ def make_plots(h2d, var_dict, plot_dir, append="",
                                       line_color=ROOT.kRed, line_width=2))
         if plot_gen:
             h_gen = h2d.ProjectionX(cu.get_unique_str(), 0, -1, "e")
-            conts.append(Contribution(h_gen, label="Gen", normalise_hist=True, 
+            conts.append(Contribution(h_gen, label="Gen", normalise_hist=True,
                                       line_color=ROOT.kBlue, line_width=2))
-        
+
         plot = Plot(conts, what='hist', has_data=False,
-                    title=var_dict.get('title', ''), 
+                    title=var_dict.get('title', ''),
                     xtitle=var_dict['var_label'], ytitle='p.d.f.')
         plot.plot("NOSTACK HISTE")
         bits = []
@@ -468,7 +469,7 @@ if __name__ == "__main__":
                         action="append")
     parser.add_argument("--target",
                         help="Target purity & stability as a fraction",
-                        default=0.4, 
+                        default=0.4,
                         type=float)
     # acceptable_metrics = ['gausfit', 'quantile']
     # parser.add_argument("--metric",
@@ -541,13 +542,13 @@ if __name__ == "__main__":
         response_maps_dict = {} # store 2D maps for later
 
         for pt_region_dict in pt_regions[:]:
-            
+
             var_dict = {
                 "name": "%s/%s%s" % (source_plot_dir_name, angle.var, pt_region_dict['append']),
                 "var_label": "%s (%s)" % (angle.name, angle.lambda_str),
                 "title": "%s\n%s" % (region_label, pt_region_dict['title']),
             }
-            
+
             do_rel_response = False  # Use relative response instead - only makes sense with quantiles/gaussian fit?
             full_var_name = var_dict['name']
             if do_rel_response:
@@ -562,9 +563,9 @@ if __name__ == "__main__":
             # Make plots with original fine equidistant binning
             # -------------------------------------------------
             make_plots(h2d_orig, var_dict, plot_dir=plot_dir, append="orig", plot_migrations=False)
-            
+
             response_maps_dict[var_dict['name']] = h2d_orig
-            
+
             # metric = "gausfit"
             # metric = "quantile"
             # new_binning = calc_variable_binning(h2d_orig, plot_dir, args.metric)
@@ -582,14 +583,14 @@ if __name__ == "__main__":
 
             # Plot with new binning
             # ---------------------
-            make_plots(h2d_rebin, var_dict, plot_dir=plot_dir, append="rebinned", 
+            make_plots(h2d_rebin, var_dict, plot_dir=plot_dir, append="rebinned",
                        plot_migrations=True, plot_reco=True, plot_gen=True)
 
             # Cache renormed plots here for migration plots
             h2d_renorm_x = cu.make_normalised_TH2(h2d_rebin, 'X', recolour=False, do_errors=False)
             output_tfile.WriteTObject(h2d_renorm_x)  # we want renormalised by col for doing folding
             response_maps_dict[var_dict['name']+"_renormX"] = h2d_renorm_x
-            
+
             h2d_renorm_y = cu.make_normalised_TH2(h2d_rebin, 'Y', recolour=False, do_errors=False)
             output_tfile.WriteTObject(h2d_renorm_y)  # save anyway for completeness
             response_maps_dict[var_dict['name']+"_renormY"] = h2d_renorm_y
@@ -602,14 +603,15 @@ if __name__ == "__main__":
                 lens = [len(x) for x in [args.rebinThisInput, args.rebinThisLabel, args.rebinThisOutputFile]]
                 if any(l != lens[0] for l in lens[1:]):
                     raise RuntimeError("Number of --rebinThisInput, --rebinThisLabel, --rebinThisOutputFile should be the same - need one of each per extra input file")
-                
+
                 for ind, (other_input, other_label, other_output_filename) in enumerate(zip(args.rebinThisInput, args.rebinThisLabel, args.rebinThisOutputFile)):
                     print(other_label)
                     tfile_other = cu.open_root_file(other_input)
                     tfile_other_out = cu.open_root_file(other_output_filename, 'RECREATE')
-                    
+
                     h2d_other = cu.get_from_tfile(tfile_other, full_var_name)
                     h2d_rebin_other = make_rebinned_2d_hist(h2d_other, new_binning, use_half_width_y=False)
+
 
                     make_plots(h2d_rebin_other, var_dict, plot_dir=plot_dir+"_"+other_label.replace(" ", "_"), append="rebinned", plot_migrations=True)
 
@@ -633,9 +635,9 @@ if __name__ == "__main__":
                 xlim = [binning[0], binning[-1]]
 
                 # plot = Plot(contributions, what='hist', xlim=xlim, ylim=[1e-3, 2], xtitle=var_dict['var_label'], has_data=False)
-                plot = Plot(contributions, what='hist', xlim=xlim, ylim=[0, 1.25], 
-                            xtitle=var_dict['var_label'], has_data=False, 
-                            subplot_type='ratio', subplot_title='Syst / nominal', 
+                plot = Plot(contributions, what='hist', xlim=xlim, ylim=[0, 1.25],
+                            xtitle=var_dict['var_label'], has_data=False,
+                            subplot_type='ratio', subplot_title='Syst / nominal',
                             subplot_limits=[0.9, 1.1])
                 y1 = 0.15
                 y1 = 0.65
@@ -682,13 +684,14 @@ if __name__ == "__main__":
         # Apply binning scheme dervied from one pT region to others
         # ---------------------------------------------------------
         rebin_other_pt_regions = True
-        reference_pt_region = "_midPt"  # correspond to 'append' key in a dict
+        reference_pt_region = "_charged_midPt"  # correspond to 'append' key in a dict
+        # reference_pt_region = "_lowPt"  # correspond to 'append' key in a dict
         if rebin_other_pt_regions:
-            
+
             this_pt_dict = [x for x in pt_regions if x['append'] == reference_pt_region][0]
 
             # God this is awful, such disconnect between rebinning, names, hists
-            
+
             # First find rebinning scheme
             reference_binning = None
             for hname, h2d in response_maps_dict.items():
@@ -711,47 +714,47 @@ if __name__ == "__main__":
                     "var_label": "%s (%s)" % (angle.name, angle.lambda_str),
                     "title": h2d.GetTitle() + "\n(rebinned for %s)" % this_pt_dict['title'],
                 }
-                make_plots(h2d_rebin, var_dict, plot_dir=plot_dir, 
-                           append="rebinned_for%s" % (reference_pt_region), 
+                make_plots(h2d_rebin, var_dict, plot_dir=plot_dir,
+                           append="rebinned_for%s" % (reference_pt_region),
                            plot_migrations=True)
 
             # Now rebin any other input files with the same hist using the new binning
             # ------------------------------------------------------------------------
             if args.rebinThisInput and len(args.rebinThisInput) > 0:
                 # contributions = qgg.migration_plot_components(h2d_renorm_x, h2d_renorm_y, var_dict['var_label'])
-                
+
                 lens = [len(x) for x in [args.rebinThisInput, args.rebinThisLabel, args.rebinThisOutputFile]]
                 if any(l != lens[0] for l in lens[1:]):
                     raise RuntimeError("Number of --rebinThisInput, --rebinThisLabel, --rebinThisOutputFile should be the same - need one of each per extra input file")
 
 
                 for pt_region_dict in pt_regions[:]:
-                    
+
                     var_dict = {
                         "name": "%s/%s%s" % (source_plot_dir_name, angle.var, pt_region_dict['append']),
                         "var_label": "%s (%s)" % (angle.name, angle.lambda_str),
                         "title": "%s\n%s\n(rebinned for %s)" % (region_label, pt_region_dict['title'], this_pt_dict['title']),
                     }
                     contributions = []
-                    
+
                     full_var_name = var_dict['name']
                     if do_rel_response:
                         full_var_name += "_rel_response"
                     else:
                         full_var_name += "_response"
-                    
+
                     print(var_dict)
 
                     for ind, (other_input, other_label, other_output_filename) in enumerate(zip(args.rebinThisInput, args.rebinThisLabel, args.rebinThisOutputFile)):
                         print(other_label)
                         tfile_other = cu.open_root_file(other_input)
                         tfile_other_out = cu.open_root_file(other_output_filename, 'RECREATE')
-                        
+
                         h2d_other = cu.get_from_tfile(tfile_other, full_var_name)
                         h2d_rebin_other = make_rebinned_2d_hist(h2d_other, reference_binning, use_half_width_y=False)
                         print(h2d_other)
                         print(h2d_rebin_other)
-          
+
                         this_var_dict = deepcopy(var_dict)
                         this_var_dict['title'] += "\n[%s]" % other_label
                         make_plots(h2d_rebin_other, this_var_dict, plot_dir=plot_dir+"_"+other_label.replace(" ", "_"), append="rebinned_for%s" % (reference_pt_region), plot_migrations=True)
@@ -777,11 +780,11 @@ if __name__ == "__main__":
                     # xlim = None
 
                     # plot = Plot(contributions, what='hist', xlim=xlim, ylim=[1e-3, 2], xtitle=var_dict['var_label'], has_data=False)
-                    # plot = Plot(contributions, what='hist', xlim=xlim, ylim=[0, 1.25], 
-                    plot = Plot(contributions, what='hist', xlim=xlim, ylim=[5e-3, 5], 
-                                xtitle=var_dict['var_label'], has_data=False, 
+                    # plot = Plot(contributions, what='hist', xlim=xlim, ylim=[0, 1.25],
+                    plot = Plot(contributions, what='hist', xlim=xlim, ylim=[5e-3, 5],
+                                xtitle=var_dict['var_label'], has_data=False,
                                 title=var_dict['title'],
-                                # subplot_type='ratio', subplot_title='Syst / nominal', 
+                                # subplot_type='ratio', subplot_title='Syst / nominal',
                                 # subplot_limits=[0.9, 1.1])
                                 )
                     y1 = 0.15
