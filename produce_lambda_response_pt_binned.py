@@ -268,7 +268,7 @@ if __name__ == "__main__":
     parser.add_argument('input',
                         help='Input ROOT file to process.'
                         'Several dirs can be specified here, separated by a space.')
-    parser.add_argument("--output_dir",
+    parser.add_argument("--outputDir",
                         help="Directory to put output plot dirs into",
                         default=None)
     parser.add_argument("--outputFile",
