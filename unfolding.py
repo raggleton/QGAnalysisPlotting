@@ -105,6 +105,8 @@ class MyUnfolder(object):
                                             "generator",
                                             axisSteering)
 
+        self.use_axis_binning = True  # for things like get_probability_matrix()
+
     def setInput(self, hist):
         self.unfolder.SetInput(hist)
 
@@ -266,11 +268,29 @@ class MyUnfolder(object):
         canv_lScan.Print("scanL_%s.%s" % (self.variable_name, self.OUTPUT_FMT))
         return tau
 
-    def doUnfolding(self, tau):
+    def do_unfolding(self, tau):
         self.unfolder.DoUnfold(tau)
         # print("( " + str(self.unfolder.GetChi2A()) + " + " + str(self.unfolder.GetChi2L()) + ") / " + str(self.unfolder.GetNdf()))
-        unfolded_1d = self.unfolder.GetOutput("unfolded" + cu.get_unique_str(), "", "generator", "*[U]", True)  # use "generator" for signal + underflow region, "generatordistribution" for only signal region
+        unfolded_1d = self.unfolder.GetOutput("unfolded_" + cu.get_unique_str(), "", "generator", "*[U]", self.use_axis_binning)  # use "generator" for signal + underflow region, "generatordistribution" for only signal region
         return unfolded_1d
+
+    def get_bias(self):
+        return self.unfolder.GetBias("bias_"+cu.get_unique_str(), "", "generator", "*[U]", self.use_axis_binning)
+
+    def get_ematrix_input(self):
+        return self.unfolder.GetEmatrixInput("ematrix_input_"+cu.get_unique_str(), "", "generator", "*[U]", self.use_axis_binning)
+
+    def get_ematrix_sys_uncorr(self):
+        return self.unfolder.GetEmatrixSysUncorr("ematrix_sys_uncorr_"+cu.get_unique_str(), "", "generator", "*[U]", self.use_axis_binning)
+
+    def get_ematrix_total(self):
+        return self.unfolder.GetEmatrixTotal("ematrix_total_"+cu.get_unique_str(), "", "generator", "*[U]", self.use_axis_binning)
+
+    def get_rhoij_total(self):
+        return self.unfolder.GetRhoIJtotal("rhoij_total_"+cu.get_unique_str(), "", "generator", "*[U]", self.use_axis_binning)
+
+    def get_probability_matrix(self):
+        return self.unfolder.GetProbabilityMatrix("prob_matrix_"+cu.get_unique_str(), "", self.use_axis_binning)
 
     def get_var_hist_pt_binned(self, hist1d, ibin_pt, binning='generator'):
         """Get hist of variable for given pt bin from massive 1D hist that TUnfold makes"""
@@ -307,21 +327,51 @@ class MyUnfolder(object):
         canv.SetLogz()
         canv.SetRightMargin(1.5)
         canv.SetLeftMargin(0.9)
-        title = "Probability map, %s region, %s" % (region_name, self.variable_name)
-        prob_map = self.unfolder.GetProbabilityMatrix(cu.get_unique_str(), title).Clone(cu.get_unique_str())
+        prob_map = self.get_probability_matrix()
+        title = "Probability map, %s region, %s;Generator Bin;Detector Bin" % (region_name, self.variable_name)
+        prob_map.SetTitle(title)
         prob_map.GetYaxis().SetTitleOffset(1.5)
         prob_map.GetXaxis().SetTitleOffset(1.5)
         prob_map.Draw("COLZ")
         canv.SaveAs(output_filename)
 
-    def draw_error_matrix(self, region_name, output_filename):
+    def draw_error_matrix_input(self, region_name, output_filename):
         canv = ROOT.TCanvas(cu.get_unique_str(), "", 800, 600)
         canv.SetTicks(1, 1)
         canv.SetLogz()
         canv.SetRightMargin(1.5)
         canv.SetLeftMargin(0.9)
-        title = "Error matrix, %s region, %s;Generator bin; Generator bin" % (region_name, self.variable_name)
-        err_map = self.unfolder.GetEmatrixTotal(cu.get_unique_str(), title).Clone(cu.get_unique_str())
+        err_map = self.get_ematrix_input()
+        title = "Error matrix (input), %s region, %s;Generator bin;Detector bin" % (region_name, self.variable_name)
+        err_map.SetTitle(title)
+        err_map.GetYaxis().SetTitleOffset(1.5)
+        err_map.GetXaxis().SetTitleOffset(1.5)
+        err_map.Draw("COLZ")
+        canv.SaveAs(output_filename)
+
+    def draw_error_matrix_sys_uncorr(self, region_name, output_filename):
+        canv = ROOT.TCanvas(cu.get_unique_str(), "", 800, 600)
+        canv.SetTicks(1, 1)
+        canv.SetLogz()
+        canv.SetRightMargin(1.5)
+        canv.SetLeftMargin(0.9)
+        err_map = self.get_ematrix_sys_uncorr()
+        title = "Error matrix (sys uncorr), %s region, %s;Generator bin;Detector bin" % (region_name, self.variable_name)
+        err_map.SetTitle(title)
+        err_map.GetYaxis().SetTitleOffset(1.5)
+        err_map.GetXaxis().SetTitleOffset(1.5)
+        err_map.Draw("COLZ")
+        canv.SaveAs(output_filename)
+
+    def draw_error_matrix_total(self, region_name, output_filename):
+        canv = ROOT.TCanvas(cu.get_unique_str(), "", 800, 600)
+        canv.SetTicks(1, 1)
+        canv.SetLogz()
+        canv.SetRightMargin(1.5)
+        canv.SetLeftMargin(0.9)
+        err_map = self.get_ematrix_total()
+        title = "Error matrix (total), %s region, %s;Generator bin;Detector bin" % (region_name, self.variable_name)
+        err_map.SetTitle(title)
         err_map.GetYaxis().SetTitleOffset(1.5)
         err_map.GetXaxis().SetTitleOffset(1.5)
         err_map.Draw("COLZ")
@@ -345,8 +395,9 @@ class MyUnfolder(object):
         # canv.SetLogz()
         canv.SetRightMargin(1.5)
         canv.SetLeftMargin(0.9)
-        title = "Correlation map, %s region, %s;Generator Bin;Generator Bin" % (region_name, self.variable_name)
-        corr_map = self.unfolder.GetRhoIJtotal(cu.get_unique_str(), title).Clone(cu.get_unique_str())
+        corr_map = self.get_rhoij_total()
+        title = "Correlation map, %s region, %s;Generator Bin;Detector Bin" % (region_name, self.variable_name)
+        corr_map.SetTitle(title)
         corr_map.GetYaxis().SetTitleOffset(1.5)
         corr_map.GetXaxis().SetTitleOffset(1.5)
         # ROOT.gStyle.SetPalette(ROOT.kLightTemperature)
@@ -391,6 +442,14 @@ def plot_simple_unfolded(unfolded, reco, gen, output_filename, title=""):
     hst.SetMaximum(1E12)
     canv_unfold.SaveAs(output_filename)
 
+
+def create_hist_with_errors(hist, err_matrix):
+    hnew = hist.Clone(cu.get_unique_str())
+    nbins = hist.GetNbinsX()
+    for i in range(1, nbins+1):
+        err = sqrt(err_matrix.GetBinContent(i, i))
+        hnew.SetBinError(i, err)
+    return hnew
 
 
 if __name__ == "__main__":
@@ -484,7 +543,7 @@ if __name__ == "__main__":
 
             # Do unfolding!
             # ---------------------
-            unfolded_1d = unfolder.doUnfolding(tau)
+            unfolded_1d = unfolder.do_unfolding(tau)
 
             # Draw unified unfolded distributions
             # ---------------------
@@ -494,23 +553,25 @@ if __name__ == "__main__":
                                  output_filename="%s/unfolded_%s_%s.%s" % (output_dir, region['name'], angle.var, OUTPUT_FMT),
                                  title="%s region, %s" % (region['label'], angle.name))
 
-
             # Draw matrices
             # -------------
             unfolder.draw_response_matrix(region['name'], "%s/response_map_%s_%s.%s" % (output_dir, region['name'], angle.var, OUTPUT_FMT))
             unfolder.draw_probability_matrix(region['name'], "%s/probability_map_%s_%s.%s" % (output_dir, region['name'], angle.var, OUTPUT_FMT))
             unfolder.draw_correlation_matrix(region['name'], "%s/corr_map_%s_%s.%s" % (output_dir, region['name'], angle.var, OUTPUT_FMT))
-            unfolder.draw_error_matrix(region['name'], "%s/err_map_%s_%s.%s" % (output_dir, region['name'], angle.var, OUTPUT_FMT))
+            unfolder.draw_error_matrix_input(region['name'], "%s/err_map_sys_input_%s_%s.%s" % (output_dir, region['name'], angle.var, OUTPUT_FMT))
+            unfolder.draw_error_matrix_sys_uncorr(region['name'], "%s/err_map_sys_uncorr_%s_%s.%s" % (output_dir, region['name'], angle.var, OUTPUT_FMT))
+            unfolder.draw_error_matrix_total(region['name'], "%s/err_map_total_%s_%s.%s" % (output_dir, region['name'], angle.var, OUTPUT_FMT))
 
             # continue
 
             # Draw individual pt bin plots
             # ----------------------------
             for ibin_pt in range(0, len(pt_bin_edges_gen)-1):
-                
+
                 gen_hist_bin = unfolder.get_var_hist_pt_binned(hist_mc_gen, ibin_pt, binning="generator")
                 unfolded_hist_bin = unfolder.get_var_hist_pt_binned(unfolded_1d, ibin_pt, binning="generator")
-                
+                # unfolded_hist_bin_with_errors = create_hist_with_errors(unfolded_hist_bin, )
+
                 for n in range(1, gen_hist_bin.GetNbinsX()+1):
                     print("Bin", n)
                     print("gen_hist:", gen_hist_bin.GetBinContent(n))
@@ -534,7 +595,7 @@ if __name__ == "__main__":
                 title = "%s\n%s region\n%g < p_{T}^{Gen} < %g GeV" % (jet_algo, region['label'], pt_bin_edges_gen[ibin_pt], pt_bin_edges_gen[ibin_pt+1])
                 plot = Plot(entries, "hist", title=title,
                             xtitle=angle.name, ytitle='p.d.f.',
-                            subplot_type='ratio', 
+                            subplot_type='ratio',
                             subplot_title='Unfolded / gen',
                             subplot_limits=(0.8, 1.2))
                 plot.legend.SetY1(0.75)
