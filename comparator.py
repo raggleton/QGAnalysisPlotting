@@ -531,7 +531,7 @@ class Plot(object):
         text_latex.SetTextFont(42)
         text_latex.SetTextSize(0.03)
         start_y = 0.87
-        diff_y = 0.07
+        diff_y = 0.05
         for ind, line in enumerate(self.title.split('\n')):
             text_latex.DrawLatex(0.18, start_y - (ind*diff_y), line)
 
