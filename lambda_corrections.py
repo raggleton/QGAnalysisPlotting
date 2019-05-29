@@ -47,7 +47,7 @@ def get_hist_metric(h_reco, metric="rawmean"):
         values = array('d', [0, 0, 0])
         h_reco.GetQuantiles(len(quantiles), values, quantiles)
         quantile_ideal_lower_edge, median, quantile_ideal_upper_edge = values
-        return median, 0
+        return median, 1.253 * h_reco.GetMeanError() / sqrt(h_reco.GetEffectiveEntries())
     elif metric == "gausfit":
         return 1, 1
 
