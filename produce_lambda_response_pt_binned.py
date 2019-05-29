@@ -369,7 +369,7 @@ if __name__ == "__main__":
             new_title = title.split(",")[title_part].strip()
             this_var_dict['title'] = new_title
             make_plots(summed_hist, this_var_dict, plot_dir=plot_dir, append="orig", plot_migrations=False)
-
+            summed_hist.SetName(this_var_dict['name'].split("/")[-1])
             output_tfile.WriteTObject(summed_hist)
     
         # new_binning = calc_variable_binning_other(h2d_orig)
