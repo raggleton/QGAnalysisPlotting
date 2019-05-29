@@ -516,6 +516,22 @@ if __name__ == "__main__":
             "append": "_highPt",
             "title": "p_{T}^{Reco} > 250 GeV",
         },
+        {
+            "append": "_charged",
+            "title": "p_{T}^{Reco} > 30 GeV (only charged constits.)",
+        },
+        {
+            "append": "_charged_lowPt",
+            "title": "30 < p_{T}^{Reco} < 100 GeV (only charged constits.)",
+        },
+        {
+            "append": "_charged_midPt",
+            "title": "100 < p_{T}^{Reco} < 250 GeV (only charged constits.)",
+        },
+        {
+            "append": "_charged_highPt",
+            "title": "p_{T}^{Reco} > 250 GeV (only charged constits.)",
+        },
     ]
 
     input_tfile = cu.open_root_file(args.input)
