@@ -85,31 +85,37 @@ ANGLE_REBIN_DICT = {
     'jet_thrust': [0.0, 0.04, 0.08, 0.12, 0.17, 0.24, 0.33, 1.0],
 }
 
+PT_UNFOLD_DICT = {
+    "signal_gen": np.array([50, 65, 88, 120, 150, 186, 254, 326, 408, 481, 614, 800, 1000, 1500, 2000, 10000], dtype='d'),
+    "underflow_gen": np.array([30, 38, 50], dtype='d'),
+    "signal_zpj_gen": np.array([50, 65, 88, 120, 150, 186, 254, 326, 408, 481, 614, 800, 10000], dtype='d'),
+    "underflow_zpj_gen": np.array([30, 38, 50], dtype='d'),
+}
 
-VAR_REBIN_DICT = {
+VAR_UNFOLD_DICT = {
     'jet_multiplicity': {
-        'coarse': np.array([1, 7, 10, 13, 19, 25, 35, 50, 75, 100, 150], dtype='d'),
-        'fine': None
+        'gen': np.array([1, 5, 10, 13, 19, 25, 35, 50, 75, 100, 150], dtype='d'),
+        'reco': None  # reco gets set later
     },
     'jet_puppiMultiplicity': {
-        'coarse': np.array([1, 7, 10, 13, 19, 25, 35, 50, 75, 100, 150], dtype='d'),
-        'fine': None
+        'gen': np.array([1, 5, 10, 13, 19, 25, 35, 50, 75, 100, 150], dtype='d'),
+        'reco': None
     },
     'jet_pTD': {
-        'coarse': np.array([0.0, 0.09, 0.12, 0.16, 0.21, 0.29, 0.43, 0.7, 1.0], dtype='d'),
-        'fine': None
+        'gen': np.array([0.0, 0.09, 0.12, 0.16, 0.21, 0.29, 0.43, 0.7, 1.0], dtype='d'),
+        'reco': None
     },
     'jet_LHA': {
-        'coarse': np.array([0.0, 0.29, 0.37, 0.44, 0.5, 0.56, 0.62, 0.68, 0.75, 1.0], dtype='d'),
-        'fine': None
+        'gen': np.array([0.0, 0.14, 0.29, 0.37, 0.44, 0.5, 0.56, 0.62, 0.68, 0.75, 1.0], dtype='d'),
+        'reco': None
     },
     'jet_width': {
-        'coarse': np.array([0.0, 0.11, 0.17, 0.23, 0.29, 0.35, 0.42, 0.6, 1.0], dtype='d'),
-        'fine': None
+        'gen': np.array([0.0, 0.11, 0.17, 0.23, 0.29, 0.35, 0.42, 0.6, 1.0], dtype='d'),
+        'reco': None
     },
     'jet_thrust': {
-        'coarse': np.array([0.0, 0.04, 0.08, 0.12, 0.17, 0.24, 0.33, 0.66, 1.0], dtype='d'),
-        'fine': None
+        'gen': np.array([0.0, 0.04, 0.08, 0.12, 0.17, 0.24, 0.33, 0.66, 1.0], dtype='d'),
+        'reco': None
     },
 }
 
@@ -124,10 +130,10 @@ def construct_fine_binning(coarse_bin_edges):
 
 # Construct fine binning from splitting coarser bins
 # Coarser bins dervied from determine_lambda_binning.py
-for angle_name, angle_dict in VAR_REBIN_DICT.items():
-    if angle_dict['fine'] is None:
-        angle_dict['fine'] = construct_fine_binning(angle_dict['coarse'])
-    VAR_REBIN_DICT[angle_name] = angle_dict
+for angle_name, angle_dict in VAR_UNFOLD_DICT.items():
+    if angle_dict['reco'] is None:
+        angle_dict['reco'] = construct_fine_binning(angle_dict['gen'])
+    VAR_UNFOLD_DICT[angle_name] = angle_dict
 
 
 
