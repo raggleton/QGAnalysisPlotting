@@ -12,7 +12,7 @@ from __future__ import print_function
 import os
 import sys
 import argparse
-import array
+from array import array
 import numpy as np
 import math
 
@@ -42,11 +42,13 @@ class MyUnfolder(object):
 
     def __init__(self,
                  response_map,  # 2D GEN-RECO heatmap
-                 variable_bin_edges_fine, # 'variable' refers to e.g. ptD, LHA
-                 variable_bin_edges_coarse, # fine for detector binnig, coarse for generator (final) binning
+                 variable_bin_edges_reco, # 'variable' refers to e.g. ptD, LHA
+                 variable_bin_edges_gen, # reco for detector binnig, gen for generator (final) binning
                  variable_name,
-                 pt_bin_edges,
-                 pt_bin_edges_coarse,
+                 pt_bin_edges_reco,
+                 pt_bin_edges_gen,
+                 pt_bin_edges_underflow_reco,
+                 pt_bin_edges_underflow_gen,
                  orientation=ROOT.TUnfold.kHistMapOutputHoriz,
                  constraintMode=ROOT.TUnfold.kEConstraintArea,
                  regMode=ROOT.TUnfold.kRegModeCurvature,
@@ -56,34 +58,52 @@ class MyUnfolder(object):
         self.response_map = response_map
         self.variable_name = variable_name
 
-        self.variable_bin_edges_fine = variable_bin_edges_fine
-        self.nbins_variable_fine = len(variable_bin_edges_fine)-1
-        self.variable_bin_edges_coarse = variable_bin_edges_coarse
-        self.nbins_variable_coarse = len(variable_bin_edges_coarse)-1
-        self.pt_bin_edges = pt_bin_edges
-        self.nbins_pt = len(pt_bin_edges)-1
-        self.pt_bin_edges_coarse = pt_bin_edges_coarse
-        self.nbins_pt_coarse = len(pt_bin_edges_coarse)-1
+        self.variable_bin_edges_reco = variable_bin_edges_reco
+        self.nbins_variable_reco = len(variable_bin_edges_reco)-1
+        self.variable_bin_edges_gen = variable_bin_edges_gen
+        self.nbins_variable_gen = len(variable_bin_edges_gen)-1
+
+        self.pt_bin_edges_reco = pt_bin_edges_reco
+        self.nbins_pt_reco = len(pt_bin_edges_reco)-1
+        self.pt_bin_edges_gen = pt_bin_edges_gen
+        self.nbins_pt_gen = len(pt_bin_edges_gen)-1
+
+        self.pt_bin_edges_underflow_reco = pt_bin_edges_underflow_reco
+        self.nbins_pt_underflow_reco = len(pt_bin_edges_underflow_reco)-1
+        self.pt_bin_edges_underflow_gen = pt_bin_edges_underflow_gen
+        self.nbins_pt_underflow_gen = len(pt_bin_edges_underflow_gen)-1
 
         # Binning setup here MUST match how it was setup in making the input files, otherwise
         # you will have untold pain and suffering!
+        # TODO read in from XML
         self.detector_binning = ROOT.TUnfoldBinning("detector")
         detector_distribution = self.detector_binning.AddBinning("detectordistribution")
-        detector_distribution.AddAxis(self.variable_name, self.nbins_variable_fine, self.variable_bin_edges_fine, False, False)
-        detector_distribution.AddAxis("pt", self.nbins_pt, self.pt_bin_edges, False, True)
+        detector_distribution.AddAxis(self.variable_name, self.nbins_variable_reco, self.variable_bin_edges_reco, False, False)
+        detector_distribution.AddAxis("pt", self.nbins_pt_reco, self.pt_bin_edges_reco, False, False) # handle pt uder/over flow ourselves
+
+        detector_distribution_underflow = self.detector_binning.AddBinning("detectordistribution_underflow")
+        detector_distribution_underflow.AddAxis(self.variable_name, self.nbins_variable_reco, self.variable_bin_edges_reco, False, False)
+        detector_distribution_underflow.AddAxis("pt", self.nbins_pt_underflow_reco, self.pt_bin_edges_underflow_reco, False, False)
 
         self.generator_binning = ROOT.TUnfoldBinning("generator")
         generator_distribution = self.generator_binning.AddBinning("generatordistribution")
-        generator_distribution.AddAxis(self.variable_name, self.nbins_variable_coarse, self.variable_bin_edges_coarse, False, False)
-        generator_distribution.AddAxis("pt", self.nbins_pt_coarse, self.pt_bin_edges_coarse, True, True)
+        generator_distribution.AddAxis(self.variable_name, self.nbins_variable_gen, self.variable_bin_edges_gen, False, False)
+        generator_distribution.AddAxis("pt", self.nbins_pt_gen, self.pt_bin_edges_gen, False, False)
+
+        generator_distribution_underflow = self.generator_binning.AddBinning("generatordistribution_underflow")
+        generator_distribution_underflow.AddAxis(self.variable_name, self.nbins_variable_gen, self.variable_bin_edges_gen, False, False)
+        generator_distribution_underflow.AddAxis("pt", self.nbins_pt_underflow_gen, self.pt_bin_edges_underflow_gen, False, False)
 
         self.axisSteering = axisSteering
-        self.unfolder = ROOT.TUnfoldDensity(response_map, orientation, regMode, constraintMode, densityFlags,
-                                            self.generator_binning, self.detector_binning,
-                                            "generatordistribution", axisSteering)
-
-        self.unfolded_1d = None  # for later
-        self.unfolded_2d = None  # for later
+        self.unfolder = ROOT.TUnfoldDensity(response_map,
+                                            orientation,
+                                            regMode,
+                                            constraintMode,
+                                            densityFlags,
+                                            self.generator_binning,
+                                            self.detector_binning,
+                                            "generator",
+                                            axisSteering)
 
     def setInput(self, hist):
         self.unfolder.SetInput(hist)
@@ -129,10 +149,9 @@ class MyUnfolder(object):
         print("rho[0] = {}".format(rho[0]))
         print("x[0] = {}".format(x[0]))
         print("y[0] = {}".format(y[0]))
-        int1 = 1
-        bestRhoLogTau = ROOT.TGraph(int1, t, rho)
+        bestRhoLogTau = ROOT.TGraph(1, t, rho)
         print("10^log_10(tau) = tau = {}".format(math.pow(10., float(t0))))
-        bestLCurve = ROOT.TGraph(int(1), x, y)
+        bestLCurve = ROOT.TGraph(1, x, y)
 
         tAll, rhoAll = array('d'), array('d')
         for i in range(n_scan):
@@ -169,6 +188,7 @@ class MyUnfolder(object):
 
         leg1 = ROOT.TLegend(0.59, 0.6, 0.74, 0.89)
         leg1.SetFillColor(0)
+        leg1.SetFillStyle(0)
         leg1.SetBorderSize(0)
         leg1.SetTextSize(0.026)
         leg1.AddEntry(knots, '{} #rho: #tau = {}'.format(tauoptname,  tau), 'l')
@@ -234,6 +254,7 @@ class MyUnfolder(object):
 
         leg1 = ROOT.TLegend(0.5, 0.6, 0.7, 0.94)
         leg1.SetFillColor(0)
+        leg1.SetFillStyle(0)
         leg1.SetBorderSize(0)
         leg1.SetTextSize(0.026)
         leg1.AddEntry(bestLcurve, 'L Curve Scan: #tau = {}'.format(tau), 'l')
@@ -247,38 +268,9 @@ class MyUnfolder(object):
 
     def doUnfolding(self, tau):
         self.unfolder.DoUnfold(tau)
-
-        print("( " + str(self.unfolder.GetChi2A()) + " + " + str(self.unfolder.GetChi2L()) + ") / " + str(self.unfolder.GetNdf()))
-        print("Tau : ", tau)
-        print("Tau : ", self.unfolder.GetTau())
-        self.unfolded_1d = self.unfolder.GetOutput("unfolded" + cu.get_unique_str(), "", "generator", "*[]", False)
-        # FIXME: do errors properly, not nullptr
-        self.unfolded_2d = self.generator_binning.ExtractHistogram("unfolded2D" + cu.get_unique_str(), self.unfolded_1d, ROOT.MakeNullPointer(ROOT.TH2), True, "*[]")
-        # self.unfolded_2d = self.unfolder.GetOutput("unfolded" + cu.get_unique_str(), "", "generator", self.axisSteering, True)
-        print(type(self.unfolded_2d))
-        return self.unfolded_1d, self.unfolded_2d
-
-    def get_unfolded_var_hist_pt_binned(self, ibin_pt):
-        """Get 1D histogram of our unfolded variable for a given pT bin
-
-        Parameters
-        ----------
-        ibin_pt : int
-            pT bin #
-        """
-        h_2d = self.unfolded_2d
-        ax_y = h_2d.GetYaxis()
-        print("2D y ax:", ax_y.GetNbins())
-        for i in range(1, ax_y.GetNbins()):
-            print("2d yax:", i, ax_y.GetBinLowEdge(i))
-        pt_low = ax_y.GetBinLowEdge(ibin_pt+1)
-        pt_high = ax_y.GetBinLowEdge(ibin_pt+2)
-        hname = "h_unfolded_%d" % (ibin_pt)
-        h_1d = h_2d.ProjectionX(hname, ibin_pt+1, ibin_pt+2)
-        h_1d.SetName(hname)
-        h_1d.SetTitle("%g < p_{T}^{Gen} < %g GeV;%s;N" % (pt_low, pt_high, self.variable_name))
-        return h_1d
-
+        # print("( " + str(self.unfolder.GetChi2A()) + " + " + str(self.unfolder.GetChi2L()) + ") / " + str(self.unfolder.GetNdf()))
+        unfolded_1d = self.unfolder.GetOutput("unfolded" + cu.get_unique_str(), "", "generator", "*[U]", True)  # use "generator" for signal + underflow region, "generatordistribution" for only signal region
+        return unfolded_1d
 
     def get_var_hist_pt_binned(self, hist1d, ibin_pt, binning='generator'):
         """Get hist of variable for given pt bin from massive 1D hist that TUnfold makes"""
@@ -287,13 +279,13 @@ class MyUnfolder(object):
         pt_bins = np.array(binning.GetDistributionBinning(1))
 
         # need the -1 on ibin_pt, as it references an array index, whereas ROOT bins start at 1
-        h = ROOT.TH1D("h_%d" % (ibin_pt), "", len(var_bins)-1, var_bins)
+        h = ROOT.TH1D("h_%d_%s" % (ibin_pt, cu.get_unique_str()), "", len(var_bins)-1, var_bins)
         for var_ind, var_value in enumerate(var_bins[:-1], 1):
             this_val = var_value * 1.001  # ensure its inside
             bin_num = binning.GetGlobalBinNumber(this_val, pt_bins[ibin_pt]*1.001)
             h.SetBinContent(var_ind, hist1d.GetBinContent(bin_num))
             h.SetBinError(var_ind, hist1d.GetBinError(bin_num))
-            print("Bin:", bin_num, this_val, pt_bins[ibin_pt], "=", hist1d.GetBinContent(bin_num), "+-", hist1d.GetBinError(bin_num))
+            # print("Bin:", bin_num, this_val, pt_bins[ibin_pt], "=", hist1d.GetBinContent(bin_num), "+-", hist1d.GetBinError(bin_num))
         return h
 
     def draw_response_matrix(self, region_name, output_filename):
@@ -303,7 +295,7 @@ class MyUnfolder(object):
         canv.SetRightMargin(1.5)
         canv.SetLeftMargin(0.9)
         rsp_map = self.response_map.Clone(cu.get_unique_str())
-        rsp_map.SetTitle("Response matrix, %s region, %s;Generator Bin;Reconstructed Bin" % (region_name, self.variable_name))
+        rsp_map.SetTitle("Response matrix, %s region, %s;Generator Bin;Detector Bin" % (region_name, self.variable_name))
         rsp_map.GetYaxis().SetTitleOffset(1.5)
         rsp_map.GetXaxis().SetTitleOffset(1.5)
         rsp_map.Draw("COLZ")
@@ -336,26 +328,16 @@ class MyUnfolder(object):
         canv.SaveAs(output_filename)
 
     def draw_correlation_matrix(self, region_name, output_filename):
-        # MyPalette = [0]*100
-        # Red = array.array('d', [0., 0.0, 1.0, 1.0, 1.0])
-        # Green = array.array('d', [0., 0.0, 0.0, 1.0, 1.0])
-        # Blue = array.array('d', [0., 1.0, 0.0, 0.0, 1.0])
-        # Length = array.array('d', [0., .25, .50, .75, 1.0])
-        # FI = ROOT.TColor.CreateGradientColorTable(5, Length, Red, Green, Blue, 100)
-        # for i in range(100):
-        #     MyPalette[i] = FI+i
-        # ROOT.gStyle.SetPalette(100, MyPalette)
-
         NRGBs = 3
         NCont = 99
         stops = [ 0.00, 0.53, 1.00 ]
         red = [ 0.00, 1.00, 1.00]
         green = [ 0.00, 1.00, 0.00 ]
         blue = [ 1.00, 1.00, 0.00 ]
-        stopsArray = array.array('d', stops)
-        redArray = array.array('d', red)
-        greenArray = array.array('d', green)
-        blueArray = array.array('d', blue)
+        stopsArray = array('d', stops)
+        redArray = array('d', red)
+        greenArray = array('d', green)
+        blueArray = array('d', blue)
         ROOT.TColor.CreateGradientColorTable(NRGBs, stopsArray, redArray, greenArray, blueArray, NCont)
 
         canv = ROOT.TCanvas(cu.get_unique_str(), "", 800, 600)
@@ -382,9 +364,12 @@ def plot_simple_unfolded(unfolded, reco, gen, output_filename, title=""):
     canv_unfold.SetLogy()
     canv_unfold.SetTicks(1, 1)
     leg = ROOT.TLegend(0.7, 0.7, 0.88, 0.88)
+    leg.SetFillColor(0)
+    leg.SetFillStyle(0)
     hst = ROOT.THStack("hst", "%s;Bin Number;N" % (title))
 
     reco.SetLineColor(ROOT.kGreen+2)
+    reco.SetMarkerColor(ROOT.kGreen+2)
     hst.Add(reco)
     leg.AddEntry(reco, "Reco", "L")
 
@@ -404,16 +389,17 @@ def plot_simple_unfolded(unfolded, reco, gen, output_filename, title=""):
     leg.Draw()
     hst.SetMinimum(1E-2)
     hst.SetMaximum(1E12)
-    canv_unfold.Draw()
     canv_unfold.SaveAs(output_filename)
 
 
 
 if __name__ == "__main__":
-    input_mc_qcd_tfile = cu.open_root_file("workdir_ak4puppi_mgpythia_newFlav_withAllResponses_jetAsymCut_chargedResp_pt1Constituents_V11JEC_JER_tUnfold/uhh2.AnalysisModuleRunner.MC.MC_QCD.root")
-    input_mc_dy_tfile = cu.open_root_file("workdir_ak4puppi_mgpythia_newFlav_withAllResponses_jetAsymCut_chargedResp_pt1Constituents_V11JEC_JER_tUnfold/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL.root")
-    input_jetht_tfile = cu.open_root_file("workdir_ak4puppi_data_newFlav_withAllResponses_jetAsymCut_chargedResp_pt1Constituents_V11JEC_JER_tUnfold/uhh2.AnalysisModuleRunner.DATA.Data_JetHTZeroBias.root")
-    input_singlemu_tfile = cu.open_root_file("workdir_ak4puppi_data_newFlav_withAllResponses_jetAsymCut_chargedResp_pt1Constituents_V11JEC_JER_tUnfold/uhh2.AnalysisModuleRunner.DATA.Data_SingleMu.root")
+    # input_mc_qcd_tfile = cu.open_root_file("workdir_ak4puppi_mgpythia_newFlav_withAllResponses_jetAsymCut_chargedResp_pt1RecoConstituents_V11JEC_JER_tUnfold/uhh2.AnalysisModuleRunner.MC.MC_QCD.root")
+    # input_mc_dy_tfile = cu.open_root_file("workdir_ak4puppi_mgpythia_newFlav_withAllResponses_jetAsymCut_chargedResp_pt1RecoConstituents_V11JEC_JER_tUnfold/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL.root")
+    # input_singlemu_tfile = cu.open_root_file("workdir_ak4puppi_data_newFlav_withAllResponses_jetAsymCut_chargedResp_pt1Constituents_V11JEC_JER_tUnfold/uhh2.AnalysisModuleRunner.DATA.Data_SingleMu.root")
+
+    input_mc_qcd_tfile = cu.open_root_file("workdir_ak4puppi_pythia_newFlav_withAllResponses_jetAsymCut_chargedResp_pt1RecoConstituents_V11JEC_JER_tUnfold/uhh2.AnalysisModuleRunner.MC.MC_PYTHIA-QCD.root")
+    input_jetht_tfile = cu.open_root_file("workdir_ak4puppi_data_withAllResponses_trigBinningBetter2_jetAsymCut_pt1RecoConstituents_V11JEC_JER_tUnfold/uhh2.AnalysisModuleRunner.DATA.Data_JetHTZeroBias.root")
 
     regions = [
         {
@@ -423,36 +409,42 @@ if __name__ == "__main__":
             "data_tfile": input_jetht_tfile,
             "mc_tfile": input_mc_qcd_tfile,
         },
-        {
-            "name": "ZPlusJets",
-            "dirname": "ZPlusJets_QG",
-            "label": "Z+jets",
-            "data_tfile": input_singlemu_tfile,
-            "mc_tfile": input_mc_dy_tfile,
-        },
+        # {
+        #     "name": "ZPlusJets",
+        #     "dirname": "ZPlusJets_QG",
+        #     "label": "Z+jets",
+        #     "data_tfile": input_singlemu_tfile,
+        #     "mc_tfile": input_mc_dy_tfile,
+        # },
     ]
-
-    pt_bin_edges_coarse = np.array([15, 23, 30, 38, 50, 65, 88, 120, 150, 186, 254, 326, 408, 481, 614, 800, 1000, 1500, 2000, 10000], dtype='d')
-    pt_bin_edges_fine = cu.construct_fine_binning(pt_bin_edges_coarse)
-
-    # z+jets needs lower last ultrawide bin
-    pt_bin_edges_coarse_zpj = np.array([15, 23, 30, 38, 50, 65, 88, 120, 150, 186, 254, 326, 408, 481, 614, 800, 10000], dtype='d')
-    pt_bin_edges_fine_zpj = cu.construct_fine_binning(pt_bin_edges_coarse_zpj)
 
     output_dir = "unfolding"
     cu.check_dir_exists_create(output_dir)
 
+    # TODO automate this
     jet_algo = "AK4 PF PUPPI"
 
     for region in regions[:]:
 
-        this_pt_bin_edges_coarse = pt_bin_edges_coarse_zpj if "ZPlusJets" in region['name'] else pt_bin_edges_coarse
-        this_pt_bin_edges_fine = pt_bin_edges_fine_zpj if "ZPlusJets" in region['name'] else pt_bin_edges_fine
+        # Setup pt bins
+        # -------------
+        # need different ones for Z+Jets region
+        is_zpj = "ZPlusJets" in region['name']
 
-        for angle in qgc.COMMON_VARS[:]:
+        zpj_append = "_zpj" if is_zpj else ""
 
-            angle_bin_edges_fine = qgc.VAR_REBIN_DICT[angle.var]['fine']
-            angle_bin_edges_coarse = qgc.VAR_REBIN_DICT[angle.var]['coarse']
+        pt_bin_edges_gen = qgc.PT_UNFOLD_DICT['signal%s_gen' % (zpj_append)]
+        pt_bin_edges_reco = qgc.construct_fine_binning(pt_bin_edges_gen)
+
+        pt_bin_edges_underflow_gen = qgc.PT_UNFOLD_DICT['underflow%s_gen' % (zpj_append)]
+        pt_bin_edges_underflow_reco = qgc.construct_fine_binning(pt_bin_edges_underflow_gen)
+
+        for angle in qgc.COMMON_VARS[2:3]:
+
+            # Setup MyUnfolder object to do unfolding etc
+            # -------------------------------------------
+            angle_bin_edges_reco = qgc.VAR_UNFOLD_DICT[angle.var]['reco']
+            angle_bin_edges_gen = qgc.VAR_UNFOLD_DICT[angle.var]['gen']
             angle_shortname = angle.var.replace("jet_", "")
 
             hist_data_reco = cu.get_from_tfile(region['data_tfile'], "%s/hist_%s_reco_new" % (region['dirname'], angle_shortname))
@@ -460,59 +452,76 @@ if __name__ == "__main__":
             hist_mc_gen = cu.get_from_tfile(region['mc_tfile'], "%s/hist_%s_truth_new" % (region['dirname'], angle_shortname))
             hist_mc_gen_reco_map = cu.get_from_tfile(region['mc_tfile'], "%s/tu_%s_GenReco_new" % (region['dirname'], angle_shortname))
 
+            # Setup unfolder object
+            # ---------------------
             unfolder = MyUnfolder(response_map=hist_mc_gen_reco_map,
-                                  variable_bin_edges_fine=angle_bin_edges_fine,
-                                  variable_bin_edges_coarse=angle_bin_edges_coarse,
+                                  variable_bin_edges_reco=angle_bin_edges_reco,
+                                  variable_bin_edges_gen=angle_bin_edges_gen,
                                   variable_name=angle.name,
-                                  pt_bin_edges=this_pt_bin_edges_fine,
-                                  pt_bin_edges_coarse=this_pt_bin_edges_coarse,
+                                  pt_bin_edges_reco=pt_bin_edges_reco,
+                                  pt_bin_edges_gen=pt_bin_edges_gen,
+                                  pt_bin_edges_underflow_reco=pt_bin_edges_underflow_reco,
+                                  pt_bin_edges_underflow_gen=pt_bin_edges_underflow_gen,
                                   orientation=ROOT.TUnfold.kHistMapOutputHoriz,
-                                  constraintMode=ROOT.TUnfold.kEConstraintArea,
+                                  # constraintMode=ROOT.TUnfold.kEConstraintArea,
+                                  constraintMode=ROOT.TUnfold.kEConstraintNone,
                                   regMode=ROOT.TUnfold.kRegModeCurvature,
-                                  densityFlags=ROOT.TUnfoldDensity.kDensityModeBinWidth,
+                                  # densityFlags=ROOT.TUnfoldDensity.kDensityModeBinWidth,
+                                  densityFlags=ROOT.TUnfoldDensity.kDensityModeNone,
                                   axisSteering='*[b]')
-            unfolder.setInput(hist_data_reco)
+
+            # Set what is to be unfolded
+            # ---------------------
+            # unfolder.setInput(hist_data_reco)
+            unfolder.setInput(hist_mc_reco)
+
+            # Do any regularisation
+            # ---------------------
             # tau = unfolder.doScanL()
             # tau = unfolder.doScanTau()
+            tau = 1E-10
             tau = 0
 
             # Do unfolding!
-            unfolded_1d, unfolded_2d = unfolder.doUnfolding(tau)
-            
+            # ---------------------
+            unfolded_1d = unfolder.doUnfolding(tau)
+
             # Draw unified unfolded distributions
+            # ---------------------
             plot_simple_unfolded(unfolded=unfolded_1d,
                                  reco=hist_data_reco,
                                  gen=hist_mc_gen,
                                  output_filename="%s/unfolded_%s_%s.%s" % (output_dir, region['name'], angle.var, OUTPUT_FMT),
                                  title="%s region, %s" % (region['label'], angle.name))
-            
-            c = ROOT.TCanvas("c" ,"", 800, 600)
-            c.SetTicks(1, 1)
-            c.SetLogy()
-            c.SetLogz()
-            unfolded_2d.SetTitle("%s;%s;p_{T} [GeV]" % (region['name'], angle.name))
-            unfolded_2d.Draw("COLZ TEXTE")
-            c.SaveAs("%s/unfolded_%s_%s_2d.%s" % (output_dir, region['name'], angle.var, OUTPUT_FMT))
+
 
             # Draw matrices
+            # -------------
             unfolder.draw_response_matrix(region['name'], "%s/response_map_%s_%s.%s" % (output_dir, region['name'], angle.var, OUTPUT_FMT))
             unfolder.draw_probability_matrix(region['name'], "%s/probability_map_%s_%s.%s" % (output_dir, region['name'], angle.var, OUTPUT_FMT))
             unfolder.draw_correlation_matrix(region['name'], "%s/corr_map_%s_%s.%s" % (output_dir, region['name'], angle.var, OUTPUT_FMT))
             unfolder.draw_error_matrix(region['name'], "%s/err_map_%s_%s.%s" % (output_dir, region['name'], angle.var, OUTPUT_FMT))
-            
-            continue
+
             # continue
-            for ibin_pt in range(1, len(this_pt_bin_edges_coarse)-1):
-                # gen_hist_bin = unfolder.get_var_hist_pt_binned(unfolder.unfolded_1d, ibin_pt, "generator")
-                gen_hist_bin = unfolder.get_var_hist_pt_binned(hist_mc_gen, ibin_pt, "generator")
-                # unfolded_hist_bin = unfolder.get_unfolded_var_hist_pt_binned(ibin_pt)  # gives diff answer?!
-                unfolded_hist_bin = unfolder.get_var_hist_pt_binned(unfolder.unfolded_1d, ibin_pt, "generator")
+
+            # Draw individual pt bin plots
+            # ----------------------------
+            for ibin_pt in range(0, len(pt_bin_edges_gen)-1):
+                
+                gen_hist_bin = unfolder.get_var_hist_pt_binned(hist_mc_gen, ibin_pt, binning="generator")
+                unfolded_hist_bin = unfolder.get_var_hist_pt_binned(unfolded_1d, ibin_pt, binning="generator")
+                
+                for n in range(1, gen_hist_bin.GetNbinsX()+1):
+                    print("Bin", n)
+                    print("gen_hist:", gen_hist_bin.GetBinContent(n))
+                    print("unfolded_hist:", unfolded_hist_bin.GetBinContent(n))
+
                 entries = [
                     Contribution(gen_hist_bin, label="Generator",
                                  line_color=ROOT.kBlue, line_width=2,
                                  marker_color=ROOT.kBlue,
                                  normalise_hist=True),
-                    Contribution(unfolded_hist_bin, label="Unfolded, from 2d",
+                    Contribution(unfolded_hist_bin, label="Unfolded",
                                  line_color=ROOT.kRed, line_width=0,
                                  marker_color=ROOT.kRed, marker_style=20,
                                  subplot=gen_hist_bin,
@@ -522,15 +531,15 @@ if __name__ == "__main__":
                 if not any(has_entries):
                     print("Skipping 0 entries in", region['name'], angle.var, ibin_pt)
                     continue
-                # plot = Plot(entries, "hist", title="%s region\n%s" % (region['label'], unfolded_hist_bin.GetTitle()), subplot_type='ratio', subplot_title='Unfolded / gen')
-                title = "%s\n%s region\n%g < p_{T}^{Gen} < %g GeV" % (jet_algo, region['label'], this_pt_bin_edges_coarse[ibin_pt], this_pt_bin_edges_coarse[ibin_pt+1])
+                title = "%s\n%s region\n%g < p_{T}^{Gen} < %g GeV" % (jet_algo, region['label'], pt_bin_edges_gen[ibin_pt], pt_bin_edges_gen[ibin_pt+1])
                 plot = Plot(entries, "hist", title=title,
                             xtitle=angle.name, ytitle='p.d.f.',
-                            subplot_type='ratio', subplot_title='Unfolded / gen')
+                            subplot_type='ratio', 
+                            subplot_title='Unfolded / gen',
+                            subplot_limits=(0.8, 1.2))
                 plot.legend.SetY1(0.75)
                 plot.legend.SetY2(0.9)
                 plot.plot("NOSTACK HISTE")
-                # plot.plot()
                 plot.save("%s/unfolded_%s_%s_bin_%d.%s" % (output_dir, region['name'], angle.var, ibin_pt, OUTPUT_FMT))
 
 
