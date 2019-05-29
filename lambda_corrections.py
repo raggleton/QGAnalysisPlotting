@@ -62,12 +62,12 @@ def get_corrections(h2d_response, h2d_rel_response, metric):
         print(bin_ind, ":", bin_low, bin_high)
 
         h_reco = qgg.get_projection_plot(h2d_response, bin_low, bin_high, cut_axis='x')
-        h_reco.SetName("%g - %g" % (bin_low, bin_high))
-        h_reco.SetTitle("%g - %g" % (bin_low, bin_high))
+        h_reco.SetName("variable: %g - %g" % (bin_low, bin_high))
+        h_reco.SetTitle("variable: %g - %g" % (bin_low, bin_high))
 
         h_response = qgg.get_projection_plot(h2d_rel_response, bin_low, bin_high, cut_axis='x')
-        h_response.SetName("%g - %g" % (bin_low, bin_high))
-        h_response.SetTitle("%g - %g" % (bin_low, bin_high))
+        h_response.SetName("variable: %g - %g" % (bin_low, bin_high))
+        h_response.SetTitle("variable: %g - %g" % (bin_low, bin_high))
 
         if h_reco.GetEntries() < 10 or h_response.GetEntries() < 10:
             continue
