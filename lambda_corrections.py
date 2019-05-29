@@ -86,12 +86,16 @@ def get_corrections(h2d_response, h2d_rel_response, metric):
     return np.array(x_values), np.array(corrections), reco_hists, response_hists
 
 
-def plot_corrections(x_values, corrections, xtitle, title, output_filename):
+def plot_corrections(corrections_graph, xtitle, title, output_filename):
     # print(x_values)
     # print(corrections)
-    gr = ROOT.TGraphErrors(len(x_values), array('d', x_values[:,0]), array('d', corrections[:,0]), array('d', x_values[:,1]), array('d', corrections[:,1]))
-    conts = [Contribution(gr, label="Correction", line_width=2, marker_size=1, marker_style=20)]
-    plot = Plot(conts, what='graph', xtitle=xtitle, ytitle="Correction", title=title, has_data=False, ylim=[0, 2.5])
+    conts = [Contribution(corrections_graph, label="Correction", 
+                          line_color=ROOT.kRed, marker_color=ROOT.kRed, 
+                          line_width=2, marker_size=1, marker_style=20, 
+                          fit_match_style=False)
+    ]
+    # plot = Plot(conts, what='graph', xtitle=xtitle, ytitle="Correction", title=title, has_data=False, ylim=[0, 2.5])
+    plot = Plot(conts, what='both', xtitle=xtitle, ytitle="Correction", title=title, has_data=False, ylim=[0, 2.5])
     plot.plot("ALP")
     plot.save(output_filename)
 
@@ -175,8 +179,13 @@ if __name__ == "__main__":
             # metric = "median"
             x_values, corrections, reco_hists, response_hists = get_corrections(h2d_orig, h2d_rel_orig, metric)
 
+            corrections_graph = ROOT.TGraphErrors(len(x_values),
+                                                  array('d', x_values[:,0]), 
+                                                  array('d', corrections[:,0]), 
+                                                  array('d', x_values[:,1]), 
+                                                  array('d', corrections[:,1]))
             output_filename = "%s/%s_corrections_%s.%s" % (args.outputDir, var_dict['name'], metric, OUTPUT_FMT)
-            plot_corrections(x_values, corrections,
+            plot_corrections(corrections_graph,
                              xtitle='RECO '+var_dict['var_label'], 
                              title=var_dict['title'],
                              output_filename=output_filename)
