@@ -100,9 +100,33 @@ def plot_corrections(corrections_graph, xtitle, title, output_filename):
     plot.save(output_filename)
 
 
-def plot_correction_hists():
-    pass
+def plot_response_hists(response_hists, output_dir):
+    cu.check_dir_exists_create(output_dir)
+    for ind, h in enumerate(response_hists):
+        c = ROOT.TCanvas(cu.get_unique_str(), "", 600, 800)
+        h.Draw("HISTE")
+        c.SaveAs(os.path.join(output_dir, "response_hist_%d.%s" % (ind, OUTPUT_FMT)))
 
+
+def fit_corrections(corrections_graph, start_fit, end_fit, fitfunc):
+    # fit to corrections graph
+    
+    fit_func = None
+    if fitfunc == "linear":
+        fit_func = ROOT.TF1("fit_func"+cu.get_unique_str(), "[0]+[1]*x", start_fit, end_fit)
+        fit_func.SetParameter(0, 1.2)
+        fit_func.SetParameter(1, 0.005)
+
+    elif fitfunc == "log":
+        fit_func = ROOT.TF1("fit_func"+cu.get_unique_str(), "([1]*log((x-[0])/[2]))", start_fit, end_fit)
+        fit_func.SetParameter(0, 1)
+        fit_func.SetParameter(1, 1)
+        fit_func.SetParameter(2, 1)
+    else:
+        raise RuntimeError("Don't know how to handle fitfunc = %s" % fitfunc)
+    
+    fit_result = corrections_graph.Fit(fit_func, "VRS", "", start_fit, end_fit)
+    return fit_result
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -114,6 +138,9 @@ if __name__ == "__main__":
     parser.add_argument("--outputFile",
                         help="Output ROOT file for things",
                         default=None)
+    parser.add_argument("--fitFunc",
+                        help="Fit function to use",
+                        choices=["linear", "log"])
 
     args = parser.parse_args()
 
@@ -176,7 +203,7 @@ if __name__ == "__main__":
             h2d_rel_orig = cu.get_from_tfile(input_tfile, full_var_name_rel)
 
             metric = "rawmean"
-            # metric = "median"
+            metric = "median"
             x_values, corrections, reco_hists, response_hists = get_corrections(h2d_orig, h2d_rel_orig, metric)
 
             corrections_graph = ROOT.TGraphErrors(len(x_values),
@@ -184,12 +211,29 @@ if __name__ == "__main__":
                                                   array('d', corrections[:,0]), 
                                                   array('d', x_values[:,1]), 
                                                   array('d', corrections[:,1]))
+
+            start_fit, end_fit = 0, 1000
+            # fit to corrections
+            if args.fitFunc == "linear":
+                start_fit, end_fit = 20, 90
+                start_fit = max(start_fit, x_values[:,0].min())
+                end_fit = min(end_fit, x_values[:,0].max())
+            
+            elif args.fitFunc == "log":
+                start_fit = x_values[3,0]
+                end_fit = x_values[-3,0]
+            # print(start_fit, end_fit)
+            
+            fit_result = fit_corrections(corrections_graph, start_fit, end_fit, fitfunc=args.fitFunc)
+
             output_filename = "%s/%s_corrections_%s.%s" % (args.outputDir, var_dict['name'], metric, OUTPUT_FMT)
             plot_corrections(corrections_graph,
                              xtitle='RECO '+var_dict['var_label'], 
                              title=var_dict['title'],
                              output_filename=output_filename)
-            # plot_response_hists(response_hists)
+            
+            plot_response_hists(response_hists, 
+                                output_dir=os.path.join(args.outputDir, "%s_correction_hists" % var_dict['name']))
 
     output_tfile.Close()
     input_tfile.Close()
