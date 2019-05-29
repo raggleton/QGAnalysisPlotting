@@ -94,6 +94,7 @@ class Contribution(object):
                  line_width=1, line_color=ROOT.kRed, line_style=1,
                  fill_color=ROOT.kRed, fill_style=0,
                  marker_size=1, marker_color=ROOT.kRed, marker_style=1,
+                 fit_match_style=True,
                  normalise_hist=False, rebin_hist=None, subplot=None):
         """
         obj : TH1, TGraph, ...
@@ -116,6 +117,8 @@ class Contribution(object):
             Color of markers.
         marker_style: int
             Marker style.
+        fit_match_style : bool
+            If True, apply line_color etc to fit function as well
         normalise_hist : bool
             If a histogram, normalise so integral = 1
         rebin_hist : int, None
@@ -145,7 +148,7 @@ class Contribution(object):
         self.obj.SetMarkerStyle(self.marker_style)
 
         # Match fit to hist styles
-        if self.obj.GetListOfFunctions().GetSize() == 1:
+        if fit_match_style and self.obj.GetListOfFunctions().GetSize() == 1:
             func = self.obj.GetListOfFunctions().At(0)
             func.SetLineStyle(line_style)
             func.SetLineWidth(line_width)
