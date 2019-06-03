@@ -271,23 +271,23 @@ class MyUnfolder(object):
     def do_unfolding(self, tau):
         self.unfolder.DoUnfold(tau)
         # print("( " + str(self.unfolder.GetChi2A()) + " + " + str(self.unfolder.GetChi2L()) + ") / " + str(self.unfolder.GetNdf()))
-        unfolded_1d = self.unfolder.GetOutput("unfolded_" + cu.get_unique_str(), "", "generator", "*[U]", self.use_axis_binning)  # use "generator" for signal + underflow region, "generatordistribution" for only signal region
+        unfolded_1d = self.unfolder.GetOutput("unfolded_" + cu.get_unique_str(), "", "generator", "*[]", self.use_axis_binning)  # use "generator" for signal + underflow region, "generatordistribution" for only signal region
         return unfolded_1d
 
     def get_bias(self):
-        return self.unfolder.GetBias("bias_"+cu.get_unique_str(), "", "generator", "*[U]", self.use_axis_binning)
+        return self.unfolder.GetBias("bias_"+cu.get_unique_str(), "", "generator", "*[]", self.use_axis_binning)
 
     def get_ematrix_input(self):
-        return self.unfolder.GetEmatrixInput("ematrix_input_"+cu.get_unique_str(), "", "generator", "*[U]", self.use_axis_binning)
+        return self.unfolder.GetEmatrixInput("ematrix_input_"+cu.get_unique_str(), "", "generator", "*[]", self.use_axis_binning)
 
     def get_ematrix_sys_uncorr(self):
-        return self.unfolder.GetEmatrixSysUncorr("ematrix_sys_uncorr_"+cu.get_unique_str(), "", "generator", "*[U]", self.use_axis_binning)
+        return self.unfolder.GetEmatrixSysUncorr("ematrix_sys_uncorr_"+cu.get_unique_str(), "", "generator", "*[]", self.use_axis_binning)
 
     def get_ematrix_total(self):
-        return self.unfolder.GetEmatrixTotal("ematrix_total_"+cu.get_unique_str(), "", "generator", "*[U]", self.use_axis_binning)
+        return self.unfolder.GetEmatrixTotal("ematrix_total_"+cu.get_unique_str(), "", "generator", "*[]", self.use_axis_binning)
 
     def get_rhoij_total(self):
-        return self.unfolder.GetRhoIJtotal("rhoij_total_"+cu.get_unique_str(), "", "generator", "*[U]", self.use_axis_binning)
+        return self.unfolder.GetRhoIJtotal("rhoij_total_"+cu.get_unique_str(), "", "generator", "*[]", self.use_axis_binning)
 
     def get_probability_matrix(self):
         return self.unfolder.GetProbabilityMatrix("prob_matrix_"+cu.get_unique_str(), "", self.use_axis_binning)
