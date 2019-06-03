@@ -637,7 +637,7 @@ if __name__ == "__main__":
                             subplot_limits=(0.8, 1.2))
                 plot.legend.SetY1(0.75)
                 plot.legend.SetY2(0.9)
-                plot.plot("NOSTACK E")
+                plot.plot("NOSTACK E1")
                 plot.save("%s/unfolded_%s_%s_bin_%d.%s" % (output_dir, region['name'], angle.var, ibin_pt, OUTPUT_FMT))
 
 
