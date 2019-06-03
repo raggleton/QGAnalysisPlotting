@@ -517,6 +517,9 @@ if __name__ == "__main__":
         pt_bin_edges_underflow_reco = qgc.construct_fine_binning(pt_bin_edges_underflow_gen)
 
         for angle in qgc.COMMON_VARS[2:3]:
+            # put plots in subdir, to avoid overcrowding
+            this_output_dir = "%s/%s/%s" % (output_dir, region['name'], angle.var)
+            cu.check_dir_exists_create(this_output_dir)
 
             # Setup MyUnfolder object to do unfolding etc
             # -------------------------------------------
@@ -573,7 +576,7 @@ if __name__ == "__main__":
             plot_simple_unfolded(unfolded=unfolded_1d,
                                  reco=reco_1d,
                                  gen=hist_mc_gen,
-                                 output_filename="%s/unfolded_%s_%s.%s" % (output_dir, region['name'], angle.var, OUTPUT_FMT),
+                                 output_filename="%s/unfolded_%s_%s.%s" % (this_output_dir, region['name'], angle.var, OUTPUT_FMT),
                                  title="%s region, %s" % (region['label'], angle_str))
 
             # Draw matrices
@@ -581,27 +584,27 @@ if __name__ == "__main__":
             draw_response_matrix(unfolder.response_map, 
                                  region['label'], 
                                  angle_str, 
-                                 "%s/response_map_%s_%s.%s" % (output_dir, region['name'], angle.var, OUTPUT_FMT))
+                                 "%s/response_map_%s_%s.%s" % (this_output_dir, region['name'], angle.var, OUTPUT_FMT))
             draw_probability_matrix(unfolder.get_probability_matrix(), 
                                     region['label'], 
                                     angle_str, 
-                                    "%s/probability_map_%s_%s.%s" % (output_dir, region['name'], angle.var, OUTPUT_FMT))
+                                    "%s/probability_map_%s_%s.%s" % (this_output_dir, region['name'], angle.var, OUTPUT_FMT))
             draw_correlation_matrix(unfolder.get_rhoij_total(), 
                                     region['label'], 
                                     angle_str, 
-                                    "%s/corr_map_%s_%s.%s" % (output_dir, region['name'], angle.var, OUTPUT_FMT))
+                                    "%s/corr_map_%s_%s.%s" % (this_output_dir, region['name'], angle.var, OUTPUT_FMT))
             draw_error_matrix_input(unfolder.get_ematrix_input(), 
                                     region['label'], 
                                     angle_str, 
-                                    "%s/err_map_sys_input_%s_%s.%s" % (output_dir, region['name'], angle.var, OUTPUT_FMT))
+                                    "%s/err_map_sys_input_%s_%s.%s" % (this_output_dir, region['name'], angle.var, OUTPUT_FMT))
             draw_error_matrix_sys_uncorr(unfolder.get_ematrix_sys_uncorr(), 
                                          region['label'], 
                                          angle_str, 
-                                         "%s/err_map_sys_uncorr_%s_%s.%s" % (output_dir, region['name'], angle.var, OUTPUT_FMT))
+                                         "%s/err_map_sys_uncorr_%s_%s.%s" % (this_output_dir, region['name'], angle.var, OUTPUT_FMT))
             draw_error_matrix_total(unfolder.get_ematrix_total(), 
                                     region['label'], 
                                     angle_str, 
-                                    "%s/err_map_total_%s_%s.%s" % (output_dir, region['name'], angle.var, OUTPUT_FMT))
+                                    "%s/err_map_total_%s_%s.%s" % (this_output_dir, region['name'], angle.var, OUTPUT_FMT))
 
             # Draw individual pt bin plots
             # ----------------------------
@@ -650,6 +653,6 @@ if __name__ == "__main__":
                 plot.legend.SetY1(0.75)
                 plot.legend.SetY2(0.9)
                 plot.plot("NOSTACK E1")
-                plot.save("%s/unfolded_%s_%s_bin_%d.%s" % (output_dir, region['name'], angle.var, ibin_pt, OUTPUT_FMT))
+                plot.save("%s/unfolded_%s_%s_bin_%d.%s" % (this_output_dir, region['name'], angle.var, ibin_pt, OUTPUT_FMT))
 
 
