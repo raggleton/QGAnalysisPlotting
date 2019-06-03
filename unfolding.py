@@ -78,20 +78,20 @@ class MyUnfolder(object):
         # TODO read in from XML
         self.detector_binning = ROOT.TUnfoldBinning("detector")
         detector_distribution = self.detector_binning.AddBinning("detectordistribution")
-        detector_distribution.AddAxis(self.variable_name, self.nbins_variable_reco, self.variable_bin_edges_reco, False, False)
+        detector_distribution.AddAxis(self.variable_name, self.nbins_variable_reco, self.variable_bin_edges_reco, True, False)
         detector_distribution.AddAxis("pt", self.nbins_pt_reco, self.pt_bin_edges_reco, False, False) # handle pt uder/over flow ourselves
 
         detector_distribution_underflow = self.detector_binning.AddBinning("detectordistribution_underflow")
-        detector_distribution_underflow.AddAxis(self.variable_name, self.nbins_variable_reco, self.variable_bin_edges_reco, False, False)
+        detector_distribution_underflow.AddAxis(self.variable_name, self.nbins_variable_reco, self.variable_bin_edges_reco, True, False)
         detector_distribution_underflow.AddAxis("pt", self.nbins_pt_underflow_reco, self.pt_bin_edges_underflow_reco, False, False)
 
         self.generator_binning = ROOT.TUnfoldBinning("generator")
         generator_distribution = self.generator_binning.AddBinning("generatordistribution")
-        generator_distribution.AddAxis(self.variable_name, self.nbins_variable_gen, self.variable_bin_edges_gen, False, False)
+        generator_distribution.AddAxis(self.variable_name, self.nbins_variable_gen, self.variable_bin_edges_gen, True, False)
         generator_distribution.AddAxis("pt", self.nbins_pt_gen, self.pt_bin_edges_gen, False, False)
 
         generator_distribution_underflow = self.generator_binning.AddBinning("generatordistribution_underflow")
-        generator_distribution_underflow.AddAxis(self.variable_name, self.nbins_variable_gen, self.variable_bin_edges_gen, False, False)
+        generator_distribution_underflow.AddAxis(self.variable_name, self.nbins_variable_gen, self.variable_bin_edges_gen, True, False)
         generator_distribution_underflow.AddAxis("pt", self.nbins_pt_underflow_gen, self.pt_bin_edges_underflow_gen, False, False)
 
         self.axisSteering = axisSteering
