@@ -53,7 +53,7 @@ class MyUnfolder(object):
                  constraintMode=ROOT.TUnfold.kEConstraintArea,
                  regMode=ROOT.TUnfold.kRegModeCurvature,
                  densityFlags=ROOT.TUnfoldDensity.kDensityModeBinWidth,
-                 axisSteering='*[UuOob]'):
+                 axisSteering='*[b]'):
 
         self.response_map = response_map
         self.variable_name = variable_name
