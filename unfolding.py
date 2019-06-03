@@ -447,9 +447,27 @@ def create_hist_with_errors(hist, err_matrix):
     hnew = hist.Clone(cu.get_unique_str())
     nbins = hist.GetNbinsX()
     for i in range(1, nbins+1):
-        err = sqrt(err_matrix.GetBinContent(i, i))
+        err = math.sqrt(err_matrix.GetBinContent(i, i))
         hnew.SetBinError(i, err)
     return hnew
+
+
+def make_hist_from_diagonals(h2d, do_sqrt=True):
+    nbins = h2d.GetNbinsX()
+    hnew = ROOT.TH1D("h_diag" + cu.get_unique_str(), "", nbins, 0, nbins)
+    for i in range(1, nbins+1):
+        err = h2d.GetBinContent(i, i)
+        if do_sqrt:
+            err = math.sqrt(err)
+        hnew.SetBinError(i, err)
+    return hnew
+
+
+def update_hist_bin_content(h_orig, h_to_be_updated):
+    if h_orig.GetNbinsX() != h_to_be_updated.GetNbinsX():
+        raise RuntimeError("Need same # x bins")
+    for i in range(1, h_orig.GetNbinsX()+1):
+        h_to_be_updated.SetBinContent(i, h_orig.GetBinContent(i))
 
 
 if __name__ == "__main__":
@@ -545,6 +563,9 @@ if __name__ == "__main__":
             # Do unfolding!
             # ---------------------
             unfolded_1d = unfolder.do_unfolding(tau)
+            # stat errosrs only
+            error_sys_uncorr_1d = make_hist_from_diagonals(unfolder.get_ematrix_sys_uncorr(), do_sqrt=True)
+
 
             # Draw unified unfolded distributions
             # ---------------------
@@ -571,37 +592,47 @@ if __name__ == "__main__":
 
                 gen_hist_bin = unfolder.get_var_hist_pt_binned(hist_mc_gen, ibin_pt, binning="generator")
                 unfolded_hist_bin = unfolder.get_var_hist_pt_binned(unfolded_1d, ibin_pt, binning="generator")
-                # unfolded_hist_bin_with_errors = create_hist_with_errors(unfolded_hist_bin, )
+                unfolded_hist_bin_errors = unfolder.get_var_hist_pt_binned(error_sys_uncorr_1d, ibin_pt, binning="generator")
+                update_hist_bin_content(unfolded_hist_bin, unfolded_hist_bin_errors)
 
                 for n in range(1, gen_hist_bin.GetNbinsX()+1):
                     print("Bin", n)
-                    print("gen_hist:", gen_hist_bin.GetBinContent(n))
-                    print("unfolded_hist:", unfolded_hist_bin.GetBinContent(n))
+                    print("gen_hist:", gen_hist_bin.GetBinContent(n), "+-", gen_hist_bin.GetBinError(n))
+                    print("unfolded_hist:", unfolded_hist_bin.GetBinContent(n), "+-", unfolded_hist_bin.GetBinError(n))
+                    print("unfolded_hist_bin_errors:", unfolded_hist_bin_errors.GetBinContent(n), "+-", unfolded_hist_bin_errors.GetBinError(n))
 
                 entries = [
                     Contribution(gen_hist_bin, label="Generator",
                                  line_color=ROOT.kBlue, line_width=2,
-                                 marker_color=ROOT.kBlue,
+                                 marker_color=ROOT.kBlue, marker_size=0,
                                  normalise_hist=True),
                     Contribution(unfolded_hist_bin, label="Unfolded",
-                                 line_color=ROOT.kRed, line_width=0,
-                                 marker_color=ROOT.kRed, marker_style=20,
+                                 line_color=ROOT.kRed, line_width=1,
+                                 marker_color=ROOT.kRed, marker_style=20, marker_size=0,
                                  subplot=gen_hist_bin,
                                  normalise_hist=True),
+                    # Contribution(unfolded_hist_bin_errors, label="Unfolded (stat err)",
+                    #              line_color=ROOT.kGreen, line_width=1,
+                    #              marker_color=ROOT.kGreen, marker_style=20, marker_size=0,
+                    #              # subplot=gen_hist_bin,
+                    #              normalise_hist=True),
                 ]
                 has_entries = [c.obj.GetEntries() > 0 for c in entries]
                 if not any(has_entries):
                     print("Skipping 0 entries in", region['name'], angle.var, ibin_pt)
                     continue
                 title = "%s\n%s region\n%g < p_{T}^{Gen} < %g GeV" % (jet_algo, region['label'], pt_bin_edges_gen[ibin_pt], pt_bin_edges_gen[ibin_pt+1])
-                plot = Plot(entries, "hist", title=title,
-                            xtitle=angle.name, ytitle='p.d.f.',
+                plot = Plot(entries,
+                            what="hist",
+                            title=title,
+                            xtitle=angle.name,
+                            ytitle='p.d.f.',
                             subplot_type='ratio',
                             subplot_title='Unfolded / gen',
                             subplot_limits=(0.8, 1.2))
                 plot.legend.SetY1(0.75)
                 plot.legend.SetY2(0.9)
-                plot.plot("NOSTACK HISTE")
+                plot.plot("NOSTACK E")
                 plot.save("%s/unfolded_%s_%s_bin_%d.%s" % (output_dir, region['name'], angle.var, ibin_pt, OUTPUT_FMT))
 
 
