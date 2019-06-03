@@ -113,7 +113,7 @@ class MyUnfolder(object):
     def setInput(self, hist):
         self.unfolder.SetInput(hist)
 
-    def doScanTau(self, n_scan=300, scan_mode=ROOT.TUnfoldDensity.kEScanTauRhoMax):
+    def doScanTau(self, output_dir, n_scan=300, scan_mode=ROOT.TUnfoldDensity.kEScanTauRhoMax):
         """Figure out best tau by scanning tau curve
         Taken from Ashley's code
         """
@@ -201,11 +201,11 @@ class MyUnfolder(object):
 
         canv_tauScan.Modified()
         canv_tauScan.Update()
-        canv_tauScan.Print("scantau_%s.%s" % (self.variable_name, self.OUTPUT_FMT))
+        canv_tauScan.Print("%s/scantau_%s.%s" % (output_dir, self.variable_name, self.OUTPUT_FMT))
         return tau
 
 
-    def doScanL(self, n_scan=300):
+    def doScanL(self, output_dir, n_scan=300):
         """Figure out best tau by doing scan over L curve
         Taken from Ashley's code
         """
@@ -269,7 +269,7 @@ class MyUnfolder(object):
         canv_lScan.Modified()
         canv_lScan.Update()
 
-        canv_lScan.Print("scanL_%s.%s" % (self.variable_name, self.OUTPUT_FMT))
+        canv_lScan.Print("%s/scanL_%s.%s" % (output_dir, self.variable_name, self.OUTPUT_FMT))
         return tau
 
     def do_unfolding(self, tau):
@@ -555,8 +555,8 @@ if __name__ == "__main__":
 
             # Do any regularisation
             # ---------------------
-            # tau = unfolder.doScanL()
-            # tau = unfolder.doScanTau(300, ROOT.TUnfoldDensity.kEScanTauRhoAvgSys)
+            # tau = unfolder.doScanL(output_dir=this_output_dir, n_scan=100)
+            # tau = unfolder.doScanTau(output_dir=this_output_dir, n_scan=100, scan_mode=ROOT.TUnfoldDensity.kEScanTauRhoAvgSys)
             # tau = 1E-10
             tau = 0
 
