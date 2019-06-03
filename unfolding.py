@@ -582,14 +582,13 @@ if __name__ == "__main__":
 
             # Draw matrices
             # -------------
-            unfolder.draw_response_matrix(region['name'], "%s/response_map_%s_%s.%s" % (output_dir, region['name'], angle.var, OUTPUT_FMT))
-            unfolder.draw_probability_matrix(region['name'], "%s/probability_map_%s_%s.%s" % (output_dir, region['name'], angle.var, OUTPUT_FMT))
-            unfolder.draw_correlation_matrix(region['name'], "%s/corr_map_%s_%s.%s" % (output_dir, region['name'], angle.var, OUTPUT_FMT))
-            unfolder.draw_error_matrix_input(region['name'], "%s/err_map_sys_input_%s_%s.%s" % (output_dir, region['name'], angle.var, OUTPUT_FMT))
-            unfolder.draw_error_matrix_sys_uncorr(region['name'], "%s/err_map_sys_uncorr_%s_%s.%s" % (output_dir, region['name'], angle.var, OUTPUT_FMT))
-            unfolder.draw_error_matrix_total(region['name'], "%s/err_map_total_%s_%s.%s" % (output_dir, region['name'], angle.var, OUTPUT_FMT))
+            unfolder.draw_response_matrix(region['label'], "%s/response_map_%s_%s.%s" % (output_dir, region['name'], angle.var, OUTPUT_FMT))
+            unfolder.draw_probability_matrix(region['label'], "%s/probability_map_%s_%s.%s" % (output_dir, region['name'], angle.var, OUTPUT_FMT))
+            unfolder.draw_correlation_matrix(region['label'], "%s/corr_map_%s_%s.%s" % (output_dir, region['name'], angle.var, OUTPUT_FMT))
+            unfolder.draw_error_matrix_input(region['label'], "%s/err_map_sys_input_%s_%s.%s" % (output_dir, region['name'], angle.var, OUTPUT_FMT))
+            unfolder.draw_error_matrix_sys_uncorr(region['label'], "%s/err_map_sys_uncorr_%s_%s.%s" % (output_dir, region['name'], angle.var, OUTPUT_FMT))
+            unfolder.draw_error_matrix_total(region['label'], "%s/err_map_total_%s_%s.%s" % (output_dir, region['name'], angle.var, OUTPUT_FMT))
 
-            # continue
 
             # Draw individual pt bin plots
             # ----------------------------
