@@ -102,8 +102,9 @@ class MyUnfolder(object):
                                             densityFlags,
                                             self.generator_binning,
                                             self.detector_binning,
+                                            # hmm comment these out when scanL or scanTau?
                                             "generator",
-                                            axisSteering)
+                                            self.axisSteering)
 
         self.use_axis_binning = True  # for things like get_probability_matrix()
 
@@ -121,14 +122,14 @@ class MyUnfolder(object):
         LogTauX = ROOT.MakeNullPointer(ROOT.TSpline)
         LogTauY = ROOT.MakeNullPointer(ROOT.TSpline)
 
-        tau_min, tau_max = 0., 0.  # let it decide range for us
+        tau_min, tau_max = 1E-15, 0.9
 
         iBestAvg = self.unfolder.ScanTau(n_scan,
                                          tau_min,
                                          tau_max,
                                          scanresults,
                                          scan_mode,
-                                         "generatordistribution",
+                                         "generator",
                                          self.axisSteering,
                                          lCurve,
                                          LogTauX,
@@ -207,6 +208,7 @@ class MyUnfolder(object):
         Taken from Ashley's code
         """
         tau_min, tau_max = 0., 0.  # let it decide range for us
+        tau_min, tau_max = 1E-14, 0.1
         scannedlcurve = ROOT.MakeNullPointer(ROOT.TGraph)
         logTauX = ROOT.MakeNullPointer(ROOT.TSpline3)
         logTauY = ROOT.MakeNullPointer(ROOT.TSpline3)
@@ -269,6 +271,7 @@ class MyUnfolder(object):
         return tau
 
     def do_unfolding(self, tau):
+        print("Unfolding with tau =", tau)
         self.unfolder.DoUnfold(tau)
         # print("( " + str(self.unfolder.GetChi2A()) + " + " + str(self.unfolder.GetChi2L()) + ") / " + str(self.unfolder.GetNdf()))
         unfolded_1d = self.unfolder.GetOutput("unfolded_" + cu.get_unique_str(), "", "generator", "*[]", self.use_axis_binning)  # use "generator" for signal + underflow region, "generatordistribution" for only signal region
@@ -556,8 +559,8 @@ if __name__ == "__main__":
             # Do any regularisation
             # ---------------------
             # tau = unfolder.doScanL()
-            # tau = unfolder.doScanTau()
-            tau = 1E-10
+            # tau = unfolder.doScanTau(300, ROOT.TUnfoldDensity.kEScanTauRhoAvgSys)
+            # tau = 1E-10
             tau = 0
 
             # Do unfolding!
