@@ -276,7 +276,8 @@ class MyUnfolder(object):
         print("Unfolding with tau =", tau)
         self.unfolder.DoUnfold(tau)
         # print("( " + str(self.unfolder.GetChi2A()) + " + " + str(self.unfolder.GetChi2L()) + ") / " + str(self.unfolder.GetNdf()))
-        unfolded_1d = self.unfolder.GetOutput("unfolded_" + cu.get_unique_str(), "", "generator", "*[]", self.use_axis_binning)  # use "generator" for signal + underflow region, "generatordistribution" for only signal region
+        # use "generator" for signal + underflow region, "generatordistribution" for only signal region
+        unfolded_1d = self.unfolder.GetOutput("unfolded_" + cu.get_unique_str(), "", "generator", "*[]", self.use_axis_binning)  
         return unfolded_1d
 
     def get_bias(self):
@@ -474,8 +475,8 @@ if __name__ == "__main__":
     input_mc_dy_tfile = cu.open_root_file("workdir_ak4puppi_mgpythia_newFlav_withAllResponses_jetAsymCut_chargedResp_pt1RecoConstituents_V11JEC_JER_tUnfold/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL.root")
     input_singlemu_tfile = cu.open_root_file("workdir_ak4puppi_data_withAllResponses_trigBinningBetter2_jetAsymCut_pt1RecoConstituents_V11JEC_JER_tUnfold/uhh2.AnalysisModuleRunner.DATA.Data_SingleMu.root")
 
-    input_mc_qcd_tfile = cu.open_root_file("workdir_ak4puppi_mgpythia_newFlav_withAllResponses_jetAsymCut_chargedResp_pt1RecoConstituents_V11JEC_JER_tUnfold/uhh2.AnalysisModuleRunner.MC.MC_QCD.root")
-    # input_mc_qcd_tfile = cu.open_root_file("workdir_ak4puppi_pythia_newFlav_withAllResponses_jetAsymCut_chargedResp_pt1RecoConstituents_V11JEC_JER_tUnfold/uhh2.AnalysisModuleRunner.MC.MC_PYTHIA-QCD.root")
+    input_mc_qcd_mgpythia_tfile = cu.open_root_file("workdir_ak4puppi_mgpythia_newFlav_withAllResponses_jetAsymCut_chargedResp_pt1RecoConstituents_V11JEC_JER_tUnfold/uhh2.AnalysisModuleRunner.MC.MC_QCD.root")
+    input_mc_qcd_pythia_tfile = cu.open_root_file("workdir_ak4puppi_pythia_newFlav_withAllResponses_jetAsymCut_chargedResp_pt1RecoConstituents_V11JEC_JER_tUnfold/uhh2.AnalysisModuleRunner.MC.MC_PYTHIA-QCD.root")
     input_jetht_tfile = cu.open_root_file("workdir_ak4puppi_data_withAllResponses_trigBinningBetter2_jetAsymCut_pt1RecoConstituents_V11JEC_JER_tUnfold/uhh2.AnalysisModuleRunner.DATA.Data_JetHTZeroBias.root")
 
     regions = [
@@ -484,7 +485,7 @@ if __name__ == "__main__":
             "dirname": "Dijet_QG_tighter",
             "label": "Dijet",
             "data_tfile": input_jetht_tfile,
-            "mc_tfile": input_mc_qcd_tfile,
+            "mc_tfile": input_mc_qcd_mgpythia_tfile,
         },
         {
             "name": "ZPlusJets",
