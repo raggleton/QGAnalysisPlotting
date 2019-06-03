@@ -531,8 +531,9 @@ if __name__ == "__main__":
 
             # Set what is to be unfolded
             # ---------------------
-            # unfolder.setInput(hist_data_reco)
-            unfolder.setInput(hist_mc_reco)
+            reco_1d = hist_data_reco
+            reco_1d = hist_mc_reco
+            unfolder.setInput(reco_1d)
 
             # Do any regularisation
             # ---------------------
@@ -548,7 +549,7 @@ if __name__ == "__main__":
             # Draw unified unfolded distributions
             # ---------------------
             plot_simple_unfolded(unfolded=unfolded_1d,
-                                 reco=hist_data_reco,
+                                 reco=reco_1d,
                                  gen=hist_mc_gen,
                                  output_filename="%s/unfolded_%s_%s.%s" % (output_dir, region['name'], angle.var, OUTPUT_FMT),
                                  title="%s region, %s" % (region['label'], angle.name))
