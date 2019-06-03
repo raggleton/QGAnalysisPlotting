@@ -616,11 +616,11 @@ if __name__ == "__main__":
                                  marker_color=ROOT.kRed, marker_style=20, marker_size=0,
                                  subplot=gen_hist_bin,
                                  normalise_hist=True),
-                    # Contribution(unfolded_hist_bin_errors, label="Unfolded (stat err)",
-                    #              line_color=ROOT.kGreen, line_width=1,
-                    #              marker_color=ROOT.kGreen, marker_style=20, marker_size=0,
-                    #              # subplot=gen_hist_bin,
-                    #              normalise_hist=True),
+                    Contribution(unfolded_hist_bin_errors, label="Unfolded (stat err)",
+                                 line_color=ROOT.kGreen+2, line_width=1,
+                                 marker_color=ROOT.kGreen+2, marker_style=20, marker_size=0,
+                                 # subplot=gen_hist_bin,
+                                 normalise_hist=True),
                 ]
                 has_entries = [c.obj.GetEntries() > 0 for c in entries]
                 if not any(has_entries):
