@@ -474,11 +474,11 @@ def update_hist_bin_content(h_orig, h_to_be_updated):
 
 
 if __name__ == "__main__":
-    # input_mc_qcd_tfile = cu.open_root_file("workdir_ak4puppi_mgpythia_newFlav_withAllResponses_jetAsymCut_chargedResp_pt1RecoConstituents_V11JEC_JER_tUnfold/uhh2.AnalysisModuleRunner.MC.MC_QCD.root")
-    # input_mc_dy_tfile = cu.open_root_file("workdir_ak4puppi_mgpythia_newFlav_withAllResponses_jetAsymCut_chargedResp_pt1RecoConstituents_V11JEC_JER_tUnfold/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL.root")
-    # input_singlemu_tfile = cu.open_root_file("workdir_ak4puppi_data_newFlav_withAllResponses_jetAsymCut_chargedResp_pt1Constituents_V11JEC_JER_tUnfold/uhh2.AnalysisModuleRunner.DATA.Data_SingleMu.root")
+    input_mc_dy_tfile = cu.open_root_file("workdir_ak4puppi_mgpythia_newFlav_withAllResponses_jetAsymCut_chargedResp_pt1RecoConstituents_V11JEC_JER_tUnfold/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL.root")
+    input_singlemu_tfile = cu.open_root_file("workdir_ak4puppi_data_withAllResponses_trigBinningBetter2_jetAsymCut_pt1RecoConstituents_V11JEC_JER_tUnfold/uhh2.AnalysisModuleRunner.DATA.Data_SingleMu.root")
 
-    input_mc_qcd_tfile = cu.open_root_file("workdir_ak4puppi_pythia_newFlav_withAllResponses_jetAsymCut_chargedResp_pt1RecoConstituents_V11JEC_JER_tUnfold/uhh2.AnalysisModuleRunner.MC.MC_PYTHIA-QCD.root")
+    input_mc_qcd_tfile = cu.open_root_file("workdir_ak4puppi_mgpythia_newFlav_withAllResponses_jetAsymCut_chargedResp_pt1RecoConstituents_V11JEC_JER_tUnfold/uhh2.AnalysisModuleRunner.MC.MC_QCD.root")
+    # input_mc_qcd_tfile = cu.open_root_file("workdir_ak4puppi_pythia_newFlav_withAllResponses_jetAsymCut_chargedResp_pt1RecoConstituents_V11JEC_JER_tUnfold/uhh2.AnalysisModuleRunner.MC.MC_PYTHIA-QCD.root")
     input_jetht_tfile = cu.open_root_file("workdir_ak4puppi_data_withAllResponses_trigBinningBetter2_jetAsymCut_pt1RecoConstituents_V11JEC_JER_tUnfold/uhh2.AnalysisModuleRunner.DATA.Data_JetHTZeroBias.root")
 
     regions = [
@@ -489,13 +489,13 @@ if __name__ == "__main__":
             "data_tfile": input_jetht_tfile,
             "mc_tfile": input_mc_qcd_tfile,
         },
-        # {
-        #     "name": "ZPlusJets",
-        #     "dirname": "ZPlusJets_QG",
-        #     "label": "Z+jets",
-        #     "data_tfile": input_singlemu_tfile,
-        #     "mc_tfile": input_mc_dy_tfile,
-        # },
+        {
+            "name": "ZPlusJets",
+            "dirname": "ZPlusJets_QG",
+            "label": "Z+jets",
+            "data_tfile": input_singlemu_tfile,
+            "mc_tfile": input_mc_dy_tfile,
+        },
     ]
 
     output_dir = "unfolding"
