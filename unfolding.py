@@ -541,10 +541,12 @@ if __name__ == "__main__":
         zpj_append = "_zpj" if is_zpj else ""
 
         pt_bin_edges_gen = qgc.PT_UNFOLD_DICT['signal%s_gen' % (zpj_append)]
-        pt_bin_edges_reco = qgc.construct_fine_binning(pt_bin_edges_gen)
+        pt_bin_edges_reco = qgc.PT_UNFOLD_DICT['signal%s_reco' % (zpj_append)]
+        # pt_bin_edges_reco = qgc.construct_fine_binning(pt_bin_edges_gen)
 
         pt_bin_edges_underflow_gen = qgc.PT_UNFOLD_DICT['underflow%s_gen' % (zpj_append)]
-        pt_bin_edges_underflow_reco = qgc.construct_fine_binning(pt_bin_edges_underflow_gen)
+        pt_bin_edges_underflow_reco = qgc.PT_UNFOLD_DICT['underflow%s_reco' % (zpj_append)]
+        # pt_bin_edges_underflow_reco = qgc.construct_fine_binning(pt_bin_edges_underflow_gen)
 
         for angle in qgc.COMMON_VARS[2:3]:
             # put plots in subdir, to avoid overcrowding

@@ -136,6 +136,10 @@ for angle_name, angle_dict in VAR_UNFOLD_DICT.items():
     VAR_UNFOLD_DICT[angle_name] = angle_dict
 
 
+for pt_name in list(PT_UNFOLD_DICT.keys()):
+    new_name = pt_name.replace("_gen", "_reco")
+    PT_UNFOLD_DICT[new_name] = construct_fine_binning(PT_UNFOLD_DICT[pt_name])
+
 
 DY_ZpJ_LABEL = "DY+jets MC, Z+jets region"
 DY_ZpJ_GEN_LABEL = "DY+jets MC, Z+jets region\n(GenJets)"
