@@ -677,9 +677,9 @@ if __name__ == "__main__":
                                  subplot=gen_hist_bin,
                                  normalise_hist=True),
                     Contribution(unfolded_hist_bin_errors, label="Unfolded (#tau = %.3g) (stat err)" % (tau),
-                                 line_color=ROOT.kGreen+2, line_width=1,
-                                 marker_color=ROOT.kGreen+2, marker_style=20, marker_size=0,
-                                 # subplot=gen_hist_bin,
+                                 line_color=ROOT.kGreen+1, line_width=1,
+                                 marker_color=ROOT.kGreen+1, marker_style=20, marker_size=0,
+                                 subplot=gen_hist_bin,
                                  normalise_hist=True),
                 ]
                 has_entries = [c.obj.GetEntries() > 0 for c in entries]
