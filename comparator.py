@@ -216,6 +216,8 @@ class Plot(object):
         self.ytitle = ytitle
         self.xlim = xlim
         self.ylim = ylim
+        self.y_padding_linear = 1.6  # factor to auto extend y limits for linear scale
+        self.y_padding_log = 5  # factor to auto extend y limits for log scale
         self.do_legend = legend
         self.legend = ROOT.TLegend(0.65, 0.6, 0.94, 0.85) if legend else None
         self.do_extend = extend
@@ -487,7 +489,10 @@ class Plot(object):
             # urgh why doesnt THStack.GetMaximum() return the actual maximum
             # GetYaxis().GetXmax() doesnt work either
             ymax = max([o.GetMaximum() for o in self.contributions_objs])
-            modifier.SetMaximum(ymax * 1.5)  # TODO different for log and lin scales
+            if self.main_pad.GetLogy():
+                modifier.SetMaximum(ymax * self.y_padding_log)
+            else:
+                modifier.SetMaximum(ymax * self.y_padding_linear)
 
         # Draw it again to update
         if self.plot_what == "graph":
