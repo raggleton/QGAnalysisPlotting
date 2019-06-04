@@ -469,7 +469,7 @@ def plot_simple_unfolded(unfolded, reco, gen, output_filename, title=""):
     hst.Draw("NOSTACK HISTE")
     leg.Draw()
     hst.SetMinimum(1E-2)
-    hst.SetMaximum(1E12)
+    hst.SetMaximum(5*max([h.GetMaximum() for h in [unfolded, reco, gen]]))
     canv_unfold.SaveAs(output_filename)
 
 
