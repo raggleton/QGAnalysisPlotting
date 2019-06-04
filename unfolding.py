@@ -323,7 +323,7 @@ class MyUnfolder(object):
 
     def get_var_hist_pt_binned(self, hist1d, ibin_pt, binning_scheme='generator'):
         """Get hist of variable for given pt bin from massive 1D hist that TUnfold makes"""
-        binning = self.generator_binning.FindNode("generatordistribution") if binning == "generator" else self.detector_binning.FindNode("detectordistribution")
+        binning = self.generator_binning.FindNode("generatordistribution") if binning_scheme == "generator" else self.detector_binning.FindNode("detectordistribution")
         var_bins = np.array(binning.GetDistributionBinning(0))
         pt_bins = np.array(binning.GetDistributionBinning(1))
 
