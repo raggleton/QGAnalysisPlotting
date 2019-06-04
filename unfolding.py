@@ -110,6 +110,29 @@ class MyUnfolder(object):
 
         self.use_axis_binning = True  # for things like get_probability_matrix()
 
+    def save_binning(self, print_xml=True, txt_filename=None):
+        """Save binning scheme to txt and/or print XML to screen"""
+        if txt_filename:
+            with open(txt_filename, 'w') as of:
+                of.write("GEN BINNING\n")
+                of.write("--------------------\n")
+                for name, region in [
+                    ("generator_distribution", self.generator_distribution),
+                    ("generator_distribution_underflow", self.generator_distribution_underflow)]:
+                    of.write("%s: bins %d - %d\n" % (name, region.GetStartBin(), region.GetEndBin()))
+                of.write("\nDETECTOR BINNING\n")
+                of.write("--------------------\n")
+                for name, region in [
+                    ("detector_distribution", self.detector_distribution),
+                    ("detector_distribution_underflow", self.detector_distribution_underflow)]:
+                    of.write("%s: bins %d - %d\n" % (name, region.GetStartBin(), region.GetEndBin()))
+
+        if print_xml:
+            # don't know how to create a ofstream in python :( best we can do is ROOT.cout
+            ROOT.TUnfoldBinningXML.ExportXML(self.detector_binning, ROOT.cout, True, False)
+            ROOT.TUnfoldBinningXML.ExportXML(self.generator_binning, ROOT.cout, False, True)
+
+
     def setInput(self, hist):
         self.unfolder.SetInput(hist)
 
@@ -550,6 +573,8 @@ if __name__ == "__main__":
                                   # densityFlags=ROOT.TUnfoldDensity.kDensityModeBinWidth,
                                   densityFlags=ROOT.TUnfoldDensity.kDensityModeNone,
                                   axisSteering='*[b]')
+
+            unfolder.save_binning(txt_filename="%s/binning_scheme.txt" % (this_output_dir), print_xml=True)
 
             # Set what is to be unfolded
             # ---------------------
