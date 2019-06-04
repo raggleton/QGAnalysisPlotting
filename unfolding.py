@@ -300,7 +300,7 @@ class MyUnfolder(object):
         self.unfolder.DoUnfold(tau)
         # print("( " + str(self.unfolder.GetChi2A()) + " + " + str(self.unfolder.GetChi2L()) + ") / " + str(self.unfolder.GetNdf()))
         # use "generator" for signal + underflow region, "generatordistribution" for only signal region
-        unfolded_1d = self.unfolder.GetOutput("unfolded_" + cu.get_unique_str(), "", "generator", "*[]", self.use_axis_binning)  
+        unfolded_1d = self.unfolder.GetOutput("unfolded_" + cu.get_unique_str(), "", "generator", "*[]", self.use_axis_binning)
         return unfolded_1d
 
     def get_bias(self):
@@ -613,31 +613,35 @@ if __name__ == "__main__":
                                  output_filename="%s/unfolded_%s_%s.%s" % (this_output_dir, region['name'], angle.var, OUTPUT_FMT),
                                  title="%s region, %s" % (region['label'], angle_str))
 
+            # Draw collapsed distributions
+            # ---------------------
+
+
             # Draw matrices
-            # -------------
-            draw_response_matrix(unfolder.response_map, 
-                                 region['label'], 
-                                 angle_str, 
+            # ---------------------
+            draw_response_matrix(unfolder.response_map,
+                                 region['label'],
+                                 angle_str,
                                  "%s/response_map_%s_%s.%s" % (this_output_dir, region['name'], angle.var, OUTPUT_FMT))
-            draw_probability_matrix(unfolder.get_probability_matrix(), 
-                                    region['label'], 
-                                    angle_str, 
+            draw_probability_matrix(unfolder.get_probability_matrix(),
+                                    region['label'],
+                                    angle_str,
                                     "%s/probability_map_%s_%s.%s" % (this_output_dir, region['name'], angle.var, OUTPUT_FMT))
-            draw_correlation_matrix(unfolder.get_rhoij_total(), 
-                                    region['label'], 
-                                    angle_str, 
+            draw_correlation_matrix(unfolder.get_rhoij_total(),
+                                    region['label'],
+                                    angle_str,
                                     "%s/corr_map_%s_%s.%s" % (this_output_dir, region['name'], angle.var, OUTPUT_FMT))
-            draw_error_matrix_input(unfolder.get_ematrix_input(), 
-                                    region['label'], 
-                                    angle_str, 
+            draw_error_matrix_input(unfolder.get_ematrix_input(),
+                                    region['label'],
+                                    angle_str,
                                     "%s/err_map_sys_input_%s_%s.%s" % (this_output_dir, region['name'], angle.var, OUTPUT_FMT))
-            draw_error_matrix_sys_uncorr(unfolder.get_ematrix_sys_uncorr(), 
-                                         region['label'], 
-                                         angle_str, 
+            draw_error_matrix_sys_uncorr(unfolder.get_ematrix_sys_uncorr(),
+                                         region['label'],
+                                         angle_str,
                                          "%s/err_map_sys_uncorr_%s_%s.%s" % (this_output_dir, region['name'], angle.var, OUTPUT_FMT))
-            draw_error_matrix_total(unfolder.get_ematrix_total(), 
-                                    region['label'], 
-                                    angle_str, 
+            draw_error_matrix_total(unfolder.get_ematrix_total(),
+                                    region['label'],
+                                    angle_str,
                                     "%s/err_map_total_%s_%s.%s" % (this_output_dir, region['name'], angle.var, OUTPUT_FMT))
 
             # Draw individual pt bin plots
@@ -649,12 +653,14 @@ if __name__ == "__main__":
                 unfolded_hist_bin_errors = unfolder.get_var_hist_pt_binned(error_sys_uncorr_1d, ibin_pt, binning_scheme="generator")
                 update_hist_bin_content(unfolded_hist_bin, unfolded_hist_bin_errors)
 
+                # print hist bins for check
                 for n in range(1, gen_hist_bin.GetNbinsX()+1):
                     print("Bin", n)
                     print("gen_hist:", gen_hist_bin.GetBinContent(n), "+-", gen_hist_bin.GetBinError(n))
                     print("unfolded_hist:", unfolded_hist_bin.GetBinContent(n), "+-", unfolded_hist_bin.GetBinError(n))
                     print("unfolded_hist_bin_errors:", unfolded_hist_bin_errors.GetBinContent(n), "+-", unfolded_hist_bin_errors.GetBinError(n))
 
+                # Make 1D plot for this lambda, for this pt bin
                 entries = [
                     Contribution(gen_hist_bin, label="Generator",
                                  line_color=ROOT.kBlue, line_width=2,
