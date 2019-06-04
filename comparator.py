@@ -523,20 +523,12 @@ class Plot(object):
         cms_latex.SetTextAlign(ROOT.kHAlignRight + ROOT.kVAlignBottom)
         cms_latex.DrawLatex(0.97, latex_height, " 35.9 fb^{-1} (13 TeV)")
 
-        # lumi_latex = ROOT.TLatex()
-        # lumi_latex.SetTextAlign(ROOT.kHAlignRight + ROOT.kVAlignBottom)
-        # lumi_latex.SetTextFont(42)
-        # lumi_latex.SetTextSize(0.035)
-        # lumi_latex.DrawLatex(0.97, 0.93, "35.9 fb^{-1} (13 TeV)")
-        # lumi_latex.SetTextAlign(ROOT.kHAlignRight + ROOT.kVAlignBottom)
-        # lumi_latex.DrawLatex(0.95, 0.93, " 35.9 fb^{-1} (13 TeV)")
-
         text_latex = ROOT.TLatex()
         text_latex.SetTextAlign(ROOT.kHAlignLeft + ROOT.kVAlignTop)
         text_latex.SetTextFont(42)
         text_latex.SetTextSize(0.03)
         start_y = 0.87
-        diff_y = 0.05
+        diff_y = 0.03
         for ind, line in enumerate(self.title.split('\n')):
             text_latex.DrawLatex(0.18, start_y - (ind*diff_y), line)
 
