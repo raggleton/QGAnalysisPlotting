@@ -321,17 +321,23 @@ class MyUnfolder(object):
     def get_probability_matrix(self):
         return self.unfolder.GetProbabilityMatrix("prob_matrix_"+cu.get_unique_str(), "", self.use_axis_binning)
 
-    def get_var_hist_pt_binned(self, hist1d, ibin_pt, binning='generator'):
+    def get_var_hist_pt_binned(self, hist1d, ibin_pt, binning_scheme='generator'):
         """Get hist of variable for given pt bin from massive 1D hist that TUnfold makes"""
         binning = self.generator_binning.FindNode("generatordistribution") if binning == "generator" else self.detector_binning.FindNode("detectordistribution")
         var_bins = np.array(binning.GetDistributionBinning(0))
         pt_bins = np.array(binning.GetDistributionBinning(1))
+
+        print("var_bins:", var_bins)
+        print("pt_bins:", pt_bins)
+        bin_num = binning.GetGlobalBinNumber(0.001, 49)
+        print("Global bin num for (pt, lambda) = (49, 0.001) => %d" % (bin_num))
 
         # need the -1 on ibin_pt, as it references an array index, whereas ROOT bins start at 1
         h = ROOT.TH1D("h_%d_%s" % (ibin_pt, cu.get_unique_str()), "", len(var_bins)-1, var_bins)
         for var_ind, var_value in enumerate(var_bins[:-1], 1):
             this_val = var_value * 1.001  # ensure its inside
             bin_num = binning.GetGlobalBinNumber(this_val, pt_bins[ibin_pt]*1.001)
+            print("Global bin num for (pt, lambda) = (%.3f, %.3f) => %d" % (pt_bins[ibin_pt]*1.001, this_val, bin_num))
             h.SetBinContent(var_ind, hist1d.GetBinContent(bin_num))
             h.SetBinError(var_ind, hist1d.GetBinError(bin_num))
             # print("Bin:", bin_num, this_val, pt_bins[ibin_pt], "=", hist1d.GetBinContent(bin_num), "+-", hist1d.GetBinError(bin_num))
@@ -636,9 +642,9 @@ if __name__ == "__main__":
             # ----------------------------
             for ibin_pt in range(0, len(pt_bin_edges_gen)-1):
 
-                gen_hist_bin = unfolder.get_var_hist_pt_binned(hist_mc_gen, ibin_pt, binning="generator")
-                unfolded_hist_bin = unfolder.get_var_hist_pt_binned(unfolded_1d, ibin_pt, binning="generator")
-                unfolded_hist_bin_errors = unfolder.get_var_hist_pt_binned(error_sys_uncorr_1d, ibin_pt, binning="generator")
+                gen_hist_bin = unfolder.get_var_hist_pt_binned(hist_mc_gen, ibin_pt, binning_scheme="generator")
+                unfolded_hist_bin = unfolder.get_var_hist_pt_binned(unfolded_1d, ibin_pt, binning_scheme="generator")
+                unfolded_hist_bin_errors = unfolder.get_var_hist_pt_binned(error_sys_uncorr_1d, ibin_pt, binning_scheme="generator")
                 update_hist_bin_content(unfolded_hist_bin, unfolded_hist_bin_errors)
 
                 for n in range(1, gen_hist_bin.GetNbinsX()+1):
