@@ -671,12 +671,12 @@ if __name__ == "__main__":
                                  line_color=ROOT.kBlue, line_width=2,
                                  marker_color=ROOT.kBlue, marker_size=0,
                                  normalise_hist=True),
-                    Contribution(unfolded_hist_bin, label="Unfolded",
+                    Contribution(unfolded_hist_bin, label="Unfolded (#tau = %.3g)" % (tau),
                                  line_color=ROOT.kRed, line_width=1,
                                  marker_color=ROOT.kRed, marker_style=20, marker_size=0,
                                  subplot=gen_hist_bin,
                                  normalise_hist=True),
-                    Contribution(unfolded_hist_bin_errors, label="Unfolded (stat err)",
+                    Contribution(unfolded_hist_bin_errors, label="Unfolded (#tau = %.3g) (stat err)" % (tau),
                                  line_color=ROOT.kGreen+2, line_width=1,
                                  marker_color=ROOT.kGreen+2, marker_style=20, marker_size=0,
                                  # subplot=gen_hist_bin,
@@ -695,7 +695,9 @@ if __name__ == "__main__":
                             subplot_type='ratio',
                             subplot_title='Unfolded / gen',
                             subplot_limits=(0.8, 1.2))
-                plot.legend.SetY1(0.75)
+                plot.legend.SetX1(0.6)
+                plot.legend.SetY1(0.68)
+                plot.legend.SetX2(0.98)
                 plot.legend.SetY2(0.9)
                 plot.plot("NOSTACK E1")
                 plot.save("%s/unfolded_%s_%s_bin_%d.%s" % (this_output_dir, region['name'], angle.var, ibin_pt, OUTPUT_FMT))
