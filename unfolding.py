@@ -79,22 +79,22 @@ class MyUnfolder(object):
         var_uf, var_of = True, False
         pt_uf, pt_of = False, False  # handle pt uder/over flow ourselves
         self.detector_binning = ROOT.TUnfoldBinning("detector")
-        detector_distribution = self.detector_binning.AddBinning("detectordistribution")
-        detector_distribution.AddAxis(self.variable_name, self.nbins_variable_reco, self.variable_bin_edges_reco, var_uf, var_of)
-        detector_distribution.AddAxis("pt", self.nbins_pt_reco, self.pt_bin_edges_reco, pt_uf, pt_of)
+        self.detector_distribution = self.detector_binning.AddBinning("detectordistribution")
+        self.detector_distribution.AddAxis(self.variable_name, self.nbins_variable_reco, self.variable_bin_edges_reco, var_uf, var_of)
+        self.detector_distribution.AddAxis("pt", self.nbins_pt_reco, self.pt_bin_edges_reco, pt_uf, pt_of)
 
-        detector_distribution_underflow = self.detector_binning.AddBinning("detectordistribution_underflow")
-        detector_distribution_underflow.AddAxis(self.variable_name, self.nbins_variable_reco, self.variable_bin_edges_reco, var_uf, var_of)
-        detector_distribution_underflow.AddAxis("pt", self.nbins_pt_underflow_reco, self.pt_bin_edges_underflow_reco, pt_uf, pt_of)
+        self.detector_distribution_underflow = self.detector_binning.AddBinning("detectordistribution_underflow")
+        self.detector_distribution_underflow.AddAxis(self.variable_name, self.nbins_variable_reco, self.variable_bin_edges_reco, var_uf, var_of)
+        self.detector_distribution_underflow.AddAxis("pt", self.nbins_pt_underflow_reco, self.pt_bin_edges_underflow_reco, pt_uf, pt_of)
 
         self.generator_binning = ROOT.TUnfoldBinning("generator")
-        generator_distribution = self.generator_binning.AddBinning("generatordistribution")
-        generator_distribution.AddAxis(self.variable_name, self.nbins_variable_gen, self.variable_bin_edges_gen, var_uf, var_of)
-        generator_distribution.AddAxis("pt", self.nbins_pt_gen, self.pt_bin_edges_gen, pt_uf, pt_of)
+        self.generator_distribution = self.generator_binning.AddBinning("generatordistribution")
+        self.generator_distribution.AddAxis(self.variable_name, self.nbins_variable_gen, self.variable_bin_edges_gen, var_uf, var_of)
+        self.generator_distribution.AddAxis("pt", self.nbins_pt_gen, self.pt_bin_edges_gen, pt_uf, pt_of)
 
-        generator_distribution_underflow = self.generator_binning.AddBinning("generatordistribution_underflow")
-        generator_distribution_underflow.AddAxis(self.variable_name, self.nbins_variable_gen, self.variable_bin_edges_gen, var_uf, var_of)
-        generator_distribution_underflow.AddAxis("pt", self.nbins_pt_underflow_gen, self.pt_bin_edges_underflow_gen, pt_uf, pt_of)
+        self.generator_distribution_underflow = self.generator_binning.AddBinning("generatordistribution_underflow")
+        self.generator_distribution_underflow.AddAxis(self.variable_name, self.nbins_variable_gen, self.variable_bin_edges_gen, var_uf, var_of)
+        self.generator_distribution_underflow.AddAxis("pt", self.nbins_pt_underflow_gen, self.pt_bin_edges_underflow_gen, pt_uf, pt_of)
 
         self.axisSteering = axisSteering
         self.unfolder = ROOT.TUnfoldDensity(response_map,
