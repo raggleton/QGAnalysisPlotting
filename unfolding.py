@@ -77,7 +77,7 @@ class MyUnfolder(object):
         # you will have untold pain and suffering!
         # TODO read in from XML
         var_uf, var_of = True, False
-        pt_uf, pt_of = True, False  # handle pt uder/over flow ourselves
+        pt_uf, pt_of = False, False  # handle pt uder/over flow ourselves
         self.detector_binning = ROOT.TUnfoldBinning("detector")
         detector_distribution = self.detector_binning.AddBinning("detectordistribution")
         detector_distribution.AddAxis(self.variable_name, self.nbins_variable_reco, self.variable_bin_edges_reco, var_uf, var_of)
