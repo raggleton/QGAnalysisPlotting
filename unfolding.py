@@ -298,10 +298,12 @@ class MyUnfolder(object):
     def do_unfolding(self, tau):
         print("Unfolding with tau =", tau)
         self.unfolder.DoUnfold(tau)
+
+    def get_output(self):
+        """Get 1D unfolded histogram covering all bins"""
         # print("( " + str(self.unfolder.GetChi2A()) + " + " + str(self.unfolder.GetChi2L()) + ") / " + str(self.unfolder.GetNdf()))
         # use "generator" for signal + underflow region, "generatordistribution" for only signal region
-        unfolded_1d = self.unfolder.GetOutput("unfolded_" + cu.get_unique_str(), "", "generator", "*[]", self.use_axis_binning)
-        return unfolded_1d
+        return self.unfolder.GetOutput("unfolded_" + cu.get_unique_str(), "", "generator", "*[]", self.use_axis_binning)
 
     def get_bias(self):
         return self.unfolder.GetBias("bias_"+cu.get_unique_str(), "", "generator", "*[]", self.use_axis_binning)
@@ -640,7 +642,9 @@ if __name__ == "__main__":
 
             # Do unfolding!
             # ---------------------
-            unfolded_1d = unfolder.do_unfolding(tau)
+            unfolder.do_unfolding(tau)
+            unfolded_1d = unfolder.get_output()
+
             # stat errors only
             ematrix_input = unfolder.get_ematrix_input() # stat errors from input to be unfolded
             ematrix_sys_uncorr = unfolder.get_ematrix_sys_uncorr() # stat errors in response matrix
