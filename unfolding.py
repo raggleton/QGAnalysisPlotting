@@ -704,17 +704,19 @@ if __name__ == "__main__":
 
             angle_str = "%s (%s)" % (angle.name, angle.lambda_str)
 
+            append = "%s_%s" % (region['name'], angle.var)  # common str to put on filenames, etc
+
             # Draw unified unfolded distributions
             # ---------------------
             plot_simple_unfolded(unfolded=unfolded_1d,
                                  reco=reco_1d,
                                  gen=hist_mc_gen,
-                                 output_filename="%s/unfolded_%s_%s.%s" % (this_output_dir, region['name'], angle.var, OUTPUT_FMT),
+                                 output_filename="%s/unfolded_%s.%s" % (this_output_dir, append, OUTPUT_FMT),
                                  title="%s region, %s" % (region['label'], angle_str))
 
             plot_simple_detector(reco_data=reco_1d_gen_binning,
                                  reco_mc=hist_mc_reco_gen_binning,
-                                 output_filename="%s/detector_%s_%s.%s" % (this_output_dir, region['name'], angle.var, OUTPUT_FMT),
+                                 output_filename="%s/detector_%s.%s" % (this_output_dir, append, OUTPUT_FMT),
                                  title="%s region, %s" % (region['label'], angle_str))
 
             # Draw collapsed distributions
@@ -726,44 +728,45 @@ if __name__ == "__main__":
 
             # Draw projections of response matrix vs 1D hist to check normalisation OK
             # ---------------------
-            proj_reco = hist_mc_gen_reco_map.ProjectionY("proj_reco_%s_%s" % (region['name'], angle.name))
+            proj_reco = hist_mc_gen_reco_map.ProjectionY("proj_reco_%s" % (append))
             draw_projection_comparison(hist_mc_reco, proj_reco,
-                                       title="%s\n%s region\n" % (jet_algo, region['label']),
+                                       title="%s\n%s region" % (jet_algo, region['label']),
                                        xtitle="%s, Detector binning" % (angle_str),
-                                       output_filename="%s/projection_reco_%s_%s.%s" % (this_output_dir, region['name'], angle.var, OUTPUT_FMT))
+                                       output_filename="%s/projection_reco_%s.%s" % (this_output_dir, append, OUTPUT_FMT))
 
-            proj_gen = hist_mc_gen_reco_map.ProjectionX("proj_gen_%s_%s" % (region['name'], angle.name))
+            proj_gen = hist_mc_gen_reco_map.ProjectionX("proj_gen_%s" % (append))
             draw_projection_comparison(hist_mc_gen, proj_gen,
-                                       title="%s\n%s region\n" % (jet_algo, region['label']),
+                                       title="%s\n%s region" % (jet_algo, region['label']),
                                        xtitle="%s, Generator binning" % (angle_str),
-                                       output_filename="%s/projection_gen_%s_%s.%s" % (this_output_dir, region['name'], angle.var, OUTPUT_FMT))
+                                       output_filename="%s/projection_gen_%s.%s" % (this_output_dir, append, OUTPUT_FMT))
 
             # Draw matrices
             # ---------------------
             draw_response_matrix(unfolder.response_map,
                                  region['label'],
                                  angle_str,
-                                 "%s/response_map_%s_%s.%s" % (this_output_dir, region['name'], angle.var, OUTPUT_FMT))
+                                 "%s/response_map_%s.%s" % (this_output_dir, append, OUTPUT_FMT))
             draw_probability_matrix(unfolder.get_probability_matrix(),
                                     region['label'],
                                     angle_str,
-                                    "%s/probability_map_%s_%s.%s" % (this_output_dir, region['name'], angle.var, OUTPUT_FMT))
+                                    "%s/probability_map_%s.%s" % (this_output_dir, append, OUTPUT_FMT))
             draw_correlation_matrix(unfolder.get_rhoij_total(),
                                     region['label'],
                                     angle_str,
-                                    "%s/corr_map_%s_%s.%s" % (this_output_dir, region['name'], angle.var, OUTPUT_FMT))
+                                    "%s/corr_map_%s.%s" % (this_output_dir, append, OUTPUT_FMT))
             draw_error_matrix_input(ematrix_input,
                                     region['label'],
                                     angle_str,
-                                    "%s/err_map_sys_input_%s_%s.%s" % (this_output_dir, region['name'], angle.var, OUTPUT_FMT))
+                                    "%s/err_map_sys_input_%s.%s" % (this_output_dir, append, OUTPUT_FMT))
             draw_error_matrix_sys_uncorr(ematrix_sys_uncorr,
                                          region['label'],
                                          angle_str,
-                                         "%s/err_map_sys_uncorr_%s_%s.%s" % (this_output_dir, region['name'], angle.var, OUTPUT_FMT))
+                                         "%s/err_map_sys_uncorr_%s.%s" % (this_output_dir, append, OUTPUT_FMT))
             draw_error_matrix_total(ematrix_total,
                                     region['label'],
                                     angle_str,
-                                    "%s/err_map_total_%s_%s.%s" % (this_output_dir, region['name'], angle.var, OUTPUT_FMT))
+                                    "%s/err_map_total_%s.%s" % (this_output_dir, append, OUTPUT_FMT))
+
 
             # Draw individual pt bin plots
             # ----------------------------
@@ -818,7 +821,7 @@ if __name__ == "__main__":
                 ]
                 has_entries = [c.obj.GetEntries() > 0 for c in entries]
                 if not any(has_entries):
-                    print("Skipping 0 entries in", region['name'], angle.var, ibin_pt)
+                    print("Skipping 0 entries in", append, ibin_pt)
                     continue
                 title = "%s\n%s region\n%g < p_{T}^{Gen} < %g GeV" % (jet_algo, region['label'], pt_bin_edges_gen[ibin_pt], pt_bin_edges_gen[ibin_pt+1])
                 ytitle= "p.d.f."
@@ -835,7 +838,7 @@ if __name__ == "__main__":
                 plot.legend.SetX2(0.98)
                 plot.legend.SetY2(0.9)
                 plot.plot("NOSTACK E1")
-                plot.save("%s/unfolded_%s_%s_bin_%d.%s" % (this_output_dir, region['name'], angle.var, ibin_pt, OUTPUT_FMT))
+                plot.save("%s/unfolded_%s_bin_%d.%s" % (this_output_dir, append, ibin_pt, OUTPUT_FMT))
 
 
                 # Reco only
@@ -854,7 +857,7 @@ if __name__ == "__main__":
                 ]
                 has_entries = [c.obj.GetEntries() > 0 for c in entries]
                 if not any(has_entries):
-                    print("Skipping 0 entries in", region['name'], angle.var, ibin_pt)
+                    print("Skipping 0 entries in", append, ibin_pt)
                     continue
                 title = "%s\n%s region\n%g < p_{T}^{Gen} < %g GeV" % (jet_algo, region['label'], pt_bin_edges_gen[ibin_pt], pt_bin_edges_gen[ibin_pt+1])
                 plot = Plot(entries,
@@ -870,7 +873,7 @@ if __name__ == "__main__":
                 plot.legend.SetX2(0.98)
                 plot.legend.SetY2(0.9)
                 plot.plot("NOSTACK E1")
-                plot.save("%s/detector_%s_%s_bin_%d.%s" % (this_output_dir, region['name'], angle.var, ibin_pt, OUTPUT_FMT))
+                plot.save("%s/detector_%s_bin_%d.%s" % (this_output_dir, append, ibin_pt, OUTPUT_FMT))
 
                 # Both together
                 entries = [
@@ -895,7 +898,7 @@ if __name__ == "__main__":
                 ]
                 has_entries = [c.obj.GetEntries() > 0 for c in entries]
                 if not any(has_entries):
-                    print("Skipping 0 entries in", region['name'], angle.var, ibin_pt)
+                    print("Skipping 0 entries in", append, ibin_pt)
                     continue
                 title = "%s\n%s region\n%g < p_{T}^{Gen} < %g GeV" % (jet_algo, region['label'], pt_bin_edges_gen[ibin_pt], pt_bin_edges_gen[ibin_pt+1])
                 plot = Plot(entries,
@@ -911,6 +914,6 @@ if __name__ == "__main__":
                 plot.legend.SetX2(0.98)
                 plot.legend.SetY2(0.9)
                 plot.plot("NOSTACK E1")
-                plot.save("%s/unfolded_detector_%s_%s_bin_%d.%s" % (this_output_dir, region['name'], angle.var, ibin_pt, OUTPUT_FMT))
+                plot.save("%s/unfolded_detector_%s_bin_%d.%s" % (this_output_dir, append, ibin_pt, OUTPUT_FMT))
 
 
