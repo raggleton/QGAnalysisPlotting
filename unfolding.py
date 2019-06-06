@@ -606,7 +606,15 @@ if __name__ == "__main__":
             # ---------------------
             unfolded_1d = unfolder.do_unfolding(tau)
             # stat errors only
-            error_sys_uncorr_1d = make_hist_from_diagonals(unfolder.get_ematrix_sys_uncorr(), do_sqrt=True)
+            ematrix_input = unfolder.get_ematrix_input() # stat errors from input to be unfolded
+            ematrix_sys_uncorr = unfolder.get_ematrix_sys_uncorr() # stat errors in response matrix
+            ematrix_stat_sum = ematrix_input.Clone("ematrix_stat_sum")
+            ematrix_stat_sum.Add(ematrix_sys_uncorr)
+            
+            error_sys_uncorr_1d = make_hist_from_diagonals(ematrix_stat_sum, do_sqrt=True)
+
+            ematrix_total = unfolder.get_ematrix_total()
+            error_total_1d = make_hist_from_diagonals(ematrix_total, do_sqrt=True)
 
             angle_str = "%s (%s)" % (angle.name, angle.lambda_str)
 
@@ -636,15 +644,15 @@ if __name__ == "__main__":
                                     region['label'],
                                     angle_str,
                                     "%s/corr_map_%s_%s.%s" % (this_output_dir, region['name'], angle.var, OUTPUT_FMT))
-            draw_error_matrix_input(unfolder.get_ematrix_input(),
+            draw_error_matrix_input(ematrix_input,
                                     region['label'],
                                     angle_str,
                                     "%s/err_map_sys_input_%s_%s.%s" % (this_output_dir, region['name'], angle.var, OUTPUT_FMT))
-            draw_error_matrix_sys_uncorr(unfolder.get_ematrix_sys_uncorr(),
+            draw_error_matrix_sys_uncorr(ematrix_sys_uncorr,
                                          region['label'],
                                          angle_str,
                                          "%s/err_map_sys_uncorr_%s_%s.%s" % (this_output_dir, region['name'], angle.var, OUTPUT_FMT))
-            draw_error_matrix_total(unfolder.get_ematrix_total(),
+            draw_error_matrix_total(ematrix_total,
                                     region['label'],
                                     angle_str,
                                     "%s/err_map_total_%s_%s.%s" % (this_output_dir, region['name'], angle.var, OUTPUT_FMT))
@@ -656,7 +664,9 @@ if __name__ == "__main__":
                 gen_hist_bin = unfolder.get_var_hist_pt_binned(hist_mc_gen, ibin_pt, binning_scheme="generator")
                 unfolded_hist_bin = unfolder.get_var_hist_pt_binned(unfolded_1d, ibin_pt, binning_scheme="generator")
                 unfolded_hist_bin_errors = unfolder.get_var_hist_pt_binned(error_sys_uncorr_1d, ibin_pt, binning_scheme="generator")
+                unfolded_hist_bin_total_errors = unfolder.get_var_hist_pt_binned(error_total_1d, ibin_pt, binning_scheme="generator")
                 update_hist_bin_content(unfolded_hist_bin, unfolded_hist_bin_errors)
+                update_hist_bin_content(unfolded_hist_bin, unfolded_hist_bin_total_errors)
 
                 # print hist bins for check
                 for n in range(1, gen_hist_bin.GetNbinsX()+1):
@@ -664,6 +674,7 @@ if __name__ == "__main__":
                     print("gen_hist:", gen_hist_bin.GetBinContent(n), "+-", gen_hist_bin.GetBinError(n))
                     print("unfolded_hist:", unfolded_hist_bin.GetBinContent(n), "+-", unfolded_hist_bin.GetBinError(n))
                     print("unfolded_hist_bin_errors:", unfolded_hist_bin_errors.GetBinContent(n), "+-", unfolded_hist_bin_errors.GetBinError(n))
+                    print("unfolded_hist_bin_total_errors:", unfolded_hist_bin_total_errors.GetBinContent(n), "+-", unfolded_hist_bin_total_errors.GetBinError(n))
 
                 # Make 1D plot for this lambda, for this pt bin
                 entries = [
@@ -677,8 +688,13 @@ if __name__ == "__main__":
                                  subplot=gen_hist_bin,
                                  normalise_hist=True),
                     Contribution(unfolded_hist_bin_errors, label="Unfolded (#tau = %.3g) (stat err)" % (tau),
-                                 line_color=ROOT.kGreen+1, line_width=1,
+                                 line_color=ROOT.kGreen+1, line_width=1, line_style=2,
                                  marker_color=ROOT.kGreen+1, marker_style=20, marker_size=0,
+                                 subplot=gen_hist_bin,
+                                 normalise_hist=True),
+                    Contribution(unfolded_hist_bin_total_errors, label="Unfolded (#tau = %.3g) (total err)" % (tau),
+                                 line_color=ROOT.kBlack, line_width=1, line_style=3,
+                                 marker_color=ROOT.kBlack, marker_style=20, marker_size=0,
                                  subplot=gen_hist_bin,
                                  normalise_hist=True),
                 ]
