@@ -473,6 +473,36 @@ def plot_simple_unfolded(unfolded, reco, gen, output_filename, title=""):
     canv_unfold.SaveAs(output_filename)
 
 
+def plot_simple_detector(reco_data, reco_mc, output_filename, title):
+    """Plot detector-level quantities for data & MC, by bin number (ie non physical axes)"""
+    canv = ROOT.TCanvas(cu.get_unique_str(), "", 800, 600)
+    canv.SetLogy()
+    canv.SetTicks(1, 1)
+    leg = ROOT.TLegend(0.7, 0.7, 0.88, 0.88)
+    leg.SetFillColor(0)
+    leg.SetFillStyle(0)
+    hst = ROOT.THStack("hst", "%s;Bin Number;N" % (title))
+
+    reco_mc.SetLineColor(ROOT.kGreen+2)
+    reco_mc.SetMarkerColor(ROOT.kGreen+2)
+    hst.Add(reco_mc)
+    leg.AddEntry(reco_mc, "MC [detector-level]", "L")
+
+    reco_data.SetLineColor(ROOT.kRed)
+    reco_data.SetLineWidth(0)
+    reco_data.SetMarkerColor(ROOT.kRed)
+    reco_data.SetMarkerSize(0.6)
+    reco_data.SetMarkerStyle(20)
+    hst.Add(reco_data)
+    leg.AddEntry(reco_data, "Data [detector-level]", "LP")
+
+    hst.Draw("NOSTACK HISTE")
+    leg.Draw()
+    hst.SetMinimum(1E-2)
+    hst.SetMaximum(5*max([h.GetMaximum() for h in [reco_data, reco_mc]]))
+    canv.SaveAs(output_filename)
+
+
 def create_hist_with_errors(hist, err_matrix):
     hnew = hist.Clone(cu.get_unique_str())
     nbins = hist.GetNbinsX()
@@ -569,6 +599,9 @@ if __name__ == "__main__":
             hist_mc_gen = cu.get_from_tfile(region['mc_tfile'], "%s/hist_%s_truth_new" % (region['dirname'], angle_shortname))
             hist_mc_gen_reco_map = cu.get_from_tfile(region['mc_tfile'], "%s/tu_%s_GenReco_new" % (region['dirname'], angle_shortname))
 
+            hist_data_reco_gen_binning = cu.get_from_tfile(region['data_tfile'], "%s/hist_%s_reco_gen_binning_new" % (region['dirname'], angle_shortname))
+            hist_mc_reco_gen_binning = cu.get_from_tfile(region['mc_tfile'], "%s/hist_%s_reco_gen_binning_new" % (region['dirname'], angle_shortname))
+
             # Setup unfolder object
             # ---------------------
             unfolder = MyUnfolder(response_map=hist_mc_gen_reco_map,
@@ -587,13 +620,16 @@ if __name__ == "__main__":
                                   densityFlags=ROOT.TUnfoldDensity.kDensityModeNone,
                                   axisSteering='*[b]')
 
-            unfolder.save_binning(txt_filename="%s/binning_scheme.txt" % (this_output_dir), print_xml=True)
+            unfolder.save_binning(txt_filename="%s/binning_scheme.txt" % (this_output_dir), print_xml=False)
 
             # Set what is to be unfolded
             # ---------------------
             reco_1d = hist_data_reco
-            reco_1d = hist_mc_reco
+            # reco_1d = hist_mc_reco  # only for testing that everything is setup OK
             unfolder.setInput(reco_1d)
+
+            reco_1d_gen_binning = hist_data_reco_gen_binning
+            # reco_1d_gen_binning = hist_mc_reco_gen_binning # only for testing that everything is setup OK
 
             # Do any regularisation
             # ---------------------
@@ -610,7 +646,7 @@ if __name__ == "__main__":
             ematrix_sys_uncorr = unfolder.get_ematrix_sys_uncorr() # stat errors in response matrix
             ematrix_stat_sum = ematrix_input.Clone("ematrix_stat_sum")
             ematrix_stat_sum.Add(ematrix_sys_uncorr)
-            
+
             error_sys_uncorr_1d = make_hist_from_diagonals(ematrix_stat_sum, do_sqrt=True)
 
             ematrix_total = unfolder.get_ematrix_total()
@@ -624,6 +660,11 @@ if __name__ == "__main__":
                                  reco=reco_1d,
                                  gen=hist_mc_gen,
                                  output_filename="%s/unfolded_%s_%s.%s" % (this_output_dir, region['name'], angle.var, OUTPUT_FMT),
+                                 title="%s region, %s" % (region['label'], angle_str))
+
+            plot_simple_detector(reco_data=reco_1d_gen_binning,
+                                 reco_mc=hist_mc_reco_gen_binning,
+                                 output_filename="%s/detector_%s_%s.%s" % (this_output_dir, region['name'], angle.var, OUTPUT_FMT),
                                  title="%s region, %s" % (region['label'], angle_str))
 
             # Draw collapsed distributions
@@ -668,6 +709,9 @@ if __name__ == "__main__":
                 update_hist_bin_content(unfolded_hist_bin, unfolded_hist_bin_errors)
                 update_hist_bin_content(unfolded_hist_bin, unfolded_hist_bin_total_errors)
 
+                data_reco_hist_bin = unfolder.get_var_hist_pt_binned(reco_1d_gen_binning, ibin_pt, binning_scheme="generator")
+                mc_reco_hist_bin = unfolder.get_var_hist_pt_binned(hist_mc_reco_gen_binning, ibin_pt, binning_scheme="generator")
+
                 # print hist bins for check
                 for n in range(1, gen_hist_bin.GetNbinsX()+1):
                     print("Bin", n)
@@ -676,25 +720,68 @@ if __name__ == "__main__":
                     print("unfolded_hist_bin_errors:", unfolded_hist_bin_errors.GetBinContent(n), "+-", unfolded_hist_bin_errors.GetBinError(n))
                     print("unfolded_hist_bin_total_errors:", unfolded_hist_bin_total_errors.GetBinContent(n), "+-", unfolded_hist_bin_total_errors.GetBinError(n))
 
-                # Make 1D plot for this lambda, for this pt bin
+                # Make 1D plots for this lambda, for this pt bin
+                # ------------------------------------------------------------
+                # Unfolded only
+                lw = 1
+                gen_colour = ROOT.kBlue
+                unfolded_basic_colour = ROOT.kAzure+10
+                unfolded_stat_colour = ROOT.kGreen+1
+                unfolded_total_colour = ROOT.kBlack
                 entries = [
                     Contribution(gen_hist_bin, label="Generator",
-                                 line_color=ROOT.kBlue, line_width=2,
-                                 marker_color=ROOT.kBlue, marker_size=0,
+                                 line_color=gen_colour, line_width=lw,
+                                 marker_color=gen_colour, marker_size=0,
                                  normalise_hist=True),
                     Contribution(unfolded_hist_bin, label="Unfolded (#tau = %.3g)" % (tau),
-                                 line_color=ROOT.kRed, line_width=1,
-                                 marker_color=ROOT.kRed, marker_style=20, marker_size=0,
+                                 line_color=unfolded_basic_colour, line_width=lw,
+                                 marker_color=unfolded_basic_colour, marker_style=20, marker_size=0,
                                  subplot=gen_hist_bin,
                                  normalise_hist=True),
                     Contribution(unfolded_hist_bin_errors, label="Unfolded (#tau = %.3g) (stat err)" % (tau),
-                                 line_color=ROOT.kGreen+1, line_width=1, line_style=2,
-                                 marker_color=ROOT.kGreen+1, marker_style=20, marker_size=0,
+                                 line_color=unfolded_stat_colour, line_width=lw, line_style=2,
+                                 marker_color=unfolded_stat_colour, marker_style=20, marker_size=0,
                                  subplot=gen_hist_bin,
                                  normalise_hist=True),
                     Contribution(unfolded_hist_bin_total_errors, label="Unfolded (#tau = %.3g) (total err)" % (tau),
-                                 line_color=ROOT.kBlack, line_width=1, line_style=3,
-                                 marker_color=ROOT.kBlack, marker_style=20, marker_size=0,
+                                 line_color=unfolded_total_colour, line_width=lw, line_style=3,
+                                 marker_color=unfolded_total_colour, marker_style=20, marker_size=0.75,
+                                 subplot=gen_hist_bin,
+                                 normalise_hist=True),
+                ]
+                has_entries = [c.obj.GetEntries() > 0 for c in entries]
+                if not any(has_entries):
+                    print("Skipping 0 entries in", region['name'], angle.var, ibin_pt)
+                    continue
+                title = "%s\n%s region\n%g < p_{T}^{Gen} < %g GeV" % (jet_algo, region['label'], pt_bin_edges_gen[ibin_pt], pt_bin_edges_gen[ibin_pt+1])
+                ytitle= "p.d.f."
+                plot = Plot(entries,
+                            what="hist",
+                            title=title,
+                            xtitle="Generator-level "+angle_str,
+                            ytitle=ytitle,
+                            subplot_type='ratio',
+                            subplot_title='Unfolded / generator',
+                            subplot_limits=(0.8, 1.2))
+                plot.legend.SetX1(0.6)
+                plot.legend.SetY1(0.68)
+                plot.legend.SetX2(0.98)
+                plot.legend.SetY2(0.9)
+                plot.plot("NOSTACK E1")
+                plot.save("%s/unfolded_%s_%s_bin_%d.%s" % (this_output_dir, region['name'], angle.var, ibin_pt, OUTPUT_FMT))
+
+
+                # Reco only
+                reco_mc_colour = ROOT.kGreen+2
+                reco_data_colour = ROOT.kRed
+                entries = [
+                    Contribution(mc_reco_hist_bin, label="MC",
+                                 line_color=reco_mc_colour, line_width=lw,
+                                 marker_color=reco_mc_colour, marker_size=0,
+                                 normalise_hist=True),
+                    Contribution(data_reco_hist_bin, label="Data",
+                                 line_color=reco_data_colour, line_width=lw,
+                                 marker_color=reco_data_colour, marker_style=20, marker_size=0.75,
                                  subplot=gen_hist_bin,
                                  normalise_hist=True),
                 ]
@@ -706,16 +793,57 @@ if __name__ == "__main__":
                 plot = Plot(entries,
                             what="hist",
                             title=title,
-                            xtitle=angle_str,
-                            ytitle='p.d.f.',
+                            xtitle="Detector-level " + angle_str,
+                            ytitle=ytitle,
                             subplot_type='ratio',
-                            subplot_title='Unfolded / gen',
+                            subplot_title='Data / MC',
                             subplot_limits=(0.8, 1.2))
                 plot.legend.SetX1(0.6)
                 plot.legend.SetY1(0.68)
                 plot.legend.SetX2(0.98)
                 plot.legend.SetY2(0.9)
                 plot.plot("NOSTACK E1")
-                plot.save("%s/unfolded_%s_%s_bin_%d.%s" % (this_output_dir, region['name'], angle.var, ibin_pt, OUTPUT_FMT))
+                plot.save("%s/detector_%s_%s_bin_%d.%s" % (this_output_dir, region['name'], angle.var, ibin_pt, OUTPUT_FMT))
+
+                # Both together
+                entries = [
+                    Contribution(gen_hist_bin, label="Generator",
+                                 line_color=ROOT.kBlue, line_width=lw,
+                                 marker_color=ROOT.kBlue, marker_size=0,
+                                 normalise_hist=True),
+                    Contribution(unfolded_hist_bin_total_errors, label="Unfolded (#tau = %.3g) (total err)" % (tau),
+                                 line_color=ROOT.kBlack, line_width=lw, line_style=1,
+                                 marker_color=ROOT.kBlack, marker_style=20, marker_size=0.75,
+                                 subplot=gen_hist_bin,
+                                 normalise_hist=True),
+                    Contribution(mc_reco_hist_bin, label="MC",
+                                 line_color=reco_mc_colour, line_width=lw,
+                                 marker_color=reco_mc_colour, marker_size=0,
+                                 normalise_hist=True),
+                    Contribution(data_reco_hist_bin, label="Data",
+                                 line_color=reco_data_colour, line_width=lw,
+                                 marker_color=reco_data_colour, marker_style=20, marker_size=0.75,
+                                 subplot=mc_reco_hist_bin,
+                                 normalise_hist=True),
+                ]
+                has_entries = [c.obj.GetEntries() > 0 for c in entries]
+                if not any(has_entries):
+                    print("Skipping 0 entries in", region['name'], angle.var, ibin_pt)
+                    continue
+                title = "%s\n%s region\n%g < p_{T}^{Gen} < %g GeV" % (jet_algo, region['label'], pt_bin_edges_gen[ibin_pt], pt_bin_edges_gen[ibin_pt+1])
+                plot = Plot(entries,
+                            what="hist",
+                            title=title,
+                            xtitle=angle_str,
+                            ytitle=ytitle,
+                            subplot_type='ratio',
+                            subplot_title='Data / MC',
+                            subplot_limits=(0.8, 1.2))
+                plot.legend.SetX1(0.6)
+                plot.legend.SetY1(0.68)
+                plot.legend.SetX2(0.98)
+                plot.legend.SetY2(0.9)
+                plot.plot("NOSTACK E1")
+                plot.save("%s/unfolded_detector_%s_%s_bin_%d.%s" % (this_output_dir, region['name'], angle.var, ibin_pt, OUTPUT_FMT))
 
 
