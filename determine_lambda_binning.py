@@ -824,7 +824,10 @@ if __name__ == "__main__":
     output_txt = os.path.join(args.outputDir, 'binning_'+parts[1])
     with open(output_txt, 'w') as fout:
         for k, v in rebin_results_dict.items():
-            fout.write("%s: %s\n" % (k, v))
+            # turn pairs of bin edges into one list
+            bins = [vv[0] for vv in v]
+            bins.append(v[-1][1])
+            fout.write("%s: %s\n" % (k, bins))
 
     print("saved new binning to", output_txt)
     print("saved rebinned 2D hists to", output_root_filename)
