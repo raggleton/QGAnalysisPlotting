@@ -95,32 +95,38 @@ class Contribution(object):
                  fill_color=ROOT.kRed, fill_style=0,
                  marker_size=1, marker_color=ROOT.kRed, marker_style=1,
                  fit_match_style=True,
-                 normalise_hist=False, rebin_hist=None, subplot=None):
+                 normalise_hist=False, divide_bin_width=False,
+                 rebin_hist=None, subplot=None):
         """
+        Parameters
+        ----------
         obj : TH1, TGraph, ...
             Object to be plotted
-        label: str
+        label : str
             Title of contribution, to be used in legend.
-        line_width: int
+        line_width : int
             Width of line.
-        line_color: int or ROOT color
+        line_color : int or ROOT color
             Color of line.
-        line_style: int
+        line_style : int
             Line style.
-        fill_color: int or ROOT color
+        fill_color : int or ROOT color
             Color of fill.
-        fill_style: int
+        fill_style : int
             Fill style.
-        marker_size: int
+        marker_size : int
             Size of marker
-        marker_color: int or ROOT color
+        marker_color : int or ROOT color
             Color of markers.
-        marker_style: int
+        marker_style : int
             Marker style.
         fit_match_style : bool
             If True, apply line_color etc to fit function as well
         normalise_hist : bool
             If a histogram, normalise so integral = 1
+        divide_bin_width : bool, optional
+            If True, divide by bin width when normalising. 
+            Only makes sense when used with normalise_hist=True
         rebin_hist : int, None
             If a histogram, specify the number of bins to be grouped together.
         subplot : ROOT.TObject
@@ -157,8 +163,15 @@ class Contribution(object):
         if rebin_hist and rebin_hist != 1:
             self.obj.Rebin(rebin_hist) # Does this handle 2D hists?
         if normalise_hist and obj.Integral() != 0:
-            # self.obj.Scale(1./(obj.GetBinWidth(1) * obj.Integral()))
-            self.obj.Scale(1./(obj.Integral()))
+            if divide_bin_width:
+                # check if all same bin width
+                if sum([obj.GetBinWidth(i)/obj.GetBinWidth(1) for i in range(2, obj.GetNbinsX())]) < 1E-5:
+                    self.obj.Scale(1./(obj.GetBinWidth(1) * obj.Integral()))
+                else:
+                    # deal with varaible bin width, much more involved
+                    raise RuntimeError("Can't deal with variable bin width and divide_bin_width")
+            else:
+                self.obj.Scale(1./(obj.Integral()))
         if isinstance(self.obj, ROOT.TH1) or isinstance(self.obj, ROOT.TH2):
             self.obj.SetDirectory(0)
 
