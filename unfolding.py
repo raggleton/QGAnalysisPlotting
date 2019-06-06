@@ -858,12 +858,12 @@ if __name__ == "__main__":
                                  normalise_hist=True),
                     Contribution(unfolded_hist_bin, label="Unfolded (#tau = %.3g)" % (tau),
                                  line_color=unfolded_basic_colour, line_width=lw,
-                                 marker_color=unfolded_basic_colour, marker_style=20, marker_size=0,
+                                 marker_color=unfolded_basic_colour, marker_size=0,
                                  subplot=gen_hist_bin,
                                  normalise_hist=True),
                     Contribution(unfolded_hist_bin_errors, label="Unfolded (#tau = %.3g) (stat err)" % (tau),
                                  line_color=unfolded_stat_colour, line_width=lw, line_style=2,
-                                 marker_color=unfolded_stat_colour, marker_style=20, marker_size=0,
+                                 marker_color=unfolded_stat_colour, marker_size=0,
                                  subplot=gen_hist_bin,
                                  normalise_hist=True),
                     Contribution(unfolded_hist_bin_total_errors, label="Unfolded (#tau = %.3g) (total err)" % (tau),
@@ -893,7 +893,6 @@ if __name__ == "__main__":
                 plot.plot("NOSTACK E1")
                 plot.save("%s/unfolded_%s_bin_%d.%s" % (this_output_dir, append, ibin_pt, OUTPUT_FMT))
 
-
                 # Reco only, generator-binning
                 reco_mc_colour = ROOT.kGreen+2
                 reco_data_colour = ROOT.kRed
@@ -905,7 +904,7 @@ if __name__ == "__main__":
                     Contribution(data_reco_hist_bin_gen_binning, label="Data",
                                  line_color=reco_data_colour, line_width=lw,
                                  marker_color=reco_data_colour, marker_style=20, marker_size=0.75,
-                                 subplot=gen_hist_bin,
+                                 subplot=mc_reco_hist_bin_gen_binning,
                                  normalise_hist=True),
                 ]
                 has_entries = [c.obj.GetEntries() > 0 for c in entries]
@@ -922,11 +921,11 @@ if __name__ == "__main__":
                             subplot_title='Data / MC',
                             subplot_limits=(0.8, 1.2))
                 plot.legend.SetX1(0.6)
-                plot.legend.SetY1(0.68)
+                plot.legend.SetY1(0.75)
                 plot.legend.SetX2(0.98)
                 plot.legend.SetY2(0.9)
                 plot.plot("NOSTACK E1")
-                plot.save("%s/detector_%s_bin_%d.%s" % (this_output_dir, append, ibin_pt, OUTPUT_FMT))
+                plot.save("%s/detector_gen_binning_%s_bin_%d.%s" % (this_output_dir, append, ibin_pt, OUTPUT_FMT))
 
                 # Reco + folded, detector binning
                 reco_mc_colour = ROOT.kGreen+2
