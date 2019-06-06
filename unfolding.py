@@ -532,6 +532,52 @@ def update_hist_bin_content(h_orig, h_to_be_updated):
         h_to_be_updated.SetBinContent(i, h_orig.GetBinContent(i))
 
 
+def draw_projection_comparison(h_orig, h_projection, title, xtitle, output_filename):
+    """Draw 2 hists, h_orig the original, and h_projection the projection of a 2D hist"""
+
+    # Check integrals
+    int_orig = h_orig.Integral()
+    int_proj = h_projection.Integral()
+    if abs(int_orig - int_proj)/int_orig > 0.01:
+        print("draw_projection_comparison: different integrals: %f vs %f" % (int_orig, int_proj))
+
+    # Check bin-by-bin
+    for i in range(1, h_orig.GetNbinsX()+1):
+        value_orig = h_orig.GetBinContent(i)
+        value_proj = h_projection.GetBinContent(i)
+        if abs(value_orig - value_proj) > 1E-2:
+            print("draw_projection_comparison: bin %s has different contents: %f vs %f" % (i, value_orig, value_proj))
+
+    entries = [
+        Contribution(h_orig, label="1D hist",
+                     line_color=ROOT.kBlue, line_width=1,
+                     marker_color=ROOT.kBlue, marker_size=0,
+                     normalise_hist=False),
+        Contribution(h_projection, label="Response map projection",
+                     line_color=ROOT.kRed, line_width=1,
+                     marker_color=ROOT.kRed, marker_size=0,
+                     normalise_hist=False,
+                     subplot=h_orig),
+    ]
+    plot = Plot(entries,
+                what='hist',
+                title=title,
+                xtitle=xtitle,
+                ytitle="N",
+                subplot_type='ratio',
+                subplot_title='Projection / 1D',
+                subplot_limits=(0.999, 1.001))
+    plot.default_canvas_size = (800, 600)
+    plot.plot("NOSTACK HIST")
+    plot.main_pad.SetLogy(1)
+    ymax = max(h.GetMaximum() for h in [h_orig, h_projection])
+    plot.container.SetMaximum(ymax * 10)
+    # plot.container.SetMinimum(1E-8)
+    plot.legend.SetY1NDC(0.77)
+    plot.legend.SetX2NDC(0.85)
+    plot.save(output_filename)
+
+
 if __name__ == "__main__":
     input_mc_dy_mgpythia_tfile = cu.open_root_file("workdir_ak4puppi_mgpythia_newFlav_withAllResponses_jetAsymCut_chargedResp_pt1RecoConstituents_V11JEC_JER_tUnfold/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL.root")
     input_mc_dy_mgherwig_tfile = cu.open_root_file("workdir_ak4puppi_herwig_newFlav_withAllResponses_jetAsymCut_chargedResp_pt1RecoConstituents_V11JEC_JER_tUnfold/uhh2.AnalysisModuleRunner.MC.MC_MG_HERWIG_DYJetsToLL.root")
@@ -673,7 +719,24 @@ if __name__ == "__main__":
 
             # Draw collapsed distributions
             # ---------------------
+            # unfolded_1d_pt = unfolder.get_output_pt_1d()
+            # hist_mc_gen
 
+            # unfolded_1d_lambda = unfolder.get_output_lambda_1d()
+
+            # Draw projections of response matrix vs 1D hist to check normalisation OK
+            # ---------------------
+            proj_reco = hist_mc_gen_reco_map.ProjectionY("proj_reco_%s_%s" % (region['name'], angle.name))
+            draw_projection_comparison(hist_mc_reco, proj_reco,
+                                       title="%s\n%s region\n" % (jet_algo, region['label']),
+                                       xtitle="%s, Detector binning" % (angle_str),
+                                       output_filename="%s/projection_reco_%s_%s.%s" % (this_output_dir, region['name'], angle.var, OUTPUT_FMT))
+
+            proj_gen = hist_mc_gen_reco_map.ProjectionX("proj_gen_%s_%s" % (region['name'], angle.name))
+            draw_projection_comparison(hist_mc_gen, proj_gen,
+                                       title="%s\n%s region\n" % (jet_algo, region['label']),
+                                       xtitle="%s, Generator binning" % (angle_str),
+                                       output_filename="%s/projection_gen_%s_%s.%s" % (this_output_dir, region['name'], angle.var, OUTPUT_FMT))
 
             # Draw matrices
             # ---------------------
