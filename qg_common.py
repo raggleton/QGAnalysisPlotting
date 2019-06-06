@@ -69,6 +69,12 @@ COMMON_VARS_WITH_FLAV = [
     Angle('jet_LHA', 1, 0.5, "LHA", "#lambda_{0.5}^{1}", 600),
     Angle('jet_width', 1, 1, "Width", "#lambda_{1}^{1}", 861),
     Angle('jet_thrust', 1, 2, "Thrust", "#lambda_{2}^{1}", 617),
+    # charged-only constit
+    Angle("jet_puppiMultiplicity_charged", 0, 0, "PUPPI Multiplicity (charged)", "#lambda_{0}^{0} (PUPPI)", 2),
+    Angle('jet_pTD_charged', 2, 0, "(p_{T}^{D})^{2} (charged)", "#lambda_{0}^{2}", 418),
+    Angle('jet_LHA_charged', 1, 0.5, "LHA (charged)", "#lambda_{0.5}^{1}", 600),
+    Angle('jet_width_charged', 1, 1, "Width (charged)", "#lambda_{1}^{1}", 861),
+    Angle('jet_thrust_charged', 1, 2, "Thrust (charged)", "#lambda_{2}^{1}", 617),
     # Angle('jet_multiplicity', 0, 0, "Multiplicity", "#lambda_{0}^{0}", 2),  # leave last as we don't want it in our RIVET numbering
     Angle('jet_flavour', 0, 0, "Flavour", "PDGID", 7),
     Angle("jet_genParton_flavour", 0, 0, "Flavour", "PDGID", 8)
@@ -97,24 +103,68 @@ VAR_UNFOLD_DICT = {
         'gen': np.array([1, 5, 10, 13, 19, 25, 35, 50, 75, 100, 150], dtype='d'),
         'reco': None  # reco gets set later
     },
-    'jet_puppiMultiplicity': {
+     'jet_puppiMultiplicity': {
         'gen': np.array([1, 5, 10, 13, 19, 25, 35, 50, 75, 100, 150], dtype='d'),
+         'reco': None
+     },
+     'jet_pTD': {
+        'gen': np.array([0.0, 0.09, 0.12, 0.16, 0.21, 0.29, 0.43, 0.7, 1.0], dtype='d'),
+         'reco': None
+     },
+     'jet_LHA': {
+        'gen': np.array([0.0, 0.14, 0.29, 0.37, 0.44, 0.5, 0.56, 0.62, 0.68, 0.75, 1.0], dtype='d'),
+         'reco': None
+     },
+     'jet_width': {
+        'gen': np.array([0.0, 0.11, 0.17, 0.23, 0.29, 0.35, 0.42, 0.6, 1.0], dtype='d'),
+         'reco': None
+     },
+     'jet_thrust': {
+        'gen': np.array([0.0, 0.04, 0.08, 0.12, 0.17, 0.24, 0.33, 0.66, 1.0], dtype='d'),
+        'reco': None
+    }
+}
+
+VAR_UNFOLD_DICT = {
+    'jet_puppiMultiplicity': {
+        'gen': np.array([0, 9, 15, 22, 35, 50, 75, 100, 150], dtype='d'),
         'reco': None
     },
     'jet_pTD': {
-        'gen': np.array([0.0, 0.09, 0.12, 0.16, 0.21, 0.29, 0.43, 0.7, 1.0], dtype='d'),
+        'gen': np.array([0.0, 0.09, 0.14, 0.25, 1.0], dtype='d'),
         'reco': None
     },
     'jet_LHA': {
-        'gen': np.array([0.0, 0.14, 0.29, 0.37, 0.44, 0.5, 0.56, 0.62, 0.68, 0.75, 1.0], dtype='d'),
+        'gen': np.array([0.0, 0.12, 0.25, 0.33, 0.39, 0.45, 0.51, 0.57, 0.62, 0.66, 0.7, 0.76, 1.0], dtype='d'),
         'reco': None
     },
     'jet_width': {
-        'gen': np.array([0.0, 0.11, 0.17, 0.23, 0.29, 0.35, 0.42, 0.6, 1.0], dtype='d'),
+        'gen': np.array([0.0, 0.09, 0.14, 0.19, 0.25, 0.31, 0.37, 0.43, 0.48, 0.54, 1.0], dtype='d'),
         'reco': None
     },
     'jet_thrust': {
-        'gen': np.array([0.0, 0.04, 0.08, 0.12, 0.17, 0.24, 0.33, 0.66, 1.0], dtype='d'),
+        'gen': np.array([0.0, 0.03, 0.06, 0.1, 0.15, 0.2, 0.25, 0.31, 0.47, 1.0], dtype='d'),
+        'reco': None
+    },
+
+    'jet_puppiMultiplicity_charged': {
+        'gen': np.array([0, 9, 15, 22, 35, 50, 75, 100, 150], dtype='d'),
+        'reco': None
+    },
+    'jet_pTD_charged': {
+        'gen': np.array([0.0, 0.09, 0.12, 0.15, 0.19, 0.24, 0.31, 0.4, 0.53, 0.73, 1.0], dtype='d'),
+        'reco': None
+    },
+    'jet_LHA_charged': {
+        'gen': np.array([0.0, 0.1, 0.2, 0.26, 0.32, 0.37, 0.42, 0.47, 0.52, 0.57, 0.62, 0.66, 0.7, 0.75, 1.0], dtype='d'),
+        'reco': None
+    },
+    'jet_width_charged': {
+        'gen': np.array([0.0, 0.06, 0.09, 0.13, 0.17, 0.21, 0.26, 0.31, 0.36, 0.41, 0.46, 0.52, 0.6, 1.0], dtype='d'),
+        'reco': None
+    },
+    'jet_thrust_charged': {
+        'gen': np.array([0.0, 0.02, 0.04, 0.07, 0.11, 0.16, 0.22, 0.28, 0.37, 1.0], dtype='d'),
         'reco': None
     },
 }
