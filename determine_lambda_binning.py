@@ -517,22 +517,22 @@ if __name__ == "__main__":
             "append": "_highPt",
             "title": "p_{T}^{Reco} > 250 GeV",
         },
-        {
-            "append": "_charged",
-            "title": "p_{T}^{Reco} > 30 GeV (only charged constits.)",
-        },
-        {
-            "append": "_charged_lowPt",
-            "title": "30 < p_{T}^{Reco} < 100 GeV (only charged constits.)",
-        },
-        {
-            "append": "_charged_midPt",
-            "title": "100 < p_{T}^{Reco} < 250 GeV (only charged constits.)",
-        },
-        {
-            "append": "_charged_highPt",
-            "title": "p_{T}^{Reco} > 250 GeV (only charged constits.)",
-        },
+        # {
+        #     "append": "_charged",
+        #     "title": "p_{T}^{Reco} > 30 GeV (only charged constits.)",
+        # },
+        # {
+        #     "append": "_charged_lowPt",
+        #     "title": "30 < p_{T}^{Reco} < 100 GeV (only charged constits.)",
+        # },
+        # {
+        #     "append": "_charged_midPt",
+        #     "title": "100 < p_{T}^{Reco} < 250 GeV (only charged constits.)",
+        # },
+        # {
+        #     "append": "_charged_highPt",
+        #     "title": "p_{T}^{Reco} > 250 GeV (only charged constits.)",
+        # },
     ]
 
     input_tfile = cu.open_root_file(args.input)
@@ -684,11 +684,13 @@ if __name__ == "__main__":
         # Apply binning scheme dervied from one pT region to others
         # ---------------------------------------------------------
         rebin_other_pt_regions = True
-        reference_pt_region = "_charged_midPt"  # correspond to 'append' key in a dict
+        reference_pt_region = "_midPt"  # correspond to 'append' key in a dict
         # reference_pt_region = "_lowPt"  # correspond to 'append' key in a dict
         if rebin_other_pt_regions:
 
             this_pt_dict = [x for x in pt_regions if x['append'] == reference_pt_region][0]
+            print("Rebinning other pt regions using:")
+            print(this_pt_dict)
 
             # God this is awful, such disconnect between rebinning, names, hists
 
@@ -708,6 +710,7 @@ if __name__ == "__main__":
             for hname, h2d in response_maps_dict.items():
                 if reference_pt_region in hname or "_renorm" in hname:
                     continue
+                print("Rebinning", hname)
                 h2d_rebin = make_rebinned_2d_hist(h2d, reference_binning, use_half_width_y=False)
                 var_dict = {
                     "name": hname,
