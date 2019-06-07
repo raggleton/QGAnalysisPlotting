@@ -135,7 +135,7 @@ class MyUnfolder(object):
     def setInput(self, hist):
         self.tunfolder.SetInput(hist)
 
-    def doScanTau(self, output_dir, n_scan=300, scan_mode=ROOT.TUnfoldDensity.kEScanTauRhoMax):
+    def doScanTau(self, output_dir, n_scan=300, tau_min=1E-14, tau_max=1E-4, scan_mode=ROOT.TUnfoldDensity.kEScanTauRhoMax):
         """Figure out best tau by scanning tau curve
         Taken from Ashley's code
         """
@@ -145,8 +145,6 @@ class MyUnfolder(object):
         lCurve = ROOT.MakeNullPointer(ROOT.TGraph)
         LogTauX = ROOT.MakeNullPointer(ROOT.TSpline)
         LogTauY = ROOT.MakeNullPointer(ROOT.TSpline)
-
-        tau_min, tau_max = 1E-15, 0.9
 
         iBestAvg = self.tunfolder.ScanTau(n_scan,
                                          tau_min,
@@ -227,12 +225,10 @@ class MyUnfolder(object):
         return tau
 
 
-    def doScanL(self, output_dir, n_scan=300):
+    def doScanL(self, output_dir, n_scan=300, tau_min=1E-14, tau_max=0.1):
         """Figure out best tau by doing scan over L curve
         Taken from Ashley's code
         """
-        tau_min, tau_max = 0., 0.  # let it decide range for us
-        tau_min, tau_max = 1E-14, 0.1
         scannedlcurve = ROOT.MakeNullPointer(ROOT.TGraph)
         logTauX = ROOT.MakeNullPointer(ROOT.TSpline3)
         logTauY = ROOT.MakeNullPointer(ROOT.TSpline3)
@@ -636,6 +632,20 @@ if __name__ == "__main__":
             "label": "Dijet",
             "data_tfile": input_jetht_tfile,
             "mc_tfile": input_mc_qcd_mgpythia_tfile,
+            "mc_neutralUp_tfile": input_mc_qcd_mgpythia_neutralUp_tfile,
+            "mc_neutralDown_tfile": input_mc_qcd_mgpythia_neutralDown_tfile,
+            "tau_limits": {
+                'jet_puppiMultiplicity': (1E-13, 1E-8),
+                'jet_pTD': (1E-13, 1E-8),
+                'jet_LHA': (1E-13, 1E-8),
+                'jet_width': (1E-13, 1E-8),
+                'jet_thrust': (1E-13, 1E-8),
+                'jet_puppiMultiplicity_charged': (1E-16, 1E-8),
+                'jet_pTD_charged': (1E-13, 1E-8),
+                'jet_LHA_charged': (1E-13, 1E-8),
+                'jet_width_charged': (1E-13, 1E-8),
+                'jet_thrust_charged': (1E-13, 1E-8),
+            },
         },
         {
             "name": "ZPlusJets",
@@ -643,6 +653,20 @@ if __name__ == "__main__":
             "label": "Z+jets",
             "data_tfile": input_singlemu_tfile,
             "mc_tfile": input_mc_dy_mgpythia_tfile,
+            "mc_neutralUp_tfile": input_mc_dy_mgpythia_neutralUp_tfile,
+            "mc_neutralDown_tfile": input_mc_dy_mgpythia_neutralDown_tfile,
+            "tau_limits": {
+                'jet_puppiMultiplicity': (1E-10, 1E-4),
+                'jet_pTD': (1E-10, 1E-4),
+                'jet_LHA': (1E-10, 1E-4),
+                'jet_width': (1E-10, 1E-4),
+                'jet_thrust': (1E-10, 1E-4),
+                'jet_puppiMultiplicity_charged': (1E-10, 1E-4),
+                'jet_pTD_charged': (1E-10, 1E-4),
+                'jet_LHA_charged': (1E-10, 1E-4),
+                'jet_width_charged': (1E-10, 1E-4),
+                'jet_thrust_charged': (1E-10, 1E-4),
+            },
         },
     ]
 
@@ -670,8 +694,12 @@ if __name__ == "__main__":
         # pt_bin_edges_underflow_reco = qgc.construct_fine_binning(pt_bin_edges_underflow_gen)
 
         for angle in qgc.COMMON_VARS[2:3]:
+            regularise = None
+            # regularise = "tau"
+            # regularise = "L"
+
             # put plots in subdir, to avoid overcrowding
-            this_output_dir = "%s/%s/%s" % (output_dir, region['name'], angle.var)
+            this_output_dir = "%s/%s_regularise%s/%s" % (output_dir, region['name'], regularise, angle.var)
             cu.check_dir_exists_create(this_output_dir)
 
             # Setup MyUnfolder object to do unfolding etc
@@ -719,10 +747,16 @@ if __name__ == "__main__":
 
             # Do any regularisation
             # ---------------------
-            # tau = unfolder.doScanL(output_dir=this_output_dir, n_scan=100)
-            # tau = unfolder.doScanTau(output_dir=this_output_dir, n_scan=100, scan_mode=ROOT.TUnfoldDensity.kEScanTauRhoAvgSys)
             # tau = 1E-10
             tau = 0
+            if regularise == "L":
+                tau = unfolder.doScanL(output_dir=this_output_dir, n_scan=100,
+                                       tau_min=1E-14, tau_max=1E-4)
+            elif regularise == "tau":
+                tau = unfolder.doScanTau(output_dir=this_output_dir, n_scan=100, 
+                                         tau_min=region['tau_limits'][angle.var][0], 
+                                         tau_max=region['tau_limits'][angle.var][1], 
+                                         scan_mode=ROOT.TUnfoldDensity.kEScanTauRhoAvgSys)
 
             # Do unfolding!
             # ---------------------
