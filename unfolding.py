@@ -97,7 +97,7 @@ class MyUnfolder(object):
         self.generator_distribution_underflow.AddAxis("pt", self.nbins_pt_underflow_gen, self.pt_bin_edges_underflow_gen, pt_uf, pt_of)
 
         self.axisSteering = axisSteering
-        self.unfolder = ROOT.TUnfoldDensity(response_map,
+        self.tunfolder = ROOT.TUnfoldDensity(response_map,
                                             orientation,
                                             regMode,
                                             constraintMode,
@@ -132,9 +132,8 @@ class MyUnfolder(object):
             ROOT.TUnfoldBinningXML.ExportXML(self.detector_binning, ROOT.cout, True, False)
             ROOT.TUnfoldBinningXML.ExportXML(self.generator_binning, ROOT.cout, False, True)
 
-
     def setInput(self, hist):
-        self.unfolder.SetInput(hist)
+        self.tunfolder.SetInput(hist)
 
     def doScanTau(self, output_dir, n_scan=300, scan_mode=ROOT.TUnfoldDensity.kEScanTauRhoMax):
         """Figure out best tau by scanning tau curve
@@ -149,7 +148,7 @@ class MyUnfolder(object):
 
         tau_min, tau_max = 1E-15, 0.9
 
-        iBestAvg = self.unfolder.ScanTau(n_scan,
+        iBestAvg = self.tunfolder.ScanTau(n_scan,
                                          tau_min,
                                          tau_max,
                                          scanresults,
@@ -159,7 +158,7 @@ class MyUnfolder(object):
                                          lCurve,
                                          LogTauX,
                                          LogTauY)
-        tau = self.unfolder.GetTau()
+        tau = self.tunfolder.GetTau()
 
         x, y, t, rho = array('d'), array('d'), array('d'), array('d')
         t0 = ROOT.Double(0.0)
@@ -190,9 +189,9 @@ class MyUnfolder(object):
             rhoAll.append(rr)
 
         knots = ROOT.TGraph(int(n_scan), tAll, rhoAll)
-        print("chi**2 A {:3.1f} + chi**2 L {:3.1f} / NDOF {:3.1f} ".format(self.unfolder.GetChi2A(),
-                                                                           self.unfolder.GetChi2L(),
-                                                                           self.unfolder.GetNdf()))
+        print("chi**2 A {:3.1f} + chi**2 L {:3.1f} / NDOF {:3.1f} ".format(self.tunfolder.GetChi2A(),
+                                                                           self.tunfolder.GetChi2L(),
+                                                                           self.tunfolder.GetNdf()))
 
         print("doScanTau value is {}".format(tau))
         print("Returned the TUnfoldDensity object.")
@@ -239,7 +238,7 @@ class MyUnfolder(object):
         logTauY = ROOT.MakeNullPointer(ROOT.TSpline3)
         logTauCurvature = ROOT.MakeNullPointer(ROOT.TSpline3)
 
-        best = self.unfolder.ScanLcurve(n_scan,
+        best = self.tunfolder.ScanLcurve(n_scan,
                                         tau_min,
                                         tau_max,
                                         scannedlcurve,
@@ -264,7 +263,7 @@ class MyUnfolder(object):
 
         bestLcurve = ROOT.TGraph(len(xx), xx, yy)  # int(nScan),xx,yy);
         bestLogTauLogChi2 = ROOT.TGraph(best, xx, yy)
-        tau = self.unfolder.GetTau()
+        tau = self.tunfolder.GetTau()
         print("doScanL value is {}".format(tau))
         print("Returned the TUnfoldDensity object.")
 
@@ -297,31 +296,32 @@ class MyUnfolder(object):
 
     def do_unfolding(self, tau):
         print("Unfolding with tau =", tau)
-        self.unfolder.DoUnfold(tau)
+        self.tunfolder.DoUnfold(tau)
 
     def get_output(self):
         """Get 1D unfolded histogram covering all bins"""
-        # print("( " + str(self.unfolder.GetChi2A()) + " + " + str(self.unfolder.GetChi2L()) + ") / " + str(self.unfolder.GetNdf()))
+        # print("( " + str(self.tunfolder.GetChi2A()) + " + " + str(self.tunfolder.GetChi2L()) + ") / " + str(self.tunfolder.GetNdf()))
         # use "generator" for signal + underflow region, "generatordistribution" for only signal region
-        return self.unfolder.GetOutput("unfolded_" + cu.get_unique_str(), "", "generator", "*[]", self.use_axis_binning)
+        return self.tunfolder.GetOutput("unfolded_" + cu.get_unique_str(), "", "generator", "*[]", self.use_axis_binning)
+
 
     def get_bias(self):
-        return self.unfolder.GetBias("bias_"+cu.get_unique_str(), "", "generator", "*[]", self.use_axis_binning)
+        return self.tunfolder.GetBias("bias_"+cu.get_unique_str(), "", "generator", "*[]", self.use_axis_binning)
 
     def get_ematrix_input(self):
-        return self.unfolder.GetEmatrixInput("ematrix_input_"+cu.get_unique_str(), "", "generator", "*[]", self.use_axis_binning)
+        return self.tunfolder.GetEmatrixInput("ematrix_input_"+cu.get_unique_str(), "", "generator", "*[]", self.use_axis_binning)
 
     def get_ematrix_sys_uncorr(self):
-        return self.unfolder.GetEmatrixSysUncorr("ematrix_sys_uncorr_"+cu.get_unique_str(), "", "generator", "*[]", self.use_axis_binning)
+        return self.tunfolder.GetEmatrixSysUncorr("ematrix_sys_uncorr_"+cu.get_unique_str(), "", "generator", "*[]", self.use_axis_binning)
 
     def get_ematrix_total(self):
-        return self.unfolder.GetEmatrixTotal("ematrix_total_"+cu.get_unique_str(), "", "generator", "*[]", self.use_axis_binning)
+        return self.tunfolder.GetEmatrixTotal("ematrix_total_"+cu.get_unique_str(), "", "generator", "*[]", self.use_axis_binning)
 
     def get_rhoij_total(self):
-        return self.unfolder.GetRhoIJtotal("rhoij_total_"+cu.get_unique_str(), "", "generator", "*[]", self.use_axis_binning)
+        return self.tunfolder.GetRhoIJtotal("rhoij_total_"+cu.get_unique_str(), "", "generator", "*[]", self.use_axis_binning)
 
     def get_probability_matrix(self):
-        return self.unfolder.GetProbabilityMatrix("prob_matrix_"+cu.get_unique_str(), "", self.use_axis_binning)
+        return self.tunfolder.GetProbabilityMatrix("prob_matrix_"+cu.get_unique_str(), "", self.use_axis_binning)
 
     def get_var_hist_pt_binned(self, hist1d, ibin_pt, binning_scheme='generator'):
         """Get hist of variable for given pt bin from massive 1D hist that TUnfold makes"""
@@ -346,7 +346,7 @@ class MyUnfolder(object):
         return h
 
     def get_folded_output(self, hist_name):
-        return self.unfolder.GetFoldedOutput(hist_name)
+        return self.tunfolder.GetFoldedOutput(hist_name)
 
 
 def generate_2d_canvas(size=(800, 600)):
