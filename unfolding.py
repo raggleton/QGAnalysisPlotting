@@ -3,7 +3,7 @@
 
 """TUnfold it all
 
-Thanks to Ashley
+Thanks to Ashley, Dennis
 """
 
 
@@ -103,10 +103,10 @@ class MyUnfolder(object):
                                             constraintMode,
                                             densityFlags,
                                             self.generator_binning,
-                                            self.detector_binning,
+                                            self.detector_binning)
                                             # hmm comment these out when scanL or scanTau?
-                                            "generator",
-                                            self.axisSteering)
+                                            # "generator",
+                                            # self.axisSteering)
 
         self.use_axis_binning = True  # for things like get_probability_matrix()
 
@@ -291,7 +291,7 @@ class MyUnfolder(object):
         return tau
 
     def do_unfolding(self, tau):
-        print("Unfolding with tau =", tau)
+        print(">>> Unfolding with tau =", tau)
         self.tunfolder.DoUnfold(tau)
 
     def get_output(self):
@@ -440,7 +440,7 @@ def draw_correlation_matrix(corr_map, region_name, variable_name, output_filenam
     ROOT.gStyle.SetPalette(ROOT.kBird)
 
 
-def plot_simple_unfolded(unfolded, reco, gen, output_filename, title=""):
+def plot_simple_unfolded(unfolded, tau, reco, gen, output_filename, title=""):
     """Simple plot of unfolded, reco, gen, by bin number (ie non physical axes)"""
     canv_unfold = ROOT.TCanvas(cu.get_unique_str(), "", 800, 600)
     canv_unfold.SetLogy()
@@ -465,7 +465,7 @@ def plot_simple_unfolded(unfolded, reco, gen, output_filename, title=""):
     unfolded.SetMarkerSize(0.6)
     unfolded.SetMarkerStyle(20)
     hst.Add(unfolded)
-    leg.AddEntry(unfolded, "Unfolded", "LP")
+    leg.AddEntry(unfolded, "Unfolded (#tau = %.3g)" % (tau), "LP")
 
     hst.Draw("NOSTACK HISTE")
     leg.Draw()
@@ -577,7 +577,7 @@ def draw_projection_comparison(h_orig, h_projection, title, xtitle, output_filen
     plot.save(output_filename)
 
 
-def draw_reco_folded(hist_folded, hist_reco_data, hist_reco_mc, title, xtitle, output_filename):
+def draw_reco_folded(hist_folded, tau, hist_reco_data, hist_reco_mc, title, xtitle, output_filename):
     entries = [
         Contribution(hist_reco_mc, label="MC (detector)",
                      line_color=ROOT.kBlack, line_width=1,
@@ -587,7 +587,7 @@ def draw_reco_folded(hist_folded, hist_reco_data, hist_reco_mc, title, xtitle, o
                      line_color=ROOT.kBlue, line_width=1,
                      marker_color=ROOT.kBlue, marker_size=0,
                      normalise_hist=False),
-        Contribution(hist_folded, label="Data (folded)",
+        Contribution(hist_folded, label="Data (#tau = %.3g, folded)" % (tau),
                      line_color=ROOT.kRed, line_width=1,
                      marker_color=ROOT.kRed, marker_size=0,
                      normalise_hist=False,
@@ -693,7 +693,12 @@ if __name__ == "__main__":
         pt_bin_edges_underflow_reco = qgc.PT_UNFOLD_DICT['underflow%s_reco' % (zpj_append)]
         # pt_bin_edges_underflow_reco = qgc.construct_fine_binning(pt_bin_edges_underflow_gen)
 
-        for angle in qgc.COMMON_VARS[2:3]:
+        for angle in qgc.COMMON_VARS[:]:
+
+            print("*"*80)
+            print("%s region, %s" % (region['name'], angle.var))
+            print("*"*80)
+
             regularise = None
             # regularise = "tau"
             # regularise = "L"
@@ -780,7 +785,8 @@ if __name__ == "__main__":
 
             # Draw unified unfolded distributions
             # ---------------------
-            plot_simple_unfolded(unfolded=unfolded_1d,
+            plot_simple_unfolded(unfolded=unfolded_1d, 
+                                 tau=tau,
                                  reco=reco_1d,
                                  gen=hist_mc_gen,
                                  output_filename="%s/unfolded_%s.%s" % (this_output_dir, append, OUTPUT_FMT),
@@ -788,7 +794,7 @@ if __name__ == "__main__":
 
             plot_simple_detector(reco_data=reco_1d_gen_binning,
                                  reco_mc=hist_mc_reco_gen_binning,
-                                 output_filename="%s/detector_%s.%s" % (this_output_dir, append, OUTPUT_FMT),
+                                 output_filename="%s/detector_gen_binning_%s.%s" % (this_output_dir, append, OUTPUT_FMT),
                                  title="%s region, %s" % (region['label'], angle_str))
 
             # Draw collapsed distributions
@@ -842,7 +848,8 @@ if __name__ == "__main__":
             # Do forward-folding to check unfolding
             # ----------------------------
             hist_data_folded = unfolder.get_folded_output(hist_name="folded_%s" % (append))
-            draw_reco_folded(hist_folded=hist_data_folded,
+            draw_reco_folded(hist_folded=hist_data_folded, 
+                             tau=tau,
                              hist_reco_data=hist_data_reco,
                              hist_reco_mc=hist_mc_reco,
                              title="%s\n%s region" % (jet_algo, region['label']),
@@ -918,7 +925,7 @@ if __name__ == "__main__":
                             xtitle="Generator-level "+angle_str,
                             ytitle=ytitle,
                             subplot_type='ratio',
-                            subplot_title='Unfolded / generator',
+                            subplot_title='Unfolded / gen',
                             subplot_limits=(0.8, 1.2))
                 plot.legend.SetX1(0.6)
                 plot.legend.SetY1(0.68)
@@ -975,7 +982,7 @@ if __name__ == "__main__":
                                  marker_color=reco_data_colour, marker_size=0,
                                  subplot=mc_reco_hist_bin_reco_binning,
                                  normalise_hist=True),
-                    Contribution(data_folded_hist_bin_reco_binning, label="Data (folded)",
+                    Contribution(data_folded_hist_bin_reco_binning, label="Data (#tau = %.3g, folded)" % (tau),
                                  line_color=reco_folded_colour, line_width=lw,
                                  marker_color=reco_folded_colour, marker_size=0,
                                  subplot=mc_reco_hist_bin_reco_binning,
@@ -1007,7 +1014,7 @@ if __name__ == "__main__":
                                  line_color=reco_data_colour, line_width=lw,
                                  marker_color=reco_data_colour, marker_size=0,
                                  normalise_hist=True),
-                    Contribution(data_folded_hist_bin_reco_binning, label="Data (folded)",
+                    Contribution(data_folded_hist_bin_reco_binning, label="Data (#tau = %.3g, folded)" % (tau),
                                  line_color=reco_folded_colour, line_width=lw,
                                  marker_color=reco_folded_colour, marker_size=0,
                                  subplot=data_reco_hist_bin_reco_binning,
