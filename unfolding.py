@@ -670,11 +670,18 @@ if __name__ == "__main__":
         },
     ]
 
-    output_dir = "unfolding"
+    regularise = None
+    # regularise = "tau"
+    # regularise = "L"
+
+    output_dir = "unfolding_regularise%s" % (regularise)
     cu.check_dir_exists_create(output_dir)
 
     # TODO automate this
     jet_algo = "AK4 PF PUPPI"
+
+    # Save hists etc to ROOT file for access later
+    output_tfile = ROOT.TFile("%s/unfolding_result.root" % (output_dir), "RECREATE")
 
     for region in regions[:]:
 
@@ -694,17 +701,19 @@ if __name__ == "__main__":
         # pt_bin_edges_underflow_reco = qgc.construct_fine_binning(pt_bin_edges_underflow_gen)
 
         for angle in qgc.COMMON_VARS[:]:
+            append = "%s_%s" % (region['name'], angle.var)  # common str to put on filenames, etc
 
             print("*"*80)
-            print("%s region, %s" % (region['name'], angle.var))
+            print("Region/var: %s" % (append))
             print("*"*80)
 
-            regularise = None
-            # regularise = "tau"
-            # regularise = "L"
+            new_tdir = "%s/%s" % (region['name'], angle.var)
+            output_tfile.mkdir(new_tdir)
+            this_tdir = output_tfile.Get(new_tdir)
+            this_tdir.cd()
 
             # put plots in subdir, to avoid overcrowding
-            this_output_dir = "%s/%s_regularise%s/%s" % (output_dir, region['name'], regularise, angle.var)
+            this_output_dir = "%s/%s/%s" % (output_dir, region['name'], angle.var)
             cu.check_dir_exists_create(this_output_dir)
 
             # Setup MyUnfolder object to do unfolding etc
@@ -746,9 +755,11 @@ if __name__ == "__main__":
             reco_1d = hist_data_reco
             # reco_1d = hist_mc_reco  # only for testing that everything is setup OK
             unfolder.setInput(reco_1d)
+            this_tdir.WriteTObject(reco_1d, "unfold_input")
 
             reco_1d_gen_binning = hist_data_reco_gen_binning
             # reco_1d_gen_binning = hist_mc_reco_gen_binning # only for testing that everything is setup OK
+            this_tdir.WriteTObject(reco_1d_gen_binning, "reco_1d_gen_binning")
 
             # Do any regularisation
             # ---------------------
@@ -758,34 +769,38 @@ if __name__ == "__main__":
                 tau = unfolder.doScanL(output_dir=this_output_dir, n_scan=100,
                                        tau_min=1E-14, tau_max=1E-4)
             elif regularise == "tau":
-                tau = unfolder.doScanTau(output_dir=this_output_dir, n_scan=100, 
-                                         tau_min=region['tau_limits'][angle.var][0], 
-                                         tau_max=region['tau_limits'][angle.var][1], 
+                tau = unfolder.doScanTau(output_dir=this_output_dir, n_scan=100,
+                                         tau_min=region['tau_limits'][angle.var][0],
+                                         tau_max=region['tau_limits'][angle.var][1],
                                          scan_mode=ROOT.TUnfoldDensity.kEScanTauRhoAvgSys)
 
             # Do unfolding!
             # ---------------------
             unfolder.do_unfolding(tau)
             unfolded_1d = unfolder.get_output()
+            unfolded_1d.SetName("unfolded_1d")
+            this_tdir.WriteTObject(unfolded_1d)
 
-            # stat errors only
+            # stat errors only - do before or after systematics?
             ematrix_input = unfolder.get_ematrix_input() # stat errors from input to be unfolded
+            this_tdir.WriteTObject(ematrix_input, "ematrix_input")
             ematrix_sys_uncorr = unfolder.get_ematrix_sys_uncorr() # stat errors in response matrix
+            this_tdir.WriteTObject(ematrix_sys_uncorr, "ematrix_sys_uncorr")
+
             ematrix_stat_sum = ematrix_input.Clone("ematrix_stat_sum")
             ematrix_stat_sum.Add(ematrix_sys_uncorr)
 
-            error_sys_uncorr_1d = make_hist_from_diagonals(ematrix_stat_sum, do_sqrt=True)
+            error_stat_1d = make_hist_from_diagonals(ematrix_stat_sum, do_sqrt=True)
 
             ematrix_total = unfolder.get_ematrix_total()
             error_total_1d = make_hist_from_diagonals(ematrix_total, do_sqrt=True)
+            this_tdir.WriteTObject(ematrix_total, "ematrix_total_1d")
 
             angle_str = "%s (%s)" % (angle.name, angle.lambda_str)
 
-            append = "%s_%s" % (region['name'], angle.var)  # common str to put on filenames, etc
-
             # Draw unified unfolded distributions
             # ---------------------
-            plot_simple_unfolded(unfolded=unfolded_1d, 
+            plot_simple_unfolded(unfolded=unfolded_1d,
                                  tau=tau,
                                  reco=reco_1d,
                                  gen=hist_mc_gen,
@@ -824,22 +839,31 @@ if __name__ == "__main__":
                                  region['label'],
                                  angle_str,
                                  "%s/response_map_%s.%s" % (this_output_dir, append, OUTPUT_FMT))
-            draw_probability_matrix(unfolder.get_probability_matrix(),
+            
+            prob_map = unfolder.get_probability_matrix()
+            this_tdir.WriteTObject(prob_map, "prob_matrix")
+            draw_probability_matrix(prob_map,
                                     region['label'],
                                     angle_str,
                                     "%s/probability_map_%s.%s" % (this_output_dir, append, OUTPUT_FMT))
-            draw_correlation_matrix(unfolder.get_rhoij_total(),
+            
+            rhoij = unfolder.get_rhoij_total()
+            this_tdir.WriteTObject(rhoij, "rhoij")
+            draw_correlation_matrix(rhoij,
                                     region['label'],
                                     angle_str,
-                                    "%s/corr_map_%s.%s" % (this_output_dir, append, OUTPUT_FMT))
+                                    "%s/rho_map_%s.%s" % (this_output_dir, append, OUTPUT_FMT))
+            
             draw_error_matrix_input(ematrix_input,
                                     region['label'],
                                     angle_str,
                                     "%s/err_map_sys_input_%s.%s" % (this_output_dir, append, OUTPUT_FMT))
+            
             draw_error_matrix_sys_uncorr(ematrix_sys_uncorr,
                                          region['label'],
                                          angle_str,
                                          "%s/err_map_sys_uncorr_%s.%s" % (this_output_dir, append, OUTPUT_FMT))
+            
             draw_error_matrix_total(ematrix_total,
                                     region['label'],
                                     angle_str,
@@ -848,7 +872,8 @@ if __name__ == "__main__":
             # Do forward-folding to check unfolding
             # ----------------------------
             hist_data_folded = unfolder.get_folded_output(hist_name="folded_%s" % (append))
-            draw_reco_folded(hist_folded=hist_data_folded, 
+            this_tdir.WriteTObject(hist_data_folded, "folded_1d")
+            draw_reco_folded(hist_folded=hist_data_folded,
                              tau=tau,
                              hist_reco_data=hist_data_reco,
                              hist_reco_mc=hist_mc_reco,
@@ -860,28 +885,44 @@ if __name__ == "__main__":
             # ----------------------------
             for ibin_pt in range(0, len(pt_bin_edges_gen)-1):
 
+                this_pt_bin_tdir = this_tdir.mkdir("bin_%d" % (ibin_pt))
+
                 # Produce 1D hist for this pt bin
                 gen_hist_bin = unfolder.get_var_hist_pt_binned(hist_mc_gen, ibin_pt, binning_scheme="generator")
-                unfolded_hist_bin = unfolder.get_var_hist_pt_binned(unfolded_1d, ibin_pt, binning_scheme="generator")
+                this_pt_bin_tdir.WriteTObject(gen_hist_bin, "gen_hist_bin")
 
-                unfolded_hist_bin_errors = unfolder.get_var_hist_pt_binned(error_sys_uncorr_1d, ibin_pt, binning_scheme="generator")
+                unfolded_hist_bin = unfolder.get_var_hist_pt_binned(unfolded_1d, ibin_pt, binning_scheme="generator")
+                this_pt_bin_tdir.WriteTObject(unfolded_hist_bin, "unfolded_hist_bin")
+
+                unfolded_hist_bin_stat_errors = unfolder.get_var_hist_pt_binned(error_stat_1d, ibin_pt, binning_scheme="generator")
+                update_hist_bin_content(unfolded_hist_bin, unfolded_hist_bin_stat_errors)
+                this_pt_bin_tdir.WriteTObject(unfolded_hist_bin_stat_errors, "unfolded_hist_bin_stat_errors")
+
                 unfolded_hist_bin_total_errors = unfolder.get_var_hist_pt_binned(error_total_1d, ibin_pt, binning_scheme="generator")
-                update_hist_bin_content(unfolded_hist_bin, unfolded_hist_bin_errors)
                 update_hist_bin_content(unfolded_hist_bin, unfolded_hist_bin_total_errors)
+                this_pt_bin_tdir.WriteTObject(unfolded_hist_bin_total_errors, "unfolded_hist_bin_total_errors")
 
                 data_reco_hist_bin_gen_binning = unfolder.get_var_hist_pt_binned(hist_data_reco_gen_binning, ibin_pt, binning_scheme="generator")
+                this_pt_bin_tdir.WriteTObject(data_reco_hist_bin_gen_binning, "data_reco_hist_bin_gen_binning")
+
                 mc_reco_hist_bin_gen_binning = unfolder.get_var_hist_pt_binned(hist_mc_reco_gen_binning, ibin_pt, binning_scheme="generator")
+                this_pt_bin_tdir.WriteTObject(mc_reco_hist_bin_gen_binning, "mc_reco_hist_bin_gen_binning")
 
                 data_folded_hist_bin_reco_binning = unfolder.get_var_hist_pt_binned(hist_data_folded, ibin_pt, binning_scheme="detector")
+                this_pt_bin_tdir.WriteTObject(data_folded_hist_bin_reco_binning, "data_folded_hist_bin_reco_binning")
+
                 data_reco_hist_bin_reco_binning = unfolder.get_var_hist_pt_binned(hist_data_reco, ibin_pt, binning_scheme="detector")
+                this_pt_bin_tdir.WriteTObject(data_reco_hist_bin_reco_binning, "data_reco_hist_bin_reco_binning")
+
                 mc_reco_hist_bin_reco_binning = unfolder.get_var_hist_pt_binned(hist_mc_reco, ibin_pt, binning_scheme="detector")
+                this_pt_bin_tdir.WriteTObject(mc_reco_hist_bin_reco_binning, "mc_reco_hist_bin_reco_binning")
 
                 # print hist bins for check
                 for n in range(1, gen_hist_bin.GetNbinsX()+1):
                     print("Bin", n)
                     print("gen_hist:", gen_hist_bin.GetBinContent(n), "+-", gen_hist_bin.GetBinError(n))
                     print("unfolded_hist:", unfolded_hist_bin.GetBinContent(n), "+-", unfolded_hist_bin.GetBinError(n))
-                    print("unfolded_hist_bin_errors:", unfolded_hist_bin_errors.GetBinContent(n), "+-", unfolded_hist_bin_errors.GetBinError(n))
+                    print("unfolded_hist_bin_stat_errors:", unfolded_hist_bin_stat_errors.GetBinContent(n), "+-", unfolded_hist_bin_stat_errors.GetBinError(n))
                     print("unfolded_hist_bin_total_errors:", unfolded_hist_bin_total_errors.GetBinContent(n), "+-", unfolded_hist_bin_total_errors.GetBinError(n))
 
                 # Make lots of plots
@@ -902,7 +943,7 @@ if __name__ == "__main__":
                                  marker_color=unfolded_basic_colour, marker_size=0,
                                  subplot=gen_hist_bin,
                                  normalise_hist=True),
-                    Contribution(unfolded_hist_bin_errors, label="Unfolded (#tau = %.3g) (stat err)" % (tau),
+                    Contribution(unfolded_hist_bin_stat_errors, label="Unfolded (#tau = %.3g) (stat err)" % (tau),
                                  line_color=unfolded_stat_colour, line_width=lw, line_style=2,
                                  marker_color=unfolded_stat_colour, marker_size=0,
                                  subplot=gen_hist_bin,
