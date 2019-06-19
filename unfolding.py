@@ -109,7 +109,7 @@ class MyUnfolder(object):
                                             # "generator",
                                             # self.axisSteering)
 
-        self.use_axis_binning = True  # for things like get_probability_matrix()
+        self.use_axis_binning = False  # for things like get_probability_matrix()
 
     def save_binning(self, print_xml=True, txt_filename=None):
         """Save binning scheme to txt and/or print XML to screen"""
