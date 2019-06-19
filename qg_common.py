@@ -125,6 +125,7 @@ VAR_UNFOLD_DICT = {
     }
 }
 
+# target 0.5 values
 VAR_UNFOLD_DICT = {
     'jet_puppiMultiplicity': {
         'gen': np.array([0, 9, 15, 22, 35, 50, 75, 100, 150], dtype='d'),
@@ -168,6 +169,51 @@ VAR_UNFOLD_DICT = {
         'reco': None
     },
 }
+
+# target 0.75 values
+# VAR_UNFOLD_DICT = {
+
+#     "jet_LHA": {
+#         'gen': np.array([0.0, 0.35, 0.5, 0.64, 1.0], dtype='d'),
+#         'reco': None
+#     },
+#     "jet_LHA_charged": {
+#         'gen': np.array([0.0, 0.29, 0.41, 0.53, 0.66, 1.0], dtype='d'),
+#         'reco': None
+#     },
+#     "jet_puppiMultiplicity": {
+#         'gen': np.array([0, 22, 44, 150], dtype='d'),
+#         'reco': None
+#     },
+#     "jet_puppiMultiplicity_charged": {
+#         'gen': np.array([0, 16, 32, 150], dtype='d'),
+#         'reco': None
+#     },
+#     "jet_pTD": {
+#         'gen': np.array([0.0, 0.15, 1.0], dtype='d'),
+#         'reco': None
+#     },
+#     "jet_pTD_charged": {
+#         'gen': np.array([0.0, 0.15, 0.26, 0.6, 1.0], dtype='d'),
+#         'reco': None
+#     },
+#     "jet_thrust": {
+#         'gen': np.array([0.0, 0.06, 0.17, 0.31, 1.0], dtype='d'),
+#         'reco': None
+#     },
+#     "jet_thrust_charged": {
+#         'gen': np.array([0.0, 0.05, 0.15, 0.45, 1.0], dtype='d'),
+#         'reco': None
+#     },
+#     "jet_width": {
+#         'gen': np.array([0.0, 0.16, 0.3, 0.45, 1.0], dtype='d'),
+#         'reco': None
+#     },
+#     "jet_width_charged": {
+#         'gen': np.array([0.0, 0.11, 0.2, 0.33, 0.49, 1.0], dtype='d'),
+#         'reco': None
+#     },
+# }
 
 
 def construct_fine_binning(coarse_bin_edges):
