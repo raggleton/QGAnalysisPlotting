@@ -230,7 +230,7 @@ class Plot(object):
         self.xlim = xlim
         self.ylim = ylim
         self.y_padding_linear = 1.6  # factor to auto extend y limits for linear scale
-        self.y_padding_log = 5  # factor to auto extend y limits for log scale
+        self.y_padding_log = 10  # factor to auto extend y limits for log scale
         self.do_legend = legend
         self.legend = ROOT.TLegend(0.65, 0.6, 0.94, 0.85) if legend else None
         self.do_extend = extend
@@ -377,6 +377,7 @@ class Plot(object):
                 ax.SetMoreLogLabels()
 
     def set_logy(self, state=True):
+        # Call AFTER plot()
         self.main_pad.SetLogy(int(state))
         if self.subplot_pad:
             self.subplot_pad.SetLogy(int(state))
