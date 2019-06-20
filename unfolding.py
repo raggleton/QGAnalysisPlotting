@@ -675,7 +675,11 @@ if __name__ == "__main__":
     # regularise = "tau"
     # regularise = "L"
 
-    output_dir = "unfolding_regularise%s" % (regularise)
+    # Run with MC input instead of data
+    MC_input = True
+    mc_append = "_MC" if MC_input else ""
+    
+    output_dir = "unfolding_regularise%s_target0p5_uflowFirst%s" % (regularise, mc_append)
     cu.check_dir_exists_create(output_dir)
 
     # TODO automate this
@@ -753,8 +757,7 @@ if __name__ == "__main__":
 
             # Set what is to be unfolded
             # ---------------------
-            reco_1d = hist_data_reco
-            # reco_1d = hist_mc_reco  # only for testing that everything is setup OK
+            reco_1d = hist_mc_reco if MC_input else hist_data_reco
             unfolder.setInput(reco_1d)
             this_tdir.WriteTObject(reco_1d, "unfold_input")
 
@@ -876,7 +879,7 @@ if __name__ == "__main__":
             this_tdir.WriteTObject(hist_data_folded, "folded_1d")
             draw_reco_folded(hist_folded=hist_data_folded,
                              tau=tau,
-                             hist_reco_data=hist_data_reco,
+                             hist_reco_data=reco_1d,
                              hist_reco_mc=hist_mc_reco,
                              title="%s\n%s region" % (jet_algo, region['label']),
                              xtitle="%s, Detector binning" % (angle_str),
@@ -912,7 +915,7 @@ if __name__ == "__main__":
                 data_folded_hist_bin_reco_binning = unfolder.get_var_hist_pt_binned(hist_data_folded, ibin_pt, binning_scheme="detector")
                 this_pt_bin_tdir.WriteTObject(data_folded_hist_bin_reco_binning, "data_folded_hist_bin_reco_binning")
 
-                data_reco_hist_bin_reco_binning = unfolder.get_var_hist_pt_binned(hist_data_reco, ibin_pt, binning_scheme="detector")
+                data_reco_hist_bin_reco_binning = unfolder.get_var_hist_pt_binned(reco_1d, ibin_pt, binning_scheme="detector")
                 this_pt_bin_tdir.WriteTObject(data_reco_hist_bin_reco_binning, "data_reco_hist_bin_reco_binning")
 
                 mc_reco_hist_bin_reco_binning = unfolder.get_var_hist_pt_binned(hist_mc_reco, ibin_pt, binning_scheme="detector")
