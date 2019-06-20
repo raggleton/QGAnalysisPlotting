@@ -937,6 +937,52 @@ if __name__ == "__main__":
                 unfolded_basic_colour = ROOT.kAzure+10
                 unfolded_stat_colour = ROOT.kGreen+1
                 unfolded_total_colour = ROOT.kBlack
+
+                # unnormalised version
+                entries = [
+                    Contribution(gen_hist_bin, label="Generator",
+                                 line_color=gen_colour, line_width=lw,
+                                 marker_color=gen_colour, marker_size=0,
+                                 normalise_hist=False),
+                    Contribution(unfolded_hist_bin, label="Unfolded (#tau = %.3g)" % (tau),
+                                 line_color=unfolded_basic_colour, line_width=lw,
+                                 marker_color=unfolded_basic_colour, marker_size=0,
+                                 subplot=gen_hist_bin,
+                                 normalise_hist=False),
+                    Contribution(unfolded_hist_bin_stat_errors, label="Unfolded (#tau = %.3g) (stat err)" % (tau),
+                                 line_color=unfolded_stat_colour, line_width=lw, line_style=2,
+                                 marker_color=unfolded_stat_colour, marker_size=0,
+                                 subplot=gen_hist_bin,
+                                 normalise_hist=False),
+                    Contribution(unfolded_hist_bin_total_errors, label="Unfolded (#tau = %.3g) (total err)" % (tau),
+                                 line_color=unfolded_total_colour, line_width=lw, line_style=3,
+                                 marker_color=unfolded_total_colour, marker_style=20, marker_size=0.75,
+                                 subplot=gen_hist_bin,
+                                 normalise_hist=False),
+                ]
+                has_entries = [c.obj.GetEntries() > 0 for c in entries]
+                if not any(has_entries):
+                    print("Skipping 0 entries in", append, ibin_pt)
+                    continue
+                title = "%s\n%s region\n%g < p_{T}^{Gen} < %g GeV" % (jet_algo, region['label'], pt_bin_edges_gen[ibin_pt], pt_bin_edges_gen[ibin_pt+1])
+                plot = Plot(entries,
+                            what="hist",
+                            title=title,
+                            xtitle="Generator-level "+angle_str,
+                            ytitle="N",
+                            subplot_type='ratio',
+                            subplot_title='Unfolded / gen',
+                            subplot_limits=(0.8, 1.2))
+                plot.legend.SetX1(0.6)
+                plot.legend.SetY1(0.68)
+                plot.legend.SetX2(0.98)
+                plot.legend.SetY2(0.9)
+                plot.plot("NOSTACK E1")
+                plot.save("%s/unfolded_unnormalised_%s_bin_%d.%s" % (this_output_dir, append, ibin_pt, OUTPUT_FMT))
+                
+                # now normalise each plot to unity
+                # Note that this modifies e.g. gen_hist_bin, so from this point
+                # onwards it will be normalised to unity
                 entries = [
                     Contribution(gen_hist_bin, label="Generator",
                                  line_color=gen_colour, line_width=lw,
@@ -962,7 +1008,6 @@ if __name__ == "__main__":
                 if not any(has_entries):
                     print("Skipping 0 entries in", append, ibin_pt)
                     continue
-                title = "%s\n%s region\n%g < p_{T}^{Gen} < %g GeV" % (jet_algo, region['label'], pt_bin_edges_gen[ibin_pt], pt_bin_edges_gen[ibin_pt+1])
                 ytitle= "p.d.f."
                 plot = Plot(entries,
                             what="hist",
@@ -978,6 +1023,8 @@ if __name__ == "__main__":
                 plot.legend.SetY2(0.9)
                 plot.plot("NOSTACK E1")
                 plot.save("%s/unfolded_%s_bin_%d.%s" % (this_output_dir, append, ibin_pt, OUTPUT_FMT))
+
+
 
                 # Reco only, generator-binning
                 reco_mc_colour = ROOT.kGreen+2
