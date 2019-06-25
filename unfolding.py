@@ -443,83 +443,104 @@ def draw_correlation_matrix(corr_map, region_name, variable_name, output_filenam
 
 def plot_simple_unfolded(unfolded, tau, reco, gen, fake, output_filename, title=""):
     """Simple plot of unfolded, reco, gen, by bin number (ie non physical axes)"""
-    canv_unfold = ROOT.TCanvas(cu.get_unique_str(), "", 800, 600)
-    canv_unfold.SetLogy()
-    canv_unfold.SetTicks(1, 1)
-    leg = ROOT.TLegend(0.7, 0.7, 0.88, 0.88)
-    leg.SetFillColor(0)
-    leg.SetFillStyle(0)
-    hst = ROOT.THStack("hst", "%s;Bin Number;N" % (title))
+    entries = []
 
     if reco:
-        reco.SetLineColor(ROOT.kGreen+2)
-        reco.SetMarkerColor(ROOT.kGreen+2)
-        hst.Add(reco)
-        leg.AddEntry(reco, "Reco", "L")
+        entries.append(
+            Contribution(reco, label="Reco",
+                         line_color=ROOT.kGreen+2, line_width=1,
+                         marker_color=ROOT.kGreen+2, marker_size=0,
+                         normalise_hist=False),
+        )
 
     if gen:
-        gen.SetLineColor(ROOT.kBlue)
-        hst.Add(gen)
-        leg.AddEntry(gen, "Gen", "L")
+        entries.append(
+            Contribution(gen, label="Gen",
+                         line_color=ROOT.kBlue, line_width=1,
+                         marker_color=ROOT.kBlue, marker_size=0,
+                         normalise_hist=False),
+        )
 
     if fake:
-        fake.SetLineColor(ROOT.kMagenta+2)
-        hst.Add(fake)
-        leg.AddEntry(fake, "Fakes", "L")
+        entries.append(
+            Contribution(fake, label="Fakes",
+                         line_color=ROOT.kMagenta+2, line_width=1,
+                         marker_color=ROOT.kMagenta+2, marker_size=0,
+                         normalise_hist=False),
+        )
 
     if unfolded:
-        unfolded.SetLineColor(ROOT.kRed)
-        unfolded.SetLineWidth(0)
-        unfolded.SetMarkerColor(ROOT.kRed)
-        unfolded.SetMarkerSize(0.6)
-        unfolded.SetMarkerStyle(20)
-        hst.Add(unfolded)
-        leg.AddEntry(unfolded, "Unfolded (#tau = %.3g)" % (tau), "LP")
+        entries.append(
+            Contribution(unfolded, label="Unfolded (#tau = %.3g)" % (tau),
+                         line_color=ROOT.kRed, line_width=0,
+                         marker_color=ROOT.kRed, marker_size=0.6, marker_style=20,
+                         normalise_hist=False, subplot=gen),
+        )
 
-    hst.Draw("NOSTACK HISTE")
-    leg.Draw()
-    hst.SetMinimum(1E-2)
-    hst.SetMaximum(5*max([h.GetMaximum() for h in [unfolded, reco, gen] if h]))
-    canv_unfold.SaveAs(output_filename)
+    plot = Plot(entries,
+                what='hist',
+                title=title,
+                xtitle="Bin number",
+                ytitle="N",
+                subplot_type='ratio',
+                subplot_title='Data / MC',
+                subplot_limits=(0.8, 1.2))
+    plot.default_canvas_size = (800, 600)
+    plot.plot("NOSTACK HISTE")
+    plot.main_pad.SetLogy(1)
+    ymax = max(h.GetMaximum() for h in [reco, gen, fake, unfolded] if h)
+    plot.container.SetMaximum(ymax * 100)
+    plot.container.SetMinimum(1)
+    plot.legend.SetY1NDC(0.77)
+    plot.legend.SetX2NDC(0.85)
+    plot.save(output_filename)
 
 
 def plot_simple_detector(reco_data, reco_mc, reco_mc_fake, output_filename, title):
     """Plot detector-level quantities for data & MC, by bin number (ie non physical axes)"""
-    canv = ROOT.TCanvas(cu.get_unique_str(), "", 800, 600)
-    canv.SetLogy()
-    canv.SetTicks(1, 1)
-    leg = ROOT.TLegend(0.67, 0.67, 0.88, 0.88)
-    leg.SetFillColor(0)
-    leg.SetFillStyle(0)
-    hst = ROOT.THStack("hst", "%s;Bin Number;N" % (title))
+    entries = []
 
     if reco_mc:
-        reco_mc.SetLineColor(ROOT.kGreen+2)
-        reco_mc.SetMarkerColor(ROOT.kGreen+2)
-        hst.Add(reco_mc)
-        leg.AddEntry(reco_mc, "MC [detector-level]", "L")
+        entries.append(
+            Contribution(reco_mc, label="MC [detector-level]",
+                         line_color=ROOT.kGreen+2, line_width=1,
+                         marker_color=ROOT.kGreen+2, marker_size=0,
+                         normalise_hist=False),
+        )
 
     if reco_mc_fake:
-        reco_mc_fake.SetLineColor(ROOT.kMagenta+2)
-        reco_mc_fake.SetLineWidth(1)
-        reco_mc_fake.SetMarkerColor(ROOT.kMagenta+2)
-        hst.Add(reco_mc_fake)
-        leg.AddEntry(reco_mc_fake, "MC fakes [detector-level]", "LP")
+        entries.append(
+            Contribution(reco_mc_fake, label="MC fakes [detector-level]",
+                         line_color=ROOT.kMagenta+2, line_width=1,
+                         marker_color=ROOT.kMagenta+2, marker_size=0,
+                         normalise_hist=False),
+        )
 
     if reco_data:
-        reco_data.SetLineColor(ROOT.kRed)
-        reco_data.SetLineWidth(0)
-        reco_data.SetMarkerColor(ROOT.kRed)
-        reco_data.SetMarkerSize(0.6)
-        reco_data.SetMarkerStyle(20)
-        hst.Add(reco_data)
-        leg.AddEntry(reco_data, "Data [detector-level]", "LP")
+        entries.append(
+            Contribution(reco_data, label="Data [detector-level]",
+                         line_color=ROOT.kRed, line_width=0,
+                         marker_color=ROOT.kRed, marker_size=0.6, marker_style=20,
+                         normalise_hist=False, subplot=reco_mc),
+        )
 
-    hst.Draw("NOSTACK HISTE")
-    leg.Draw()
-    hst.SetMinimum(1E-2)
-    hst.SetMaximum(5*max([h.GetMaximum() for h in [reco_data, reco_mc] if h]))
-    canv.SaveAs(output_filename)
+    plot = Plot(entries,
+                what='hist',
+                title=title,
+                xtitle="Bin number",
+                ytitle="N",
+                subplot_type='ratio',
+                subplot_title='Data / MC',
+                subplot_limits=(0.8, 1.2))
+    plot.default_canvas_size = (800, 600)
+    plot.plot("NOSTACK HISTE")
+    plot.main_pad.SetLogy(1)
+    ymax = max(h.GetMaximum() for h in [reco_mc, reco_mc_fake, reco_data] if h)
+    plot.container.SetMaximum(ymax * 100)
+    plot.container.SetMinimum(1)
+    plot.legend.SetY1NDC(0.77)
+    plot.legend.SetX2NDC(0.85)
+    plot.save(output_filename)
 
 
 def create_hist_with_errors(hist, err_matrix):
@@ -871,6 +892,7 @@ if __name__ == "__main__":
 
             # Draw unified unfolded distributions
             # ---------------------
+            # unfolded, gen, and reco for comparison
             plot_simple_unfolded(unfolded=unfolded_1d,
                                  tau=tau,
                                  reco=None,
