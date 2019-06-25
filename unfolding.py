@@ -76,7 +76,7 @@ class MyUnfolder(object):
         # Binning setup here MUST match how it was setup in making the input files, otherwise
         # you will have untold pain and suffering!
         # TODO read in from XML
-        var_uf, var_of = True, False
+        var_uf, var_of = False, False
         pt_uf, pt_of = False, False  # handle pt uder/over flow ourselves
         self.detector_binning = ROOT.TUnfoldBinning("detector")
         self.detector_distribution_underflow = self.detector_binning.AddBinning("detectordistribution_underflow")
