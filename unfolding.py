@@ -326,17 +326,17 @@ class MyUnfolder(object):
         var_bins = np.array(binning.GetDistributionBinning(0))
         pt_bins = np.array(binning.GetDistributionBinning(1))
 
-        print("var_bins:", var_bins)
-        print("pt_bins:", pt_bins)
+        # print("var_bins:", var_bins)
+        # print("pt_bins:", pt_bins)
         bin_num = binning.GetGlobalBinNumber(0.001, 49)
-        print("Global bin num for (pt, lambda) = (49, 0.001) => %d" % (bin_num))
+        # print("Global bin num for (pt, lambda) = (49, 0.001) => %d" % (bin_num))
 
         # need the -1 on ibin_pt, as it references an array index, whereas ROOT bins start at 1
         h = ROOT.TH1D("h_%d_%s" % (ibin_pt, cu.get_unique_str()), "", len(var_bins)-1, var_bins)
         for var_ind, var_value in enumerate(var_bins[:-1], 1):
             this_val = var_value * 1.001  # ensure its inside
             bin_num = binning.GetGlobalBinNumber(this_val, pt_bins[ibin_pt]*1.001)
-            print("Global bin num for (pt, lambda) = (%.3f, %.3f) => %d" % (pt_bins[ibin_pt]*1.001, this_val, bin_num))
+            # print("Global bin num for (pt, lambda) = (%.3f, %.3f) => %d" % (pt_bins[ibin_pt]*1.001, this_val, bin_num))
             h.SetBinContent(var_ind, hist1d.GetBinContent(bin_num))
             h.SetBinError(var_ind, hist1d.GetBinError(bin_num))
             # print("Bin:", bin_num, this_val, pt_bins[ibin_pt], "=", hist1d.GetBinContent(bin_num), "+-", hist1d.GetBinError(bin_num))
@@ -549,7 +549,7 @@ def update_hist_bin_content(h_orig, h_to_be_updated):
         h_to_be_updated.SetBinContent(i, h_orig.GetBinContent(i))
 
 
-def draw_projection_comparison(h_orig, h_projection, title, xtitle, output_filename):
+def draw_projection_comparison(h_orig, h_projection, title, xtitle, output_filename, print_bin_comparison=True):
     """Draw 2 hists, h_orig the original, and h_projection the projection of a 2D hist"""
 
     # Check integrals
@@ -559,11 +559,12 @@ def draw_projection_comparison(h_orig, h_projection, title, xtitle, output_filen
         print("draw_projection_comparison: different integrals: %f vs %f" % (int_orig, int_proj))
 
     # Check bin-by-bin
-    for i in range(1, h_orig.GetNbinsX()+1):
-        value_orig = h_orig.GetBinContent(i)
-        value_proj = h_projection.GetBinContent(i)
-        if abs(value_orig - value_proj) > 1E-2:
-            print("draw_projection_comparison: bin %s has different contents: %f vs %f" % (i, value_orig, value_proj))
+    if print_bin_comparison:
+        for i in range(1, h_orig.GetNbinsX()+1):
+            value_orig = h_orig.GetBinContent(i)
+            value_proj = h_projection.GetBinContent(i)
+            if abs(value_orig - value_proj) > 1E-2:
+                print("draw_projection_comparison: bin %s has different contents: %f vs %f" % (i, value_orig, value_proj))
 
     entries = [
         Contribution(h_orig, label="1D hist",
@@ -885,7 +886,8 @@ if __name__ == "__main__":
             draw_projection_comparison(hist_mc_reco, proj_reco,
                                        title="%s\n%s region" % (jet_algo, region['label']),
                                        xtitle="%s, Detector binning" % (angle_str),
-                                       output_filename="%s/projection_reco_%s.%s" % (this_output_dir, append, OUTPUT_FMT))
+                                       output_filename="%s/projection_reco_%s.%s" % (this_output_dir, append, OUTPUT_FMT),
+                                       print_bin_comparison=False)
 
             proj_gen = hist_mc_gen_reco_map.ProjectionX("proj_gen_%s" % (append))
             draw_projection_comparison(hist_mc_gen, proj_gen,
