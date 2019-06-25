@@ -639,7 +639,7 @@ if __name__ == "__main__":
     regions = [
         {
             "name": "Dijet",
-            "dirname": "Dijet_QG_unfold_tighter",
+            "dirname": "Dijet_QG_Unfold_tighter",
             "label": "Dijet",
             "data_tfile": input_jetht_tfile,
             "mc_tfile": input_mc_qcd_mgpythia_tfile,
@@ -660,7 +660,7 @@ if __name__ == "__main__":
         },
         {
             "name": "ZPlusJets",
-            "dirname": "ZPlusJets_QG_unfold",
+            "dirname": "ZPlusJets_QG_Unfold",
             "label": "Z+jets",
             "data_tfile": input_singlemu_tfile,
             "mc_tfile": input_mc_dy_mgpythia_tfile,
@@ -689,7 +689,7 @@ if __name__ == "__main__":
     MC_input = False
     mc_append = "_MC" if MC_input else ""
     
-    output_dir = "unfolding_regularise%s_target0p5_uflowFirst%s" % (regularise, mc_append)
+    output_dir = "unfolding_better_regularise%s_target0p5%s" % (regularise, mc_append)
     cu.check_dir_exists_create(output_dir)
 
     # TODO automate this
@@ -737,13 +737,13 @@ if __name__ == "__main__":
             angle_bin_edges_gen = qgc.VAR_UNFOLD_DICT[angle.var]['gen']
             angle_shortname = angle.var.replace("jet_", "")
 
-            hist_data_reco = cu.get_from_tfile(region['data_tfile'], "%s/hist_%s_reco_new" % (region['dirname'], angle_shortname))
-            hist_mc_reco = cu.get_from_tfile(region['mc_tfile'], "%s/hist_%s_reco_new" % (region['dirname'], angle_shortname))
-            hist_mc_gen = cu.get_from_tfile(region['mc_tfile'], "%s/hist_%s_truth_new" % (region['dirname'], angle_shortname))
-            hist_mc_gen_reco_map = cu.get_from_tfile(region['mc_tfile'], "%s/tu_%s_GenReco_new" % (region['dirname'], angle_shortname))
+            hist_data_reco = cu.get_from_tfile(region['data_tfile'], "%s/hist_%s_reco_all" % (region['dirname'], angle_shortname))
+            hist_mc_reco = cu.get_from_tfile(region['mc_tfile'], "%s/hist_%s_reco_all" % (region['dirname'], angle_shortname))
+            hist_mc_gen = cu.get_from_tfile(region['mc_tfile'], "%s/hist_%s_truth_all" % (region['dirname'], angle_shortname))
+            hist_mc_gen_reco_map = cu.get_from_tfile(region['mc_tfile'], "%s/tu_%s_GenReco_all" % (region['dirname'], angle_shortname))
 
-            # hist_mc_gen_reco_neutralUp_map = cu.get_from_tfile(region['mc_neutralUp_tfile'], "%s/tu_%s_GenReco_new" % (region['dirname'], angle_shortname))
-            # hist_mc_gen_reco_neutralDown_map = cu.get_from_tfile(region['mc_neutralDown_tfile'], "%s/tu_%s_GenReco_new" % (region['dirname'], angle_shortname))
+            # hist_mc_gen_reco_neutralUp_map = cu.get_from_tfile(region['mc_neutralUp_tfile'], "%s/tu_%s_GenReco_all" % (region['dirname'], angle_shortname))
+            # hist_mc_gen_reco_neutralDown_map = cu.get_from_tfile(region['mc_neutralDown_tfile'], "%s/tu_%s_GenReco_all" % (region['dirname'], angle_shortname))
 
             hist_data_reco_gen_binning = cu.get_from_tfile(region['data_tfile'], "%s/hist_%s_reco_gen_binning_new" % (region['dirname'], angle_shortname))
             hist_mc_reco_gen_binning = cu.get_from_tfile(region['mc_tfile'], "%s/hist_%s_reco_gen_binning_new" % (region['dirname'], angle_shortname))
