@@ -770,11 +770,24 @@ if __name__ == "__main__":
             hist_mc_fakes_reco = cu.get_from_tfile(region['mc_tfile'], "%s/hist_%s_reco_fake_all" % (region['dirname'], angle_shortname))
             hist_mc_fakes_reco_gen_binning = cu.get_from_tfile(region['mc_tfile'], "%s/hist_%s_reco_fake_gen_binning_new" % (region['dirname'], angle_shortname))
 
+            # background-subtracted reco hists, only for plotting purposes, not for TUnfold (that does background subtraction internally)
+            hist_data_reco_bg_subtracted = hist_data_reco.Clone(hist_data_reco.GetName() + "_bgrSubtracted")
+            hist_data_reco_bg_subtracted.Add(hist_mc_fakes_reco, -1)
+            
+            hist_mc_reco_bg_subtracted = hist_mc_reco.Clone(hist_mc_reco.GetName() + "_bgrSubtracted")
+            hist_mc_reco_bg_subtracted.Add(hist_mc_fakes_reco, -1)
+
             # hist_mc_gen_reco_neutralUp_map = cu.get_from_tfile(region['mc_neutralUp_tfile'], "%s/tu_%s_GenReco_all" % (region['dirname'], angle_shortname))
             # hist_mc_gen_reco_neutralDown_map = cu.get_from_tfile(region['mc_neutralDown_tfile'], "%s/tu_%s_GenReco_all" % (region['dirname'], angle_shortname))
 
             hist_data_reco_gen_binning = cu.get_from_tfile(region['data_tfile'], "%s/hist_%s_reco_gen_binning_new" % (region['dirname'], angle_shortname))
+            hist_data_reco_gen_binning_bg_subtracted = hist_data_reco_gen_binning.Clone(hist_data_reco_gen_binning.GetName() + "_bgrSubtracted")
+            hist_data_reco_gen_binning_bg_subtracted.Add(hist_mc_fakes_reco_gen_binning, -1)
+
             hist_mc_reco_gen_binning = cu.get_from_tfile(region['mc_tfile'], "%s/hist_%s_reco_gen_binning_new" % (region['dirname'], angle_shortname))
+            hist_mc_reco_gen_binning_bg_subtracted = hist_mc_reco_gen_binning.Clone(hist_mc_reco_gen_binning.GetName() + "_bgrSubtracted")
+            hist_mc_reco_gen_binning_bg_subtracted.Add(hist_mc_fakes_reco_gen_binning, -1)
+
 
             # Setup unfolder object
             # ---------------------
@@ -808,9 +821,16 @@ if __name__ == "__main__":
             unfolder.setInput(reco_1d)
             this_tdir.WriteTObject(reco_1d, "unfold_input")
 
-            reco_1d_gen_binning = hist_data_reco_gen_binning
+            # background-subtracted for plotting
+            reco_1d_bg_subtracted = reco_1d.Clone()
+            reco_1d_bg_subtracted.Add(hist_mc_fakes_reco, -1)
+
+            # repeat but with truth binning
+            reco_1d_gen_binning = hist_mc_reco_gen_binning.Clone() if MC_input else hist_data_reco_gen_binning
             # reco_1d_gen_binning = hist_mc_reco_gen_binning # only for testing that everything is setup OK
             this_tdir.WriteTObject(reco_1d_gen_binning, "reco_1d_gen_binning")
+
+            reco_1d_gen_binning_bg_subtracted = hist_mc_reco_gen_binning_bg_subtracted.Clone() if MC_input else hist_data_reco_gen_binning_bg_subtracted
 
             # Do any regularisation
             # ---------------------
@@ -865,12 +885,25 @@ if __name__ == "__main__":
                                  reco_mc_fake=hist_mc_fakes_reco,
                                  output_filename="%s/detector_reco_binning_%s.%s" % (this_output_dir, append, OUTPUT_FMT),
                                  title="%s region, %s" % (region['label'], angle_str))
+            
+            # smae plot but with background-subtracted reco
+            plot_simple_detector(reco_data=reco_1d_bg_subtracted,
+                                 reco_mc=hist_mc_reco_bg_subtracted,
+                                 reco_mc_fake=hist_mc_fakes_reco,
+                                 output_filename="%s/detector_reco_binning_bg_subtracted_%s.%s" % (this_output_dir, append, OUTPUT_FMT),
+                                 title="%s region, %s" % (region['label'], angle_str))
 
             # reco using gen binning
             plot_simple_detector(reco_data=reco_1d_gen_binning,
                                  reco_mc=hist_mc_reco_gen_binning,
                                  reco_mc_fake=hist_mc_fakes_reco_gen_binning,
                                  output_filename="%s/detector_gen_binning_%s.%s" % (this_output_dir, append, OUTPUT_FMT),
+                                 title="%s region, %s" % (region['label'], angle_str))
+            # same but with background-subtracted
+            plot_simple_detector(reco_data=reco_1d_gen_binning_bg_subtracted,
+                                 reco_mc=hist_mc_reco_gen_binning_bg_subtracted,
+                                 reco_mc_fake=hist_mc_fakes_reco_gen_binning,
+                                 output_filename="%s/detector_gen_binning_bg_subtracted_%s.%s" % (this_output_dir, append, OUTPUT_FMT),
                                  title="%s region, %s" % (region['label'], angle_str))
 
             # Draw collapsed distributions
@@ -895,6 +928,12 @@ if __name__ == "__main__":
                                        xtitle="%s, Generator binning" % (angle_str),
                                        output_filename="%s/projection_gen_%s.%s" % (this_output_dir, append, OUTPUT_FMT))
 
+            # Do the same but with backgrounds subtracted from the 1D
+            draw_projection_comparison(hist_mc_reco_bg_subtracted, proj_reco,
+                                       title="%s\n%s region" % (jet_algo, region['label']),
+                                       xtitle="%s, Detector binning" % (angle_str),
+                                       output_filename="%s/projection_reco_bg_subtracted_%s.%s" % (this_output_dir, append, OUTPUT_FMT))
+            
             # Draw matrices
             # ---------------------
             draw_response_matrix(unfolder.response_map,
@@ -964,11 +1003,18 @@ if __name__ == "__main__":
                 update_hist_bin_content(unfolded_hist_bin, unfolded_hist_bin_total_errors)
                 this_pt_bin_tdir.WriteTObject(unfolded_hist_bin_total_errors, "unfolded_hist_bin_total_errors")
 
-                data_reco_hist_bin_gen_binning = unfolder.get_var_hist_pt_binned(hist_data_reco_gen_binning, ibin_pt, binning_scheme="generator")
+                # here this is the thing to be unfolded, bould be data or MC depending on MC_input flag
+                data_reco_hist_bin_gen_binning = unfolder.get_var_hist_pt_binned(reco_1d_gen_binning, ibin_pt, binning_scheme="generator")
                 this_pt_bin_tdir.WriteTObject(data_reco_hist_bin_gen_binning, "data_reco_hist_bin_gen_binning")
+
+                data_reco_hist_bg_subtracted_bin_gen_binning = unfolder.get_var_hist_pt_binned(reco_1d_gen_binning_bg_subtracted, ibin_pt, binning_scheme="generator")
+                this_pt_bin_tdir.WriteTObject(data_reco_hist_bg_subtracted_bin_gen_binning, "data_reco_hist_bg_subtracted_bin_gen_binning")
 
                 mc_reco_hist_bin_gen_binning = unfolder.get_var_hist_pt_binned(hist_mc_reco_gen_binning, ibin_pt, binning_scheme="generator")
                 this_pt_bin_tdir.WriteTObject(mc_reco_hist_bin_gen_binning, "mc_reco_hist_bin_gen_binning")
+
+                mc_reco_hist_bg_subtracted_bin_gen_binning = unfolder.get_var_hist_pt_binned(hist_mc_reco_gen_binning_bg_subtracted, ibin_pt, binning_scheme="generator")
+                this_pt_bin_tdir.WriteTObject(mc_reco_hist_bg_subtracted_bin_gen_binning, "mc_reco_hist_bg_subtracted_bin_gen_binning")
 
                 mc_fake_reco_hist_bin_gen_binning = unfolder.get_var_hist_pt_binned(hist_mc_fakes_reco_gen_binning, ibin_pt, binning_scheme="generator")
                 this_pt_bin_tdir.WriteTObject(mc_fake_reco_hist_bin_gen_binning, "mc_fake_reco_hist_bin_gen_binning")
@@ -979,8 +1025,14 @@ if __name__ == "__main__":
                 data_reco_hist_bin_reco_binning = unfolder.get_var_hist_pt_binned(reco_1d, ibin_pt, binning_scheme="detector")
                 this_pt_bin_tdir.WriteTObject(data_reco_hist_bin_reco_binning, "data_reco_hist_bin_reco_binning")
 
+                data_reco_hist_bg_subtracted_bin_reco_binning = unfolder.get_var_hist_pt_binned(reco_1d_bg_subtracted, ibin_pt, binning_scheme="detector")
+                this_pt_bin_tdir.WriteTObject(data_reco_hist_bg_subtracted_bin_reco_binning, "data_reco_hist_bg_subtracted_bin_reco_binning")
+
                 mc_reco_hist_bin_reco_binning = unfolder.get_var_hist_pt_binned(hist_mc_reco, ibin_pt, binning_scheme="detector")
                 this_pt_bin_tdir.WriteTObject(mc_reco_hist_bin_reco_binning, "mc_reco_hist_bin_reco_binning")
+
+                mc_reco_hist_bg_subtracted_bin_reco_binning = unfolder.get_var_hist_pt_binned(hist_mc_reco_bg_subtracted, ibin_pt, binning_scheme="detector")
+                this_pt_bin_tdir.WriteTObject(mc_reco_hist_bg_subtracted_bin_reco_binning, "mc_reco_hist_bg_subtracted_bin_reco_binning")
 
                 # print hist bins for check
                 for n in range(1, gen_hist_bin.GetNbinsX()+1):
@@ -1089,7 +1141,6 @@ if __name__ == "__main__":
                 # Reco only, generator-binning
                 reco_mc_colour = ROOT.kGreen+2
                 reco_data_colour = ROOT.kRed
-                reco_fake_colour = ROOT.kMagenta+2
                 entries = [
                     Contribution(mc_reco_hist_bin_gen_binning, label="MC",
                                  line_color=reco_mc_colour, line_width=lw,
@@ -1100,10 +1151,6 @@ if __name__ == "__main__":
                                  marker_color=reco_data_colour, marker_style=20, marker_size=0.75,
                                  subplot=mc_reco_hist_bin_gen_binning,
                                  normalise_hist=True),
-                    # Contribution(mc_fake_reco_hist_bin_gen_binning, label="MC fakes",
-                    #              line_color=reco_fake_colour, line_width=lw,
-                    #              marker_color=reco_fake_colour, marker_size=0,
-                    #              normalise_hist=True),  # hard to show fakes if everything normalised to 1
                 ]
                 has_entries = [c.obj.GetEntries() > 0 for c in entries]
                 if not any(has_entries):
@@ -1124,6 +1171,102 @@ if __name__ == "__main__":
                 plot.legend.SetY2(0.9)
                 plot.plot("NOSTACK E1")
                 plot.save("%s/detector_gen_binning_%s_bin_%d.%s" % (this_output_dir, append, ibin_pt, OUTPUT_FMT))
+
+                # Same but background-subtracted
+                entries = [
+                    Contribution(mc_reco_hist_bg_subtracted_bin_gen_binning, label="MC (bg-subtracted)",
+                                 line_color=reco_mc_colour, line_width=lw,
+                                 marker_color=reco_mc_colour, marker_size=0,
+                                 normalise_hist=True),
+                    Contribution(data_reco_hist_bg_subtracted_bin_gen_binning, label="Data (bg-subtracted)",
+                                 line_color=reco_data_colour, line_width=lw,
+                                 marker_color=reco_data_colour, marker_style=20, marker_size=0.75,
+                                 subplot=mc_reco_hist_bg_subtracted_bin_gen_binning,
+                                 normalise_hist=True),
+                ]
+                has_entries = [c.obj.GetEntries() > 0 for c in entries]
+                if not any(has_entries):
+                    print("Skipping 0 entries in", append, ibin_pt)
+                    continue
+                title = "%s\n%s region\n%g < p_{T}^{Gen} < %g GeV" % (jet_algo, region['label'], pt_bin_edges_gen[ibin_pt], pt_bin_edges_gen[ibin_pt+1])
+                plot = Plot(entries,
+                            what="hist",
+                            title=title,
+                            xtitle="Detector-level " + angle_str,
+                            ytitle=ytitle,
+                            subplot_type='ratio',
+                            subplot_title='Data / MC',
+                            subplot_limits=(0.8, 1.2))
+                plot.legend.SetX1(0.6)
+                plot.legend.SetY1(0.75)
+                plot.legend.SetX2(0.98)
+                plot.legend.SetY2(0.9)
+                plot.plot("NOSTACK E1")
+                plot.save("%s/detector_gen_binning_bg_subtracted_%s_bin_%d.%s" % (this_output_dir, append, ibin_pt, OUTPUT_FMT))
+
+                # Reco only, detector-binning
+                entries = [
+                    Contribution(mc_reco_hist_bin_reco_binning, label="MC",
+                                 line_color=reco_mc_colour, line_width=lw,
+                                 marker_color=reco_mc_colour, marker_size=0,
+                                 normalise_hist=True),
+                    Contribution(data_reco_hist_bin_reco_binning, label="Data",
+                                 line_color=reco_data_colour, line_width=lw,
+                                 marker_color=reco_data_colour, marker_style=20, marker_size=0.75,
+                                 subplot=mc_reco_hist_bin_reco_binning,
+                                 normalise_hist=True),
+                ]
+                has_entries = [c.obj.GetEntries() > 0 for c in entries]
+                if not any(has_entries):
+                    print("Skipping 0 entries in", append, ibin_pt)
+                    continue
+                title = "%s\n%s region\n%g < p_{T}^{Gen} < %g GeV" % (jet_algo, region['label'], pt_bin_edges_gen[ibin_pt], pt_bin_edges_gen[ibin_pt+1])
+                plot = Plot(entries,
+                            what="hist",
+                            title=title,
+                            xtitle="Detector-level " + angle_str,
+                            ytitle=ytitle,
+                            subplot_type='ratio',
+                            subplot_title='Data / MC',
+                            subplot_limits=(0.8, 1.2))
+                plot.legend.SetX1(0.6)
+                plot.legend.SetY1(0.75)
+                plot.legend.SetX2(0.98)
+                plot.legend.SetY2(0.9)
+                plot.plot("NOSTACK E1")
+                plot.save("%s/detector_reco_binning_%s_bin_%d.%s" % (this_output_dir, append, ibin_pt, OUTPUT_FMT))
+
+                # Same but background-subtracted
+                entries = [
+                    Contribution(mc_reco_hist_bg_subtracted_bin_reco_binning, label="MC (bg-subtracted)",
+                                 line_color=reco_mc_colour, line_width=lw,
+                                 marker_color=reco_mc_colour, marker_size=0,
+                                 normalise_hist=True),
+                    Contribution(data_reco_hist_bg_subtracted_bin_reco_binning, label="Data (bg-subtracted)",
+                                 line_color=reco_data_colour, line_width=lw,
+                                 marker_color=reco_data_colour, marker_style=20, marker_size=0.75,
+                                 subplot=mc_reco_hist_bg_subtracted_bin_reco_binning,
+                                 normalise_hist=True),
+                ]
+                has_entries = [c.obj.GetEntries() > 0 for c in entries]
+                if not any(has_entries):
+                    print("Skipping 0 entries in", append, ibin_pt)
+                    continue
+                title = "%s\n%s region\n%g < p_{T}^{Gen} < %g GeV" % (jet_algo, region['label'], pt_bin_edges_gen[ibin_pt], pt_bin_edges_gen[ibin_pt+1])
+                plot = Plot(entries,
+                            what="hist",
+                            title=title,
+                            xtitle="Detector-level " + angle_str,
+                            ytitle=ytitle,
+                            subplot_type='ratio',
+                            subplot_title='Data / MC',
+                            subplot_limits=(0.8, 1.2))
+                plot.legend.SetX1(0.6)
+                plot.legend.SetY1(0.75)
+                plot.legend.SetX2(0.98)
+                plot.legend.SetY2(0.9)
+                plot.plot("NOSTACK E1")
+                plot.save("%s/detector_reco_binning_bg_subtracted_%s_bin_%d.%s" % (this_output_dir, append, ibin_pt, OUTPUT_FMT))
 
                 # Reco + folded, detector binning
                 reco_mc_colour = ROOT.kGreen+2
