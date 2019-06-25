@@ -463,7 +463,7 @@ def plot_simple_unfolded(unfolded, tau, reco, gen, fake, output_filename, title=
         leg.AddEntry(gen, "Gen", "L")
 
     if fake:
-        fake.SetLineColor(ROOT.kMagenta)
+        fake.SetLineColor(ROOT.kMagenta+2)
         hst.Add(fake)
         leg.AddEntry(fake, "Fakes", "L")
 
@@ -479,7 +479,7 @@ def plot_simple_unfolded(unfolded, tau, reco, gen, fake, output_filename, title=
     hst.Draw("NOSTACK HISTE")
     leg.Draw()
     hst.SetMinimum(1E-2)
-    hst.SetMaximum(5*max([h.GetMaximum() for h in [unfolded, reco, gen]]))
+    hst.SetMaximum(5*max([h.GetMaximum() for h in [unfolded, reco, gen] if h]))
     canv_unfold.SaveAs(output_filename)
 
 
@@ -488,7 +488,7 @@ def plot_simple_detector(reco_data, reco_mc, reco_mc_fake, output_filename, titl
     canv = ROOT.TCanvas(cu.get_unique_str(), "", 800, 600)
     canv.SetLogy()
     canv.SetTicks(1, 1)
-    leg = ROOT.TLegend(0.7, 0.7, 0.88, 0.88)
+    leg = ROOT.TLegend(0.67, 0.67, 0.88, 0.88)
     leg.SetFillColor(0)
     leg.SetFillStyle(0)
     hst = ROOT.THStack("hst", "%s;Bin Number;N" % (title))
@@ -500,9 +500,9 @@ def plot_simple_detector(reco_data, reco_mc, reco_mc_fake, output_filename, titl
         leg.AddEntry(reco_mc, "MC [detector-level]", "L")
 
     if reco_mc_fake:
-        reco_mc_fake.SetLineColor(ROOT.kMagenta)
+        reco_mc_fake.SetLineColor(ROOT.kMagenta+2)
         reco_mc_fake.SetLineWidth(1)
-        reco_mc_fake.SetMarkerColor(ROOT.kMagenta)
+        reco_mc_fake.SetMarkerColor(ROOT.kMagenta+2)
         hst.Add(reco_mc_fake)
         leg.AddEntry(reco_mc_fake, "MC fakes [detector-level]", "LP")
 
@@ -518,7 +518,7 @@ def plot_simple_detector(reco_data, reco_mc, reco_mc_fake, output_filename, titl
     hst.Draw("NOSTACK HISTE")
     leg.Draw()
     hst.SetMinimum(1E-2)
-    hst.SetMaximum(5*max([h.GetMaximum() for h in [reco_data, reco_mc]]))
+    hst.SetMaximum(5*max([h.GetMaximum() for h in [reco_data, reco_mc] if h]))
     canv.SaveAs(output_filename)
 
 
