@@ -614,27 +614,37 @@ def draw_reco_folded(hist_folded, tau, hist_reco_data, hist_reco_mc, title, xtit
 
 
 if __name__ == "__main__":
-    input_mc_dy_mgpythia_tfile = cu.open_root_file("workdir_ak4puppi_mgpythia_newFlav_withAllResponses_jetAsymCut_chargedResp_pt1RecoConstituents_V11JEC_JER_tUnfold/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL.root")
-    input_mc_dy_mgherwig_tfile = cu.open_root_file("workdir_ak4puppi_herwig_newFlav_withAllResponses_jetAsymCut_chargedResp_pt1RecoConstituents_V11JEC_JER_tUnfold/uhh2.AnalysisModuleRunner.MC.MC_MG_HERWIG_DYJetsToLL.root")
-    input_mc_dy_herwig_tfile = cu.open_root_file("workdir_ak4puppi_herwig_newFlav_withAllResponses_jetAsymCut_chargedResp_pt1RecoConstituents_V11JEC_JER_tUnfold/uhh2.AnalysisModuleRunner.MC.MC_HERWIG_DYJetsToLL.root")
+    # FOR Z+JETS:
+    input_mc_dy_mgpythia_tfile = cu.open_root_file("workdir_ak4puppi_mgpythia_newFlav_jetAsymCut_chargedVars_pt1RecoConstituents_V11JEC_JER_tUnfoldBetter_target0p5_noZReweight/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL.root")
+    
+    # input_mc_dy_mgherwig_tfile = cu.open_root_file("workdir_ak4puppi_herwig_newFlav_withAllResponses_jetAsymCut_chargedResp_pt1RecoConstituents_V11JEC_JER_tUnfold/uhh2.AnalysisModuleRunner.MC.MC_MG_HERWIG_DYJetsToLL.root")
+    # input_mc_dy_herwig_tfile = cu.open_root_file("workdir_ak4puppi_herwig_newFlav_withAllResponses_jetAsymCut_chargedResp_pt1RecoConstituents_V11JEC_JER_tUnfold/uhh2.AnalysisModuleRunner.MC.MC_HERWIG_DYJetsToLL.root")
 
-    input_singlemu_tfile = cu.open_root_file("workdir_ak4puppi_data_withAllResponses_trigBinningBetter2_jetAsymCut_pt1RecoConstituents_V11JEC_JER_tUnfold/uhh2.AnalysisModuleRunner.DATA.Data_SingleMu.root")
+    # input_mc_dy_mgpythia_neutralUp_tfile = cu.open_root_file("workdir_ak4puppi_mgpythia_newFlav_withAllResponses_jetAsymCut_chargedResp_pt1RecoConstituents_V11JEC_JER_tUnfold_neutralUp/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL.root")
+    # input_mc_dy_mgpythia_neutralDown_tfile = cu.open_root_file("workdir_ak4puppi_mgpythia_newFlav_withAllResponses_jetAsymCut_chargedResp_pt1RecoConstituents_V11JEC_JER_tUnfold_neutralDown/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL.root")
 
-    input_mc_qcd_mgpythia_tfile = cu.open_root_file("workdir_ak4puppi_mgpythia_newFlav_withAllResponses_jetAsymCut_chargedResp_pt1RecoConstituents_V11JEC_JER_tUnfold/uhh2.AnalysisModuleRunner.MC.MC_QCD.root")
-    input_mc_qcd_pythia_tfile = cu.open_root_file("workdir_ak4puppi_pythia_newFlav_withAllResponses_jetAsymCut_chargedResp_pt1RecoConstituents_V11JEC_JER_tUnfold/uhh2.AnalysisModuleRunner.MC.MC_PYTHIA-QCD.root")
-    input_mc_qcd_herwig_tfile = cu.open_root_file("workdir_ak4puppi_herwig_newFlav_withAllResponses_jetAsymCut_chargedResp_pt1RecoConstituents_V11JEC_JER_tUnfold/uhh2.AnalysisModuleRunner.MC.MC_HERWIG_QCD.root")
+    input_singlemu_tfile = cu.open_root_file("workdir_ak4puppi_data_trigBinningBetter2_jetAsymCut_pt1RecoConstituents_V11JEC_JER_tUnfoldBetter_target0p5/uhh2.AnalysisModuleRunner.DATA.Data_SingleMu.root")
 
-    input_jetht_tfile = cu.open_root_file("workdir_ak4puppi_data_withAllResponses_trigBinningBetter2_jetAsymCut_pt1RecoConstituents_V11JEC_JER_tUnfold/uhh2.AnalysisModuleRunner.DATA.Data_JetHTZeroBias.root")
+    # FOR DIJET:
+    input_mc_qcd_mgpythia_tfile = cu.open_root_file("workdir_ak4puppi_mgpythia_newFlav_jetAsymCut_chargedVars_pt1RecoConstituents_V11JEC_JER_tUnfoldBetter_target0p5_noZReweight/uhh2.AnalysisModuleRunner.MC.MC_QCD.root")
+    
+    # input_mc_qcd_pythia_tfile = cu.open_root_file("workdir_ak4puppi_pythia_newFlav_withAllResponses_jetAsymCut_chargedResp_pt1RecoConstituents_V11JEC_JER_tUnfold/uhh2.AnalysisModuleRunner.MC.MC_PYTHIA-QCD.root")
+    # input_mc_qcd_herwig_tfile = cu.open_root_file("workdir_ak4puppi_herwig_newFlav_withAllResponses_jetAsymCut_chargedResp_pt1RecoConstituents_V11JEC_JER_tUnfold/uhh2.AnalysisModuleRunner.MC.MC_HERWIG_QCD.root")
+
+    input_jetht_tfile = cu.open_root_file("workdir_ak4puppi_data_trigBinningBetter2_jetAsymCut_pt1RecoConstituents_V11JEC_JER_tUnfoldBetter_target0p5/uhh2.AnalysisModuleRunner.DATA.Data_JetHTZeroBias.root")
+
+    # input_mc_qcd_mgpythia_neutralUp_tfile = cu.open_root_file("workdir_ak4puppi_mgpythia_newFlav_withAllResponses_jetAsymCut_chargedResp_pt1RecoConstituents_V11JEC_JER_tUnfold_neutralUp/uhh2.AnalysisModuleRunner.MC.MC_QCD.root")
+    # input_mc_qcd_mgpythia_neutralDown_tfile = cu.open_root_file("workdir_ak4puppi_mgpythia_newFlav_withAllResponses_jetAsymCut_chargedResp_pt1RecoConstituents_V11JEC_JER_tUnfold_neutralDown/uhh2.AnalysisModuleRunner.MC.MC_QCD.root")
 
     regions = [
         {
             "name": "Dijet",
-            "dirname": "Dijet_QG_tighter",
+            "dirname": "Dijet_QG_unfold_tighter",
             "label": "Dijet",
             "data_tfile": input_jetht_tfile,
             "mc_tfile": input_mc_qcd_mgpythia_tfile,
-            "mc_neutralUp_tfile": input_mc_qcd_mgpythia_neutralUp_tfile,
-            "mc_neutralDown_tfile": input_mc_qcd_mgpythia_neutralDown_tfile,
+            # "mc_neutralUp_tfile": input_mc_qcd_mgpythia_neutralUp_tfile,
+            # "mc_neutralDown_tfile": input_mc_qcd_mgpythia_neutralDown_tfile,
             "tau_limits": {
                 'jet_puppiMultiplicity': (1E-13, 1E-8),
                 'jet_pTD': (1E-13, 1E-8),
@@ -650,12 +660,12 @@ if __name__ == "__main__":
         },
         {
             "name": "ZPlusJets",
-            "dirname": "ZPlusJets_QG",
+            "dirname": "ZPlusJets_QG_unfold",
             "label": "Z+jets",
             "data_tfile": input_singlemu_tfile,
             "mc_tfile": input_mc_dy_mgpythia_tfile,
-            "mc_neutralUp_tfile": input_mc_dy_mgpythia_neutralUp_tfile,
-            "mc_neutralDown_tfile": input_mc_dy_mgpythia_neutralDown_tfile,
+            # "mc_neutralUp_tfile": input_mc_dy_mgpythia_neutralUp_tfile,
+            # "mc_neutralDown_tfile": input_mc_dy_mgpythia_neutralDown_tfile,
             "tau_limits": {
                 'jet_puppiMultiplicity': (1E-10, 1E-4),
                 'jet_pTD': (1E-10, 1E-4),
@@ -676,7 +686,7 @@ if __name__ == "__main__":
     # regularise = "L"
 
     # Run with MC input instead of data
-    MC_input = True
+    MC_input = False
     mc_append = "_MC" if MC_input else ""
     
     output_dir = "unfolding_regularise%s_target0p5_uflowFirst%s" % (regularise, mc_append)
@@ -732,6 +742,9 @@ if __name__ == "__main__":
             hist_mc_gen = cu.get_from_tfile(region['mc_tfile'], "%s/hist_%s_truth_new" % (region['dirname'], angle_shortname))
             hist_mc_gen_reco_map = cu.get_from_tfile(region['mc_tfile'], "%s/tu_%s_GenReco_new" % (region['dirname'], angle_shortname))
 
+            # hist_mc_gen_reco_neutralUp_map = cu.get_from_tfile(region['mc_neutralUp_tfile'], "%s/tu_%s_GenReco_new" % (region['dirname'], angle_shortname))
+            # hist_mc_gen_reco_neutralDown_map = cu.get_from_tfile(region['mc_neutralDown_tfile'], "%s/tu_%s_GenReco_new" % (region['dirname'], angle_shortname))
+
             hist_data_reco_gen_binning = cu.get_from_tfile(region['data_tfile'], "%s/hist_%s_reco_gen_binning_new" % (region['dirname'], angle_shortname))
             hist_mc_reco_gen_binning = cu.get_from_tfile(region['mc_tfile'], "%s/hist_%s_reco_gen_binning_new" % (region['dirname'], angle_shortname))
 
@@ -754,6 +767,9 @@ if __name__ == "__main__":
                                   axisSteering='*[b]')
 
             unfolder.save_binning(txt_filename="%s/binning_scheme.txt" % (this_output_dir), print_xml=False)
+
+            # unfolder.tunfolder.AddSysError(hist_mc_gen_reco_neutralUp_map, "NeutralUp", ROOT.TUnfold.kHistMapOutputHoriz, ROOT.TUnfoldDensity.kSysErrModeMatrix)
+            # unfolder.tunfolder.AddSysError(hist_mc_gen_reco_neutralDown_map, "NeutralDown", ROOT.TUnfold.kHistMapOutputHoriz, ROOT.TUnfoldDensity.kSysErrModeMatrix)
 
             # Set what is to be unfolded
             # ---------------------
