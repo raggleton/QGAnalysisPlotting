@@ -710,7 +710,10 @@ if __name__ == "__main__":
     mc_append = "_MC" if MC_input else ""
     mc_append += "_split" if MC_split else "_all"
     
-    output_dir = "unfolding_better_regularise%s_target0p5%s" % (regularise, mc_append)
+    subtract_fakes = True
+    sub_append = "_subFakes" if subtract_fakes else "" 
+    
+    output_dir = "unfolding_better_regularise%s_target0p5%s%s" % (regularise, mc_append, sub_append)
     cu.check_dir_exists_create(output_dir)
 
     # TODO automate this
@@ -791,13 +794,16 @@ if __name__ == "__main__":
                                   axisSteering='*[b]')
 
             unfolder.save_binning(txt_filename="%s/binning_scheme.txt" % (this_output_dir), print_xml=False)
-
+            
+            if subtract_fakes:
+                unfolder.tunfolder.SubtractBackground(hist_mc_fakes_reco, "fakes")
+            
             # unfolder.tunfolder.AddSysError(hist_mc_gen_reco_neutralUp_map, "NeutralUp", ROOT.TUnfold.kHistMapOutputHoriz, ROOT.TUnfoldDensity.kSysErrModeMatrix)
             # unfolder.tunfolder.AddSysError(hist_mc_gen_reco_neutralDown_map, "NeutralDown", ROOT.TUnfold.kHistMapOutputHoriz, ROOT.TUnfoldDensity.kSysErrModeMatrix)
 
             # Set what is to be unfolded
             # ---------------------
-            reco_1d = hist_mc_reco if MC_input else hist_data_reco
+            reco_1d = hist_mc_reco.Clone() if MC_input else hist_data_reco
             unfolder.setInput(reco_1d)
             this_tdir.WriteTObject(reco_1d, "unfold_input")
 
@@ -846,12 +852,20 @@ if __name__ == "__main__":
             # ---------------------
             plot_simple_unfolded(unfolded=unfolded_1d,
                                  tau=tau,
-                                 reco=reco_1d,
+                                 reco=None,
                                  gen=hist_mc_gen,
-                                 fake=hist_mc_fakes_reco,
+                                 fake=None,
                                  output_filename="%s/unfolded_%s.%s" % (this_output_dir, append, OUTPUT_FMT),
                                  title="%s region, %s" % (region['label'], angle_str))
 
+            # reco using detector binning
+            plot_simple_detector(reco_data=reco_1d,
+                                 reco_mc=hist_mc_reco,
+                                 reco_mc_fake=hist_mc_fakes_reco,
+                                 output_filename="%s/detector_reco_binning_%s.%s" % (this_output_dir, append, OUTPUT_FMT),
+                                 title="%s region, %s" % (region['label'], angle_str))
+
+            # reco using gen binning
             plot_simple_detector(reco_data=reco_1d_gen_binning,
                                  reco_mc=hist_mc_reco_gen_binning,
                                  reco_mc_fake=hist_mc_fakes_reco_gen_binning,
@@ -1073,7 +1087,7 @@ if __name__ == "__main__":
                 # Reco only, generator-binning
                 reco_mc_colour = ROOT.kGreen+2
                 reco_data_colour = ROOT.kRed
-                reco_fake_colour = ROOT.kMagenta
+                reco_fake_colour = ROOT.kMagenta+2
                 entries = [
                     Contribution(mc_reco_hist_bin_gen_binning, label="MC",
                                  line_color=reco_mc_colour, line_width=lw,
