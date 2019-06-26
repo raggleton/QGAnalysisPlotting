@@ -464,8 +464,8 @@ def plot_simple_unfolded(unfolded, tau, reco, gen, fake, output_filename, title=
     if fake:
         entries.append(
             Contribution(fake, label="Fakes",
-                         line_color=ROOT.kMagenta+2, line_width=1,
-                         marker_color=ROOT.kMagenta+2, marker_size=0,
+                         line_color=ROOT.kOrange+4, line_width=1,
+                         marker_color=ROOT.kOrange+4, marker_size=0,
                          normalise_hist=False),
         )
 
@@ -511,6 +511,10 @@ def plot_simple_detector(reco_data, reco_mc, reco_mc_fake, output_filename, titl
     if reco_mc_fake:
         entries.append(
             Contribution(reco_mc_fake, label="MC fakes [detector-level]",
+                         line_color=ROOT.kOrange+4, line_width=1,
+                         marker_color=ROOT.kOrange+4, marker_size=0,
+                         normalise_hist=False),
+        )
                          line_color=ROOT.kMagenta+2, line_width=1,
                          marker_color=ROOT.kMagenta+2, marker_size=0,
                          normalise_hist=False),
