@@ -496,7 +496,7 @@ def plot_simple_unfolded(unfolded, tau, reco, gen, fake, output_filename, title=
     plot.save(output_filename)
 
 
-def plot_simple_detector(reco_data, reco_mc, reco_mc_fake, output_filename, title):
+def plot_simple_detector(reco_data, reco_data_fake, reco_mc, reco_mc_fake, output_filename, title):
     """Plot detector-level quantities for data & MC, by bin number (ie non physical axes)"""
     entries = []
 
@@ -515,6 +515,10 @@ def plot_simple_detector(reco_data, reco_mc, reco_mc_fake, output_filename, titl
                          marker_color=ROOT.kOrange+4, marker_size=0,
                          normalise_hist=False),
         )
+
+    if reco_data_fake:
+        entries.append(
+            Contribution(reco_data_fake, label="Data fakes template [detector-level]",
                          line_color=ROOT.kMagenta+2, line_width=1,
                          marker_color=ROOT.kMagenta+2, marker_size=0,
                          normalise_hist=False),
@@ -793,31 +797,55 @@ if __name__ == "__main__":
             hist_mc_gen = cu.get_from_tfile(region['mc_tfile'], "%s/hist_%s_truth_%s" % (region['dirname'], angle_shortname, mc_hname_append))
             hist_mc_gen_reco_map = cu.get_from_tfile(region['mc_tfile'], "%s/tu_%s_GenReco_%s" % (region['dirname'], angle_shortname, mc_hname_append))
 
-            hist_mc_fakes_reco = cu.get_from_tfile(region['mc_tfile'], "%s/hist_%s_reco_fake_%s" % (region['dirname'], angle_shortname, mc_hname_append))
-            
-            mc_hname_append = "_split" if MC_split else ""  # FIXME consistency in unfold hist module!
-            hist_mc_fakes_reco_gen_binning = cu.get_from_tfile(region['mc_tfile'], "%s/hist_%s_reco_fake_gen_binning%s_new" % (region['dirname'], angle_shortname, mc_hname_append))
+            # Actual distribution to be unfolded
+            reco_1d = hist_mc_reco.Clone() if MC_input else hist_data_reco
 
-            # background-subtracted reco hists, only for plotting purposes, not for TUnfold (that does background subtraction internally)
             if subtract_fakes:
+                # to construct our "fakes" template, we use the ratio as predicted by MC, and apply it to data
+                # this way we ensure we don't have -ve values, and avoid any issue with cross sections
+                hist_mc_fakes_reco = cu.get_from_tfile(region['mc_tfile'], "%s/hist_%s_reco_fake_%s" % (region['dirname'], angle_shortname, mc_hname_append))
+                hist_fakes_reco = hist_mc_fakes_reco.Clone("hist_%s_fakes" % angle_shortname)
+                hist_fakes_reco.Divide(hist_mc_reco)
+                hist_fakes_reco.Multiply(reco_1d)
+
+                # background-subtracted reco hists, only for plotting purposes, not for TUnfold (that does background subtraction internally)
+                reco_1d_bg_subtracted = reco_1d.Clone()
+                reco_1d_bg_subtracted.Add(hist_fakes_reco, -1)
+
                 hist_data_reco_bg_subtracted = hist_data_reco.Clone(hist_data_reco.GetName() + "_bgrSubtracted")
-                hist_data_reco_bg_subtracted.Add(hist_mc_fakes_reco, -1)
+                hist_data_reco_bg_subtracted.Add(hist_fakes_reco, -1)
 
                 hist_mc_reco_bg_subtracted = hist_mc_reco.Clone(hist_mc_reco.GetName() + "_bgrSubtracted")
-                hist_mc_reco_bg_subtracted.Add(hist_mc_fakes_reco, -1)
+                hist_mc_reco_bg_subtracted.Add(hist_mc_fakes_reco, -1)  # should this be hist_fakes_reco? depends on what we want to see...
 
             # hist_mc_gen_reco_neutralUp_map = cu.get_from_tfile(region['mc_neutralUp_tfile'], "%s/tu_%s_GenReco_all" % (region['dirname'], angle_shortname))
             # hist_mc_gen_reco_neutralDown_map = cu.get_from_tfile(region['mc_neutralDown_tfile'], "%s/tu_%s_GenReco_all" % (region['dirname'], angle_shortname))
 
+            mc_hname_append = "_split" if MC_split else ""  # FIXME consistency in unfold hist module!
             hist_data_reco_gen_binning = cu.get_from_tfile(region['data_tfile'], "%s/hist_%s_reco_gen_binning_new" % (region['dirname'], angle_shortname))
             hist_mc_reco_gen_binning = cu.get_from_tfile(region['mc_tfile'], "%s/hist_%s_reco_gen_binning%s_new" % (region['dirname'], angle_shortname, mc_hname_append))
 
+            # Actual distribution to be unfolded, but with gen binning
+            reco_1d_gen_binning = hist_mc_reco_gen_binning.Clone() if MC_input else hist_data_reco_gen_binning
+            # reco_1d_gen_binning = hist_mc_reco_gen_binning # only for testing that everything is setup OK
+
             if subtract_fakes:
+                mc_hname_append = "_split" if MC_split else ""  # FIXME consistency in unfold hist module!
+                hist_mc_fakes_reco_gen_binning = cu.get_from_tfile(region['mc_tfile'], "%s/hist_%s_reco_fake_gen_binning%s_new" % (region['dirname'], angle_shortname, mc_hname_append))
+                # create template as above, but with gen binning
+                hist_fakes_reco_gen_binning = hist_mc_fakes_reco_gen_binning.Clone("hist_%s_fakes_gen_binning" % angle_shortname)
+                hist_fakes_reco_gen_binning.Divide(hist_mc_reco_gen_binning)
+                hist_fakes_reco_gen_binning.Multiply(reco_1d_gen_binning)
+
+                # background-subtracted reco hists, only for plotting purposes, not for TUnfold (that does background subtraction internally)
+                reco_1d_gen_binning_bg_subtracted = reco_1d_gen_binning.Clone()
+                reco_1d_gen_binning_bg_subtracted.Add(hist_fakes_reco_gen_binning, -1)
+
                 hist_data_reco_gen_binning_bg_subtracted = hist_data_reco_gen_binning.Clone(hist_data_reco_gen_binning.GetName() + "_bgrSubtracted")
-                hist_data_reco_gen_binning_bg_subtracted.Add(hist_mc_fakes_reco_gen_binning, -1)
+                hist_data_reco_gen_binning_bg_subtracted.Add(hist_fakes_reco_gen_binning, -1)
 
                 hist_mc_reco_gen_binning_bg_subtracted = hist_mc_reco_gen_binning.Clone(hist_mc_reco_gen_binning.GetName() + "_bgrSubtracted")
-                hist_mc_reco_gen_binning_bg_subtracted.Add(hist_mc_fakes_reco_gen_binning, -1)
+                hist_mc_reco_gen_binning_bg_subtracted.Add(hist_mc_fakes_reco_gen_binning, -1)  # should this be hist_fakes_reco_gen_binning? depends on what we want to see...
 
 
             # Setup unfolder object
@@ -841,29 +869,22 @@ if __name__ == "__main__":
             unfolder.save_binning(txt_filename="%s/binning_scheme.txt" % (this_output_dir), print_xml=False)
 
             if subtract_fakes:
-                unfolder.tunfolder.SubtractBackground(hist_mc_fakes_reco, "fakes")
+                unfolder.tunfolder.SubtractBackground(hist_fakes_reco, "fakes")
 
             # unfolder.tunfolder.AddSysError(hist_mc_gen_reco_neutralUp_map, "NeutralUp", ROOT.TUnfold.kHistMapOutputHoriz, ROOT.TUnfoldDensity.kSysErrModeMatrix)
             # unfolder.tunfolder.AddSysError(hist_mc_gen_reco_neutralDown_map, "NeutralDown", ROOT.TUnfold.kHistMapOutputHoriz, ROOT.TUnfoldDensity.kSysErrModeMatrix)
 
             # Set what is to be unfolded
             # ---------------------
-            reco_1d = hist_mc_reco.Clone() if MC_input else hist_data_reco
             unfolder.setInput(reco_1d)
+
             this_tdir.WriteTObject(reco_1d, "unfold_input")
-
-            # background-subtracted for plotting
+            this_tdir.WriteTObject(reco_1d_gen_binning, "unfold_input_gen_binning")
             if subtract_fakes:
-                reco_1d_bg_subtracted = reco_1d.Clone()
-                reco_1d_bg_subtracted.Add(hist_mc_fakes_reco, -1)
-
-            # repeat but with truth binning
-            reco_1d_gen_binning = hist_mc_reco_gen_binning.Clone() if MC_input else hist_data_reco_gen_binning
-            # reco_1d_gen_binning = hist_mc_reco_gen_binning # only for testing that everything is setup OK
-            this_tdir.WriteTObject(reco_1d_gen_binning, "reco_1d_gen_binning")
-
-            if subtract_fakes:
-                reco_1d_gen_binning_bg_subtracted = hist_mc_reco_gen_binning_bg_subtracted.Clone() if MC_input else hist_data_reco_gen_binning_bg_subtracted
+                this_tdir.WriteTObject(hist_fakes_reco, "fakes")
+                this_tdir.WriteTObject(hist_fakes_reco_gen_binning, "fakes_gen_binning")
+                this_tdir.WriteTObject(reco_1d_bg_subtracted, "unfold_input_bg_subtracted")
+                this_tdir.WriteTObject(reco_1d_gen_binning_bg_subtracted, "reco_1d_gen_binning_bg_subtracted")
 
             # Do any regularisation
             # ---------------------
@@ -916,7 +937,8 @@ if __name__ == "__main__":
             # reco using detector binning
             plot_simple_detector(reco_data=reco_1d,
                                  reco_mc=hist_mc_reco,
-                                 reco_mc_fake=hist_mc_fakes_reco,
+                                 reco_mc_fake=hist_mc_fakes_reco if subtract_fakes else None,
+                                 reco_data_fake=hist_fakes_reco if subtract_fakes else None,
                                  output_filename="%s/detector_reco_binning_%s.%s" % (this_output_dir, append, OUTPUT_FMT),
                                  title="%s region, %s" % (region['label'], angle_str))
 
@@ -925,13 +947,15 @@ if __name__ == "__main__":
                 plot_simple_detector(reco_data=reco_1d_bg_subtracted,
                                      reco_mc=hist_mc_reco_bg_subtracted,
                                      reco_mc_fake=hist_mc_fakes_reco,
+                                     reco_data_fake=hist_fakes_reco,
                                      output_filename="%s/detector_reco_binning_bg_subtracted_%s.%s" % (this_output_dir, append, OUTPUT_FMT),
                                      title="%s region, %s" % (region['label'], angle_str))
 
             # reco using gen binning
             plot_simple_detector(reco_data=reco_1d_gen_binning,
                                  reco_mc=hist_mc_reco_gen_binning,
-                                 reco_mc_fake=hist_mc_fakes_reco_gen_binning,
+                                 reco_mc_fake=hist_mc_fakes_reco_gen_binning if subtract_fakes else None,
+                                 reco_data_fake=hist_fakes_reco_gen_binning if subtract_fakes else None,
                                  output_filename="%s/detector_gen_binning_%s.%s" % (this_output_dir, append, OUTPUT_FMT),
                                  title="%s region, %s" % (region['label'], angle_str))
 
@@ -940,6 +964,7 @@ if __name__ == "__main__":
                 plot_simple_detector(reco_data=reco_1d_gen_binning_bg_subtracted,
                                      reco_mc=hist_mc_reco_gen_binning_bg_subtracted,
                                      reco_mc_fake=hist_mc_fakes_reco_gen_binning,
+                                     reco_data_fake=hist_fakes_reco_gen_binning,
                                      output_filename="%s/detector_gen_binning_bg_subtracted_%s.%s" % (this_output_dir, append, OUTPUT_FMT),
                                      title="%s region, %s" % (region['label'], angle_str))
 
@@ -1058,8 +1083,11 @@ if __name__ == "__main__":
                     mc_reco_hist_bg_subtracted_bin_gen_binning = unfolder.get_var_hist_pt_binned(hist_mc_reco_gen_binning_bg_subtracted, ibin_pt, binning_scheme="generator")
                     this_pt_bin_tdir.WriteTObject(mc_reco_hist_bg_subtracted_bin_gen_binning, "mc_reco_hist_bg_subtracted_bin_gen_binning")
 
-                mc_fake_reco_hist_bin_gen_binning = unfolder.get_var_hist_pt_binned(hist_mc_fakes_reco_gen_binning, ibin_pt, binning_scheme="generator")
-                this_pt_bin_tdir.WriteTObject(mc_fake_reco_hist_bin_gen_binning, "mc_fake_reco_hist_bin_gen_binning")
+                # mc_fake_reco_hist_bin_gen_binning = unfolder.get_var_hist_pt_binned(hist_mc_fakes_reco_gen_binning, ibin_pt, binning_scheme="generator")
+                # this_pt_bin_tdir.WriteTObject(mc_fake_reco_hist_bin_gen_binning, "mc_fake_reco_hist_bin_gen_binning")
+
+                # data_fake_reco_hist_bin_gen_binning = unfolder.get_var_hist_pt_binned(hist_fakes_reco_gen_binning, ibin_pt, binning_scheme="generator")
+                # this_pt_bin_tdir.WriteTObject(data_fake_reco_hist_bin_gen_binning, "data_fake_reco_hist_bin_gen_binning")
 
                 data_folded_hist_bin_reco_binning = unfolder.get_var_hist_pt_binned(hist_data_folded, ibin_pt, binning_scheme="detector")
                 this_pt_bin_tdir.WriteTObject(data_folded_hist_bin_reco_binning, "data_folded_hist_bin_reco_binning")
@@ -1088,8 +1116,10 @@ if __name__ == "__main__":
 
                 # Make lots of plots
                 # ------------------------------------------------------------
-                # Unfolded only
                 lw = 1
+
+                # PLOT UNFOLDED DATA
+                # --------------------------------------------------------------
                 gen_colour = ROOT.kBlue
                 unfolded_basic_colour = ROOT.kAzure+10
                 unfolded_stat_colour = ROOT.kGreen+1
@@ -1182,6 +1212,8 @@ if __name__ == "__main__":
                 plot.save("%s/unfolded_%s_bin_%d.%s" % (this_output_dir, append, ibin_pt, OUTPUT_FMT))
 
 
+                # PLOT RECO DISTRIBUTIONS
+                # --------------------------------------------------------------
                 # Reco only, generator-binning
                 reco_mc_colour = ROOT.kGreen+2
                 reco_data_colour = ROOT.kRed
@@ -1252,11 +1284,13 @@ if __name__ == "__main__":
 
                 # Reco only, detector-binning
                 entries = [
-                    Contribution(mc_reco_hist_bin_reco_binning, label="MC",
+                    Contribution(mc_reco_hist_bin_reco_binning,
+                                 label="MC",
                                  line_color=reco_mc_colour, line_width=lw,
                                  marker_color=reco_mc_colour, marker_size=0,
                                  normalise_hist=True),
-                    Contribution(data_reco_hist_bin_reco_binning, label="Data",
+                    Contribution(data_reco_hist_bin_reco_binning,
+                                 label="Data",
                                  line_color=reco_data_colour, line_width=lw,
                                  marker_color=reco_data_colour, marker_style=20, marker_size=0.75,
                                  subplot=mc_reco_hist_bin_reco_binning,
@@ -1285,11 +1319,13 @@ if __name__ == "__main__":
                 if subtract_fakes:
                     # Same but background-subtracted
                     entries = [
-                        Contribution(mc_reco_hist_bg_subtracted_bin_reco_binning, label="MC (bg-subtracted)",
+                        Contribution(mc_reco_hist_bg_subtracted_bin_reco_binning,
+                                     label="MC (bg-subtracted)",
                                      line_color=reco_mc_colour, line_width=lw,
                                      marker_color=reco_mc_colour, marker_size=0,
                                      normalise_hist=True),
-                        Contribution(data_reco_hist_bg_subtracted_bin_reco_binning, label="Data (bg-subtracted)",
+                        Contribution(data_reco_hist_bg_subtracted_bin_reco_binning,
+                                     label="Data (bg-subtracted)",
                                      line_color=reco_data_colour, line_width=lw,
                                      marker_color=reco_data_colour, marker_style=20, marker_size=0.75,
                                      subplot=mc_reco_hist_bg_subtracted_bin_reco_binning,
@@ -1315,22 +1351,26 @@ if __name__ == "__main__":
                     plot.plot("NOSTACK E1")
                     plot.save("%s/detector_reco_binning_bg_subtracted_%s_bin_%d.%s" % (this_output_dir, append, ibin_pt, OUTPUT_FMT))
 
+                # PLOT FOLDED UNFOLDED DATA
+                # --------------------------------------------------------------
                 # Reco + folded, detector binning
                 reco_mc_colour = ROOT.kGreen+2
                 reco_data_colour = ROOT.kRed
                 reco_folded_colour = ROOT.kAzure+1
                 entries = [
-                    Contribution(mc_reco_hist_bin_reco_binning, label="MC",
+                    Contribution(mc_reco_hist_bg_subtracted_bin_reco_binning if subtract_fakes else mc_reco_hist_bin_reco_binning,
+                                 label="MC (reco, bg-subtracted)" if subtract_fakes else "MC (reco)",
                                  line_color=reco_mc_colour, line_width=lw,
                                  marker_color=reco_mc_colour, marker_size=0,
                                  normalise_hist=True),
-                    Contribution(data_reco_hist_bg_subtracted_bin_reco_binning if subtract_fakes else data_reco_hist_bin_reco_binning, 
+                    Contribution(data_reco_hist_bg_subtracted_bin_reco_binning if subtract_fakes else data_reco_hist_bin_reco_binning,
                                  label="Data (reco, bg-subtracted)" if subtract_fakes else "Data (reco)",
                                  line_color=reco_data_colour, line_width=lw,
                                  marker_color=reco_data_colour, marker_size=0,
                                  subplot=mc_reco_hist_bin_reco_binning,
                                  normalise_hist=True),
-                    Contribution(data_folded_hist_bin_reco_binning, label="Unfolded data (#tau = %.3g, folded)" % (tau),
+                    Contribution(data_folded_hist_bin_reco_binning,
+                                 label="Folded unfolded data (#tau = %.3g)" % (tau),
                                  line_color=reco_folded_colour, line_width=lw,
                                  marker_color=reco_folded_colour, marker_size=0,
                                  subplot=mc_reco_hist_bin_reco_binning,
@@ -1358,12 +1398,13 @@ if __name__ == "__main__":
 
                 # Folded, but only comparing data with data to check it is sane
                 entries = [
-                    Contribution(data_reco_hist_bg_subtracted_bin_reco_binning if subtract_fakes else data_reco_hist_bin_reco_binning, 
+                    Contribution(data_reco_hist_bg_subtracted_bin_reco_binning if subtract_fakes else data_reco_hist_bin_reco_binning,
                                  label="Data (reco, bg-subtracted)" if subtract_fakes else "Data (reco)",
                                  line_color=reco_data_colour, line_width=lw,
                                  marker_color=reco_data_colour, marker_size=0,
                                  normalise_hist=True),
-                    Contribution(data_folded_hist_bin_reco_binning, label="Unfolded data (#tau = %.3g, folded)" % (tau),
+                    Contribution(data_folded_hist_bin_reco_binning,
+                                 label="Folded unfolded data (#tau = %.3g)" % (tau),
                                  line_color=reco_folded_colour, line_width=lw,
                                  marker_color=reco_folded_colour, marker_size=0,
                                  subplot=data_reco_hist_bin_reco_binning,
