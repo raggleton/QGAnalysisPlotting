@@ -726,10 +726,10 @@ if __name__ == "__main__":
 
     # Run with MC input instead of data
     MC_input = True
+    mc_append = "_MC" if MC_input else ""
     # If True, use part of MC for response matrix, and separate part for unfolding
     # as independent test
-    MC_split = False
-    mc_append = "_MC" if MC_input else ""
+    MC_split = True
     mc_append += "_split" if MC_split else "_all"
 
     subtract_fakes = True
