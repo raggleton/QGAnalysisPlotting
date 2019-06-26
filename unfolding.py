@@ -784,12 +784,15 @@ if __name__ == "__main__":
             angle_shortname = angle.var.replace("jet_", "")
 
             hist_data_reco = cu.get_from_tfile(region['data_tfile'], "%s/hist_%s_reco_all" % (region['dirname'], angle_shortname))
-            hist_mc_reco = cu.get_from_tfile(region['mc_tfile'], "%s/hist_%s_reco_all" % (region['dirname'], angle_shortname))
-            hist_mc_gen = cu.get_from_tfile(region['mc_tfile'], "%s/hist_%s_truth_all" % (region['dirname'], angle_shortname))
-            hist_mc_gen_reco_map = cu.get_from_tfile(region['mc_tfile'], "%s/tu_%s_GenReco_all" % (region['dirname'], angle_shortname))
+            mc_hname_append = "split" if MC_split else "all"
+            hist_mc_reco = cu.get_from_tfile(region['mc_tfile'], "%s/hist_%s_reco_%s" % (region['dirname'], angle_shortname, mc_hname_append))
+            hist_mc_gen = cu.get_from_tfile(region['mc_tfile'], "%s/hist_%s_truth_%s" % (region['dirname'], angle_shortname, mc_hname_append))
+            hist_mc_gen_reco_map = cu.get_from_tfile(region['mc_tfile'], "%s/tu_%s_GenReco_%s" % (region['dirname'], angle_shortname, mc_hname_append))
 
-            hist_mc_fakes_reco = cu.get_from_tfile(region['mc_tfile'], "%s/hist_%s_reco_fake_all" % (region['dirname'], angle_shortname))
-            hist_mc_fakes_reco_gen_binning = cu.get_from_tfile(region['mc_tfile'], "%s/hist_%s_reco_fake_gen_binning_new" % (region['dirname'], angle_shortname))
+            hist_mc_fakes_reco = cu.get_from_tfile(region['mc_tfile'], "%s/hist_%s_reco_fake_%s" % (region['dirname'], angle_shortname, mc_hname_append))
+            
+            mc_hname_append = "_split" if MC_split else ""  # FIXME consistency in unfold hist module!
+            hist_mc_fakes_reco_gen_binning = cu.get_from_tfile(region['mc_tfile'], "%s/hist_%s_reco_fake_gen_binning%s_new" % (region['dirname'], angle_shortname, mc_hname_append))
 
             # background-subtracted reco hists, only for plotting purposes, not for TUnfold (that does background subtraction internally)
             if subtract_fakes:
@@ -803,7 +806,7 @@ if __name__ == "__main__":
             # hist_mc_gen_reco_neutralDown_map = cu.get_from_tfile(region['mc_neutralDown_tfile'], "%s/tu_%s_GenReco_all" % (region['dirname'], angle_shortname))
 
             hist_data_reco_gen_binning = cu.get_from_tfile(region['data_tfile'], "%s/hist_%s_reco_gen_binning_new" % (region['dirname'], angle_shortname))
-            hist_mc_reco_gen_binning = cu.get_from_tfile(region['mc_tfile'], "%s/hist_%s_reco_gen_binning_new" % (region['dirname'], angle_shortname))
+            hist_mc_reco_gen_binning = cu.get_from_tfile(region['mc_tfile'], "%s/hist_%s_reco_gen_binning%s_new" % (region['dirname'], angle_shortname, mc_hname_append))
 
             if subtract_fakes:
                 hist_data_reco_gen_binning_bg_subtracted = hist_data_reco_gen_binning.Clone(hist_data_reco_gen_binning.GetName() + "_bgrSubtracted")
@@ -827,9 +830,9 @@ if __name__ == "__main__":
                                   # constraintMode=ROOT.TUnfold.kEConstraintArea,
                                   constraintMode=ROOT.TUnfold.kEConstraintNone,
                                   regMode=ROOT.TUnfold.kRegModeCurvature,
-                                  # densityFlags=ROOT.TUnfoldDensity.kDensityModeBinWidth,
-                                  densityFlags=ROOT.TUnfoldDensity.kDensityModeNone,
-                                  axisSteering='*[b]')
+                                  densityFlags=ROOT.TUnfoldDensity.kDensityModeBinWidth,
+                                  # densityFlags=ROOT.TUnfoldDensity.kDensityModeNone,
+                                  axisSteering='*[B]')
 
             unfolder.save_binning(txt_filename="%s/binning_scheme.txt" % (this_output_dir), print_xml=False)
 
@@ -944,26 +947,28 @@ if __name__ == "__main__":
             # unfolded_1d_lambda = unfolder.get_output_lambda_1d()
 
             # Draw projections of response matrix vs 1D hist to check normalisation OK
-            # ---------------------
-            proj_reco = hist_mc_gen_reco_map.ProjectionY("proj_reco_%s" % (append))
-            draw_projection_comparison(hist_mc_reco, proj_reco,
-                                       title="%s\n%s region" % (jet_algo, region['label']),
-                                       xtitle="%s, Detector binning" % (angle_str),
-                                       output_filename="%s/projection_reco_%s.%s" % (this_output_dir, append, OUTPUT_FMT),
-                                       print_bin_comparison=False)
-
-            proj_gen = hist_mc_gen_reco_map.ProjectionX("proj_gen_%s" % (append))
-            draw_projection_comparison(hist_mc_gen, proj_gen,
-                                       title="%s\n%s region" % (jet_algo, region['label']),
-                                       xtitle="%s, Generator binning" % (angle_str),
-                                       output_filename="%s/projection_gen_%s.%s" % (this_output_dir, append, OUTPUT_FMT))
-
-            if subtract_fakes:
-                # Do the same but with backgrounds subtracted from the 1D
-                draw_projection_comparison(hist_mc_reco_bg_subtracted, proj_reco,
+            # Only makes sense if the same MC events go into matrix & 1D plot
+            # ------------------------------------------------------------------
+            if not MC_split:
+                proj_reco = hist_mc_gen_reco_map.ProjectionY("proj_reco_%s" % (append))
+                draw_projection_comparison(hist_mc_reco, proj_reco,
                                            title="%s\n%s region" % (jet_algo, region['label']),
                                            xtitle="%s, Detector binning" % (angle_str),
-                                           output_filename="%s/projection_reco_bg_subtracted_%s.%s" % (this_output_dir, append, OUTPUT_FMT))
+                                           output_filename="%s/projection_reco_%s.%s" % (this_output_dir, append, OUTPUT_FMT),
+                                           print_bin_comparison=False)
+
+                proj_gen = hist_mc_gen_reco_map.ProjectionX("proj_gen_%s" % (append))
+                draw_projection_comparison(hist_mc_gen, proj_gen,
+                                           title="%s\n%s region" % (jet_algo, region['label']),
+                                           xtitle="%s, Generator binning" % (angle_str),
+                                           output_filename="%s/projection_gen_%s.%s" % (this_output_dir, append, OUTPUT_FMT))
+
+                if subtract_fakes:
+                    # Do the same but with backgrounds subtracted from the 1D
+                    draw_projection_comparison(hist_mc_reco_bg_subtracted, proj_reco,
+                                               title="%s\n%s region" % (jet_algo, region['label']),
+                                               xtitle="%s, Detector binning" % (angle_str),
+                                               output_filename="%s/projection_reco_bg_subtracted_%s.%s" % (this_output_dir, append, OUTPUT_FMT))
 
             # Draw matrices
             # ---------------------
@@ -1007,8 +1012,8 @@ if __name__ == "__main__":
             this_tdir.WriteTObject(hist_data_folded, "folded_1d")
             draw_reco_folded(hist_folded=hist_data_folded,
                              tau=tau,
-                             hist_reco_data=reco_1d,
-                             hist_reco_mc=hist_mc_reco,
+                             hist_reco_data=reco_1d_bg_subtracted if subtract_fakes else reco_1d,
+                             hist_reco_mc=hist_mc_reco_bg_subtracted if subtract_fakes else hist_mc_reco,
                              title="%s\n%s region" % (jet_algo, region['label']),
                              xtitle="%s, Detector binning" % (angle_str),
                              output_filename="%s/folded_%s.%s" % (this_output_dir, append, OUTPUT_FMT))
@@ -1315,7 +1320,8 @@ if __name__ == "__main__":
                                  line_color=reco_mc_colour, line_width=lw,
                                  marker_color=reco_mc_colour, marker_size=0,
                                  normalise_hist=True),
-                    Contribution(data_reco_hist_bin_reco_binning, label="Data (reco)",
+                    Contribution(data_reco_hist_bg_subtracted_bin_reco_binning if subtract_fakes else data_reco_hist_bin_reco_binning, 
+                                 label="Data (reco, bg-subtracted)" if subtract_fakes else "Data (reco)",
                                  line_color=reco_data_colour, line_width=lw,
                                  marker_color=reco_data_colour, marker_size=0,
                                  subplot=mc_reco_hist_bin_reco_binning,
@@ -1348,7 +1354,8 @@ if __name__ == "__main__":
 
                 # Folded, but only comparing data with data to check it is sane
                 entries = [
-                    Contribution(data_reco_hist_bin_reco_binning, label="Data (reco)",
+                    Contribution(data_reco_hist_bg_subtracted_bin_reco_binning if subtract_fakes else data_reco_hist_bin_reco_binning, 
+                                 label="Data (reco, bg-subtracted)" if subtract_fakes else "Data (reco)",
                                  line_color=reco_data_colour, line_width=lw,
                                  marker_color=reco_data_colour, marker_size=0,
                                  normalise_hist=True),
