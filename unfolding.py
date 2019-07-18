@@ -926,6 +926,11 @@ if __name__ == "__main__":
             this_tdir.WriteTObject(ematrix_total, "ematrix_total_1d")
             print ("total uncert:", error_total_1d.GetBinError(30))
 
+            # Update errors to big unfolded 1D
+            update_hist_bin_content(unfolded_1d, error_total_1d)
+            print ("new uncert:", unfolded_1d.GetBinError(30))
+            this_tdir.WriteTObject(unfolded_1d)
+            
             angle_str = "%s (%s)" % (angle.name, angle.lambda_str)
 
             # Draw unified unfolded distributions
