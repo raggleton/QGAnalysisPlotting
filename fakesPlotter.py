@@ -93,6 +93,10 @@ if __name__ == "__main__":
         print_cutflow(unfold_fakes_counter, os.path.join(args.outputDir, "cutflow_DijetUnfoldFakes.%s" % OUTPUT_FMT), logy=True)
         unfold_fakes_counter_scaled = unfold_fakes_counter.Clone()
         unfold_fakes_counter_scaled.Scale(1./unfold_fakes_counter_scaled.GetBinContent(1))
+        # printout values per bin
+        print("Fraction fakes in unfolding:")
+        for i in range(2, unfold_fakes_counter_scaled.GetNbinsX()+1):
+            print(unfold_fakes_counter_scaled.GetXaxis().GetBinLabel(i), ":", unfold_fakes_counter_scaled.GetBinContent(i))
         # can't use normal get_fraction_passing_cut as scales weirdly
         print("Fraction of fakes in unfolding:", print(unfold_fakes_counter_scaled.Integral(unfold_fakes_counter_scaled.FindBin(0), 4)))  # 0 as weird bin numbering, 1st bin is -1
         lw = 2
@@ -112,11 +116,12 @@ if __name__ == "__main__":
             plots_kwargs={"xtitle": "#eta_{GenJet 2}", "ytitle": "N", "has_data": False},
             output_filename=os.path.join(args.outputDir, "dijet_genjet_eta2.%s" % OUTPUT_FMT)
         )
-        print("Fraction failing eta1 cut:", 1-get_fraction_passing_cut(cu.get_from_tfile(in_tfile, "GenJetsPassDijetReco/eta_1"),-2.6, 2.6))
-        print("Fraction failing eta2 cut:", 1-get_fraction_passing_cut(cu.get_from_tfile(in_tfile, "GenJetsPassDijetReco/eta_2"),-2.6, 2.6))
+        eta_cut = 1.8
+        print("Fraction failing eta1 cut:", 1-get_fraction_passing_cut(cu.get_from_tfile(in_tfile, "GenJetsPassDijetReco/eta_1"), -eta_cut, eta_cut))
+        print("Fraction failing eta2 cut:", 1-get_fraction_passing_cut(cu.get_from_tfile(in_tfile, "GenJetsPassDijetReco/eta_2"), -eta_cut, eta_cut))
         print_hist_comparison(
             entries=[
-                (cu.get_from_tfile(in_tfile, "GenJetsPresel/eta_3"), {"line_color": ROOT.kBlack, "marker_color": ROOT.kBlack, "line_width": lw, "label": "passGen || passReco"}),
+                # (cu.get_from_tfile(in_tfile, "GenJetsPresel/eta_3"), {"line_color": ROOT.kBlack, "marker_color": ROOT.kBlack, "line_width": lw, "label": "passGen || passReco"}),
                 (cu.get_from_tfile(in_tfile, "GenJetsPassDijetReco/eta_3"), {"line_color": ROOT.kRed, "marker_color": ROOT.kRed, "line_width": lw, "label": "pass dijet reco cuts"})
             ],
             plots_kwargs={"xtitle": "#eta_{GenJet 3}", "ytitle": "N", "has_data": False},
@@ -138,8 +143,9 @@ if __name__ == "__main__":
             plots_kwargs={"xtitle": "p_{T}^{GenJet 2} [GeV]", "ytitle": "N", "has_data": False, "xlim": [0, 200], "ylim": [1E7, 5E12], "logy": True},
             output_filename=os.path.join(args.outputDir, "dijet_genjet_pt2.%s" % OUTPUT_FMT)
         )
-        print("Fraction failing pt1 cut:", 1-get_fraction_passing_cut(cu.get_from_tfile(in_tfile, "GenJetsPassDijetReco/pt_1"), 15, None))
-        print("Fraction failing pt2 cut:", 1-get_fraction_passing_cut(cu.get_from_tfile(in_tfile, "GenJetsPassDijetReco/pt_2"), 15, None))
+        pt_cut = 10
+        print("Fraction failing pt1 cut:", 1-get_fraction_passing_cut(cu.get_from_tfile(in_tfile, "GenJetsPassDijetReco/pt_1"), pt_cut, None))
+        print("Fraction failing pt2 cut:", 1-get_fraction_passing_cut(cu.get_from_tfile(in_tfile, "GenJetsPassDijetReco/pt_2"), pt_cut, None))
         print_hist_comparison(
             entries=[
                 (cu.get_from_tfile(in_tfile, "GenJetsPresel/pt_3"), {"line_color": ROOT.kBlack, "marker_color": ROOT.kBlack, "line_width": lw, "label": "passGen || passReco"}),
