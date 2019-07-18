@@ -735,15 +735,18 @@ if __name__ == "__main__":
     # Run with MC input instead of data
     MC_input = True
     mc_append = "_MC" if MC_input else ""
+
     # If True, use part of MC for response matrix, and separate part for unfolding
     # as independent test
     MC_split = True
-    mc_append += "_split" if MC_split else "_all"
+    if MC_input:
+        mc_append += "_split" if MC_split else "_all"
 
     subtract_fakes = True
     sub_append = "_subFakes" if subtract_fakes else ""
 
     output_dir = "unfolding_better_regularise%s_target0p5%s%s" % (regularise, mc_append, sub_append)
+    output_dir = "unfolding_better_regularise%s_target0p5%s%s_densityModeBinWidth_constraintArea" % (regularise, mc_append, sub_append)
     cu.check_dir_exists_create(output_dir)
 
     # TODO automate this
@@ -916,10 +919,12 @@ if __name__ == "__main__":
             ematrix_stat_sum.Add(ematrix_sys_uncorr)
 
             error_stat_1d = make_hist_from_diagonals(ematrix_stat_sum, do_sqrt=True)
+            print ("stat uncert:", error_stat_1d.GetBinError(30))
 
             ematrix_total = unfolder.get_ematrix_total()
             error_total_1d = make_hist_from_diagonals(ematrix_total, do_sqrt=True)
             this_tdir.WriteTObject(ematrix_total, "ematrix_total_1d")
+            print ("total uncert:", error_total_1d.GetBinError(30))
 
             angle_str = "%s (%s)" % (angle.name, angle.lambda_str)
 
