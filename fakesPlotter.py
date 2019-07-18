@@ -21,6 +21,7 @@ ROOT.gROOT.SetBatch(1)
 ROOT.TH1.SetDefaultSumw2()
 ROOT.gStyle.SetOptStat(0)
 ROOT.gStyle.SetOptFit()
+ROOT.gStyle.SetPaintTextFormat(".3f")
 # ROOT.gStyle.SetStatColor()
 
 # Control plot output format
@@ -34,7 +35,7 @@ def print_cutflow(hist, output_filename, logy=False):
     canv.SetTicks(1, 1)
     canv.SetGrid()
     hist.Scale(1/hist.GetBinContent(1))
-    hist.Draw("HISTE")
+    hist.Draw("HIST TEXT")
     hist.GetYaxis().SetTitle("Fraction")
     if not logy:
         hist.SetMinimum(0)
