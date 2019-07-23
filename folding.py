@@ -378,6 +378,20 @@ def convert_th1_physical_bins(hist, bin_values):
     h_new = ROOT.TH1D(hist.GetName()+"Physical"+cu.get_unique_str(),
                       ';'.join([hist.GetTitle(), hist.GetXaxis().GetTitle(), hist.GetYaxis().GetTitle()]),
                       hist.GetNbinsX(), array('f', bin_values))
+    for i in range(0, h_new.GetNbinsX()+2):  # 0 for uflow, N+1 for oflow
+        h_new.SetBinContent(i, hist.GetBinContent(i))
+        h_new.SetBinError(i, hist.GetBinError(i))
+    return h_new
+
+
+def renumber_hist_bins(hist):
+    """Renumber bins to go 1, 2, ..., N
+
+    Needed if you rebinned but want to compare
+    """
+    h_new  = ROOT.TH1D(hist.GetName()+cu.get_unique_str(),
+                      ';'.join([hist.GetTitle(), hist.GetXaxis().GetTitle(), hist.GetYaxis().GetTitle()]),
+                      hist.GetNbinsX(), 0.5, hist.GetNbinsX()+0.5)
     for i in range(0, h_new.GetNbinsX()+2):
         h_new.SetBinContent(i, hist.GetBinContent(i))
         h_new.SetBinError(i, hist.GetBinError(i))
@@ -549,8 +563,8 @@ if __name__ == "__main__":
         bin_values = all_pt_bin_edges_reco
         hist_mc_gen_physical = convert_th1_physical_bins(hist_mc_gen, all_pt_bin_edges_gen)
         hist_mc_folded_physical = convert_th1_physical_bins(hist_mc_folded, bin_values)
-        hist_mc_reco_physical = convert_th1_physical_bins(hist_mc_reco_bg_subtracted, bin_values)
-        hist_data_reco_physical = convert_th1_physical_bins(hist_data_reco_bg_subtracted, bin_values)
+        hist_mc_reco_physical = convert_th1_physical_bins(hist_mc_reco_1d, bin_values)
+        hist_data_reco_physical = convert_th1_physical_bins(hist_data_reco_1d, bin_values)
 
         draw_folded_hists_physical(hist_mc_folded_physical,
                                    hist_mc_reco_physical,
@@ -570,9 +584,62 @@ if __name__ == "__main__":
         this_tdir.WriteTObject(hist_mc_gen, "gen_mc")
         this_tdir.WriteTObject(hist_mc_reco_1d, "reco_mc")
         this_tdir.WriteTObject(hist_data_reco_1d, "reco_data")
+        this_tdir.WriteTObject(hist_mc_folded, "mc_folded")
         this_tdir.WriteTObject(hist_mc_gen_physical, "gen_mc_physical")
         this_tdir.WriteTObject(hist_mc_reco_physical, "reco_mc_physical")
         this_tdir.WriteTObject(hist_data_reco_physical, "reco_data_physical")
+        this_tdir.WriteTObject(hist_mc_folded_physical, "mc_folded_physical")
+
+
+        # Do a version with wider reco binning to match gen
+        # -------------------------------------------------
+        hist_mc_gen_reco_map_rebin = hist_mc_gen_reco_map.RebinY(2)
+
+        draw_response_matrix(hist_mc_gen_reco_map_rebin,
+                             region['label'],
+                             angle_str,
+                             draw_values=False,
+                             output_filename="%s/response_map_rebin_%s.%s" % (this_output_dir, append, OUTPUT_FMT))
+
+        draw_response_matrix(cu.make_normalised_TH2(hist_mc_gen_reco_map_rebin, 'X', recolour=False),
+                             region['label'],
+                             angle_str + " (normalised by gen bin)",
+                             draw_values=True,
+                             output_filename="%s/response_map_rebin_%s_normX.%s" % (this_output_dir, append, OUTPUT_FMT))
+
+
+        hist_mc_folded_rebin = get_folded_hist(hist_mc_gen_reco_map_rebin, hist_mc_gen)
+        hist_mc_reco_1d_rebin = renumber_hist_bins(hist_mc_reco_1d.Rebin(2))
+        hist_data_reco_1d_rebin = renumber_hist_bins(hist_data_reco_1d.Rebin(2))
+        draw_folded_hists(hist_mc_folded_rebin,
+                          hist_mc_reco_1d_rebin,
+                          hist_data_reco_1d_rebin,
+                          output_filename="%s/folded_hist_rebin_%s.%s" % (this_output_dir, append, OUTPUT_FMT),
+                          title="%s region, %s jets, %s" % (region['label'], jet_algo, angle_str))
+
+        # Convert to physical bin limits
+        bin_values = all_pt_bin_edges_gen
+        hist_mc_gen_physical = convert_th1_physical_bins(hist_mc_gen, all_pt_bin_edges_gen)
+        hist_mc_folded_rebin_physical = convert_th1_physical_bins(hist_mc_folded_rebin, bin_values)
+        hist_mc_reco_rebin_physical = convert_th1_physical_bins(hist_mc_reco_1d_rebin, bin_values)
+        hist_data_reco_rebin_physical = convert_th1_physical_bins(hist_data_reco_1d_rebin, bin_values)
+
+        draw_folded_hists_physical(hist_mc_folded_rebin_physical,
+                                   hist_mc_reco_rebin_physical,
+                                   hist_data_reco_rebin_physical,
+                                   output_filename="%s/folded_hist_rebin_physical_%s.%s" % (this_output_dir, append, OUTPUT_FMT),
+                                   title="%s region, %s jets" % (region['label'], jet_algo),
+                                   xtitle=angle_str,
+                                   logx=True,
+                                   logy=True)
+
+        this_tdir.WriteTObject(hist_mc_gen_reco_map_rebin, "response_map_rebin")
+        this_tdir.WriteTObject(hist_mc_reco_1d_rebin, "reco_mc_rebin")
+        this_tdir.WriteTObject(hist_data_reco_1d_rebin, "reco_data_rebin")
+        this_tdir.WriteTObject(hist_mc_folded_rebin, "mc_folded_rebin")
+        this_tdir.WriteTObject(hist_mc_reco_rebin_physical, "reco_mc_physical_rebin")
+        this_tdir.WriteTObject(hist_data_reco_rebin_physical, "reco_data_physical_rebin")
+        this_tdir.WriteTObject(hist_mc_folded_rebin_physical, "mc_folded_rebin_physical")
 
     output_tfile.Close()
 
