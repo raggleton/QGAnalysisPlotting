@@ -36,27 +36,53 @@ OUTPUT_FMT = "pdf"
 
 
 
-def th2_to_tmatrixsparse(hist_A, oflow_x=False, oflow_y=False):
-    """Convert TH2 to TMatrixSparse
-
-    Mainly taken from TUnfold ctor: https://root.cern.ch/doc/master/TUnfold_8cxx_source.html#l01715
-
-    Assumes histmap == kHistMapOutputHoriz
-    """
+def th1_to_tvector(hist_A, oflow_x=False):
+    """Convert TH1 to numpy ndarray"""
     ncol = hist_A.GetNbinsX()
     if oflow_x:
         ncol += 2
-    nrow = hist_A.GetNbinsY()
-    if oflow_y:
-        nrow += 2
+    result = ROOT.TVectorD(ncol)
+    errors = ROOT.TVectorD(ncol)
 
-    r = ROOT.TMatrixD(nrow, ncol)  #nrow, ncol
+    # Get ROOT indices to loop over
+    x_start = 0 if oflow_x else 1
+    x_end = hist_A.GetNbinsX()
+    if oflow_x:
+        x_end += 1
 
-    for iy in range(0, nrow):
-        for ix in range(0, ncol):
-            z = hist_A.GetBinContent(ix, iy+1)
+    # x_ind for numpy as always starts at 0
+    # ix for ROOT
+    for x_ind, ix in enumerate(range(x_start, x_end+1)):
+        result[x_ind] = hist_A.GetBinContent(ix)
+        errors[x_ind] = hist_A.GetBinError(ix)
 
-    return matrix
+    # check sparsity
+    return result, errors
+
+
+def tvector_to_th1(vector, has_oflow_x=False):
+    """Convert numpy ndarray row vector to TH1, with shape (1, nbins)
+
+    Use has_oflow_x to include the under/overflow bins
+    """
+    nbins_hist = vector.GetNrows()
+    if has_oflow_x:
+        nbins_hist -= 2
+
+    # need the 0.5 offset to match TUnfold
+    h = ROOT.TH1F(cu.get_unique_str(), "", nbins_hist, 0.5, nbins_hist+0.5)
+
+    x_start = 1
+    x_end = nbins_hist
+
+    if has_oflow_x:
+        x_start = 0
+        x_end = nbins_hist+1
+
+    for x_ind, ix in enumerate(range(x_start, x_end+1)):
+        h.SetBinContent(ix, vector[x_ind])
+        #FIXME how to do errors
+    return h
 
 
 def th1_to_ndarray(hist_A, oflow_x=False):
@@ -66,7 +92,6 @@ def th1_to_ndarray(hist_A, oflow_x=False):
         ncol += 2
     result = np.zeros(shape=(1, ncol), dtype=float)
     errors = np.zeros(shape=(1, ncol), dtype=float)
-    # access via result[irow][icol]
 
     # Get ROOT indices to loop over
     x_start = 0 if oflow_x else 1
@@ -82,6 +107,73 @@ def th1_to_ndarray(hist_A, oflow_x=False):
 
     # check sparsity
     return result, errors
+
+
+def ndarray_to_th1(nd_array, has_oflow_x=False):
+    """Convert numpy ndarray row vector to TH1, with shape (1, nbins)
+
+    Use has_oflow_x to include the under/overflow bins
+    """
+    nbinsx = nd_array.shape[1]
+    nbins_hist = nbinsx
+    if has_oflow_x:
+        nbins_hist -= 2
+
+    # need the 0.5 offset to match TUnfold
+    h = ROOT.TH1F(cu.get_unique_str(), "", nbins_hist, 0.5, nbins_hist+0.5)
+
+    x_start = 1
+    x_end = nbins_hist
+
+    if has_oflow_x:
+        x_start = 0
+        x_end = nbins_hist+1
+
+    for x_ind, ix in enumerate(range(x_start, x_end+1)):
+        h.SetBinContent(ix, nd_array[0][x_ind])
+        #FIXME how to do errors
+    return h
+
+
+def th2_to_tmatrix(hist_A, oflow_x=False, oflow_y=False):
+    """Convert TH2 to TMatrix
+
+    Mainly taken from TUnfold ctor: https://root.cern.ch/doc/master/TUnfold_8cxx_source.html#l01715
+
+    Assumes histmap == kHistMapOutputHoriz
+    """
+    ncol = hist_A.GetNbinsX()
+    if oflow_x:
+        ncol += 2
+    nrow = hist_A.GetNbinsY()
+    if oflow_y:
+        nrow += 2
+
+    result = ROOT.TMatrixD(nrow, ncol)
+    errors = ROOT.TMatrixD(nrow, ncol)
+
+    # Get ROOT indices to loop over
+    y_start = 0 if oflow_y else 1
+    y_end = hist_A.GetNbinsY()
+    if oflow_y:
+        y_end += 1
+
+    x_start = 0 if oflow_x else 1
+    x_end = hist_A.GetNbinsX()
+    if oflow_x:
+        x_end += 1
+
+    # y_ind, x_ind for indexing as always starts at 0
+    # iy, ix for TH2
+    for y_ind, iy in enumerate(range(y_start, y_end+1)):
+        for x_ind, ix in enumerate(range(x_start, x_end+1)):
+            result[y_ind, x_ind] = hist_A.GetBinContent(ix, iy)
+            errors[y_ind, x_ind] = hist_A.GetBinError(ix, iy)
+    return result, errors
+
+
+def tmatrix_to_th2():
+    pass
 
 
 def th2_to_ndarray(hist_A, oflow_x=False, oflow_y=False):
@@ -132,37 +224,34 @@ def th2_to_ndarray(hist_A, oflow_x=False, oflow_y=False):
     return result, errors
 
 
-def ndarray_to_th1(nd_array, has_oflow_x=False):
-    """Convert numpy ndarray row vector to TH1, with shape (1, nbins)
-
-    Use has_oflow_x to include the under/overflow bins
-    """
-    nbinsx = nd_array.shape[1]
-    nbins_hist = nbinsx
-    if has_oflow_x:
-        nbins_hist -= 2
-
-    # need the 0.5 offset to match TUnfold
-    h = ROOT.TH1F(cu.get_unique_str(), "", nbins_hist, 0.5, nbins_hist+0.5)
-
-    x_start = 1
-    x_end = nbins_hist
-
-    if has_oflow_x:
-        x_start = 0
-        x_end = nbins_hist+1
-
-    for x_ind, ix in enumerate(range(x_start, x_end+1)):
-        h.SetBinContent(ix, nd_array[0][x_ind])
-        #FIXME how to do errors
-    return h
-
-
 def ndarray_to_th2(nd_array, has_oflow_x=False, has_oflow_y=False):
     pass
 
 
-def normalise_ndarray_by_row(matrix):
+def normalise_matrix_by_col(matrix):
+    # transpose to do extract row
+    nrow = matrix.GetNrows()
+    ncol = matrix.GetNcols()
+    # create vector of weights, one entry per column
+    weights = ROOT.TVectorD(ncol)
+    for i in range(ncol):
+        # Get bin contents for this col
+        thisRow = ROOT.TMatrixDColumn(matrix, i)
+
+        this_col_sum = 0
+        for j in range(nrow):
+            this_col_sum += thisRow[j]
+
+        if this_col_sum != 0:
+            weights[i] = 1./this_col_sum
+        else:
+            weights[i] = 1.
+
+    matrix.NormByRow(weights, "")  # MUST use empty string otherwise weights applied as inverse
+    return matrix
+
+
+def normalise_ndarray_by_col(matrix):
     matrix = matrix.T # makes life a bit easier
     for i in range(matrix.shape[0]):
         row_sum = matrix[i].sum()
@@ -171,7 +260,7 @@ def normalise_ndarray_by_row(matrix):
     return matrix.T
 
 
-def normalise_ndarray_by_col(matrix):
+def normalise_ndarray_by_row(matrix):
     for i in range(matrix.shape[0]):
         row_sum = matrix[i].sum()
         if row_sum != 0:
@@ -180,6 +269,12 @@ def normalise_ndarray_by_col(matrix):
 
 
 def get_folded_hist(hist_mc_gen_reco_map, hist_mc_gen):
+    """Do folding, i.e. hist_mc_gen_reco_map * hist_mc_gen,
+    with correct normalisation of hist_mc_gen_reco_map
+
+    Version using numpy
+    """
+
     oflow = True
     # Convert map to matrix
     response_matrix, response_matrix_err = th2_to_ndarray(hist_mc_gen_reco_map, oflow_x=oflow, oflow_y=oflow)
@@ -187,17 +282,14 @@ def get_folded_hist(hist_mc_gen_reco_map, hist_mc_gen):
     # Normalise response_matrix so that bins represent prob to go from
     # given gen bin to a reco bin
     # ASSUMES GEN ON X AXIS!
-    response_matrix = normalise_ndarray_by_row(response_matrix)
+    response_matrix_normed = normalise_ndarray_by_col(response_matrix)
 
     # Convert hist to vector
     gen_vec, gen_vec_err = th1_to_ndarray(hist_mc_gen, oflow_x=oflow)
 
     # Multiply
     # Note that we need to transpose from row vecc to column vec
-    folded_vec = response_matrix.dot(gen_vec.T)
-    print("response_matrix.shape:", response_matrix.shape)
-    print("gen_vec.shape", gen_vec.shape)
-    print("folded_vec.shape", folded_vec.shape)
+    folded_vec = response_matrix_normed.dot(gen_vec.T)
 
     # Convert vector to TH1
     folded_hist = ndarray_to_th1(folded_vec.T, has_oflow_x=oflow)
@@ -205,7 +297,35 @@ def get_folded_hist(hist_mc_gen_reco_map, hist_mc_gen):
     return folded_hist
 
 
-def generate_2d_canvas(size=(800, 600)):
+def get_folded_hist_root(hist_mc_gen_reco_map, hist_mc_gen):
+    """Do folding, i.e. hist_mc_gen_reco_map * hist_mc_gen,
+    with correct normalisation of hist_mc_gen_reco_map
+
+    ROOT TMath version"""
+    oflow = True
+    # Convert map to matrix
+    response_matrix, response_matrix_err = th2_to_tmatrix(hist_mc_gen_reco_map, oflow_x=oflow, oflow_y=oflow)
+
+    # Normalise response_matrix so that bins represent prob to go from
+    # given gen bin to a reco bin
+    # ASSUMES GEN ON X AXIS!
+    response_matrix_normed = normalise_matrix_by_col(response_matrix)
+
+    # Convert hist to vector
+    gen_vec, gen_vec_err = th1_to_tvector(hist_mc_gen, oflow_x=oflow)
+
+    # Multiply
+    # folded_vec = response_matrix * gen_vec  # cannot use as operator overloads broken in PyROOT https://sft.its.cern.ch/jira/browse/ROOT-7717
+    folded_vec = ROOT.TVectorD(gen_vec)
+    folded_vec *= response_matrix_normed  # This actually does v = M*v ... https://root-forum.cern.ch/t/tmatrixd-tvectord-multiplication-in-python-crashes/27785
+
+    # Convert vector to TH1
+    folded_hist = tvector_to_th1(folded_vec, has_oflow_x=oflow)
+
+    return folded_hist
+
+
+def generate_2d_canvas(size=(800, 800)):
     canv = ROOT.TCanvas(cu.get_unique_str(), "", *size)
     canv.SetTicks(1, 1)
     canv.SetRightMargin(1.5)
@@ -241,7 +361,7 @@ def draw_folded_hists(hist_mc_folded, hist_mc_reco, hist_data_reco, output_filen
     if hist_mc_reco:
         entries.append(
             Contribution(hist_mc_reco, label="Reco MC [detector-level]",
-                         line_color=ROOT.kAzure+2, line_width=1,
+                         line_color=ROOT.kAzure+2, line_width=1, line_style=2,
                          marker_color=ROOT.kAzure+2, marker_size=0,
                          normalise_hist=False, subplot=hist_data_reco),
         )
@@ -287,7 +407,7 @@ def draw_folded_hists_physical(hist_mc_folded, hist_mc_reco, hist_data_reco, out
     if hist_mc_reco:
         entries.append(
             Contribution(hist_mc_reco, label="Reco MC [detector-level]",
-                         line_color=ROOT.kAzure+2, line_width=1,
+                         line_color=ROOT.kAzure+2, line_width=1, line_style=2,
                          marker_color=ROOT.kAzure+2, marker_size=0,
                          normalise_hist=False, subplot=hist_data_reco),
         )
@@ -458,7 +578,7 @@ if __name__ == "__main__":
 
     # If True, use part of MC for response matrix, and separate part for unfolding
     # as independent test
-    MC_split = True
+    MC_split = False
     mc_append = "_split" if MC_split else "_all"
 
     # Subtract fakes from reconstructed hists, using MC fakes as template
@@ -545,10 +665,13 @@ if __name__ == "__main__":
                              draw_values=True,
                              output_filename="%s/response_map_%s_normX.%s" % (this_output_dir, append, OUTPUT_FMT))
 
-        # Do folding, plot
-        # ----------------
+        # Actually do folding!
+        # --------------------
         hist_mc_folded = get_folded_hist(hist_mc_gen_reco_map, hist_mc_gen)
+        # hist_mc_folded = get_folded_hist_root(hist_mc_gen_reco_map, hist_mc_gen)
 
+        # Do lots of plots
+        # ---------------
         hist_mc_reco_1d = hist_mc_reco_bg_subtracted if subtract_fakes else hist_mc_reco
         hist_data_reco_1d = hist_data_reco_bg_subtracted if subtract_fakes else hist_data_reco
 
@@ -590,7 +713,6 @@ if __name__ == "__main__":
         this_tdir.WriteTObject(hist_data_reco_physical, "reco_data_physical")
         this_tdir.WriteTObject(hist_mc_folded_physical, "mc_folded_physical")
 
-
         # Do a version with wider reco binning to match gen
         # -------------------------------------------------
         hist_mc_gen_reco_map_rebin = hist_mc_gen_reco_map.RebinY(2)
@@ -609,6 +731,7 @@ if __name__ == "__main__":
 
 
         hist_mc_folded_rebin = get_folded_hist(hist_mc_gen_reco_map_rebin, hist_mc_gen)
+        # hist_mc_folded_rebin = get_folded_hist_root(hist_mc_gen_reco_map_rebin, hist_mc_gen)
         hist_mc_reco_1d_rebin = renumber_hist_bins(hist_mc_reco_1d.Rebin(2))
         hist_data_reco_1d_rebin = renumber_hist_bins(hist_data_reco_1d.Rebin(2))
         draw_folded_hists(hist_mc_folded_rebin,
