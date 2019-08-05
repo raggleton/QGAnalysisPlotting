@@ -573,9 +573,10 @@ def make_hist_from_diagonals(h2d, do_sqrt=True):
 
 def update_hist_bin_content(h_orig, h_to_be_updated):
     if h_orig.GetNbinsX() != h_to_be_updated.GetNbinsX():
-        raise RuntimeError("Need same # x bins")
-    for i in range(1, h_orig.GetNbinsX()+1):
+        raise RuntimeError("Need same # x bins, %d vs %s" % (h_orig.GetNbinsX(), h_to_be_updated.GetNbinsX()))
+    for i in range(0, h_orig.GetNbinsX()+2):
         h_to_be_updated.SetBinContent(i, h_orig.GetBinContent(i))
+        h_to_be_updated.SetBinError(i, h_orig.GetBinError(i))
 
 
 def draw_projection_comparison(h_orig, h_projection, title, xtitle, output_filename, print_bin_comparison=True):
@@ -825,8 +826,8 @@ if __name__ == "__main__":
             # hist_mc_gen_reco_neutralDown_map = cu.get_from_tfile(region['mc_neutralDown_tfile'], "%s/tu_%s_GenReco_all" % (region['dirname'], angle_shortname))
 
             mc_hname_append = "_split" if MC_split else ""  # FIXME consistency in unfold hist module!
-            hist_data_reco_gen_binning = cu.get_from_tfile(region['data_tfile'], "%s/hist_%s_reco_gen_binning_new" % (region['dirname'], angle_shortname))
-            hist_mc_reco_gen_binning = cu.get_from_tfile(region['mc_tfile'], "%s/hist_%s_reco_gen_binning%s_new" % (region['dirname'], angle_shortname, mc_hname_append))
+            hist_data_reco_gen_binning = cu.get_from_tfile(region['data_tfile'], "%s/hist_%s_reco_gen_binning" % (region['dirname'], angle_shortname))
+            hist_mc_reco_gen_binning = cu.get_from_tfile(region['mc_tfile'], "%s/hist_%s_reco_gen_binning%s" % (region['dirname'], angle_shortname, mc_hname_append))
 
             # Actual distribution to be unfolded, but with gen binning
             reco_1d_gen_binning = hist_mc_reco_gen_binning.Clone() if MC_input else hist_data_reco_gen_binning
@@ -834,7 +835,7 @@ if __name__ == "__main__":
 
             if subtract_fakes:
                 mc_hname_append = "_split" if MC_split else ""  # FIXME consistency in unfold hist module!
-                hist_mc_fakes_reco_gen_binning = cu.get_from_tfile(region['mc_tfile'], "%s/hist_%s_reco_fake_gen_binning%s_new" % (region['dirname'], angle_shortname, mc_hname_append))
+                hist_mc_fakes_reco_gen_binning = cu.get_from_tfile(region['mc_tfile'], "%s/hist_%s_reco_fake_gen_binning%s" % (region['dirname'], angle_shortname, mc_hname_append))
                 # create template as above, but with gen binning
                 hist_fakes_reco_gen_binning = hist_mc_fakes_reco_gen_binning.Clone("hist_%s_fakes_gen_binning" % angle_shortname)
                 hist_fakes_reco_gen_binning.Divide(hist_mc_reco_gen_binning)
@@ -881,13 +882,23 @@ if __name__ == "__main__":
             # ---------------------
             unfolder.setInput(reco_1d)
 
+            this_tdir.WriteTObject(unfolder.detector_binning)
+            this_tdir.WriteTObject(unfolder.generator_binning)
             this_tdir.WriteTObject(reco_1d, "unfold_input")
             this_tdir.WriteTObject(reco_1d_gen_binning, "unfold_input_gen_binning")
+            this_tdir.WriteTObject(hist_mc_reco, "mc_reco")
+            this_tdir.WriteTObject(hist_mc_reco_gen_binning, "mc_reco_gen_binning")
+            this_tdir.WriteTObject(hist_mc_gen, "mc_gen")
+            this_tdir.WriteTObject(hist_mc_gen_reco_map, "response_map")  # response map
+            this_tdir.WriteTObject(hist_mc_gen_reco_map.RebinY(2), "response_map_rebin")  # response map
+
             if subtract_fakes:
                 this_tdir.WriteTObject(hist_fakes_reco, "fakes")
                 this_tdir.WriteTObject(hist_fakes_reco_gen_binning, "fakes_gen_binning")
                 this_tdir.WriteTObject(reco_1d_bg_subtracted, "unfold_input_bg_subtracted")
-                this_tdir.WriteTObject(reco_1d_gen_binning_bg_subtracted, "reco_1d_gen_binning_bg_subtracted")
+                this_tdir.WriteTObject(reco_1d_gen_binning_bg_subtracted, "unfold_input_gen_binning_bg_subtracted")
+                this_tdir.WriteTObject(hist_mc_reco_bg_subtracted, "mc_reco_bg_subtracted")
+                this_tdir.WriteTObject(hist_mc_reco_gen_binning_bg_subtracted, "mc_reco_gen_binning_bg_subtracted")
 
             # Do any regularisation
             # ---------------------
@@ -907,7 +918,8 @@ if __name__ == "__main__":
             unfolder.do_unfolding(tau)
             unfolded_1d = unfolder.get_output()
             unfolded_1d.SetName("unfolded_1d")
-            this_tdir.WriteTObject(unfolded_1d)
+            print ("Bin 30:")
+            print ("original uncert:", unfolded_1d.GetBinError(30))
 
             # stat errors only - do before or after systematics?
             ematrix_input = unfolder.get_ematrix_input() # stat errors from input to be unfolded
@@ -1062,11 +1074,12 @@ if __name__ == "__main__":
             for ibin_pt in range(0, len(pt_bin_edges_gen)-1):
 
                 this_pt_bin_tdir = this_tdir.mkdir("bin_%d" % (ibin_pt))
+                print("Individual bin", ibin_pt, "=", pt_bin_edges_gen[ibin_pt], pt_bin_edges_gen[ibin_pt+1])
 
                 # Produce 1D hist for this pt bin
-                gen_hist_bin = unfolder.get_var_hist_pt_binned(hist_mc_gen, ibin_pt, binning_scheme="generator")
-                this_pt_bin_tdir.WriteTObject(gen_hist_bin, "gen_hist_bin")
-
+                mc_gen_hist_bin = unfolder.get_var_hist_pt_binned(hist_mc_gen, ibin_pt, binning_scheme="generator")
+                this_pt_bin_tdir.WriteTObject(mc_gen_hist_bin, "mc_gen_hist_bin")
+                
                 unfolded_hist_bin = unfolder.get_var_hist_pt_binned(unfolded_1d, ibin_pt, binning_scheme="generator")
                 this_pt_bin_tdir.WriteTObject(unfolded_hist_bin, "unfolded_hist_bin")
 
@@ -1078,20 +1091,6 @@ if __name__ == "__main__":
                 update_hist_bin_content(unfolded_hist_bin, unfolded_hist_bin_total_errors)
                 this_pt_bin_tdir.WriteTObject(unfolded_hist_bin_total_errors, "unfolded_hist_bin_total_errors")
 
-                # here this is the thing to be unfolded, bould be data or MC depending on MC_input flag
-                data_reco_hist_bin_gen_binning = unfolder.get_var_hist_pt_binned(reco_1d_gen_binning, ibin_pt, binning_scheme="generator")
-                this_pt_bin_tdir.WriteTObject(data_reco_hist_bin_gen_binning, "data_reco_hist_bin_gen_binning")
-
-                if subtract_fakes:
-                    data_reco_hist_bg_subtracted_bin_gen_binning = unfolder.get_var_hist_pt_binned(reco_1d_gen_binning_bg_subtracted, ibin_pt, binning_scheme="generator")
-                    this_pt_bin_tdir.WriteTObject(data_reco_hist_bg_subtracted_bin_gen_binning, "data_reco_hist_bg_subtracted_bin_gen_binning")
-
-                mc_reco_hist_bin_gen_binning = unfolder.get_var_hist_pt_binned(hist_mc_reco_gen_binning, ibin_pt, binning_scheme="generator")
-                this_pt_bin_tdir.WriteTObject(mc_reco_hist_bin_gen_binning, "mc_reco_hist_bin_gen_binning")
-
-                if subtract_fakes:
-                    mc_reco_hist_bg_subtracted_bin_gen_binning = unfolder.get_var_hist_pt_binned(hist_mc_reco_gen_binning_bg_subtracted, ibin_pt, binning_scheme="generator")
-                    this_pt_bin_tdir.WriteTObject(mc_reco_hist_bg_subtracted_bin_gen_binning, "mc_reco_hist_bg_subtracted_bin_gen_binning")
 
                 # mc_fake_reco_hist_bin_gen_binning = unfolder.get_var_hist_pt_binned(hist_mc_fakes_reco_gen_binning, ibin_pt, binning_scheme="generator")
                 # this_pt_bin_tdir.WriteTObject(mc_fake_reco_hist_bin_gen_binning, "mc_fake_reco_hist_bin_gen_binning")
@@ -1099,15 +1098,17 @@ if __name__ == "__main__":
                 # data_fake_reco_hist_bin_gen_binning = unfolder.get_var_hist_pt_binned(hist_fakes_reco_gen_binning, ibin_pt, binning_scheme="generator")
                 # this_pt_bin_tdir.WriteTObject(data_fake_reco_hist_bin_gen_binning, "data_fake_reco_hist_bin_gen_binning")
 
-                data_folded_hist_bin_reco_binning = unfolder.get_var_hist_pt_binned(hist_data_folded, ibin_pt, binning_scheme="detector")
-                this_pt_bin_tdir.WriteTObject(data_folded_hist_bin_reco_binning, "data_folded_hist_bin_reco_binning")
+                # The folded unfolded result
+                folded_unfolded_hist_bin_reco_binning = unfolder.get_var_hist_pt_binned(hist_data_folded, ibin_pt, binning_scheme="detector")
+                this_pt_bin_tdir.WriteTObject(folded_unfolded_hist_bin_reco_binning, "folded_unfolded_hist_bin_reco_binning")
 
-                data_reco_hist_bin_reco_binning = unfolder.get_var_hist_pt_binned(reco_1d, ibin_pt, binning_scheme="detector")
-                this_pt_bin_tdir.WriteTObject(data_reco_hist_bin_reco_binning, "data_reco_hist_bin_reco_binning")
+                # here this is the thing to be unfolded, should be data or MC depending on MC_input flag
+                reco_hist_bin_reco_binning = unfolder.get_var_hist_pt_binned(reco_1d, ibin_pt, binning_scheme="detector")
+                this_pt_bin_tdir.WriteTObject(reco_hist_bin_reco_binning, "reco_hist_bin_reco_binning")
 
                 if subtract_fakes:
-                    data_reco_hist_bg_subtracted_bin_reco_binning = unfolder.get_var_hist_pt_binned(reco_1d_bg_subtracted, ibin_pt, binning_scheme="detector")
-                    this_pt_bin_tdir.WriteTObject(data_reco_hist_bg_subtracted_bin_reco_binning, "data_reco_hist_bg_subtracted_bin_reco_binning")
+                    reco_hist_bg_subtracted_bin_reco_binning = unfolder.get_var_hist_pt_binned(reco_1d_bg_subtracted, ibin_pt, binning_scheme="detector")
+                    this_pt_bin_tdir.WriteTObject(reco_hist_bg_subtracted_bin_reco_binning, "reco_hist_bg_subtracted_bin_reco_binning")
 
                 mc_reco_hist_bin_reco_binning = unfolder.get_var_hist_pt_binned(hist_mc_reco, ibin_pt, binning_scheme="detector")
                 this_pt_bin_tdir.WriteTObject(mc_reco_hist_bin_reco_binning, "mc_reco_hist_bin_reco_binning")
@@ -1115,6 +1116,22 @@ if __name__ == "__main__":
                 if subtract_fakes:
                     mc_reco_hist_bg_subtracted_bin_reco_binning = unfolder.get_var_hist_pt_binned(hist_mc_reco_bg_subtracted, ibin_pt, binning_scheme="detector")
                     this_pt_bin_tdir.WriteTObject(mc_reco_hist_bg_subtracted_bin_reco_binning, "mc_reco_hist_bg_subtracted_bin_reco_binning")
+
+                # Same but with gen binning
+                reco_hist_bin_gen_binning = unfolder.get_var_hist_pt_binned(reco_1d_gen_binning, ibin_pt, binning_scheme="generator")
+                this_pt_bin_tdir.WriteTObject(reco_hist_bin_gen_binning, "reco_hist_bin_gen_binning")
+
+                if subtract_fakes:
+                    reco_hist_bg_subtracted_bin_gen_binning = unfolder.get_var_hist_pt_binned(reco_1d_gen_binning_bg_subtracted, ibin_pt, binning_scheme="generator")
+                    this_pt_bin_tdir.WriteTObject(reco_hist_bg_subtracted_bin_gen_binning, "reco_hist_bg_subtracted_bin_gen_binning")
+
+                mc_reco_hist_bin_gen_binning = unfolder.get_var_hist_pt_binned(hist_mc_reco_gen_binning, ibin_pt, binning_scheme="generator")
+                this_pt_bin_tdir.WriteTObject(mc_reco_hist_bin_gen_binning, "mc_reco_hist_bin_gen_binning")
+
+                if subtract_fakes:
+                    mc_reco_hist_bg_subtracted_bin_gen_binning = unfolder.get_var_hist_pt_binned(hist_mc_reco_gen_binning_bg_subtracted, ibin_pt, binning_scheme="generator")
+                    this_pt_bin_tdir.WriteTObject(mc_reco_hist_bg_subtracted_bin_gen_binning, "mc_reco_hist_bg_subtracted_bin_gen_binning")
+                
 
                 # print hist bins for check
                 # for n in range(1, gen_hist_bin.GetNbinsX()+1):
@@ -1137,24 +1154,24 @@ if __name__ == "__main__":
 
                 # unnormalised version
                 entries = [
-                    Contribution(gen_hist_bin, label="Generator",
+                    Contribution(mc_gen_hist_bin, label="Generator",
                                  line_color=gen_colour, line_width=lw,
                                  marker_color=gen_colour, marker_size=0,
                                  normalise_hist=False),
                     Contribution(unfolded_hist_bin, label="Unfolded (#tau = %.3g)" % (tau),
                                  line_color=unfolded_basic_colour, line_width=lw,
                                  marker_color=unfolded_basic_colour, marker_size=0,
-                                 subplot=gen_hist_bin,
+                                 subplot=mc_gen_hist_bin,
                                  normalise_hist=False),
                     Contribution(unfolded_hist_bin_stat_errors, label="Unfolded (#tau = %.3g) (stat err)" % (tau),
                                  line_color=unfolded_stat_colour, line_width=lw, line_style=2,
                                  marker_color=unfolded_stat_colour, marker_size=0,
-                                 subplot=gen_hist_bin,
+                                 subplot=mc_gen_hist_bin,
                                  normalise_hist=False),
                     Contribution(unfolded_hist_bin_total_errors, label="Unfolded (#tau = %.3g) (total err)" % (tau),
                                  line_color=unfolded_total_colour, line_width=lw, line_style=3,
                                  marker_color=unfolded_total_colour, marker_style=20, marker_size=0.75,
-                                 subplot=gen_hist_bin,
+                                 subplot=mc_gen_hist_bin,
                                  normalise_hist=False),
                 ]
                 has_entries = [c.obj.GetEntries() > 0 for c in entries]
@@ -1178,27 +1195,27 @@ if __name__ == "__main__":
                 plot.save("%s/unfolded_unnormalised_%s_bin_%d.%s" % (this_output_dir, append, ibin_pt, OUTPUT_FMT))
 
                 # now normalise each plot to unity
-                # Note that this modifies e.g. gen_hist_bin, so from this point
+                # Note that this modifies e.g. mc_gen_hist_bin, so from this point
                 # onwards it will be normalised to unity
                 entries = [
-                    Contribution(gen_hist_bin, label="Generator",
+                    Contribution(mc_gen_hist_bin, label="Generator",
                                  line_color=gen_colour, line_width=lw,
                                  marker_color=gen_colour, marker_size=0,
                                  normalise_hist=True),
                     Contribution(unfolded_hist_bin, label="Unfolded (#tau = %.3g)" % (tau),
                                  line_color=unfolded_basic_colour, line_width=lw,
                                  marker_color=unfolded_basic_colour, marker_size=0,
-                                 subplot=gen_hist_bin,
+                                 subplot=mc_gen_hist_bin,
                                  normalise_hist=True),
                     Contribution(unfolded_hist_bin_stat_errors, label="Unfolded (#tau = %.3g) (stat err)" % (tau),
                                  line_color=unfolded_stat_colour, line_width=lw, line_style=2,
                                  marker_color=unfolded_stat_colour, marker_size=0,
-                                 subplot=gen_hist_bin,
+                                 subplot=mc_gen_hist_bin,
                                  normalise_hist=True),
                     Contribution(unfolded_hist_bin_total_errors, label="Unfolded (#tau = %.3g) (total err)" % (tau),
                                  line_color=unfolded_total_colour, line_width=lw, line_style=3,
                                  marker_color=unfolded_total_colour, marker_style=20, marker_size=0.75,
-                                 subplot=gen_hist_bin,
+                                 subplot=mc_gen_hist_bin,
                                  normalise_hist=True),
                 ]
                 has_entries = [c.obj.GetEntries() > 0 for c in entries]
@@ -1232,7 +1249,7 @@ if __name__ == "__main__":
                                  line_color=reco_mc_colour, line_width=lw,
                                  marker_color=reco_mc_colour, marker_size=0,
                                  normalise_hist=True),
-                    Contribution(data_reco_hist_bin_gen_binning, label="Data",
+                    Contribution(reco_hist_bin_gen_binning, label="Data",
                                  line_color=reco_data_colour, line_width=lw,
                                  marker_color=reco_data_colour, marker_style=20, marker_size=0.75,
                                  subplot=mc_reco_hist_bin_gen_binning,
@@ -1266,7 +1283,7 @@ if __name__ == "__main__":
                                      line_color=reco_mc_colour, line_width=lw,
                                      marker_color=reco_mc_colour, marker_size=0,
                                      normalise_hist=True),
-                        Contribution(data_reco_hist_bg_subtracted_bin_gen_binning, label="Data (bg-subtracted)",
+                        Contribution(reco_hist_bg_subtracted_bin_gen_binning, label="Data (bg-subtracted)",
                                      line_color=reco_data_colour, line_width=lw,
                                      marker_color=reco_data_colour, marker_style=20, marker_size=0.75,
                                      subplot=mc_reco_hist_bg_subtracted_bin_gen_binning,
@@ -1299,7 +1316,7 @@ if __name__ == "__main__":
                                  line_color=reco_mc_colour, line_width=lw,
                                  marker_color=reco_mc_colour, marker_size=0,
                                  normalise_hist=True),
-                    Contribution(data_reco_hist_bin_reco_binning,
+                    Contribution(reco_hist_bin_reco_binning,
                                  label="Data",
                                  line_color=reco_data_colour, line_width=lw,
                                  marker_color=reco_data_colour, marker_style=20, marker_size=0.75,
@@ -1334,7 +1351,7 @@ if __name__ == "__main__":
                                      line_color=reco_mc_colour, line_width=lw,
                                      marker_color=reco_mc_colour, marker_size=0,
                                      normalise_hist=True),
-                        Contribution(data_reco_hist_bg_subtracted_bin_reco_binning,
+                        Contribution(reco_hist_bg_subtracted_bin_reco_binning,
                                      label="Data (bg-subtracted)",
                                      line_color=reco_data_colour, line_width=lw,
                                      marker_color=reco_data_colour, marker_style=20, marker_size=0.75,
@@ -1373,13 +1390,13 @@ if __name__ == "__main__":
                                  line_color=reco_mc_colour, line_width=lw,
                                  marker_color=reco_mc_colour, marker_size=0,
                                  normalise_hist=True),
-                    Contribution(data_reco_hist_bg_subtracted_bin_reco_binning if subtract_fakes else data_reco_hist_bin_reco_binning,
+                    Contribution(reco_hist_bg_subtracted_bin_reco_binning if subtract_fakes else reco_hist_bin_reco_binning,
                                  label="Data (reco, bg-subtracted)" if subtract_fakes else "Data (reco)",
                                  line_color=reco_data_colour, line_width=lw,
                                  marker_color=reco_data_colour, marker_size=0,
                                  subplot=mc_reco_hist_bin_reco_binning,
                                  normalise_hist=True),
-                    Contribution(data_folded_hist_bin_reco_binning,
+                    Contribution(folded_unfolded_hist_bin_reco_binning,
                                  label="Folded unfolded data (#tau = %.3g)" % (tau),
                                  line_color=reco_folded_colour, line_width=lw,
                                  marker_color=reco_folded_colour, marker_size=0,
@@ -1408,16 +1425,16 @@ if __name__ == "__main__":
 
                 # Folded, but only comparing data with data to check it is sane
                 entries = [
-                    Contribution(data_reco_hist_bg_subtracted_bin_reco_binning if subtract_fakes else data_reco_hist_bin_reco_binning,
+                    Contribution(reco_hist_bg_subtracted_bin_reco_binning if subtract_fakes else reco_hist_bin_reco_binning,
                                  label="Data (reco, bg-subtracted)" if subtract_fakes else "Data (reco)",
                                  line_color=reco_data_colour, line_width=lw,
                                  marker_color=reco_data_colour, marker_size=0,
                                  normalise_hist=True),
-                    Contribution(data_folded_hist_bin_reco_binning,
+                    Contribution(folded_unfolded_hist_bin_reco_binning,
                                  label="Folded unfolded data (#tau = %.3g)" % (tau),
                                  line_color=reco_folded_colour, line_width=lw,
                                  marker_color=reco_folded_colour, marker_size=0,
-                                 subplot=data_reco_hist_bin_reco_binning,
+                                 subplot=reco_hist_bin_reco_binning,
                                  normalise_hist=True),
                 ]
                 has_entries = [c.obj.GetEntries() > 0 for c in entries]
@@ -1439,4 +1456,6 @@ if __name__ == "__main__":
                 plot.legend.SetY2(0.9)
                 plot.plot("NOSTACK E1")
                 plot.save("%s/detector_folded_only_data_%s_bin_%d.%s" % (this_output_dir, append, ibin_pt, OUTPUT_FMT))
+
+    print("Saved hists to", output_tfile.GetName())
 
