@@ -773,6 +773,20 @@ if __name__ == "__main__":
         pt_bin_edges_underflow_reco = qgc.PT_UNFOLD_DICT['underflow%s_reco' % (zpj_append)]
         # pt_bin_edges_underflow_reco = qgc.construct_fine_binning(pt_bin_edges_underflow_gen)
 
+        new_tdir = region['name']
+        output_tfile.mkdir(new_tdir)
+        region_tdir = output_tfile.Get(new_tdir)
+        region_tdir.cd()
+
+        # Get 1D pt hist and save it
+        hist_mc_gen_pt = cu.get_from_tfile(region['mc_tfile'], "%s/hist_pt_truth_all" % (region['dirname']))
+        # Redo with physical bins
+        all_pt_bins_gen = np.concatenate((pt_bin_edges_underflow_gen[:-1], pt_bin_edges_gen))
+        hist_mc_gen_pt_physical = ROOT.TH1F("mc_gen_pt", ";p_{T}^{jet} [GeV];N", len(all_pt_bins_gen)-1, array('d', all_pt_bins_gen))
+        update_hist_bin_content(hist_mc_gen_pt, hist_mc_gen_pt_physical)
+        region_tdir.WriteTObject(hist_mc_gen_pt_physical, "mc_gen_pt")
+
+        # for angle in qgc.COMMON_VARS[2:3]:
         for angle in qgc.COMMON_VARS[:]:
             append = "%s_%s" % (region['name'], angle.var)  # common str to put on filenames, etc
 
