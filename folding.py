@@ -236,11 +236,11 @@ def normalise_matrix_by_col(matrix):
     weights = ROOT.TVectorD(ncol)
     for i in range(ncol):
         # Get bin contents for this col
-        thisRow = ROOT.TMatrixDColumn(matrix, i)
+        thisCol = ROOT.TMatrixDColumn(matrix, i)
 
         this_col_sum = 0
         for j in range(nrow):
-            this_col_sum += thisRow[j]
+            this_col_sum += thisCol[j]
 
         if this_col_sum != 0:
             weights[i] = 1./this_col_sum
