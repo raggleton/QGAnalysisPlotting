@@ -576,11 +576,14 @@ class Plot(object):
                 self.subplot_container.GetXaxis().SetRangeUser(*self.xlim)
 
             if self.subplot_type == "ratio":
+                # Set ratio y limits
                 self.subplot_container.SetMinimum(0)  # use this, not SetRangeUser()
                 if self.subplot_limits:
+                    # User-specified limits
                     self.subplot_container.SetMinimum(self.subplot_limits[0])  # use this, not SetRangeUser()
                     self.subplot_container.SetMaximum(self.subplot_limits[1])  # use this, not SetRangeUser()
                 else:
+                    # A more intelligent way?
                     # Make sure that the upper limit is the largest bin of the contributions,
                     # so long as it is within 1.5 and some upper limit
                     harrays = [cu.th1_to_arr(h)[0] for h in self.subplot_contributions]
@@ -602,6 +605,7 @@ class Plot(object):
                         bin_mins = [0]
                     self.subplot_container.SetMinimum(min(0.5, min(bin_mins)))
 
+                # Draw a line at 1
                 xax = modifier.GetXaxis()
                 self.subplot_line = ROOT.TLine(xax.GetXmin(), 1., xax.GetXmax(), 1.)
                 if self.xlim:
@@ -611,9 +615,15 @@ class Plot(object):
                 self.subplot_line.SetLineColor(ROOT.kBlack)
                 self.subplot_line.Draw()
 
+            # Some resizing of subplot things
             self._rescale_plot_labels(self.subplot_container, self.subplot_pad_height)
             self.subplot_container.GetXaxis().SetTitleOffset(self.subplot_container.GetXaxis().GetTitleOffset()*3)
             self.subplot_container.GetYaxis().SetNdivisions(505)
+            
+            # If subplot y label is 2 lines, let's scale it down a bit
+            if "splitline" in self.subplot_title:
+                self.subplot_container.GetYaxis().SetTitleSize(self.subplot_container.GetYaxis().GetTitleSize()*0.8)
+                self.subplot_container.GetYaxis().SetTitleOffset(self.subplot_container.GetYaxis().GetTitleOffset()*1.2)
 
             self.subplot_pad.Update()
             self.canvas.Update()
