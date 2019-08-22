@@ -120,8 +120,9 @@ def do_comparison_plot(entries, output_filename, rebin=1, **plot_kwargs):
 
 
 def get_projection_plot(h2d, start_val, end_val, cut_axis='y'):
-    """Get projection plot from h2d, only covering form start_val to end_val
-    on the other axis (specified by cut_axis)"""
+    """Get projection plot from h2d, only covering from
+    start_val (incl) to end_val (not incl) on the other axis (specified by cut_axis)"""
+
     cut_axis = cut_axis.lower()
     if cut_axis == "y":
         axis = h2d.GetYaxis()
@@ -129,14 +130,37 @@ def get_projection_plot(h2d, start_val, end_val, cut_axis='y'):
         axis = h2d.GetXaxis()
     else:
         raise RuntimeError("cut_axis must be x or y")
-    bin_edges = [axis.GetBinLowEdge(i) for i in range(1, axis.GetNbins()+2)]
-    bin_start = bisect.bisect_right(bin_edges, start_val)
-    bin_end = bisect.bisect_right(bin_edges, end_val)
+
+    # bin_edges = [axis.GetBinLowEdge(i) for i in range(1, axis.GetNbins()+2)]
+
+    # # insert under and overflow
+    # bin_edges.insert(0, -999999999999999)
+    # bin_edges.append(999999999999999)
+
+    # print(bin_edges)
+    # bin_start = bisect.bisect_left(bin_edges, start_val)
+    # bin_end = bisect.bisect_left(bin_edges, end_val)-1
+
+    # print("bin_edges[bin_start]", bin_edges[bin_start])
+    # print("bin_edges[bin_end]", bin_edges[bin_end])
+    # # if end_val == bin_edges[bin_end]:
+    #     # bin_end -= 1
+    # # elif bin_end == bin_start:
+    # #     bin_end = bin_start+1
+    # # else:
+    #     # bin_end -= 1
+
+    start_bin = axis.FindBin(start_val)
+    end_bin = axis.FindBin(end_val)
+    # TH2::Projection* does first to last bin INCLUSIVE so we need to account for that
+    if axis.GetBinLowEdge(end_bin) == end_val and end_bin != 0:
+        end_bin -=1
+
     if cut_axis == "y":
-        hproj = h2d.ProjectionX(ROOT.TUUID().AsString(), bin_start, bin_end, "eo")
+        hproj = h2d.ProjectionX(ROOT.TUUID().AsString(), start_bin, end_bin, "eo")
         return hproj
     elif cut_axis == "x":
-        hproj = h2d.ProjectionY(ROOT.TUUID().AsString(), bin_start, bin_end, "eo")
+        hproj = h2d.ProjectionY(ROOT.TUUID().AsString(), start_bin, end_bin, "eo")
         return hproj
 
 
