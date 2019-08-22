@@ -73,9 +73,20 @@ def make_comparison_plot_ingredients(entries, rebin=1, normalise_hist=True, mean
     do_legend = len(conts) > 1
     if len(conts) == 0:
         raise RuntimeError("0 contributions for this plot")
-    do_subplot = any(c.subplot for c in conts)
+
+    # Automatically correct plot_kwargs if we only have 1 contribution (don't want subplot)
+    do_subplot = any(c.subplot for c in conts) or "subplot" in plot_kwargs
     if (len(conts) == 1 or not do_subplot) and "subplot_type" in plot_kwargs:
         plot_kwargs['subplot_type'] = None
+
+    # Plot expects subplot to be a Contribution
+    # But we only make those here
+    # So here we figure out which contribution matches the subplot, if it exists
+    if "subplot" in plot_kwargs:
+        subplot_cont = [c for c in conts if c.obj == plot_kwargs['subplot']]
+        if len(subplot_cont) > 0:
+            plot_kwargs['subplot'] = subplot_cont[0]
+
     p = Plot(conts, what="hist", ytitle="p.d.f", legend=do_legend, **plot_kwargs)
     if do_legend:
         p.legend.SetX1(0.5)
@@ -267,16 +278,29 @@ def do_all_exclusive_plots_comparison(sources, plot_dir="plots_dy_vs_qcd",
             elif "LHA" in v:
                 ylim = (0, 5)
 
+            subplot = None
+            if subplot_type != None and len(entries_normal) > 0:
+                subplot = entries_normal[0][0]
+
             do_comparison_plot(entries_normal, "%s/ptBinned/%s_pt%dto%d.%s" % (plot_dir, v, start_val, end_val, ofmt),
                                rebin=rebin, title="%d < p_{T}^{jet} < %d GeV" % (start_val, end_val),
                                xtitle=ang.name + " (" + ang.lambda_str + ")",
-                               xlim=xlim, ylim=ylim, subplot_type=subplot_type, subplot_title=subplot_title, subplot_limits=(0, 2))
+                               xlim=xlim, ylim=ylim,
+                               subplot=subplot, subplot_type=subplot_type,
+                               subplot_title=subplot_title, subplot_limits=(0, 2))
+
 
             if do_flav_tagged and "flavour" not in v:
+                subplot = None
+                if subplot_type != None and len(entries_flav) > 0:
+                    subplot = entries_flav[0][0]
+
                 do_comparison_plot(entries_flav, "%s/ptBinned/%s_pt%dto%d_flavMatched.%s" % (plot_dir, v, start_val, end_val, ofmt),
                                    rebin=rebin, title="%d < p_{T}^{jet} < %d GeV" % (start_val, end_val),
                                    xtitle=ang.name + " (" + ang.lambda_str + ")",
-                                   xlim=xlim, subplot_type=subplot_type, subplot_title=subplot_title, subplot_limits=(0, 2))
+                                   xlim=xlim,
+                                   subplot=subplot, subplot_type=subplot_type,
+                                   subplot_title=subplot_title, subplot_limits=(0, 2))
 
 
 
