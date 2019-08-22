@@ -90,7 +90,7 @@ def make_comparison_plot_ingredients(entries, rebin=1, normalise_hist=True, mean
     p = Plot(conts, what="hist", ytitle="p.d.f", legend=do_legend, **plot_kwargs)
     if do_legend:
         p.legend.SetX1(0.5)
-        p.legend.SetX2(0.95)
+        p.legend.SetX2(0.99)
         if len(entries) > 4:
             p.legend.SetY1(0.6)
         else:
@@ -291,7 +291,7 @@ def do_all_exclusive_plots_comparison(sources, plot_dir="plots_dy_vs_qcd",
                 rebin = 1
 
             xlim = None
-            if "width" in v or "thrust" in v or "pTD" in v:
+            if "width" in v or "thrust" in v: # or "pTD" in v:
                 xlim = (0, 0.5)
             elif "multiplicity" in v.lower() and "ak4" in sources[0]['root_dir'].lower():
                 xlim = (0, 100)
@@ -299,8 +299,8 @@ def do_all_exclusive_plots_comparison(sources, plot_dir="plots_dy_vs_qcd",
             ylim = None
             if "flavour" in v:
                 ylim = (0, 1)
-            elif "LHA" in v:
-                ylim = (0, 5)
+            # elif "LHA" in v:
+            #     ylim = (0, 5)
 
             subplot = None
             if subplot_type != None and len(entries_normal) > 0:
