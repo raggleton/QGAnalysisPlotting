@@ -272,7 +272,8 @@ def do_trig_plots_vs_zerobias(zb_input_filename, jetht_input_filename, output_di
     for name, info in this_trig_info.items():
         # for each trig, jet 2d pt vs eta hist, project into 1D pt distribution
         # then create efficiency hist using zero bias hist
-        rebin_factor = 2 if info['threshold'] > 100 else 2  # rough rebinning across all pt
+        rebin_factor = 4 if info['threshold'] > 100 else 5  # rough rebinning across all pt
+        # rebin_factor = 4
         # rebin_factor = 1
         # h2d = f.Get(dir_name + "/pt_vs_eta_%s_v*" % name)
         h2d = f_jetht.Get(name+"_v*Ref"  + "/pt_vs_eta_all")
@@ -287,7 +288,9 @@ def do_trig_plots_vs_zerobias(zb_input_filename, jetht_input_filename, output_di
 
         # rebin the jet pt hist at higher pt where it plateaus
         higher_pt_rebin_factor = 20
+        # higher_pt_rebin_factor = 10
         higher_pt_rebin_limit = info['threshold'] * 1.4
+        # higher_pt_rebin_limit = 9999999
         this_hpt_rebin = do_custom_rebin(this_hpt, this_hpt.GetName()+"CustomRebin", higher_pt_rebin_limit, higher_pt_rebin_factor)
 
         # rebin the zb pt hist in same way
@@ -704,10 +707,11 @@ def do_trig_plots_vs_prevjet(input_filename, output_dir, title="", eta_min=-2.4,
 
         # Rebin both numerator and denominator in special way
         higher_pt_rebin_factor = 20
-        # higher_pt_rebin_factor = 10
+        # higher_pt_rebin_factor = 25
         # higher_pt_rebin_factor = 1
         # higher_pt_rebin_limit = num_dict['threshold'] * 175000
         higher_pt_rebin_limit = num_dict['threshold'] * 1.75000
+        # higher_pt_rebin_limit = 99999999
         # if denom_name == "HLT_PFJet40":
         #     higher_pt_rebin_limit *= 1.5
         # heff_denom = do_custom_rebin(hpt_denom, hpt_denom.GetName()+"Rebin", higher_pt_rebin_limit, higher_pt_rebin_factor)

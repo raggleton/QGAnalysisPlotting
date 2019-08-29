@@ -42,14 +42,17 @@ ROOT.gStyle.SetOptFit()
 OUTPUT_FMT = "png"
 
 
-def make_mega_maps(filename, var):
+def make_mega_maps(filename, var, out_filename):
     rootfile = cu.open_root_file(filename)
+    outfile = cu.open_root_file(out_filename, "RECREATE")
 
     plot_dirname = "Dijet_QG_tighter"
     plot_dir = cu.get_from_tfile(rootfile, plot_dirname)
     var_stem = "jet_%s_response_bin_" % (var)
     all_plot_names = [x for x in cu.get_list_of_element_names(plot_dir) if var_stem in x]
     n_bins = int(sqrt(len(all_plot_names)))
+    if len(all_plot_names) == 0:
+        raise RuntimeError("No response plots in file")
 
     mult_hists = {histname : cu.get_from_tfile(rootfile, os.path.join(plot_dirname, histname)) for histname in all_plot_names}
     
@@ -79,14 +82,19 @@ def make_mega_maps(filename, var):
     del mult_hists
     canv = ROOT.TCanvas("c", "", 5000, 5000)
     canv.SetLogz(1)
-    h_mega.Draw("COLZ")
-    canv.SaveAs(os.path.join(os.path.dirname(filename), "mega_map_%s.%s" % (var, OUTPUT_FMT)))
+    # h_mega.Draw("COLZ")
+    # canv.SaveAs(os.path.join(os.path.dirname(filename), "mega_map_%s.%s" % (var, OUTPUT_FMT)))
+    # outfile.cd()
+    # h_mega.Write()
 
     canv.Clear()
     h_renormx = cu.make_normalised_TH2(h_mega, "X", False)
+    h_renormx.SetMinimum(1E-5)
     h_renormx.Draw("COLZ")
     # h_renormx.SetMinimum()
     canv.SaveAs(os.path.join(os.path.dirname(filename), "mega_map_%s_renormX.%s" % (var, OUTPUT_FMT)))
+    outfile.cd()
+    h_renormx.Write()
     del h_renormx
 
     # canv.Clear()
@@ -100,5 +108,7 @@ def make_mega_maps(filename, var):
 
 if __name__ == "__main__":
     # make_mega_maps("workdir_ak4puppi_pythia_newFlav_binByAve_trigBinningBetter_jetAsymCut_multResponse/uhh2.AnalysisModuleRunner.MC.MC_PYTHIA-QCD.root", "multiplicity")
-    make_mega_maps("workdir_ak4puppi_pythia_newFlav_binByAve_trigBinningBetter_jetAsymCut_multResponse/uhh2.AnalysisModuleRunner.MC.MC_PYTHIA-QCD.root", "puppiMultiplicity")
-    make_mega_maps("workdir_ak4puppi_pythia_newFlav_binByAve_trigBinningBetter_jetAsymCut_multResponse/uhh2.AnalysisModuleRunner.MC.MC_PYTHIA-QCD.root", "lha")
+    # make_mega_maps("workdir_ak4puppi_pythia_newFlav_binByAve_trigBinningBetter_jetAsymCut_multResponse/uhh2.AnalysisModuleRunner.MC.MC_PYTHIA-QCD.root", "puppiMultiplicity")
+    # make_mega_maps("workdir_ak4puppi_pythia_newFlav_binByAve_trigBinningBetter_jetAsymCut_multResponse/uhh2.AnalysisModuleRunner.MC.MC_PYTHIA-QCD.root", "lha")
+    # make_mega_maps("workdir_ak4puppi_mgpythia_newFlav_withAllResponses_jetAsymCut_chargedResp_pt1Constituents_V11JEC_JER/uhh2.AnalysisModuleRunner.MC.MC_QCD.root", "lha", "workdir_ak4puppi_mgpythia_newFlav_withAllResponses_jetAsymCut_chargedResp_pt1Constituents_V11JEC_JER/mega_map.root")
+    make_mega_maps("workdir_ak4puppi_mgpythia_newFlav_withAllResponses_jetAsymCut_chargedResp_pt1Constituents_V11JEC_JER_murUp/uhh2.AnalysisModuleRunner.MC.MC_QCD.root", "lha", "workdir_ak4puppi_mgpythia_newFlav_withAllResponses_jetAsymCut_chargedResp_pt1Constituents_V11JEC_JER_murUp/mega_map.root")

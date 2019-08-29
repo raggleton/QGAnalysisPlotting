@@ -148,10 +148,10 @@ if __name__ == "__main__":
     default_plot_dir = os.path.join(input_dir, "rebinning_"+os.path.splitext(input_basename)[0])
     plot_dir = args.outputDir if args.outputDir else default_plot_dir
 
-    default_output_root_filename = os.path.join(input_dir, "rebinned_" + input_basename)
-    output_root_filename = args.outputFile if args.outputFile else default_output_root_filename
-    cu.check_dir_exists_create(os.path.dirname(os.path.abspath(output_root_filename)))
-    output_tfile = cu.open_root_file(output_root_filename, 'RECREATE')
+    # default_output_root_filename = os.path.join(input_dir, "rebinned_" + input_basename)
+    # output_root_filename = args.outputFile if args.outputFile else default_output_root_filename
+    # cu.check_dir_exists_create(os.path.dirname(os.path.abspath(output_root_filename)))
+    # output_tfile = cu.open_root_file(output_root_filename, 'RECREATE')
 
     source_plot_dir_name = None
     region_label = None
@@ -165,14 +165,14 @@ if __name__ == "__main__":
         raise RuntimeError("No idea which region we're using")
 
     pt_regions = [
-        {
-            "append": "",
-            "title": "p_{T}^{Reco} > 30 GeV",
-        },
-        {
-            "append": "_lowPt",
-            "title": "30 < p_{T}^{Reco} < 100 GeV",
-        },
+        # {
+        #     "append": "",
+        #     "title": "p_{T}^{Reco} > 30 GeV",
+        # },
+        # {
+        #     "append": "_lowPt",
+        #     "title": "30 < p_{T}^{Reco} < 100 GeV",
+        # },
         {
             "append": "_midPt",
             "title": "100 < p_{T}^{Reco} < 250 GeV",
@@ -185,9 +185,9 @@ if __name__ == "__main__":
 
     input_tfile = cu.open_root_file(args.input)
 
-    for angle in qgc.COMMON_VARS[:]:
+    for angle in qgc.COMMON_VARS[:]: # only care about multiplicity
 
-        for pt_region_dict in pt_regions[2:3]:
+        for pt_region_dict in pt_regions[:]:
 
             var_dict = {
                 "name": "%s/%s%s" % (source_plot_dir_name, angle.var, pt_region_dict['append']),
@@ -196,11 +196,16 @@ if __name__ == "__main__":
             }
 
             # Need both to do corrections
+            # this is reco vs gen
             full_var_name = var_dict['name'] + "_response"
+            # relative response is reco/gen vs gen
             full_var_name_rel = var_dict['name'] + "_rel_response"
 
             h2d_orig = cu.get_from_tfile(input_tfile, full_var_name)
             h2d_rel_orig = cu.get_from_tfile(input_tfile, full_var_name_rel)
+
+            h2d_orig.Rebin2D(4, 4)
+            h2d_rel_orig.Rebin2D(4, 4)
 
             metric = "rawmean"
             metric = "median"
@@ -235,6 +240,6 @@ if __name__ == "__main__":
             plot_response_hists(response_hists, 
                                 output_dir=os.path.join(args.outputDir, "%s_correction_hists" % var_dict['name']))
 
-    output_tfile.Close()
+    # output_tfile.Close()
     input_tfile.Close()
 
