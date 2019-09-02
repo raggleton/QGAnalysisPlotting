@@ -61,7 +61,7 @@ def do_reco_reweight_comparison_plots(pythia_dir, herwig_dir, herwig_reweighted_
     sources = [
         {"root_dir": pythia_dir, 'label': ", MG + Pythia", "style": {'line_style': 1}},
         {"root_dir": herwig_reweighted_dir, 'label': ", Herwig, reweighted to MG+Pythia", "style": {'line_style': 1},
-          "dy_style": {'line_color': ROOT.kRed, 'fill_color': ROOT.kRed},
+          "zpj_style": {'line_color': ROOT.kRed, 'fill_color': ROOT.kRed},
           "qcd_style": {'line_color': ROOT.kBlue, 'fill_color': ROOT.kBlue}
         }
     ]
@@ -77,7 +77,7 @@ def do_reco_reweight_comparison_plots(pythia_dir, herwig_dir, herwig_reweighted_
         {"root_dir": pythia_dir, 'label': ", MG + Pythia", "style": {'line_style': 1}},
         {"root_dir": herwig_reweighted_dir, 'label': ", Herwig, reweighted to MG+Pythia",
             "style": {'line_style': 2},
-            "dy_style": {'line_color': ROOT.kRed, 'fill_color': ROOT.kRed},
+            "zpj_style": {'line_color': ROOT.kRed, 'fill_color': ROOT.kRed},
             "qcd_style": {'line_color': ROOT.kBlue, 'fill_color': ROOT.kBlue}
         },
         {"root_dir": herwig_dir, 'label': ", Herwig, not reweighted", "style": {'line_style': 2}}
@@ -135,7 +135,7 @@ def do_gen_reweight_comparison_plots(pythia_dir, herwig_dir, herwig_reweighted_d
     sources = [
         {"root_dir": pythia_dir, 'label': ", MG + Pythia", "style": {'line_style': 1}},
         {"root_dir": herwig_reweighted_dir, 'label': ", Herwig, reweighted to MG+Pythia", "style": {'line_style': 1},
-          "dy_style": {'line_color': ROOT.kRed, 'fill_color': ROOT.kRed},
+          "zpj_style": {'line_color': ROOT.kRed, 'fill_color': ROOT.kRed},
           "qcd_style": {'line_color': ROOT.kBlue, 'fill_color': ROOT.kBlue}
         }
     ]
@@ -153,7 +153,7 @@ def do_gen_reweight_comparison_plots(pythia_dir, herwig_dir, herwig_reweighted_d
         {"root_dir": pythia_dir, 'label': ", MG + Pythia", "style": {'line_style': 1}},
         {"root_dir": herwig_reweighted_dir, 'label': ", Herwig, reweighted to MG+Pythia",
             "style": {'line_style': 2},
-            "dy_style": {'line_color': ROOT.kRed, 'fill_color': ROOT.kRed},
+            "zpj_style": {'line_color': ROOT.kRed, 'fill_color': ROOT.kRed},
             "qcd_style": {'line_color': ROOT.kBlue, 'fill_color': ROOT.kBlue}
         },
         {"root_dir": herwig_dir, 'label': ", Herwig, not reweighted", "style": {'line_style': 2}}

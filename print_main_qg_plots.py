@@ -216,7 +216,7 @@ def do_reco_pu_comparison_plots(root_dir):
             'zpj_dirname': qgc.ZPJ_RECOJET_RDIR + "_PU_%d_to_%d" % (pu_min, pu_max),
             'dj_dirname': qgc.DJ_RECOJET_RDIR + "_PU_%d_to_%d" % (pu_min, pu_max),
             "style": {'line_style': 1, "line_width": 2},
-            "dy_style": {'line_color': qgc.DY_COLOURS[ind], 'fill_color': qgc.DY_COLOURS[ind], 'marker_color': qgc.DY_COLOURS[ind]},
+            "zpj_style": {'line_color': qgc.DY_COLOURS[ind], 'fill_color': qgc.DY_COLOURS[ind], 'marker_color': qgc.DY_COLOURS[ind]},
             "qcd_style": {'line_color': qgc.QCD_COLOURS[ind], 'fill_color': qgc.QCD_COLOURS[ind], 'marker_color': qgc.QCD_COLOURS[ind]}
         })
     subplot_title = "#splitline{Ratio wrt}{PU %d-%d}" % (pu_bins[0][0], pu_bins[0][1])

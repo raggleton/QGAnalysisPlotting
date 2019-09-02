@@ -37,7 +37,7 @@ def do_chs_vs_puppi_plots(chs_dir, puppi_dir, plot_dir):
     sources = [
         {"root_dir": chs_dir, 'label': ", CHS"},
         {"root_dir": puppi_dir, 'label': ", PUPPI", "style": {'line_style': 3}, 
-            "dy_style": {"line_color": qgc.DY_COLOURS[-2], "fill_color": qgc.DY_COLOURS[-2]}, 
+            "zpj_style": {"line_color": qgc.DY_COLOURS[-2], "fill_color": qgc.DY_COLOURS[-2]}, 
             "qcd_style": {"line_color": qgc.QCD_COLOURS[-2], "fill_color": qgc.QCD_COLOURS[-2]}}
     ]
     qgg.do_all_exclusive_plots_comparison(sources, var_list=qgc.COMMON_VARS,

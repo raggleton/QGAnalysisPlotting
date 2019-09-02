@@ -11,22 +11,27 @@ from collections import namedtuple
 # Red and blue does look different
 # DY_COLOUR =  880 # kViolet
 DY_COLOUR =  628 # kViolet
-QCD_COLOUR = 867 # kAzure+7
+QCD_COLOUR = 867 # kAzure+7, for backwards compatibility
+QCD_CEN_COLOUR = 867 # 
+QCD_FWD_COLOUR = 868 # 
 
 # SINGLE_MU_COLOUR =  884 # kViolet+3
 SINGLE_MU_COLOUR =  634
 JETHT_COLOUR = 600 # kBlue
+JETHT_CEN_COLOUR = 601 # kBlue
+JETHT_FWD_COLOUR = 600 # kBlue
 ZB_COLOUR = 416+1 # kGreen+1
 
 # You should use markers as well for colourblindness
 DY_MARKER = 20
 QCD_MARKER = 22
+QCD_CEN_MARKER = 22
+QCD_FWD_MARKER = 23
 
 # When comparing e.g. PU bins
 # FIXME: update for colourblindness
 # DY_COLOURS = [880, 881, 884, 873]
 DY_COLOURS = [880, 881, 797, 902]
-QCD_COLOURS = [867, 600, 853, 870]
 QCD_COLOURS = [867, 600, 853, 882]
 
 PT_BINS = [(80, 100), (100, 200), (400, 500), (1000, 2000), (80, 2000)]
@@ -244,6 +249,7 @@ for pt_name in list(PT_UNFOLD_DICT.keys()):
     PT_UNFOLD_DICT[new_name] = construct_fine_binning(PT_UNFOLD_DICT[pt_name])
 
 
+# Common labels for legends etc
 DY_ZpJ_LABEL = "DY+jets MC, Z+jets region"
 DY_ZpJ_GEN_LABEL = "DY+jets MC, Z+jets region\n(GenJets)"
 DY_ZpJ_QFLAV_LABEL = "DY+jets MC, Z+jets region\n(uds-matched)"
@@ -264,14 +270,32 @@ QCD_Dijet_GEN_LABEL = "QCD MC, Dijet region\n(GenJets)"
 QCD_Dijet_QFLAV_LABEL = "QCD MC, Dijet region\n(uds-matched)"
 QCD_Dijet_GFLAV_LABEL = "QCD MC, Dijet region\n(g-matched)"
 
+QCD_Dijet_CEN_LABEL = "QCD MC, Dijet region (central jet)"
+QCD_Dijet_CEN_GEN_LABEL = "QCD MC, Dijet region (central jet)\n(GenJets)"
+QCD_Dijet_CEN_QFLAV_LABEL = "QCD MC, Dijet region (central jet)\n(uds-matched)"
+QCD_Dijet_CEN_GFLAV_LABEL = "QCD MC, Dijet region (central jet)\n(g-matched)"
+
+QCD_Dijet_FWD_LABEL = "QCD MC, Dijet region (forward jet)"
+QCD_Dijet_FWD_GEN_LABEL = "QCD MC, Dijet region (forward jet)\n(GenJets)"
+QCD_Dijet_FWD_QFLAV_LABEL = "QCD MC, Dijet region (forward jet)\n(uds-matched)"
+QCD_Dijet_FWD_GFLAV_LABEL = "QCD MC, Dijet region (forward jet)\n(g-matched)"
+
 SINGLE_MU_LABEL = "SingleMu, Z+jets region"
 JETHT_LABEL = "JetHT, Dijet region"
 ZB_LABEL = "ZeroBias, Dijet region"
 JETHT_ZB_LABEL = "JetHT+ZeroBias, Dijet region"
 
+JETHT_CEN_LABEL = "JetHT, Dijet region (central jet)"
+ZB_CEN_LABEL = "ZeroBias, Dijet region (central jet)"
+JETHT_ZB_CEN_LABEL = "JetHT+ZeroBias, Dijet region (central jet)"
+
+JETHT_FWD_LABEL = "JetHT, Dijet region (forward jet)"
+ZB_FWD_LABEL = "ZeroBias, Dijet region (forward jet)"
+JETHT_ZB_FWD_LABEL = "JetHT+ZeroBias, Dijet region (forward jet)"
+
 # Dirs in ROOT files
 ZPJ_RECOJET_RDIR = "ZPlusJets_QG"
-DJ_RECOJET_RDIR = "Dijet_QG"
+DJ_RECOJET_RDIR = "Dijet_QG_tighter"
 ZPJ_GENJET_RDIR = "ZPlusJets_genjet"
 DJ_GENJET_RDIR = "Dijet_genjet"
 

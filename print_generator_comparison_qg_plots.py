@@ -48,7 +48,7 @@ def do_reco_generator_comparison_plots(pythia_dir, herwig_dir, plot_dir):
     sources = [
         {"root_dir": pythia_dir, 'label': PYTHIA_LABEL, "style": {'line_style': 1}},
         {"root_dir": herwig_dir, 'label': HERWIG_LABEL, "style": {'line_style': 2}, 
-            "dy_style": {'line_color': 632, 'marker_color': 632}, 
+            "zpj_style": {'line_color': 632, 'marker_color': 632}, 
             "qcd_style": {'line_color': 600, 'marker_color': 600}
         }
     ]
@@ -59,7 +59,7 @@ def do_reco_generator_comparison_plots(pythia_dir, herwig_dir, plot_dir):
                                               ofmt=OUTPUT_FMT)
     # Do a version jsut using dijet samples for higher pT
     for sdict in sources:
-        sdict['dy_style'] = {'label': qgc.QCD_Dijet_QFLAV_LABEL + sdict['label']}
+        sdict['zpj_style'] = {'label': qgc.QCD_Dijet_QFLAV_LABEL + sdict['label']}
     qgg.do_all_exclusive_plots_comparison(sources=sources, var_list=qgc.COMMON_VARS,
                                           dy_filename=qgc.QCD_FILENAME, zpj_dirname=qgc.DJ_RECOJET_RDIR,
                                           plot_dir=os.path.join(plot_dir, "plots_dy_vs_qcd_compare_generators_only_qcd"),
@@ -116,10 +116,10 @@ def do_jet_algo_generator_comparison_plots(pythia_ak4_dir, herwig_ak4_dir, pythi
         {"root_dir": pythia_ak4_dir, 'label': PYTHIA_LABEL + " AK4", "style": {'line_style': 1}},
         {"root_dir": herwig_ak4_dir, 'label': HERWIG_LABEL + " AK4", "style": {'line_style': 2}},
         {"root_dir": pythia_ak8_dir, 'label': PYTHIA_LABEL + " AK8", "style": {'line_style': 1}, 
-          "dy_style": {'line_color': qgc.DY_COLOURS[-2], 'fill_color': qgc.DY_COLOURS[-2]},
+          "zpj_style": {'line_color': qgc.DY_COLOURS[-2], 'fill_color': qgc.DY_COLOURS[-2]},
           "qcd_style": {'line_color': qgc.QCD_COLOURS[-2], 'fill_color': qgc.QCD_COLOURS[-2]}},
         {"root_dir": herwig_ak8_dir, 'label': HERWIG_LABEL + " AK8", "style": {'line_style': 2},
-          "dy_style": {'line_color': qgc.DY_COLOURS[-2], 'fill_color': qgc.DY_COLOURS[-2]},
+          "zpj_style": {'line_color': qgc.DY_COLOURS[-2], 'fill_color': qgc.DY_COLOURS[-2]},
           "qcd_style": {'line_color': qgc.QCD_COLOURS[-2], 'fill_color': qgc.QCD_COLOURS[-2]}},
     ]
 

@@ -211,16 +211,42 @@ def do_2D_plot(obj, output_filename, draw_opt="COLZ", renorm_axis=None, title=No
     canvas.SaveAs(output_filename)
 
 
-def do_all_exclusive_plots_comparison(sources, plot_dir="plots_dy_vs_qcd",
-                                      dy_filename=qgc.DY_FILENAME, qcd_filename=qgc.QCD_FILENAME,
-                                      zpj_dirname="ZPlusJets_QG", dj_dirname="Dijet_QG",
-                                      var_list=None, var_prepend="", pt_bins=None,
-                                      subplot_type=None, subplot_title=None,
-                                      do_flav_tagged=True, ofmt="pdf"):
-    """Do 1D plots, comparing various sources. For each source plots DY & QCD samples. If zpj_dirname or dj_dirname blank, not plotted.
+def do_all_exclusive_plots_comparison(sources,
+                                      plot_dir="plots_dy_vs_qcd",
+                                      dy_filename=qgc.DY_FILENAME,
+                                      zpj_dirname="ZPlusJets_QG",
+                                      qcd_filename=qgc.QCD_FILENAME,
+                                      dj_cen_dirname="Dijet_QG_central_tighter",
+                                      dj_fwd_dirname="Dijet_QG_forward_tighter",
+                                      var_list=None,
+                                      var_prepend="",
+                                      pt_bins=None,
+                                      title="",
+                                      subplot_type=None,
+                                      subplot_title=None,
+                                      do_flav_tagged=True,
+                                      has_data=False,
+                                      ofmt="pdf"):
+    """Do 1D plots, comparing various sources. Looping over pt_bins, for each source, plots DY & QCD samples.
 
-    Relies on QCD sample file being called uhh2.AnalysisModuleRunner.MC.MC_QCD_.root,
-    and the DYJetsToLL one being called uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root
+    `sources` is a list of dicts. Each dict has structure:
+    {
+    'root_dir': directory with ROOT file
+    'label': append to put in legend after main label (optional)
+    'dy_filename': name of ROOT file with Z+jets hists (optional)
+    'qcd_filename': name of ROOT file with dijet hists (optional)
+    'zpj_dirname': name of TDirectory with Z+jets hists (optional)
+    'dj_cen_dirname': name of TDirectory with dijet central hists (optional)
+    'dj_fwd_dirname': name of TDirectory with dijet foward hists (optional)
+    'style': dict of style options for this Contribution (optional)
+    'zpj_style': dict of style options for this Contribution if Z+jets (optional, applied after 'style' dict)
+    'qcd_cen_style': dict of style options for this Contribution if dijet central (optional, applied after 'style' dict)
+    'qcd_fwd_style': dict of style options for this Contribution if dijet forward (optional, applied after 'style' dict)
+    }
+
+    If zpj_dirname, dj_cen_dirname, dj_fwd_dirname blank, those contributions will not be plotted.
+
+    `title` is appended after pt bin title.
     """
     var_list = var_list or qgc.COMMON_VARS_WITH_FLAV
     pt_bins = pt_bins or qgc.PT_BINS
@@ -240,24 +266,36 @@ def do_all_exclusive_plots_comparison(sources, plot_dir="plots_dy_vs_qcd",
                 msize = 1.1
 
                 if zpj_dirname:
-                    h2d_dyj = grab_obj(os.path.join(source['root_dir'], dy_filename),
+                    h2d_dyj = grab_obj(os.path.join(source['root_dir'], source.get('dy_filename', dy_filename)),
                                        "%s/%s" % (source.get('zpj_dirname', zpj_dirname), v))
                     dy_kwargs = dict(line_color=qgc.DY_COLOUR, line_width=lw, fill_color=qgc.DY_COLOUR,
                                      label=qgc.DY_ZpJ_LABEL + source.get('label', ''),
                                      marker_color=qgc.DY_COLOUR, marker_style=qgc.DY_MARKER+ind, marker_size=msize)
                     dy_kwargs.update(source.get('style', {}))
-                    dy_kwargs.update(source.get('dy_style', {}))
+                    dy_kwargs.update(source.get('zpj_style', {}))
                     entries_normal.append((get_projection_plot(h2d_dyj, start_val, end_val), dy_kwargs))
 
-                if dj_dirname:
-                    h2d_qcd = grab_obj(os.path.join(source['root_dir'], qcd_filename),
-                                       "%s/%s" % (source.get('dj_dirname', dj_dirname), v))
-                    qcd_kwargs = dict(line_color=qgc.QCD_COLOUR, line_width=lw, fill_color=qgc.QCD_COLOUR,
-                                      label=qgc.QCD_Dijet_LABEL + source.get('label', ''),
-                                      marker_color=qgc.QCD_COLOUR, marker_style=qgc.QCD_MARKER+ind, marker_size=msize)
-                    qcd_kwargs.update(source.get('style', {}))
-                    qcd_kwargs.update(source.get('qcd_style', {}))
-                    entries_normal.append((get_projection_plot(h2d_qcd, start_val, end_val), qcd_kwargs))
+                if dj_cen_dirname:
+                    h2d_qcd_cen = grab_obj(os.path.join(source['root_dir'], source.get('qcd_filename', qcd_filename)),
+                                           "%s/%s" % (source.get('dj_cen_dirname', dj_cen_dirname), v))
+                    qcd_cen_kwargs = dict(line_color=qgc.QCD_CEN_COLOUR, line_width=lw,
+                                          fill_color=qgc.QCD_CEN_COLOUR,
+                                          label=qgc.QCD_Dijet_CEN_LABEL + source.get('label', ''),
+                                          marker_color=qgc.QCD_CEN_COLOUR, marker_style=qgc.QCD_CEN_MARKER+ind, marker_size=msize)
+                    qcd_cen_kwargs.update(source.get('style', {}))
+                    qcd_cen_kwargs.update(source.get('qcd_cen_style', {}))
+                    entries_normal.append((get_projection_plot(h2d_qcd_cen, start_val, end_val), qcd_cen_kwargs))
+
+                if dj_fwd_dirname:
+                    h2d_qcd_fwd = grab_obj(os.path.join(source['root_dir'], source.get('qcd_filename', qcd_filename)),
+                                           "%s/%s" % (source.get('dj_fwd_dirname', dj_fwd_dirname), v))
+                    qcd_fwd_kwargs = dict(line_color=qgc.QCD_FWD_COLOUR, line_width=lw,
+                                          fill_color=qgc.QCD_FWD_COLOUR,
+                                          label=qgc.QCD_Dijet_FWD_LABEL + source.get('label', ''),
+                                          marker_color=qgc.QCD_FWD_COLOUR, marker_style=qgc.QCD_FWD_MARKER+ind, marker_size=msize)
+                    qcd_fwd_kwargs.update(source.get('style', {}))
+                    qcd_fwd_kwargs.update(source.get('qcd_fwd_style', {}))
+                    entries_normal.append((get_projection_plot(h2d_qcd_fwd, start_val, end_val), qcd_fwd_kwargs))
 
                 if not do_flav_tagged or "flavour" in v:
                     continue
@@ -271,18 +309,49 @@ def do_all_exclusive_plots_comparison(sources, plot_dir="plots_dy_vs_qcd",
                                        # label=qgc.QCD_Dijet_QFLAV_LABEL + source.get('label', ''),
                                        marker_color=qgc.DY_COLOUR, marker_style=qgc.DY_MARKER+ind, marker_size=msize)
                     dy_kwargs_q.update(source.get('style', {}))
-                    dy_kwargs_q.update(source.get('dy_style', {}))
+                    dy_kwargs_q.update(source.get('zpj_style', {}))
                     entries_flav.append((get_projection_plot(h2d_dyj_q, start_val, end_val), dy_kwargs_q))
 
-                if dj_dirname:
-                    h2d_qcd_g = grab_obj(os.path.join(source['root_dir'], qcd_filename),
-                                         "%s/g%s" % (source.get('dj_dirname', dj_dirname), v))
-                    qcd_kwargs_g = dict(line_color=qgc.QCD_COLOUR, line_width=lw, fill_color=qgc.QCD_COLOUR,
-                                        label=qgc.QCD_Dijet_GFLAV_LABEL + source.get('label', ''),
-                                        marker_color=qgc.QCD_COLOUR, marker_style=qgc.QCD_MARKER+ind, marker_size=msize)
-                    qcd_kwargs_g.update(source.get('style', {}))
-                    qcd_kwargs_g.update(source.get('qcd_style', {}))
-                    entries_flav.append((get_projection_plot(h2d_qcd_g, start_val, end_val), qcd_kwargs_g))
+                if dj_cen_dirname:
+                    h2d_qcd_cen_g = grab_obj(os.path.join(source['root_dir'], qcd_filename),
+                                             "%s/g%s" % (source.get('dj_dirname', dj_dirname), v))
+                    qcd_cen_kwargs_g = dict(line_color=qgc.QCD_CEN_COLOUR, line_width=lw,
+                                            fill_color=qgc.QCD_CEN_COLOUR,
+                                            label=qgc.QCD_Dijet_CEN_GFLAV_LABEL + source.get('label', ''),
+                                            marker_color=qgc.QCD_CEN_COLOUR, marker_style=qgc.QCD_CEN_MARKER+ind, marker_size=msize)
+                    qcd_cen_kwargs_g.update(source.get('style', {}))
+                    qcd_cen_kwargs_g.update(source.get('qcd_cen_style', {}))
+                    entries_flav.append((get_projection_plot(h2d_qcd_cen_g, start_val, end_val), qcd_cen_kwargs_g))
+
+                    h2d_qcd_cen_q = grab_obj(os.path.join(source['root_dir'], qcd_filename),
+                                             "%s/q%s" % (source.get('dj_dirname', dj_dirname), v))
+                    qcd_cen_kwargs_q = dict(line_color=qgc.QCD_CEN_COLOUR, line_width=lw,
+                                            fill_color=qgc.QCD_CEN_COLOUR,
+                                            label=qgc.QCD_Dijet_CEN_QFLAV_LABEL + source.get('label', ''),
+                                            marker_color=qgc.QCD_CEN_COLOUR, marker_style=qgc.QCD_CEN_MARKER+ind+1, marker_size=msize)
+                    qcd_cen_kwargs_q.update(source.get('style', {}))
+                    qcd_cen_kwargs_q.update(source.get('qcd_cen_style', {}))
+                    entries_flav.append((get_projection_plot(h2d_qcd_cen_q, start_val, end_val), qcd_cen_kwargs_q))
+
+                    h2d_qcd_fwd_g = grab_obj(os.path.join(source['root_dir'], qcd_filename),
+                                             "%s/g%s" % (source.get('dj_cen_dirname', dj_dirname), v))
+                    qcd_fwd_kwargs_g = dict(line_color=qgc.QCD_FWD_COLOUR, line_width=lw,
+                                            fill_color=qgc.QCD_FWD_COLOUR,
+                                            label=qgc.QCD_Dijet_FWD_GFLAV_LABEL + source.get('label', ''),
+                                            marker_color=qgc.QCD_FWD_COLOUR, marker_style=qgc.QCD_FWD_MARKER+ind, marker_size=msize)
+                    qcd_fwd_kwargs_g.update(source.get('style', {}))
+                    qcd_fwd_kwargs_g.update(source.get('qcd_fwd_style', {}))
+                    entries_flav.append((get_projection_plot(h2d_qcd_fwd_g, start_val, end_val), qcd_fwd_kwargs_g))
+
+                    h2d_qcd_fwd_q = grab_obj(os.path.join(source['root_dir'], qcd_filename),
+                                             "%s/q%s" % (source.get('dj_fwd_dirname', dj_dirname), v))
+                    qcd_fwd_kwargs_q = dict(line_color=qgc.QCD_FWD_COLOUR, line_width=lw,
+                                            fill_color=qgc.QCD_FWD_COLOUR,
+                                            label=qgc.QCD_Dijet_FWD_QFLAV_LABEL + source.get('label', ''),
+                                            marker_color=qgc.QCD_FWD_COLOUR, marker_style=qgc.QCD_FWD_MARKER+ind+1, marker_size=msize)
+                    qcd_fwd_kwargs_q.update(source.get('style', {}))
+                    qcd_fwd_kwargs_q.update(source.get('qcd_fwd_style', {}))
+                    entries_flav.append((get_projection_plot(h2d_qcd_cen_q, start_val, end_val), qcd_fwd_kwargs_q))
 
             rebin = 2
             if "multiplicity" in v:
@@ -306,10 +375,18 @@ def do_all_exclusive_plots_comparison(sources, plot_dir="plots_dy_vs_qcd",
             if subplot_type != None and len(entries_normal) > 0:
                 subplot = entries_normal[0][0]
 
-            do_comparison_plot(entries_normal, "%s/ptBinned/%s_pt%dto%d.%s" % (plot_dir, v, start_val, end_val, ofmt),
-                               rebin=rebin, title="%d < p_{T}^{jet} < %d GeV" % (start_val, end_val),
-                               xtitle=ang.name + " (" + ang.lambda_str + ")",
-                               xlim=xlim, ylim=ylim,
+            plot_title = "%d < p_{T}^{jet} < %d GeV" % (start_val, end_val)
+            if title:
+                plot_title += "\n%s" % title
+            x_title = ang.name + " (" + ang.lambda_str + ")"
+            do_comparison_plot(entries_normal,
+                               output_filename="%s/ptBinned/%s_pt%dto%d.%s" % (plot_dir, v, start_val, end_val, ofmt),
+                               rebin=rebin,
+                               title=plot_title,
+                               xtitle=x_title,
+                               xlim=xlim,
+                               ylim=ylim,
+                               has_data=has_data,
                                subplot=subplot, subplot_type=subplot_type,
                                subplot_title=subplot_title, subplot_limits=(0, 2))
 
@@ -319,10 +396,13 @@ def do_all_exclusive_plots_comparison(sources, plot_dir="plots_dy_vs_qcd",
                 if subplot_type != None and len(entries_flav) > 0:
                     subplot = entries_flav[0][0]
 
-                do_comparison_plot(entries_flav, "%s/ptBinned/%s_pt%dto%d_flavMatched.%s" % (plot_dir, v, start_val, end_val, ofmt),
-                                   rebin=rebin, title="%d < p_{T}^{jet} < %d GeV" % (start_val, end_val),
-                                   xtitle=ang.name + " (" + ang.lambda_str + ")",
+                do_comparison_plot(entries_flav,
+                                   output_filename="%s/ptBinned/%s_pt%dto%d_flavMatched.%s" % (plot_dir, v, start_val, end_val, ofmt),
+                                   rebin=rebin,
+                                   title=plot_title,
+                                   xtitle=x_title,
                                    xlim=xlim,
+                                   has_data=has_data,
                                    subplot=subplot, subplot_type=subplot_type,
                                    subplot_title=subplot_title, subplot_limits=(0, 2))
 
