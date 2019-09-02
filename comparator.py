@@ -125,7 +125,7 @@ class Contribution(object):
         normalise_hist : bool
             If a histogram, normalise so integral = 1
         divide_bin_width : bool, optional
-            If True, divide by bin width when normalising. 
+            If True, divide by bin width when normalising.
             Only makes sense when used with normalise_hist=True
         rebin_hist : int, None
             If a histogram, specify the number of bins to be grouped together.
@@ -529,22 +529,28 @@ class Plot(object):
         cms_latex.SetTextFont(42)
         cms_latex.SetTextSize(0.035)
         latex_height = 0.91
-        # cms_latex.DrawLatex(0.14, latex_height, "#font[62]{CMS}#font[52]{ Preliminary}")
         if self.is_preliminary:
             if self.has_data:
                 cms_latex.DrawLatex(0.14, latex_height, "#font[62]{CMS}#font[52]{ Preliminary}")
             else:
                 cms_latex.DrawLatex(0.14, latex_height, "#font[62]{CMS}#font[52]{ Preliminary Simulation}")
+        else:
+            if self.has_data:
+                cms_latex.DrawLatex(0.14, latex_height, "#font[62]{CMS}")
+            else:
+                cms_latex.DrawLatex(0.14, latex_height, "#font[62]{CMS}#font[52]{ Simulation}")
+        # cms_latex.DrawLatex(0.14, latex_height, "#font[62]{CMS}#font[52]{ Preliminary}")
         # cms_latex.DrawLatex(0.14, latex_height, "#font[62]{CMS}")
         cms_latex.SetTextAlign(ROOT.kHAlignRight + ROOT.kVAlignBottom)
         cms_latex.DrawLatex(0.97, latex_height, " 35.9 fb^{-1} (13 TeV)")
 
+        # Add title to plot
         text_latex = ROOT.TLatex()
         text_latex.SetTextAlign(ROOT.kHAlignLeft + ROOT.kVAlignTop)
         text_latex.SetTextFont(42)
         text_latex.SetTextSize(0.03)
         start_y = 0.87
-        diff_y = 0.03
+        diff_y = 0.05
         for ind, line in enumerate(self.title.split('\n')):
             text_latex.DrawLatex(0.18, start_y - (ind*diff_y), line)
 
@@ -619,7 +625,7 @@ class Plot(object):
             self._rescale_plot_labels(self.subplot_container, self.subplot_pad_height)
             self.subplot_container.GetXaxis().SetTitleOffset(self.subplot_container.GetXaxis().GetTitleOffset()*3)
             self.subplot_container.GetYaxis().SetNdivisions(505)
-            
+
             # If subplot y label is 2 lines, let's scale it down a bit
             if "splitline" in self.subplot_title:
                 self.subplot_container.GetYaxis().SetTitleSize(self.subplot_container.GetYaxis().GetTitleSize()*0.8)
