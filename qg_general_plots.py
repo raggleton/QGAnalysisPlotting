@@ -333,8 +333,9 @@ def do_all_exclusive_plots_comparison(sources,
                     qcd_cen_kwargs_q.update(source.get('qcd_cen_style', {}))
                     entries_flav.append((get_projection_plot(h2d_qcd_cen_q, start_val, end_val), qcd_cen_kwargs_q))
 
+                if dj_fwd_dirname:
                     h2d_qcd_fwd_g = grab_obj(os.path.join(source['root_dir'], qcd_filename),
-                                             "%s/g%s" % (source.get('dj_cen_dirname', dj_dirname), v))
+                                             "%s/g%s" % (source.get('dj_fwd_dirname', dj_dirname), v))
                     qcd_fwd_kwargs_g = dict(line_color=qgc.QCD_FWD_COLOUR, line_width=lw,
                                             fill_color=qgc.QCD_FWD_COLOUR,
                                             label=qgc.QCD_Dijet_FWD_GFLAV_LABEL + source.get('label', ''),
@@ -351,7 +352,7 @@ def do_all_exclusive_plots_comparison(sources,
                                             marker_color=qgc.QCD_FWD_COLOUR, marker_style=qgc.QCD_FWD_MARKER+ind+1, marker_size=msize)
                     qcd_fwd_kwargs_q.update(source.get('style', {}))
                     qcd_fwd_kwargs_q.update(source.get('qcd_fwd_style', {}))
-                    entries_flav.append((get_projection_plot(h2d_qcd_cen_q, start_val, end_val), qcd_fwd_kwargs_q))
+                    entries_flav.append((get_projection_plot(h2d_qcd_fwd_q, start_val, end_val), qcd_fwd_kwargs_q))
 
             rebin = 2
             if "multiplicity" in v:
