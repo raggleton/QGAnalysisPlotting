@@ -86,6 +86,10 @@ def make_comparison_plot_ingredients(entries, rebin=1, normalise_hist=True, mean
         subplot_cont = [c for c in conts if c.obj == plot_kwargs['subplot']]
         if len(subplot_cont) > 0:
             plot_kwargs['subplot'] = subplot_cont[0]
+        else:
+            print("Couldn't identify subplot object, no subplot")
+            plot_kwargs['subplot_type'] = None
+            del plot_kwargs['subplot']
 
     p = Plot(conts, what="hist", ytitle="p.d.f", legend=do_legend, **plot_kwargs)
     if do_legend:
@@ -375,6 +379,12 @@ def do_all_exclusive_plots_comparison(sources,
             subplot = None
             if subplot_type != None and len(entries_normal) > 0:
                 subplot = entries_normal[0][0]
+                if subplot.GetEntries() < 1:
+                    subplot = entries_normal[1][0]
+                    if subplot.GetEntries() < 1:
+                        subplot = entries_normal[2][0]
+                        if subplot.GetEntries() < 1:
+                            subplot = None
 
             plot_title = "%d < p_{T}^{jet} < %d GeV" % (start_val, end_val)
             if title:
