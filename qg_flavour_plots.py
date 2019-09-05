@@ -29,16 +29,14 @@ ROOT.TH1.SetDefaultSumw2()
 ROOT.gStyle.SetOptStat(0)
 
 
-def get_flavour_fractions(input_file, dirname, pt_bins, flav_source="", var_prepend="", which_jet="both"):
+def get_flavour_fractions(input_file, dirname, pt_bins, var_prepend="", which_jet="both"):
     """Get dict of flav : [fraction for specified pt bins] for a given input file & directory.
 
-    flav_source : str
-        Which flavour to use, either "" or "genParton_"
     which_jet : "both", 1, 2
         Which jet to look at - both, or one of the two in particular
     """
     jet_str = "" if which_jet == "both" else str(which_jet)
-    h2d_flav = grab_obj(input_file, "%s/%sjet%s_%sflavour_vs_pt" % (dirname, var_prepend, jet_str, flav_source))
+    h2d_flav = grab_obj(input_file, "%s/%sjet%s_flavour_vs_pt" % (dirname, var_prepend, jet_str))
 
     flav_dict = {'d': [], 'u': [], 's': [], 'c': [], 'b': [] ,'t': [], 'g': [], 'unknown': []}
     for (pt_min, pt_max) in pt_bins:
@@ -70,7 +68,7 @@ def get_flavour_fractions(input_file, dirname, pt_bins, flav_source="", var_prep
     return flav_dict
 
 
-def compare_flavour_fractions_vs_pt(input_files, dirnames, pt_bins, labels, flav, output_filename, title="", flav_source="", var_prepend="", which_jet="both", xtitle="p_{T}^{jet} [GeV]"):
+def compare_flavour_fractions_vs_pt(input_files, dirnames, pt_bins, labels, flav, output_filename, title="", var_prepend="", which_jet="both", xtitle="p_{T}^{jet} [GeV]"):
     """Plot a specified flavour fraction vs pT for several sources.
     Each entry in input_files, dirnames, and labels corresponds to one line
 
@@ -78,7 +76,7 @@ def compare_flavour_fractions_vs_pt(input_files, dirnames, pt_bins, labels, flav
     """
     bin_centers = [0.5*(x[0]+x[1]) for x in pt_bins]
     bin_widths = [0.5*(x[1]-x[0]) for x in pt_bins]
-    info = [get_flavour_fractions(ifile, sel, pt_bins, flav_source=flav_source, var_prepend=var_prepend, which_jet=(which_jet if "Dijet" in sel else "both")) 
+    info = [get_flavour_fractions(ifile, sel, pt_bins, var_prepend=var_prepend, which_jet=(which_jet if "Dijet" in sel else "both"))
             for ifile, sel in zip(input_files, dirnames)]
     contribs = []
     N = len(bin_centers)
@@ -91,19 +89,26 @@ def compare_flavour_fractions_vs_pt(input_files, dirnames, pt_bins, labels, flav
         c = Contribution(gr, label="%s" % (labels[i]), line_color=colours[i], marker_style=20+i, marker_color=colours[i])
         contribs.append(c)
     ytitle = "%s flavour fraction" % flav
-    p = Plot(contribs, what='graph', xtitle=xtitle, ytitle=ytitle, title=title, ylim=(0, 1))
+    p = Plot(contribs,
+             what='graph',
+             xtitle=xtitle,
+             ytitle=ytitle,
+             title=title,
+             xlim=(pt_bins[0][0], pt_bins[-1][1]),
+             ylim=(0, 1),
+             has_data=False)
     # p.legend.SetX1(0.4)
     p.plot("ALP")
-    p.canvas.SetLogx()
+    p.set_logx()
     p.save(output_filename)
 
 
-def do_flavour_fraction_vs_pt(input_file, dirname, pt_bins, output_filename, title="", flav_source="", var_prepend="", which_jet="both"):
+def do_flavour_fraction_vs_pt(input_file, dirname, pt_bins, output_filename, title="", var_prepend="", which_jet="both"):
     """Plot all flavour fractions vs PT for one input file & dirname in the ROOT file"""
     bin_centers = [0.5*(x[0]+x[1]) for x in pt_bins]
     bin_widths = [0.5*(x[1]-x[0]) for x in pt_bins]
-    flav_dict = get_flavour_fractions(input_file, dirname, pt_bins, flav_source, var_prepend, which_jet)
-    
+    flav_dict = get_flavour_fractions(input_file, dirname, pt_bins, var_prepend, which_jet)
+
     # TODO: check if empty arrays
     N = len(bin_centers)
     gr_flav_u = ROOT.TGraphErrors(N, np.array(bin_centers), np.array(flav_dict['u']), np.array(bin_widths), np.zeros(N))
@@ -118,11 +123,18 @@ def do_flavour_fraction_vs_pt(input_file, dirname, pt_bins, output_filename, tit
     plot_d = Contribution(gr_flav_d, label="d", line_color=ROOT.kBlue, marker_color=ROOT.kBlue, marker_style=21)
     plot_s = Contribution(gr_flav_s, label="s", line_color=ROOT.kBlack, marker_color=ROOT.kBlack, marker_style=22)
     plot_c = Contribution(gr_flav_c, label="c", line_color=ROOT.kGreen-3, marker_color=ROOT.kGreen-3, marker_style=23)
-    plot_b = Contribution(gr_flav_b, label="b", line_color=ROOT.kOrange, marker_color=ROOT.kOrange, marker_style=24)
-    plot_g = Contribution(gr_flav_g, label="g", line_color=ROOT.kViolet, marker_color=ROOT.kViolet, marker_style=25)
+    plot_b = Contribution(gr_flav_b, label="b", line_color=ROOT.kOrange-3, marker_color=ROOT.kOrange-3, marker_style=33)
+    plot_g = Contribution(gr_flav_g, label="g", line_color=ROOT.kViolet, marker_color=ROOT.kViolet, marker_style=29)
     plot_unknown = Contribution(gr_flav_unknown, label="unknown", line_color=ROOT.kGray+1, marker_color=ROOT.kGray+1, marker_style=26)
 
-    p_flav = Plot([plot_u, plot_d, plot_s, plot_c, plot_b, plot_g, plot_unknown], what='graph', 
-                  xtitle="p_{T}^{jet} [GeV]", ytitle="Fraction", title=title, ylim=[0, 1])
+    p_flav = Plot([plot_u, plot_d, plot_s, plot_c, plot_b, plot_g, plot_unknown],
+                  what='graph',
+                  xtitle="p_{T}^{jet} [GeV]",
+                  ytitle="Fraction",
+                  title=title,
+                  xlim=(pt_bins[0][0], pt_bins[-1][1]),
+                  ylim=[0, 1],
+                  has_data=False)
     p_flav.plot("ALP")
+    p_flav.set_logx()
     p_flav.save(output_filename)

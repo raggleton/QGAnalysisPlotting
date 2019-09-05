@@ -36,11 +36,7 @@ OUTPUT_FMT = "pdf"
 def do_all_flavour_fraction_plots(root_dir, plot_dir="flav_fractions", zpj_dirname="ZPlusJets_QG", dj_dirname="Dijet_QG", var_prepend="", flav_source=""):
     """Do plots of jet flavour fractions vs pT, for both Z+jets and dijets regions"""
 
-    pt_bins = [(0, 20), (20, 40), (40, 60), (60, 80), (80, 100), (100, 120),
-               (120, 160), (160, 200), (200, 260), (260, 300), (300, 400),
-               (400, 500), (500, 600), (600, 800), (800, 1000),
-               (1000, 1400), (1400, 2000)]
-
+    pt_bins = qgc.PT_BINS_INC_UFLOW
     # Plots of all flavour fractions vs pT for a given sample/selection
     if zpj_dirname:
         # Z+jets
