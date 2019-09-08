@@ -254,6 +254,7 @@ for pt_name in list(PT_UNFOLD_DICT.keys()):
 
 # Common labels for legends etc
 DY_ZpJ_LABEL = "DY+jets MC, Z+jets region"
+DY_ZpJ_GROOMED_LABEL = "DY+jets MC, Z+jets region\n(groomed)"
 DY_ZpJ_GEN_LABEL = "DY+jets MC, Z+jets region\n(GenJets)"
 DY_ZpJ_QFLAV_LABEL = "DY+jets MC, Z+jets region\n(uds-matched)"
 DY_ZpJ_GFLAV_LABEL = "DY+jets MC, Z+jets region\n(g-matched)"
@@ -263,7 +264,7 @@ DY_Dijet_GEN_LABEL = "DY+jets MC, Dijet region\n(GenJets)"
 DY_Dijet_QFLAV_LABEL = "DY+jets MC, Dijet region\n(uds-matched)"
 DY_Dijet_GFLAV_LABEL = "DY+jets MC, Dijet region\n(g-matched)"
 
-QCD_ZpJ_LABEL = "QCD MC, Z+jetsets region"
+QCD_ZpJ_LABEL = "QCD MC, Z+jet region"
 QCD_ZpJ_GEN_LABEL = "QCD MC, Z+jets region\n(GenJets)"
 QCD_ZpJ_QFLAV_LABEL = "QCD MC, Z+jets region\n(uds-matched)"
 QCD_ZpJ_GFLAV_LABEL = "QCD MC, Z+jets region\n(g-matched)"
@@ -274,11 +275,13 @@ QCD_Dijet_QFLAV_LABEL = "QCD MC, Dijet region\n(uds-matched)"
 QCD_Dijet_GFLAV_LABEL = "QCD MC, Dijet region\n(g-matched)"
 
 QCD_Dijet_CEN_LABEL = "QCD MC, Dijet region (central jet)"
+QCD_Dijet_CEN_GROOMED_LABEL = "QCD MC, Dijet region (central jet, groomed)"
 QCD_Dijet_CEN_GEN_LABEL = "QCD MC, Dijet region (central jet)\n(GenJets)"
 QCD_Dijet_CEN_QFLAV_LABEL = "QCD MC, Dijet region (central jet)\n(uds-matched)"
 QCD_Dijet_CEN_GFLAV_LABEL = "QCD MC, Dijet region (central jet)\n(g-matched)"
 
 QCD_Dijet_FWD_LABEL = "QCD MC, Dijet region (forward jet)"
+QCD_Dijet_FWD_GROOMED_LABEL = "QCD MC, Dijet region (forward jet, groomed)"
 QCD_Dijet_FWD_GEN_LABEL = "QCD MC, Dijet region (forward jet)\n(GenJets)"
 QCD_Dijet_FWD_QFLAV_LABEL = "QCD MC, Dijet region (forward jet)\n(uds-matched)"
 QCD_Dijet_FWD_GFLAV_LABEL = "QCD MC, Dijet region (forward jet)\n(g-matched)"
