@@ -38,6 +38,9 @@ TOTAL_LUMI = 35918
 if __name__ == "__main__":
     # pythia_dir = "workdir_ak4puppi_mgpythia_newFlav_jetAsymCut_chargedVars_pt1RecoConstituents_V11JEC_JER_tUnfoldBetter_target0p5_noZReweight_wta_groomed"
     pythia_dir = "workdir_ak4puppi_mgpythia_newFlav_jetAsymCut_chargedVars_pt1RecoConstituents_V11JEC_JER_tUnfoldBetter_target0p5_noZReweight_wta_groomed_fwdcenDijet"
+    pythia_dir = "workdir_ak4puppi_mgpythia_newFlav_jetAsymCut_chargedVars_pt1RecoConstituents_V11JEC_JER_tUnfoldBetter_target0p5_noZReweight_wta_groomed_fwdcenDijet_betterLargeWeightVeto"
+    # pythia_dir = "workdir_ak4puppi_mgpythia_newFlav_jetAsymCut_chargedVars_pt1RecoConstituents_V11JEC_JER_tUnfoldBetter_target0p5_noZReweight_wta_groomed_fwdcenDijet_betterLargeWeightVetoNoPUpthatCut"
+    # pythia_dir = "workdir_ak4puppi_mgpythia_newFlav_jetAsymCut_chargedVars_pt1RecoConstituents_V11JEC_JER_tUnfoldBetter_target0p5_noZReweight_wta_groomed_fwdcenDijet_betterLargeWeightVetoNoPUpthatCutNoQscaleCut"
     # pythia_dir = "workdir_ak8puppi_mgpythia_newFlav_jetAsymCut_chargedVars_pt1RecoConstituents_V11JEC_JER_tUnfoldBetter_target0p5_noZReweight_wta_groomed"
     sources = [
         {"root_dir": pythia_dir ,
@@ -65,15 +68,49 @@ if __name__ == "__main__":
 
     title = qgc.extract_jet_config(pythia_dir)
     # Do Z+jets region only
+    # qgp.do_all_exclusive_plots_comparison(sources=sources,
+    #                                       var_list=qgc.COMMON_VARS[:],
+    #                                       plot_dir=os.path.join(pythia_dir, "groomed_vs_ungroomed_jet_zpj"),
+    #                                       dy_filename=qgc.DY_FILENAME,
+    #                                       qcd_filename=None,
+    #                                       dj_cen_dirname=None,
+    #                                       dj_fwd_dirname=None,
+    #                                       subplot_type="ratio",
+    #                                       subplot_title="#splitline{Groomed/}{ungroomed}",
+    #                                       do_flav_tagged=False,
+    #                                       pt_bins=qgc.PT_BINS,
+    #                                       title=title,
+    #                                       has_data=False,
+    #                                       ofmt=OUTPUT_FMT)
+
+    # Do Z+jet and dijet regions altogether
     qgp.do_all_exclusive_plots_comparison(sources=sources,
                                           var_list=qgc.COMMON_VARS[:],
-                                          plot_dir=os.path.join(pythia_dir, "groomed_vs_ungroomed_jet_zpj"),
-                                          dy_filename=qgc.DY_FILENAME,
-                                          qcd_filename=None,
-                                          dj_cen_dirname=None,
-                                          dj_fwd_dirname=None,
+                                          plot_dir=os.path.join(pythia_dir, "groomed_vs_ungroomed_jet_dijet_zpj"),
                                           subplot_type="ratio",
                                           subplot_title="#splitline{Groomed/}{ungroomed}",
+                                          do_flav_tagged=False,
+                                          pt_bins=qgc.PT_BINS,
+                                          title=title,
+                                          has_data=False,
+                                          ofmt=OUTPUT_FMT)
+    
+    qgp.do_all_exclusive_plots_comparison(sources=sources[0],
+                                          var_list=qgc.COMMON_VARS[:],
+                                          plot_dir=os.path.join(pythia_dir, "ungroomed_jet_dijet_zpj"),
+                                          # subplot_type="ratio",
+                                          # subplot_title="#splitline{Groomed/}{ungroomed}",
+                                          do_flav_tagged=False,
+                                          pt_bins=qgc.PT_BINS,
+                                          title=title,
+                                          has_data=False,
+                                          ofmt=OUTPUT_FMT)
+    
+    qgp.do_all_exclusive_plots_comparison(sources=sources[1],
+                                          var_list=qgc.COMMON_VARS[:],
+                                          plot_dir=os.path.join(pythia_dir, "groomed_jet_dijet_zpj"),
+                                          # subplot_type="ratio",
+                                          # subplot_title="#splitline{Groomed/}{ungroomed}",
                                           do_flav_tagged=False,
                                           pt_bins=qgc.PT_BINS,
                                           title=title,
@@ -142,17 +179,17 @@ if __name__ == "__main__":
         })
     subplot_title = "#splitline{Ratio wrt}{PU %d-%d}" % (pu_bins[0][0], pu_bins[0][1])
     # Z+jets plots
-    qgp.do_all_exclusive_plots_comparison(sources=sources,
-                                          var_list=qgc.COMMON_VARS,
-                                          dj_cen_dirname=None,
-                                          dj_fwd_dirname=None,
-                                          plot_dir=os.path.join(pythia_dir, "plots_dy_vs_qcd_compare_pu_zpj_groomed"),
-                                          pt_bins=qgc.PT_BINS,
-                                          subplot_type="ratio",
-                                          subplot_title=subplot_title,
-                                          title=title,
-                                          has_data=False,
-                                          do_flav_tagged=False)
+    # qgp.do_all_exclusive_plots_comparison(sources=sources,
+    #                                       var_list=qgc.COMMON_VARS,
+    #                                       dj_cen_dirname=None,
+    #                                       dj_fwd_dirname=None,
+    #                                       plot_dir=os.path.join(pythia_dir, "plots_dy_vs_qcd_compare_pu_zpj_groomed"),
+    #                                       pt_bins=qgc.PT_BINS,
+    #                                       subplot_type="ratio",
+    #                                       subplot_title=subplot_title,
+    #                                       title=title,
+    #                                       has_data=False,
+    #                                       do_flav_tagged=False)
     # Dijet central
     qgp.do_all_exclusive_plots_comparison(sources=sources,
                                           var_list=qgc.COMMON_VARS,
