@@ -869,3 +869,18 @@ def make_migration_summary_plot(h2d_renorm_x, h2d_renorm_y, xlabel, output_filen
         lines.append(line)
         line.Draw("same")
     plot.save(output_filename)
+
+
+def hist_divide_bin_width(h):
+    """Create copy of hist, but each bin's contents is divide by the bin width"""
+    h_new = h.Clone(h.GetName()+"DivideBinWidth")
+    for i in range(1, h_new.GetNbinsX()+1):
+        binc = h_new.GetBinContent(i)
+        bine = h_new.GetBinError(i)
+        bin_width = h_new.GetBinWidth(i)
+        h_new.SetBinContent(i, binc*1./bin_width)
+        h_new.SetBinError(i, bine*1./bin_width)
+    return h_new
+
+
+# def do_
