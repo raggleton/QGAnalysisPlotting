@@ -33,14 +33,14 @@ ROOT.gStyle.SetOptStat(0)
 OUTPUT_FMT = "pdf"
 
 
-def do_all_flavour_fraction_plots(root_dir, plot_dir="flav_fractions", zpj_dirname="ZPlusJets_QG", dj_dirname="Dijet_QG", var_prepend="", flav_source=""):
+def do_all_flavour_fraction_plots(root_dir, plot_dir="flav_fractions", zpj_dirname="ZPlusJets_QG", dj_dirname="Dijet_QG_tighter", var_prepend="", flav_source=""):
     """Do plots of jet flavour fractions vs pT, for both Z+jets and dijets regions"""
 
     pt_bins = [(0, 20), (20, 40), (40, 60), (60, 80), (80, 100), (100, 120),
                (120, 160), (160, 200), (200, 260), (260, 300), (300, 400),
                (400, 500), (500, 600), (600, 800), (800, 1000),
                (1000, 1400), (1400, 2000)]
-
+    pt_bins = qgc.PT_BINS
     # Plots of all flavour fractions vs pT for a given sample/selection
     if zpj_dirname:
         # Z+jets
@@ -112,12 +112,13 @@ def do_all_flavour_fraction_plots(root_dir, plot_dir="flav_fractions", zpj_dirna
                                             xtitle="p_{T}^{jet 2} [GeV]")
 
 
-def do_flavour_fraction_input_comparison_plots(root_dirs, labels, plot_dir="flav_fractions_comparison", zpj_dirname="ZPlusJets_QG", dj_dirname="Dijet_QG", var_prepend="", flav_source=""):
+def do_flavour_fraction_input_comparison_plots(root_dirs, labels, plot_dir="flav_fractions_comparison", zpj_dirname="ZPlusJets_QG", dj_dirname="Dijet_QG_tighter", var_prepend="", flav_source=""):
     """Do plots comparing several input dirs """
     pt_bins = [(0, 20), (20, 40), (40, 60), (60, 80), (80, 100), (100, 120),
            (120, 160), (160, 200), (200, 260), (260, 300), (300, 400),
            (400, 500), (500, 600), (600, 800), (800, 1000),
            (1000, 1400), (1400, 2000)]
+    pt_bins = qgc.PT_BINS
     if dj_dirname:
         this_flav = "g"
         dirnames = [dj_dirname]*len(root_dirs)
@@ -215,19 +216,26 @@ if __name__ == '__main__':
     parser.add_argument("--dir", help="Directory to get plot from. Can be used multiple times", action="append")
     parser.add_argument("--dirlabel", help="Label to be given for dir. Must be used in conjunction with --dir, once per entry.", action="append")
     args = parser.parse_args()
-    print args
-    if args.genparton:
-        do_flavour_fraction_input_comparison_plots(args.dir, 
-            plot_dir=os.path.join(args.dir[0], "flav_fractions_genParton_comparison"), 
-            labels=args.dirlabel,
-            flav_source="genParton_",
-            zpj_dirname="ZPlusJets_QG" if args.zpj else None,
-            dj_dirname="Dijet_QG" if args.dj else None)
-    else:
-        do_flavour_fraction_input_comparison_plots(args.dir, 
-            plot_dir=os.path.join(args.dir[0], "flav_fractions_comparison"), 
-            labels=args.dirlabel,
-            flav_source="",
-            zpj_dirname="ZPlusJets_QG" if args.zpj else None,
-            dj_dirname="Dijet_QG" if args.dj else None)
+    print(args)
+    # if args.genparton:
+    do_all_flavour_fraction_plots(args.dir[0],
+        plot_dir=os.path.join(args.dir[0], "flav_fractions_genParton"), 
+        # labels=args.dirlabel,
+        flav_source="",
+        zpj_dirname="ZPlusJets_QG" if args.zpj else None,
+        dj_dirname="Dijet_QG_tighter" if args.dj else None
+    )
+        # do_flavour_fraction_input_comparison_plots(args.dir, 
+        #     plot_dir=os.path.join(args.dir[0], "flav_fractions_genParton_comparison"), 
+        #     labels=args.dirlabel,
+        #     flav_source="genParton_",
+        #     zpj_dirname="ZPlusJets_QG" if args.zpj else None,
+        #     dj_dirname="Dijet_QG_tighter" if args.dj else None)
+    # else:
+    #     do_flavour_fraction_input_comparison_plots(args.dir, 
+    #         plot_dir=os.path.join(args.dir[0], "flav_fractions_comparison"), 
+    #         labels=args.dirlabel,
+    #         flav_source="",
+    #         zpj_dirname="ZPlusJets_QG" if args.zpj else None,
+    #         dj_dirname="Dijet_QG" if args.dj else None)
 
