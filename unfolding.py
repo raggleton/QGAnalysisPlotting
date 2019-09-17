@@ -802,20 +802,239 @@ if __name__ == "__main__":
 
         pt_bin_edges_gen = qgc.PT_UNFOLD_DICT['signal%s_gen' % (zpj_append)]
         pt_bin_edges_reco = qgc.PT_UNFOLD_DICT['signal%s_reco' % (zpj_append)]
-        # pt_bin_edges_reco = qgc.construct_fine_binning(pt_bin_edges_gen)
 
         pt_bin_edges_underflow_gen = qgc.PT_UNFOLD_DICT['underflow%s_gen' % (zpj_append)]
         pt_bin_edges_underflow_reco = qgc.PT_UNFOLD_DICT['underflow%s_reco' % (zpj_append)]
-        # pt_bin_edges_underflow_reco = qgc.construct_fine_binning(pt_bin_edges_underflow_gen)
 
         new_tdir = region['name']
         output_tfile.mkdir(new_tdir)
         region_tdir = output_tfile.Get(new_tdir)
         region_tdir.cd()
 
-        # Get 1D pt hist and save it
-        hist_mc_gen_pt = cu.get_from_tfile(region['mc_tfile'], "%s/hist_pt_truth_all" % (region['dirname']))
-        # Redo with physical bins
+        # Do 1D unfolding of pt
+        # ----------------------------------------------------------------------
+        append = "%s_pt" % (region['name'])  # common str to put on filenames, etc
+        # print("*"*80)
+        # print("Region/var: %s" % (append))
+        # print("*"*80)
+
+        # hist_data_reco = cu.get_from_tfile(region['data_tfile'], "%s/hist_pt_reco_all" % (region['dirname']))
+        mc_hname_append = "split" if MC_split else "all"
+        # hist_mc_reco = cu.get_from_tfile(region['mc_tfile'], "%s/hist_pt_reco_%s" % (region['dirname'], mc_hname_append))
+        # hist_mc_gen = cu.get_from_tfile(region['mc_tfile'], "%s/hist_pt_truth_%s" % (region['dirname'], mc_hname_append))
+        hist_mc_gen_pt = cu.get_from_tfile(region['mc_tfile'], "%s/hist_pt_truth_%s" % (region['dirname'], mc_hname_append))
+        # hist_mc_gen_reco_map = cu.get_from_tfile(region['mc_tfile'], "%s/tu_pt_GenReco_%s" % (region['dirname'], mc_hname_append))
+
+        # # Actual distribution to be unfolded
+        # reco_1d = hist_mc_reco.Clone() if MC_input else hist_data_reco
+
+        # if subtract_fakes:
+        #     # to construct our "fakes" template, we use the ratio as predicted by MC, and apply it to data
+        #     # this way we ensure we don't have -ve values, and avoid any issue with cross sections
+        #     hist_mc_fakes_reco = cu.get_from_tfile(region['mc_tfile'], "%s/hist_pt_reco_fake_%s" % (region['dirname'], mc_hname_append))
+        #     hist_fakes_reco = hist_mc_fakes_reco.Clone("hist_pt_fakes")
+        #     hist_fakes_reco.Divide(hist_mc_reco)
+        #     hist_fakes_reco.Multiply(reco_1d)
+
+        #     # background-subtracted reco hists, only for plotting purposes, not for TUnfold (that does background subtraction internally)
+        #     reco_1d_bg_subtracted = reco_1d.Clone()
+        #     reco_1d_bg_subtracted.Add(hist_fakes_reco, -1)
+
+        #     hist_data_reco_bg_subtracted = hist_data_reco.Clone(hist_data_reco.GetName() + "_bgrSubtracted")
+        #     hist_data_reco_bg_subtracted.Add(hist_fakes_reco, -1)
+
+        #     hist_mc_reco_bg_subtracted = hist_mc_reco.Clone(hist_mc_reco.GetName() + "_bgrSubtracted")
+        #     hist_mc_reco_bg_subtracted.Add(hist_mc_fakes_reco, -1)  # should
+
+        # # Setup unfolder object
+        # # ---------------------
+        # unfolder = MyUnfolder(response_map=hist_mc_gen_reco_map,
+        #                       variable_bin_edges_reco=None,
+        #                       variable_bin_edges_gen=None,
+        #                       variable_name="", # as it's only 1D in pt
+        #                       pt_bin_edges_reco=pt_bin_edges_reco,
+        #                       pt_bin_edges_gen=pt_bin_edges_gen,
+        #                       pt_bin_edges_underflow_reco=pt_bin_edges_underflow_reco,
+        #                       pt_bin_edges_underflow_gen=pt_bin_edges_underflow_gen,
+        #                       orientation=ROOT.TUnfold.kHistMapOutputHoriz,
+        #                       constraintMode=ROOT.TUnfold.kEConstraintArea,
+        #                       # constraintMode=ROOT.TUnfold.kEConstraintNone,
+        #                       regMode=ROOT.TUnfold.kRegModeCurvature,
+        #                       densityFlags=ROOT.TUnfoldDensity.kDensityModeBinWidth,
+        #                       # densityFlags=ROOT.TUnfoldDensity.kDensityModeNone,
+        #                       axisSteering='*[B]')
+
+        # unfolder.save_binning(txt_filename="%s/binning_scheme.txt" % (this_output_dir), print_xml=False)
+
+        # if subtract_fakes:
+        #     unfolder.tunfolder.SubtractBackground(hist_fakes_reco, "fakes")
+
+        # # Set what is to be unfolded
+        # # ---------------------
+        # unfolder.setInput(reco_1d)
+
+        # # Do any regularisation
+        # # ---------------------
+        # # tau = 1E-10
+        # tau = 0
+        # if regularise == "L":
+        #     tau = unfolder.doScanL(output_dir=this_output_dir, n_scan=100,
+        #                            tau_min=1E-14, tau_max=1E-4)
+        # elif regularise == "tau":
+        #     tau = unfolder.doScanTau(output_dir=this_output_dir, n_scan=100,
+        #                              tau_min=1E-13,
+        #                              tau_max=1E-10,
+        #                              scan_mode=ROOT.TUnfoldDensity.kEScanTauRhoAvgSys)
+        # # Do unfolding!
+        # # ---------------------
+        # unfolder.do_unfolding(tau)
+        # unfolded_1d = unfolder.get_output()
+        # unfolded_1d.SetName("unfolded_1d")
+
+        # # stat errors only - do before or after systematics?
+        # ematrix_input = unfolder.get_ematrix_input() # stat errors from input to be unfolded
+        # this_tdir.WriteTObject(ematrix_input, "ematrix_input")
+        # ematrix_sys_uncorr = unfolder.get_ematrix_sys_uncorr() # stat errors in response matrix
+        # this_tdir.WriteTObject(ematrix_sys_uncorr, "ematrix_sys_uncorr")
+
+        # ematrix_stat_sum = ematrix_input.Clone("ematrix_stat_sum")
+        # ematrix_stat_sum.Add(ematrix_sys_uncorr)
+
+        # error_stat_1d = make_hist_from_diagonals(ematrix_stat_sum, do_sqrt=True)
+        # print ("stat uncert:", error_stat_1d.GetBinError(30))
+
+        # ematrix_total = unfolder.get_ematrix_total()
+        # error_total_1d = make_hist_from_diagonals(ematrix_total, do_sqrt=True)
+        # this_tdir.WriteTObject(ematrix_total, "ematrix_total_1d")
+        # print ("total uncert:", error_total_1d.GetBinError(30))
+
+        # # Update errors to big unfolded 1D
+        # update_hist_bin_content(unfolded_1d, error_total_1d)
+        # print ("new uncert:", unfolded_1d.GetBinError(30))
+        # this_tdir.WriteTObject(unfolded_1d)
+
+        # angle_str = "%s (%s)" % (angle.name, angle.lambda_str)
+
+        # # Draw unified unfolded distributions
+        # # ---------------------
+        # # unfolded, gen, and reco for comparison
+        # plot_simple_unfolded(unfolded=unfolded_1d,
+        #                      tau=tau,
+        #                      reco=None,
+        #                      gen=hist_mc_gen,
+        #                      fake=None,
+        #                      output_filename="%s/unfolded_%s.%s" % (this_output_dir, append, OUTPUT_FMT),
+        #                      title="%s region, %s" % (region['label'], angle_str))
+
+        # # reco using detector binning
+        # plot_simple_detector(reco_data=reco_1d,
+        #                      reco_mc=hist_mc_reco,
+        #                      reco_mc_fake=hist_mc_fakes_reco if subtract_fakes else None,
+        #                      reco_data_fake=hist_fakes_reco if subtract_fakes else None,
+        #                      output_filename="%s/detector_reco_binning_%s.%s" % (this_output_dir, append, OUTPUT_FMT),
+        #                      title="%s region, %s" % (region['label'], angle_str))
+
+        # if subtract_fakes:
+        #     # same plot but with background-subtracted reco
+        #     plot_simple_detector(reco_data=reco_1d_bg_subtracted,
+        #                          reco_mc=hist_mc_reco_bg_subtracted,
+        #                          reco_mc_fake=hist_mc_fakes_reco,
+        #                          reco_data_fake=hist_fakes_reco,
+        #                          output_filename="%s/detector_reco_binning_bg_subtracted_%s.%s" % (this_output_dir, append, OUTPUT_FMT),
+        #                          title="%s region, %s" % (region['label'], angle_str))
+
+        # # reco using gen binning
+        # plot_simple_detector(reco_data=reco_1d_gen_binning,
+        #                      reco_mc=hist_mc_reco_gen_binning,
+        #                      reco_mc_fake=hist_mc_fakes_reco_gen_binning if subtract_fakes else None,
+        #                      reco_data_fake=hist_fakes_reco_gen_binning if subtract_fakes else None,
+        #                      output_filename="%s/detector_gen_binning_%s.%s" % (this_output_dir, append, OUTPUT_FMT),
+        #                      title="%s region, %s" % (region['label'], angle_str))
+
+        # if subtract_fakes:
+        #     # same but with background-subtracted
+        #     plot_simple_detector(reco_data=reco_1d_gen_binning_bg_subtracted,
+        #                          reco_mc=hist_mc_reco_gen_binning_bg_subtracted,
+        #                          reco_mc_fake=hist_mc_fakes_reco_gen_binning,
+        #                          reco_data_fake=hist_fakes_reco_gen_binning,
+        #                          output_filename="%s/detector_gen_binning_bg_subtracted_%s.%s" % (this_output_dir, append, OUTPUT_FMT),
+        #                          title="%s region, %s" % (region['label'], angle_str))
+
+
+        # # Draw projections of response matrix vs 1D hist to check normalisation OK
+        # # Only makes sense if the same MC events go into matrix & 1D plot
+        # # ------------------------------------------------------------------
+        # if not MC_split:
+        #     proj_reco = hist_mc_gen_reco_map.ProjectionY("proj_reco_%s" % (append))
+        #     draw_projection_comparison(hist_mc_reco, proj_reco,
+        #                                title="%s\n%s region" % (jet_algo, region['label']),
+        #                                xtitle="%s, Detector binning" % (angle_str),
+        #                                output_filename="%s/projection_reco_%s.%s" % (this_output_dir, append, OUTPUT_FMT),
+        #                                print_bin_comparison=False)
+
+        #     proj_gen = hist_mc_gen_reco_map.ProjectionX("proj_gen_%s" % (append))
+        #     draw_projection_comparison(hist_mc_gen, proj_gen,
+        #                                title="%s\n%s region" % (jet_algo, region['label']),
+        #                                xtitle="%s, Generator binning" % (angle_str),
+        #                                output_filename="%s/projection_gen_%s.%s" % (this_output_dir, append, OUTPUT_FMT))
+
+        #     if subtract_fakes:
+        #         # Do the same but with backgrounds subtracted from the 1D
+        #         draw_projection_comparison(hist_mc_reco_bg_subtracted, proj_reco,
+        #                                    title="%s\n%s region" % (jet_algo, region['label']),
+        #                                    xtitle="%s, Detector binning" % (angle_str),
+        #                                    output_filename="%s/projection_reco_bg_subtracted_%s.%s" % (this_output_dir, append, OUTPUT_FMT))
+
+        # # Draw matrices
+        # # ---------------------
+        # draw_response_matrix(unfolder.response_map,
+        #                      region['label'],
+        #                      angle_str,
+        #                      "%s/response_map_%s.%s" % (this_output_dir, append, OUTPUT_FMT))
+
+        # prob_map = unfolder.get_probability_matrix()
+        # this_tdir.WriteTObject(prob_map, "prob_matrix")
+        # draw_probability_matrix(prob_map,
+        #                         region['label'],
+        #                         angle_str,
+        #                         "%s/probability_map_%s.%s" % (this_output_dir, append, OUTPUT_FMT))
+
+        # rhoij = unfolder.get_rhoij_total()
+        # this_tdir.WriteTObject(rhoij, "rhoij")
+        # draw_correlation_matrix(rhoij,
+        #                         region['label'],
+        #                         angle_str,
+        #                         "%s/rho_map_%s.%s" % (this_output_dir, append, OUTPUT_FMT))
+
+        # draw_error_matrix_input(ematrix_input,
+        #                         region['label'],
+        #                         angle_str,
+        #                         "%s/err_map_sys_input_%s.%s" % (this_output_dir, append, OUTPUT_FMT))
+
+        # draw_error_matrix_sys_uncorr(ematrix_sys_uncorr,
+        #                              region['label'],
+        #                              angle_str,
+        #                              "%s/err_map_sys_uncorr_%s.%s" % (this_output_dir, append, OUTPUT_FMT))
+
+        # draw_error_matrix_total(ematrix_total,
+        #                         region['label'],
+        #                         angle_str,
+        #                         "%s/err_map_total_%s.%s" % (this_output_dir, append, OUTPUT_FMT))
+
+        # # Do forward-folding to check unfolding
+        # # ----------------------------
+        # hist_data_folded = unfolder.get_folded_output(hist_name="folded_%s" % (append))
+        # this_tdir.WriteTObject(hist_data_folded, "folded_1d")
+        # draw_reco_folded(hist_folded=hist_data_folded,
+        #                  tau=tau,
+        #                  hist_reco_data=reco_1d_bg_subtracted if subtract_fakes else reco_1d,
+        #                  hist_reco_mc=hist_mc_reco_bg_subtracted if subtract_fakes else hist_mc_reco,
+        #                  title="%s\n%s region" % (jet_algo, region['label']),
+        #                  xtitle="%s, Detector binning" % (angle_str),
+        #                  output_filename="%s/folded_%s.%s" % (this_output_dir, append, OUTPUT_FMT))
+
+
+        # Remake gen hist with physical bins & save to file
         all_pt_bins_gen = np.concatenate((pt_bin_edges_underflow_gen[:-1], pt_bin_edges_gen))
         hist_mc_gen_pt_physical = ROOT.TH1F("mc_gen_pt", ";p_{T}^{jet} [GeV];N", len(all_pt_bins_gen)-1, array('d', all_pt_bins_gen))
         update_hist_bin_content(hist_mc_gen_pt, hist_mc_gen_pt_physical)
