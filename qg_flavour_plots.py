@@ -94,7 +94,7 @@ def compare_flavour_fractions_vs_pt(input_files, dirnames, pt_bins, labels, flav
     p = Plot(contribs, what='graph', xtitle=xtitle, ytitle=ytitle, title=title, ylim=(0, 1))
     # p.legend.SetX1(0.4)
     p.plot("ALP")
-    p.canvas.SetLogx()
+    p.set_logx()
     p.save(output_filename)
 
 
