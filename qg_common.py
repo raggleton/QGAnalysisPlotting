@@ -177,6 +177,51 @@ VAR_UNFOLD_DICT = {
     },
 }
 
+# WTA axis, no dijet eta split
+VAR_UNFOLD_DICT = {
+    'jet_puppiMultiplicity': {
+        'gen': np.array([0, 9, 15, 22, 35, 50, 75, 100, 150], dtype='d'),
+        'reco': None
+    },
+    'jet_pTD': {
+        'gen': np.array([0.0, 0.09, 0.14, 0.25, 1.0], dtype='d'),
+        'reco': None
+    },
+    'jet_LHA': {
+        'gen': np.array([0.0, 0.16, 0.23, 0.3, 0.36, 0.42, 0.49, 0.56, 0.63, 0.72, 1.0], dtype='d'),
+        'reco': None
+    },
+    'jet_width': {
+        'gen': np.array([0.0, 0.08, 0.13, 0.18, 0.24, 0.31, 0.39, 0.47, 0.58, 1.0], dtype='d'),
+        'reco': None
+    },
+    'jet_thrust': {
+        'gen': np.array([0.0, 0.04, 0.07, 0.12, 0.19, 0.27, 0.37, 0.52, 1.0], dtype='d'),
+        'reco': None
+    },
+
+    'jet_puppiMultiplicity_charged': {
+        'gen': np.array([0, 9, 15, 22, 35, 50, 75, 100, 150], dtype='d'),
+        'reco': None
+    },
+    'jet_pTD_charged': {
+        'gen': np.array([0.0, 0.09, 0.12, 0.15, 0.19, 0.24, 0.31, 0.4, 0.53, 0.73, 1.0], dtype='d'),
+        'reco': None
+    },
+    'jet_LHA_charged': {
+        'gen': np.array([0.0, 0.09, 0.14, 0.19, 0.24, 0.3, 0.36, 0.43, 0.51, 0.6, 0.71, 1.0], dtype='d'),
+        'reco': None
+    },
+    'jet_width_charged': {
+        'gen': np.array([0.0, 0.04, 0.07, 0.1, 0.14, 0.18, 0.23, 0.29, 0.37, 0.46, 0.58, 0.99, 1.0], dtype='d'),
+        'reco': None
+    },
+    'jet_thrust_charged': {
+        'gen': np.array([0.0, 0.02, 0.04, 0.07, 0.11, 0.17, 0.25, 0.36, 0.52, 1.0], dtype='d'),
+        'reco': None
+    },
+}
+
 # target 0.75 values
 # VAR_UNFOLD_DICT = {
 
