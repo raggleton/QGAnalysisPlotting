@@ -790,8 +790,11 @@ if __name__ == "__main__":
         update_hist_bin_content(hist_mc_gen_pt, hist_mc_gen_pt_physical)
         region_tdir.WriteTObject(hist_mc_gen_pt_physical, "mc_gen_pt")
 
-        # for angle in qgc.COMMON_VARS[2:3]:
-        for angle in qgc.COMMON_VARS[:]:
+        # Do unfolding for each angle
+        # ----------------------------------------------------------------------
+
+        for angle in qgc.COMMON_VARS[2:3]:
+        # for angle in qgc.COMMON_VARS[:]:
             append = "%s_%s" % (region['name'], angle.var)  # common str to put on filenames, etc
 
             print("*"*80)
@@ -1087,6 +1090,8 @@ if __name__ == "__main__":
                              xtitle="%s, Detector binning" % (angle_str),
                              output_filename="%s/folded_%s.%s" % (this_output_dir, append, OUTPUT_FMT))
 
+            dijet_1d_entries = []
+
             # Draw individual pt bin plots
             # ----------------------------
             for ibin_pt in range(0, len(pt_bin_edges_gen)-1):
@@ -1097,7 +1102,7 @@ if __name__ == "__main__":
                 # Produce 1D hist for this pt bin
                 mc_gen_hist_bin = unfolder.get_var_hist_pt_binned(hist_mc_gen, ibin_pt, binning_scheme="generator")
                 this_pt_bin_tdir.WriteTObject(mc_gen_hist_bin, "mc_gen_hist_bin")
-                
+
                 unfolded_hist_bin = unfolder.get_var_hist_pt_binned(unfolded_1d, ibin_pt, binning_scheme="generator")
                 this_pt_bin_tdir.WriteTObject(unfolded_hist_bin, "unfolded_hist_bin")
 
@@ -1247,8 +1252,8 @@ if __name__ == "__main__":
                             xtitle="Particle level "+angle_str,
                             ytitle=ytitle,
                             subplot_type='ratio',
-                            subplot_title='Unfolded / gen',
-                            subplot_limits=(0.8, 1.2))
+                            subplot_title='Gen / Unfolded',
+                            subplot_limits=(0.5, 1.5))
                 plot.legend.SetX1(0.6)
                 plot.legend.SetY1(0.68)
                 plot.legend.SetX2(0.98)
@@ -1555,6 +1560,22 @@ if __name__ == "__main__":
                 plot.legend.SetY2(0.9)
                 plot.plot("NOSTACK E1")
                 plot.save("%s/detector_folded_only_data_%s_bin_%d.%s" % (this_output_dir, append, ibin_pt, OUTPUT_FMT))
+
+            ylim=None
+            # skip first entries as low pt bin
+            marker = ""
+            if "_" in angle.name or "^" in angle.name:
+                marker = "$"
+            var_label = "Particle-level\n" + marker + angle.name + marker + "\n$%s$" % angle.lambda_str
+            v = "%s_vs_pt" % (angle.var)
+            bins = [(pt_bin_edges_gen[i], pt_bin_edges_gen[i+1]) for i in range(len(pt_bin_edges_gen)-1)]
+            print(bins)
+            qgp.do_box_plot_mpl(dijet_1d_entries[:], bins,
+                                "%s/%s_box_dijet_mpl.%s" % (this_output_dir, v, OUTPUT_FMT),
+                                var_label=var_label,
+                                xlim=(50, 1000),
+                                ylim=ylim,
+                                region_title="dijet")
 
     print("Saved hists to", output_tfile.GetName())
 
