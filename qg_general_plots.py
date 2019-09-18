@@ -688,15 +688,19 @@ def do_box_plot_mpl(entries, bins, output_filename, var_label="", xlim=None, yli
         for entry in bin_entry:
             quantile_values = array('d', [0., 0., 0.])
             hist = entry[0]
-            if cu.get_hist_mean_rel_error(hist) < 0.4:
-                hist.GetQuantiles(len(quantiles), quantile_values, quantiles)
-                this_lower.append(quantile_values[0])
-                this_median.append(quantile_values[1])
-                this_upper.append(quantile_values[2])
-            else:
-                this_lower.append(np.nan)
-                this_median.append(np.nan)
-                this_upper.append(np.nan)
+            # if cu.get_hist_mean_rel_error(hist) < 0.4:
+            # hist.GetQuantiles(len(quantiles), quantile_values, quantiles)
+            # this_lower.append(quantile_values[0])
+            # this_median.append(quantile_values[1])
+            # this_upper.append(quantile_values[2])
+            
+            this_median.append(hist.GetMean())
+            this_lower.append(hist.GetMean()-hist.GetRMS())
+            this_upper.append(hist.GetMean()+hist.GetRMS())
+            # else:
+            #     this_lower.append(np.nan)
+            #     this_median.append(np.nan)
+            #     this_upper.append(np.nan)
         lower_quants.append(this_lower)
         median_quants.append(this_median)
         upper_quants.append(this_upper)
@@ -743,7 +747,10 @@ def do_box_plot_mpl(entries, bins, output_filename, var_label="", xlim=None, yli
                             boxprops=boxprops, showcaps=False)
 
         # Explicitly set the label and store for the legend
-        things['boxes'][0].set_label(extract_sample_name(entry[1]['label']).split(',')[0])
+        label = extract_sample_name(entry[1]['label']).split(',')[0]
+        label = label.replace("#tau", "$\\tau$").replace("#", "\\")
+        print(label)
+        things['boxes'][0].set_label(label)
         plot_objs.append(things['boxes'][0])
 
         # loc = plticker.LogLocator(base=10.0, subs=(1.0, 2.0, 5.0))
@@ -752,7 +759,8 @@ def do_box_plot_mpl(entries, bins, output_filename, var_label="", xlim=None, yli
         # axes[0].set_ylim(bottom=0)
 
     leg_loc = (1.05, 0.1)
-    labels = [e[1]['label'] for e in entries[0]]
+    labels = [e[1]['label'].replace("#", "\\") for e in entries[0]]
+    print(labels)
     axes[0].legend(handles=plot_objs, loc=leg_loc, fancybox=False, edgecolor='white')
 
     plt.xscale('log')
@@ -786,7 +794,8 @@ def do_box_plot_mpl(entries, bins, output_filename, var_label="", xlim=None, yli
                              color=cols[ind],
                              linewidth=0, elinewidth=2)
     axes[1].axhline(1.0, color='gray', linestyle='dashed')
-    axes[1].set_ylabel("Ratio of medians\n(MC / Data)")
+    axes[1].set_ylabel("Ratio of means\n(MC / Data)")
+    # axes[1].set_ylabel("Ratio of medians\n(MC / Data)")
     ylim = axes[1].get_ylim()
     lim = 2
     if ylim[1] > lim:
@@ -839,11 +848,13 @@ def do_box_plot_mpl(entries, bins, output_filename, var_label="", xlim=None, yli
     if ylim[1] > lim:
         axes[2].set_ylim(top=lim)
     axes[2].axhline(1.0, color='gray', linestyle='dashed')
-    axes[2].set_ylabel("Ratio of central\n%d% quantile width\n(MC / Data)" % (100*(quantiles[-1] - quantiles[0])))
+    # axes[2].set_ylabel("Ratio of central\n{}% quantile width\n(MC / Data)".format(100*(quantiles[-1] - quantiles[0])))
+    axes[2].set_ylabel("Ratio of RMS\n(MC / Data)")
     # axes[2].legend(loc=leg_loc, fancybox=False)
 
     quantiles_str = ", ".join(["%d%%" % (100*q) for q in quantiles])
-    axes[0].set_title("{} quantiles for {} region".format(quantiles_str, region_title), pad=35)
+    # axes[0].set_title("{} quantiles for {} region".format(quantiles_str, region_title), pad=35)
+    axes[0].set_title("Mean, RMS for {} region".format(region_title), pad=35)
 
     # Draw bin delineators
     for ax in axes.flat:
@@ -960,3 +971,18 @@ def make_migration_summary_plot(h2d_renorm_x, h2d_renorm_y, xlabel, output_filen
         lines.append(line)
         line.Draw("same")
     plot.save(output_filename)
+
+
+def hist_divide_bin_width(h):
+    """Create copy of hist, but each bin's contents is divide by the bin width"""
+    h_new = h.Clone(h.GetName()+"DivideBinWidth")
+    for i in range(1, h_new.GetNbinsX()+1):
+        binc = h_new.GetBinContent(i)
+        bine = h_new.GetBinError(i)
+        bin_width = h_new.GetBinWidth(i)
+        h_new.SetBinContent(i, binc*1./bin_width)
+        h_new.SetBinError(i, bine*1./bin_width)
+    return h_new
+
+
+# def do_

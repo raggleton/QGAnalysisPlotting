@@ -80,7 +80,7 @@ class MyUnfolder(object):
         pt_uf, pt_of = False, False  # handle pt uder/over flow ourselves
         self.detector_binning = ROOT.TUnfoldBinning("detector")
         self.detector_distribution_underflow = self.detector_binning.AddBinning("detectordistribution_underflow")
-        if self.variable_bin_edges_reco is not None: 
+        if self.variable_bin_edges_reco is not None:
             self.detector_distribution_underflow.AddAxis(self.variable_name, self.nbins_variable_reco, self.variable_bin_edges_reco, var_uf, var_of)
         self.detector_distribution_underflow.AddAxis("pt", self.nbins_pt_underflow_reco, self.pt_bin_edges_underflow_reco, pt_uf, pt_of)
 
@@ -667,23 +667,24 @@ def draw_reco_folded(hist_folded, tau, hist_reco_data, hist_reco_mc, title, xtit
 
 if __name__ == "__main__":
     # FOR Z+JETS:
-    input_mc_dy_mgpythia_tfile = cu.open_root_file("workdir_ak4puppi_mgpythia_newFlav_jetAsymCut_chargedVars_pt1RecoConstituents_V11JEC_JER_tUnfoldBetter_target0p5_noZReweight/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL.root")
+    input_mc_dy_mgpythia_tfile = cu.open_root_file("workdir_ak4puppi_mgpythia_newFlav_jetAsymCut_chargedVars_pt1RecoConstituents_V11JEC_JER_tUnfoldBetter_target0p5_noZReweight_wta_groomed/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL.root")
 
-    # input_mc_dy_mgherwig_tfile = cu.open_root_file("workdir_ak4puppi_herwig_newFlav_withAllResponses_jetAsymCut_chargedResp_pt1RecoConstituents_V11JEC_JER_tUnfold/uhh2.AnalysisModuleRunner.MC.MC_MG_HERWIG_DYJetsToLL.root")
-    # input_mc_dy_herwig_tfile = cu.open_root_file("workdir_ak4puppi_herwig_newFlav_withAllResponses_jetAsymCut_chargedResp_pt1RecoConstituents_V11JEC_JER_tUnfold/uhh2.AnalysisModuleRunner.MC.MC_HERWIG_DYJetsToLL.root")
+    input_mc_dy_mgherwig_tfile = cu.open_root_file("workdir_ak4puppi_herwig_newFlav_jetAsymCut_chargedVars_pt1RecoConstituents_V11JEC_JER_tUnfoldBetter_target0p5_noZReweight_wta_groomed/uhh2.AnalysisModuleRunner.MC.MC_MG_HERWIG_DYJetsToLL.root")
+    input_mc_dy_herwig_tfile = cu.open_root_file("workdir_ak4puppi_herwig_newFlav_jetAsymCut_chargedVars_pt1RecoConstituents_V11JEC_JER_tUnfoldBetter_target0p5_noZReweight_wta_groomed/uhh2.AnalysisModuleRunner.MC.MC_HERWIG_DYJetsToLL.root")
 
     # input_mc_dy_mgpythia_neutralUp_tfile = cu.open_root_file("workdir_ak4puppi_mgpythia_newFlav_withAllResponses_jetAsymCut_chargedResp_pt1RecoConstituents_V11JEC_JER_tUnfold_neutralUp/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL.root")
     # input_mc_dy_mgpythia_neutralDown_tfile = cu.open_root_file("workdir_ak4puppi_mgpythia_newFlav_withAllResponses_jetAsymCut_chargedResp_pt1RecoConstituents_V11JEC_JER_tUnfold_neutralDown/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL.root")
 
-    input_singlemu_tfile = cu.open_root_file("workdir_ak4puppi_data_trigBinningBetter2_jetAsymCut_pt1RecoConstituents_V11JEC_JER_tUnfoldBetter_target0p5/uhh2.AnalysisModuleRunner.DATA.Data_SingleMu.root")
+    input_singlemu_tfile = cu.open_root_file("workdir_ak4puppi_data_trigBinningBetter2_jetAsymCut_pt1RecoConstituents_V11JEC_JER_tUnfoldBetter_target0p5_wta_groomed/uhh2.AnalysisModuleRunner.DATA.Data_SingleMu.root")
 
     # FOR DIJET:
-    input_mc_qcd_mgpythia_tfile = cu.open_root_file("workdir_ak4puppi_mgpythia_newFlav_jetAsymCut_chargedVars_pt1RecoConstituents_V11JEC_JER_tUnfoldBetter_target0p5_noZReweight/uhh2.AnalysisModuleRunner.MC.MC_QCD.root")
+    input_mc_qcd_mgpythia_tfile = cu.open_root_file("workdir_ak4puppi_mgpythia_newFlav_jetAsymCut_chargedVars_pt1RecoConstituents_V11JEC_JER_tUnfoldBetter_target0p5_noZReweight_wta_groomed/uhh2.AnalysisModuleRunner.MC.MC_QCD.root")
 
-    # input_mc_qcd_pythia_tfile = cu.open_root_file("workdir_ak4puppi_pythia_newFlav_withAllResponses_jetAsymCut_chargedResp_pt1RecoConstituents_V11JEC_JER_tUnfold/uhh2.AnalysisModuleRunner.MC.MC_PYTHIA-QCD.root")
-    # input_mc_qcd_herwig_tfile = cu.open_root_file("workdir_ak4puppi_herwig_newFlav_withAllResponses_jetAsymCut_chargedResp_pt1RecoConstituents_V11JEC_JER_tUnfold/uhh2.AnalysisModuleRunner.MC.MC_HERWIG_QCD.root")
+    input_mc_qcd_pythia_tfile = cu.open_root_file("workdir_ak4puppi_pythia_newFlav_jetAsymCut_chargedVars_pt1RecoConstituents_V11JEC_JER_tUnfoldBetter_target0p5_noZReweight/uhh2.AnalysisModuleRunner.MC.MC_PYTHIA-QCD.root")
+    input_mc_qcd_pythia_flat_tfile = cu.open_root_file("workdir_ak4puppi_pythia_newFlav_jetAsymCut_chargedVars_pt1RecoConstituents_V11JEC_JER_tUnfoldBetter_target0p5_noZReweight/uhh2.AnalysisModuleRunner.MC.MC_QCD_PYTHIA_ONLY.root")
+    input_mc_qcd_herwig_tfile = cu.open_root_file("workdir_ak4puppi_herwig_newFlav_jetAsymCut_chargedVars_pt1RecoConstituents_V11JEC_JER_tUnfoldBetter_target0p5_noZReweight_wta_groomed/uhh2.AnalysisModuleRunner.MC.MC_HERWIG_QCD.root")
 
-    input_jetht_tfile = cu.open_root_file("workdir_ak4puppi_data_trigBinningBetter2_jetAsymCut_pt1RecoConstituents_V11JEC_JER_tUnfoldBetter_target0p5/uhh2.AnalysisModuleRunner.DATA.Data_JetHTZeroBias.root")
+    input_jetht_tfile = cu.open_root_file("workdir_ak4puppi_data_trigBinningBetter2_jetAsymCut_pt1RecoConstituents_V11JEC_JER_tUnfoldBetter_target0p5_wta_groomed/uhh2.AnalysisModuleRunner.DATA.Data_JetHT_ZeroBias.root")
 
     # input_mc_qcd_mgpythia_neutralUp_tfile = cu.open_root_file("workdir_ak4puppi_mgpythia_newFlav_withAllResponses_jetAsymCut_chargedResp_pt1RecoConstituents_V11JEC_JER_tUnfold_neutralUp/uhh2.AnalysisModuleRunner.MC.MC_QCD.root")
     # input_mc_qcd_mgpythia_neutralDown_tfile = cu.open_root_file("workdir_ak4puppi_mgpythia_newFlav_withAllResponses_jetAsymCut_chargedResp_pt1RecoConstituents_V11JEC_JER_tUnfold_neutralDown/uhh2.AnalysisModuleRunner.MC.MC_QCD.root")
@@ -695,6 +696,10 @@ if __name__ == "__main__":
             "label": "Dijet",
             "data_tfile": input_jetht_tfile,
             "mc_tfile": input_mc_qcd_mgpythia_tfile,
+            "alt_mc_tfile": input_mc_qcd_herwig_tfile,
+            "alt_mc_label": "Herwig++",
+            # "mc_tfile": input_mc_qcd_pythia_tfile,
+            # "mc_tfile": input_mc_qcd_pythia_flat_tfile,
             # "mc_neutralUp_tfile": input_mc_qcd_mgpythia_neutralUp_tfile,
             # "mc_neutralDown_tfile": input_mc_qcd_mgpythia_neutralDown_tfile,
             "tau_limits": {
@@ -709,6 +714,20 @@ if __name__ == "__main__":
                 'jet_width_charged': (1E-13, 1E-10),
                 'jet_thrust_charged': (1E-13, 1E-10),
             },
+            "systematics": [
+            #     {
+            #         "label": "Neutral hadron up",
+            #         "tfile": input_mc_qcd_mgpythia_neutralUp_tfile
+            #     },
+            #     {
+            #         "label": "Neutral hadron down",
+            #         "tfile": input_mc_qcd_mgpythia_neutralDown_tfile
+            #     },
+                {
+                    "label": "Alternate generator",
+                    "tfile": input_mc_qcd_herwig_tfile
+                },
+            ]
         },
         {
             "name": "ZPlusJets",
@@ -716,6 +735,8 @@ if __name__ == "__main__":
             "label": "Z+jets",
             "data_tfile": input_singlemu_tfile,
             "mc_tfile": input_mc_dy_mgpythia_tfile,
+            "alt_mc_tfile": input_mc_dy_mgherwig_tfile,
+            "alt_mc_label": "MG+Herwig++",
             # "mc_neutralUp_tfile": input_mc_dy_mgpythia_neutralUp_tfile,
             # "mc_neutralDown_tfile": input_mc_dy_mgpythia_neutralDown_tfile,
             "tau_limits": {
@@ -730,6 +751,16 @@ if __name__ == "__main__":
                 'jet_width_charged': (1E-10, 1E-4),
                 'jet_thrust_charged': (1E-10, 1E-4),
             },
+            "systematics": [
+            #     {
+            #         "label": "Neutral hadron up",
+            #         "tfile": input_mc_dy_mgpythia_neutralUp_tfile
+            #     },
+            #     {
+            #         "label": "Neutral hadron down",
+            #         "tfile": input_mc_dy_mgpythia_neutralDown_tfile
+            #     },
+            ]
         },
     ]
 
@@ -738,12 +769,12 @@ if __name__ == "__main__":
     # regularise = "L"
 
     # Run with MC input instead of data
-    MC_input = True
+    MC_input = False
     mc_append = "_MC" if MC_input else ""
 
     # If True, use part of MC for response matrix, and separate part for unfolding
     # as independent test
-    MC_split = True
+    MC_split = False
     if MC_input:
         mc_append += "_split" if MC_split else "_all"
 
@@ -751,7 +782,7 @@ if __name__ == "__main__":
     sub_append = "_subFakes" if subtract_fakes else ""
 
     output_dir = "unfolding_better_regularise%s_target0p5%s%s" % (regularise, mc_append, sub_append)
-    output_dir = "unfolding_better_regularise%s_target0p5%s%s_densityModeBinWidth_constraintArea" % (regularise, mc_append, sub_append)
+    output_dir = "unfolding_better_regularise%s_target0p5%s%s_densityModeBinWidth_constraintArea_mgpythia_wta_ungroomed_altGen" % (regularise, mc_append, sub_append)
     cu.check_dir_exists_create(output_dir)
 
     # TODO automate this
@@ -771,27 +802,249 @@ if __name__ == "__main__":
 
         pt_bin_edges_gen = qgc.PT_UNFOLD_DICT['signal%s_gen' % (zpj_append)]
         pt_bin_edges_reco = qgc.PT_UNFOLD_DICT['signal%s_reco' % (zpj_append)]
-        # pt_bin_edges_reco = qgc.construct_fine_binning(pt_bin_edges_gen)
 
         pt_bin_edges_underflow_gen = qgc.PT_UNFOLD_DICT['underflow%s_gen' % (zpj_append)]
         pt_bin_edges_underflow_reco = qgc.PT_UNFOLD_DICT['underflow%s_reco' % (zpj_append)]
-        # pt_bin_edges_underflow_reco = qgc.construct_fine_binning(pt_bin_edges_underflow_gen)
 
         new_tdir = region['name']
         output_tfile.mkdir(new_tdir)
         region_tdir = output_tfile.Get(new_tdir)
         region_tdir.cd()
 
-        # Get 1D pt hist and save it
-        hist_mc_gen_pt = cu.get_from_tfile(region['mc_tfile'], "%s/hist_pt_truth_all" % (region['dirname']))
-        # Redo with physical bins
+        # Do 1D unfolding of pt
+        # ----------------------------------------------------------------------
+        append = "%s_pt" % (region['name'])  # common str to put on filenames, etc
+        # print("*"*80)
+        # print("Region/var: %s" % (append))
+        # print("*"*80)
+
+        # hist_data_reco = cu.get_from_tfile(region['data_tfile'], "%s/hist_pt_reco_all" % (region['dirname']))
+        mc_hname_append = "split" if MC_split else "all"
+        # hist_mc_reco = cu.get_from_tfile(region['mc_tfile'], "%s/hist_pt_reco_%s" % (region['dirname'], mc_hname_append))
+        # hist_mc_gen = cu.get_from_tfile(region['mc_tfile'], "%s/hist_pt_truth_%s" % (region['dirname'], mc_hname_append))
+        hist_mc_gen_pt = cu.get_from_tfile(region['mc_tfile'], "%s/hist_pt_truth_%s" % (region['dirname'], mc_hname_append))
+        # hist_mc_gen_reco_map = cu.get_from_tfile(region['mc_tfile'], "%s/tu_pt_GenReco_%s" % (region['dirname'], mc_hname_append))
+
+        # # Actual distribution to be unfolded
+        # reco_1d = hist_mc_reco.Clone() if MC_input else hist_data_reco
+
+        # if subtract_fakes:
+        #     # to construct our "fakes" template, we use the ratio as predicted by MC, and apply it to data
+        #     # this way we ensure we don't have -ve values, and avoid any issue with cross sections
+        #     hist_mc_fakes_reco = cu.get_from_tfile(region['mc_tfile'], "%s/hist_pt_reco_fake_%s" % (region['dirname'], mc_hname_append))
+        #     hist_fakes_reco = hist_mc_fakes_reco.Clone("hist_pt_fakes")
+        #     hist_fakes_reco.Divide(hist_mc_reco)
+        #     hist_fakes_reco.Multiply(reco_1d)
+
+        #     # background-subtracted reco hists, only for plotting purposes, not for TUnfold (that does background subtraction internally)
+        #     reco_1d_bg_subtracted = reco_1d.Clone()
+        #     reco_1d_bg_subtracted.Add(hist_fakes_reco, -1)
+
+        #     hist_data_reco_bg_subtracted = hist_data_reco.Clone(hist_data_reco.GetName() + "_bgrSubtracted")
+        #     hist_data_reco_bg_subtracted.Add(hist_fakes_reco, -1)
+
+        #     hist_mc_reco_bg_subtracted = hist_mc_reco.Clone(hist_mc_reco.GetName() + "_bgrSubtracted")
+        #     hist_mc_reco_bg_subtracted.Add(hist_mc_fakes_reco, -1)  # should
+
+        # # Setup unfolder object
+        # # ---------------------
+        # unfolder = MyUnfolder(response_map=hist_mc_gen_reco_map,
+        #                       variable_bin_edges_reco=None,
+        #                       variable_bin_edges_gen=None,
+        #                       variable_name="", # as it's only 1D in pt
+        #                       pt_bin_edges_reco=pt_bin_edges_reco,
+        #                       pt_bin_edges_gen=pt_bin_edges_gen,
+        #                       pt_bin_edges_underflow_reco=pt_bin_edges_underflow_reco,
+        #                       pt_bin_edges_underflow_gen=pt_bin_edges_underflow_gen,
+        #                       orientation=ROOT.TUnfold.kHistMapOutputHoriz,
+        #                       constraintMode=ROOT.TUnfold.kEConstraintArea,
+        #                       # constraintMode=ROOT.TUnfold.kEConstraintNone,
+        #                       regMode=ROOT.TUnfold.kRegModeCurvature,
+        #                       densityFlags=ROOT.TUnfoldDensity.kDensityModeBinWidth,
+        #                       # densityFlags=ROOT.TUnfoldDensity.kDensityModeNone,
+        #                       axisSteering='*[B]')
+
+        # unfolder.save_binning(txt_filename="%s/binning_scheme.txt" % (this_output_dir), print_xml=False)
+
+        # if subtract_fakes:
+        #     unfolder.tunfolder.SubtractBackground(hist_fakes_reco, "fakes")
+
+        # # Set what is to be unfolded
+        # # ---------------------
+        # unfolder.setInput(reco_1d)
+
+        # # Do any regularisation
+        # # ---------------------
+        # # tau = 1E-10
+        # tau = 0
+        # if regularise == "L":
+        #     tau = unfolder.doScanL(output_dir=this_output_dir, n_scan=100,
+        #                            tau_min=1E-14, tau_max=1E-4)
+        # elif regularise == "tau":
+        #     tau = unfolder.doScanTau(output_dir=this_output_dir, n_scan=100,
+        #                              tau_min=1E-13,
+        #                              tau_max=1E-10,
+        #                              scan_mode=ROOT.TUnfoldDensity.kEScanTauRhoAvgSys)
+        # # Do unfolding!
+        # # ---------------------
+        # unfolder.do_unfolding(tau)
+        # unfolded_1d = unfolder.get_output()
+        # unfolded_1d.SetName("unfolded_1d")
+
+        # # stat errors only - do before or after systematics?
+        # ematrix_input = unfolder.get_ematrix_input() # stat errors from input to be unfolded
+        # this_tdir.WriteTObject(ematrix_input, "ematrix_input")
+        # ematrix_sys_uncorr = unfolder.get_ematrix_sys_uncorr() # stat errors in response matrix
+        # this_tdir.WriteTObject(ematrix_sys_uncorr, "ematrix_sys_uncorr")
+
+        # ematrix_stat_sum = ematrix_input.Clone("ematrix_stat_sum")
+        # ematrix_stat_sum.Add(ematrix_sys_uncorr)
+
+        # error_stat_1d = make_hist_from_diagonals(ematrix_stat_sum, do_sqrt=True)
+        # print ("stat uncert:", error_stat_1d.GetBinError(30))
+
+        # ematrix_total = unfolder.get_ematrix_total()
+        # error_total_1d = make_hist_from_diagonals(ematrix_total, do_sqrt=True)
+        # this_tdir.WriteTObject(ematrix_total, "ematrix_total_1d")
+        # print ("total uncert:", error_total_1d.GetBinError(30))
+
+        # # Update errors to big unfolded 1D
+        # update_hist_bin_content(unfolded_1d, error_total_1d)
+        # print ("new uncert:", unfolded_1d.GetBinError(30))
+        # this_tdir.WriteTObject(unfolded_1d)
+
+        # angle_str = "%s (%s)" % (angle.name, angle.lambda_str)
+
+        # # Draw unified unfolded distributions
+        # # ---------------------
+        # # unfolded, gen, and reco for comparison
+        # plot_simple_unfolded(unfolded=unfolded_1d,
+        #                      tau=tau,
+        #                      reco=None,
+        #                      gen=hist_mc_gen,
+        #                      fake=None,
+        #                      output_filename="%s/unfolded_%s.%s" % (this_output_dir, append, OUTPUT_FMT),
+        #                      title="%s region, %s" % (region['label'], angle_str))
+
+        # # reco using detector binning
+        # plot_simple_detector(reco_data=reco_1d,
+        #                      reco_mc=hist_mc_reco,
+        #                      reco_mc_fake=hist_mc_fakes_reco if subtract_fakes else None,
+        #                      reco_data_fake=hist_fakes_reco if subtract_fakes else None,
+        #                      output_filename="%s/detector_reco_binning_%s.%s" % (this_output_dir, append, OUTPUT_FMT),
+        #                      title="%s region, %s" % (region['label'], angle_str))
+
+        # if subtract_fakes:
+        #     # same plot but with background-subtracted reco
+        #     plot_simple_detector(reco_data=reco_1d_bg_subtracted,
+        #                          reco_mc=hist_mc_reco_bg_subtracted,
+        #                          reco_mc_fake=hist_mc_fakes_reco,
+        #                          reco_data_fake=hist_fakes_reco,
+        #                          output_filename="%s/detector_reco_binning_bg_subtracted_%s.%s" % (this_output_dir, append, OUTPUT_FMT),
+        #                          title="%s region, %s" % (region['label'], angle_str))
+
+        # # reco using gen binning
+        # plot_simple_detector(reco_data=reco_1d_gen_binning,
+        #                      reco_mc=hist_mc_reco_gen_binning,
+        #                      reco_mc_fake=hist_mc_fakes_reco_gen_binning if subtract_fakes else None,
+        #                      reco_data_fake=hist_fakes_reco_gen_binning if subtract_fakes else None,
+        #                      output_filename="%s/detector_gen_binning_%s.%s" % (this_output_dir, append, OUTPUT_FMT),
+        #                      title="%s region, %s" % (region['label'], angle_str))
+
+        # if subtract_fakes:
+        #     # same but with background-subtracted
+        #     plot_simple_detector(reco_data=reco_1d_gen_binning_bg_subtracted,
+        #                          reco_mc=hist_mc_reco_gen_binning_bg_subtracted,
+        #                          reco_mc_fake=hist_mc_fakes_reco_gen_binning,
+        #                          reco_data_fake=hist_fakes_reco_gen_binning,
+        #                          output_filename="%s/detector_gen_binning_bg_subtracted_%s.%s" % (this_output_dir, append, OUTPUT_FMT),
+        #                          title="%s region, %s" % (region['label'], angle_str))
+
+
+        # # Draw projections of response matrix vs 1D hist to check normalisation OK
+        # # Only makes sense if the same MC events go into matrix & 1D plot
+        # # ------------------------------------------------------------------
+        # if not MC_split:
+        #     proj_reco = hist_mc_gen_reco_map.ProjectionY("proj_reco_%s" % (append))
+        #     draw_projection_comparison(hist_mc_reco, proj_reco,
+        #                                title="%s\n%s region" % (jet_algo, region['label']),
+        #                                xtitle="%s, Detector binning" % (angle_str),
+        #                                output_filename="%s/projection_reco_%s.%s" % (this_output_dir, append, OUTPUT_FMT),
+        #                                print_bin_comparison=False)
+
+        #     proj_gen = hist_mc_gen_reco_map.ProjectionX("proj_gen_%s" % (append))
+        #     draw_projection_comparison(hist_mc_gen, proj_gen,
+        #                                title="%s\n%s region" % (jet_algo, region['label']),
+        #                                xtitle="%s, Generator binning" % (angle_str),
+        #                                output_filename="%s/projection_gen_%s.%s" % (this_output_dir, append, OUTPUT_FMT))
+
+        #     if subtract_fakes:
+        #         # Do the same but with backgrounds subtracted from the 1D
+        #         draw_projection_comparison(hist_mc_reco_bg_subtracted, proj_reco,
+        #                                    title="%s\n%s region" % (jet_algo, region['label']),
+        #                                    xtitle="%s, Detector binning" % (angle_str),
+        #                                    output_filename="%s/projection_reco_bg_subtracted_%s.%s" % (this_output_dir, append, OUTPUT_FMT))
+
+        # # Draw matrices
+        # # ---------------------
+        # draw_response_matrix(unfolder.response_map,
+        #                      region['label'],
+        #                      angle_str,
+        #                      "%s/response_map_%s.%s" % (this_output_dir, append, OUTPUT_FMT))
+
+        # prob_map = unfolder.get_probability_matrix()
+        # this_tdir.WriteTObject(prob_map, "prob_matrix")
+        # draw_probability_matrix(prob_map,
+        #                         region['label'],
+        #                         angle_str,
+        #                         "%s/probability_map_%s.%s" % (this_output_dir, append, OUTPUT_FMT))
+
+        # rhoij = unfolder.get_rhoij_total()
+        # this_tdir.WriteTObject(rhoij, "rhoij")
+        # draw_correlation_matrix(rhoij,
+        #                         region['label'],
+        #                         angle_str,
+        #                         "%s/rho_map_%s.%s" % (this_output_dir, append, OUTPUT_FMT))
+
+        # draw_error_matrix_input(ematrix_input,
+        #                         region['label'],
+        #                         angle_str,
+        #                         "%s/err_map_sys_input_%s.%s" % (this_output_dir, append, OUTPUT_FMT))
+
+        # draw_error_matrix_sys_uncorr(ematrix_sys_uncorr,
+        #                              region['label'],
+        #                              angle_str,
+        #                              "%s/err_map_sys_uncorr_%s.%s" % (this_output_dir, append, OUTPUT_FMT))
+
+        # draw_error_matrix_total(ematrix_total,
+        #                         region['label'],
+        #                         angle_str,
+        #                         "%s/err_map_total_%s.%s" % (this_output_dir, append, OUTPUT_FMT))
+
+        # # Do forward-folding to check unfolding
+        # # ----------------------------
+        # hist_data_folded = unfolder.get_folded_output(hist_name="folded_%s" % (append))
+        # this_tdir.WriteTObject(hist_data_folded, "folded_1d")
+        # draw_reco_folded(hist_folded=hist_data_folded,
+        #                  tau=tau,
+        #                  hist_reco_data=reco_1d_bg_subtracted if subtract_fakes else reco_1d,
+        #                  hist_reco_mc=hist_mc_reco_bg_subtracted if subtract_fakes else hist_mc_reco,
+        #                  title="%s\n%s region" % (jet_algo, region['label']),
+        #                  xtitle="%s, Detector binning" % (angle_str),
+        #                  output_filename="%s/folded_%s.%s" % (this_output_dir, append, OUTPUT_FMT))
+
+
+        # Remake gen hist with physical bins & save to file
         all_pt_bins_gen = np.concatenate((pt_bin_edges_underflow_gen[:-1], pt_bin_edges_gen))
         hist_mc_gen_pt_physical = ROOT.TH1F("mc_gen_pt", ";p_{T}^{jet} [GeV];N", len(all_pt_bins_gen)-1, array('d', all_pt_bins_gen))
         update_hist_bin_content(hist_mc_gen_pt, hist_mc_gen_pt_physical)
         region_tdir.WriteTObject(hist_mc_gen_pt_physical, "mc_gen_pt")
 
-        # for angle in qgc.COMMON_VARS[2:3]:
-        for angle in qgc.COMMON_VARS[:]:
+        # Do unfolding for each angle
+        # ----------------------------------------------------------------------
+
+        for angle in qgc.COMMON_VARS[2:3]:
+        # for angle in qgc.COMMON_VARS[:]:
             append = "%s_%s" % (region['name'], angle.var)  # common str to put on filenames, etc
 
             print("*"*80)
@@ -870,6 +1123,28 @@ if __name__ == "__main__":
                 hist_mc_reco_gen_binning_bg_subtracted.Add(hist_mc_fakes_reco_gen_binning, -1)  # should this be hist_fakes_reco_gen_binning? depends on what we want to see...
 
 
+            # Alternate MC
+            mc_hname_append = ""  # FIXME consistency in unfold hist module!
+            alt_hist_mc_reco = cu.get_from_tfile(region['alt_mc_tfile'], "%s/hist_%s_reco_all" % (region['dirname'], angle_shortname))
+            alt_hist_mc_gen = cu.get_from_tfile(region['alt_mc_tfile'], "%s/hist_%s_truth_all" % (region['dirname'], angle_shortname))
+            if subtract_fakes:
+                alt_hist_mc_fakes_reco = cu.get_from_tfile(region['alt_mc_tfile'], "%s/hist_%s_reco_fake_all" % (region['dirname'], angle_shortname))
+                alt_hist_fakes_reco = alt_hist_mc_fakes_reco.Clone("alt_hist_%s_fakes" % angle_shortname)
+            alt_hist_mc_reco_bg_subtracted = alt_hist_mc_reco.Clone(alt_hist_mc_reco.GetName() + "_bgrSubtracted")
+            alt_hist_mc_reco_bg_subtracted.Add(alt_hist_fakes_reco, -1)
+
+            alt_hist_mc_reco_gen_binning = cu.get_from_tfile(region['alt_mc_tfile'], "%s/hist_%s_reco_gen_binning" % (region['dirname'], angle_shortname))
+            if subtract_fakes:
+                alt_hist_mc_fakes_reco_gen_binning = cu.get_from_tfile(region['alt_mc_tfile'], "%s/hist_%s_reco_fake_gen_binning" % (region['dirname'], angle_shortname))
+                # create template as above, but with gen binning
+                hist_fakes_reco_gen_binning = alt_hist_mc_fakes_reco_gen_binning.Clone("hist_%s_fakes_gen_binning" % angle_shortname)
+                hist_fakes_reco_gen_binning.Divide(hist_mc_reco_gen_binning)
+                hist_fakes_reco_gen_binning.Multiply(reco_1d_gen_binning)
+
+                alt_hist_mc_reco_gen_binning_bg_subtracted = alt_hist_mc_reco_gen_binning.Clone(alt_hist_mc_reco_gen_binning.GetName() + "_bgrSubtracted")
+                alt_hist_mc_reco_gen_binning_bg_subtracted.Add(alt_hist_mc_fakes_reco_gen_binning, -1)
+
+
             # Setup unfolder object
             # ---------------------
             unfolder = MyUnfolder(response_map=hist_mc_gen_reco_map,
@@ -892,6 +1167,10 @@ if __name__ == "__main__":
 
             if subtract_fakes:
                 unfolder.tunfolder.SubtractBackground(hist_fakes_reco, "fakes")
+
+            for syst_dict in region['systematics']:
+                hist_syst = cu.get_from_tfile(syst_dict['tfile'], "%s/tu_%s_GenReco_all" % (region['dirname'], angle_shortname))
+                unfolder.tunfolder.AddSysError(hist_syst, syst_dict['label'], ROOT.TUnfold.kHistMapOutputHoriz, ROOT.TUnfoldDensity.kSysErrModeMatrix)
 
             # unfolder.tunfolder.AddSysError(hist_mc_gen_reco_neutralUp_map, "NeutralUp", ROOT.TUnfold.kHistMapOutputHoriz, ROOT.TUnfoldDensity.kSysErrModeMatrix)
             # unfolder.tunfolder.AddSysError(hist_mc_gen_reco_neutralDown_map, "NeutralDown", ROOT.TUnfold.kHistMapOutputHoriz, ROOT.TUnfoldDensity.kSysErrModeMatrix)
@@ -960,7 +1239,7 @@ if __name__ == "__main__":
             update_hist_bin_content(unfolded_1d, error_total_1d)
             print ("new uncert:", unfolded_1d.GetBinError(30))
             this_tdir.WriteTObject(unfolded_1d)
-            
+
             angle_str = "%s (%s)" % (angle.name, angle.lambda_str)
 
             # Draw unified unfolded distributions
@@ -1087,6 +1366,8 @@ if __name__ == "__main__":
                              xtitle="%s, Detector binning" % (angle_str),
                              output_filename="%s/folded_%s.%s" % (this_output_dir, append, OUTPUT_FMT))
 
+            dijet_1d_entries = []
+
             # Draw individual pt bin plots
             # ----------------------------
             for ibin_pt in range(0, len(pt_bin_edges_gen)-1):
@@ -1097,7 +1378,7 @@ if __name__ == "__main__":
                 # Produce 1D hist for this pt bin
                 mc_gen_hist_bin = unfolder.get_var_hist_pt_binned(hist_mc_gen, ibin_pt, binning_scheme="generator")
                 this_pt_bin_tdir.WriteTObject(mc_gen_hist_bin, "mc_gen_hist_bin")
-                
+
                 unfolded_hist_bin = unfolder.get_var_hist_pt_binned(unfolded_1d, ibin_pt, binning_scheme="generator")
                 this_pt_bin_tdir.WriteTObject(unfolded_hist_bin, "unfolded_hist_bin")
 
@@ -1149,7 +1430,25 @@ if __name__ == "__main__":
                 if subtract_fakes:
                     mc_reco_hist_bg_subtracted_bin_gen_binning = unfolder.get_var_hist_pt_binned(hist_mc_reco_gen_binning_bg_subtracted, ibin_pt, binning_scheme="generator")
                     this_pt_bin_tdir.WriteTObject(mc_reco_hist_bg_subtracted_bin_gen_binning, "mc_reco_hist_bg_subtracted_bin_gen_binning")
-                
+
+
+                # Alternate MC
+                # gen w/gen binning
+                alt_mc_gen_hist_bin = unfolder.get_var_hist_pt_binned(alt_hist_mc_gen, ibin_pt, binning_scheme="generator")
+                this_pt_bin_tdir.WriteTObject(alt_mc_gen_hist_bin, "alt_mc_gen_hist_bin")
+
+                # reco w/reco binning
+                if subtract_fakes:
+                    alt_mc_reco_hist_bg_subtracted_bin_reco_binning = unfolder.get_var_hist_pt_binned(alt_hist_mc_reco_bg_subtracted, ibin_pt, binning_scheme="detector")
+                    this_pt_bin_tdir.WriteTObject(alt_mc_reco_hist_bg_subtracted_bin_reco_binning, "alt_mc_reco_hist_bg_subtracted_bin_reco_binning")
+
+                # reco w/gen binning
+                alt_mc_reco_hist_bin_gen_binning = unfolder.get_var_hist_pt_binned(alt_hist_mc_reco_gen_binning, ibin_pt, binning_scheme="generator")
+                this_pt_bin_tdir.WriteTObject(alt_mc_reco_hist_bin_gen_binning, "alt_mc_reco_hist_bin_gen_binning")
+
+                if subtract_fakes:
+                    alt_mc_reco_hist_bg_subtracted_bin_gen_binning = unfolder.get_var_hist_pt_binned(alt_hist_mc_reco_gen_binning_bg_subtracted, ibin_pt, binning_scheme="generator")
+                    this_pt_bin_tdir.WriteTObject(alt_mc_reco_hist_bg_subtracted_bin_gen_binning, "alt_mc_reco_hist_bg_subtracted_bin_gen_binning")
 
                 # print hist bins for check
                 # for n in range(1, gen_hist_bin.GetNbinsX()+1):
@@ -1165,7 +1464,7 @@ if __name__ == "__main__":
 
                 # PLOT UNFOLDED DATA
                 # --------------------------------------------------------------
-                gen_colour = ROOT.kBlue
+                gen_colour = ROOT.kRed
                 unfolded_basic_colour = ROOT.kAzure+10
                 unfolded_stat_colour = ROOT.kGreen+1
                 unfolded_total_colour = ROOT.kBlack
@@ -1216,15 +1515,25 @@ if __name__ == "__main__":
                 # Note that this modifies e.g. mc_gen_hist_bin, so from this point
                 # onwards it will be normalised to unity
                 entries = [
-                    Contribution(mc_gen_hist_bin, label="Generator",
+                    Contribution(mc_gen_hist_bin, label="Generator (MG+Pythia8)",
                                  line_color=gen_colour, line_width=lw,
                                  marker_color=gen_colour, marker_size=0,
+                                 subplot=unfolded_hist_bin_stat_errors,
                                  normalise_hist=True),
-                    Contribution(unfolded_hist_bin, label="Unfolded (#tau = %.3g)" % (tau),
-                                 line_color=unfolded_basic_colour, line_width=lw,
-                                 marker_color=unfolded_basic_colour, marker_size=0,
-                                 subplot=mc_gen_hist_bin,
+                    Contribution(alt_mc_gen_hist_bin, label="Generator (%s)" % region['alt_mc_label'],
+                                 line_color=ROOT.kAzure, line_width=lw,
+                                 marker_color=ROOT.kAzure, marker_size=0,
+                                 subplot=unfolded_hist_bin_stat_errors,
                                  normalise_hist=True),
+                    # Contribution(unfolded_hist_bin, label="Unfolded (#tau = %.3g)" % (tau),
+                    #              line_color=unfolded_basic_colour, line_width=lw,
+                    #              marker_color=unfolded_basic_colour, marker_size=0,
+                    #              subplot=mc_gen_hist_bin,
+                    #              normalise_hist=True),
+                    # Contribution(unfolded_hist_bin_stat_errors, label="Unfolded (#tau = %.3g)" % (tau),
+                    #              line_color=unfolded_stat_colour, line_width=lw, line_style=1,
+                    #              marker_color=unfolded_stat_colour, marker_style=20, marker_size=0.75,
+                    #              normalise_hist=True),
                     Contribution(unfolded_hist_bin_stat_errors, label="Unfolded (#tau = %.3g) (stat err)" % (tau),
                                  line_color=unfolded_stat_colour, line_width=lw, line_style=2,
                                  marker_color=unfolded_stat_colour, marker_size=0,
@@ -1247,8 +1556,8 @@ if __name__ == "__main__":
                             xtitle="Particle level "+angle_str,
                             ytitle=ytitle,
                             subplot_type='ratio',
-                            subplot_title='Unfolded / gen',
-                            subplot_limits=(0.8, 1.2))
+                            subplot_title='Gen / Unfolded',
+                            subplot_limits=(0.5, 1.5))
                 plot.legend.SetX1(0.6)
                 plot.legend.SetY1(0.68)
                 plot.legend.SetX2(0.98)
@@ -1256,6 +1565,87 @@ if __name__ == "__main__":
                 plot.plot("NOSTACK E1")
                 plot.save("%s/unfolded_%s_bin_%d.%s" % (this_output_dir, append, ibin_pt, OUTPUT_FMT))
 
+                # Do a version where divided by bin width
+                mc_gen_hist_bin_div_bin_width = qgp.hist_divide_bin_width(mc_gen_hist_bin)
+                unfolded_hist_bin_stat_errors_div_bin_width = qgp.hist_divide_bin_width(unfolded_hist_bin_stat_errors)
+                unfolded_hist_bin_total_errors_div_bin_width = qgp.hist_divide_bin_width(unfolded_hist_bin_total_errors)
+                entries = [
+                    Contribution(mc_gen_hist_bin_div_bin_width, label="Generator (MG+Pythia8)",
+                                 line_color=gen_colour, line_width=lw,
+                                 marker_color=gen_colour, marker_size=0,
+                                 subplot=unfolded_hist_bin_stat_errors_div_bin_width,
+                                 normalise_hist=True),
+                    Contribution(qgp.hist_divide_bin_width(alt_mc_gen_hist_bin), label="Generator (%s)" % region['alt_mc_label'],
+                                 line_color=ROOT.kAzure, line_width=lw,
+                                 marker_color=ROOT.kAzure, marker_size=0,
+                                 subplot=unfolded_hist_bin_stat_errors_div_bin_width,
+                                 normalise_hist=True),
+                    # Contribution(unfolded_hist_bin, label="Unfolded (#tau = %.3g)" % (tau),
+                    #              line_color=unfolded_basic_colour, line_width=lw,
+                    #              marker_color=unfolded_basic_colour, marker_size=0,
+                    #              subplot=mc_gen_hist_bin,
+                    #              normalise_hist=True),
+                    Contribution(unfolded_hist_bin_stat_errors_div_bin_width, label="Unfolded (#tau = %.3g)" % (tau),
+                                 line_color=unfolded_stat_colour, line_width=lw, line_style=1,
+                                 marker_color=unfolded_stat_colour, marker_style=20, marker_size=0.75,
+                                 # subplot=mc_gen_hist_bin_div_bin_width,
+                                 normalise_hist=True),
+                    # Contribution(unfolded_hist_bin_stat_errors, label="Unfolded (#tau = %.3g) (stat err)" % (tau),
+                    #              line_color=unfolded_stat_colour, line_width=lw, line_style=2,
+                    #              marker_color=unfolded_stat_colour, marker_size=0,
+                    #              subplot=mc_gen_hist_bin,
+                    #              normalise_hist=True),
+                    Contribution(unfolded_hist_bin_total_errors_div_bin_width, label="Unfolded (#tau = %.3g) (total err)" % (tau),
+                                 line_color=unfolded_total_colour, line_width=lw, line_style=3,
+                                 marker_color=unfolded_total_colour, marker_style=20, marker_size=0.75,
+                                 subplot=unfolded_hist_bin_stat_errors_div_bin_width,
+                                 normalise_hist=True),
+                ]
+                has_entries = [c.obj.GetEntries() > 0 for c in entries]
+                if not any(has_entries):
+                    print("Skipping 0 entries in", append, ibin_pt)
+                    continue
+                ytitle= "p.d.f."
+                plot = Plot(entries,
+                            what="hist",
+                            title=title,
+                            xtitle="Particle level "+angle_str,
+                            ytitle=ytitle,
+                            subplot_type='ratio',
+                            subplot_title='Gen / Unfolded',
+                            subplot_limits=(0.5, 1.5))
+                plot.legend.SetX1(0.6)
+                plot.legend.SetY1(0.68)
+                plot.legend.SetX2(0.98)
+                plot.legend.SetY2(0.9)
+                plot.plot("NOSTACK E1")
+                plot.save("%s/unfolded_%s_bin_%d_divBinWidth.%s" % (this_output_dir, append, ibin_pt, OUTPUT_FMT))
+
+
+                dijet_1d_entries.append([
+                    # (unfolded_hist_bin_stat_errors,
+                    #     dict(label="Unfolded (#tau = %.3g)" % (tau),
+                    #          line_color=unfolded_total_colour, line_width=lw, line_style=3,
+                    #          marker_color=unfolded_total_colour, marker_style=20, marker_size=0.75,
+                    #          subplot=mc_gen_hist_bin,
+                    #          normalise_hist=True)),  # unfolded data
+                    # (mc_gen_hist_bin,
+                    #     dict(label="MG+Pythia8",
+                    #          line_color=gen_colour, line_width=lw,
+                    #          marker_color=gen_colour, marker_size=0,
+                    #          normalise_hist=True)),  # generator
+                    (unfolded_hist_bin_stat_errors_div_bin_width,
+                        dict(label="Unfolded (#tau = %.3g)" % (tau),
+                             line_color=unfolded_total_colour, line_width=lw, line_style=3,
+                             marker_color=unfolded_total_colour, marker_style=20, marker_size=0.75,
+                             subplot=mc_gen_hist_bin,
+                             normalise_hist=True)),  # unfolded data
+                    (mc_gen_hist_bin_div_bin_width,
+                        dict(label="MG+Pythia8",
+                             line_color=gen_colour, line_width=lw,
+                             marker_color=gen_colour, marker_size=0,
+                             normalise_hist=True)),  # generator
+                ])
 
                 # PLOT RECO DISTRIBUTIONS
                 # --------------------------------------------------------------
@@ -1474,6 +1864,22 @@ if __name__ == "__main__":
                 plot.legend.SetY2(0.9)
                 plot.plot("NOSTACK E1")
                 plot.save("%s/detector_folded_only_data_%s_bin_%d.%s" % (this_output_dir, append, ibin_pt, OUTPUT_FMT))
+
+            ylim=None
+            # skip first entries as low pt bin
+            marker = ""
+            if "_" in angle.name or "^" in angle.name:
+                marker = "$"
+            var_label = "Particle-level\n" + marker + angle.name + marker + "\n$%s$" % angle.lambda_str
+            v = "%s_vs_pt" % (angle.var)
+            bins = [(pt_bin_edges_gen[i], pt_bin_edges_gen[i+1]) for i in range(len(pt_bin_edges_gen)-1)]
+            print(bins)
+            qgp.do_box_plot_mpl(dijet_1d_entries[:], bins,
+                                "%s/%s_box_dijet_mpl.%s" % (this_output_dir, v, OUTPUT_FMT),
+                                var_label=var_label,
+                                xlim=(50, 1000),
+                                ylim=ylim,
+                                region_title="dijet")
 
     print("Saved hists to", output_tfile.GetName())
 

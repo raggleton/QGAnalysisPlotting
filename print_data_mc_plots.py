@@ -7,6 +7,8 @@ Any other plots comparing more than one sample should go into its own script!
 USe addZeroBiasJetHT.py first to sum jetht and zerobias
 """
 
+from __future__ import print_function
+
 import ROOT
 from MyStyle import My_Style
 My_Style.cd()
@@ -42,14 +44,14 @@ TOTAL_LUMI = 35918
 
 def do_plots(root_dir):
     # QG variable plots
-    pt_bins = qgc.PT_BINS
+    pt_bins = qgc.PT_BINS[:]
     # pt_bins = qgc.THEORY_PT_BINS
     sources = [{"root_dir": root_dir, 'label': "", "style": {'line_style': 1}}]
     var_list = qgc.COMMON_VARS
     var_prepend = ""
 
-    zpj_dirname = "ZPlusJets_QG"
-    dj_dirname = "Dijet_QG_tighter"
+    zpj_dirname = "ZPlusJets_QG_groomed"
+    dj_dirname = "Dijet_QG_tighter_groomed"
 
     for ang in var_list[:]:
         # if "ptd" not in ang.var.lower():
@@ -90,7 +92,7 @@ def do_plots(root_dir):
                 h2d_dyj_mc = grab_obj(os.path.join(source['root_dir'], qgc.DY_FILENAME), "%s/%s" % (zpj_dirname, v))
                 dy_kwargs_mc = dict(line_color=qgc.DY_COLOUR, line_width=lw, fill_color=qgc.DY_COLOUR,
                                     marker_color=qgc.DY_COLOUR, marker_style=qgc.DY_MARKER+ind, marker_size=0,
-                                    label=qgc.DY_ZpJ_LABEL + " [MG+PY8]", subplot=zpj_data_hist)
+                                    label=qgc.DY_ZpJ_LABEL + "\n[MG+PY8]", subplot=zpj_data_hist)
                 entries.append((qgp.get_projection_plot(h2d_dyj_mc, start_val, end_val), dy_kwargs_mc))
                 zpj_entries.append((qgp.get_projection_plot(h2d_dyj_mc, start_val, end_val), dy_kwargs_mc))
                 if pt_ind == 0:
@@ -101,7 +103,7 @@ def do_plots(root_dir):
                 col3 = qgc.DY_COLOURS[2]
                 dy_kwargs_mc2 = dict(line_color=col3, line_width=lw, fill_color=col3,
                                     marker_color=col3, marker_style=qgc.DY_MARKER+ind, marker_size=0,
-                                    label=qgc.DY_ZpJ_LABEL + " [H++]", subplot=zpj_data_hist)
+                                    label=qgc.DY_ZpJ_LABEL + "\n[H++]", subplot=zpj_data_hist)
                 entries.append((qgp.get_projection_plot(h2d_dyj_mc2, start_val, end_val), dy_kwargs_mc2))
                 zpj_entries.append((qgp.get_projection_plot(h2d_dyj_mc2, start_val, end_val), dy_kwargs_mc2))
                 if pt_ind == 0:
@@ -112,7 +114,7 @@ def do_plots(root_dir):
                 col4 = qgc.DY_COLOURS[3]
                 dy_kwargs_mc3 = dict(line_color=col4, line_width=lw, fill_color=col4,
                                     marker_color=col4, marker_style=qgc.DY_MARKER+ind, marker_size=0,
-                                    label=qgc.DY_ZpJ_LABEL + " [MG+H++]", subplot=zpj_data_hist)
+                                    label=qgc.DY_ZpJ_LABEL + "\n[MG+H++]", subplot=zpj_data_hist)
                 entries.append((qgp.get_projection_plot(h2d_dyj_mc3, start_val, end_val), dy_kwargs_mc3))
                 zpj_entries.append((qgp.get_projection_plot(h2d_dyj_mc3, start_val, end_val), dy_kwargs_mc3))
                 if pt_ind == 0:
@@ -132,7 +134,7 @@ def do_plots(root_dir):
                                        label=qgc.JETHT_ZB_LABEL)
                 dijet_data_hist = qgp.get_projection_plot(h2d_qcd_data, start_val, end_val)
                 entries.append((dijet_data_hist, qcd_kwargs_data))
-                dijet_entries.append((qgp.get_projection_plot(h2d_qcd_data, start_val, end_val), qcd_kwargs_data))
+                dijet_entries.append((dijet_data_hist, qcd_kwargs_data))
                 if pt_ind == 0:
                     dijet_2d_entries.append((h2d_qcd_data, qcd_kwargs_data))
 
@@ -140,34 +142,36 @@ def do_plots(root_dir):
                 h2d_qcd_mc = grab_obj(os.path.join(source['root_dir'], qgc.QCD_FILENAME), "%s/%s" % (dj_dirname, v))
                 qcd_kwargs_mc = dict(line_color=qgc.QCD_COLOUR, line_width=lw, fill_color=qgc.QCD_COLOUR,
                                      marker_color=qgc.QCD_COLOUR, marker_style=qgc.QCD_MARKER+ind, marker_size=0,
-                                     label=qgc.QCD_Dijet_LABEL + " [MG+PY8]", subplot=dijet_data_hist)
+                                     label=qgc.QCD_Dijet_LABEL + "\n[MG+PY8]", subplot=dijet_data_hist)
                 # h2d_qcd_mc.Scale(35860)
-                entries.append((qgp.get_projection_plot(h2d_qcd_mc, start_val, end_val), qcd_kwargs_mc))
-                dijet_entries.append((qgp.get_projection_plot(h2d_qcd_mc, start_val, end_val), qcd_kwargs_mc))
+                dijet_mgpy_hist = qgp.get_projection_plot(h2d_qcd_mc, start_val, end_val)
+                entries.append((dijet_mgpy_hist, qcd_kwargs_mc))
+                dijet_entries.append((dijet_mgpy_hist, qcd_kwargs_mc))
                 if pt_ind == 0:
                     dijet_2d_entries.append((h2d_qcd_mc, qcd_kwargs_mc))
 
                 # PYTHIA ONLY
-                col = qgc.QCD_COLOURS[2]
-                h2d_qcd_mc2 = grab_obj(os.path.join(source['root_dir'], qgc.QCD_PYTHIA_ONLY_FILENAME), "%s/%s" % (dj_dirname, v))
-                qcd_kwargs_mc2 = dict(line_color=col, line_width=lw, fill_color=col,
-                                     marker_color=col, marker_style=qgc.QCD_MARKER+ind, marker_size=0,
-                                     label=qgc.QCD_Dijet_LABEL + " [PY8]", subplot=dijet_data_hist)
-                # h2d_qcd_mc2.Scale(35860)
-                entries.append((qgp.get_projection_plot(h2d_qcd_mc2, start_val, end_val), qcd_kwargs_mc2))
-                dijet_entries.append((qgp.get_projection_plot(h2d_qcd_mc2, start_val, end_val), qcd_kwargs_mc2))
-                if pt_ind == 0:
-                    dijet_2d_entries.append((h2d_qcd_mc2, qcd_kwargs_mc2))
+                # col = qgc.QCD_COLOURS[2]
+                # h2d_qcd_mc2 = grab_obj(os.path.join(source['root_dir'], qgc.QCD_PYTHIA_ONLY_FILENAME), "%s/%s" % (dj_dirname, v))
+                # qcd_kwargs_mc2 = dict(line_color=col, line_width=lw, fill_color=col,
+                #                      marker_color=col, marker_style=qgc.QCD_MARKER+ind, marker_size=0,
+                #                      label=qgc.QCD_Dijet_LABEL + " [PY8]", subplot=dijet_data_hist)
+                # # h2d_qcd_mc2.Scale(35860)
+                # entries.append((qgp.get_projection_plot(h2d_qcd_mc2, start_val, end_val), qcd_kwargs_mc2))
+                # dijet_entries.append((qgp.get_projection_plot(h2d_qcd_mc2, start_val, end_val), qcd_kwargs_mc2))
+                # if pt_ind == 0:
+                #     dijet_2d_entries.append((h2d_qcd_mc2, qcd_kwargs_mc2))
                 
                 # HERWIG++ QCD
                 col2 = qgc.QCD_COLOURS[3]
                 h2d_qcd_mc3 = grab_obj(os.path.join(source['root_dir'], qgc.QCD_HERWIG_FILENAME), "%s/%s" % (dj_dirname, v))
                 qcd_kwargs_mc3 = dict(line_color=col2, line_width=lw, fill_color=col2,
                                      marker_color=col2, marker_style=qgc.QCD_MARKER+ind, marker_size=0,
-                                     label=qgc.QCD_Dijet_LABEL + " [H++]", subplot=dijet_data_hist)
+                                     label=qgc.QCD_Dijet_LABEL + "\n[H++]", subplot=dijet_data_hist)
                 h2d_qcd_mc3.Scale(TOTAL_LUMI)
-                entries.append((qgp.get_projection_plot(h2d_qcd_mc3, start_val, end_val), qcd_kwargs_mc3))
-                dijet_entries.append((qgp.get_projection_plot(h2d_qcd_mc3, start_val, end_val), qcd_kwargs_mc3))
+                dijet_hpp_hist = qgp.get_projection_plot(h2d_qcd_mc3, start_val, end_val)
+                entries.append((dijet_hpp_hist, qcd_kwargs_mc3))
+                dijet_entries.append((dijet_hpp_hist, qcd_kwargs_mc3))
                 if pt_ind == 0:
                     dijet_2d_entries.append((h2d_qcd_mc3, qcd_kwargs_mc3))
 
@@ -201,11 +205,15 @@ def do_plots(root_dir):
                 ylim = (0, 5)
                 ylim = None
 
-            plot_dir = os.path.join(root_dir, "plots_dy_vs_qcd_mc_vs_data")
+            plot_dir = os.path.join(root_dir, "plots_dy_vs_qcd_mc_vs_data_groomed")
             radius, pus = cu.get_jet_config_from_dirname(root_dir)
             jet_str = "AK%s PF %s" % (radius.upper(), pus.upper())
             subplot_title = "MC / Data"
             subplot_limits = (0.5, 1.5)
+
+            xlabel = ang.name + " (" + ang.lambda_str + ")"
+            xlabel = "Groomed " + ang.name + " (" + ang.lambda_str + ")"
+            
             # dj+zpj
             # qgp.do_comparison_plot(entries, 
             #                        "%s/ptBinned/%s_pt%dto%d.%s" % (plot_dir, v, start_val, end_val, OUTPUT_FMT),
@@ -216,26 +224,27 @@ def do_plots(root_dir):
             #                        subplot_type='ratio',
             #                        subplot_title=subplot_title,
             #                        subplot_limits=subplot_limits)
-            # # dj only
-            # qgp.do_comparison_plot(dijet_entries, 
-            #                        "%s/ptBinned/%s_pt%dto%d_dijet.%s" % (plot_dir, v, start_val, end_val, OUTPUT_FMT),
-            #                        rebin=rebin,
-            #                        title="%d < p_{T}^{jet} < %d GeV\n%s" % (start_val, end_val, jet_str),
-            #                        xtitle=ang.name + " (" + ang.lambda_str + ")",
-            #                        xlim=xlim, ylim=ylim,
-            #                        subplot_type='ratio',
-            #                        subplot_title=subplot_title,
-            #                        subplot_limits=subplot_limits)
+            
+            # dj only
+            qgp.do_comparison_plot(dijet_entries, 
+                                   "%s/ptBinned/%s_pt%dto%d_dijet.%s" % (plot_dir, v, start_val, end_val, OUTPUT_FMT),
+                                   rebin=rebin,
+                                   title="%d < p_{T}^{jet} < %d GeV\n%s" % (start_val, end_val, jet_str),
+                                   xtitle=xlabel,
+                                   xlim=xlim, ylim=ylim,
+                                   subplot_type='ratio',
+                                   subplot_title=subplot_title,
+                                   subplot_limits=subplot_limits)
             # # zpj only
-            # qgp.do_comparison_plot(zpj_entries,
-            #                        "%s/ptBinned/%s_pt%dto%d_zpj.%s" % (plot_dir, v, start_val, end_val, OUTPUT_FMT),
-            #                        rebin=rebin,
-            #                        title="%d < p_{T}^{jet} < %d GeV\n%s" % (start_val, end_val, jet_str),
-            #                        xtitle=ang.name + " (" + ang.lambda_str + ")",
-            #                        xlim=xlim, ylim=ylim,
-            #                        subplot_type='ratio',
-            #                        subplot_title=subplot_title,
-            #                        subplot_limits=subplot_limits)
+            qgp.do_comparison_plot(zpj_entries,
+                                   "%s/ptBinned/%s_pt%dto%d_zpj.%s" % (plot_dir, v, start_val, end_val, OUTPUT_FMT),
+                                   rebin=rebin,
+                                   title="%d < p_{T}^{jet} < %d GeV\n%s" % (start_val, end_val, jet_str),
+                                   xtitle=xlabel,
+                                   xlim=xlim, ylim=ylim,
+                                   subplot_type='ratio',
+                                   subplot_title=subplot_title,
+                                   subplot_limits=subplot_limits)
         
         ylim = None
         if "width" in v_lower or "ptd" in v_lower:
@@ -257,12 +266,13 @@ def do_plots(root_dir):
         if "_" in ang.name or "^" in ang.name:
             marker = "$"
         var_label = marker + ang.name + marker + "\n$%s$" % ang.lambda_str
-        qgp.do_box_plot_mpl(dijet_1d_entries[3:], pt_bins[3:],
+        var_label = "Groomed " + marker + ang.name + marker + "\n$%s$" % ang.lambda_str
+        qgp.do_box_plot_mpl(dijet_1d_entries[:], pt_bins[:],
                             "%s/ptBinned/%s_box_dijet_mpl.%s" % (plot_dir, v, OUTPUT_FMT),
                             var_label=var_label,
                             ylim=ylim, xlim=(50, 1000), region_title="dijet")
 
-        qgp.do_box_plot_mpl(zpj_1d_entries[3:], pt_bins[3:],
+        qgp.do_box_plot_mpl(zpj_1d_entries[:], pt_bins[:],
                             "%s/ptBinned/%s_box_zpj_mpl.%s" % (plot_dir, v, OUTPUT_FMT),
                             var_label=var_label,
                             ylim=ylim, xlim=(50, 326), region_title="Z+jets")
