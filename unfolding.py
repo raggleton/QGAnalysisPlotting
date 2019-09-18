@@ -769,12 +769,12 @@ if __name__ == "__main__":
     # regularise = "L"
 
     # Run with MC input instead of data
-    MC_input = True
+    MC_input = False
     mc_append = "_MC" if MC_input else ""
 
     # If True, use part of MC for response matrix, and separate part for unfolding
     # as independent test
-    MC_split = True
+    MC_split = False
     if MC_input:
         mc_append += "_split" if MC_split else "_all"
 
@@ -782,7 +782,7 @@ if __name__ == "__main__":
     sub_append = "_subFakes" if subtract_fakes else ""
 
     output_dir = "unfolding_better_regularise%s_target0p5%s%s" % (regularise, mc_append, sub_append)
-    output_dir = "unfolding_better_regularise%s_target0p5%s%s_densityModeBinWidth_constraintArea" % (regularise, mc_append, sub_append)
+    output_dir = "unfolding_better_regularise%s_target0p5%s%s_densityModeBinWidth_constraintArea_mgpythia_wta_ungroomed_altGen" % (regularise, mc_append, sub_append)
     cu.check_dir_exists_create(output_dir)
 
     # TODO automate this
@@ -1464,7 +1464,7 @@ if __name__ == "__main__":
 
                 # PLOT UNFOLDED DATA
                 # --------------------------------------------------------------
-                gen_colour = ROOT.kBlue
+                gen_colour = ROOT.kRed
                 unfolded_basic_colour = ROOT.kAzure+10
                 unfolded_stat_colour = ROOT.kGreen+1
                 unfolded_total_colour = ROOT.kBlack
