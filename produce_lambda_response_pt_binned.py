@@ -15,7 +15,7 @@ import bisect
 import numpy as np
 from collections import OrderedDict
 from copy import deepcopy
-
+os.nice(10)
 
 import ROOT
 ROOT.PyConfig.IgnoreCommandLineOptions = True

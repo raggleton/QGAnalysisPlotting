@@ -7,6 +7,7 @@ Also set names ready for RIVET/YODA.
 
 import ROOT
 import os
+os.nice(10)
 import argparse
 from array import array
 

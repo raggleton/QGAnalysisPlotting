@@ -9,6 +9,7 @@ import ROOT
 from MyStyle import My_Style
 My_Style.cd()
 import os
+os.nice(10)
 from collections import OrderedDict
 import sys
 from array import array

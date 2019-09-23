@@ -13,6 +13,7 @@ import argparse
 from array import array
 import numpy as np
 import math
+os.nice(10)
 
 import ROOT
 from MyStyle import My_Style

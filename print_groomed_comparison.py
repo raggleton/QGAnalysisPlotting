@@ -6,6 +6,7 @@ import ROOT
 from MyStyle import My_Style
 My_Style.cd()
 import os
+os.nice(10)
 
 # My stuff
 from comparator import Contribution, Plot, grab_obj

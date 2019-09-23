@@ -7,6 +7,7 @@ import argparse
 # from MyStyle import My_Style
 # My_Style.cd()
 import os
+os.nice(10)
 from itertools import product
 from array import array
 from math import sqrt

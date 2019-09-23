@@ -6,6 +6,7 @@ import ROOT
 from MyStyle import My_Style
 My_Style.cd()
 import os
+os.nice(10)
 from itertools import product
 import numpy as np
 np.seterr(all='raise')

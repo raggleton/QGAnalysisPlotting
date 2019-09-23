@@ -6,6 +6,7 @@ import ROOT
 from MyStyle import My_Style
 My_Style.cd()
 import os
+os.nice(10)
 from uuid import uuid1
 
 # My stuff
