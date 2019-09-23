@@ -713,7 +713,7 @@ def do_box_plot_mpl(entries, bins, output_filename, var_label="", xlim=None, yli
     upper_quants = np.array(upper_quants)
 
     # Do all plot - start by setting up figure
-    fig, axes = plt.subplots(nrows=3, ncols=1, figsize=(16, 8), sharex=True)
+    fig, axes = plt.subplots(nrows=3, ncols=1, figsize=(12, 8), sharex=True)
     plt.subplots_adjust(left=0.1, right=0.78, top=0.9, hspace=0.1)
 
     n_datasets = len(entries[0])
@@ -760,7 +760,7 @@ def do_box_plot_mpl(entries, bins, output_filename, var_label="", xlim=None, yli
         # axes[0].xaxis.set_minor_locator(loc)
         # axes[0].set_ylim(bottom=0)
 
-    leg_loc = (1.05, 0.1)
+    leg_loc = (1.02, 0.1)
     labels = [e[1]['label'].replace("#", "\\") for e in entries[0]]
     print(labels)
     axes[0].legend(handles=plot_objs, loc=leg_loc, fancybox=False, edgecolor='white')
@@ -880,7 +880,13 @@ def do_box_plot_mpl(entries, bins, output_filename, var_label="", xlim=None, yli
             #                         color='lightgray', zorder=-9999999
             #                         ))
             ax.axvline(this_bin[0], color='lightgray', linestyle='dashed')
+    
+    odir = os.path.dirname(os.path.abspath(output_filename))
+    if not os.path.isdir(odir):
+        os.makedirs(odir)
     plt.savefig(output_filename)
+    plt.close(fig)
+    # plt.clf()
 
 
 def migration_plot_components(h2d_renorm_x, h2d_renorm_y, xlabel):
