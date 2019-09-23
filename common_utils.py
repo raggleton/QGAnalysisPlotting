@@ -107,10 +107,12 @@ def grab_obj_from_file(file_name, obj_name):
     """Get object names obj_name from ROOT file file_name"""
     input_file = open_root_file(file_name)
     obj = get_from_tfile(input_file, obj_name)
-    if isinstance(obj, (ROOT.TH1)):
-        obj.SetDirectory(0)  # Ownership kludge
+    if isinstance(obj, (ROOT.TH1, ROOT.TH2)):
+        # THIS ORDER IS VERY IMPORTANT TO AVOID MEMORY LEAKS
+        new_obj = obj.Clone(get_unique_str())
+        new_obj.SetDirectory(0)  # Ownership kludge
         input_file.Close()
-        return obj.Clone(get_unique_str())
+        return new_obj
     else:
         return obj
 

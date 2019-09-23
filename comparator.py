@@ -80,10 +80,12 @@ def grab_obj(file_name, obj_name):
     input_file = cu.open_root_file(file_name)
     obj = cu.get_from_tfile(input_file, obj_name)
     # print("Getting", obj_name, "from", file_name)
-    if isinstance(obj, (ROOT.TH1, ROOT.TGraph)):
-        obj.SetDirectory(0)  # Ownership kludge
+    if isinstance(obj, (ROOT.TH1, ROOT.TGraph, ROOT.TH2)):
+        # THIS ORDER IS VERY IMPORTANT TO AVOID MEMORY LEAKS
+        new_obj = obj.Clone(ROOT.TUUID().AsString())
+        new_obj.SetDirectory(0)
         input_file.Close()
-        return obj.Clone(ROOT.TUUID().AsString())
+        return new_obj
     else:
         return obj
 
