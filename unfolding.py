@@ -10,6 +10,7 @@ Thanks to Ashley, Dennis
 from __future__ import print_function
 
 import os
+os.nice(10)
 import sys
 import argparse
 from array import array
@@ -57,6 +58,7 @@ class MyUnfolder(object):
 
         self.response_map = response_map
         self.variable_name = variable_name
+        self.variable_name_safe = variable_name.replace(" ", "_")
 
         self.variable_bin_edges_reco = variable_bin_edges_reco
         self.nbins_variable_reco = len(variable_bin_edges_reco)-1 if variable_bin_edges_reco is not None else 0
@@ -667,68 +669,82 @@ def draw_reco_folded(hist_folded, tau, hist_reco_data, hist_reco_mc, title, xtit
 
 if __name__ == "__main__":
     # FOR Z+JETS:
-    input_mc_dy_mgpythia_tfile = cu.open_root_file("workdir_ak4puppi_mgpythia_newFlav_jetAsymCut_chargedVars_pt1RecoConstituents_V11JEC_JER_tUnfoldBetter_target0p5_noZReweight_wta_groomed/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL.root")
+    input_mc_dy_mgpythia_tfile = cu.open_root_file("workdir_ak4puppi_mgpythia_newFlav_jetAsymCut_chargedVars_pt1RecoConstituents_V11JEC_JER_tUnfoldBetter_target0p5_noZReweight_wta_groomed_fwdcenDijet_betterLargeWeightVeto/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL.root")
 
-    input_mc_dy_mgherwig_tfile = cu.open_root_file("workdir_ak4puppi_herwig_newFlav_jetAsymCut_chargedVars_pt1RecoConstituents_V11JEC_JER_tUnfoldBetter_target0p5_noZReweight_wta_groomed/uhh2.AnalysisModuleRunner.MC.MC_MG_HERWIG_DYJetsToLL.root")
-    input_mc_dy_herwig_tfile = cu.open_root_file("workdir_ak4puppi_herwig_newFlav_jetAsymCut_chargedVars_pt1RecoConstituents_V11JEC_JER_tUnfoldBetter_target0p5_noZReweight_wta_groomed/uhh2.AnalysisModuleRunner.MC.MC_HERWIG_DYJetsToLL.root")
+    input_mc_dy_mgherwig_tfile = cu.open_root_file("workdir_ak4puppi_herwig_newFlav_jetAsymCut_chargedVars_pt1RecoConstituents_V11JEC_JER_tUnfoldBetter_target0p5_noZReweight_wta_groomed_fwdcenDijet_betterLargeWeightVeto/uhh2.AnalysisModuleRunner.MC.MC_MG_HERWIG_DYJetsToLL.root")
+    input_mc_dy_herwig_tfile = cu.open_root_file("workdir_ak4puppi_herwig_newFlav_jetAsymCut_chargedVars_pt1RecoConstituents_V11JEC_JER_tUnfoldBetter_target0p5_noZReweight_wta_groomed_fwdcenDijet_betterLargeWeightVeto/uhh2.AnalysisModuleRunner.MC.MC_HERWIG_DYJetsToLL.root")
 
-    # input_mc_dy_mgpythia_neutralUp_tfile = cu.open_root_file("workdir_ak4puppi_mgpythia_newFlav_withAllResponses_jetAsymCut_chargedResp_pt1RecoConstituents_V11JEC_JER_tUnfold_neutralUp/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL.root")
-    # input_mc_dy_mgpythia_neutralDown_tfile = cu.open_root_file("workdir_ak4puppi_mgpythia_newFlav_withAllResponses_jetAsymCut_chargedResp_pt1RecoConstituents_V11JEC_JER_tUnfold_neutralDown/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL.root")
-
-    input_singlemu_tfile = cu.open_root_file("workdir_ak4puppi_data_trigBinningBetter2_jetAsymCut_pt1RecoConstituents_V11JEC_JER_tUnfoldBetter_target0p5_wta_groomed/uhh2.AnalysisModuleRunner.DATA.Data_SingleMu.root")
+    input_singlemu_tfile = cu.open_root_file("workdir_ak4puppi_data_trigBinningBetter2_jetAsymCut_pt1RecoConstituents_V11JEC_JER_tUnfoldBetter_target0p5_wta_groomed_fwdcenDijet/uhh2.AnalysisModuleRunner.DATA.Data_SingleMu.root")
 
     # FOR DIJET:
-    input_mc_qcd_mgpythia_tfile = cu.open_root_file("workdir_ak4puppi_mgpythia_newFlav_jetAsymCut_chargedVars_pt1RecoConstituents_V11JEC_JER_tUnfoldBetter_target0p5_noZReweight_wta_groomed/uhh2.AnalysisModuleRunner.MC.MC_QCD.root")
+    input_mc_qcd_mgpythia_tfile = cu.open_root_file("workdir_ak4puppi_mgpythia_newFlav_jetAsymCut_chargedVars_pt1RecoConstituents_V11JEC_JER_tUnfoldBetter_target0p5_noZReweight_wta_groomed_fwdcenDijet_betterLargeWeightVeto/uhh2.AnalysisModuleRunner.MC.MC_QCD.root")
 
     input_mc_qcd_pythia_tfile = cu.open_root_file("workdir_ak4puppi_pythia_newFlav_jetAsymCut_chargedVars_pt1RecoConstituents_V11JEC_JER_tUnfoldBetter_target0p5_noZReweight/uhh2.AnalysisModuleRunner.MC.MC_PYTHIA-QCD.root")
     input_mc_qcd_pythia_flat_tfile = cu.open_root_file("workdir_ak4puppi_pythia_newFlav_jetAsymCut_chargedVars_pt1RecoConstituents_V11JEC_JER_tUnfoldBetter_target0p5_noZReweight/uhh2.AnalysisModuleRunner.MC.MC_QCD_PYTHIA_ONLY.root")
-    input_mc_qcd_herwig_tfile = cu.open_root_file("workdir_ak4puppi_herwig_newFlav_jetAsymCut_chargedVars_pt1RecoConstituents_V11JEC_JER_tUnfoldBetter_target0p5_noZReweight_wta_groomed/uhh2.AnalysisModuleRunner.MC.MC_HERWIG_QCD.root")
+    input_mc_qcd_herwig_tfile = cu.open_root_file("workdir_ak4puppi_herwig_newFlav_jetAsymCut_chargedVars_pt1RecoConstituents_V11JEC_JER_tUnfoldBetter_target0p5_noZReweight_wta_groomed_fwdcenDijet_betterLargeWeightVeto/uhh2.AnalysisModuleRunner.MC.MC_HERWIG_QCD.root")
 
-    input_jetht_tfile = cu.open_root_file("workdir_ak4puppi_data_trigBinningBetter2_jetAsymCut_pt1RecoConstituents_V11JEC_JER_tUnfoldBetter_target0p5_wta_groomed/uhh2.AnalysisModuleRunner.DATA.Data_JetHT_ZeroBias.root")
+    input_jetht_tfile = cu.open_root_file("workdir_ak4puppi_data_trigBinningBetter2_jetAsymCut_pt1RecoConstituents_V11JEC_JER_tUnfoldBetter_target0p5_wta_groomed_fwdcenDijet/uhh2.AnalysisModuleRunner.DATA.Data_JetHT_ZeroBias.root")
 
-    # input_mc_qcd_mgpythia_neutralUp_tfile = cu.open_root_file("workdir_ak4puppi_mgpythia_newFlav_withAllResponses_jetAsymCut_chargedResp_pt1RecoConstituents_V11JEC_JER_tUnfold_neutralUp/uhh2.AnalysisModuleRunner.MC.MC_QCD.root")
-    # input_mc_qcd_mgpythia_neutralDown_tfile = cu.open_root_file("workdir_ak4puppi_mgpythia_newFlav_withAllResponses_jetAsymCut_chargedResp_pt1RecoConstituents_V11JEC_JER_tUnfold_neutralDown/uhh2.AnalysisModuleRunner.MC.MC_QCD.root")
+
+    dijet_region_dict_template = {
+        "name": "Dijet",
+        "dirname": "Dijet_QG_Unfold_central_tighter",
+        "label": "Dijet",
+        "data_tfile": input_jetht_tfile,
+        "mc_tfile": input_mc_qcd_mgpythia_tfile,
+        "alt_mc_tfile": input_mc_qcd_herwig_tfile,
+        "alt_mc_label": "Herwig++",
+        "tau_limits": {
+            'jet_puppiMultiplicity': (1E-13, 1E-10),
+            'jet_pTD': (1E-13, 1E-10),
+            'jet_LHA': (1E-13, 1E-10),
+            'jet_width': (1E-13, 1E-10),
+            'jet_thrust': (1E-13, 1E-10),
+            'jet_puppiMultiplicity_charged': (1E-13, 1E-10),
+            'jet_pTD_charged': (1E-13, 1E-10),
+            'jet_LHA_charged': (1E-13, 1E-10),
+            'jet_width_charged': (1E-13, 1E-10),
+            'jet_thrust_charged': (1E-13, 1E-10),
+        },
+        "systematics": [
+        #     {
+        #         "label": "Neutral hadron up",
+        #         "tfile": input_mc_qcd_mgpythia_neutralUp_tfile
+        #     },
+        #     {
+        #         "label": "Neutral hadron down",
+        #         "tfile": input_mc_qcd_mgpythia_neutralDown_tfile
+        #     },
+            # {
+            #     "label": "Alternate generator",
+            #     "tfile": input_mc_qcd_herwig_tfile
+            # },
+        ]
+    }
+
+    dijet_region_central_dict = dijet_region_dict_template.copy()
+    dijet_region_central_dict['dirname'] = 'Dijet_QG_Unfold_central_tighter'
+    dijet_region_central_dict['label'] = 'Dijet central'
+    dijet_region_central_dict['name'] = 'Dijet_central'
+    dijet_region_forward_dict = dijet_region_dict_template.copy()
+    dijet_region_forward_dict['dirname'] = 'Dijet_QG_Unfold_forward_tighter'
+    dijet_region_forward_dict['label'] = 'Dijet forward'
+    dijet_region_forward_dict['name'] = 'Dijet_forward'
+
+    dijet_region_central_groomed_dict = dijet_region_dict_template.copy()
+    dijet_region_central_groomed_dict['dirname'] = 'Dijet_QG_Unfold_central_tighter_groomed'
+    dijet_region_central_groomed_dict['label'] = 'Dijet central (groomed)'
+    dijet_region_central_groomed_dict['name'] = 'Dijet_central_groomed'
+    dijet_region_forward_groomed_dict = dijet_region_dict_template.copy()
+    dijet_region_forward_groomed_dict['dirname'] = 'Dijet_QG_Unfold_forward_tighter_groomed'
+    dijet_region_forward_groomed_dict['label'] = 'Dijet forward (groomed)'
+    dijet_region_forward_groomed_dict['name'] = 'Dijet_forward_groomed'
 
     regions = [
-        {
-            "name": "Dijet",
-            "dirname": "Dijet_QG_Unfold_tighter",
-            "label": "Dijet",
-            "data_tfile": input_jetht_tfile,
-            "mc_tfile": input_mc_qcd_mgpythia_tfile,
-            "alt_mc_tfile": input_mc_qcd_herwig_tfile,
-            "alt_mc_label": "Herwig++",
-            # "mc_tfile": input_mc_qcd_pythia_tfile,
-            # "mc_tfile": input_mc_qcd_pythia_flat_tfile,
-            # "mc_neutralUp_tfile": input_mc_qcd_mgpythia_neutralUp_tfile,
-            # "mc_neutralDown_tfile": input_mc_qcd_mgpythia_neutralDown_tfile,
-            "tau_limits": {
-                'jet_puppiMultiplicity': (1E-13, 1E-10),
-                'jet_pTD': (1E-13, 1E-10),
-                'jet_LHA': (1E-13, 1E-10),
-                'jet_width': (1E-13, 1E-10),
-                'jet_thrust': (1E-13, 1E-10),
-                'jet_puppiMultiplicity_charged': (1E-13, 1E-10),
-                'jet_pTD_charged': (1E-13, 1E-10),
-                'jet_LHA_charged': (1E-13, 1E-10),
-                'jet_width_charged': (1E-13, 1E-10),
-                'jet_thrust_charged': (1E-13, 1E-10),
-            },
-            "systematics": [
-            #     {
-            #         "label": "Neutral hadron up",
-            #         "tfile": input_mc_qcd_mgpythia_neutralUp_tfile
-            #     },
-            #     {
-            #         "label": "Neutral hadron down",
-            #         "tfile": input_mc_qcd_mgpythia_neutralDown_tfile
-            #     },
-                {
-                    "label": "Alternate generator",
-                    "tfile": input_mc_qcd_herwig_tfile
-                },
-            ]
-        },
+        dijet_region_central_dict,
+        dijet_region_forward_dict,
+        dijet_region_central_groomed_dict,
+        dijet_region_forward_groomed_dict,
         {
             "name": "ZPlusJets",
             "dirname": "ZPlusJets_QG_Unfold",
@@ -1042,10 +1058,10 @@ if __name__ == "__main__":
 
         # Do unfolding for each angle
         # ----------------------------------------------------------------------
-
         for angle in qgc.COMMON_VARS[2:3]:
         # for angle in qgc.COMMON_VARS[:]:
-            append = "%s_%s" % (region['name'], angle.var)  # common str to put on filenames, etc
+            angle_prepend = "Groomed " if "groomed" in region['name'] else ""
+            append = "%s_%s%s" % (region['name'], angle_prepend.lower(), angle.var)  # common str to put on filenames, etc
 
             print("*"*80)
             print("Region/var: %s" % (append))
@@ -1147,10 +1163,11 @@ if __name__ == "__main__":
 
             # Setup unfolder object
             # ---------------------
+            variable_name = "%s%s" % (angle_prepend, angle.name)
             unfolder = MyUnfolder(response_map=hist_mc_gen_reco_map,
                                   variable_bin_edges_reco=angle_bin_edges_reco,
                                   variable_bin_edges_gen=angle_bin_edges_gen,
-                                  variable_name=angle.name,
+                                  variable_name=variable_name,
                                   pt_bin_edges_reco=pt_bin_edges_reco,
                                   pt_bin_edges_gen=pt_bin_edges_gen,
                                   pt_bin_edges_underflow_reco=pt_bin_edges_underflow_reco,
@@ -1240,7 +1257,7 @@ if __name__ == "__main__":
             print ("new uncert:", unfolded_1d.GetBinError(30))
             this_tdir.WriteTObject(unfolded_1d)
 
-            angle_str = "%s (%s)" % (angle.name, angle.lambda_str)
+            angle_str = "%s%s (%s)" % (angle_prepend, angle.name, angle.lambda_str)
 
             # Draw unified unfolded distributions
             # ---------------------
