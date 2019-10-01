@@ -266,7 +266,7 @@ def do_all_exclusive_plots_comparison(sources,
         v = "%s%s_vs_pt" % (var_prepend, ang.var)
         for (start_val, end_val) in pt_bins:
             entries_normal, entries_flav = [], []
-            
+
             # some default sizings
             lw = 2
             msize = 1.1
@@ -328,9 +328,9 @@ def do_all_exclusive_plots_comparison(sources,
                     qcd_kwargs.update(source.get('qcd_style', {}))
                     entries_normal.append((get_projection_plot(h2d_qcd, start_val, end_val), qcd_kwargs))
                     del h2d_qcd
-                    
+
             do_flav_plot = do_flav_tagged and "flavour" not in v
-            
+
             # Flav tagged plots
             if zpj_dirname and do_flav_plot:
                 for ind, source in enumerate(sources):
@@ -698,8 +698,8 @@ def extract_sample_name(label):
     return new_label
 
 
-def do_box_plot_mpl(entries, bins, output_filename, var_label="", xlim=None, ylim=None, region_title=""):
-    """Create box n whickers plot from 1D hists using matplotlib
+def do_mean_rms_summary_plot(entries, bins, output_filename, var_label="", xlim=None, ylim=None, region_title=""):
+    """Create summary plot from 1D hists using matplotlib
 
     Parameters
     ----------
@@ -712,51 +712,37 @@ def do_box_plot_mpl(entries, bins, output_filename, var_label="", xlim=None, yli
     # entries is a list, where each element corresponds to a pt bin
     # each element is itself a list, with different entries for the different datasets being compared
 
-    quantiles = array('d', [0.25, 0.5, 0.75])
-    quantiles = array('d', [0.16, 0.5, 0.84])
-
-    lower_quants = []
-    median_quants = []
-    upper_quants = []
-
     # only do the bins we need, otherwise axis limits go awry
     if xlim:
         bins = [b for b in bins if b[1] <= xlim[1]]
+
+    means_minus_rms = []
+    means = []
+    means_plus_rms = []
 
     for ind, bin_entry in enumerate(entries):
         if ind == len(bins):
             break
         this_lower = []
-        this_median = []
+        this_mean = []
         this_upper = []
         for entry in bin_entry:
-            quantile_values = array('d', [0., 0., 0.])
             hist = entry[0]
-            # if cu.get_hist_mean_rel_error(hist) < 0.4:
-            # hist.GetQuantiles(len(quantiles), quantile_values, quantiles)
-            # this_lower.append(quantile_values[0])
-            # this_median.append(quantile_values[1])
-            # this_upper.append(quantile_values[2])
-            
-            this_median.append(hist.GetMean())
+            this_mean.append(hist.GetMean())
             this_lower.append(hist.GetMean()-hist.GetRMS())
             this_upper.append(hist.GetMean()+hist.GetRMS())
-            # else:
-            #     this_lower.append(np.nan)
-            #     this_median.append(np.nan)
-            #     this_upper.append(np.nan)
-        lower_quants.append(this_lower)
-        median_quants.append(this_median)
-        upper_quants.append(this_upper)
+        means_minus_rms.append(this_lower)
+        means.append(this_mean)
+        means_plus_rms.append(this_upper)
 
     # convert to numpy array to maniuplate easier
-    lower_quants = np.array(lower_quants)
-    median_quants = np.array(median_quants)
-    upper_quants = np.array(upper_quants)
+    means_minus_rms = np.array(means_minus_rms)
+    means = np.array(means)
+    means_plus_rms = np.array(means_plus_rms)
 
-    # Do all plot - start by setting up figure
+    # Start by setting up figure
     fig, axes = plt.subplots(nrows=3, ncols=1, figsize=(12, 8), sharex=True)
-    plt.subplots_adjust(left=0.1, right=0.78, top=0.9, hspace=0.1)
+    plt.subplots_adjust(left=0.1, right=0.8, top=0.85, hspace=0.1)
 
     n_datasets = len(entries[0])
     bin_widths = [(x[1]-x[0])/(n_datasets) for x in bins]
@@ -771,7 +757,7 @@ def do_box_plot_mpl(entries, bins, output_filename, var_label="", xlim=None, yli
     # loop over datasets
     for ind, entry in enumerate(entries[0]):  # assumes all are in 0th element!
         bxpstats = []
-        for med, low, upper in zip(median_quants[:,ind], lower_quants[:,ind], upper_quants[:,ind]):
+        for med, low, upper in zip(means[:,ind], means_minus_rms[:,ind], means_plus_rms[:,ind]):
             bxpstats.append({
                 "med": med,
                 "q1": low,
@@ -793,25 +779,17 @@ def do_box_plot_mpl(entries, bins, output_filename, var_label="", xlim=None, yli
         # Explicitly set the label and store for the legend
         label = extract_sample_name(entry[1]['label']).split(',')[0]
         label = label.replace("#tau", "$\\tau$").replace("#", "\\")
-        print(label)
+        label = label.replace("JetHT+ZeroBias", "Data").replace("SingleMu", "Data")
         things['boxes'][0].set_label(label)
         plot_objs.append(things['boxes'][0])
 
-        # loc = plticker.LogLocator(base=10.0, subs=(1.0, 2.0, 5.0))
-        # axes[1].xaxis.set_major_locator(loc)
-        # axes[0].xaxis.set_minor_locator(loc)
-        # axes[0].set_ylim(bottom=0)
-
     leg_loc = (1.02, 0.1)
-    labels = [e[1]['label'].replace("#", "\\") for e in entries[0]]
-    print(labels)
     axes[0].legend(handles=plot_objs, loc=leg_loc, fancybox=False, edgecolor='white')
 
     plt.xscale('log')
 
-    # convert from ROOTism to latex
-    new_var_label = var_label.replace("#", "\\")
-    axes[0].set_ylabel('%s' % new_var_label)
+    # Set axis titles
+    axes[0].set_ylabel('Mean $\\pm$ RMS')
     axes[-1].set_xlabel('$p_{T}^{\mathrm{jet}}$ [GeV]')
 
     axes[0].set_xlim(*xlim)
@@ -820,85 +798,62 @@ def do_box_plot_mpl(entries, bins, output_filename, var_label="", xlim=None, yli
     if axes[0].get_ylim()[0] > 0:
         axes[0].set_ylim(bottom=0)
 
+    axes[0].yaxis.set_minor_locator(plticker.AutoMinorLocator())
+
     axes[-1].set_xlim(*xlim)
 
-    # subplot - ratio of medians
+    # Subplot - ratio of means
     ref_data = None
     x_pos = [0.5*sum(x) for x in bins]
     bin_widths = [0.5*(x[1]-x[0]) for x in bins]
     markers = ['x', 'o', 'd', '^']
     for ind, entry in enumerate(entries[0]):
         if ind == 0:
-            ref_data = median_quants[:, ind]
+            ref_data = means[:, ind]
         else:
-            this_data = median_quants[:, ind] / ref_data
+            this_data = means[:, ind] / ref_data
             axes[1].errorbar(x_pos, this_data, xerr=bin_widths,
                              marker=markers[ind],
                              label=extract_sample_name(entry[1]['label']),
                              color=cols[ind],
                              linewidth=0, elinewidth=2)
-    axes[1].axhline(1.0, color='gray', linestyle='dashed')
-    axes[1].set_ylabel("Ratio of means\n(MC / Data)")
-    # axes[1].set_ylabel("Ratio of medians\n(MC / Data)")
+
+    # Cap maximum y to 2
     ylim = axes[1].get_ylim()
     lim = 2
     if ylim[1] > lim:
         axes[1].set_ylim(top=lim)
 
-    # subplot - ratio of lower/upper quantiles
-    # ref_data_lower = None
-    # ref_data_upper = None
-    # for ind, entry in enumerate(entries[0]):
-    #     if ind == 0:
-    #         ref_data_lower = lower_quants[:, ind]
-    #         ref_data_upper = upper_quants[:, ind]
-    #     else:
-    #         this_data_lower = lower_quants[:, ind] / ref_data_lower
-    #         this_data_upper = upper_quants[:, ind] / ref_data_upper
-    #         axes[2].errorbar(x_pos, this_data_lower, xerr=bin_widths,
-    #                          marker=markers[ind],
-    #                          label=extract_sample_name(entry[1]['label']) + " [25%]",
-    #                          color=cols[ind],
-    #                          linewidth=0, elinewidth=2)
+    axes[1].axhline(1.0, color='gray', linestyle='dashed')
+    axes[1].set_ylabel("Ratio of means\n(MC / Data)")
+    axes[1].yaxis.set_minor_locator(plticker.AutoMinorLocator())
 
-    #         axes[2].errorbar(x_pos, this_data_upper, xerr=bin_widths,
-    #                          marker=markers[ind],
-    #                          label=extract_sample_name(entry[1]['label']) + " [75%]",
-    #                          color=cols[ind],
-    #                          linewidth=0, elinewidth=2, linestyle='dashed', markerfacecolor='white')
-    # ylim = axes[2].get_ylim()
-    # lim = 2
-    # if ylim[1] > lim:
-    #     axes[2].set_ylim(top=lim)
-    # axes[2].axhline(1.0, color='gray', linestyle='dashed')
-    # axes[2].set_ylabel("Ratio of upper\n& lower quantiles\n(MC / Data)")
-    # axes[2].legend(loc=leg_loc, fancybox=False)
-
-    # Subplot - ratio of width (75%-25%)
+    # Subplot - ratio of RMS
     ref_data = None
     for ind, entry in enumerate(entries[0]):
         if ind == 0:
-            ref_data = upper_quants[:, ind]-lower_quants[:, ind]
+            ref_data = means_plus_rms[:, ind]-means_minus_rms[:, ind]
         else:
-            this_data = (upper_quants[:, ind]-lower_quants[:, ind]) / ref_data
+            this_data = (means_plus_rms[:, ind]-means_minus_rms[:, ind]) / ref_data
             axes[2].errorbar(x_pos, this_data, xerr=bin_widths,
                              marker=markers[ind],
                              label=extract_sample_name(entry[1]['label']),
                              color=cols[ind],
                              linewidth=0, elinewidth=2)
 
+    # Cap maximum y to 2
     ylim = axes[2].get_ylim()
     lim = 2
     if ylim[1] > lim:
         axes[2].set_ylim(top=lim)
-    axes[2].axhline(1.0, color='gray', linestyle='dashed')
-    # axes[2].set_ylabel("Ratio of central\n{}% quantile width\n(MC / Data)".format(100*(quantiles[-1] - quantiles[0])))
-    axes[2].set_ylabel("Ratio of RMS\n(MC / Data)")
-    # axes[2].legend(loc=leg_loc, fancybox=False)
 
-    quantiles_str = ", ".join(["%d%%" % (100*q) for q in quantiles])
-    # axes[0].set_title("{} quantiles for {} region".format(quantiles_str, region_title), pad=35)
-    axes[0].set_title("Mean, RMS for {} region".format(region_title), pad=35)
+    axes[2].axhline(1.0, color='gray', linestyle='dashed')
+    axes[2].set_ylabel("Ratio of RMS\n(MC / Data)")
+    axes[2].yaxis.set_minor_locator(plticker.AutoMinorLocator())
+
+    # Set overall plot title
+    new_var_label = var_label.replace("#", "\\")
+    axes[0].set_title("Summary for {} region:\n{}".format(region_title, new_var_label), pad=20)
 
     # Draw bin delineators
     for ax in axes.flat:
@@ -909,20 +864,8 @@ def do_box_plot_mpl(entries, bins, output_filename, var_label="", xlim=None, yli
 
         this_ylim = ax.get_ylim()
         for ind, this_bin in enumerate(bins):
-            # if xlim and this_bin[1] < xlim[0]:
-            #     continue
-            # if xlim and this_bin[0] > xlim[1]:
-            #     continue
-            # if ind % 2 == 0:
-            #     continue
-            # ax.add_patch(patches.Rectangle(
-            #                         (this_bin[1], this_ylim[0]),
-            #                         width=this_bin[1]-this_bin[0],
-            #                         height=this_ylim[1]-this_ylim[0],
-            #                         color='lightgray', zorder=-9999999
-            #                         ))
             ax.axvline(this_bin[0], color='lightgray', linestyle='dashed')
-    
+
     odir = os.path.dirname(os.path.abspath(output_filename))
     if not os.path.isdir(odir):
         os.makedirs(odir)
@@ -1023,16 +966,15 @@ def make_migration_summary_plot(h2d_renorm_x, h2d_renorm_y, xlabel, output_filen
     plot.save(output_filename)
 
 
+def normalise_hist(h):
+    if h.Integral() > 0:
+        h.Scale(1./h.Integral())
+
+
 def hist_divide_bin_width(h):
     """Create copy of hist, but each bin's contents is divide by the bin width"""
     h_new = h.Clone(h.GetName()+"DivideBinWidth")
-    for i in range(1, h_new.GetNbinsX()+1):
-        binc = h_new.GetBinContent(i)
-        bine = h_new.GetBinError(i)
-        bin_width = h_new.GetBinWidth(i)
-        h_new.SetBinContent(i, binc*1./bin_width)
-        h_new.SetBinError(i, bine*1./bin_width)
+    h_new.Scale(1., 'width')
     return h_new
 
 
-# def do_

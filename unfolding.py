@@ -1891,12 +1891,12 @@ if __name__ == "__main__":
             v = "%s_vs_pt" % (angle.var)
             bins = [(pt_bin_edges_gen[i], pt_bin_edges_gen[i+1]) for i in range(len(pt_bin_edges_gen)-1)]
             print(bins)
-            qgp.do_box_plot_mpl(dijet_1d_entries[:], bins,
-                                "%s/%s_box_dijet_mpl.%s" % (this_output_dir, v, OUTPUT_FMT),
-                                var_label=var_label,
-                                xlim=(50, 1000),
-                                ylim=ylim,
-                                region_title="dijet")
+            qgp.do_mean_rms_summary_plot(dijet_1d_entries[:], bins,
+                                         "%s/%s_box_dijet_mpl.%s" % (this_output_dir, v, OUTPUT_FMT),
+                                         var_label=var_label,
+                                         xlim=(50, 2000),
+                                         ylim=ylim,
+                                         region_title="dijet")
 
     print("Saved hists to", output_tfile.GetName())
 

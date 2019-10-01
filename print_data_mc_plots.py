@@ -51,6 +51,9 @@ def do_plots(root_dir):
     var_list = qgc.COMMON_VARS
     var_prepend = ""
 
+    radius, pus = cu.get_jet_config_from_dirname(root_dir)
+    jet_str = "AK%s PF %s" % (radius.upper(), pus.upper())
+    
     for gr_append in ["", "_groomed"]:
 
         zpj_dirname = "ZPlusJets_QG%s" % (gr_append)
@@ -79,7 +82,7 @@ def do_plots(root_dir):
                 for ind, source in enumerate(sources):
                     lw = 2
                     msize = 1.1
-                    data_line_width = 0
+                    data_line_width = lw
 
                     ####################
                     # Z+JETS REGION
@@ -270,8 +273,7 @@ def do_plots(root_dir):
                     ylim = None
 
                 plot_dir = os.path.join(root_dir, "plots_dy_vs_qcd_mc_vs_data%s" % (gr_append))
-                radius, pus = cu.get_jet_config_from_dirname(root_dir)
-                jet_str = "AK%s PF %s" % (radius.upper(), pus.upper())
+
                 subplot_title = "MC / Data"
                 subplot_limits = (0.5, 1.5)
 
@@ -323,6 +325,9 @@ def do_plots(root_dir):
                                        subplot_title=subplot_title,
                                        subplot_limits=subplot_limits)
 
+
+            # Do overall summary plots across all pt bins
+            # ------------------------------------------------------------------
             ylim = None
             if "width" in v_lower or "ptd" in v_lower:
                 ylim = (0, 0.4)
@@ -334,31 +339,42 @@ def do_plots(root_dir):
                 if end_val < 150:
                     ylim = (0, 50)
             ylim=None
-            # qgp.do_box_plot(dijet_2d_entries,
-            #                 "%s/ptBinned/%s_box_dijet.%s" % (plot_dir, v, OUTPUT_FMT),
-            #                 ylim=ylim, xlim=(0, 300), transpose=True)
 
-            # skip first entries as low pt bin
+            # Setup variable names for MPL
             marker = ""
             if "_" in ang.name or "^" in ang.name:
                 marker = "$"
-            var_label = marker + ang.name + marker + "\n$%s$" % ang.lambda_str
+            var_label = marker + ang.name + marker + " ($%s$)" % ang.lambda_str
             if gr_append != "":
-                var_label = "Groomed " + marker + ang.name + marker + "\n$%s$" % ang.lambda_str
-            qgp.do_box_plot_mpl(dijet_cen_1d_entries[:], pt_bins[:],
-                                "%s/ptBinned/%s_box_dijet_cen_mpl.%s" % (plot_dir, v, OUTPUT_FMT),
-                                var_label=var_label,
-                                ylim=ylim, xlim=(50, 1000), region_title="Dijet (central)")
+                var_label = "Groomed " + marker + ang.name + marker + " ($%s$)" % ang.lambda_str
 
-            qgp.do_box_plot_mpl(dijet_fwd_1d_entries[:], pt_bins[:],
-                                "%s/ptBinned/%s_box_dijet_fwd_mpl.%s" % (plot_dir, v, OUTPUT_FMT),
-                                var_label=var_label,
-                                ylim=ylim, xlim=(50, 1000), region_title="Dijet (forward)")
+            qgp.do_mean_rms_summary_plot(dijet_cen_1d_entries[:],
+                                         pt_bins[:],
+                                         "%s/ptBinned/%s_box_dijet_cen_mpl.%s" % (plot_dir, v, OUTPUT_FMT),
+                                         var_label=var_label,
+                                         xlim=(50, 2000),
+                                         ylim=ylim,
+                                         region_title="%s jets in dijet (central)" % (jet_str))
 
-            qgp.do_box_plot_mpl(zpj_1d_entries[:], pt_bins[:],
-                                "%s/ptBinned/%s_box_zpj_mpl.%s" % (plot_dir, v, OUTPUT_FMT),
-                                var_label=var_label,
-                                ylim=ylim, xlim=(50, 326), region_title="Z+jets")
+            qgp.do_mean_rms_summary_plot(dijet_fwd_1d_entries[:],
+                                         pt_bins[:],
+                                         "%s/ptBinned/%s_box_dijet_fwd_mpl.%s" % (plot_dir, v, OUTPUT_FMT),
+                                         var_label=var_label,
+                                         xlim=(50, 2000),
+                                         ylim=ylim,
+                                         region_title="%s jets in dijet (forward)" % (jet_str))
+
+            qgp.do_mean_rms_summary_plot(zpj_1d_entries[:],
+                                         pt_bins[:],
+                                         "%s/ptBinned/%s_box_zpj_mpl.%s" % (plot_dir, v, OUTPUT_FMT),
+                                         var_label=var_label,
+                                         xlim=(50, 481),
+                                         ylim=ylim,
+                                         region_title="%s jets in Z+jets" % (jet_str))
+
+            # qgp.do_box_plot(dijet_2d_entries,
+            #                 "%s/ptBinned/%s_box_dijet.%s" % (plot_dir, v, OUTPUT_FMT),
+            #                 ylim=ylim, xlim=(0, 300), transpose=True)
 
             # qgp.do_box_plot(zpj_2d_entries,
             #                 "%s/ptBinned/%s_box_zpj.%s" % (plot_dir, v, OUTPUT_FMT),
