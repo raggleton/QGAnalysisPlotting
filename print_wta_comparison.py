@@ -38,10 +38,10 @@ TOTAL_LUMI = 35918
 
 if __name__ == "__main__":
     pythia_no_wta_dir = "workdir_ak4puppi_mgpythia_newFlav_jetAsymCut_chargedVars_pt1RecoConstituents_V11JEC_JER_tUnfoldBetter_target0p5_noZReweight"
-    pythia_wta_dir = "workdir_ak8puppi_mgpythia_newFlav_jetAsymCut_chargedVars_pt1RecoConstituents_V11JEC_JER_tUnfoldBetter_target0p5_noZReweight_wta_groomed"
+    pythia_wta_dir = "workdir_ak4puppi_mgpythia_newFlav_jetAsymCut_chargedVars_pt1RecoConstituents_V11JEC_JER_tUnfoldBetter_target0p5_noZReweight_wta_groomed"
     sources = [
-        {"root_dir": pythia_no_wta_dir, 'label': " MG+PYTHIA8 (normal axis)", "style": {'line_color': ROOT.kBlue, 'marker_color': ROOT.kBlue}},
-        {"root_dir": pythia_wta_dir , 'label': " MG+PYTHIA8 (WTA axis)", "style": {'line_color': ROOT.kRed, 'marker_color': ROOT.kRed}},
+        {"root_dir": pythia_no_wta_dir, 'label': " [MG+PY8]\n(normal axis)", "style": {'line_color': ROOT.kBlue, 'marker_color': ROOT.kBlue}},
+        {"root_dir": pythia_wta_dir , 'label': " [MG+PY8]\n(WTA axis)", "style": {'line_color': ROOT.kRed, 'marker_color': ROOT.kRed}},
     ]
 
     # Do Z+jets region only
@@ -51,7 +51,8 @@ if __name__ == "__main__":
                                           dy_filename=qgc.DY_FILENAME,
                                           zpj_dirname="ZPlusJets_QG",
                                           qcd_filename=None,
-                                          dj_dirname=None,
+                                          dj_cen_dirname=None,
+                                          dj_fwd_dirname=None,
                                           subplot_type="ratio",
                                           subplot_title="#splitline{WTA/normal}{jet axis}",
                                           do_flav_tagged=False,
@@ -66,6 +67,8 @@ if __name__ == "__main__":
                                           zpj_dirname=None,
                                           qcd_filename=qgc.QCD_FILENAME,
                                           dj_dirname="Dijet_QG_tighter",
+                                          dj_cen_dirname=None,
+                                          dj_fwd_dirname=None,
                                           subplot_type="ratio",
                                           subplot_title="#splitline{WTA/normal}{jet axis}",
                                           do_flav_tagged=False,
@@ -88,7 +91,8 @@ if __name__ == "__main__":
     subplot_title = "#splitline{Ratio wrt}{PU %d-%d}" % (pu_bins[0][0], pu_bins[0][1])
     qgp.do_all_exclusive_plots_comparison(sources=sources, 
                                           var_list=qgc.COMMON_VARS, 
-                                          dj_dirname=None,
+                                          dj_cen_dirname=None,
+                                          dj_fwd_dirname=None,
                                           plot_dir=os.path.join(pythia_wta_dir, "plots_dy_vs_qcd_compare_pu_zpj"),
                                           pt_bins=qgc.PT_BINS, 
                                           subplot_type="ratio", 
@@ -101,4 +105,7 @@ if __name__ == "__main__":
                                           pt_bins=qgc.PT_BINS, 
                                           subplot_type="ratio", 
                                           subplot_title=subplot_title, 
+                                          dj_dirname="blah",
+                                          dj_cen_dirname=None,
+                                          dj_fwd_dirname=None,
                                           do_flav_tagged=False)
