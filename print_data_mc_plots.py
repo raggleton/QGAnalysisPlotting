@@ -291,15 +291,15 @@ def do_plots(root_dir):
                 #                        subplot_limits=subplot_limits)
 
                 # dj central only
-                # qgp.do_comparison_plot(dijet_cen_entries,
-                #                        "%s/ptBinned/%s_pt%dto%d_dijet_central.%s" % (plot_dir, v, start_val, end_val, OUTPUT_FMT),
-                #                        rebin=rebin,
-                #                        title="%d < p_{T}^{jet} < %d GeV\n%s" % (start_val, end_val, jet_str),
-                #                        xtitle=xlabel,
-                #                        xlim=xlim, ylim=ylim,
-                #                        subplot_type='ratio',
-                #                        subplot_title=subplot_title,
-                #                        subplot_limits=subplot_limits)
+                qgp.do_comparison_plot(dijet_cen_entries,
+                                       "%s/ptBinned/%s_pt%dto%d_dijet_central.%s" % (plot_dir, v, start_val, end_val, OUTPUT_FMT),
+                                       rebin=rebin,
+                                       title="%d < p_{T}^{jet} < %d GeV\n%s" % (start_val, end_val, jet_str),
+                                       xtitle=xlabel,
+                                       xlim=xlim, ylim=ylim,
+                                       subplot_type='ratio',
+                                       subplot_title=subplot_title,
+                                       subplot_limits=subplot_limits)
 
                 # dj forward only
                 qgp.do_comparison_plot(dijet_fwd_entries,
@@ -313,15 +313,15 @@ def do_plots(root_dir):
                                        subplot_limits=subplot_limits)
 
                 # zpj only
-                # qgp.do_comparison_plot(zpj_entries,
-                #                        "%s/ptBinned/%s_pt%dto%d_zpj.%s" % (plot_dir, v, start_val, end_val, OUTPUT_FMT),
-                #                        rebin=rebin,
-                #                        title="%d < p_{T}^{jet} < %d GeV\n%s" % (start_val, end_val, jet_str),
-                #                        xtitle=xlabel,
-                #                        xlim=xlim, ylim=ylim,
-                #                        subplot_type='ratio',
-                #                        subplot_title=subplot_title,
-                #                        subplot_limits=subplot_limits)
+                qgp.do_comparison_plot(zpj_entries,
+                                       "%s/ptBinned/%s_pt%dto%d_zpj.%s" % (plot_dir, v, start_val, end_val, OUTPUT_FMT),
+                                       rebin=rebin,
+                                       title="%d < p_{T}^{jet} < %d GeV\n%s" % (start_val, end_val, jet_str),
+                                       xtitle=xlabel,
+                                       xlim=xlim, ylim=ylim,
+                                       subplot_type='ratio',
+                                       subplot_title=subplot_title,
+                                       subplot_limits=subplot_limits)
 
             ylim = None
             if "width" in v_lower or "ptd" in v_lower:
