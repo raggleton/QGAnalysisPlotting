@@ -82,7 +82,7 @@ def make_comparison_plot_ingredients(entries, rebin=1, normalise_hist=True, mean
     # Plot expects subplot to be a Contribution
     # But we only make those here
     # So here we figure out which contribution matches the subplot, if it exists
-    if "subplot" in plot_kwargs:
+    if "subplot" in plot_kwargs and plot_kwargs['subplot'] is not None:
         subplot_cont = [c for c in conts if c.obj == plot_kwargs['subplot']]
         if len(subplot_cont) > 0:
             plot_kwargs['subplot'] = subplot_cont[0]
@@ -220,6 +220,7 @@ def do_all_exclusive_plots_comparison(sources,
                                       dy_filename=qgc.DY_FILENAME,
                                       zpj_dirname="ZPlusJets_QG",
                                       qcd_filename=qgc.QCD_FILENAME,
+                                      dj_dirname=None,  # backwards-compatible
                                       dj_cen_dirname="Dijet_QG_central_tighter",
                                       dj_fwd_dirname="Dijet_QG_forward_tighter",
                                       var_list=None,
@@ -229,28 +230,30 @@ def do_all_exclusive_plots_comparison(sources,
                                       subplot_type=None,
                                       subplot_title=None,
                                       do_flav_tagged=True,
+                                      show_region_labels=True,
                                       has_data=False,
                                       ofmt="pdf"):
     """Do 1D plots, comparing various sources. Looping over pt_bins, for each source, plots DY & QCD samples.
 
     `sources` is a list of dicts. Each dict has structure:
     {
-    'root_dir': directory with ROOT file
-    'label': append to put in legend after main label (optional)
-    'dy_filename': name of ROOT file with Z+jets hists (optional)
-    'qcd_filename': name of ROOT file with dijet hists (optional)
-    'zpj_dirname': name of TDirectory with Z+jets hists (optional)
-    'dj_cen_dirname': name of TDirectory with dijet central hists (optional)
-    'dj_fwd_dirname': name of TDirectory with dijet foward hists (optional)
-    'style': dict of style options for this Contribution (optional)
-    'zpj_style': dict of style options for this Contribution if Z+jets (optional, applied after 'style' dict)
-    'qcd_cen_style': dict of style options for this Contribution if dijet central (optional, applied after 'style' dict)
-    'qcd_fwd_style': dict of style options for this Contribution if dijet forward (optional, applied after 'style' dict)
+        'root_dir': directory with ROOT file
+        'label': append to put in legend after main label (optional)
+        'dy_filename': name of ROOT file with Z+jets hists (optional)
+        'qcd_filename': name of ROOT file with dijet hists (optional)
+        'zpj_dirname': name of TDirectory with Z+jets hists (optional)
+        'dj_cen_dirname': name of TDirectory with dijet central hists (optional)
+        'dj_fwd_dirname': name of TDirectory with dijet foward hists (optional)
+        'style': dict of style options for this Contribution (optional)
+        'zpj_style': dict of style options for this Contribution if Z+jets (optional, applied after 'style' dict)
+        'qcd_cen_style': dict of style options for this Contribution if dijet central (optional, applied after 'style' dict)
+        'qcd_fwd_style': dict of style options for this Contribution if dijet forward (optional, applied after 'style' dict)
     }
 
     If zpj_dirname, dj_cen_dirname, dj_fwd_dirname blank, those contributions will not be plotted.
 
     `title` is appended after pt bin title.
+    `show_region_labels` adds region label to legend
     """
     var_list = var_list or qgc.COMMON_VARS_WITH_FLAV
     pt_bins = pt_bins or qgc.PT_BINS
@@ -263,52 +266,74 @@ def do_all_exclusive_plots_comparison(sources,
         v = "%s%s_vs_pt" % (var_prepend, ang.var)
         for (start_val, end_val) in pt_bins:
             entries_normal, entries_flav = [], []
+            
+            # some default sizings
+            lw = 2
+            msize = 1.1
 
-            # Get all plots
-            for ind, source in enumerate(sources):
-                lw = 2
-                msize = 1.1
+            # Get all plots, grouped by signal region
 
-                if zpj_dirname:
+            if zpj_dirname:
+                for ind, source in enumerate(sources):
                     h2d_dyj = grab_obj(os.path.join(source['root_dir'], source.get('dy_filename', dy_filename)),
                                        "%s/%s" % (source.get('zpj_dirname', zpj_dirname), v))
+                    label_parts = [qgc.ZpJ_LABEL if show_region_labels else "", source.get('label', '')]
                     dy_kwargs = dict(line_color=qgc.DY_COLOUR, line_width=lw, fill_color=qgc.DY_COLOUR,
-                                     label=qgc.ZpJ_LABEL + source.get('label', ''),
+                                     label='\n'.join([l for l in label_parts if l]),
                                      marker_color=qgc.DY_COLOUR, marker_style=qgc.DY_MARKER+ind, marker_size=msize)
                     dy_kwargs.update(source.get('style', {}))
                     dy_kwargs.update(source.get('zpj_style', {}))
                     entries_normal.append((get_projection_plot(h2d_dyj, start_val, end_val), dy_kwargs))
                     del h2d_dyj
 
-                if dj_cen_dirname:
+            if dj_cen_dirname:
+                for ind, source in enumerate(sources):
                     h2d_qcd_cen = grab_obj(os.path.join(source['root_dir'], source.get('qcd_filename', qcd_filename)),
                                            "%s/%s" % (source.get('dj_cen_dirname', dj_cen_dirname), v))
+                    label_parts = [qgc.Dijet_CEN_LABEL if show_region_labels else "", source.get('label', '')]
+                    label_parts = [l for l in label_parts if l]
                     qcd_cen_kwargs = dict(line_color=qgc.QCD_CEN_COLOUR, line_width=lw,
                                           fill_color=qgc.QCD_CEN_COLOUR,
-                                          label=qgc.Dijet_CEN_LABEL + source.get('label', ''),
+                                          label='\n'.join([l for l in label_parts if l]),
                                           marker_color=qgc.QCD_CEN_COLOUR, marker_style=qgc.QCD_CEN_MARKER+ind, marker_size=msize)
                     qcd_cen_kwargs.update(source.get('style', {}))
                     qcd_cen_kwargs.update(source.get('qcd_cen_style', {}))
                     entries_normal.append((get_projection_plot(h2d_qcd_cen, start_val, end_val), qcd_cen_kwargs))
                     del h2d_qcd_cen
 
-                if dj_fwd_dirname:
+            if dj_fwd_dirname:
+                for ind, source in enumerate(sources):
                     h2d_qcd_fwd = grab_obj(os.path.join(source['root_dir'], source.get('qcd_filename', qcd_filename)),
                                            "%s/%s" % (source.get('dj_fwd_dirname', dj_fwd_dirname), v))
+                    label_parts = [qgc.Dijet_FWD_LABEL if show_region_labels else "", source.get('label', '')]
                     qcd_fwd_kwargs = dict(line_color=qgc.QCD_FWD_COLOUR, line_width=lw,
                                           fill_color=qgc.QCD_FWD_COLOUR,
-                                          label=qgc.Dijet_FWD_LABEL + source.get('label', ''),
+                                          label='\n'.join([l for l in label_parts if l]),
                                           marker_color=qgc.QCD_FWD_COLOUR, marker_style=qgc.QCD_FWD_MARKER+ind, marker_size=msize)
                     qcd_fwd_kwargs.update(source.get('style', {}))
                     qcd_fwd_kwargs.update(source.get('qcd_fwd_style', {}))
                     entries_normal.append((get_projection_plot(h2d_qcd_fwd, start_val, end_val), qcd_fwd_kwargs))
                     del h2d_qcd_fwd
 
-                if not do_flav_tagged or "flavour" in v:
-                    continue
-
-                # Flav tagged plots
-                if zpj_dirname:
+            if dj_dirname:
+                for ind, source in enumerate(sources):
+                    h2d_qcd = grab_obj(os.path.join(source['root_dir'], source.get('qcd_filename', qcd_filename)),
+                                           "%s/%s" % (source.get('dj_dirname', dj_dirname), v))
+                    label_parts = [qgc.Dijet_LABEL if show_region_labels else "", source.get('label', '')]
+                    qcd_kwargs = dict(line_color=qgc.QCD_COLOUR, line_width=lw,
+                                      fill_color=qgc.QCD_COLOUR,
+                                      label='\n'.join([l for l in label_parts if l]),
+                                      marker_color=qgc.QCD_COLOUR, marker_style=qgc.QCD_MARKER+ind, marker_size=msize)
+                    qcd_kwargs.update(source.get('style', {}))
+                    qcd_kwargs.update(source.get('qcd_style', {}))
+                    entries_normal.append((get_projection_plot(h2d_qcd, start_val, end_val), qcd_kwargs))
+                    del h2d_qcd
+                    
+            do_flav_plot = do_flav_tagged and "flavour" not in v
+            
+            # Flav tagged plots
+            if zpj_dirname and do_flav_plot:
+                for ind, source in enumerate(sources):
                     h2d_dyj_q = grab_obj(os.path.join(source['root_dir'], source.get('dy_filename', dy_filename)),
                                          "%s/q%s" % (source.get('zpj_dirname', zpj_dirname), v))
                     dy_kwargs_q = dict(line_color=qgc.DY_COLOUR, line_width=lw, fill_color=qgc.DY_COLOUR,
@@ -319,7 +344,8 @@ def do_all_exclusive_plots_comparison(sources,
                     dy_kwargs_q.update(source.get('zpj_style', {}))
                     entries_flav.append((get_projection_plot(h2d_dyj_q, start_val, end_val), dy_kwargs_q))
 
-                if dj_cen_dirname:
+            if dj_cen_dirname and do_flav_plot:
+                for ind, source in enumerate(sources):
                     h2d_qcd_cen_g = grab_obj(os.path.join(source['root_dir'], source.get('qcd_filename', qcd_filename)),
                                              "%s/g%s" % (source.get('dj_cen_dirname', dj_cen_dirname), v))
                     qcd_cen_kwargs_g = dict(line_color=qgc.QCD_CEN_COLOUR, line_width=lw,
@@ -340,7 +366,8 @@ def do_all_exclusive_plots_comparison(sources,
                     qcd_cen_kwargs_q.update(source.get('qcd_cen_style', {}))
                     entries_flav.append((get_projection_plot(h2d_qcd_cen_q, start_val, end_val), qcd_cen_kwargs_q))
 
-                if dj_fwd_dirname:
+            if dj_fwd_dirname and do_flav_plot:
+                for ind, source in enumerate(sources):
                     h2d_qcd_fwd_g = grab_obj(os.path.join(source['root_dir'], source.get('qcd_filename', qcd_filename)),
                                              "%s/g%s" % (source.get('dj_fwd_dirname', dj_dirname), v))
                     qcd_fwd_kwargs_g = dict(line_color=qgc.QCD_FWD_COLOUR, line_width=lw,
@@ -361,6 +388,19 @@ def do_all_exclusive_plots_comparison(sources,
                     qcd_fwd_kwargs_q.update(source.get('qcd_fwd_style', {}))
                     entries_flav.append((get_projection_plot(h2d_qcd_fwd_q, start_val, end_val), qcd_fwd_kwargs_q))
 
+            # Now we've gone through all entries, we can update with the subplots (if any),
+            # where the subplot has been specified by an index
+            start_ind = -1
+            for dn in [zpj_dirname, dj_cen_dirname, dj_fwd_dirname, dj_dirname]:
+                if dn:
+                    start_ind += 1
+                    for ind, source in enumerate(sources):
+                        if 'subplot' in source and isinstance(source['subplot'], int):
+                            subplot_ind = source['subplot']
+                            entries_normal[start_ind + ind][1]['subplot'] = entries_normal[start_ind+subplot_ind][0]
+                    start_ind += ind
+
+            # some default plot options
             rebin = 2
             if "multiplicity" in v:
                 rebin = 2
@@ -380,7 +420,9 @@ def do_all_exclusive_plots_comparison(sources,
             #     ylim = (0, 5)
 
             subplot = None
-            if subplot_type != None and len(entries_normal) > 0:
+            num_entries_with_subplot = len([e for e in entries_normal if e[1].get('subplot', None)])
+            if subplot_type != None and len(entries_normal) > 0 and num_entries_with_subplot == 0:
+                print("creating common subplot obj")
                 subplot = entries_normal[0][0]
                 if subplot.GetEntries() < 1:
                     subplot = entries_normal[1][0]
@@ -405,7 +447,7 @@ def do_all_exclusive_plots_comparison(sources,
                                subplot_title=subplot_title, subplot_limits=(0, 2))
 
 
-            if do_flav_tagged and "flavour" not in v:
+            if do_flav_plot:
                 subplot = None
                 if subplot_type != None and len(entries_flav) > 0:
                     subplot = entries_flav[0][0]
