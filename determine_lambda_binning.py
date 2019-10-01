@@ -501,10 +501,10 @@ if __name__ == "__main__":
     rebin_results_dict = OrderedDict()
 
     pt_regions = [
-        {
-            "append": "",
-            "title": "p_{T}^{Reco} > 30 GeV",
-        },
+        # {
+        #     "append": "",
+        #     "title": "p_{T}^{Reco} > 30 GeV",
+        # },
         {
             "append": "_lowPt",
             "title": "30 < p_{T}^{Reco} < 100 GeV",
@@ -537,16 +537,19 @@ if __name__ == "__main__":
 
     input_tfile = cu.open_root_file(args.input)
 
-    for source_plot_dir_name, region_label in zip(source_plot_dir_names, region_labels):
+    for angle in qgc.COMMON_VARS[:]:
 
-        for angle in qgc.COMMON_VARS[:]:
+        all_response_maps_dict = {}
+
+        for source_plot_dir_name, region_label in zip(source_plot_dir_names, region_labels):
+            var_prepend = "groomed" if "groomed" in source_plot_dir_name else ""
 
             response_maps_dict = {} # store 2D maps for later
 
             for pt_region_dict in pt_regions[:]:
                 var_dict = {
                     "name": "%s/%s%s" % (source_plot_dir_name, angle.var, pt_region_dict['append']),
-                    "var_label": "%s (%s)" % (angle.name, angle.lambda_str),
+                    "var_label": "%s%s (%s)" % (var_prepend, angle.name, angle.lambda_str),
                     "title": "%s\n%s" % (region_label, pt_region_dict['title']),
                 }
 
@@ -682,6 +685,8 @@ if __name__ == "__main__":
                     #         new_obj = var.obj.Clone()
                     #         new_obj.Divide(ref)
 
+            all_response_maps_dict.update(response_maps_dict)
+
             # Apply binning scheme dervied from one pT region to others
             # ---------------------------------------------------------
             rebin_other_pt_regions = True
@@ -715,12 +720,48 @@ if __name__ == "__main__":
                     h2d_rebin = make_rebinned_2d_hist(h2d, reference_binning, use_half_width_y=False)
                     var_dict = {
                         "name": hname,
-                        "var_label": "%s (%s)" % (angle.name, angle.lambda_str),
+                        "var_label": "%s%s (%s)" % (var_prepend, angle.name, angle.lambda_str),
                         "title": h2d.GetTitle() + "\n(rebinned for %s)" % this_pt_dict['title'],
                     }
                     make_plots(h2d_rebin, var_dict, plot_dir=plot_dir,
                                append="rebinned_for%s" % (reference_pt_region),
                                plot_migrations=True)
+
+
+                # Apply binning scheme dervied from one ungroomed region to groomed
+                # And use the reference pt region
+                # ---------------------------------------------------------
+                rebin_other_groomed_regions = True
+                if "groomed" in source_plot_dir_name and rebin_other_groomed_regions:
+                    # Find rebinning scheme
+                    ungroomed_source_plot_dir_name = source_plot_dir_name.replace("_groomed", "")
+                    key = "%s/%s%s" % (ungroomed_source_plot_dir_name, angle.var, reference_pt_region)
+                    print("key", key)
+                    if key not in rebin_results_dict:
+                        raise RuntimeError("Missing key %s in dict" % key)
+
+                    reference_binning = rebin_results_dict[key]
+
+                    # Now rebin all other 2D hists
+                    for hname, h2d in all_response_maps_dict.items():
+                        # print("hname", hname)
+                        # print("source_plot_dir_name", source_plot_dir_name)
+                        # print("angle.var", angle.var)
+                        if ("_renorm" in hname
+                            or angle.var not in hname
+                            or source_plot_dir_name not in hname):
+                            continue
+
+                        print("Rebinning groomed", hname)
+                        h2d_rebin = make_rebinned_2d_hist(h2d, reference_binning, use_half_width_y=False)
+                        var_dict = {
+                            "name": hname,
+                            "var_label": "groomed %s (%s)" % (angle.name, angle.lambda_str),
+                            "title": h2d.GetTitle() + "\n(rebinned for %s, ungroomed)" % this_pt_dict['title'],
+                        }
+                        make_plots(h2d_rebin, var_dict, plot_dir=plot_dir,
+                                   append="rebinned_for%s_ungroomed" % (reference_pt_region),
+                                   plot_migrations=True)
 
                 # Now rebin any other input files with the same hist using the new binning
                 # ------------------------------------------------------------------------
