@@ -40,36 +40,41 @@ if __name__ == "__main__":
     # pythia_dir = "workdir_ak4puppi_mgpythia_newFlav_jetAsymCut_chargedVars_pt1RecoConstituents_V11JEC_JER_tUnfoldBetter_target0p5_noZReweight_wta_groomed"
     pythia_dir = "workdir_ak4puppi_mgpythia_newFlav_jetAsymCut_chargedVars_pt1RecoConstituents_V11JEC_JER_tUnfoldBetter_target0p5_noZReweight_wta_groomed_fwdcenDijet"
     pythia_dir = "workdir_ak4puppi_mgpythia_newFlav_jetAsymCut_chargedVars_pt1RecoConstituents_V11JEC_JER_tUnfoldBetter_target0p5_noZReweight_wta_groomed_fwdcenDijet_betterLargeWeightVeto"
+    pythia_dir = "workdir_ak4puppi_data_trigBinningBetter2_jetAsymCut_pt1RecoConstituents_V11JEC_JER_tUnfoldBetter_target0p5_wta_groomed_fwdcenDijet"
     # pythia_dir = "workdir_ak4puppi_mgpythia_newFlav_jetAsymCut_chargedVars_pt1RecoConstituents_V11JEC_JER_tUnfoldBetter_target0p5_noZReweight_wta_groomed_fwdcenDijet_betterLargeWeightVetoNoPUpthatCut"
     # pythia_dir = "workdir_ak4puppi_mgpythia_newFlav_jetAsymCut_chargedVars_pt1RecoConstituents_V11JEC_JER_tUnfoldBetter_target0p5_noZReweight_wta_groomed_fwdcenDijet_betterLargeWeightVetoNoPUpthatCutNoQscaleCut"
     # pythia_dir = "workdir_ak8puppi_mgpythia_newFlav_jetAsymCut_chargedVars_pt1RecoConstituents_V11JEC_JER_tUnfoldBetter_target0p5_noZReweight_wta_groomed"
     data_dir = "workdir_ak4puppi_data_trigBinningBetter2_jetAsymCut_pt1RecoConstituents_V11JEC_JER_tUnfoldBetter_target0p5_wta_groomed_fwdcenDijet"
-    sources = [
+    mc_sources = [
         {"root_dir": pythia_dir ,
-         "label": "\nMG+PYTHIA8 (ungroomed)",
+         "label": "MG+PYTHIA8 MC (ungroomed)",
          "style": {
              "line_color": ROOT.kBlack,
              "marker_color": ROOT.kBlack
          },
+         "dy_filename": qgc.DY_FILENAME,
          "zpj_dirname": "ZPlusJets_QG",
+         "qcd_filename": qgc.QCD_FILENAME,
          "dj_cen_dirname": "Dijet_QG_central_tighter",
          "dj_fwd_dirname": "Dijet_QG_forward_tighter"
         },
 
         {"root_dir": pythia_dir,
-         "label": "\nMG+PYTHIA8 (groomed)",
+         "label": "MG+PYTHIA8 MC (groomed)",
          "style": {
              "line_color": ROOT.kRed,
              "marker_color": ROOT.kRed
          },
+         "dy_filename": qgc.DY_FILENAME,
          "zpj_dirname": "ZPlusJets_QG_groomed",
+         "qcd_filename": qgc.QCD_FILENAME,
          "dj_cen_dirname": "Dijet_QG_central_tighter_groomed",
          "dj_fwd_dirname": "Dijet_QG_forward_tighter_groomed"
         },
     ]
     data_sources = [
         {"root_dir": data_dir ,
-         "label": "\nJetHT+ZeroBias (ungroomed)",
+         "label": "Data (ungroomed)",
          "style": {
              "line_color": ROOT.kBlue,
              "marker_color": ROOT.kBlue
@@ -82,10 +87,10 @@ if __name__ == "__main__":
         },
 
         {"root_dir": data_dir,
-         "label": "\nJetHT+ZeroBias (groomed)",
+         "label": "Data (groomed)",
          "style": {
-             "line_color": ROOT.kGreen,
-             "marker_color": ROOT.kGreen
+             "line_color": ROOT.kGreen+2,
+             "marker_color": ROOT.kGreen+2
          },
          "dy_filename": qgc.SINGLE_MU_FILENAME,
          "zpj_dirname": "ZPlusJets_QG_groomed",
@@ -95,15 +100,82 @@ if __name__ == "__main__":
         },
     ]
 
+    all_sources = [
+        {"root_dir": data_dir ,
+         "label": "Data (ungroomed)",
+         "style": {
+             "line_color": ROOT.kBlue,
+             "marker_color": ROOT.kBlue
+         },
+         "dy_filename": qgc.SINGLE_MU_FILENAME,
+         "zpj_dirname": "ZPlusJets_QG",
+         "qcd_filename": qgc.JETHT_ZB_FILENAME,
+         "dj_cen_dirname": "Dijet_QG_central_tighter",
+         "dj_fwd_dirname": "Dijet_QG_forward_tighter"
+        },
+        {"root_dir": pythia_dir ,
+         "label": "MG+PYTHIA8 MC (ungroomed)",
+         "style": {
+             "line_color": ROOT.kBlack,
+             "marker_color": ROOT.kBlack
+         },
+         "dy_filename": qgc.DY_FILENAME,
+         "zpj_dirname": "ZPlusJets_QG",
+         "qcd_filename": qgc.QCD_FILENAME,
+         "dj_cen_dirname": "Dijet_QG_central_tighter",
+         "dj_fwd_dirname": "Dijet_QG_forward_tighter"
+        },
+
+        {"root_dir": data_dir,
+         "label": "Data (groomed)",
+         "style": {
+             "line_color": ROOT.kGreen+2,
+             "marker_color": ROOT.kGreen+2
+         },
+         "dy_filename": qgc.SINGLE_MU_FILENAME,
+         "zpj_dirname": "ZPlusJets_QG_groomed",
+         "qcd_filename": qgc.JETHT_ZB_FILENAME,
+         "dj_cen_dirname": "Dijet_QG_central_tighter_groomed",
+         "dj_fwd_dirname": "Dijet_QG_forward_tighter_groomed"
+        },
+        {"root_dir": pythia_dir,
+         "label": "MG+PYTHIA8 MC (groomed)",
+         "style": {
+             "line_color": ROOT.kRed,
+             "marker_color": ROOT.kRed
+         },
+         "dy_filename": qgc.DY_FILENAME,
+         "zpj_dirname": "ZPlusJets_QG_groomed",
+         "qcd_filename": qgc.QCD_FILENAME,
+         "dj_cen_dirname": "Dijet_QG_central_tighter_groomed",
+         "dj_fwd_dirname": "Dijet_QG_forward_tighter_groomed"
+        },
+    ]
+
     title = qgc.extract_jet_config(pythia_dir)
     # Do Z+jets region only
+    all_sources[2]['subplot'] = 0
+    all_sources[3]['subplot'] = 1
+    qgp.do_all_exclusive_plots_comparison(sources=all_sources,
+                                          var_list=qgc.COMMON_VARS[:],
+                                          plot_dir=os.path.join(pythia_dir, "groomed_vs_ungroomed_jet_zpj"),
+                                          dy_filename=qgc.DY_FILENAME,
+                                          qcd_filename=None,
+                                          dj_cen_dirname=None,
+                                          dj_fwd_dirname=None,
+                                          show_region_labels=False,
+                                          subplot_type="ratio",
+                                          subplot_title="#splitline{Groomed/}{ungroomed}",
+                                          do_flav_tagged=False,
+                                          pt_bins=qgc.PT_BINS,
+                                          title=title + "\n" + qgc.ZpJ_LABEL,
+                                          has_data=False,
+                                          ofmt=OUTPUT_FMT)
+
+    # Do Z+jet and dijet regions altogether
     # qgp.do_all_exclusive_plots_comparison(sources=sources,
     #                                       var_list=qgc.COMMON_VARS[:],
-    #                                       plot_dir=os.path.join(pythia_dir, "groomed_vs_ungroomed_jet_zpj"),
-    #                                       dy_filename=qgc.DY_FILENAME,
-    #                                       qcd_filename=None,
-    #                                       dj_cen_dirname=None,
-    #                                       dj_fwd_dirname=None,
+    #                                       plot_dir=os.path.join(pythia_dir, "groomed_vs_ungroomed_jet_dijet_zpj"),
     #                                       subplot_type="ratio",
     #                                       subplot_title="#splitline{Groomed/}{ungroomed}",
     #                                       do_flav_tagged=False,
@@ -111,43 +183,31 @@ if __name__ == "__main__":
     #                                       title=title,
     #                                       has_data=False,
     #                                       ofmt=OUTPUT_FMT)
-
-    # Do Z+jet and dijet regions altogether
-    qgp.do_all_exclusive_plots_comparison(sources=sources,
-                                          var_list=qgc.COMMON_VARS[:],
-                                          plot_dir=os.path.join(pythia_dir, "groomed_vs_ungroomed_jet_dijet_zpj"),
-                                          subplot_type="ratio",
-                                          subplot_title="#splitline{Groomed/}{ungroomed}",
-                                          do_flav_tagged=False,
-                                          pt_bins=qgc.PT_BINS,
-                                          title=title,
-                                          has_data=False,
-                                          ofmt=OUTPUT_FMT)
     
-    qgp.do_all_exclusive_plots_comparison(sources=sources[0:1]+data_sources[0:1],
-                                          var_list=qgc.COMMON_VARS[:],
-                                          plot_dir=os.path.join(pythia_dir, "ungroomed_jet_dijet_zpj"),
-                                          # subplot_type="ratio",
-                                          # subplot_title="#splitline{Groomed/}{ungroomed}",
-                                          do_flav_tagged=False,
-                                          pt_bins=qgc.PT_BINS,
-                                          title=title,
-                                          has_data=False,
-                                          ofmt=OUTPUT_FMT)
+    # qgp.do_all_exclusive_plots_comparison(sources=sources[0:1]+data_sources[0:1],
+    #                                       var_list=qgc.COMMON_VARS[:],
+    #                                       plot_dir=os.path.join(pythia_dir, "ungroomed_jet_dijet_zpj"),
+    #                                       # subplot_type="ratio",
+    #                                       # subplot_title="#splitline{Groomed/}{ungroomed}",
+    #                                       do_flav_tagged=False,
+    #                                       pt_bins=qgc.PT_BINS,
+    #                                       title=title,
+    #                                       has_data=False,
+    #                                       ofmt=OUTPUT_FMT)
     
-    qgp.do_all_exclusive_plots_comparison(sources=sources[1:2]+data_sources[1:2],
-                                          var_list=qgc.COMMON_VARS[:],
-                                          plot_dir=os.path.join(pythia_dir, "groomed_jet_dijet_zpj"),
-                                          # subplot_type="ratio",
-                                          # subplot_title="#splitline{Groomed/}{ungroomed}",
-                                          do_flav_tagged=False,
-                                          pt_bins=qgc.PT_BINS,
-                                          title=title,
-                                          has_data=False,
-                                          ofmt=OUTPUT_FMT)
+    # qgp.do_all_exclusive_plots_comparison(sources=sources[1:2]+data_sources[1:2],
+    #                                       var_list=qgc.COMMON_VARS[:],
+    #                                       plot_dir=os.path.join(pythia_dir, "groomed_jet_dijet_zpj"),
+    #                                       # subplot_type="ratio",
+    #                                       # subplot_title="#splitline{Groomed/}{ungroomed}",
+    #                                       do_flav_tagged=False,
+    #                                       pt_bins=qgc.PT_BINS,
+    #                                       title=title,
+    #                                       has_data=False,
+    #                                       ofmt=OUTPUT_FMT)
 
     # Do Dijet region only
-    qgp.do_all_exclusive_plots_comparison(sources=sources[0:1]+data_sources[0:1],
+    qgp.do_all_exclusive_plots_comparison(sources=data_sources[0:1]+mc_sources[0:1],
                                           var_list=qgc.COMMON_VARS[:],
                                           plot_dir=os.path.join(pythia_dir, "ungroomed_jet_dijet"),
                                           dy_filename=None,
@@ -160,7 +220,7 @@ if __name__ == "__main__":
                                           has_data=False,
                                           ofmt=OUTPUT_FMT)
 
-    qgp.do_all_exclusive_plots_comparison(sources=sources+data_sources,
+    qgp.do_all_exclusive_plots_comparison(sources=all_sources,
                                           var_list=qgc.COMMON_VARS[:],
                                           plot_dir=os.path.join(pythia_dir, "groomed_vs_ungroomed_jet_dijet"),
                                           dy_filename=None,
@@ -175,7 +235,7 @@ if __name__ == "__main__":
                                           ofmt=OUTPUT_FMT)
 
     # Do Dijet central region only
-    qgp.do_all_exclusive_plots_comparison(sources=sources+data_sources,
+    qgp.do_all_exclusive_plots_comparison(sources=all_sources,
                                           var_list=qgc.COMMON_VARS[:],
                                           plot_dir=os.path.join(pythia_dir, "groomed_vs_ungroomed_jet_dijet_central"),
                                           zpj_dirname=None,
@@ -190,7 +250,7 @@ if __name__ == "__main__":
                                           ofmt=OUTPUT_FMT)
 
     # Do Dijet forward region only
-    qgp.do_all_exclusive_plots_comparison(sources=sources+data_sources,
+    qgp.do_all_exclusive_plots_comparison(sources=all_sources,
                                           var_list=qgc.COMMON_VARS[:],
                                           plot_dir=os.path.join(pythia_dir, "groomed_vs_ungroomed_jet_dijet_forward"),
                                           zpj_dirname=None,
@@ -210,7 +270,7 @@ if __name__ == "__main__":
     for ind, (pu_min, pu_max) in enumerate(pu_bins):
         sources.append({
             "root_dir": pythia_dir,
-            "label": "\nPU %d-%d (groomed)" % (pu_min, pu_max),
+            "label": "PU %d-%d (groomed)" % (pu_min, pu_max),
             "zpj_dirname": "ZPlusJets_QG_PU_%d_to_%d_groomed" % (pu_min, pu_max),
             "dj_cen_dirname": "Dijet_QG_central_tighter_PU_%d_to_%d_groomed" % (pu_min, pu_max),
             "dj_fwd_dirname": "Dijet_QG_forward_tighter_PU_%d_to_%d_groomed" % (pu_min, pu_max),
@@ -221,19 +281,19 @@ if __name__ == "__main__":
         })
     subplot_title = "#splitline{Ratio wrt}{PU %d-%d}" % (pu_bins[0][0], pu_bins[0][1])
     # Z+jets plots
-    # qgp.do_all_exclusive_plots_comparison(sources=sources,
-    #                                       var_list=qgc.COMMON_VARS,
-    #                                       dj_cen_dirname=None,
-    #                                       dj_fwd_dirname=None,
-    #                                       plot_dir=os.path.join(pythia_dir, "plots_dy_vs_qcd_compare_pu_zpj_groomed"),
-    #                                       pt_bins=qgc.PT_BINS,
-    #                                       subplot_type="ratio",
-    #                                       subplot_title=subplot_title,
-    #                                       title=title,
-    #                                       has_data=False,
-    #                                       do_flav_tagged=False)
+    qgp.do_all_exclusive_plots_comparison(sources=mc_sources,
+                                          var_list=qgc.COMMON_VARS,
+                                          dj_cen_dirname=None,
+                                          dj_fwd_dirname=None,
+                                          plot_dir=os.path.join(pythia_dir, "plots_dy_vs_qcd_compare_pu_zpj_groomed"),
+                                          pt_bins=qgc.PT_BINS,
+                                          subplot_type="ratio",
+                                          subplot_title=subplot_title,
+                                          title=title,
+                                          has_data=False,
+                                          do_flav_tagged=False)
     # Dijet central
-    qgp.do_all_exclusive_plots_comparison(sources=sources,
+    qgp.do_all_exclusive_plots_comparison(sources=mc_sources,
                                           var_list=qgc.COMMON_VARS,
                                           zpj_dirname=None,
                                           dj_fwd_dirname=None,
@@ -246,7 +306,7 @@ if __name__ == "__main__":
                                           do_flav_tagged=False)
 
     # Dijet forward
-    qgp.do_all_exclusive_plots_comparison(sources=sources,
+    qgp.do_all_exclusive_plots_comparison(sources=mc_sources,
                                           var_list=qgc.COMMON_VARS,
                                           zpj_dirname=None,
                                           dj_cen_dirname=None,
