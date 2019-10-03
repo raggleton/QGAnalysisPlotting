@@ -54,12 +54,17 @@ def do_plots(root_dir):
     jet_str = "AK%s PF %s" % (radius.upper(), pus.upper())
 
     for gr_append in ["", "_groomed"]:
+        if gr_append == "_groomed":
+            print("Doing groomed plots...")
+        else:
+            print("Doing ungroomed plots...")
 
         zpj_dirname = "ZPlusJets_QG%s" % (gr_append)
         dj_cen_dirname = "Dijet_QG_central_tighter%s" % (gr_append)
         dj_fwd_dirname = "Dijet_QG_forward_tighter%s" % (gr_append)
 
         for ang in var_list[:]:
+            print("...Doing", ang.name)
             v = "%s%s_vs_pt" % (var_prepend, ang.var)
             zpj_2d_entries = []
             dijet_cen_2d_entries = []
@@ -89,7 +94,6 @@ def do_plots(root_dir):
                 dy_kwargs_data = dict(line_color=qgc.SINGLE_MU_COLOUR, line_width=data_line_width, fill_color=qgc.SINGLE_MU_COLOUR,
                                       marker_color=qgc.SINGLE_MU_COLOUR, marker_style=cu.Marker.get(qgc.DY_MARKER), marker_size=msize,
                                       label="Data")
-                                      # label=qgc.SINGLE_MU_LABEL)
                 zpj_data_hist = qgp.get_projection_plot(h2d_dyj_data, start_val, end_val)
                 entries.append((zpj_data_hist, dy_kwargs_data))
                 zpj_entries.append((zpj_data_hist, dy_kwargs_data))
@@ -101,7 +105,6 @@ def do_plots(root_dir):
                 dy_kwargs_mc = dict(line_color=qgc.DY_COLOUR, line_width=lw, fill_color=qgc.DY_COLOUR,
                                     marker_color=qgc.DY_COLOUR, marker_style=cu.Marker.get(qgc.DY_MARKER), marker_size=0,
                                     label="MG+PY8",
-                                    # label=qgc.DY_ZpJ_LABEL + "\n[MG+PY8]",
                                     subplot=zpj_data_hist)
                 entries.append((qgp.get_projection_plot(h2d_dyj_mc, start_val, end_val), dy_kwargs_mc))
                 zpj_entries.append((qgp.get_projection_plot(h2d_dyj_mc, start_val, end_val), dy_kwargs_mc))
@@ -115,7 +118,6 @@ def do_plots(root_dir):
                     dy_kwargs_mc2 = dict(line_color=col3, line_width=lw, fill_color=col3,
                                          marker_color=col3, marker_style=cu.Marker.get(qgc.DY_MARKER), marker_size=0,
                                          label="H++",
-                                         # label=qgc.DY_ZpJ_LABEL + "\n[H++]",
                                          subplot=zpj_data_hist)
                     entries.append((qgp.get_projection_plot(h2d_dyj_mc2, start_val, end_val), dy_kwargs_mc2))
                     zpj_entries.append((qgp.get_projection_plot(h2d_dyj_mc2, start_val, end_val), dy_kwargs_mc2))
@@ -131,7 +133,6 @@ def do_plots(root_dir):
                     dy_kwargs_mc3 = dict(line_color=col4, line_width=lw, fill_color=col4,
                                          marker_color=col4, marker_style=cu.Marker.get(qgc.DY_MARKER), marker_size=0,
                                          label="MG+H++",
-                                         # label=qgc.DY_ZpJ_LABEL + "\n[MG+H++]",
                                          subplot=zpj_data_hist)
                     entries.append((qgp.get_projection_plot(h2d_dyj_mc3, start_val, end_val), dy_kwargs_mc3))
                     zpj_entries.append((qgp.get_projection_plot(h2d_dyj_mc3, start_val, end_val), dy_kwargs_mc3))
@@ -152,7 +153,6 @@ def do_plots(root_dir):
                 qcd_cen_kwargs_data = dict(line_color=qgc.JETHT_COLOUR, line_width=data_line_width, fill_color=qgc.JETHT_COLOUR,
                                            marker_color=qgc.JETHT_COLOUR, marker_style=cu.Marker.get(qgc.QCD_MARKER), marker_size=msize,
                                            label="Data")
-                                           # label=qgc.JETHT_ZB_CEN_LABEL)
                 dijet_cen_data_hist = qgp.get_projection_plot(h2d_qcd_cen_data, start_val, end_val)
                 entries.append((dijet_cen_data_hist, qcd_cen_kwargs_data))
                 dijet_cen_entries.append((dijet_cen_data_hist, qcd_cen_kwargs_data))
@@ -164,7 +164,6 @@ def do_plots(root_dir):
                 qcd_cen_kwargs_mc = dict(line_color=qgc.QCD_COLOUR, line_width=lw, fill_color=qgc.QCD_COLOUR,
                                          marker_color=qgc.QCD_COLOUR, marker_style=cu.Marker.get(qgc.QCD_MARKER), marker_size=0,
                                          label="MG+PY8",
-                                         # label=qgc.QCD_Dijet_CEN_LABEL + "\n[MG+PY8]",
                                          subplot=dijet_cen_data_hist)
                 # h2d_qcd_cen_mc.Scale(35860)
                 dijet_mgpy_hist = qgp.get_projection_plot(h2d_qcd_cen_mc, start_val, end_val)
@@ -179,7 +178,6 @@ def do_plots(root_dir):
                 qcd_cen_kwargs_mc2 = dict(line_color=col, line_width=lw, fill_color=col,
                                           marker_color=col, marker_style=cu.Marker.get(qgc.QCD_MARKER), marker_size=0,
                                           label="PY8",
-                                          # label=qgc.QCD_Dijet_CEN_LABEL + "\n[PY8]",
                                           subplot=dijet_cen_data_hist)
                 # h2d_qcd_cen_mc2.Scale(35860)
                 entries.append((qgp.get_projection_plot(h2d_qcd_cen_mc2, start_val, end_val), qcd_cen_kwargs_mc2))
@@ -193,7 +191,6 @@ def do_plots(root_dir):
                 qcd_cen_kwargs_mc3 = dict(line_color=col2, line_width=lw, fill_color=col2,
                                           marker_color=col2, marker_style=cu.Marker.get(qgc.QCD_MARKER), marker_size=0,
                                           label="H++",
-                                          # label=qgc.QCD_Dijet_CEN_LABEL + "\n[H++]",
                                           subplot=dijet_cen_data_hist)
                 h2d_qcd_cen_mc3.Scale(TOTAL_LUMI)
                 dijet_hpp_hist = qgp.get_projection_plot(h2d_qcd_cen_mc3, start_val, end_val)
@@ -214,7 +211,6 @@ def do_plots(root_dir):
                 qcd_fwd_kwargs_data = dict(line_color=qgc.JETHT_COLOUR, line_width=data_line_width, fill_color=qgc.JETHT_COLOUR,
                                            marker_color=qgc.JETHT_COLOUR, marker_style=cu.Marker.get(qgc.QCD_MARKER), marker_size=msize,
                                            label="Data")
-                                           # label=qgc.JETHT_ZB_FWD_LABEL)
                 dijet_fwd_data_hist = qgp.get_projection_plot(h2d_qcd_fwd_data, start_val, end_val)
                 entries.append((dijet_fwd_data_hist, qcd_fwd_kwargs_data))
                 dijet_fwd_entries.append((dijet_fwd_data_hist, qcd_fwd_kwargs_data))
@@ -226,7 +222,6 @@ def do_plots(root_dir):
                 qcd_fwd_kwargs_mc = dict(line_color=qgc.QCD_COLOUR, line_width=lw, fill_color=qgc.QCD_COLOUR,
                                          marker_color=qgc.QCD_COLOUR, marker_style=cu.Marker.get(qgc.QCD_MARKER), marker_size=0,
                                          label="MG+PY8",
-                                         # label=qgc.QCD_Dijet_FWD_LABEL + "\n[MG+PY8]",
                                          subplot=dijet_fwd_data_hist)
                 # h2d_qcd_fwd_mc.Scale(35860)
                 dijet_mgpy_hist = qgp.get_projection_plot(h2d_qcd_fwd_mc, start_val, end_val)
@@ -241,7 +236,6 @@ def do_plots(root_dir):
                 qcd_fwd_kwargs_mc2 = dict(line_color=col, line_width=lw, fill_color=col,
                                           marker_color=col, marker_style=cu.Marker.get(qgc.QCD_MARKER), marker_size=0,
                                           label="PY8",
-                                          # label=qgc.QCD_Dijet_FWD_LABEL + "\n[PY8]",
                                           subplot=dijet_fwd_data_hist)
                 # h2d_qcd_fwd_mc2.Scale(35860)
                 entries.append((qgp.get_projection_plot(h2d_qcd_fwd_mc2, start_val, end_val), qcd_fwd_kwargs_mc2))
@@ -255,7 +249,6 @@ def do_plots(root_dir):
                 qcd_fwd_kwargs_mc3 = dict(line_color=col2, line_width=lw, fill_color=col2,
                                           marker_color=col2, marker_style=cu.Marker.get(qgc.QCD_MARKER), marker_size=0,
                                           label="H++",
-                                          # label=qgc.QCD_Dijet_FWD_LABEL + "\n[H++]",
                                           subplot=dijet_fwd_data_hist)
                 h2d_qcd_fwd_mc3.Scale(TOTAL_LUMI)
                 dijet_hpp_hist = qgp.get_projection_plot(h2d_qcd_fwd_mc3, start_val, end_val)
@@ -397,7 +390,7 @@ def do_plots(root_dir):
                                          pt_bins[:],
                                          "%s/ptBinned/%s_box_zpj_mpl.%s" % (plot_dir, v, OUTPUT_FMT),
                                          var_label=var_label,
-                                         xlim=(50, 408),
+                                         xlim=(50, 614),
                                          ylim=ylim,
                                          region_title="%s jets in Z+jets" % (jet_str))
 

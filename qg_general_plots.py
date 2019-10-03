@@ -69,6 +69,7 @@ def make_comparison_plot_ingredients(entries, rebin=1, normalise_hist=True, mean
     """
     # first figure out if there is a plot where the mean relative error
     #  is greater than a certain amount
+    entries = [ent for ent in entries if ent]
     big_mean_rel_err = any([cu.get_hist_mean_rel_error(ent[0]) > mean_rel_error
                             and ent[0].Integral() > 0
                             for ent in entries])
@@ -303,7 +304,7 @@ def do_all_exclusive_plots_comparison(sources,
                 marker_cycle_settings = dict(cycle_filling=False)
             elif len(sources) > 3:
                 marker_cycle_settings = dict(cycle_filling=True)
-            
+
             # Get all plots, grouped by signal region
             if zpj_dirname:
                 marker_zpj = cu.Marker(qgc.DY_MARKER)
@@ -766,36 +767,59 @@ def do_mean_rms_summary_plot(entries, bins, output_filename, var_label="", xlim=
     Parameters
     ----------
     entries : list[list[(TH1, dict)]]
-        Description
+        Histograms to be used.
+        entries[i][j] is the jth sample for the ith pt bin
+    bins : list[(float, float)]
+        Bin edges
     output_filename : str
         Output filename
+    var_label : str, optional
+        Variable name to put in title
+    xlim : None, optional
+        Limit range on x axis
+    ylim : None, optional
+        Limit range on y axis
+    region_title : str, optional
+        Name of region to put in title
     """
     # Get the statistics from our 1D hists
-    # entries is a list, where each element corresponds to a pt bin
-    # each element is itself a list, with different entries for the different datasets being compared
-
     # only do the bins we need, otherwise axis limits go awry
     if xlim:
         bins = [b for b in bins if b[1] <= xlim[1]]
 
+    # same structure as entries:
+    # means[i][j] is the jth dataset for the ith pt bin
     means_minus_rms = []
     means = []
     means_plus_rms = []
 
-    for ind, bin_entry in enumerate(entries):
-        if ind == len(bins):
+    for pt_ind, pt_bin_entry in enumerate(entries):  # iterate over pt bins
+        if pt_ind == len(bins):
             break
         this_lower = []
-        this_mean = []
+        this_mean = [] # hold data for all datasets, for this pt bin
         this_upper = []
-        for entry in bin_entry:
-            hist = entry[0]
+        for dataset_entry in pt_bin_entry:  # iterate over datasets
+            # here deal with missing, or bad hists
+            if not dataset_entry:
+                this_mean.append(None)
+                this_lower.append(None)
+                this_upper.append(None)
+                continue
+            hist = dataset_entry[0]
+            # skip low stats hists
+            if hist.GetEntries() < 100:
+                this_mean.append(None)
+                this_lower.append(None)
+                this_upper.append(None)
+                continue
             this_mean.append(hist.GetMean())
             this_lower.append(hist.GetMean()-hist.GetRMS())
             this_upper.append(hist.GetMean()+hist.GetRMS())
-        means_minus_rms.append(this_lower)
-        means.append(this_mean)
-        means_plus_rms.append(this_upper)
+
+        means_minus_rms.append(np.array(this_lower, dtype=float))  # dtype ensure None -> nan
+        means.append(np.array(this_mean, dtype=float))
+        means_plus_rms.append(np.array(this_upper, dtype=float))
 
     # convert to numpy array to maniuplate easier
     means_minus_rms = np.array(means_minus_rms)
@@ -811,39 +835,63 @@ def do_mean_rms_summary_plot(entries, bins, output_filename, var_label="", xlim=
 
     # Convert ROOT colors to hex for matplotlib
     cols = []
-    for ind, entry in enumerate(entries[0]):
-        cols.append(ROOT.gROOT.GetColor(entry[1]['line_color']).AsHexString())
+    for dataset_entry in entries[0]:
+        cols.append(ROOT.gROOT.GetColor(dataset_entry[1]['line_color']).AsHexString())
 
     # main plot
     plot_objs = []
-    # loop over datasets
-    for ind, entry in enumerate(entries[0]):  # assumes all are in 0th element!
+    markers = ['x', 'o', 'd', '^']
+
+    # iterate over the datasets
+    # assumes 0th pt bin has hists for all datasets
+    for ind, dataset_entry in enumerate(entries[0]):
         bxpstats = []
         for med, low, upper in zip(means[:,ind], means_minus_rms[:,ind], means_plus_rms[:,ind]):
-            bxpstats.append({
-                "med": med,
-                "q1": low,
-                "q3": upper,
-                "whislo": low,
-                "whishi": upper,
-            })
+            if med:
+                bxpstats.append({
+                    "mean": med,
+                    "med": med,
+                    "q1": low,
+                    "q3": upper,
+                    "whislo": low,
+                    "whishi": upper,
+                })
         boxprops = {
             "color": cols[ind],
             "linewidth": 2,
         }
+        meanprops = {
+            "color": cols[ind],
+            "marker": markers[ind],
+            "markeredgecolor": cols[ind],
+            "markerfacecolor": cols[ind],
+            'linestyle': '-',
+            'linewidth': 2,
+        }
+        # Get positions for this dataset
         x_pos = [(x[0] + (0.5+ind)*binw) for x, binw in zip(bins, bin_widths)]
-        # DO NOT USE axes[0,0], get indexerror
-        # Make boxplot
-        things = axes[0].bxp(bxpstats, positions=x_pos, widths=bin_widths,
-                            vert=True, showfliers=False, medianprops=boxprops,
-                            boxprops=boxprops, showcaps=False)
+
+        # Make boxplot for this dataset
+        things = axes[0].bxp(bxpstats,
+                             positions=x_pos,
+                             widths=bin_widths,
+                             vert=True,
+                             showfliers=False,
+                             showmeans=True,
+                             meanprops=meanprops,
+                             meanline=False,
+                             medianprops=boxprops,
+                             boxprops=boxprops,
+                             showcaps=False)
 
         # Explicitly set the label and store for the legend
-        label = extract_sample_name(entry[1]['label']).split(',')[0]
+        label = extract_sample_name(dataset_entry[1]['label']).split(',')[0]
         label = label.replace("#tau", "$\\tau$").replace("#", "\\")
         label = label.replace("JetHT+ZeroBias", "Data").replace("SingleMu", "Data")
         things['boxes'][0].set_label(label)
-        plot_objs.append(things['boxes'][0])
+        things['means'][0].set_label(label)
+        # plot_objs.append(things['boxes'][0])
+        plot_objs.append(things['means'][0])
 
     leg_loc = (1.02, 0.1)
     axes[0].legend(handles=plot_objs, loc=leg_loc, fancybox=False, edgecolor='white')
@@ -854,6 +902,7 @@ def do_mean_rms_summary_plot(entries, bins, output_filename, var_label="", xlim=
     axes[0].set_ylabel('Mean $\\pm$ RMS')
     axes[-1].set_xlabel('$p_{T}^{\mathrm{jet}}$ [GeV]')
 
+    # Set axis limits
     axes[0].set_xlim(*xlim)
     if ylim:
         axes[0].set_ylim(*ylim)
@@ -868,16 +917,16 @@ def do_mean_rms_summary_plot(entries, bins, output_filename, var_label="", xlim=
     ref_data = None
     x_pos = [0.5*sum(x) for x in bins]
     bin_widths = [0.5*(x[1]-x[0]) for x in bins]
-    markers = ['x', 'o', 'd', '^']
-    for ind, entry in enumerate(entries[0]):
-        if ind == 0:
-            ref_data = means[:, ind]
+
+    for dataset_ind, dataset_entry in enumerate(entries[0]):
+        if dataset_ind == 0:
+            ref_data = means[:, dataset_ind]
         else:
-            this_data = means[:, ind] / ref_data
+            this_data = means[:, dataset_ind] / ref_data
             axes[1].errorbar(x_pos, this_data, xerr=bin_widths,
-                             marker=markers[ind],
-                             label=extract_sample_name(entry[1]['label']),
-                             color=cols[ind],
+                             marker=markers[dataset_ind],
+                             label=extract_sample_name(dataset_entry[1]['label']),
+                             color=cols[dataset_ind],
                              linewidth=0, elinewidth=2)
 
     # Cap maximum y to 2
@@ -892,15 +941,15 @@ def do_mean_rms_summary_plot(entries, bins, output_filename, var_label="", xlim=
 
     # Subplot - ratio of RMS
     ref_data = None
-    for ind, entry in enumerate(entries[0]):
-        if ind == 0:
-            ref_data = means_plus_rms[:, ind]-means_minus_rms[:, ind]
+    for dataset_ind, dataset_entry in enumerate(entries[0]):
+        if dataset_ind == 0:
+            ref_data = means_plus_rms[:, dataset_ind]-means_minus_rms[:, dataset_ind]
         else:
-            this_data = (means_plus_rms[:, ind]-means_minus_rms[:, ind]) / ref_data
+            this_data = (means_plus_rms[:, dataset_ind]-means_minus_rms[:, dataset_ind]) / ref_data
             axes[2].errorbar(x_pos, this_data, xerr=bin_widths,
-                             marker=markers[ind],
-                             label=extract_sample_name(entry[1]['label']),
-                             color=cols[ind],
+                             marker=markers[dataset_ind],
+                             label=extract_sample_name(dataset_entry[1]['label']),
+                             color=cols[dataset_ind],
                              linewidth=0, elinewidth=2)
 
     # Cap maximum y to 2
