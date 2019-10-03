@@ -276,45 +276,65 @@ def do_all_exclusive_plots_comparison(sources,
             lw = 2
             msize = 1.1
 
+            marker_cycle_settings = dict(only_cycle_filling=True)
+            if len(sources) == 3:
+                marker_cycle_settings = dict(cycle_filling=False)
+            elif len(sources) > 3:
+                marker_cycle_settings = dict(cycle_filling=True)
+            
             # Get all plots, grouped by signal region
-
             if zpj_dirname:
+                marker_zpj = cu.Marker(qgc.DY_MARKER)
+                marker_iter = marker_zpj.cycle(**marker_cycle_settings)
                 for ind, source in enumerate(sources):
+                    if not source:
+                        continue
+                    marker = next(marker_iter)
                     h2d_dyj = grab_obj(os.path.join(source['root_dir'], source.get('dy_filename', dy_filename)),
                                        "%s/%s" % (source.get('zpj_dirname', zpj_dirname), v))
                     label_parts = [qgc.ZpJ_LABEL if show_region_labels else "", source.get('label', '')]
                     dy_kwargs = dict(line_color=qgc.DY_COLOUR, line_width=lw, fill_color=qgc.DY_COLOUR,
                                      label='\n'.join([l for l in label_parts if l]),
-                                     marker_color=qgc.DY_COLOUR, marker_style=qgc.DY_MARKER+ind, marker_size=msize)
+                                     marker_color=qgc.DY_COLOUR, marker_style=marker, marker_size=msize)
                     dy_kwargs.update(source.get('style', {}))
                     dy_kwargs.update(source.get('zpj_style', {}))
                     entries_normal.append((get_projection_plot(h2d_dyj, start_val, end_val), dy_kwargs))
                     del h2d_dyj
 
             if dj_cen_dirname:
+                marker_qcd_cen = cu.Marker(qgc.QCD_CEN_MARKER, filled=True)
+                marker_iter = marker_qcd_cen.cycle(**marker_cycle_settings)
                 for ind, source in enumerate(sources):
+                    if not source:
+                        continue
+                    marker = next(marker_iter)
+                    # print(marker_qcd_cen.fill_state)
                     h2d_qcd_cen = grab_obj(os.path.join(source['root_dir'], source.get('qcd_filename', qcd_filename)),
                                            "%s/%s" % (source.get('dj_cen_dirname', dj_cen_dirname), v))
                     label_parts = [qgc.Dijet_CEN_LABEL if show_region_labels else "", source.get('label', '')]
-                    label_parts = [l for l in label_parts if l]
                     qcd_cen_kwargs = dict(line_color=qgc.QCD_CEN_COLOUR, line_width=lw,
                                           fill_color=qgc.QCD_CEN_COLOUR,
                                           label='\n'.join([l for l in label_parts if l]),
-                                          marker_color=qgc.QCD_CEN_COLOUR, marker_style=qgc.QCD_CEN_MARKER+ind, marker_size=msize)
+                                          marker_color=qgc.QCD_CEN_COLOUR, marker_style=marker, marker_size=msize)
                     qcd_cen_kwargs.update(source.get('style', {}))
                     qcd_cen_kwargs.update(source.get('qcd_cen_style', {}))
                     entries_normal.append((get_projection_plot(h2d_qcd_cen, start_val, end_val), qcd_cen_kwargs))
                     del h2d_qcd_cen
 
             if dj_fwd_dirname:
+                marker_qcd_fwd = cu.Marker(qgc.QCD_FWD_MARKER, filled=True)
+                marker_iter = marker_qcd_fwd.cycle(**marker_cycle_settings)
                 for ind, source in enumerate(sources):
+                    if not source:
+                        continue
+                    marker = next(marker_iter)
                     h2d_qcd_fwd = grab_obj(os.path.join(source['root_dir'], source.get('qcd_filename', qcd_filename)),
                                            "%s/%s" % (source.get('dj_fwd_dirname', dj_fwd_dirname), v))
                     label_parts = [qgc.Dijet_FWD_LABEL if show_region_labels else "", source.get('label', '')]
                     qcd_fwd_kwargs = dict(line_color=qgc.QCD_FWD_COLOUR, line_width=lw,
                                           fill_color=qgc.QCD_FWD_COLOUR,
                                           label='\n'.join([l for l in label_parts if l]),
-                                          marker_color=qgc.QCD_FWD_COLOUR, marker_style=qgc.QCD_FWD_MARKER+ind, marker_size=msize)
+                                          marker_color=qgc.QCD_FWD_COLOUR, marker_style=marker, marker_size=msize)
                     qcd_fwd_kwargs.update(source.get('style', {}))
                     qcd_fwd_kwargs.update(source.get('qcd_fwd_style', {}))
                     entries_normal.append((get_projection_plot(h2d_qcd_fwd, start_val, end_val), qcd_fwd_kwargs))
@@ -322,6 +342,8 @@ def do_all_exclusive_plots_comparison(sources,
 
             if dj_dirname:
                 for ind, source in enumerate(sources):
+                    if not source:
+                        continue
                     h2d_qcd = grab_obj(os.path.join(source['root_dir'], source.get('qcd_filename', qcd_filename)),
                                            "%s/%s" % (source.get('dj_dirname', dj_dirname), v))
                     label_parts = [qgc.Dijet_LABEL if show_region_labels else "", source.get('label', '')]
@@ -339,6 +361,8 @@ def do_all_exclusive_plots_comparison(sources,
             # Flav tagged plots
             if zpj_dirname and do_flav_plot:
                 for ind, source in enumerate(sources):
+                    if not source:
+                        continue
                     h2d_dyj_q = grab_obj(os.path.join(source['root_dir'], source.get('dy_filename', dy_filename)),
                                          "%s/q%s" % (source.get('zpj_dirname', zpj_dirname), v))
                     dy_kwargs_q = dict(line_color=qgc.DY_COLOUR, line_width=lw, fill_color=qgc.DY_COLOUR,
@@ -351,6 +375,8 @@ def do_all_exclusive_plots_comparison(sources,
 
             if dj_cen_dirname and do_flav_plot:
                 for ind, source in enumerate(sources):
+                    if not source:
+                        continue
                     h2d_qcd_cen_g = grab_obj(os.path.join(source['root_dir'], source.get('qcd_filename', qcd_filename)),
                                              "%s/g%s" % (source.get('dj_cen_dirname', dj_cen_dirname), v))
                     qcd_cen_kwargs_g = dict(line_color=qgc.QCD_CEN_COLOUR, line_width=lw,
@@ -373,6 +399,8 @@ def do_all_exclusive_plots_comparison(sources,
 
             if dj_fwd_dirname and do_flav_plot:
                 for ind, source in enumerate(sources):
+                    if not source:
+                        continue
                     h2d_qcd_fwd_g = grab_obj(os.path.join(source['root_dir'], source.get('qcd_filename', qcd_filename)),
                                              "%s/g%s" % (source.get('dj_fwd_dirname', dj_dirname), v))
                     qcd_fwd_kwargs_g = dict(line_color=qgc.QCD_FWD_COLOUR, line_width=lw,

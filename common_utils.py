@@ -9,6 +9,8 @@ from sys import platform as _platform
 import numpy as np
 import math
 import argparse
+from itertools import chain
+from collections import OrderedDict
 
 
 ROOT.PyConfig.IgnoreCommandLineOptions = True
@@ -317,4 +319,48 @@ def get_bin_edges(hist, axis):
     ax = hist.GetXaxis() if axis == "x" else hist.GetYaxis()
     bins = [ax.GetBinLowEdge(i) for i in range(1, ax.GetNbins()+2)]
     return bins
+
+
+class Marker(object):
+    
+    shape_dict = OrderedDict()
+    shape_dict['circle'] = {'filled': 20, 'open': 24}
+    shape_dict['square'] = {'filled': 21, 'open': 25}
+    shape_dict['triangleUp'] = {'filled': 22, 'open': 26}
+    shape_dict['triangleDown'] = {'filled': 23, 'open': 32}
+    shape_dict['star'] = {'filled': 29, 'open': 30}
+    shape_dict['diamond'] = {'filled': 33, 'open': 27}
+    shape_dict['cross'] = {'filled': 34, 'open': 28}
+    shape_dict['crossX'] = {'filled': 47, 'open': 46}
+    shape_dict['doubleDiamond'] = {'filled': 43, 'open': 42}
+    shape_dict['3star'] = {'filled': 39, 'open': 37}
+    
+
+    def __init__(self, shape='circle', filled=True):
+        self.fill_state = filled
+        self.shape_state = shape
+
+    @staticmethod
+    def get(shape, filled=True):
+        if shape not in Marker.shape_dict.keys():
+            raise RuntimeError("Unknown marker shape %s" % (shape))        
+        return Marker.shape_dict[shape]['filled' if filled else 'open']
+
+    def cycle(self, filled=True, cycle_filling=False, only_cycle_filling=False):
+        if only_cycle_filling:
+            self.fill_state = filled
+            while True:
+                yield self.get(self.shape_state, self.fill_state)
+                self.fill_state = not self.fill_state
+        else:
+            for k in chain(Marker.shape_dict.keys()):
+                self.fill_state = filled
+                yield self.get(k, self.fill_state)
+                if cycle_filling:
+                    self.fill_state = not self.fill_state
+                    yield self.get(k, self.fill_state)
+
+
+
+
 
