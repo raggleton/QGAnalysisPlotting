@@ -544,7 +544,7 @@ class Plot(object):
         # cms_latex.DrawLatex(0.14, latex_height, "#font[62]{CMS}#font[52]{ Preliminary}")
         # cms_latex.DrawLatex(0.14, latex_height, "#font[62]{CMS}")
         cms_latex.SetTextAlign(ROOT.kHAlignRight + ROOT.kVAlignBottom)
-        cms_latex.DrawLatex(0.97, latex_height, " 35.9 fb^{-1} (13 TeV)")
+        cms_latex.DrawLatex(0.95, latex_height, " 35.9 fb^{-1} (13 TeV)")
 
         # Add title to plot
         text_latex = ROOT.TLatex()
@@ -611,7 +611,7 @@ class Plot(object):
                         bin_mins = [0]
                     if len(bin_mins) == 0:
                         bin_mins = [0]
-                    self.subplot_container.SetMinimum(min(0.5, min(bin_mins)))
+                    self.subplot_container.SetMinimum(min(0.5, 0.75*min(bin_mins)))
 
                 # Draw a line at 1
                 xax = modifier.GetXaxis()

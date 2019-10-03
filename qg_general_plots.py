@@ -93,13 +93,20 @@ def make_comparison_plot_ingredients(entries, rebin=1, normalise_hist=True, mean
 
     p = Plot(conts, what="hist", ytitle="p.d.f", legend=do_legend, **plot_kwargs)
     if do_legend:
-        p.legend.SetX1(0.5)
+        # ensure legend big enough, but not too big, depending on how long entries are
+        max_leg_str = max([len(c.label) for c in conts])
+        if max_leg_str < 9:
+            p.legend.SetX1(0.65)
+        else:
+            p.legend.SetX1(0.5)
+
         p.legend.SetX2(0.99)
         if len(entries) > 4:
             p.legend.SetY1(0.6)
         else:
             p.legend.SetY1(0.68)
         p.legend.SetY2(0.88)
+    rebin = orig_rebin
     return p
 
 
@@ -113,14 +120,12 @@ def do_comparison_plot(entries, output_filename, rebin=1, **plot_kwargs):
         p = make_comparison_plot_ingredients(entries, rebin=rebin, mean_rel_error=0.4, **plot_kwargs)
         draw_opt = "NOSTACK HISTE"
         p.plot(draw_opt)
-        # p.container.SetMaximum(min(5, p.container.GetMaximum()))
         dirname = os.path.dirname(output_filename)
         if not os.path.isdir(dirname):
             os.makedirs(dirname)
         p.save(output_filename)
     except RuntimeError as e:
-        print("Skipping")
-        print(e)
+        print("Skipping:", e)
 
 
 def get_projection_plot(h2d, start_val, end_val, cut_axis='y'):
@@ -402,19 +407,22 @@ def do_all_exclusive_plots_comparison(sources,
 
             # some default plot options
             rebin = 2
-            if "multiplicity" in v:
+            v_lower = v.lower()
+            if "multiplicity" in v_lower:
                 rebin = 2
-            elif "flavour" in v or "thrust" in v or 'pTD' in v:
+            elif "flavour" in v_lower or "thrust" in v_lower:
                 rebin = 1
+            elif 'ptd' in v_lower:
+                rebin = 2
 
             xlim = None
-            if "width" in v or "thrust" in v: # or "pTD" in v:
+            if "width" in v_lower or "thrust" in v_lower: # or "pTD" in v_lower:
                 xlim = (0, 0.5)
-            elif "multiplicity" in v.lower() and "ak4" in sources[0]['root_dir'].lower():
+            elif "multiplicity" in v_lower and "ak4" in sources[0]['root_dir'].lower():
                 xlim = (0, 100)
 
             ylim = None
-            if "flavour" in v:
+            if "flavour" in v_lower:
                 ylim = (0, 1)
             # elif "LHA" in v:
             #     ylim = (0, 5)
@@ -422,7 +430,7 @@ def do_all_exclusive_plots_comparison(sources,
             subplot = None
             num_entries_with_subplot = len([e for e in entries_normal if e[1].get('subplot', None)])
             if subplot_type != None and len(entries_normal) > 0 and num_entries_with_subplot == 0:
-                print("creating common subplot obj")
+                # print("creating common subplot obj")
                 subplot = entries_normal[0][0]
                 if subplot.GetEntries() < 1:
                     subplot = entries_normal[1][0]
@@ -443,8 +451,10 @@ def do_all_exclusive_plots_comparison(sources,
                                xlim=xlim,
                                ylim=ylim,
                                has_data=has_data,
-                               subplot=subplot, subplot_type=subplot_type,
-                               subplot_title=subplot_title, subplot_limits=(0, 2))
+                               subplot=subplot,
+                               subplot_type=subplot_type,
+                               subplot_title=subplot_title,
+                               subplot_limits=None)
 
 
             if do_flav_plot:
@@ -459,8 +469,10 @@ def do_all_exclusive_plots_comparison(sources,
                                    xtitle=x_title,
                                    xlim=xlim,
                                    has_data=has_data,
-                                   subplot=subplot, subplot_type=subplot_type,
-                                   subplot_title=subplot_title, subplot_limits=(0, 2))
+                                   subplot=subplot,
+                                   subplot_type=subplot_type,
+                                   subplot_title=subplot_title,
+                                   subplot_limits=(0, 2))
 
 
 def transpose_2d_hist(hist):

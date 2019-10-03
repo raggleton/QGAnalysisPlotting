@@ -24,9 +24,16 @@ ZB_COLOUR = 416+1 # kGreen+1
 
 # You should use markers as well for colourblindness
 DY_MARKER = 20
+DY_MARKER = 'circle'
+
 QCD_MARKER = 22
+QCD_MARKER = 'triangleUp'
+
 QCD_CEN_MARKER = 22
+QCD_CEN_MARKER = 'triangleUp'
+
 QCD_FWD_MARKER = 23
+QCD_FWD_MARKER = 'triangleDown'
 
 # When comparing e.g. PU bins
 # FIXME: update for colourblindness
@@ -79,12 +86,14 @@ PT_BINS_INC_UFLOW += PT_BINS
 
 Angle = namedtuple("Angle", ['var', 'kappa', 'beta', 'name', "lambda_str", "colour"])
 COMMON_VARS_WITH_FLAV = [
+    # Angle("jet_multiplicity", 0, 0, "Multiplicity", "#lambda_{0}^{0}", 2),
     Angle("jet_puppiMultiplicity", 0, 0, "PUPPI Multiplicity", "#lambda_{0}^{0} (PUPPI)", 2),
     Angle('jet_pTD', 2, 0, "(p_{T}^{D})^{2}", "#lambda_{0}^{2}", 418),
     Angle('jet_LHA', 1, 0.5, "LHA", "#lambda_{0.5}^{1}", 600),
     Angle('jet_width', 1, 1, "Width", "#lambda_{1}^{1}", 861),
     Angle('jet_thrust', 1, 2, "Thrust", "#lambda_{2}^{1}", 617),
     # charged-only constit
+    # Angle("jet_multiplicity_charged", 0, 0, "Multiplicity (charged)", "#lambda_{0}^{0}", 2),
     Angle("jet_puppiMultiplicity_charged", 0, 0, "PUPPI Multiplicity (charged)", "#lambda_{0}^{0} (PUPPI)", 2),
     Angle('jet_pTD_charged', 2, 0, "(p_{T}^{D})^{2} (charged)", "#lambda_{0}^{2}", 418),
     Angle('jet_LHA_charged', 1, 0.5, "LHA (charged)", "#lambda_{0.5}^{1}", 600),
