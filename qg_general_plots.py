@@ -52,8 +52,8 @@ def make_comparison_plot_ingredients(entries, rebin=1, normalise_hist=True, mean
     normalise_hist : bool, optional
         Normalise each histogram's integral to unity
     mean_rel_error : float, optional
-        Remove contributions that have a mean realtive error more than this value
-        mean realtive error = mean of all the error/bin contents
+        Rebin contributions that have a mean relative error more than this value,
+        where "mean relative error" = mean across all (error/bin contents) in a hist
     **plot_kwargs
         Any other kwargs to be passed to the Plot object contructor
 
@@ -67,9 +67,31 @@ def make_comparison_plot_ingredients(entries, rebin=1, normalise_hist=True, mean
     RuntimeError
         If there are 0 contributions
     """
+    # first figure out if there is a plot where the mean relative error
+    #  is greater than a certain amount
+    big_mean_rel_err = any([cu.get_hist_mean_rel_error(ent[0]) > mean_rel_error
+                            and ent[0].Integral() > 0
+                            for ent in entries])
+
+    # If this is the case, rebin the plot. Start by making bins factor 2 bigger,
+    # but check to find nearest divisor
+    orig_rebin = rebin
+    if big_mean_rel_err:
+        rebin *= 2
+
+        # find some sensible divisor
+        counter = 0
+        while entries[0][0].GetNbinsX() % rebin != 0:
+            rebin += 1
+            counter += 1
+            # if we don't find one, then revert back to original setting
+            if counter == 10:
+                rebin = orig_rebin
+                break
+
     conts = [Contribution(ent[0], normalise_hist=normalise_hist, rebin_hist=rebin, **ent[1])
-             for ent in entries
-             if cu.get_hist_mean_rel_error(ent[0]) < mean_rel_error and ent[0].Integral() > 0]
+             for ent in entries]
+             # if cu.get_hist_mean_rel_error(ent[0]) < mean_rel_error and ent[0].Integral() > 0]
     do_legend = len(conts) > 1
     if len(conts) == 0:
         raise RuntimeError("0 contributions for this plot")
