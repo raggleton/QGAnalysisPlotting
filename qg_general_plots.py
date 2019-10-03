@@ -761,7 +761,7 @@ def extract_sample_name(label):
     return new_label
 
 
-def do_mean_rms_summary_plot(entries, bins, output_filename, var_label="", xlim=None, ylim=None, region_title=""):
+def do_mean_rms_summary_plot(entries, bins, output_filename, var_label="", xlim=None, ylim_mean=None, ylim_rms=None, region_title=""):
     """Create summary plot from 1D hists using matplotlib
 
     Parameters
@@ -777,8 +777,10 @@ def do_mean_rms_summary_plot(entries, bins, output_filename, var_label="", xlim=
         Variable name to put in title
     xlim : None, optional
         Limit range on x axis
-    ylim : None, optional
-        Limit range on y axis
+    ylim_mean : None, optional
+        Limit range on y axis for mean
+    ylim_rms : None, optional
+        Limit range on y axis for rms
     region_title : str, optional
         Name of region to put in title
     """
@@ -789,46 +791,54 @@ def do_mean_rms_summary_plot(entries, bins, output_filename, var_label="", xlim=
 
     # same structure as entries:
     # means[i][j] is the jth dataset for the ith pt bin
-    means_minus_rms = []
-    means = []
-    means_plus_rms = []
+    data_means = []
+    data_mean_errs = []
+    data_rms = []
+    data_rms_errs = []
 
     for pt_ind, pt_bin_entry in enumerate(entries):  # iterate over pt bins
         if pt_ind == len(bins):
             break
-        this_lower = []
         this_mean = [] # hold data for all datasets, for this pt bin
-        this_upper = []
+        this_mean_err = []
+        this_rms = []
+        this_rms_err = []
+
         for dataset_entry in pt_bin_entry:  # iterate over datasets
             # here deal with missing, or bad hists
-            if not dataset_entry:
+            # also skip low stats hists
+            if not dataset_entry or (dataset_entry[0].GetEntries() < 100):
                 this_mean.append(None)
-                this_lower.append(None)
-                this_upper.append(None)
+                this_mean_err.append(None)
+                this_rms.append(None)
+                this_rms_err.append(None)
                 continue
-            hist = dataset_entry[0]
-            # skip low stats hists
-            if hist.GetEntries() < 100:
-                this_mean.append(None)
-                this_lower.append(None)
-                this_upper.append(None)
-                continue
-            this_mean.append(hist.GetMean())
-            this_lower.append(hist.GetMean()-hist.GetRMS())
-            this_upper.append(hist.GetMean()+hist.GetRMS())
 
-        means_minus_rms.append(np.array(this_lower, dtype=float))  # dtype ensure None -> nan
-        means.append(np.array(this_mean, dtype=float))
-        means_plus_rms.append(np.array(this_upper, dtype=float))
+            hist = dataset_entry[0]
+            this_mean.append(hist.GetMean())
+            this_mean_err.append(hist.GetMeanError())
+            this_rms.append(hist.GetRMS())
+            this_rms_err.append(hist.GetRMSError())
+
+        data_means.append(np.array(this_mean, dtype=float))
+        data_mean_errs.append(np.array(this_mean_err, dtype=float))
+        data_rms.append(np.array(this_rms, dtype=float))
+        data_rms_errs.append(np.array(this_rms_err, dtype=float))
 
     # convert to numpy array to maniuplate easier
-    means_minus_rms = np.array(means_minus_rms)
-    means = np.array(means)
-    means_plus_rms = np.array(means_plus_rms)
+    data_means = np.array(data_means)
+    data_mean_errs = np.array(data_mean_errs)
+    data_rms = np.array(data_rms)
+    data_rms_errs = np.array(data_rms_errs)
 
     # Start by setting up figure
-    fig, axes = plt.subplots(nrows=3, ncols=1, figsize=(12, 8), sharex=True)
-    plt.subplots_adjust(left=0.1, right=0.8, top=0.85, hspace=0.1)
+    fig, axes = plt.subplots(nrows=4, ncols=1, figsize=(12, 10), sharex=True)
+    plt.subplots_adjust(left=0.1, right=0.8, top=0.85, hspace=0.2)
+    mean_plot_ind, mean_ratio_plot_ind, rms_plot_ind, rms_ratio_plot_ind = 0, 1, 2, 3
+
+    # Turn on minor ticks
+    for ax in axes.flat:
+        ax.yaxis.set_minor_locator(plticker.AutoMinorLocator())
 
     n_datasets = len(entries[0])
     bin_widths = [(x[1]-x[0])/(n_datasets) for x in bins]
@@ -838,133 +848,112 @@ def do_mean_rms_summary_plot(entries, bins, output_filename, var_label="", xlim=
     for dataset_entry in entries[0]:
         cols.append(ROOT.gROOT.GetColor(dataset_entry[1]['line_color']).AsHexString())
 
-    # main plot
-    plot_objs = []
     markers = ['x', 'o', 'd', '^']
 
-    # iterate over the datasets
-    # assumes 0th pt bin has hists for all datasets
-    for ind, dataset_entry in enumerate(entries[0]):
-        bxpstats = []
-        for med, low, upper in zip(means[:,ind], means_minus_rms[:,ind], means_plus_rms[:,ind]):
-            if med:
-                bxpstats.append({
-                    "mean": med,
-                    "med": med,
-                    "q1": low,
-                    "q3": upper,
-                    "whislo": low,
-                    "whishi": upper,
-                })
-        boxprops = {
-            "color": cols[ind],
-            "linewidth": 2,
-        }
-        meanprops = {
-            "color": cols[ind],
-            "marker": markers[ind],
-            "markeredgecolor": cols[ind],
-            "markerfacecolor": cols[ind],
-            'linestyle': '-',
-            'linewidth': 2,
-        }
-        # Get positions for this dataset
-        x_pos = [(x[0] + (0.5+ind)*binw) for x, binw in zip(bins, bin_widths)]
+    x_pos = [0.5*sum(x) for x in bins]
+    bin_widths = [0.5*(x[1]-x[0]) for x in bins]
+    plot_obj = []
 
-        # Make boxplot for this dataset
-        things = axes[0].bxp(bxpstats,
-                             positions=x_pos,
-                             widths=bin_widths,
-                             vert=True,
-                             showfliers=False,
-                             showmeans=True,
-                             meanprops=meanprops,
-                             meanline=False,
-                             medianprops=boxprops,
-                             boxprops=boxprops,
-                             showcaps=False)
+    # Create & plot graphs
+    ref_data_mean = None
+    ref_data_rms = None
+    for dataset_ind, dataset_entry in enumerate(entries[0]):
+        common_plot_settings = dict(
+            xerr=bin_widths,
+            marker=markers[dataset_ind],
+            label=extract_sample_name(dataset_entry[1]['label']),
+            color=cols[dataset_ind],
+            markersize=8,
+            linewidth=0,
+            elinewidth=2
+        )
 
-        # Explicitly set the label and store for the legend
-        label = extract_sample_name(dataset_entry[1]['label']).split(',')[0]
-        label = label.replace("#tau", "$\\tau$").replace("#", "\\")
-        label = label.replace("JetHT+ZeroBias", "Data").replace("SingleMu", "Data")
-        things['boxes'][0].set_label(label)
-        things['means'][0].set_label(label)
-        # plot_objs.append(things['boxes'][0])
-        plot_objs.append(things['means'][0])
+        # Plot means
+        this_data = data_means[:, dataset_ind]
+        this_data_err = data_mean_errs[:, dataset_ind]
+        this_plot_obj = axes[mean_plot_ind].errorbar(x_pos, this_data,
+                                                     yerr=this_data_err,
+                                                     **common_plot_settings)
+        plot_obj.append(this_plot_obj)
 
-    leg_loc = (1.02, 0.1)
-    axes[0].legend(handles=plot_objs, loc=leg_loc, fancybox=False, edgecolor='white')
+        # Plot RMS
+        this_data = data_rms[:, dataset_ind]
+        this_data_err = data_rms_errs[:, dataset_ind]
+        axes[rms_plot_ind].errorbar(x_pos, this_data,
+                                    yerr=this_data_err,
+                                    **common_plot_settings)
+
+        if dataset_ind == 0:
+            ref_data_mean = data_means[:, dataset_ind]
+            ref_data_rms = data_rms[:, dataset_ind]
+        else:
+            # Plot ratio of means
+            this_data_mean = data_means[:, dataset_ind] / ref_data_mean
+            axes[mean_ratio_plot_ind].errorbar(x_pos, this_data_mean,
+                                               **common_plot_settings)
+            # Plot ratio of RMS
+            this_data_rms = data_rms[:, dataset_ind] / ref_data_rms
+            axes[rms_ratio_plot_ind].errorbar(x_pos, this_data_rms,
+                                              **common_plot_settings)
+
+    # Add legend
+    axes[mean_plot_ind].legend(handles=plot_obj,
+                               loc=(1.02, 0.05),
+                               fancybox=False,
+                               edgecolor='white')
+
+    # Set axis limits for mean
+    axes[mean_plot_ind].set_xlim(*xlim)
+    if ylim_mean:
+        axes[mean_plot_ind].set_ylim(*ylim_mean)
+    # if axes[mean_plot_ind].get_ylim()[0] > 0:
+    #     axes[mean_plot_ind].set_ylim(bottom=0)
+    axes[-1].set_xlim(*xlim)
+
+    # Set axis limits for rms
+    axes[rms_plot_ind].set_xlim(*xlim)
+    if ylim_rms:
+        axes[rms_plot_ind].set_ylim(*ylim_rms)
+    # if axes[rms_plot_ind].get_ylim()[0] > 0:
+    #     axes[rms_plot_ind].set_ylim(bottom=0)
+    axes[-1].set_xlim(*xlim)
 
     plt.xscale('log')
 
-    # Set axis titles
-    axes[0].set_ylabel('Mean $\\pm$ RMS')
-    axes[-1].set_xlabel('$p_{T}^{\mathrm{jet}}$ [GeV]')
+    # Cap mean ratio maximum y to 2
+    ratio_ylim = axes[mean_ratio_plot_ind].get_ylim()
+    lim = 2
+    if ratio_ylim[1] > lim:
+        axes[mean_ratio_plot_ind].set_ylim(top=lim)
+    # Add line at 1
+    axes[mean_ratio_plot_ind].axhline(1.0, color='gray', linestyle='dashed')
 
-    # Set axis limits
-    axes[0].set_xlim(*xlim)
-    if ylim:
-        axes[0].set_ylim(*ylim)
-    if axes[0].get_ylim()[0] > 0:
-        axes[0].set_ylim(bottom=0)
-
-    axes[0].yaxis.set_minor_locator(plticker.AutoMinorLocator())
-
-    axes[-1].set_xlim(*xlim)
-
-    # Subplot - ratio of means
-    ref_data = None
-    x_pos = [0.5*sum(x) for x in bins]
-    bin_widths = [0.5*(x[1]-x[0]) for x in bins]
-
-    for dataset_ind, dataset_entry in enumerate(entries[0]):
-        if dataset_ind == 0:
-            ref_data = means[:, dataset_ind]
-        else:
-            this_data = means[:, dataset_ind] / ref_data
-            axes[1].errorbar(x_pos, this_data, xerr=bin_widths,
-                             marker=markers[dataset_ind],
-                             label=extract_sample_name(dataset_entry[1]['label']),
-                             color=cols[dataset_ind],
-                             linewidth=0, elinewidth=2)
-
-    # Cap maximum y to 2
-    ylim = axes[1].get_ylim()
+    # Cap rms ratio maximum y to 2
+    ylim = axes[rms_ratio_plot_ind].get_ylim()
     lim = 2
     if ylim[1] > lim:
-        axes[1].set_ylim(top=lim)
-
-    axes[1].axhline(1.0, color='gray', linestyle='dashed')
-    axes[1].set_ylabel("Ratio of means\n(MC / Data)")
-    axes[1].yaxis.set_minor_locator(plticker.AutoMinorLocator())
-
-    # Subplot - ratio of RMS
-    ref_data = None
-    for dataset_ind, dataset_entry in enumerate(entries[0]):
-        if dataset_ind == 0:
-            ref_data = means_plus_rms[:, dataset_ind]-means_minus_rms[:, dataset_ind]
-        else:
-            this_data = (means_plus_rms[:, dataset_ind]-means_minus_rms[:, dataset_ind]) / ref_data
-            axes[2].errorbar(x_pos, this_data, xerr=bin_widths,
-                             marker=markers[dataset_ind],
-                             label=extract_sample_name(dataset_entry[1]['label']),
-                             color=cols[dataset_ind],
-                             linewidth=0, elinewidth=2)
-
-    # Cap maximum y to 2
-    ylim = axes[2].get_ylim()
-    lim = 2
-    if ylim[1] > lim:
-        axes[2].set_ylim(top=lim)
-
-    axes[2].axhline(1.0, color='gray', linestyle='dashed')
-    axes[2].set_ylabel("Ratio of RMS\n(MC / Data)")
-    axes[2].yaxis.set_minor_locator(plticker.AutoMinorLocator())
+        axes[rms_ratio_plot_ind].set_ylim(top=lim)
+    # Add line at 1
+    axes[rms_ratio_plot_ind].axhline(1.0, color='gray', linestyle='dashed')
 
     # Set overall plot title
     new_var_label = var_label.replace("#", "\\")
-    axes[0].set_title("Summary for {} region:\n{}".format(region_title, new_var_label), pad=20)
+    axes[mean_plot_ind].set_title("Summary for {} region:\n{}".format(region_title, new_var_label), pad=40)
+
+    # Add CMS text
+    text_height = 1.1
+    axes[mean_plot_ind].text(0, text_height, "CMS", fontweight='bold', horizontalalignment='left', transform=axes[mean_plot_ind].transAxes)
+    # have to do bold bit separately
+    axes[mean_plot_ind].text(0, text_height, "         Preliminary", horizontalalignment='left', transform=axes[mean_plot_ind].transAxes)
+    # Add lumi text
+    axes[mean_plot_ind].text(1, text_height, "35.9 $\\mathrm{fb}^{\\mathrm{-1}}$ (13 TeV)", horizontalalignment='right', transform=axes[mean_plot_ind].transAxes)
+
+    # Set axis titles
+    axes[mean_plot_ind].set_ylabel('Mean $\\pm$ error')
+    axes[mean_ratio_plot_ind].set_ylabel("Ratio of means\n(MC / Data)")
+    axes[rms_plot_ind].set_ylabel('RMS $\\pm$ error')
+    axes[rms_ratio_plot_ind].set_ylabel("Ratio of RMS\n(MC / Data)")
+    axes[-1].set_xlabel('$p_{\mathrm{T}}^{\mathrm{jet}}$ [GeV]')
 
     # Draw bin delineators
     for ax in axes.flat:
@@ -977,6 +966,7 @@ def do_mean_rms_summary_plot(entries, bins, output_filename, var_label="", xlim=
         for ind, this_bin in enumerate(bins):
             ax.axvline(this_bin[0], color='lightgray', linestyle='dashed')
 
+    # Save to file
     odir = os.path.dirname(os.path.abspath(output_filename))
     if not os.path.isdir(odir):
         os.makedirs(odir)

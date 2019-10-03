@@ -349,17 +349,18 @@ def do_plots(root_dir):
 
             # Do overall summary plots across all pt bins
             # ------------------------------------------------------------------
-            ylim = None
+            ylim_mean = None
             if "width" in v_lower or "ptd" in v_lower:
-                ylim = (0, 0.4)
+                ylim_mean = (0, 0.4)
             elif"thrust" in v_lower:
-                ylim = (0, 0.5)
+                ylim_mean = (0, 0.5)
             elif "multiplicity" in v_lower and "ak4" in root_dir.lower():
-                ylim = (0, 100)
-                ylim = (0, 80)
+                ylim_mean = (0, 100)
+                ylim_mean = (0, 80)
                 if end_val < 150:
-                    ylim = (0, 50)
-            ylim=None
+                    ylim_mean = (0, 50)
+            ylim_mean=None
+            ylim_rms=None
 
             # Setup variable names for MPL
             marker = ""
@@ -374,7 +375,8 @@ def do_plots(root_dir):
                                          "%s/ptBinned/%s_box_dijet_cen_mpl.%s" % (plot_dir, v, OUTPUT_FMT),
                                          var_label=var_label,
                                          xlim=(50, 2000),
-                                         ylim=ylim,
+                                         ylim_mean=ylim_mean,
+                                         ylim_rms=ylim_rms,
                                          region_title="%s jets in dijet (central)" % (jet_str))
 
             qgp.do_mean_rms_summary_plot(dijet_fwd_1d_entries[:],
@@ -382,7 +384,8 @@ def do_plots(root_dir):
                                          "%s/ptBinned/%s_box_dijet_fwd_mpl.%s" % (plot_dir, v, OUTPUT_FMT),
                                          var_label=var_label,
                                          xlim=(50, 2000),
-                                         ylim=ylim,
+                                         ylim_mean=ylim_mean,
+                                         ylim_rms=ylim_rms,
                                          region_title="%s jets in dijet (forward)" % (jet_str))
 
             # zpj_1d_entries[i][j] is the jth sample in the ith pt bin
@@ -391,7 +394,8 @@ def do_plots(root_dir):
                                          "%s/ptBinned/%s_box_zpj_mpl.%s" % (plot_dir, v, OUTPUT_FMT),
                                          var_label=var_label,
                                          xlim=(50, 614),
-                                         ylim=ylim,
+                                         ylim_mean=ylim_mean,
+                                         ylim_rms=ylim_rms,
                                          region_title="%s jets in Z+jets" % (jet_str))
 
             # qgp.do_box_plot(dijet_2d_entries,
