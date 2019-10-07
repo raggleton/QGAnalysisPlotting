@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-"""produce plots comparing different kinematics between different flavours"""
+"""produce plots comparing different kinematics between data & MC"""
 
 import ROOT
 from MyStyle import My_Style
@@ -34,6 +34,7 @@ ROOT.PyConfig.IgnoreCommandLineOptions = True
 ROOT.gROOT.SetBatch(1)
 ROOT.TH1.SetDefaultSumw2()
 ROOT.gStyle.SetOptStat(0)
+ROOT.gErrorIgnoreLevel = ROOT.kWarning
 
 # Control output format
 OUTPUT_FMT = "pdf"
@@ -117,13 +118,11 @@ def do_1D_plot(hists, output_filename, components_styles_dicts=None,
         p.legend.SetY1(0.7)
     p.legend.SetY2(0.9)
     p.plot(draw_opts)
-    p.main_pad.cd()
 
     if logy:
-        p.main_pad.SetLogy(1)
+        p.set_logy()
     if logx:
-        p.main_pad.SetLogx(1)
-        p.subplot_pad.SetLogx(1)
+        p.set_logx()
 
     # p.save(os.path.join(output_dir, obj_name+".%s" % (OUTPUT_FMT)))
     p.save(output_filename)
@@ -188,7 +187,7 @@ def do_all_1D_projection_plots_in_dir(directories, output_dir, components_styles
 
         # Ignore TH1s
         if not isinstance(objs[0], (ROOT.TH2F, ROOT.TH2D, ROOT.TH2I)):
-            logx = obj_name in ["pt_jet", "pt_jet1", "pt_mumu", 'gen_ht']
+            logx = obj_name in ["pt_jet", "pt_jet1", "pt_mumu", 'gen_ht', 'pt_jet_response_binning', 'pt_genjet_response_binning', ]
             do_1D_plot(objs, components_styles_dicts=components_styles_dicts,
                        draw_opts=draw_opts, do_ratio=do_ratio, normalise_hists=normalise_hists, logy=True,
                        title=jet_config_str, logx=logx,
@@ -262,7 +261,7 @@ def do_dijet_distributions(root_dir):
     msize = 1
     csd = [
         # {"label": "ZeroBias Data", "line_color": zb_col, "fill_color": zb_col, "marker_color": zb_col, "marker_style": 23, "fill_style": 0, "marker_size": msize},
-        {"label": "Data [JetHT+ZB]", "line_color": data_col, "fill_color": data_col, "marker_color": data_col, "marker_style": 20, "fill_style": 0, "marker_size": msize},
+        {"label": "Data", "line_color": data_col, "fill_color": data_col, "marker_color": data_col, "marker_style": 20, "fill_style": 0, "marker_size": msize},
         {"label": "QCD MC [MG+PY8]", "line_color": mc_col, "fill_color": mc_col, "marker_color": mc_col, "marker_style": 22, "fill_style": 0, "marker_size": msize},
         # {"label": "Z+jets", "line_color": mc_col2, "fill_color": mc_col2, "marker_color": mc_col2, "marker_style": 21, "fill_style": 0, "marker_size": msize},
         {"label": "QCD MC [PY8]", "line_color": mc_col2, "fill_color": mc_col2, "marker_color": mc_col2, "marker_style": 21, "fill_style": 0, "marker_size": msize},
@@ -297,7 +296,7 @@ def do_dijet_distributions(root_dir):
 
 
 def do_zpj_distributions(root_dir):
-    """Do plots comparing different different inputs in dijet region"""
+    """Do plots comparing different different inputs in Z+jet region"""
     # root_files = [qgc.SINGLE_MU_FILENAME, qgc.DY_FILENAME, "uhh2.AnalysisModuleRunner.MC.MC_MGPYTHIA_DYJetsToLL_M-50_HT-0to70.root"][:2]
     # root_files = [qgc.SINGLE_MU_FILENAME, qgc.ZPJ_ALL_FILENAME]
     root_files = [qgc.SINGLE_MU_FILENAME, qgc.DY_FILENAME, qgc.DY_HERWIG_FILENAME, qgc.DY_MG_HERWIG_FILENAME]
@@ -318,7 +317,7 @@ def do_zpj_distributions(root_dir):
     data_col = qgc.SINGLE_MU_COLOUR
     msize = 1
     csd = [
-        {"label": "SingleMu Data", "line_color": data_col, "fill_color": data_col, "marker_color": data_col, "marker_style": 20, "fill_style": 0, "marker_size": msize},
+        {"label": "Data", "line_color": data_col, "fill_color": data_col, "marker_color": data_col, "marker_style": 20, "fill_style": 0, "marker_size": msize},
         {"label": "DY+Jets MC [MG+PY8]", "line_color": mc_col, "fill_color": mc_col, "marker_color": mc_col, "marker_style": 21, "fill_style": 0, "marker_size": msize},
         # {"label": "DY+Jets MC [MG+PY8]", "line_color": mc_col2, "fill_color": mc_col2, "marker_color": mc_col2, "marker_style": 22, "fill_style": 0, "marker_size": msize},
         # {"label": "DY+Jets MC [MG+PY8]", "line_color": mc_col2, "fill_color": mc_col2, "marker_color": mc_col2, "marker_style": 20, "fill_style": 0, "marker_size": msize},
