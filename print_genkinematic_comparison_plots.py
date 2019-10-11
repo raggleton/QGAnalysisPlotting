@@ -61,7 +61,7 @@ def find_first_filled_bin(hist):
     return 1, hist.GetBinLowEdge(1)
 
 
-def do_1D_plot(hists, 
+def do_1D_plot(hists,
                output_filename,
                components_styles_dicts=None,
                draw_opts="NOSTACK HISTE",
@@ -167,11 +167,11 @@ def do_all_1D_plots_in_dir(directories,
 
         # Ignore TH1s
         if isinstance(objs[0], (ROOT.TH1F, ROOT.TH1D, ROOT.TH1I)):
-            logx = obj_name in ["pt_jet", 
-                                "pt_jet1", 
-                                "pt_jet2", 
-                                "pt_mumu", 
-                                'gen_ht', 
+            logx = obj_name in ["pt_jet",
+                                "pt_jet1",
+                                "pt_jet2",
+                                "pt_mumu",
+                                'gen_ht',
                                 'pt_mu1',
                                 'pt_mu2',
                                 'ptHat',
@@ -245,8 +245,8 @@ def do_zpj_gen_distributions(root_dir):
     lw = 2
     csd = [
         {"label": "DY+Jets MC [MG+PY8]", "line_color": mc_col, "fill_color": mc_col, "marker_color": mc_col, "marker_style": 21, "fill_style": 0, "marker_size": msize, 'line_width': lw},
-        {"label": "DY+Jets MC [MG+H++]", "line_color": mc_col2, "fill_color": mc_col2, "marker_color": mc_col2, "marker_style": 22, "fill_style": 0, "marker_size": msize, 'line_width': lw},
         {"label": "DY+Jets MC [H++]", "line_color": mc_col3, "fill_color": mc_col3, "marker_color": mc_col3, "marker_style": 23, "fill_style": 0, "marker_size": msize, 'line_width': lw},
+        {"label": "DY+Jets MC [MG+H++]", "line_color": mc_col2, "fill_color": mc_col2, "marker_color": mc_col2, "marker_style": 22, "fill_style": 0, "marker_size": msize, 'line_width': lw},
     ]
     jet_config_str = qgc.extract_jet_config(root_dir)
 
