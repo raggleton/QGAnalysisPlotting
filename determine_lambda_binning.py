@@ -264,7 +264,7 @@ def rebin_2d_hist(h2d, new_binning_x, new_binning_y):
     bin_edges_y = [b[0] for b in new_binning_y]
     bin_edges_y.append(new_binning_y[-1][1])
 
-    print("rebin_2d_hist, new axes:", bin_edges_x, bin_edges_y)
+    # print("rebin_2d_hist, new axes:", bin_edges_x, bin_edges_y)
 
     new_hist = ROOT.TH2D(
         h2d.GetName()+"Rebin",
@@ -276,10 +276,10 @@ def rebin_2d_hist(h2d, new_binning_x, new_binning_y):
     )
 
     nbins_x_orig = h2d.GetNbinsX()
-    bins_x_orig = cu.get_bin_edges(h2d_orig, 'X')
+    bins_x_orig = cu.get_bin_edges(h2d, 'X')
 
     nbins_y_orig = h2d.GetNbinsY()
-    bins_y_orig = cu.get_bin_edges(h2d_orig, 'Y')
+    bins_y_orig = cu.get_bin_edges(h2d, 'Y')
 
     # TODO: handle under/overflow
     for xind, xbin in enumerate(new_binning_x, 1):  # these are tuples
@@ -469,7 +469,7 @@ if __name__ == "__main__":
                         action="append")
     parser.add_argument("--target",
                         help="Target purity & stability as a fraction",
-                        default=0.4,
+                        default=0.5,
                         type=float)
     # acceptable_metrics = ['gausfit', 'quantile']
     # parser.add_argument("--metric",
@@ -517,22 +517,6 @@ if __name__ == "__main__":
             "append": "_highPt",
             "title": "p_{T}^{Reco} > 250 GeV",
         },
-        # {
-        #     "append": "_charged",
-        #     "title": "p_{T}^{Reco} > 30 GeV (only charged constits.)",
-        # },
-        # {
-        #     "append": "_charged_lowPt",
-        #     "title": "30 < p_{T}^{Reco} < 100 GeV (only charged constits.)",
-        # },
-        # {
-        #     "append": "_charged_midPt",
-        #     "title": "100 < p_{T}^{Reco} < 250 GeV (only charged constits.)",
-        # },
-        # {
-        #     "append": "_charged_highPt",
-        #     "title": "p_{T}^{Reco} > 250 GeV (only charged constits.)",
-        # },
     ]
 
     input_tfile = cu.open_root_file(args.input)
