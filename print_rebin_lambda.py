@@ -85,6 +85,15 @@ if __name__ == "__main__":
     parser.add_argument("--outputFile",
                         help="Output ROOT file for rebinned 2D hists",
                         default=None)
+    ref_choices = ["groomed", "ungroomed"]
+    parser.add_argument("--ungroomedRef",
+                        help="Reference region for ungroomed vars",
+                        choices=ref_choices,
+                        default="ungroomed")
+    parser.add_argument("--groomedRef",
+                        help="Reference region for groomed vars",
+                        choices=ref_choices,
+                        default="groomed")
     args = parser.parse_args()
 
     input_dir, input_basename = os.path.split(args.input)
@@ -154,9 +163,23 @@ if __name__ == "__main__":
         # Use same for central/forward
         # Use Dijet ones for Z+Jets
         ref_region = "Dijet_QG_forward_tighter"
+        # Here we want separate groomed/ungroomed binnings
         if "groomed" in source_plot_dir_name:
-            # Here we want separate groomed/ungroomed binnings
-            ref_region += "_groomed"
+            if args.groomedRef == "groomed":
+                # Use groomed for groomed
+                ref_region += "_groomed"
+                var_dict['title'] += " (groomed)"
+            else:
+                # Use ungroomed for groomed
+                var_dict['title'] += " (ungroomed)"
+        else:
+            if args.ungroomedRef == "groomed":
+                # Use groomed for ungroomed as well
+                ref_region += "_groomed"
+                var_dict['title'] += " (groomed)"
+            else:
+                # Use ungroomed for ungroomed
+                var_dict['title'] += " (ungroomed)"
         key = key.replace(source_plot_dir_name, ref_region)
 
         new_binning = binning_dict[key]
