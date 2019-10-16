@@ -19,6 +19,7 @@ import ROOT
 from MyStyle import My_Style
 from comparator import Contribution, Plot
 My_Style.cd()
+ROOT.gErrorIgnoreLevel = ROOT.kWarning
 
 import common_utils as cu
 import qg_common as qgc
@@ -457,8 +458,11 @@ def draw_projection_comparison(h_orig, h_projection, title, xtitle, output_filen
         for i in range(1, h_orig.GetNbinsX()+1):
             value_orig = h_orig.GetBinContent(i)
             value_proj = h_projection.GetBinContent(i)
-            if abs(value_orig - value_proj) > 1E-2:
-                print("draw_projection_comparison: bin %s has different contents: %f vs %f" % (i, value_orig, value_proj))
+            if value_orig == 0 and value_proj == 0:
+                continue
+            rel_diff = abs((value_orig - value_proj)/max(abs(value_orig), abs(value_proj)))
+            if rel_diff > 1E-3:
+                print("draw_projection_comparison: bin %s has different contents: %f vs %f (rel diff %f)" % (i, value_orig, value_proj, rel_diff))
 
     entries = [
         Contribution(h_orig, label="1D hist",
