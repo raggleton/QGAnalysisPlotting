@@ -747,12 +747,7 @@ if __name__ == "__main__":
     dijet_region_forward_groomed_dict['label'] = 'Dijet forward (groomed)'
     dijet_region_forward_groomed_dict['name'] = 'Dijet_forward_groomed'
 
-    regions = [
-        dijet_region_central_dict,
-        dijet_region_forward_dict,
-        dijet_region_central_groomed_dict,
-        dijet_region_forward_groomed_dict,
-        {
+    zpj_region_dict = {
             "name": "ZPlusJets",
             "dirname": "ZPlusJets_QG_Unfold",
             "label": "Z+jets",
@@ -784,7 +779,20 @@ if __name__ == "__main__":
             #         "tfile": input_mc_dy_mgpythia_neutralDown_tfile
             #     },
             ]
-        },
+    }
+
+    zpj_region_groomed_dict = zpj_region_dict.copy()
+    zpj_region_groomed_dict['dirname'] = 'ZPlusJets_QG_Unfold_groomed'
+    zpj_region_groomed_dict['name'] = 'ZPlusJets_groomed'
+    zpj_region_groomed_dict['label'] = 'Z+jets'
+
+    regions = [
+        dijet_region_central_dict,
+        dijet_region_forward_dict,
+        dijet_region_central_groomed_dict,
+        dijet_region_forward_groomed_dict,
+        zpj_region_dict,
+        zpj_region_groomed_dict,
     ]
 
     regularise = None
