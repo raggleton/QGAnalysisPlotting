@@ -33,6 +33,7 @@ ROOT.PyConfig.IgnoreCommandLineOptions = True
 ROOT.gROOT.SetBatch(1)
 ROOT.TH1.SetDefaultSumw2()
 ROOT.gStyle.SetOptStat(0)
+ROOT.gStyle.SetPaintTextFormat(".3f")
 
 
 # Control plot output format
@@ -444,7 +445,8 @@ def draw_correlation_matrix(corr_map, region_name, variable_name, output_filenam
     # ROOT.gStyle.SetPalette(ROOT.kLightTemperature)
     corr_map.SetMinimum(-1)
     corr_map.SetMaximum(1)
-    corr_map.Draw("COLZ0")
+    corr_map.SetMarkerSize(0.05)
+    corr_map.Draw("COLZ0 TEXT45")
     canv.SaveAs(output_filename)
     ROOT.gStyle.SetPalette(ROOT.kBird)
 
