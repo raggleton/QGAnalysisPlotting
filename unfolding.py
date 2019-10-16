@@ -21,6 +21,8 @@ import ROOT
 from MyStyle import My_Style
 from comparator import Contribution, Plot
 My_Style.cd()
+ROOT.gErrorIgnoreLevel = ROOT.kWarning
+
 
 import common_utils as cu
 import qg_common as qgc

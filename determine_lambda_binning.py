@@ -27,7 +27,7 @@ ROOT.gROOT.SetBatch(1)
 ROOT.TH1.SetDefaultSumw2()
 # ROOT.gStyle.SetOptStat(0)
 ROOT.gStyle.SetOptFit(1111)
-
+ROOT.gErrorIgnoreLevel = ROOT.kWarning
 
 # My stuff
 import qg_general_plots as qgg
