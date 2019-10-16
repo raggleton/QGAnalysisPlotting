@@ -74,7 +74,7 @@ def get_reference_pt_region(var_name):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('input',
                         help='Input ROOT file to rebin.')
     parser.add_argument('binningFile',
@@ -94,6 +94,9 @@ if __name__ == "__main__":
                         help="Reference region for groomed vars",
                         choices=ref_choices,
                         default="groomed")
+    parser.add_argument("--target",
+                        help="Target purity/stability to put on plot",
+                        default=None)
     args = parser.parse_args()
 
     input_dir, input_basename = os.path.split(args.input)
@@ -139,16 +142,14 @@ if __name__ == "__main__":
     for angle, (source_plot_dir_name, region_label), pt_region_dict in product(qgc.COMMON_VARS[:],
                                                                                zip(source_plot_dir_names, region_labels),
                                                                                pt_regions):
-        var_prepend = "groomed" if "groomed" in source_plot_dir_name else ""
+        var_prepend = "groomed " if "groomed" in source_plot_dir_name else ""
         print(angle, source_plot_dir_name, region_label, pt_region_dict['title'])
 
         var_dict = {
             "name": "%s/%s%s" % (source_plot_dir_name, angle.var, pt_region_dict['append']),
             "var_label": "%s%s (%s)" % (var_prepend, angle.name, angle.lambda_str),
-            # "title": "%s\n%s" % (region_label, pt_region_dict['title']),
-            "title": "%s\n%s\nRebinned for 100 < p_{T}^{Reco} < 250 GeV" % (region_label, pt_region_dict['title']),
+            "title": "", # setup later
         }
-
         h2d_orig = cu.get_from_tfile(input_tfile, var_dict['name'] + "_response")
 
         # Get desired binning
@@ -160,9 +161,14 @@ if __name__ == "__main__":
         ref_pt_region = get_reference_pt_region(var_dict['name'])
         key = key.replace(pt_region_dict['append'], ref_pt_region)
 
+        ref_pt_region_dict = [x for x in pt_regions if x['append'] == ref_pt_region][0]
+        dijet_region = "forward"
+        var_dict["title"] = "%s\n%s\nRebinned for %s (%s)" % (region_label, pt_region_dict['title'], ref_pt_region_dict['title'], dijet_region)
+
         # Use same for central/forward
         # Use Dijet ones for Z+Jets
-        ref_region = "Dijet_QG_forward_tighter"
+        ref_region = "Dijet_QG_%s_tighter" % (dijet_region)
+
         # Here we want separate groomed/ungroomed binnings
         if "groomed" in source_plot_dir_name:
             if args.groomedRef == "groomed":
@@ -180,6 +186,10 @@ if __name__ == "__main__":
             else:
                 # Use ungroomed for ungroomed
                 var_dict['title'] += " (ungroomed)"
+
+        if args.target:
+            var_dict['title'] += " (target %s)" % (args.target)
+
         key = key.replace(source_plot_dir_name, ref_region)
 
         new_binning = binning_dict[key]
