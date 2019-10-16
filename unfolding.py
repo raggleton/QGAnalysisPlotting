@@ -1206,7 +1206,7 @@ if __name__ == "__main__":
             this_tdir.WriteTObject(hist_mc_reco_gen_binning, "mc_reco_gen_binning")
             this_tdir.WriteTObject(hist_mc_gen, "mc_gen")
             this_tdir.WriteTObject(hist_mc_gen_reco_map, "response_map")  # response map
-            this_tdir.WriteTObject(hist_mc_gen_reco_map.RebinY(2), "response_map_rebin")  # response map
+            # this_tdir.WriteTObject(hist_mc_gen_reco_map.RebinY(2), "response_map_rebin")  # response map
 
             if subtract_fakes:
                 this_tdir.WriteTObject(hist_fakes_reco, "fakes")
