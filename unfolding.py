@@ -1333,11 +1333,6 @@ if __name__ == "__main__":
             # ------------------------------------------------------------------
             if not MC_split:
                 proj_reco = hist_mc_gen_reco_map.ProjectionY("proj_reco_%s" % (append))
-                draw_projection_comparison(hist_mc_reco, proj_reco,
-                                           title="%s\n%s region" % (jet_algo, region['label']),
-                                           xtitle="%s, Detector binning" % (angle_str),
-                                           output_filename="%s/projection_reco_%s.%s" % (this_output_dir, append, OUTPUT_FMT),
-                                           print_bin_comparison=False)
 
                 proj_gen = hist_mc_gen_reco_map.ProjectionX("proj_gen_%s" % (append))
                 draw_projection_comparison(hist_mc_gen, proj_gen,
@@ -1345,12 +1340,23 @@ if __name__ == "__main__":
                                            xtitle="%s, Generator binning" % (angle_str),
                                            output_filename="%s/projection_gen_%s.%s" % (this_output_dir, append, OUTPUT_FMT))
 
+                print("projection reco #bins:", proj_reco.GetNbinsX())
+                print("response map # bins x:", hist_mc_gen_reco_map.GetNbinsX())
+                print("response map # bins y:", hist_mc_gen_reco_map.GetNbinsY())
                 if subtract_fakes:
+                    print("reco bg subtracted #bins:", hist_mc_reco_bg_subtracted.GetNbinsX())
+                    print(proj_reco.GetNbinsX())
                     # Do the same but with backgrounds subtracted from the 1D
                     draw_projection_comparison(hist_mc_reco_bg_subtracted, proj_reco,
                                                title="%s\n%s region" % (jet_algo, region['label']),
                                                xtitle="%s, Detector binning" % (angle_str),
                                                output_filename="%s/projection_reco_bg_subtracted_%s.%s" % (this_output_dir, append, OUTPUT_FMT))
+                else:
+                    draw_projection_comparison(hist_mc_reco, proj_reco,
+                           title="%s\n%s region" % (jet_algo, region['label']),
+                           xtitle="%s, Detector binning" % (angle_str),
+                           output_filename="%s/projection_reco_%s.%s" % (this_output_dir, append, OUTPUT_FMT),
+                           print_bin_comparison=False)
 
             # Draw matrices
             # ---------------------
