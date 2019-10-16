@@ -733,6 +733,7 @@ if __name__ == "__main__":
     dijet_region_central_dict['dirname'] = 'Dijet_QG_Unfold_central_tighter'
     dijet_region_central_dict['label'] = 'Dijet central'
     dijet_region_central_dict['name'] = 'Dijet_central'
+
     dijet_region_forward_dict = dijet_region_dict_template.copy()
     dijet_region_forward_dict['dirname'] = 'Dijet_QG_Unfold_forward_tighter'
     dijet_region_forward_dict['label'] = 'Dijet forward'
@@ -740,11 +741,12 @@ if __name__ == "__main__":
 
     dijet_region_central_groomed_dict = dijet_region_dict_template.copy()
     dijet_region_central_groomed_dict['dirname'] = 'Dijet_QG_Unfold_central_tighter_groomed'
-    dijet_region_central_groomed_dict['label'] = 'Dijet central (groomed)'
+    dijet_region_central_groomed_dict['label'] = 'Dijet central'
     dijet_region_central_groomed_dict['name'] = 'Dijet_central_groomed'
+
     dijet_region_forward_groomed_dict = dijet_region_dict_template.copy()
     dijet_region_forward_groomed_dict['dirname'] = 'Dijet_QG_Unfold_forward_tighter_groomed'
-    dijet_region_forward_groomed_dict['label'] = 'Dijet forward (groomed)'
+    dijet_region_forward_groomed_dict['label'] = 'Dijet forward'
     dijet_region_forward_groomed_dict['name'] = 'Dijet_forward_groomed'
 
     zpj_region_dict = {
@@ -1075,7 +1077,7 @@ if __name__ == "__main__":
         # ----------------------------------------------------------------------
         for angle in qgc.COMMON_VARS[2:3]:
         # for angle in qgc.COMMON_VARS[:]:
-            angle_prepend = "Groomed " if "groomed" in region['name'] else ""
+            angle_prepend = "groomed " if "groomed" in region['name'] else ""
             append = "%s_%s%s" % (region['name'], angle_prepend.lower(), angle.var)  # common str to put on filenames, etc
 
             print("*"*80)
@@ -1531,7 +1533,7 @@ if __name__ == "__main__":
                 plot = Plot(entries,
                             what="hist",
                             title=title,
-                            xtitle="Particle level "+angle_str,
+                            xtitle="Particle-level "+angle_str,
                             ytitle="N",
                             subplot_type='ratio',
                             subplot_title='Unfolded / gen',
@@ -1585,7 +1587,7 @@ if __name__ == "__main__":
                 plot = Plot(entries,
                             what="hist",
                             title=title,
-                            xtitle="Particle level "+angle_str,
+                            xtitle="Particle-level "+angle_str,
                             ytitle=ytitle,
                             subplot_type='ratio',
                             subplot_title='Gen / Unfolded',
@@ -1641,7 +1643,7 @@ if __name__ == "__main__":
                 plot = Plot(entries,
                             what="hist",
                             title=title,
-                            xtitle="Particle level "+angle_str,
+                            xtitle="Particle-level "+angle_str,
                             ytitle=ytitle,
                             subplot_type='ratio',
                             subplot_title='Gen / Unfolded',
@@ -1667,7 +1669,7 @@ if __name__ == "__main__":
                     #          marker_color=gen_colour, marker_size=0,
                     #          normalise_hist=True)),  # generator
                     (unfolded_hist_bin_stat_errors_div_bin_width,
-                        dict(label="Unfolded (#tau = %.3g)" % (tau),
+                        dict(label="Unfolded\n($\\tau = %.3g$)" % (tau),
                              line_color=unfolded_total_colour, line_width=lw, line_style=3,
                              marker_color=unfolded_total_colour, marker_style=20, marker_size=0.75,
                              subplot=mc_gen_hist_bin,
@@ -1703,7 +1705,7 @@ if __name__ == "__main__":
                 plot = Plot(entries,
                             what="hist",
                             title=title,
-                            xtitle="Detector level " + angle_str,
+                            xtitle="Detector-level " + angle_str,
                             ytitle=ytitle,
                             subplot_type='ratio',
                             subplot_title='Data / MC',
@@ -1737,7 +1739,7 @@ if __name__ == "__main__":
                     plot = Plot(entries,
                                 what="hist",
                                 title=title,
-                                xtitle="Detector level " + angle_str,
+                                xtitle="Detector-level " + angle_str,
                                 ytitle=ytitle,
                                 subplot_type='ratio',
                                 subplot_title='Data / MC',
@@ -1771,7 +1773,7 @@ if __name__ == "__main__":
                 plot = Plot(entries,
                             what="hist",
                             title=title,
-                            xtitle="Detector level " + angle_str,
+                            xtitle="Detector-level " + angle_str,
                             ytitle=ytitle,
                             subplot_type='ratio',
                             subplot_title='Data / MC',
@@ -1806,7 +1808,7 @@ if __name__ == "__main__":
                     plot = Plot(entries,
                                 what="hist",
                                 title=title,
-                                xtitle="Detector level " + angle_str,
+                                xtitle="Detector-level " + angle_str,
                                 ytitle=ytitle,
                                 subplot_type='ratio',
                                 subplot_title='Data / MC',
@@ -1902,16 +1904,15 @@ if __name__ == "__main__":
             marker = ""
             if "_" in angle.name or "^" in angle.name:
                 marker = "$"
-            var_label = "Particle-level\n" + marker + angle.name + marker + "\n$%s$" % angle.lambda_str
+            var_label = "Particle-level " + marker + angle.name + marker + " ($%s$)" % angle.lambda_str
             v = "%s_vs_pt" % (angle.var)
             bins = [(pt_bin_edges_gen[i], pt_bin_edges_gen[i+1]) for i in range(len(pt_bin_edges_gen)-1)]
             print(bins)
-            qgp.do_mean_rms_summary_plot(dijet_1d_entries[:], bins,
+            qgp.do_mean_rms_summary_plot(summary_1d_entries[:], bins,
                                          "%s/%s_box_dijet_mpl.%s" % (this_output_dir, v, OUTPUT_FMT),
                                          var_label=var_label,
                                          xlim=(50, 2000),
-                                         ylim=ylim,
-                                         region_title="dijet")
+                                         region_title=region['label'].lower())
 
     print("Saved hists to", output_tfile.GetName())
 
