@@ -1406,7 +1406,7 @@ if __name__ == "__main__":
                              xtitle="%s, Detector binning" % (angle_str),
                              output_filename="%s/folded_%s.%s" % (this_output_dir, append, OUTPUT_FMT))
 
-            dijet_1d_entries = []
+            summary_1d_entries = []  # for final summary plot
 
             # Draw individual pt bin plots
             # ----------------------------
@@ -1558,13 +1558,13 @@ if __name__ == "__main__":
                     Contribution(mc_gen_hist_bin, label="Generator (MG+Pythia8)",
                                  line_color=gen_colour, line_width=lw,
                                  marker_color=gen_colour, marker_size=0,
-                                 subplot=unfolded_hist_bin_stat_errors,
+                                 subplot=unfolded_hist_bin_total_errors,
                                  normalise_hist=True),
-                    Contribution(alt_mc_gen_hist_bin, label="Generator (%s)" % region['alt_mc_label'],
-                                 line_color=ROOT.kAzure, line_width=lw,
-                                 marker_color=ROOT.kAzure, marker_size=0,
-                                 subplot=unfolded_hist_bin_stat_errors,
-                                 normalise_hist=True),
+                    # Contribution(alt_mc_gen_hist_bin, label="Generator (%s)" % region['alt_mc_label'],
+                    #              line_color=ROOT.kAzure, line_width=lw,
+                    #              marker_color=ROOT.kAzure, marker_size=0,
+                    #              subplot=unfolded_hist_bin_stat_errors,
+                    #              normalise_hist=True),
                     # Contribution(unfolded_hist_bin, label="Unfolded (#tau = %.3g)" % (tau),
                     #              line_color=unfolded_basic_colour, line_width=lw,
                     #              marker_color=unfolded_basic_colour, marker_size=0,
@@ -1577,12 +1577,10 @@ if __name__ == "__main__":
                     Contribution(unfolded_hist_bin_stat_errors, label="Unfolded (#tau = %.3g) (stat err)" % (tau),
                                  line_color=unfolded_stat_colour, line_width=lw, line_style=2,
                                  marker_color=unfolded_stat_colour, marker_size=0,
-                                 subplot=mc_gen_hist_bin,
                                  normalise_hist=True),
                     Contribution(unfolded_hist_bin_total_errors, label="Unfolded (#tau = %.3g) (total err)" % (tau),
                                  line_color=unfolded_total_colour, line_width=lw, line_style=3,
                                  marker_color=unfolded_total_colour, marker_style=20, marker_size=0.75,
-                                 subplot=mc_gen_hist_bin,
                                  normalise_hist=True),
                 ]
                 has_entries = [c.obj.GetEntries() > 0 for c in entries]
@@ -1613,13 +1611,13 @@ if __name__ == "__main__":
                     Contribution(mc_gen_hist_bin_div_bin_width, label="Generator (MG+Pythia8)",
                                  line_color=gen_colour, line_width=lw,
                                  marker_color=gen_colour, marker_size=0,
-                                 subplot=unfolded_hist_bin_stat_errors_div_bin_width,
+                                 subplot=unfolded_hist_bin_total_errors_div_bin_width,
                                  normalise_hist=True),
-                    Contribution(qgp.hist_divide_bin_width(alt_mc_gen_hist_bin), label="Generator (%s)" % region['alt_mc_label'],
-                                 line_color=ROOT.kAzure, line_width=lw,
-                                 marker_color=ROOT.kAzure, marker_size=0,
-                                 subplot=unfolded_hist_bin_stat_errors_div_bin_width,
-                                 normalise_hist=True),
+                    # Contribution(qgp.hist_divide_bin_width(alt_mc_gen_hist_bin), label="Generator (%s)" % region['alt_mc_label'],
+                    #              line_color=ROOT.kAzure, line_width=lw,
+                    #              marker_color=ROOT.kAzure, marker_size=0,
+                    #              subplot=unfolded_hist_bin_stat_errors_div_bin_width,
+                    #              normalise_hist=True),
                     # Contribution(unfolded_hist_bin, label="Unfolded (#tau = %.3g)" % (tau),
                     #              line_color=unfolded_basic_colour, line_width=lw,
                     #              marker_color=unfolded_basic_colour, marker_size=0,
@@ -1638,7 +1636,6 @@ if __name__ == "__main__":
                     Contribution(unfolded_hist_bin_total_errors_div_bin_width, label="Unfolded (#tau = %.3g) (total err)" % (tau),
                                  line_color=unfolded_total_colour, line_width=lw, line_style=3,
                                  marker_color=unfolded_total_colour, marker_style=20, marker_size=0.75,
-                                 subplot=unfolded_hist_bin_stat_errors_div_bin_width,
                                  normalise_hist=True),
                 ]
                 has_entries = [c.obj.GetEntries() > 0 for c in entries]
@@ -1662,7 +1659,7 @@ if __name__ == "__main__":
                 plot.save("%s/unfolded_%s_bin_%d_divBinWidth.%s" % (this_output_dir, append, ibin_pt, OUTPUT_FMT))
 
 
-                dijet_1d_entries.append([
+                summary_1d_entries.append([
                     # (unfolded_hist_bin_stat_errors,
                     #     dict(label="Unfolded (#tau = %.3g)" % (tau),
                     #          line_color=unfolded_total_colour, line_width=lw, line_style=3,
