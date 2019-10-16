@@ -70,6 +70,10 @@ def get_reference_pt_region(var_name):
 
     In a function cos it may get complex
     """
+    var_name_lower = var_name.lower()
+    if "multiplicity" in var_name_lower:
+        return "_highPt"
+
     return "_midPt"
 
 
@@ -98,6 +102,7 @@ if __name__ == "__main__":
                         help="Target purity/stability to put on plot",
                         default=None)
     args = parser.parse_args()
+    print(args)
 
     input_dir, input_basename = os.path.split(args.input)
     default_plot_dir = os.path.join(input_dir, "rebinning_"+os.path.splitext(input_basename)[0])
