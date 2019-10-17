@@ -1535,7 +1535,7 @@ if __name__ == "__main__":
                 if not any(has_entries):
                     print("Skipping 0 entries in", append, ibin_pt)
                     continue
-                title = "%s\n%s region\n%g < p_{T}^{Gen} < %g GeV" % (jet_algo, region['label'], pt_bin_edges_gen[ibin_pt], pt_bin_edges_gen[ibin_pt+1])
+                title = "%s\n%s region\n%g < p_{T}^{jet} < %g GeV" % (jet_algo, region['label'], pt_bin_edges_gen[ibin_pt], pt_bin_edges_gen[ibin_pt+1])
                 plot = Plot(entries,
                             what="hist",
                             title=title,
@@ -1704,7 +1704,7 @@ if __name__ == "__main__":
                 if not any(has_entries):
                     print("Skipping 0 entries in", append, ibin_pt)
                     continue
-                title = "%s\n%s region\n%g < p_{T}^{Gen} < %g GeV" % (jet_algo, region['label'], pt_bin_edges_gen[ibin_pt], pt_bin_edges_gen[ibin_pt+1])
+                title = "%s\n%s region\n%g < p_{T}^{Jet} < %g GeV" % (jet_algo, region['label'], pt_bin_edges_gen[ibin_pt], pt_bin_edges_gen[ibin_pt+1])
                 plot = Plot(entries,
                             what="hist",
                             title=title,
@@ -1738,7 +1738,7 @@ if __name__ == "__main__":
                     if not any(has_entries):
                         print("Skipping 0 entries in", append, ibin_pt)
                         continue
-                    title = "%s\n%s region\n%g < p_{T}^{Gen} < %g GeV" % (jet_algo, region['label'], pt_bin_edges_gen[ibin_pt], pt_bin_edges_gen[ibin_pt+1])
+                    title = "%s\n%s region\n%g < p_{T}^{Jet} < %g GeV" % (jet_algo, region['label'], pt_bin_edges_gen[ibin_pt], pt_bin_edges_gen[ibin_pt+1])
                     plot = Plot(entries,
                                 what="hist",
                                 title=title,
@@ -1772,7 +1772,7 @@ if __name__ == "__main__":
                 if not any(has_entries):
                     print("Skipping 0 entries in", append, ibin_pt)
                     continue
-                title = "%s\n%s region\n%g < p_{T}^{Gen} < %g GeV" % (jet_algo, region['label'], pt_bin_edges_gen[ibin_pt], pt_bin_edges_gen[ibin_pt+1])
+                title = "%s\n%s region\n%g < p_{T}^{Jet} < %g GeV" % (jet_algo, region['label'], pt_bin_edges_gen[ibin_pt], pt_bin_edges_gen[ibin_pt+1])
                 plot = Plot(entries,
                             what="hist",
                             title=title,
@@ -1807,7 +1807,7 @@ if __name__ == "__main__":
                     if not any(has_entries):
                         print("Skipping 0 entries in", append, ibin_pt)
                         continue
-                    title = "%s\n%s region\n%g < p_{T}^{Gen} < %g GeV" % (jet_algo, region['label'], pt_bin_edges_gen[ibin_pt], pt_bin_edges_gen[ibin_pt+1])
+                    title = "%s\n%s region\n%g < p_{T}^{Jet} < %g GeV" % (jet_algo, region['label'], pt_bin_edges_gen[ibin_pt], pt_bin_edges_gen[ibin_pt+1])
                     plot = Plot(entries,
                                 what="hist",
                                 title=title,
@@ -1852,7 +1852,7 @@ if __name__ == "__main__":
                 if not any(has_entries):
                     print("Skipping 0 entries in", append, ibin_pt)
                     continue
-                title = "%s\n%s region\n%g < p_{T}^{Gen} < %g GeV" % (jet_algo, region['label'], pt_bin_edges_gen[ibin_pt], pt_bin_edges_gen[ibin_pt+1])
+                title = "%s\n%s region\n%g < p_{T}^{Jet} < %g GeV" % (jet_algo, region['label'], pt_bin_edges_gen[ibin_pt], pt_bin_edges_gen[ibin_pt+1])
                 plot = Plot(entries,
                             what="hist",
                             title=title,
@@ -1886,7 +1886,7 @@ if __name__ == "__main__":
                 if not any(has_entries):
                     print("Skipping 0 entries in", append, ibin_pt)
                     continue
-                title = "%s\n%s region\n%g < p_{T}^{Gen} < %g GeV" % (jet_algo, region['label'], pt_bin_edges_gen[ibin_pt], pt_bin_edges_gen[ibin_pt+1])
+                title = "%s\n%s region\n%g < p_{T}^{Jet} < %g GeV" % (jet_algo, region['label'], pt_bin_edges_gen[ibin_pt], pt_bin_edges_gen[ibin_pt+1])
                 plot = Plot(entries,
                             what="hist",
                             title=title,
@@ -1921,4 +1921,3 @@ if __name__ == "__main__":
                                          region_title=region['label'].lower())
 
     print("Saved hists to", output_tfile.GetName())
-
