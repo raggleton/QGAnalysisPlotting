@@ -106,7 +106,12 @@ class MyUnfolder(object):
             self.generator_distribution.AddAxis(self.variable_name, self.nbins_variable_gen, self.variable_bin_edges_gen, var_uf, var_of)
         self.generator_distribution.AddAxis("pt", self.nbins_pt_gen, self.pt_bin_edges_gen, pt_uf, pt_of)
 
+        self.orientation = orientation
+        self.constraintMode = constraintMode
+        self.regMode = regMode
+        self.densityFlags = densityFlags
         self.axisSteering = axisSteering
+
         self.tunfolder = ROOT.TUnfoldDensity(response_map,
                                             orientation,
                                             regMode,
@@ -570,7 +575,7 @@ def create_hist_with_errors(hist, err_matrix):
     return hnew
 
 
-def make_hist_from_diagonals(h2d, do_sqrt=True):
+def make_hist_from_diagonal_errors(h2d, do_sqrt=True):
     nbins = h2d.GetNbinsX()
     hnew = ROOT.TH1D("h_diag" + cu.get_unique_str(), "", nbins, 0, nbins)
     for i in range(1, nbins+1):
@@ -586,6 +591,13 @@ def update_hist_bin_content(h_orig, h_to_be_updated):
         raise RuntimeError("Need same # x bins, %d vs %s" % (h_orig.GetNbinsX(), h_to_be_updated.GetNbinsX()))
     for i in range(0, h_orig.GetNbinsX()+2):
         h_to_be_updated.SetBinContent(i, h_orig.GetBinContent(i))
+        # h_to_be_updated.SetBinError(i, h_orig.GetBinError(i))
+
+
+def update_hist_bin_error(h_orig, h_to_be_updated):
+    if h_orig.GetNbinsX() != h_to_be_updated.GetNbinsX():
+        raise RuntimeError("Need same # x bins, %d vs %s" % (h_orig.GetNbinsX(), h_to_be_updated.GetNbinsX()))
+    for i in range(0, h_orig.GetNbinsX()+2):
         h_to_be_updated.SetBinError(i, h_orig.GetBinError(i))
 
 
@@ -684,6 +696,56 @@ def check_entries(entries, message=""):
             print("Skipping 0 entries")
         return False
     return True
+
+
+def plot_systematic_shifts(total_hist, stat_hist, syst_shifts, systs, output_filename, title, angle_str):
+    """
+    Parameters
+    ----------
+    total_hist : TH1
+        Description
+    stat_hist : TH1
+        Description
+    syst_shifts : list[TH1]
+        Description
+    systs : list[dict]
+        Description
+    output_file : str
+        Description
+    """
+    entries = []
+    hists = []
+    for h, syst_dict in zip(syst_shifts, systs):
+        h_fraction = h.Clone()
+        h_fraction.Divide(total_hist)
+        hists.append(h_fraction)
+        for i in range(1, h_fraction.GetNbinsX()+1):
+            h_fraction.SetBinContent(i, abs(h_fraction.GetBinContent(i)))
+        c = Contribution(h_fraction,
+                         label=syst_dict['label'],
+                         line_color=syst_dict['colour'],
+                         line_style=syst_dict.get('linestyle', 1),
+                         line_width=1,
+                         marker_size=0,
+                         marker_color=syst_dict['colour'],
+                         )
+        entries.append(c)
+
+    if not check_entries(entries, "systematic shifts"):
+        return
+    plot = Plot(entries,
+                what="hist",
+                title=title,
+                xtitle="Particle-level "+angle_str,
+                ytitle="| Fractional shift |")
+    plot.legend.SetX1(0.55)
+    plot.legend.SetY1(0.68)
+    plot.legend.SetX2(0.98)
+    plot.legend.SetY2(0.88)
+    plot.legend.SetNColumns(2)
+    plot.y_padding_max_linear = 2
+    plot.plot("NOSTACK HIST")
+    plot.save(output_filename)
 
 
 if __name__ == "__main__":
@@ -972,6 +1034,7 @@ if __name__ == "__main__":
         all_pt_bins_gen = np.concatenate((pt_bin_edges_underflow_gen[:-1], pt_bin_edges_gen))
         hist_mc_gen_pt_physical = ROOT.TH1F("mc_gen_pt", ";p_{T}^{jet} [GeV];N", len(all_pt_bins_gen)-1, array('d', all_pt_bins_gen))
         update_hist_bin_content(hist_mc_gen_pt, hist_mc_gen_pt_physical)
+        update_hist_bin_error(hist_mc_gen_pt, hist_mc_gen_pt_physical)
         region_tdir.WriteTObject(hist_mc_gen_pt_physical, "mc_gen_pt")
 
         # Do unfolding for each angle
@@ -1105,12 +1168,19 @@ if __name__ == "__main__":
             if SUBTRACT_FAKES:
                 unfolder.tunfolder.SubtractBackground(hist_fakes_reco, "fakes")
 
-            for syst_dict in region['systematics']:
-                hist_syst = cu.get_from_tfile(syst_dict['tfile'], "%s/tu_%s_GenReco_all" % (region['dirname'], angle_shortname))
-                unfolder.tunfolder.AddSysError(hist_syst, syst_dict['label'], ROOT.TUnfold.kHistMapOutputHoriz, ROOT.TUnfoldDensity.kSysErrModeMatrix)
-
-            # unfolder.tunfolder.AddSysError(hist_mc_gen_reco_neutralUp_map, "NeutralUp", ROOT.TUnfold.kHistMapOutputHoriz, ROOT.TUnfoldDensity.kSysErrModeMatrix)
-            # unfolder.tunfolder.AddSysError(hist_mc_gen_reco_neutralDown_map, "NeutralDown", ROOT.TUnfold.kHistMapOutputHoriz, ROOT.TUnfoldDensity.kSysErrModeMatrix)
+            # Add systematic errors as different response matrices
+            # ----------------------------------------------------
+            if DO_SYSTS:
+                chosen_rsp_bin = (15, 15)
+                print("nominal response bin content for", chosen_rsp_bin, hist_mc_gen_reco_map.GetBinContent(*chosen_rsp_bin))
+                for syst_dict in region['systematics']:
+                    if 'tfile' in syst_dict:
+                        map_syst = cu.get_from_tfile(syst_dict['tfile'], "%s/tu_%s_GenReco_all" % (region['dirname'], angle_shortname))
+                    else:
+                        raise NotImplementedError("TODO: handle sources of unc other than from tfile (e.g. lumi)")
+                    print("Adding systematic:", syst_dict['label'])
+                    print("    syst bin", chosen_rsp_bin, map_syst.GetBinContent(15, 15))
+                    unfolder.tunfolder.AddSysError(map_syst, syst_dict['label'], unfolder.orientation, ROOT.TUnfoldDensity.kSysErrModeMatrix)
 
             # Set what is to be unfolded
             # ---------------------
@@ -1156,35 +1226,55 @@ if __name__ == "__main__":
             unfolder.do_unfolding(tau)
             unfolded_1d = unfolder.get_output()
             unfolded_1d.SetName("unfolded_1d")
-            print ("Bin 30:")
-            print ("original uncert:", unfolded_1d.GetBinError(30))
+            chosen_bin = 15
+            print ("Bin %d:" % chosen_bin, unfolded_1d.GetBinContent(chosen_bin))
+            print ("original uncert:", unfolded_1d.GetBinError(chosen_bin))
 
+            # Get various error matrices
+            # ------------------------------------------------------------------
             # stat errors only - do before or after systematics?
             ematrix_input = unfolder.get_ematrix_input() # stat errors from input to be unfolded
+            print ("ematrix_input uncert:", ematrix_input.GetBinContent(chosen_bin, chosen_bin))
             this_tdir.WriteTObject(ematrix_input, "ematrix_input")
+
             ematrix_sys_uncorr = unfolder.get_ematrix_sys_uncorr() # stat errors in response matrix
+            print ("ematrix_sys_uncorr uncert:", ematrix_sys_uncorr.GetBinContent(chosen_bin, chosen_bin))
             this_tdir.WriteTObject(ematrix_sys_uncorr, "ematrix_sys_uncorr")
 
             ematrix_stat_sum = ematrix_input.Clone("ematrix_stat_sum")
-            ematrix_stat_sum.Add(ematrix_sys_uncorr)
+            ematrix_stat_sum.Add(ematrix_sys_uncorr) # total 'stat' errors
 
-            error_stat_1d = make_hist_from_diagonals(ematrix_stat_sum, do_sqrt=True)
-            print ("stat uncert:", error_stat_1d.GetBinError(30))
+            error_stat_1d = make_hist_from_diagonal_errors(ematrix_stat_sum, do_sqrt=True) # note that bin contents = 0, only bin errors are non-0
+            print ("stat uncert:", error_stat_1d.GetBinError(chosen_bin))
 
             ematrix_total = unfolder.get_ematrix_total()
-            error_total_1d = make_hist_from_diagonals(ematrix_total, do_sqrt=True)
+            error_total_1d = make_hist_from_diagonal_errors(ematrix_total, do_sqrt=True) # note that bin contents = 0, only bin errors are non-0
             this_tdir.WriteTObject(ematrix_total, "ematrix_total_1d")
-            print ("total uncert:", error_total_1d.GetBinError(30))
+            print ("total uncert:", error_total_1d.GetBinError(chosen_bin))
 
             # Update errors to big unfolded 1D
-            update_hist_bin_content(unfolded_1d, error_total_1d)
-            print ("new uncert:", unfolded_1d.GetBinError(30))
+            update_hist_bin_error(error_total_1d, unfolded_1d)
+            print ("new uncert:", unfolded_1d.GetBinError(chosen_bin))
             this_tdir.WriteTObject(unfolded_1d)
 
             angle_str = "%s%s (%s)" % (angle_prepend, angle.name, angle.lambda_str)
 
+            # Get shifts due to systematics
+            # ------------------------------------------------------------------
+            systematic_shift_hists = []
+            if DO_SYSTS:
+                for syst_dict in region['systematics']:
+                    syst_label = syst_dict['label']
+                    h_syst = unfolder.tunfolder.GetDeltaSysSource(syst_label,
+                                                                  '%s_%s_shift_%s' % (region['name'], angle.var, syst_label),
+                                                                  "",
+                                                                  "generator",
+                                                                  unfolder.axisSteering,
+                                                                  unfolder.use_axis_binning)
+                    systematic_shift_hists.append(h_syst)
+
             # Draw unified unfolded distributions
-            # ---------------------
+            # ------------------------------------------------------------------
             # unfolded, gen, and reco for comparison
             plot_simple_unfolded(unfolded=unfolded_1d,
                                  tau=tau,
@@ -1327,13 +1417,12 @@ if __name__ == "__main__":
                 this_pt_bin_tdir.WriteTObject(unfolded_hist_bin, "unfolded_hist_bin")
 
                 unfolded_hist_bin_stat_errors = unfolder.get_var_hist_pt_binned(error_stat_1d, ibin_pt, binning_scheme="generator")
-                update_hist_bin_content(unfolded_hist_bin, unfolded_hist_bin_stat_errors)
+                update_hist_bin_content(unfolded_hist_bin, unfolded_hist_bin_stat_errors)  # use stat errors, update central values
                 this_pt_bin_tdir.WriteTObject(unfolded_hist_bin_stat_errors, "unfolded_hist_bin_stat_errors")
 
                 unfolded_hist_bin_total_errors = unfolder.get_var_hist_pt_binned(error_total_1d, ibin_pt, binning_scheme="generator")
-                update_hist_bin_content(unfolded_hist_bin, unfolded_hist_bin_total_errors)
+                update_hist_bin_content(unfolded_hist_bin, unfolded_hist_bin_total_errors)  # use total errors, update central values
                 this_pt_bin_tdir.WriteTObject(unfolded_hist_bin_total_errors, "unfolded_hist_bin_total_errors")
-
 
                 # mc_fake_reco_hist_bin_gen_binning = unfolder.get_var_hist_pt_binned(hist_mc_fakes_reco_gen_binning, ibin_pt, binning_scheme="generator")
                 # this_pt_bin_tdir.WriteTObject(mc_fake_reco_hist_bin_gen_binning, "mc_fake_reco_hist_bin_gen_binning")
@@ -1531,6 +1620,20 @@ if __name__ == "__main__":
                              marker_color=gen_colour, marker_size=0,
                              normalise_hist=True)),  # generator
                 ])
+
+                # PLOT SYSTEMATIC SHIFTS
+                # --------------------------------------------------------------
+                systematic_shift_hists_bin = [unfolder.get_var_hist_pt_binned(h, ibin_pt, binning_scheme='generator')
+                                              for h in systematic_shift_hists]
+
+                unfolded_total_error_bin =  unfolder.get_var_hist_pt_binned(unfolded_1d, ibin_pt, binning_scheme="generator")
+                plot_systematic_shifts(total_hist=unfolded_total_error_bin,
+                                       stat_hist=unfolded_hist_bin_stat_errors,
+                                       syst_shifts=systematic_shift_hists_bin,
+                                       systs=region['systematics'],
+                                       output_filename='%s/unfolded_systs_%s_bin_%d.%s' % (this_output_dir, append, ibin_pt, OUTPUT_FMT),
+                                       title=title,
+                                       angle_str=angle_str)
 
                 # PLOT RECO DISTRIBUTIONS
                 # --------------------------------------------------------------
