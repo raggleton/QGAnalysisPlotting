@@ -749,241 +749,312 @@ def plot_systematic_shifts(total_hist, stat_hist, syst_shifts, systs, output_fil
 
 
 if __name__ == "__main__":
-    # Setup files n things
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("source",
+                        help="Source directory with ROOT files")
+    parser.add_argument("--doDijetCentral",
+                        action='store_true',
+                        help='Do unfolding for dijet (central) jets')
+    parser.add_argument("--doDijetForward",
+                        action='store_true',
+                        help='Do unfolding for dijet (forward) jets')
+    parser.add_argument("--doDijetCentralGroomed",
+                        action='store_true',
+                        help='Do unfolding for groomed dijet (central) jets')
+    parser.add_argument("--doDijetForwardGroomed",
+                        action='store_true',
+                        help='Do unfolding for groomed dijet (forward) jets')
+    parser.add_argument("--doZPJ",
+                        action='store_true',
+                        help='Do unfolding for Z+jet jets')
+    parser.add_argument("--doZPJGroomed",
+                        action='store_true',
+                        help='Do unfolding for groomed Z+jet jets')
+
+    parser.add_argument("--regularize",
+                        choices=['None', 'tau', 'L'],
+                        default='None',
+                        help='Regularization scheme')
+
+    parser.add_argument("--MCinput",
+                        action='store_true',
+                        help='Unfold MC instead of data')
+
+    parser.add_argument("--MCsplit",
+                        action='store_true',
+                        help='Split MC between response & 1D reco, good for testing procedure')
+
+    parser.add_argument("--doSysts",
+                        action='store_true',
+                        help='Do systematics')
+
+    parser.add_argument("--outputDir",
+                        default='',
+                        help='Output directory')
+
+    parser.add_argument("--angles",
+                        choices=list(qgc.VAR_UNFOLD_DICT.keys()),
+                        nargs='+',
+                        help="Lambda angles to unfold")
+
+    args = parser.parse_args()
+    print(args)
+
+    if not any([args.doDijetCentral, args.doDijetForward, args.doDijetCentralGroomed, args.doDijetForwardGroomed, args.doZPJ, args.doZPJGroomed]):
+        raise RuntimeError("You need to specify at least one signal region e.g. --doDijetCentral")
+
+    # Setup files and regions to unfold
     # --------------------------------------------------------------------------
     src_dir = "workdir_ak4puppi_data_trigBinningBetter2_jetAsymCut_pt1RecoConstituents_V11JEC_JER_tUnfoldBetter_target0p5_wta_groomed_fwdcenDijet"
+    src_dir = args.source
     src_dir_systs = os.path.join(src_dir, "systematics_files")
 
-    # FOR Z+JETS:
-    input_mc_dy_mgpythia_tfile = cu.open_root_file(os.path.join(src_dir, qgc.DY_FILENAME))
-    input_mc_dy_mgherwig_tfile = cu.open_root_file(os.path.join(src_dir, qgc.DY_MG_HERWIG_FILENAME))
-    input_mc_dy_herwig_tfile = cu.open_root_file(os.path.join(src_dir, qgc.DY_HERWIG_FILENAME))
+    regions = []
 
-    input_singlemu_tfile = cu.open_root_file(os.path.join(src_dir, qgc.SINGLE_MU_FILENAME))
+    if any([args.doDijetCentral, args.doDijetForward, args.doDijetCentralGroomed, args.doDijetForwardGroomed]):
+        # FOR DIJET:
+        input_mc_qcd_mgpythia_tfile = cu.open_root_file(os.path.join(src_dir, qgc.QCD_FILENAME))
+        input_mc_qcd_pythia_tfile = cu.open_root_file(os.path.join(src_dir, qgc.QCD_PYTHIA_ONLY_FILENAME))
+        input_mc_qcd_herwig_tfile = cu.open_root_file(os.path.join(src_dir, qgc.QCD_HERWIG_FILENAME))
 
-    # FOR DIJET:
-    input_mc_qcd_mgpythia_tfile = cu.open_root_file(os.path.join(src_dir, qgc.QCD_FILENAME))
-    input_mc_qcd_pythia_tfile = cu.open_root_file(os.path.join(src_dir, qgc.QCD_PYTHIA_ONLY_FILENAME))
-    input_mc_qcd_herwig_tfile = cu.open_root_file(os.path.join(src_dir, qgc.QCD_HERWIG_FILENAME))
+        input_jetht_tfile = cu.open_root_file(os.path.join(src_dir, qgc.JETHT_ZB_FILENAME))
 
-    input_jetht_tfile = cu.open_root_file(os.path.join(src_dir, qgc.JETHT_ZB_FILENAME))
+        dijet_region_dict_template = {
+            "name": "Dijet",
+            "dirname": "Dijet_QG_Unfold_central_tighter",
+            "label": "Dijet",
+            "data_tfile": input_jetht_tfile,
+            "mc_tfile": input_mc_qcd_mgpythia_tfile,
+            "alt_mc_tfile": input_mc_qcd_herwig_tfile,
+            "alt_mc_label": "Herwig++",
+            "tau_limits": {
+                'jet_puppiMultiplicity': (1E-13, 1E-10),
+                'jet_pTD': (1E-13, 1E-10),
+                'jet_LHA': (1E-13, 1E-10),
+                'jet_width': (1E-13, 1E-10),
+                'jet_thrust': (1E-13, 1E-10),
+                'jet_puppiMultiplicity_charged': (1E-13, 1E-10),
+                'jet_pTD_charged': (1E-13, 1E-10),
+                'jet_LHA_charged': (1E-13, 1E-10),
+                'jet_width_charged': (1E-13, 1E-10),
+                'jet_thrust_charged': (1E-13, 1E-10),
+            },
+            "systematics": [
+                {
+                    "label": "Neutral hadron up",
+                    "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'neutralHadronShiftUp', qgc.QCD_FILENAME)),
+                    "colour": ROOT.kOrange-3,
+                },
+                {
+                    "label": "Neutral hadron down",
+                    "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'neutralHadronShiftDown', qgc.QCD_FILENAME)),
+                    "colour": ROOT.kOrange-3,
+                    "linestyle": 2,
+                },
+                {
+                    "label": "Photon up",
+                    "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'photonShiftUp', qgc.QCD_FILENAME)),
+                    "colour": ROOT.kMagenta-3,
+                },
+                {
+                    "label": "Photon down",
+                    "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'photonShiftDown', qgc.QCD_FILENAME)),
+                    "colour": ROOT.kMagenta-3,
+                    "linestyle": 2,
+                },
+                {
+                    "label": "JEC up",
+                    "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'jecsmear_directionUp', qgc.QCD_FILENAME)),
+                    "colour": ROOT.kGreen+2,
+                },
+                {
+                    "label": "JEC down",
+                    "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'jecsmear_directionDown', qgc.QCD_FILENAME)),
+                    "colour": ROOT.kGreen+2,
+                    "linestyle": 2,
+                },
+                {
+                    "label": "JER up",
+                    "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'jersmear_directionUp', qgc.QCD_FILENAME)),
+                    "colour": ROOT.kOrange+3,
+                },
+                {
+                    "label": "JER down",
+                    "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'jersmear_directionDown', qgc.QCD_FILENAME)),
+                    "colour": ROOT.kOrange+3,
+                    "linestyle": 2,
+                },
+                {
+                    "label": "Pileup up",
+                    "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'pileup_directionUp', qgc.QCD_FILENAME)),
+                    "colour": ROOT.kBlue-4,
+                },
+                {
+                    "label": "Pileup down",
+                    "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'pileup_directionDown', qgc.QCD_FILENAME)),
+                    "colour": ROOT.kBlue-4,
+                    "linestyle": 2,
+                },
+            ]
+        }
 
-    dijet_region_dict_template = {
-        "name": "Dijet",
-        "dirname": "Dijet_QG_Unfold_central_tighter",
-        "label": "Dijet",
-        "data_tfile": input_jetht_tfile,
-        "mc_tfile": input_mc_qcd_mgpythia_tfile,
-        "alt_mc_tfile": input_mc_qcd_herwig_tfile,
-        "alt_mc_label": "Herwig++",
-        "tau_limits": {
-            'jet_puppiMultiplicity': (1E-13, 1E-10),
-            'jet_pTD': (1E-13, 1E-10),
-            'jet_LHA': (1E-13, 1E-10),
-            'jet_width': (1E-13, 1E-10),
-            'jet_thrust': (1E-13, 1E-10),
-            'jet_puppiMultiplicity_charged': (1E-13, 1E-10),
-            'jet_pTD_charged': (1E-13, 1E-10),
-            'jet_LHA_charged': (1E-13, 1E-10),
-            'jet_width_charged': (1E-13, 1E-10),
-            'jet_thrust_charged': (1E-13, 1E-10),
-        },
-        "systematics": [
-            {
-                "label": "Neutral hadron up",
-                "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'neutralHadronShiftUp', qgc.QCD_FILENAME)),
-                "colour": ROOT.kOrange-3,
-            },
-            {
-                "label": "Neutral hadron down",
-                "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'neutralHadronShiftDown', qgc.QCD_FILENAME)),
-                "colour": ROOT.kOrange-3,
-                "linestyle": 2,
-            },
-            {
-                "label": "Photon up",
-                "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'photonShiftUp', qgc.QCD_FILENAME)),
-                "colour": ROOT.kMagenta-3,
-            },
-            {
-                "label": "Photon down",
-                "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'photonShiftDown', qgc.QCD_FILENAME)),
-                "colour": ROOT.kMagenta-3,
-                "linestyle": 2,
-            },
-            {
-                "label": "JEC up",
-                "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'jecsmear_directionUp', qgc.QCD_FILENAME)),
-                "colour": ROOT.kGreen+2,
-            },
-            {
-                "label": "JEC down",
-                "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'jecsmear_directionDown', qgc.QCD_FILENAME)),
-                "colour": ROOT.kGreen+2,
-                "linestyle": 2,
-            },
-            {
-                "label": "JER up",
-                "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'jersmear_directionUp', qgc.QCD_FILENAME)),
-                "colour": ROOT.kOrange+3,
-            },
-            {
-                "label": "JER down",
-                "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'jersmear_directionDown', qgc.QCD_FILENAME)),
-                "colour": ROOT.kOrange+3,
-                "linestyle": 2,
-            },
-            {
-                "label": "Pileup up",
-                "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'pileup_directionUp', qgc.QCD_FILENAME)),
-                "colour": ROOT.kBlue-4,
-            },
-            {
-                "label": "Pileup down",
-                "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'pileup_directionDown', qgc.QCD_FILENAME)),
-                "colour": ROOT.kBlue-4,
-                "linestyle": 2,
-            },
-        ]
-    }
+        if args.doDijetCentral:
+            dijet_region_central_dict = dijet_region_dict_template.copy()
+            dijet_region_central_dict['dirname'] = 'Dijet_QG_Unfold_central_tighter'
+            dijet_region_central_dict['label'] = 'Dijet central'
+            dijet_region_central_dict['name'] = 'Dijet_central'
+            regions.append(dijet_region_central_dict)
 
-    dijet_region_central_dict = dijet_region_dict_template.copy()
-    dijet_region_central_dict['dirname'] = 'Dijet_QG_Unfold_central_tighter'
-    dijet_region_central_dict['label'] = 'Dijet central'
-    dijet_region_central_dict['name'] = 'Dijet_central'
+        if args.doDijetForward:
+            dijet_region_forward_dict = dijet_region_dict_template.copy()
+            dijet_region_forward_dict['dirname'] = 'Dijet_QG_Unfold_forward_tighter'
+            dijet_region_forward_dict['label'] = 'Dijet forward'
+            dijet_region_forward_dict['name'] = 'Dijet_forward'
+            regions.append(dijet_region_forward_dict)
 
-    dijet_region_forward_dict = dijet_region_dict_template.copy()
-    dijet_region_forward_dict['dirname'] = 'Dijet_QG_Unfold_forward_tighter'
-    dijet_region_forward_dict['label'] = 'Dijet forward'
-    dijet_region_forward_dict['name'] = 'Dijet_forward'
+        if args.doDijetCentralGroomed:
+            dijet_region_central_groomed_dict = dijet_region_dict_template.copy()
+            dijet_region_central_groomed_dict['dirname'] = 'Dijet_QG_Unfold_central_tighter_groomed'
+            dijet_region_central_groomed_dict['label'] = 'Dijet central'
+            dijet_region_central_groomed_dict['name'] = 'Dijet_central_groomed'
+            regions.append(dijet_region_central_groomed_dict)
 
-    dijet_region_central_groomed_dict = dijet_region_dict_template.copy()
-    dijet_region_central_groomed_dict['dirname'] = 'Dijet_QG_Unfold_central_tighter_groomed'
-    dijet_region_central_groomed_dict['label'] = 'Dijet central'
-    dijet_region_central_groomed_dict['name'] = 'Dijet_central_groomed'
+        if args.doDijetForwardGroomed:
+            dijet_region_forward_groomed_dict = dijet_region_dict_template.copy()
+            dijet_region_forward_groomed_dict['dirname'] = 'Dijet_QG_Unfold_forward_tighter_groomed'
+            dijet_region_forward_groomed_dict['label'] = 'Dijet forward'
+            dijet_region_forward_groomed_dict['name'] = 'Dijet_forward_groomed'
+            regions.append(dijet_region_forward_groomed_dict)
 
-    dijet_region_forward_groomed_dict = dijet_region_dict_template.copy()
-    dijet_region_forward_groomed_dict['dirname'] = 'Dijet_QG_Unfold_forward_tighter_groomed'
-    dijet_region_forward_groomed_dict['label'] = 'Dijet forward'
-    dijet_region_forward_groomed_dict['name'] = 'Dijet_forward_groomed'
+    if any([args.doZPJ, args.doZPJGroomed]):
+        # FOR Z+JETS:
+        input_mc_dy_mgpythia_tfile = cu.open_root_file(os.path.join(src_dir, qgc.DY_FILENAME))
+        input_mc_dy_mgherwig_tfile = cu.open_root_file(os.path.join(src_dir, qgc.DY_MG_HERWIG_FILENAME))
+        input_mc_dy_herwig_tfile = cu.open_root_file(os.path.join(src_dir, qgc.DY_HERWIG_FILENAME))
 
-    zpj_region_dict = {
-        "name": "ZPlusJets",
-        "dirname": "ZPlusJets_QG_Unfold",
-        "label": "Z+jets",
-        "data_tfile": input_singlemu_tfile,
-        "mc_tfile": input_mc_dy_mgpythia_tfile,
-        "alt_mc_tfile": input_mc_dy_mgherwig_tfile,
-        "alt_mc_label": "MG+Herwig++",
-        "tau_limits": {
-            'jet_puppiMultiplicity': (1E-10, 1E-4),
-            'jet_pTD': (1E-10, 1E-4),
-            'jet_LHA': (1E-10, 1E-4),
-            'jet_width': (1E-10, 1E-4),
-            'jet_thrust': (1E-10, 1E-4),
-            'jet_puppiMultiplicity_charged': (1E-10, 1E-4),
-            'jet_pTD_charged': (1E-10, 1E-4),
-            'jet_LHA_charged': (1E-10, 1E-4),
-            'jet_width_charged': (1E-10, 1E-4),
-            'jet_thrust_charged': (1E-10, 1E-4),
-        },
-        "systematics": [
-            {
-                "label": "Neutral hadron up",
-                "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'neutralHadronShiftUp', qgc.DY_FILENAME)),
-                "colour": ROOT.kOrange-3,
-            },
-            {
-                "label": "Neutral hadron down",
-                "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'neutralHadronShiftDown', qgc.DY_FILENAME)),
-                "colour": ROOT.kOrange-3,
-                "linestyle": 2,
-            },
-            {
-                "label": "Photon up",
-                "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'photonShiftUp', qgc.DY_FILENAME)),
-                "colour": ROOT.kMagenta-3,
-            },
-            {
-                "label": "Photon down",
-                "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'photonShiftDown', qgc.DY_FILENAME)),
-                "colour": ROOT.kMagenta-3,
-                "linestyle": 2,
-            },
-            {
-                "label": "JEC up",
-                "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'jecsmear_directionUp', qgc.DY_FILENAME)),
-                "colour": ROOT.kGreen+2,
-            },
-            {
-                "label": "JEC down",
-                "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'jecsmear_directionDown', qgc.DY_FILENAME)),
-                "colour": ROOT.kGreen+2,
-                "linestyle": 2,
-            },
-            {
-                "label": "JER up",
-                "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'jersmear_directionUp', qgc.DY_FILENAME)),
-                "colour": ROOT.kOrange+3,
-            },
-            {
-                "label": "JER down",
-                "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'jersmear_directionDown', qgc.DY_FILENAME)),
-                "colour": ROOT.kOrange+3,
-                "linestyle": 2,
-            },
-            {
-                "label": "Pileup up",
-                "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'pileup_directionUp', qgc.DY_FILENAME)),
-                "colour": ROOT.kBlue-4,
-            },
-            {
-                "label": "Pileup down",
-                "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'pileup_directionDown', qgc.DY_FILENAME)),
-                "colour": ROOT.kBlue-4,
-                "linestyle": 2,
-            },
-        ]
-    }
+        input_singlemu_tfile = cu.open_root_file(os.path.join(src_dir, qgc.SINGLE_MU_FILENAME))
 
-    zpj_region_groomed_dict = zpj_region_dict.copy()
-    zpj_region_groomed_dict['dirname'] = 'ZPlusJets_QG_Unfold_groomed'
-    zpj_region_groomed_dict['name'] = 'ZPlusJets_groomed'
-    zpj_region_groomed_dict['label'] = 'Z+jets'
+        zpj_region_dict = {
+            "name": "ZPlusJets",
+            "dirname": "ZPlusJets_QG_Unfold",
+            "label": "Z+jets",
+            "data_tfile": input_singlemu_tfile,
+            "mc_tfile": input_mc_dy_mgpythia_tfile,
+            "alt_mc_tfile": input_mc_dy_mgherwig_tfile,
+            "alt_mc_label": "MG+Herwig++",
+            "tau_limits": {
+                'jet_puppiMultiplicity': (1E-10, 1E-4),
+                'jet_pTD': (1E-10, 1E-4),
+                'jet_LHA': (1E-10, 1E-4),
+                'jet_width': (1E-10, 1E-4),
+                'jet_thrust': (1E-10, 1E-4),
+                'jet_puppiMultiplicity_charged': (1E-10, 1E-4),
+                'jet_pTD_charged': (1E-10, 1E-4),
+                'jet_LHA_charged': (1E-10, 1E-4),
+                'jet_width_charged': (1E-10, 1E-4),
+                'jet_thrust_charged': (1E-10, 1E-4),
+            },
+            "systematics": [
+                {
+                    "label": "Neutral hadron up",
+                    "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'neutralHadronShiftUp', qgc.DY_FILENAME)),
+                    "colour": ROOT.kOrange-3,
+                },
+                {
+                    "label": "Neutral hadron down",
+                    "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'neutralHadronShiftDown', qgc.DY_FILENAME)),
+                    "colour": ROOT.kOrange-3,
+                    "linestyle": 2,
+                },
+                {
+                    "label": "Photon up",
+                    "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'photonShiftUp', qgc.DY_FILENAME)),
+                    "colour": ROOT.kMagenta-3,
+                },
+                {
+                    "label": "Photon down",
+                    "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'photonShiftDown', qgc.DY_FILENAME)),
+                    "colour": ROOT.kMagenta-3,
+                    "linestyle": 2,
+                },
+                {
+                    "label": "JEC up",
+                    "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'jecsmear_directionUp', qgc.DY_FILENAME)),
+                    "colour": ROOT.kGreen+2,
+                },
+                {
+                    "label": "JEC down",
+                    "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'jecsmear_directionDown', qgc.DY_FILENAME)),
+                    "colour": ROOT.kGreen+2,
+                    "linestyle": 2,
+                },
+                {
+                    "label": "JER up",
+                    "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'jersmear_directionUp', qgc.DY_FILENAME)),
+                    "colour": ROOT.kOrange+3,
+                },
+                {
+                    "label": "JER down",
+                    "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'jersmear_directionDown', qgc.DY_FILENAME)),
+                    "colour": ROOT.kOrange+3,
+                    "linestyle": 2,
+                },
+                {
+                    "label": "Pileup up",
+                    "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'pileup_directionUp', qgc.DY_FILENAME)),
+                    "colour": ROOT.kBlue-4,
+                },
+                {
+                    "label": "Pileup down",
+                    "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'pileup_directionDown', qgc.DY_FILENAME)),
+                    "colour": ROOT.kBlue-4,
+                    "linestyle": 2,
+                },
+            ]
+        }
 
-    regions = [
-        dijet_region_central_dict,
-        dijet_region_forward_dict,
-        dijet_region_central_groomed_dict,
-        dijet_region_forward_groomed_dict,
-        zpj_region_dict,
-        zpj_region_groomed_dict,
-    ]
+        if args.doZPJ:
+            regions.append(zpj_region_dict)
 
-    REGULARISE = None
-    REGULARISE = "tau"
-    # REGULARISE = "L"
+        if args.doZPJGroomed:
+            zpj_region_groomed_dict = zpj_region_dict.copy()
+            zpj_region_groomed_dict['dirname'] = 'ZPlusJets_QG_Unfold_groomed'
+            zpj_region_groomed_dict['name'] = 'ZPlusJets_groomed'
+            zpj_region_groomed_dict['label'] = 'Z+jets'
+            regions.append(zpj_region_groomed_dict)
+
+    # Setup various options
+    # --------------------------------------------------------------------------
+
+    REGULARIZE = None
+    REGULARIZE = "tau"
+    # REGULARIZE = "L"
+    REGULARIZE = args.regularize
 
     # Run with MC input instead of data
-    MC_INPUT = False
+    MC_INPUT = args.MCinput
     mc_append = "_MC" if MC_INPUT else ""
 
     # If True, use part of MC for response matrix, and separate part for unfolding
     # as independent test
-    MC_SPLIT = False
+    # Should always be false for data
+    MC_SPLIT = args.MCsplit if args.MCinput else False
     if MC_INPUT:
         mc_append += "_split" if MC_SPLIT else "_all"
 
-    SUBTRACT_FAKES = True
+    SUBTRACT_FAKES = True  # this should alwys be True
     sub_append = "_subFakes" if SUBTRACT_FAKES else ""
 
     append = ""
 
     # Add in systematics
-    DO_SYSTS = True
-    append += "_syst"
+    DO_SYSTS = args.doSysts
+    if DO_SYSTS:
+        append += "_syst"
 
-    output_dir = os.path.join(src_dir, "unfolding_better_regularise%s_target0p5%s%s_densityModeBinWidth_constraintArea%s" % (str(REGULARISE).capitalize(), mc_append, sub_append, append))
+    output_dir = os.path.join(src_dir, "unfolding_better_regulariZe%s_target0p5%s%s_densityModeBinWidth_constraintArea%s" % (str(REGULARIZE).capitalize(), mc_append, sub_append, append))
+    if args.outputDir:
+        output_dir = args.outputDir
     cu.check_dir_exists_create(output_dir)
 
     jet_algo = "AK4 PF PUPPI"
@@ -992,6 +1063,9 @@ if __name__ == "__main__":
 
     # Save hists etc to ROOT file for access later
     output_tfile = ROOT.TFile("%s/unfolding_result.root" % (output_dir), "RECREATE")
+
+    angles = [a for a in qgc.COMMON_VARS if a.var in args.angles]
+    print(angles)
 
     # Do unfolding per signal region
     # --------------------------------------------------------------------------
@@ -1039,8 +1113,7 @@ if __name__ == "__main__":
 
         # Do unfolding for each angle
         # ----------------------------------------------------------------------
-        for angle in qgc.COMMON_VARS[2:3]:
-        # for angle in qgc.COMMON_VARS[:]:
+        for angle in angles:
             angle_prepend = "groomed " if "groomed" in region['name'] else ""
             append = "%s_%s%s" % (region['name'], angle_prepend.lower(), angle.var)  # common str to put on filenames, etc
 
@@ -1206,15 +1279,15 @@ if __name__ == "__main__":
                 this_tdir.WriteTObject(hist_mc_reco_bg_subtracted, "mc_reco_bg_subtracted")
                 this_tdir.WriteTObject(hist_mc_reco_gen_binning_bg_subtracted, "mc_reco_gen_binning_bg_subtracted")
 
-            # Do any regularisation
+            # Do any regularization
             # ---------------------
             # tau = 1E-10
             tau = 0
-            if REGULARISE == "L":
+            if REGULARIZE == "L":
                 print("Regularizing with doScanL, please be patient...")
                 tau = unfolder.doScanL(output_dir=this_output_dir, n_scan=100,
                                        tau_min=1E-14, tau_max=1E-4)
-            elif REGULARISE == "tau":
+            elif REGULARIZE == "tau":
                 print("Regularizing with doScanTau, please be patient...")
                 tau = unfolder.doScanTau(output_dir=this_output_dir, n_scan=100,
                                          tau_min=region['tau_limits'][angle.var][0],
