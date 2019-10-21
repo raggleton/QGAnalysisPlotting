@@ -1171,7 +1171,7 @@ if __name__ == "__main__":
             # Add systematic errors as different response matrices
             # ----------------------------------------------------
             if DO_SYSTS:
-                chosen_rsp_bin = (15, 15)
+                chosen_rsp_bin = (18, 18)
                 print("nominal response bin content for", chosen_rsp_bin, hist_mc_gen_reco_map.GetBinContent(*chosen_rsp_bin))
                 for syst_dict in region['systematics']:
                     if 'tfile' in syst_dict:
@@ -1179,7 +1179,7 @@ if __name__ == "__main__":
                     else:
                         raise NotImplementedError("TODO: handle sources of unc other than from tfile (e.g. lumi)")
                     print("Adding systematic:", syst_dict['label'])
-                    print("    syst bin", chosen_rsp_bin, map_syst.GetBinContent(15, 15))
+                    print("    syst bin", chosen_rsp_bin, map_syst.GetBinContent(*chosen_rsp_bin))
                     unfolder.tunfolder.AddSysError(map_syst, syst_dict['label'], unfolder.orientation, ROOT.TUnfoldDensity.kSysErrModeMatrix)
 
             # Set what is to be unfolded
@@ -1226,7 +1226,7 @@ if __name__ == "__main__":
             unfolder.do_unfolding(tau)
             unfolded_1d = unfolder.get_output()
             unfolded_1d.SetName("unfolded_1d")
-            chosen_bin = 15
+            chosen_bin = 18
             print ("Bin %d:" % chosen_bin, unfolded_1d.GetBinContent(chosen_bin))
             print ("original uncert:", unfolded_1d.GetBinError(chosen_bin))
 
