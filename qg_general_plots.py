@@ -14,8 +14,9 @@ import common_utils as cu
 import qg_common as qgc
 
 import numpy as np
-import matplotlib.pyplot as plt
 import matplotlib as mpl
+mpl.use('agg')
+import matplotlib.pyplot as plt
 import matplotlib.ticker as plticker
 import matplotlib.patches as patches
 
