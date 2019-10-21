@@ -674,24 +674,27 @@ def draw_reco_folded(hist_folded, tau, hist_reco_data, hist_reco_mc, title, xtit
     plot.save(output_filename)
 
 
+
+
 if __name__ == "__main__":
+    # Setup files n things
+    # --------------------------------------------------------------------------
+    src_dir = "workdir_ak4puppi_data_trigBinningBetter2_jetAsymCut_pt1RecoConstituents_V11JEC_JER_tUnfoldBetter_target0p5_wta_groomed_fwdcenDijet"
+    src_dir_systs = os.path.join(src_dir, "systematics_files")
+
     # FOR Z+JETS:
-    input_mc_dy_mgpythia_tfile = cu.open_root_file("workdir_ak4puppi_mgpythia_newFlav_jetAsymCut_chargedVars_pt1RecoConstituents_V11JEC_JER_tUnfoldBetter_target0p5_noZReweight_wta_groomed_fwdcenDijet_betterLargeWeightVeto/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL.root")
+    input_mc_dy_mgpythia_tfile = cu.open_root_file(os.path.join(src_dir, qgc.DY_FILENAME))
+    input_mc_dy_mgherwig_tfile = cu.open_root_file(os.path.join(src_dir, qgc.DY_MG_HERWIG_FILENAME))
+    input_mc_dy_herwig_tfile = cu.open_root_file(os.path.join(src_dir, qgc.DY_HERWIG_FILENAME))
 
-    input_mc_dy_mgherwig_tfile = cu.open_root_file("workdir_ak4puppi_herwig_newFlav_jetAsymCut_chargedVars_pt1RecoConstituents_V11JEC_JER_tUnfoldBetter_target0p5_noZReweight_wta_groomed_fwdcenDijet_betterLargeWeightVeto/uhh2.AnalysisModuleRunner.MC.MC_MG_HERWIG_DYJetsToLL.root")
-    input_mc_dy_herwig_tfile = cu.open_root_file("workdir_ak4puppi_herwig_newFlav_jetAsymCut_chargedVars_pt1RecoConstituents_V11JEC_JER_tUnfoldBetter_target0p5_noZReweight_wta_groomed_fwdcenDijet_betterLargeWeightVeto/uhh2.AnalysisModuleRunner.MC.MC_HERWIG_DYJetsToLL.root")
-
-    input_singlemu_tfile = cu.open_root_file("workdir_ak4puppi_data_trigBinningBetter2_jetAsymCut_pt1RecoConstituents_V11JEC_JER_tUnfoldBetter_target0p5_wta_groomed_fwdcenDijet/uhh2.AnalysisModuleRunner.DATA.Data_SingleMu.root")
+    input_singlemu_tfile = cu.open_root_file(os.path.join(src_dir, qgc.SINGLE_MU_FILENAME))
 
     # FOR DIJET:
-    input_mc_qcd_mgpythia_tfile = cu.open_root_file("workdir_ak4puppi_mgpythia_newFlav_jetAsymCut_chargedVars_pt1RecoConstituents_V11JEC_JER_tUnfoldBetter_target0p5_noZReweight_wta_groomed_fwdcenDijet_betterLargeWeightVeto/uhh2.AnalysisModuleRunner.MC.MC_QCD.root")
+    input_mc_qcd_mgpythia_tfile = cu.open_root_file(os.path.join(src_dir, qgc.QCD_FILENAME))
+    input_mc_qcd_pythia_tfile = cu.open_root_file(os.path.join(src_dir, qgc.QCD_PYTHIA_ONLY_FILENAME))
+    input_mc_qcd_herwig_tfile = cu.open_root_file(os.path.join(src_dir, qgc.QCD_HERWIG_FILENAME))
 
-    input_mc_qcd_pythia_tfile = cu.open_root_file("workdir_ak4puppi_pythia_newFlav_jetAsymCut_chargedVars_pt1RecoConstituents_V11JEC_JER_tUnfoldBetter_target0p5_noZReweight/uhh2.AnalysisModuleRunner.MC.MC_PYTHIA-QCD.root")
-    input_mc_qcd_pythia_flat_tfile = cu.open_root_file("workdir_ak4puppi_pythia_newFlav_jetAsymCut_chargedVars_pt1RecoConstituents_V11JEC_JER_tUnfoldBetter_target0p5_noZReweight/uhh2.AnalysisModuleRunner.MC.MC_QCD_PYTHIA_ONLY.root")
-    input_mc_qcd_herwig_tfile = cu.open_root_file("workdir_ak4puppi_herwig_newFlav_jetAsymCut_chargedVars_pt1RecoConstituents_V11JEC_JER_tUnfoldBetter_target0p5_noZReweight_wta_groomed_fwdcenDijet_betterLargeWeightVeto/uhh2.AnalysisModuleRunner.MC.MC_HERWIG_QCD.root")
-
-    input_jetht_tfile = cu.open_root_file("workdir_ak4puppi_data_trigBinningBetter2_jetAsymCut_pt1RecoConstituents_V11JEC_JER_tUnfoldBetter_target0p5_wta_groomed_fwdcenDijet/uhh2.AnalysisModuleRunner.DATA.Data_JetHT_ZeroBias.root")
-
+    input_jetht_tfile = cu.open_root_file(os.path.join(src_dir, qgc.JETHT_ZB_FILENAME))
 
     dijet_region_dict_template = {
         "name": "Dijet",
@@ -714,18 +717,61 @@ if __name__ == "__main__":
             'jet_thrust_charged': (1E-13, 1E-10),
         },
         "systematics": [
-        #     {
-        #         "label": "Neutral hadron up",
-        #         "tfile": input_mc_qcd_mgpythia_neutralUp_tfile
-        #     },
-        #     {
-        #         "label": "Neutral hadron down",
-        #         "tfile": input_mc_qcd_mgpythia_neutralDown_tfile
-        #     },
-            # {
-            #     "label": "Alternate generator",
-            #     "tfile": input_mc_qcd_herwig_tfile
-            # },
+            {
+                "label": "Neutral hadron up",
+                "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'neutralHadronShiftUp', qgc.QCD_FILENAME)),
+                "colour": ROOT.kOrange-3,
+            },
+            {
+                "label": "Neutral hadron down",
+                "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'neutralHadronShiftDown', qgc.QCD_FILENAME)),
+                "colour": ROOT.kOrange-3,
+                "linestyle": 2,
+            },
+            {
+                "label": "Photon up",
+                "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'photonShiftUp', qgc.QCD_FILENAME)),
+                "colour": ROOT.kMagenta-3,
+            },
+            {
+                "label": "Photon down",
+                "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'photonShiftDown', qgc.QCD_FILENAME)),
+                "colour": ROOT.kMagenta-3,
+                "linestyle": 2,
+            },
+            {
+                "label": "JEC up",
+                "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'jecsmear_directionUp', qgc.QCD_FILENAME)),
+                "colour": ROOT.kGreen+2,
+            },
+            {
+                "label": "JEC down",
+                "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'jecsmear_directionDown', qgc.QCD_FILENAME)),
+                "colour": ROOT.kGreen+2,
+                "linestyle": 2,
+            },
+            {
+                "label": "JER up",
+                "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'jersmear_directionUp', qgc.QCD_FILENAME)),
+                "colour": ROOT.kOrange+3,
+            },
+            {
+                "label": "JER down",
+                "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'jersmear_directionDown', qgc.QCD_FILENAME)),
+                "colour": ROOT.kOrange+3,
+                "linestyle": 2,
+            },
+            {
+                "label": "Pileup up",
+                "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'pileup_directionUp', qgc.QCD_FILENAME)),
+                "colour": ROOT.kBlue-4,
+            },
+            {
+                "label": "Pileup down",
+                "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'pileup_directionDown', qgc.QCD_FILENAME)),
+                "colour": ROOT.kBlue-4,
+                "linestyle": 2,
+            },
         ]
     }
 
@@ -750,37 +796,82 @@ if __name__ == "__main__":
     dijet_region_forward_groomed_dict['name'] = 'Dijet_forward_groomed'
 
     zpj_region_dict = {
-            "name": "ZPlusJets",
-            "dirname": "ZPlusJets_QG_Unfold",
-            "label": "Z+jets",
-            "data_tfile": input_singlemu_tfile,
-            "mc_tfile": input_mc_dy_mgpythia_tfile,
-            "alt_mc_tfile": input_mc_dy_mgherwig_tfile,
-            "alt_mc_label": "MG+Herwig++",
-            # "mc_neutralUp_tfile": input_mc_dy_mgpythia_neutralUp_tfile,
-            # "mc_neutralDown_tfile": input_mc_dy_mgpythia_neutralDown_tfile,
-            "tau_limits": {
-                'jet_puppiMultiplicity': (1E-10, 1E-4),
-                'jet_pTD': (1E-10, 1E-4),
-                'jet_LHA': (1E-10, 1E-4),
-                'jet_width': (1E-10, 1E-4),
-                'jet_thrust': (1E-10, 1E-4),
-                'jet_puppiMultiplicity_charged': (1E-10, 1E-4),
-                'jet_pTD_charged': (1E-10, 1E-4),
-                'jet_LHA_charged': (1E-10, 1E-4),
-                'jet_width_charged': (1E-10, 1E-4),
-                'jet_thrust_charged': (1E-10, 1E-4),
+        "name": "ZPlusJets",
+        "dirname": "ZPlusJets_QG_Unfold",
+        "label": "Z+jets",
+        "data_tfile": input_singlemu_tfile,
+        "mc_tfile": input_mc_dy_mgpythia_tfile,
+        "alt_mc_tfile": input_mc_dy_mgherwig_tfile,
+        "alt_mc_label": "MG+Herwig++",
+        "tau_limits": {
+            'jet_puppiMultiplicity': (1E-10, 1E-4),
+            'jet_pTD': (1E-10, 1E-4),
+            'jet_LHA': (1E-10, 1E-4),
+            'jet_width': (1E-10, 1E-4),
+            'jet_thrust': (1E-10, 1E-4),
+            'jet_puppiMultiplicity_charged': (1E-10, 1E-4),
+            'jet_pTD_charged': (1E-10, 1E-4),
+            'jet_LHA_charged': (1E-10, 1E-4),
+            'jet_width_charged': (1E-10, 1E-4),
+            'jet_thrust_charged': (1E-10, 1E-4),
+        },
+        "systematics": [
+            {
+                "label": "Neutral hadron up",
+                "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'neutralHadronShiftUp', qgc.DY_FILENAME)),
+                "colour": ROOT.kOrange-3,
             },
-            "systematics": [
-            #     {
-            #         "label": "Neutral hadron up",
-            #         "tfile": input_mc_dy_mgpythia_neutralUp_tfile
-            #     },
-            #     {
-            #         "label": "Neutral hadron down",
-            #         "tfile": input_mc_dy_mgpythia_neutralDown_tfile
-            #     },
-            ]
+            {
+                "label": "Neutral hadron down",
+                "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'neutralHadronShiftDown', qgc.DY_FILENAME)),
+                "colour": ROOT.kOrange-3,
+                "linestyle": 2,
+            },
+            {
+                "label": "Photon up",
+                "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'photonShiftUp', qgc.DY_FILENAME)),
+                "colour": ROOT.kMagenta-3,
+            },
+            {
+                "label": "Photon down",
+                "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'photonShiftDown', qgc.DY_FILENAME)),
+                "colour": ROOT.kMagenta-3,
+                "linestyle": 2,
+            },
+            {
+                "label": "JEC up",
+                "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'jecsmear_directionUp', qgc.DY_FILENAME)),
+                "colour": ROOT.kGreen+2,
+            },
+            {
+                "label": "JEC down",
+                "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'jecsmear_directionDown', qgc.DY_FILENAME)),
+                "colour": ROOT.kGreen+2,
+                "linestyle": 2,
+            },
+            {
+                "label": "JER up",
+                "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'jersmear_directionUp', qgc.DY_FILENAME)),
+                "colour": ROOT.kOrange+3,
+            },
+            {
+                "label": "JER down",
+                "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'jersmear_directionDown', qgc.DY_FILENAME)),
+                "colour": ROOT.kOrange+3,
+                "linestyle": 2,
+            },
+            {
+                "label": "Pileup up",
+                "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'pileup_directionUp', qgc.DY_FILENAME)),
+                "colour": ROOT.kBlue-4,
+            },
+            {
+                "label": "Pileup down",
+                "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'pileup_directionDown', qgc.DY_FILENAME)),
+                "colour": ROOT.kBlue-4,
+                "linestyle": 2,
+            },
+        ]
     }
 
     zpj_region_groomed_dict = zpj_region_dict.copy()
