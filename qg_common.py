@@ -1,5 +1,7 @@
 """Common vars for doing QG plots"""
 
+from __future__ import print_function, division
+
 import numpy as np
 import argparse
 from collections import namedtuple

@@ -7,7 +7,7 @@ Thanks to Ashley, Dennis
 """
 
 
-from __future__ import print_function
+from __future__ import print_function, division
 
 import os
 os.nice(10)

@@ -7,6 +7,7 @@ Currently uses minimum required purity & stability in response matrix.
 Can also rebin other inputs according to the binning scheme from the main input.
 """
 
+from __future__ import print_function, division
 
 import argparse
 from MyStyle import My_Style
