@@ -674,6 +674,16 @@ def draw_reco_folded(hist_folded, tau, hist_reco_data, hist_reco_mc, title, xtit
     plot.save(output_filename)
 
 
+def check_entries(entries, message=""):
+    """Check that at least 1 Contribution has something in it"""
+    has_entries = [c.obj.GetEntries() > 0 for c in entries]
+    if not any(has_entries):
+        if message:
+            print("Skipping 0 entries (%s)" % (message))
+        else:
+            print("Skipping 0 entries")
+        return False
+    return True
 
 
 if __name__ == "__main__":
@@ -1332,19 +1342,19 @@ if __name__ == "__main__":
                 # this_pt_bin_tdir.WriteTObject(data_fake_reco_hist_bin_gen_binning, "data_fake_reco_hist_bin_gen_binning")
 
                 # The folded unfolded result
-                folded_unfolded_hist_bin_reco_binning = unfolder.get_var_hist_pt_binned(hist_data_folded, ibin_pt, binning_scheme="detector")
-                this_pt_bin_tdir.WriteTObject(folded_unfolded_hist_bin_reco_binning, "folded_unfolded_hist_bin_reco_binning")
+                # folded_unfolded_hist_bin_reco_binning = unfolder.get_var_hist_pt_binned(hist_data_folded, ibin_pt, binning_scheme="detector")
+                # this_pt_bin_tdir.WriteTObject(folded_unfolded_hist_bin_reco_binning, "folded_unfolded_hist_bin_reco_binning")
 
-                # here this is the thing to be unfolded, should be data or MC depending on MC_input flag
-                reco_hist_bin_reco_binning = unfolder.get_var_hist_pt_binned(reco_1d, ibin_pt, binning_scheme="detector")
-                this_pt_bin_tdir.WriteTObject(reco_hist_bin_reco_binning, "reco_hist_bin_reco_binning")
+                # # here this is the thing to be unfolded, should be data or MC depending on MC_INPUT flag
+                # reco_hist_bin_reco_binning = unfolder.get_var_hist_pt_binned(reco_1d, ibin_pt, binning_scheme="detector")
+                # this_pt_bin_tdir.WriteTObject(reco_hist_bin_reco_binning, "reco_hist_bin_reco_binning")
 
-                if subtract_fakes:
-                    reco_hist_bg_subtracted_bin_reco_binning = unfolder.get_var_hist_pt_binned(reco_1d_bg_subtracted, ibin_pt, binning_scheme="detector")
-                    this_pt_bin_tdir.WriteTObject(reco_hist_bg_subtracted_bin_reco_binning, "reco_hist_bg_subtracted_bin_reco_binning")
+                # if SUBTRACT_FAKES:
+                #     reco_hist_bg_subtracted_bin_reco_binning = unfolder.get_var_hist_pt_binned(reco_1d_bg_subtracted, ibin_pt, binning_scheme="detector")
+                #     this_pt_bin_tdir.WriteTObject(reco_hist_bg_subtracted_bin_reco_binning, "reco_hist_bg_subtracted_bin_reco_binning")
 
-                mc_reco_hist_bin_reco_binning = unfolder.get_var_hist_pt_binned(hist_mc_reco, ibin_pt, binning_scheme="detector")
-                this_pt_bin_tdir.WriteTObject(mc_reco_hist_bin_reco_binning, "mc_reco_hist_bin_reco_binning")
+                # mc_reco_hist_bin_reco_binning = unfolder.get_var_hist_pt_binned(hist_mc_reco, ibin_pt, binning_scheme="detector")
+                # this_pt_bin_tdir.WriteTObject(mc_reco_hist_bin_reco_binning, "mc_reco_hist_bin_reco_binning")
 
                 # if SUBTRACT_FAKES:
                 #     mc_reco_hist_bg_subtracted_bin_reco_binning = unfolder.get_var_hist_pt_binned(hist_mc_reco_bg_subtracted, ibin_pt, binning_scheme="detector")
@@ -1398,8 +1408,8 @@ if __name__ == "__main__":
                 # PLOT UNFOLDED DATA
                 # --------------------------------------------------------------
                 gen_colour = ROOT.kRed
-                unfolded_basic_colour = ROOT.kAzure+10
-                unfolded_stat_colour = ROOT.kGreen+1
+                unfolded_basic_colour = ROOT.kAzure+7
+                unfolded_stat_colour = ROOT.kGreen+2
                 unfolded_total_colour = ROOT.kBlack
 
                 # unnormalised version
@@ -1408,25 +1418,18 @@ if __name__ == "__main__":
                                  line_color=gen_colour, line_width=lw,
                                  marker_color=gen_colour, marker_size=0,
                                  normalise_hist=False),
-                    Contribution(unfolded_hist_bin, label="Unfolded (#tau = %.3g)" % (tau),
-                                 line_color=unfolded_basic_colour, line_width=lw,
-                                 marker_color=unfolded_basic_colour, marker_size=0,
-                                 subplot=mc_gen_hist_bin,
-                                 normalise_hist=False),
-                    Contribution(unfolded_hist_bin_stat_errors, label="Unfolded (#tau = %.3g) (stat err)" % (tau),
-                                 line_color=unfolded_stat_colour, line_width=lw, line_style=2,
-                                 marker_color=unfolded_stat_colour, marker_size=0,
-                                 subplot=mc_gen_hist_bin,
-                                 normalise_hist=False),
                     Contribution(unfolded_hist_bin_total_errors, label="Unfolded (#tau = %.3g) (total err)" % (tau),
-                                 line_color=unfolded_total_colour, line_width=lw, line_style=3,
+                                 line_color=unfolded_total_colour, line_width=lw, line_style=1,
                                  marker_color=unfolded_total_colour, marker_style=20, marker_size=0.75,
                                  subplot=mc_gen_hist_bin,
                                  normalise_hist=False),
+                    Contribution(unfolded_hist_bin_stat_errors, label="Unfolded (#tau = %.3g) (stat err)" % (tau),
+                                 line_color=unfolded_stat_colour, line_width=lw, line_style=1,
+                                 marker_color=unfolded_stat_colour, marker_size=0,
+                                 subplot=mc_gen_hist_bin,
+                                 normalise_hist=False),
                 ]
-                has_entries = [c.obj.GetEntries() > 0 for c in entries]
-                if not any(has_entries):
-                    print("Skipping 0 entries in", append, ibin_pt)
+                if not check_entries(entries, "%s %d" % (append, ibin_pt)):
                     continue
                 title = "%s\n%s region\n%g < p_{T}^{jet} < %g GeV" % (jet_algo, region['label'], pt_bin_edges_gen[ibin_pt], pt_bin_edges_gen[ibin_pt+1])
                 plot = Plot(entries,
@@ -1453,39 +1456,22 @@ if __name__ == "__main__":
                                  marker_color=gen_colour, marker_size=0,
                                  subplot=unfolded_hist_bin_total_errors,
                                  normalise_hist=True),
-                    # Contribution(alt_mc_gen_hist_bin, label="Generator (%s)" % region['alt_mc_label'],
-                    #              line_color=ROOT.kAzure, line_width=lw,
-                    #              marker_color=ROOT.kAzure, marker_size=0,
-                    #              subplot=unfolded_hist_bin_stat_errors,
-                    #              normalise_hist=True),
-                    # Contribution(unfolded_hist_bin, label="Unfolded (#tau = %.3g)" % (tau),
-                    #              line_color=unfolded_basic_colour, line_width=lw,
-                    #              marker_color=unfolded_basic_colour, marker_size=0,
-                    #              subplot=mc_gen_hist_bin,
-                    #              normalise_hist=True),
-                    # Contribution(unfolded_hist_bin_stat_errors, label="Unfolded (#tau = %.3g)" % (tau),
-                    #              line_color=unfolded_stat_colour, line_width=lw, line_style=1,
-                    #              marker_color=unfolded_stat_colour, marker_style=20, marker_size=0.75,
-                    #              normalise_hist=True),
-                    Contribution(unfolded_hist_bin_stat_errors, label="Unfolded (#tau = %.3g) (stat err)" % (tau),
-                                 line_color=unfolded_stat_colour, line_width=lw, line_style=2,
-                                 marker_color=unfolded_stat_colour, marker_size=0,
-                                 normalise_hist=True),
                     Contribution(unfolded_hist_bin_total_errors, label="Unfolded (#tau = %.3g) (total err)" % (tau),
-                                 line_color=unfolded_total_colour, line_width=lw, line_style=3,
+                                 line_color=unfolded_total_colour, line_width=lw, line_style=1,
                                  marker_color=unfolded_total_colour, marker_style=20, marker_size=0.75,
                                  normalise_hist=True),
+                    Contribution(unfolded_hist_bin_stat_errors, label="Unfolded (#tau = %.3g) (stat err)" % (tau),
+                                 line_color=unfolded_stat_colour, line_width=lw, line_style=1,
+                                 marker_color=unfolded_stat_colour, marker_size=0,
+                                 normalise_hist=True),
                 ]
-                has_entries = [c.obj.GetEntries() > 0 for c in entries]
-                if not any(has_entries):
-                    print("Skipping 0 entries in", append, ibin_pt)
+                if not check_entries(entries, "%s %d" % (append, ibin_pt)):
                     continue
-                ytitle= "p.d.f."
                 plot = Plot(entries,
                             what="hist",
                             title=title,
                             xtitle="Particle-level "+angle_str,
-                            ytitle=ytitle,
+                            ytitle="p.d.f",
                             subplot_type='ratio',
                             subplot_title='Gen / Unfolded',
                             subplot_limits=(0.5, 1.5))
@@ -1506,41 +1492,22 @@ if __name__ == "__main__":
                                  marker_color=gen_colour, marker_size=0,
                                  subplot=unfolded_hist_bin_total_errors_div_bin_width,
                                  normalise_hist=True),
-                    # Contribution(qgp.hist_divide_bin_width(alt_mc_gen_hist_bin), label="Generator (%s)" % region['alt_mc_label'],
-                    #              line_color=ROOT.kAzure, line_width=lw,
-                    #              marker_color=ROOT.kAzure, marker_size=0,
-                    #              subplot=unfolded_hist_bin_stat_errors_div_bin_width,
-                    #              normalise_hist=True),
-                    # Contribution(unfolded_hist_bin, label="Unfolded (#tau = %.3g)" % (tau),
-                    #              line_color=unfolded_basic_colour, line_width=lw,
-                    #              marker_color=unfolded_basic_colour, marker_size=0,
-                    #              subplot=mc_gen_hist_bin,
-                    #              normalise_hist=True),
-                    Contribution(unfolded_hist_bin_stat_errors_div_bin_width, label="Unfolded (#tau = %.3g)" % (tau),
-                                 line_color=unfolded_stat_colour, line_width=lw, line_style=1,
-                                 marker_color=unfolded_stat_colour, marker_style=20, marker_size=0.75,
-                                 # subplot=mc_gen_hist_bin_div_bin_width,
-                                 normalise_hist=True),
-                    # Contribution(unfolded_hist_bin_stat_errors, label="Unfolded (#tau = %.3g) (stat err)" % (tau),
-                    #              line_color=unfolded_stat_colour, line_width=lw, line_style=2,
-                    #              marker_color=unfolded_stat_colour, marker_size=0,
-                    #              subplot=mc_gen_hist_bin,
-                    #              normalise_hist=True),
                     Contribution(unfolded_hist_bin_total_errors_div_bin_width, label="Unfolded (#tau = %.3g) (total err)" % (tau),
-                                 line_color=unfolded_total_colour, line_width=lw, line_style=3,
+                                 line_color=unfolded_total_colour, line_width=lw, line_style=1,
                                  marker_color=unfolded_total_colour, marker_style=20, marker_size=0.75,
                                  normalise_hist=True),
+                    Contribution(unfolded_hist_bin_stat_errors_div_bin_width, label="Unfolded (#tau = %.3g) (stat err)" % (tau),
+                                 line_color=unfolded_stat_colour, line_width=lw, line_style=1,
+                                 marker_color=unfolded_stat_colour, marker_size=0,
+                                 normalise_hist=True),
                 ]
-                has_entries = [c.obj.GetEntries() > 0 for c in entries]
-                if not any(has_entries):
-                    print("Skipping 0 entries in", append, ibin_pt)
+                if not check_entries(entries, "%s %d" % (append, ibin_pt)):
                     continue
-                ytitle= "p.d.f."
                 plot = Plot(entries,
                             what="hist",
                             title=title,
                             xtitle="Particle-level "+angle_str,
-                            ytitle=ytitle,
+                            ytitle="p.d.f.",
                             subplot_type='ratio',
                             subplot_title='Gen / Unfolded',
                             subplot_limits=(0.5, 1.5))
@@ -1551,20 +1518,8 @@ if __name__ == "__main__":
                 plot.plot("NOSTACK E1")
                 plot.save("%s/unfolded_%s_bin_%d_divBinWidth.%s" % (this_output_dir, append, ibin_pt, OUTPUT_FMT))
 
-
                 summary_1d_entries.append([
-                    # (unfolded_hist_bin_stat_errors,
-                    #     dict(label="Unfolded (#tau = %.3g)" % (tau),
-                    #          line_color=unfolded_total_colour, line_width=lw, line_style=3,
-                    #          marker_color=unfolded_total_colour, marker_style=20, marker_size=0.75,
-                    #          subplot=mc_gen_hist_bin,
-                    #          normalise_hist=True)),  # unfolded data
-                    # (mc_gen_hist_bin,
-                    #     dict(label="MG+Pythia8",
-                    #          line_color=gen_colour, line_width=lw,
-                    #          marker_color=gen_colour, marker_size=0,
-                    #          normalise_hist=True)),  # generator
-                    (unfolded_hist_bin_stat_errors_div_bin_width,
+                    (unfolded_hist_bin_total_errors_div_bin_width,
                         dict(label="Unfolded\n($\\tau = %.3g$)" % (tau),
                              line_color=unfolded_total_colour, line_width=lw, line_style=3,
                              marker_color=unfolded_total_colour, marker_style=20, marker_size=0.75,
@@ -1593,16 +1548,14 @@ if __name__ == "__main__":
                                  subplot=mc_reco_hist_bin_gen_binning,
                                  normalise_hist=True),
                 ]
-                has_entries = [c.obj.GetEntries() > 0 for c in entries]
-                if not any(has_entries):
-                    print("Skipping 0 entries in", append, ibin_pt)
+                if not check_entries(entries, "%s %d" % (append, ibin_pt)):
                     continue
                 title = "%s\n%s region\n%g < p_{T}^{Jet} < %g GeV" % (jet_algo, region['label'], pt_bin_edges_gen[ibin_pt], pt_bin_edges_gen[ibin_pt+1])
                 plot = Plot(entries,
                             what="hist",
                             title=title,
                             xtitle="Detector-level " + angle_str,
-                            ytitle=ytitle,
+                            ytitle="p.d.f.",
                             subplot_type='ratio',
                             subplot_title='Data / MC',
                             subplot_limits=(0.8, 1.2))
@@ -1627,16 +1580,14 @@ if __name__ == "__main__":
                                      subplot=mc_reco_hist_bg_subtracted_bin_gen_binning,
                                      normalise_hist=True),
                     ]
-                    has_entries = [c.obj.GetEntries() > 0 for c in entries]
-                    if not any(has_entries):
-                        print("Skipping 0 entries in", append, ibin_pt)
+                    if not check_entries(entries, "%s %d" % (append, ibin_pt)):
                         continue
                     title = "%s\n%s region\n%g < p_{T}^{Jet} < %g GeV" % (jet_algo, region['label'], pt_bin_edges_gen[ibin_pt], pt_bin_edges_gen[ibin_pt+1])
                     plot = Plot(entries,
                                 what="hist",
                                 title=title,
                                 xtitle="Detector-level " + angle_str,
-                                ytitle=ytitle,
+                                ytitle="p.d.f.",
                                 subplot_type='ratio',
                                 subplot_title='Data / MC',
                                 subplot_limits=(0.8, 1.2))
@@ -1648,152 +1599,146 @@ if __name__ == "__main__":
                     plot.save("%s/detector_gen_binning_bg_subtracted_%s_bin_%d.%s" % (this_output_dir, append, ibin_pt, OUTPUT_FMT))
 
                 # Reco only, detector-binning
-                entries = [
-                    Contribution(mc_reco_hist_bin_reco_binning,
-                                 label="MC",
-                                 line_color=reco_mc_colour, line_width=lw,
-                                 marker_color=reco_mc_colour, marker_size=0,
-                                 normalise_hist=True),
-                    Contribution(reco_hist_bin_reco_binning,
-                                 label="Data",
-                                 line_color=reco_data_colour, line_width=lw,
-                                 marker_color=reco_data_colour, marker_style=20, marker_size=0.75,
-                                 subplot=mc_reco_hist_bin_reco_binning,
-                                 normalise_hist=True),
-                ]
-                has_entries = [c.obj.GetEntries() > 0 for c in entries]
-                if not any(has_entries):
-                    print("Skipping 0 entries in", append, ibin_pt)
-                    continue
-                title = "%s\n%s region\n%g < p_{T}^{Jet} < %g GeV" % (jet_algo, region['label'], pt_bin_edges_gen[ibin_pt], pt_bin_edges_gen[ibin_pt+1])
-                plot = Plot(entries,
-                            what="hist",
-                            title=title,
-                            xtitle="Detector-level " + angle_str,
-                            ytitle=ytitle,
-                            subplot_type='ratio',
-                            subplot_title='Data / MC',
-                            subplot_limits=(0.8, 1.2))
-                plot.legend.SetX1(0.6)
-                plot.legend.SetY1(0.75)
-                plot.legend.SetX2(0.98)
-                plot.legend.SetY2(0.9)
-                plot.plot("NOSTACK E1")
-                plot.save("%s/detector_reco_binning_%s_bin_%d.%s" % (this_output_dir, append, ibin_pt, OUTPUT_FMT))
+                # FIXME: shouldn't we use reco binning here?
+                # entries = [
+                #     Contribution(mc_reco_hist_bin_reco_binning,
+                #                  label="MC",
+                #                  line_color=reco_mc_colour, line_width=lw,
+                #                  marker_color=reco_mc_colour, marker_size=0,
+                #                  normalise_hist=True),
+                #     Contribution(reco_hist_bin_reco_binning,
+                #                  label="Data",
+                #                  line_color=reco_data_colour, line_width=lw,
+                #                  marker_color=reco_data_colour, marker_style=20, marker_size=0.75,
+                #                  subplot=mc_reco_hist_bin_reco_binning,
+                #                  normalise_hist=True),
+                # ]
+                # if not check_entries(entries, "%s %d" % (append, ibin_pt)):
+                #     continue
+                # title = "%s\n%s region\n%g < p_{T}^{Jet} < %g GeV" % (jet_algo, region['label'], pt_bin_edges_gen[ibin_pt], pt_bin_edges_gen[ibin_pt+1])
+                # plot = Plot(entries,
+                #             what="hist",
+                #             title=title,
+                #             xtitle="Detector-level " + angle_str,
+                #             ytitle="p.d.f.",
+                #             subplot_type='ratio',
+                #             subplot_title='Data / MC',
+                #             subplot_limits=(0.8, 1.2))
+                # plot.legend.SetX1(0.6)
+                # plot.legend.SetY1(0.75)
+                # plot.legend.SetX2(0.98)
+                # plot.legend.SetY2(0.9)
+                # plot.plot("NOSTACK E1")
+                # plot.save("%s/detector_reco_binning_%s_bin_%d.%s" % (this_output_dir, append, ibin_pt, OUTPUT_FMT))
 
-                if subtract_fakes:
-                    # Same but background-subtracted
-                    entries = [
-                        Contribution(mc_reco_hist_bg_subtracted_bin_reco_binning,
-                                     label="MC (bg-subtracted)",
-                                     line_color=reco_mc_colour, line_width=lw,
-                                     marker_color=reco_mc_colour, marker_size=0,
-                                     normalise_hist=True),
-                        Contribution(reco_hist_bg_subtracted_bin_reco_binning,
-                                     label="Data (bg-subtracted)",
-                                     line_color=reco_data_colour, line_width=lw,
-                                     marker_color=reco_data_colour, marker_style=20, marker_size=0.75,
-                                     subplot=mc_reco_hist_bg_subtracted_bin_reco_binning,
-                                     normalise_hist=True),
-                    ]
-                    has_entries = [c.obj.GetEntries() > 0 for c in entries]
-                    if not any(has_entries):
-                        print("Skipping 0 entries in", append, ibin_pt)
-                        continue
-                    title = "%s\n%s region\n%g < p_{T}^{Jet} < %g GeV" % (jet_algo, region['label'], pt_bin_edges_gen[ibin_pt], pt_bin_edges_gen[ibin_pt+1])
-                    plot = Plot(entries,
-                                what="hist",
-                                title=title,
-                                xtitle="Detector-level " + angle_str,
-                                ytitle=ytitle,
-                                subplot_type='ratio',
-                                subplot_title='Data / MC',
-                                subplot_limits=(0.8, 1.2))
-                    plot.legend.SetX1(0.6)
-                    plot.legend.SetY1(0.75)
-                    plot.legend.SetX2(0.98)
-                    plot.legend.SetY2(0.9)
-                    plot.plot("NOSTACK E1")
-                    plot.save("%s/detector_reco_binning_bg_subtracted_%s_bin_%d.%s" % (this_output_dir, append, ibin_pt, OUTPUT_FMT))
+                # if SUBTRACT_FAKES:
+                #     # Same but background-subtracted
+                #     entries = [
+                #         Contribution(mc_reco_hist_bg_subtracted_bin_reco_binning,
+                #                      label="MC (bg-subtracted)",
+                #                      line_color=reco_mc_colour, line_width=lw,
+                #                      marker_color=reco_mc_colour, marker_size=0,
+                #                      normalise_hist=True),
+                #         Contribution(reco_hist_bg_subtracted_bin_reco_binning,
+                #                      label="Data (bg-subtracted)",
+                #                      line_color=reco_data_colour, line_width=lw,
+                #                      marker_color=reco_data_colour, marker_style=20, marker_size=0.75,
+                #                      subplot=mc_reco_hist_bg_subtracted_bin_reco_binning,
+                #                      normalise_hist=True),
+                #     ]
+                #     if not check_entries(entries, "%s %d" % (append, ibin_pt)):
+                #         continue
+                #     title = "%s\n%s region\n%g < p_{T}^{Jet} < %g GeV" % (jet_algo, region['label'], pt_bin_edges_gen[ibin_pt], pt_bin_edges_gen[ibin_pt+1])
+                #     plot = Plot(entries,
+                #                 what="hist",
+                #                 title=title,
+                #                 xtitle="Detector-level " + angle_str,
+                #                 ytitle="p.d.f.",
+                #                 subplot_type='ratio',
+                #                 subplot_title='Data / MC',
+                #                 subplot_limits=(0.8, 1.2))
+                #     plot.legend.SetX1(0.6)
+                #     plot.legend.SetY1(0.75)
+                #     plot.legend.SetX2(0.98)
+                #     plot.legend.SetY2(0.9)
+                #     plot.plot("NOSTACK E1")
+                #     plot.save("%s/detector_reco_binning_bg_subtracted_%s_bin_%d.%s" % (this_output_dir, append, ibin_pt, OUTPUT_FMT))
 
                 # PLOT FOLDED UNFOLDED DATA
                 # --------------------------------------------------------------
                 # Reco + folded, detector binning
-                reco_mc_colour = ROOT.kGreen+2
-                reco_data_colour = ROOT.kRed
-                reco_folded_colour = ROOT.kAzure+1
-                entries = [
-                    Contribution(mc_reco_hist_bg_subtracted_bin_reco_binning if subtract_fakes else mc_reco_hist_bin_reco_binning,
-                                 label="MC (reco, bg-subtracted)" if subtract_fakes else "MC (reco)",
-                                 line_color=reco_mc_colour, line_width=lw,
-                                 marker_color=reco_mc_colour, marker_size=0,
-                                 normalise_hist=True),
-                    Contribution(reco_hist_bg_subtracted_bin_reco_binning if subtract_fakes else reco_hist_bin_reco_binning,
-                                 label="Data (reco, bg-subtracted)" if subtract_fakes else "Data (reco)",
-                                 line_color=reco_data_colour, line_width=lw,
-                                 marker_color=reco_data_colour, marker_size=0,
-                                 subplot=mc_reco_hist_bin_reco_binning,
-                                 normalise_hist=True),
-                    Contribution(folded_unfolded_hist_bin_reco_binning,
-                                 label="Folded unfolded data (#tau = %.3g)" % (tau),
-                                 line_color=reco_folded_colour, line_width=lw,
-                                 marker_color=reco_folded_colour, marker_size=0,
-                                 subplot=mc_reco_hist_bin_reco_binning,
-                                 normalise_hist=True),
-                ]
-                has_entries = [c.obj.GetEntries() > 0 for c in entries]
-                if not any(has_entries):
-                    print("Skipping 0 entries in", append, ibin_pt)
-                    continue
-                title = "%s\n%s region\n%g < p_{T}^{Jet} < %g GeV" % (jet_algo, region['label'], pt_bin_edges_gen[ibin_pt], pt_bin_edges_gen[ibin_pt+1])
-                plot = Plot(entries,
-                            what="hist",
-                            title=title,
-                            xtitle="Detector-level " + angle_str,
-                            ytitle=ytitle,
-                            subplot_type='ratio',
-                            subplot_title='Data / MC',
-                            subplot_limits=(0.8, 1.2))
-                plot.legend.SetX1(0.6)
-                plot.legend.SetY1(0.72)
-                plot.legend.SetX2(0.98)
-                plot.legend.SetY2(0.9)
-                plot.plot("NOSTACK E1")
-                plot.save("%s/detector_folded_%s_bin_%d.%s" % (this_output_dir, append, ibin_pt, OUTPUT_FMT))
+                # FIXME: shouldn't this use RECO gen bin
+                # reco_mc_colour = ROOT.kGreen+2
+                # reco_data_colour = ROOT.kRed
+                # reco_folded_colour = ROOT.kAzure+1
+                # entries = [
+                #     Contribution(mc_reco_hist_bg_subtracted_bin_reco_binning if SUBTRACT_FAKES else mc_reco_hist_bin_reco_binning,
+                #                  label="MC (reco, bg-subtracted)" if SUBTRACT_FAKES else "MC (reco)",
+                #                  line_color=reco_mc_colour, line_width=lw,
+                #                  marker_color=reco_mc_colour, marker_size=0,
+                #                  normalise_hist=True),
+                #     Contribution(reco_hist_bg_subtracted_bin_reco_binning if SUBTRACT_FAKES else reco_hist_bin_reco_binning,
+                #                  label="Data (reco, bg-subtracted)" if SUBTRACT_FAKES else "Data (reco)",
+                #                  line_color=reco_data_colour, line_width=lw,
+                #                  marker_color=reco_data_colour, marker_size=0,
+                #                  subplot=mc_reco_hist_bin_reco_binning,
+                #                  normalise_hist=True),
+                #     Contribution(folded_unfolded_hist_bin_reco_binning,
+                #                  label="Folded unfolded data (#tau = %.3g)" % (tau),
+                #                  line_color=reco_folded_colour, line_width=lw,
+                #                  marker_color=reco_folded_colour, marker_size=0,
+                #                  subplot=mc_reco_hist_bin_reco_binning,
+                #                  normalise_hist=True),
+                # ]
+                # if not check_entries(entries, "%s %d" % (append, ibin_pt)):
+                #     continue
+                # title = "%s\n%s region\n%g < p_{T}^{Jet} < %g GeV" % (jet_algo, region['label'], pt_bin_edges_gen[ibin_pt], pt_bin_edges_gen[ibin_pt+1])
+                # plot = Plot(entries,
+                #             what="hist",
+                #             title=title,
+                #             xtitle="Detector-level " + angle_str,
+                #             ytitle="p.d.f.",
+                #             subplot_type='ratio',
+                #             subplot_title='Data / MC',
+                #             subplot_limits=(0.8, 1.2))
+                # plot.legend.SetX1(0.6)
+                # plot.legend.SetY1(0.72)
+                # plot.legend.SetX2(0.98)
+                # plot.legend.SetY2(0.9)
+                # plot.plot("NOSTACK E1")
+                # plot.save("%s/detector_folded_%s_bin_%d.%s" % (this_output_dir, append, ibin_pt, OUTPUT_FMT))
 
                 # Folded, but only comparing data with data to check it is sane
-                entries = [
-                    Contribution(reco_hist_bg_subtracted_bin_reco_binning if subtract_fakes else reco_hist_bin_reco_binning,
-                                 label="Data (reco, bg-subtracted)" if subtract_fakes else "Data (reco)",
-                                 line_color=reco_data_colour, line_width=lw,
-                                 marker_color=reco_data_colour, marker_size=0,
-                                 normalise_hist=True),
-                    Contribution(folded_unfolded_hist_bin_reco_binning,
-                                 label="Folded unfolded data (#tau = %.3g)" % (tau),
-                                 line_color=reco_folded_colour, line_width=lw,
-                                 marker_color=reco_folded_colour, marker_size=0,
-                                 subplot=reco_hist_bin_reco_binning,
-                                 normalise_hist=True),
-                ]
-                has_entries = [c.obj.GetEntries() > 0 for c in entries]
-                if not any(has_entries):
-                    print("Skipping 0 entries in", append, ibin_pt)
-                    continue
-                title = "%s\n%s region\n%g < p_{T}^{Jet} < %g GeV" % (jet_algo, region['label'], pt_bin_edges_gen[ibin_pt], pt_bin_edges_gen[ibin_pt+1])
-                plot = Plot(entries,
-                            what="hist",
-                            title=title,
-                            xtitle="Detector-level " + angle_str,
-                            ytitle=ytitle,
-                            subplot_type='ratio',
-                            subplot_title='Unfolded / reco',
-                            subplot_limits=(0.8, 1.2))
-                plot.legend.SetX1(0.6)
-                plot.legend.SetY1(0.75)
-                plot.legend.SetX2(0.98)
-                plot.legend.SetY2(0.9)
-                plot.plot("NOSTACK E1")
-                plot.save("%s/detector_folded_only_data_%s_bin_%d.%s" % (this_output_dir, append, ibin_pt, OUTPUT_FMT))
+                # entries = [
+                #     Contribution(reco_hist_bg_subtracted_bin_reco_binning if SUBTRACT_FAKES else reco_hist_bin_reco_binning,
+                #                  label="Data (reco, bg-subtracted)" if SUBTRACT_FAKES else "Data (reco)",
+                #                  line_color=reco_data_colour, line_width=lw,
+                #                  marker_color=reco_data_colour, marker_size=0,
+                #                  normalise_hist=True),
+                #     Contribution(folded_unfolded_hist_bin_reco_binning,
+                #                  label="Folded unfolded data (#tau = %.3g)" % (tau),
+                #                  line_color=reco_folded_colour, line_width=lw,
+                #                  marker_color=reco_folded_colour, marker_size=0,
+                #                  subplot=reco_hist_bin_reco_binning,
+                #                  normalise_hist=True),
+                # ]
+                # if not check_entries(entries, "%s %d" % (append, ibin_pt)):
+                #     continue
+                # title = "%s\n%s region\n%g < p_{T}^{Jet} < %g GeV" % (jet_algo, region['label'], pt_bin_edges_gen[ibin_pt], pt_bin_edges_gen[ibin_pt+1])
+                # plot = Plot(entries,
+                #             what="hist",
+                #             title=title,
+                #             xtitle="Detector-level " + angle_str,
+                #             ytitle="p.d.f.",
+                #             subplot_type='ratio',
+                #             subplot_title='Unfolded / reco',
+                #             subplot_limits=(0.8, 1.2))
+                # plot.legend.SetX1(0.6)
+                # plot.legend.SetY1(0.75)
+                # plot.legend.SetX2(0.98)
+                # plot.legend.SetY2(0.9)
+                # plot.plot("NOSTACK E1")
+                # plot.save("%s/detector_folded_only_data_%s_bin_%d.%s" % (this_output_dir, append, ibin_pt, OUTPUT_FMT))
 
             ylim=None
             # skip first entries as low pt bin
@@ -1807,10 +1752,10 @@ if __name__ == "__main__":
             xlim = (50, 2000)
             if "ZPlusJets" in region['name']:
                 xlim = (50, 614)
-            qgp.do_mean_rms_summary_plot(summary_1d_entries[:], bins,
+            qgp.do_mean_rms_summary_plot(summary_1d_entries, bins,
                                          "%s/%s_box_dijet_mpl.%s" % (this_output_dir, v, OUTPUT_FMT),
                                          var_label=var_label,
-                                         xlim=(50, 2000),
+                                         xlim=xlim,
                                          region_title=region['label'].lower())
 
     print("Saved hists to", output_tfile.GetName())
