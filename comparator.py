@@ -231,8 +231,10 @@ class Plot(object):
         self.ytitle = ytitle
         self.xlim = xlim
         self.ylim = ylim
-        self.y_padding_linear = 1.6  # factor to auto extend y limits for linear scale
-        self.y_padding_log = 10  # factor to auto extend y limits for log scale
+        self.y_padding_max_linear = 1.6  # factor to auto extend y upper limit for linear scale
+        self.y_padding_max_log = 10  # factor to auto extend y upper limit for log scale
+        self.y_padding_min_linear = 1  # factor to auto extend y lower limit for linear scale
+        self.y_padding_min_log = 0.1  # factor to auto extend y lower limit for log scale
         self.do_legend = legend
         self.legend = ROOT.TLegend(0.65, 0.6, 0.94, 0.85) if legend else None
         self.do_extend = extend
@@ -508,9 +510,18 @@ class Plot(object):
             # GetYaxis().GetXmax() doesnt work either
             ymax = max([o.GetMaximum() for o in self.contributions_objs])
             if self.main_pad.GetLogy():
-                modifier.SetMaximum(ymax * self.y_padding_log)
+                modifier.SetMaximum(ymax * self.y_padding_max_log)
             else:
-                modifier.SetMaximum(ymax * self.y_padding_linear)
+                modifier.SetMaximum(ymax * self.y_padding_max_linear)
+
+            # somehow broken
+            # ymin = min([o.GetMinimum() for o in self.contributions_objs])
+            # if self.main_pad.GetLogy():
+            #     pass
+            #     # if ymin > 0:
+            #     #     modifier.SetMinimum(ymin * self.y_padding_min_log)
+            # else:
+            #     modifier.SetMinimum(ymin * self.y_padding_min_linear)
 
         # Draw it again to update
         if self.plot_what == "graph":
