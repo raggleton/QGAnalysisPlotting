@@ -383,7 +383,16 @@ class Plot(object):
 
     def set_logy(self, state=True):
         # Call AFTER plot()
-        self.main_pad.SetLogy(int(state))
+        try:
+            self.main_pad.SetLogy(int(state))
+        except AttributeError as e:
+            print("")
+            print(e)
+            print("")
+            print("You should run set_logy() after plot()")
+            print("")
+            raise
+
         # Don't make subplot log y...we never want that
         # if self.subplot_pad:
             # self.subplot_pad.SetLogy(int(state))
