@@ -698,7 +698,7 @@ def check_entries(entries, message=""):
     return True
 
 
-def plot_systematic_shifts(total_hist, stat_hist, syst_shifts, systs, output_filename, title, angle_str):
+def plot_uncertainty_shifts(total_hist, stat_hist, syst_shifts, systs, output_filename, title, angle_str):
     """
     Parameters
     ----------
@@ -1734,19 +1734,19 @@ if __name__ == "__main__":
                              normalise_hist=True)),  # generator
                 ])
 
-                # PLOT SYSTEMATIC SHIFTS
+                # PLOT UNCERTAINTY SHIFTS
                 # --------------------------------------------------------------
                 systematic_shift_hists_bin = [unfolder.get_var_hist_pt_binned(h, ibin_pt, binning_scheme='generator')
                                               for h in systematic_shift_hists]
                 unfolded_stat_error_bin = unfolder.get_var_hist_pt_binned(error_stat_1d, ibin_pt, binning_scheme="generator")
                 unfolded_total_error_bin =  unfolder.get_var_hist_pt_binned(unfolded_1d, ibin_pt, binning_scheme="generator")
-                plot_systematic_shifts(total_hist=unfolded_total_error_bin,
-                                       stat_hist=unfolded_stat_error_bin,
-                                       syst_shifts=systematic_shift_hists_bin,
-                                       systs=region['systematics'],
-                                       output_filename='%s/unfolded_systs_%s_bin_%d.%s' % (this_output_dir, append, ibin_pt, OUTPUT_FMT),
-                                       title=title,
-                                       angle_str=angle_str)
+                plot_uncertainty_shifts(total_hist=unfolded_total_error_bin,
+                                        stat_hist=unfolded_stat_error_bin,
+                                        syst_shifts=systematic_shift_hists_bin,
+                                        systs=region['systematics'],
+                                        output_filename='%s/unfolded_systs_%s_bin_%d.%s' % (this_output_dir, append, ibin_pt, OUTPUT_FMT),
+                                        title=title,
+                                        angle_str=angle_str)
 
                 # PLOT RECO DISTRIBUTIONS
                 # --------------------------------------------------------------
