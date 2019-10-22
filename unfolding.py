@@ -703,15 +703,24 @@ def plot_systematic_shifts(total_hist, stat_hist, syst_shifts, systs, output_fil
     Parameters
     ----------
     total_hist : TH1
-        Description
+        Distribution with total uncertainty
     stat_hist : TH1
-        Description
+        Distribution with stat-only uncertainties
     syst_shifts : list[TH1]
-        Description
+        Distributions with 1-sigma shift from systematics
     systs : list[dict]
-        Description
-    output_file : str
-        Description
+        Dicts describing each syst
+    output_filename : str
+        Output plot filename
+    title : str
+        Title to put on plot
+    angle_str : str
+        Angle name for x axis
+
+    Returns
+    -------
+    None
+        If all hists are empty
     """
     entries = []
     hists = []
@@ -730,6 +739,37 @@ def plot_systematic_shifts(total_hist, stat_hist, syst_shifts, systs, output_fil
                          marker_color=syst_dict['colour'],
                          )
         entries.append(c)
+
+    # Add systematic
+    h_syst = stat_hist.Clone()
+    h_total = total_hist.Clone()
+    for i in range(1, h_syst.GetNbinsX()+1):
+        if total_hist.GetBinContent(i) > 0:
+            h_syst.SetBinContent(i, stat_hist.GetBinError(i) / total_hist.GetBinContent(i))
+            h_total.SetBinContent(i, total_hist.GetBinError(i) / total_hist.GetBinContent(i))
+        else:
+            h_syst.SetBinContent(i, 0)
+            h_total.SetBinContent(i, 0)
+        h_syst.SetBinError(i, 0)
+        h_total.SetBinError(i, 0)
+    c_stat = Contribution(h_syst,
+                         label="Stat.",
+                         line_color=ROOT.kRed,
+                         line_style=3,
+                         line_width=2,
+                         marker_size=0,
+                         marker_color=ROOT.kRed,
+                         )
+    entries.append(c_stat)
+    c_tot = Contribution(h_total,
+                         label="Total",
+                         line_color=ROOT.kBlack,
+                         line_style=1,
+                         line_width=2,
+                         marker_size=0,
+                         marker_color=ROOT.kBlack,
+                         )
+    entries.append(c_tot)
 
     if not check_entries(entries, "systematic shifts"):
         return
@@ -1698,10 +1738,10 @@ if __name__ == "__main__":
                 # --------------------------------------------------------------
                 systematic_shift_hists_bin = [unfolder.get_var_hist_pt_binned(h, ibin_pt, binning_scheme='generator')
                                               for h in systematic_shift_hists]
-
+                unfolded_stat_error_bin = unfolder.get_var_hist_pt_binned(error_stat_1d, ibin_pt, binning_scheme="generator")
                 unfolded_total_error_bin =  unfolder.get_var_hist_pt_binned(unfolded_1d, ibin_pt, binning_scheme="generator")
                 plot_systematic_shifts(total_hist=unfolded_total_error_bin,
-                                       stat_hist=unfolded_hist_bin_stat_errors,
+                                       stat_hist=unfolded_stat_error_bin,
                                        syst_shifts=systematic_shift_hists_bin,
                                        systs=region['systematics'],
                                        output_filename='%s/unfolded_systs_%s_bin_%d.%s' % (this_output_dir, append, ibin_pt, OUTPUT_FMT),
