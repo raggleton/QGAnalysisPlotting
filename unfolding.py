@@ -883,55 +883,65 @@ if __name__ == "__main__":
                 {
                     "label": "Neutral hadron up",
                     "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'neutralHadronShiftUp', qgc.QCD_FILENAME)),
+                    "systematic_type": "response",
                     "colour": ROOT.kOrange-3,
                 },
                 {
                     "label": "Neutral hadron down",
                     "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'neutralHadronShiftDown', qgc.QCD_FILENAME)),
+                    "systematic_type": "response",
                     "colour": ROOT.kOrange-3,
                     "linestyle": 2,
                 },
                 {
                     "label": "Photon up",
                     "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'photonShiftUp', qgc.QCD_FILENAME)),
+                    "systematic_type": "response",
                     "colour": ROOT.kMagenta-3,
                 },
                 {
                     "label": "Photon down",
                     "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'photonShiftDown', qgc.QCD_FILENAME)),
+                    "systematic_type": "response",
                     "colour": ROOT.kMagenta-3,
                     "linestyle": 2,
                 },
                 {
                     "label": "JEC up",
                     "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'jecsmear_directionUp', qgc.QCD_FILENAME)),
+                    "systematic_type": "response",
                     "colour": ROOT.kGreen+2,
                 },
                 {
                     "label": "JEC down",
                     "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'jecsmear_directionDown', qgc.QCD_FILENAME)),
+                    "systematic_type": "response",
                     "colour": ROOT.kGreen+2,
                     "linestyle": 2,
                 },
                 {
                     "label": "JER up",
                     "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'jersmear_directionUp', qgc.QCD_FILENAME)),
+                    "systematic_type": "response",
                     "colour": ROOT.kOrange+3,
                 },
                 {
                     "label": "JER down",
                     "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'jersmear_directionDown', qgc.QCD_FILENAME)),
+                    "systematic_type": "response",
                     "colour": ROOT.kOrange+3,
                     "linestyle": 2,
                 },
                 {
                     "label": "Pileup up",
                     "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'pileup_directionUp', qgc.QCD_FILENAME)),
+                    "systematic_type": "response",
                     "colour": ROOT.kBlue-4,
                 },
                 {
                     "label": "Pileup down",
                     "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'pileup_directionDown', qgc.QCD_FILENAME)),
+                    "systematic_type": "response",
                     "colour": ROOT.kBlue-4,
                     "linestyle": 2,
                 },
@@ -998,55 +1008,65 @@ if __name__ == "__main__":
                 {
                     "label": "Neutral hadron up",
                     "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'neutralHadronShiftUp', qgc.DY_FILENAME)),
+                    "systematic_type": "response",
                     "colour": ROOT.kOrange-3,
                 },
                 {
                     "label": "Neutral hadron down",
                     "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'neutralHadronShiftDown', qgc.DY_FILENAME)),
+                    "systematic_type": "response",
                     "colour": ROOT.kOrange-3,
                     "linestyle": 2,
                 },
                 {
                     "label": "Photon up",
                     "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'photonShiftUp', qgc.DY_FILENAME)),
+                    "systematic_type": "response",
                     "colour": ROOT.kMagenta-3,
                 },
                 {
                     "label": "Photon down",
                     "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'photonShiftDown', qgc.DY_FILENAME)),
+                    "systematic_type": "response",
                     "colour": ROOT.kMagenta-3,
                     "linestyle": 2,
                 },
                 {
                     "label": "JEC up",
                     "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'jecsmear_directionUp', qgc.DY_FILENAME)),
+                    "systematic_type": "response",
                     "colour": ROOT.kGreen+2,
                 },
                 {
                     "label": "JEC down",
                     "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'jecsmear_directionDown', qgc.DY_FILENAME)),
+                    "systematic_type": "response",
                     "colour": ROOT.kGreen+2,
                     "linestyle": 2,
                 },
                 {
                     "label": "JER up",
                     "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'jersmear_directionUp', qgc.DY_FILENAME)),
+                    "systematic_type": "response",
                     "colour": ROOT.kOrange+3,
                 },
                 {
                     "label": "JER down",
                     "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'jersmear_directionDown', qgc.DY_FILENAME)),
+                    "systematic_type": "response",
                     "colour": ROOT.kOrange+3,
                     "linestyle": 2,
                 },
                 {
                     "label": "Pileup up",
                     "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'pileup_directionUp', qgc.DY_FILENAME)),
+                    "systematic_type": "response",
                     "colour": ROOT.kBlue-4,
                 },
                 {
                     "label": "Pileup down",
                     "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'pileup_directionDown', qgc.DY_FILENAME)),
+                    "systematic_type": "response",
                     "colour": ROOT.kBlue-4,
                     "linestyle": 2,
                 },
@@ -1287,10 +1307,10 @@ if __name__ == "__main__":
                 chosen_rsp_bin = (18, 18)
                 print("nominal response bin content for", chosen_rsp_bin, hist_mc_gen_reco_map.GetBinContent(*chosen_rsp_bin))
                 for syst_dict in region['systematics']:
-                    if 'tfile' in syst_dict:
+                    if 'tfile' in syst_dict and syst_dict['systematic_type'] == 'response':
                         map_syst = cu.get_from_tfile(syst_dict['tfile'], "%s/tu_%s_GenReco_all" % (region['dirname'], angle_shortname))
                     else:
-                        raise NotImplementedError("TODO: handle sources of unc other than from tfile (e.g. lumi)")
+                        raise NotImplementedError("TODO: handle sources of unc other than from tfile (e.g. lumi) or other systematic_type")
                     print("Adding systematic:", syst_dict['label'])
                     print("    syst bin", chosen_rsp_bin, map_syst.GetBinContent(*chosen_rsp_bin))
                     unfolder.tunfolder.AddSysError(map_syst, syst_dict['label'], unfolder.orientation, ROOT.TUnfoldDensity.kSysErrModeMatrix)
