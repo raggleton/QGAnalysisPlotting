@@ -1360,11 +1360,9 @@ if __name__ == "__main__":
                 for syst_dict in region['systematics']:
                     if 'tfile' in syst_dict and syst_dict['systematic_type'] == 'response':
                         map_syst = cu.get_from_tfile(syst_dict['tfile'], "%s/tu_%s_GenReco_all" % (region['dirname'], angle_shortname))
-                    else:
-                        raise NotImplementedError("TODO: handle sources of unc other than from tfile (e.g. lumi) or other systematic_type")
-                    print("Adding systematic:", syst_dict['label'])
-                    print("    syst bin", chosen_rsp_bin, map_syst.GetBinContent(*chosen_rsp_bin))
-                    unfolder.tunfolder.AddSysError(map_syst, syst_dict['label'], unfolder.orientation, ROOT.TUnfoldDensity.kSysErrModeMatrix)
+                        print("Adding systematic:", syst_dict['label'])
+                        print("    syst bin", chosen_rsp_bin, map_syst.GetBinContent(*chosen_rsp_bin))
+                        unfolder.tunfolder.AddSysError(map_syst, syst_dict['label'], unfolder.orientation, ROOT.TUnfoldDensity.kSysErrModeMatrix)
 
             # Set what is to be unfolded
             # ---------------------
