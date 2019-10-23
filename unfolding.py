@@ -1175,8 +1175,8 @@ if __name__ == "__main__":
         # Remake gen hist with physical bins & save to file
         all_pt_bins_gen = np.concatenate((pt_bin_edges_underflow_gen[:-1], pt_bin_edges_gen))
         hist_mc_gen_pt_physical = ROOT.TH1F("mc_gen_pt", ";p_{T}^{jet} [GeV];N", len(all_pt_bins_gen)-1, array('d', all_pt_bins_gen))
-        update_hist_bin_content(hist_mc_gen_pt, hist_mc_gen_pt_physical)
-        update_hist_bin_error(hist_mc_gen_pt, hist_mc_gen_pt_physical)
+        update_hist_bin_content(h_orig=hist_mc_gen_pt, h_to_be_updated=hist_mc_gen_pt_physical)
+        update_hist_bin_error(h_orig=hist_mc_gen_pt, h_to_be_updated=hist_mc_gen_pt_physical)
         region_tdir.WriteTObject(hist_mc_gen_pt_physical, "mc_gen_pt")
 
         # Do unfolding for each angle
@@ -1388,15 +1388,17 @@ if __name__ == "__main__":
             ematrix_stat_sum.Add(ematrix_sys_uncorr) # total 'stat' errors
 
             error_stat_1d = make_hist_from_diagonal_errors(ematrix_stat_sum, do_sqrt=True) # note that bin contents = 0, only bin errors are non-0
+            this_tdir.WriteTObject(error_stat_1d, "error_stat_1d")
             print ("stat uncert:", error_stat_1d.GetBinError(chosen_bin))
 
             ematrix_total = unfolder.get_ematrix_total()
             error_total_1d = make_hist_from_diagonal_errors(ematrix_total, do_sqrt=True) # note that bin contents = 0, only bin errors are non-0
             this_tdir.WriteTObject(ematrix_total, "ematrix_total_1d")
+            this_tdir.WriteTObject(error_total_1d, "error_total_1d")
             print ("total uncert:", error_total_1d.GetBinError(chosen_bin))
 
             # Update errors to big unfolded 1D
-            update_hist_bin_error(error_total_1d, unfolded_1d)
+            update_hist_bin_error(h_orig=error_total_1d, h_to_be_updated=unfolded_1d)
             print ("new uncert:", unfolded_1d.GetBinError(chosen_bin))
             this_tdir.WriteTObject(unfolded_1d)
 
@@ -1534,7 +1536,7 @@ if __name__ == "__main__":
                                     "%s/err_map_total_%s.%s" % (this_output_dir, append, OUTPUT_FMT))
 
             # Do forward-folding to check unfolding
-            # ----------------------------
+            # ------------------------------------------------------------------
             hist_data_folded = unfolder.get_folded_output(hist_name="folded_%s" % (append))
             this_tdir.WriteTObject(hist_data_folded, "folded_1d")
             draw_reco_folded(hist_folded=hist_data_folded,
@@ -1562,11 +1564,11 @@ if __name__ == "__main__":
                 this_pt_bin_tdir.WriteTObject(unfolded_hist_bin, "unfolded_hist_bin")
 
                 unfolded_hist_bin_stat_errors = unfolder.get_var_hist_pt_binned(error_stat_1d, ibin_pt, binning_scheme="generator")
-                update_hist_bin_content(unfolded_hist_bin, unfolded_hist_bin_stat_errors)  # use stat errors, update central values
+                update_hist_bin_content(h_orig=unfolded_hist_bin, h_to_be_updated=unfolded_hist_bin_stat_errors)  # use stat errors, update central values
                 this_pt_bin_tdir.WriteTObject(unfolded_hist_bin_stat_errors, "unfolded_hist_bin_stat_errors")
 
                 unfolded_hist_bin_total_errors = unfolder.get_var_hist_pt_binned(error_total_1d, ibin_pt, binning_scheme="generator")
-                update_hist_bin_content(unfolded_hist_bin, unfolded_hist_bin_total_errors)  # use total errors, update central values
+                update_hist_bin_content(h_orig=unfolded_hist_bin, h_to_be_updated=unfolded_hist_bin_total_errors)  # use total errors, update central values
                 this_pt_bin_tdir.WriteTObject(unfolded_hist_bin_total_errors, "unfolded_hist_bin_total_errors")
 
                 # mc_fake_reco_hist_bin_gen_binning = unfolder.get_var_hist_pt_binned(hist_mc_fakes_reco_gen_binning, ibin_pt, binning_scheme="generator")
@@ -1626,14 +1628,6 @@ if __name__ == "__main__":
                 if SUBTRACT_FAKES:
                     alt_mc_reco_hist_bg_subtracted_bin_gen_binning = unfolder.get_var_hist_pt_binned(alt_hist_mc_reco_gen_binning_bg_subtracted, ibin_pt, binning_scheme="generator")
                     this_pt_bin_tdir.WriteTObject(alt_mc_reco_hist_bg_subtracted_bin_gen_binning, "alt_mc_reco_hist_bg_subtracted_bin_gen_binning")
-
-                # print hist bins for check
-                # for n in range(1, gen_hist_bin.GetNbinsX()+1):
-                #     print("Bin", n)
-                #     print("gen_hist:", gen_hist_bin.GetBinContent(n), "+-", gen_hist_bin.GetBinError(n))
-                #     print("unfolded_hist:", unfolded_hist_bin.GetBinContent(n), "+-", unfolded_hist_bin.GetBinError(n))
-                #     print("unfolded_hist_bin_stat_errors:", unfolded_hist_bin_stat_errors.GetBinContent(n), "+-", unfolded_hist_bin_stat_errors.GetBinError(n))
-                #     print("unfolded_hist_bin_total_errors:", unfolded_hist_bin_total_errors.GetBinContent(n), "+-", unfolded_hist_bin_total_errors.GetBinError(n))
 
                 # Make lots of plots
                 # ------------------------------------------------------------
