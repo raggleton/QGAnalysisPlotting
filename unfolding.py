@@ -783,8 +783,9 @@ def plot_uncertainty_shifts(total_hist, stat_hist, syst_shifts, systs, output_fi
     plot.legend.SetX2(0.98)
     plot.legend.SetY2(0.88)
     plot.legend.SetNColumns(2)
-    plot.y_padding_max_linear = 2
+    plot.y_padding_max_linear = 1.4
     plot.plot("NOSTACK HIST")
+    # plot.set_logy()
     plot.save(output_filename)
 
 
@@ -1112,7 +1113,7 @@ if __name__ == "__main__":
     if DO_SYSTS:
         append += "_syst"
 
-    output_dir = os.path.join(src_dir, "unfolding_better_regulariZe%s_target0p5%s%s_densityModeBinWidth_constraintArea%s" % (str(REGULARIZE).capitalize(), mc_append, sub_append, append))
+    output_dir = os.path.join(src_dir, "unfolding_better_regularise%s_target0p5%s%s_densityModeBinWidth_constraintArea%s" % (str(REGULARIZE).capitalize(), mc_append, sub_append, append))
     if args.outputDir:
         output_dir = args.outputDir
     cu.check_dir_exists_create(output_dir)
