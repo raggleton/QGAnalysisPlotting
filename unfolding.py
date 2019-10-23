@@ -818,15 +818,18 @@ if __name__ == "__main__":
                         help='Regularization scheme')
 
     parser.add_argument("--MCinput",
-                        action='store_true',
+                        type=bool,
+                        default=False,
                         help='Unfold MC instead of data')
 
     parser.add_argument("--MCsplit",
-                        action='store_true',
+                        type=bool,
+                        default=False,
                         help='Split MC between response & 1D reco, good for testing procedure')
 
     parser.add_argument("--doSysts",
-                        action='store_true',
+                        type=bool,
+                        default=True,
                         help='Do systematics')
 
     parser.add_argument("--outputDir",
