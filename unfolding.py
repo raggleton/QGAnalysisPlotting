@@ -1401,14 +1401,16 @@ if __name__ == "__main__":
             systematic_shift_hists = []
             if DO_SYSTS:
                 for syst_dict in region['systematics']:
-                    syst_label = syst_dict['label']
-                    h_syst = unfolder.tunfolder.GetDeltaSysSource(syst_label,
-                                                                  '%s_%s_shift_%s' % (region['name'], angle.var, syst_label),
-                                                                  "",
-                                                                  "generator",
-                                                                  unfolder.axisSteering,
-                                                                  unfolder.use_axis_binning)
-                    systematic_shift_hists.append(h_syst)
+                    if syst_dict['systematic_type'] == 'response':
+                        syst_label = syst_dict['label']
+                        h_syst = unfolder.tunfolder.GetDeltaSysSource(syst_label,
+                                                                      '%s_%s_shift_%s' % (region['name'], angle.var, syst_label),
+                                                                      "",
+                                                                      "generator",
+                                                                      unfolder.axisSteering,
+                                                                      unfolder.use_axis_binning)
+                        systematic_shift_hists.append(h_syst)
+                        this_tdir.WriteTObject(h_syst)
 
             # Draw unified unfolded distributions
             # ------------------------------------------------------------------
@@ -1980,6 +1982,8 @@ if __name__ == "__main__":
                 # plot.plot("NOSTACK E1")
                 # plot.save("%s/detector_folded_only_data_%s_bin_%d.%s" % (this_output_dir, append, ibin_pt, OUTPUT_FMT))
 
+            # DO SUMMARY PLOT
+            # ------------------------------------------------------------------
             ylim=None
             # skip first entries as low pt bin
             marker = ""
