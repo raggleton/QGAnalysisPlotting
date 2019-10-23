@@ -16,6 +16,8 @@ import argparse
 from array import array
 import numpy as np
 import math
+import distutils
+from distutils import util
 
 import ROOT
 from MyStyle import My_Style
@@ -838,26 +840,28 @@ if __name__ == "__main__":
                         help='Regularization scheme')
 
     parser.add_argument("--MCinput",
-                        type=bool,
+                        type=lambda x:bool(distutils.util.strtobool(x)),
                         default=False,
                         help='Unfold MC instead of data')
 
     parser.add_argument("--MCsplit",
-                        type=bool,
+                        type=lambda x:bool(distutils.util.strtobool(x)),
                         default=False,
                         help='Split MC between response & 1D reco, good for testing procedure')
 
     parser.add_argument("--doSysts",
-                        type=bool,
+                        type=lambda x:bool(distutils.util.strtobool(x)),
                         default=True,
                         help='Do systematics')
 
     parser.add_argument("--doSummaryPlot",
-                        action='store_true',
+                        type=lambda x:bool(distutils.util.strtobool(x)),
+                        default=False,
                         help='Do summary plot')
 
     parser.add_argument("--useAltResponse",
-                        action='store_true',
+                        type=lambda x:bool(distutils.util.strtobool(x)),
+                        default=False,
                         help='Use alternate response matrix to unfold')
 
     parser.add_argument("--outputDir",
