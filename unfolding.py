@@ -1355,12 +1355,14 @@ if __name__ == "__main__":
                 print("Regularizing with doScanL, please be patient...")
                 tau = unfolder.doScanL(output_dir=this_output_dir, n_scan=100,
                                        tau_min=1E-14, tau_max=1E-4)
+                print("Found tau:", tau)
             elif REGULARIZE == "tau":
                 print("Regularizing with doScanTau, please be patient...")
                 tau = unfolder.doScanTau(output_dir=this_output_dir, n_scan=100,
                                          tau_min=region['tau_limits'][angle.var][0],
                                          tau_max=region['tau_limits'][angle.var][1],
                                          scan_mode=ROOT.TUnfoldDensity.kEScanTauRhoAvgSys)
+                print("Found tau:", tau)
 
             # Do unfolding!
             # ---------------------
