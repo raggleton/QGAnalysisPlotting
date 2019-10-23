@@ -832,6 +832,10 @@ if __name__ == "__main__":
                         default=True,
                         help='Do systematics')
 
+    parser.add_argument("--doSummaryPlot",
+                        action='store_true',
+                        help='Do summary plot')
+
     parser.add_argument("--outputDir",
                         default='',
                         help='Output directory')
@@ -1984,22 +1988,21 @@ if __name__ == "__main__":
 
             # DO SUMMARY PLOT
             # ------------------------------------------------------------------
-            ylim=None
-            # skip first entries as low pt bin
-            marker = ""
-            if "_" in angle.name or "^" in angle.name:
-                marker = "$"
-            var_label = "Particle-level " + marker + angle.name + marker + " ($%s$)" % angle.lambda_str
-            v = "%s_vs_pt" % (angle.var)
-            bins = [(pt_bin_edges_gen[i], pt_bin_edges_gen[i+1]) for i in range(len(pt_bin_edges_gen)-1)]
-            print(bins)
-            xlim = (50, 2000)
-            if "ZPlusJets" in region['name']:
-                xlim = (50, 614)
-            qgp.do_mean_rms_summary_plot(summary_1d_entries, bins,
-                                         "%s/%s_box_dijet_mpl.%s" % (this_output_dir, v, OUTPUT_FMT),
-                                         var_label=var_label,
-                                         xlim=xlim,
-                                         region_title=region['label'].lower())
+            if args.doSummaryPlot:
+                marker = ""
+                if "_" in angle.name or "^" in angle.name:
+                    marker = "$"
+                var_label = "Particle-level " + marker + angle.name + marker + " ($%s$)" % angle.lambda_str
+                v = "%s_vs_pt" % (angle.var)
+                bins = [(pt_bin_edges_gen[i], pt_bin_edges_gen[i+1]) for i in range(len(pt_bin_edges_gen)-1)]
+                print("Making summary plot from pt bins:", bins)
+                xlim = (50, 2000)
+                if "ZPlusJets" in region['name']:
+                    xlim = (50, 614)
+                qgp.do_mean_rms_summary_plot(summary_1d_entries, bins,
+                                             "%s/%s_box_dijet_mpl.%s" % (this_output_dir, v, OUTPUT_FMT),
+                                             var_label=var_label,
+                                             xlim=xlim,
+                                             region_title=region['label'].lower())
 
     print("Saved hists to", output_tfile.GetName())
