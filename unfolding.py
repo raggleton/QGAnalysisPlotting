@@ -580,7 +580,7 @@ def make_hist_from_diagonal_errors(h2d, do_sqrt=True):
     hnew = ROOT.TH1D("h_diag" + cu.get_unique_str(), "", nbins, 0, nbins)
     for i in range(1, nbins+1):
         err = h2d.GetBinContent(i, i)
-        if do_sqrt:
+        if do_sqrt and err > 0:
             err = math.sqrt(err)
         hnew.SetBinError(i, err)
     return hnew
