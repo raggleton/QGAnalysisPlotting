@@ -856,6 +856,10 @@ if __name__ == "__main__":
                         action='store_true',
                         help='Do summary plot')
 
+    parser.add_argument("--useAltResponse",
+                        action='store_true',
+                        help='Use alternate response matrix to unfold')
+
     parser.add_argument("--outputDir",
                         default='',
                         help='Output directory')
@@ -1140,6 +1144,9 @@ if __name__ == "__main__":
     if DO_SYSTS:
         append += "_syst"
 
+    if args.useAltResponse:
+        append += "_altResponse"
+
     output_dir = os.path.join(src_dir, "unfolding_better_regularise%s_target0p5%s%s_densityModeBinWidth_constraintArea%s" % (str(REGULARIZE).capitalize(), mc_append, sub_append, append))
     if args.outputDir:
         output_dir = args.outputDir
@@ -1229,7 +1236,11 @@ if __name__ == "__main__":
             mc_hname_append = "split" if MC_SPLIT else "all"
             hist_mc_reco = cu.get_from_tfile(region['mc_tfile'], "%s/hist_%s_reco_%s" % (region['dirname'], angle_shortname, mc_hname_append))
             hist_mc_gen = cu.get_from_tfile(region['mc_tfile'], "%s/hist_%s_truth_%s" % (region['dirname'], angle_shortname, mc_hname_append))
-            hist_mc_gen_reco_map = cu.get_from_tfile(region['mc_tfile'], "%s/tu_%s_GenReco_%s" % (region['dirname'], angle_shortname, mc_hname_append))
+            hist_mc_gen_reco_map = None
+            if args.useAltResponse:
+                hist_mc_gen_reco_map = cu.get_from_tfile(region['alt_mc_tfile'], "%s/tu_%s_GenReco_%s" % (region['dirname'], angle_shortname, mc_hname_append))
+            else:
+                hist_mc_gen_reco_map = cu.get_from_tfile(region['mc_tfile'], "%s/tu_%s_GenReco_%s" % (region['dirname'], angle_shortname, mc_hname_append))
 
             # Actual distribution to be unfolded
             reco_1d = hist_mc_reco.Clone() if MC_INPUT else hist_data_reco
