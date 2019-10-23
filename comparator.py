@@ -414,14 +414,20 @@ class Plot(object):
         draw_opts: str
             Same options as you would pass to Draw() in ROOT.
         """
+        # Now add all the contributions to the container, styling as we go
+        if len(self.contributions) == 0:
+            raise UnboundLocalError("contributions list is empty")
+
+        has_entries = [c.obj.GetEntries() > 0 for c in self.contributions]
+        if not any(has_entries):
+            print("Skipping plot() as 0 entries")
+            return
+
         if not self.container:
             # First make a container
             self._create_container()
 
             # Now add all the contributions to the container, styling as we go
-            if len(self.contributions) == 0:
-                raise UnboundLocalError("contributions list is empty")
-
             self._populate_container_and_legend()
 
         # Set default drawing opts
