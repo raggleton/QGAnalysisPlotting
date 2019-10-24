@@ -1332,6 +1332,7 @@ if __name__ == "__main__":
 
             # Setup unfolder object
             # ---------------------
+            print("Running TUnfold version", ROOT.TUnfold.GetTUnfoldVersion())
             variable_name = "%s%s" % (angle_prepend, angle.name)
             unfolder = MyUnfolder(response_map=hist_mc_gen_reco_map,
                                   variable_bin_edges_reco=angle_bin_edges_reco,
@@ -1997,7 +1998,7 @@ if __name__ == "__main__":
                 plot = Plot(entries,
                             xtitle=detector_title,
                             ytitle=normalised_differential_label,
-                            subplot_title='Unfolded / reco',
+                            subplot_title='Folded unfolded / reco',
                             **common_hist_args)
                 plot.legend.SetX1(0.6)
                 plot.legend.SetY1(0.75)
