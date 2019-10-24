@@ -181,6 +181,13 @@ class Contribution(object):
         return self.obj == other.obj
 
 
+class ZeroContributions(Exception):
+    """Own exception for when there are 0 Contributions (or they all have 0 entries)"""
+    def __init__(self, message):
+        super(ZeroContributions, self).__init__()
+        self.message = message
+
+
 class Plot(object):
     """
     Basic class to handle information about one plot,
@@ -416,12 +423,11 @@ class Plot(object):
         """
         # Now add all the contributions to the container, styling as we go
         if len(self.contributions) == 0:
-            raise UnboundLocalError("contributions list is empty")
+            raise ZeroContributions("Contributions list is empty")
 
         has_entries = [c.obj.GetEntries() > 0 for c in self.contributions]
         if not any(has_entries):
-            print("Skipping plot() as 0 entries")
-            return
+            raise ZeroContributions("All contributions have 0 entries")
 
         if not self.container:
             # First make a container
