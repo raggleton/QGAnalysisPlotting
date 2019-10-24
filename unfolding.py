@@ -168,7 +168,8 @@ class MyUnfolder(object):
                                          tau_max,
                                          scanresults,
                                          scan_mode,
-                                         "generator",
+                                         # "generator",
+                                         "generatordistribution",
                                          self.axisSteering,
                                          lCurve,
                                          LogTauX,
@@ -209,7 +210,6 @@ class MyUnfolder(object):
                                                                            self.tunfolder.GetNdf()))
 
         print("doScanTau value is {}".format(tau))
-        print("Returned the TUnfoldDensity object.")
 
         canv_tauScan = ROOT.TCanvas("canv_tauScan"+str(tau), "canv_tauScan"+str(tau))
 
@@ -1166,6 +1166,8 @@ if __name__ == "__main__":
     angles = [a for a in qgc.COMMON_VARS if a.var in args.angles]
     print(angles)
 
+    print("Running TUnfold version", ROOT.TUnfold.GetTUnfoldVersion())
+
     # Do unfolding per signal region
     # --------------------------------------------------------------------------
     for region in regions[:]:
@@ -1332,7 +1334,6 @@ if __name__ == "__main__":
 
             # Setup unfolder object
             # ---------------------
-            print("Running TUnfold version", ROOT.TUnfold.GetTUnfoldVersion())
             variable_name = "%s%s" % (angle_prepend, angle.name)
             unfolder = MyUnfolder(response_map=hist_mc_gen_reco_map,
                                   variable_bin_edges_reco=angle_bin_edges_reco,
