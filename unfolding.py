@@ -42,6 +42,117 @@ ROOT.gStyle.SetPaintTextFormat(".3f")
 OUTPUT_FMT = "pdf"
 
 
+class TauScanner(object):
+    """Class to handle doing ScanTau on a TUnfoldBinning object,
+    since it produces many associated objects & values.
+
+    Can also plot results from scanning.
+    """
+    def __init__(self):
+        self.scan_results = ROOT.MakeNullPointer(ROOT.TSpline)
+        self.l_curve = ROOT.MakeNullPointer(ROOT.TGraph)
+        self.log_tau_x = ROOT.MakeNullPointer(ROOT.TSpline)
+        self.log_tau_y = ROOT.MakeNullPointer(ROOT.TSpline)
+        self.ind_best_point = 0
+        self.tau = 0
+        self.scan_mode = ""
+        self.graph_all_scan_points = None
+        self.graph_best_scan_point = None
+
+    def scan_tau(self, tunfolder, n_scan, tau_min, tau_max, scan_mode, distribution, axis_steering):
+        self.ind_best_point = tunfolder.ScanTau(n_scan,
+                                                tau_min,
+                                                tau_max,
+                                                self.scan_results,
+                                                scan_mode,
+                                                distribution,
+                                                axis_steering,
+                                                self.l_curve,
+                                                self.log_tau_x,
+                                                self.log_tau_y)
+        self.tau = tunfolder.GetTau()
+        self._process_results(scan_mode)
+        print("scan_tau value is {}".format(self.tau))
+        print("chi**2 A {:3.1f} + chi**2 L {:3.1f} / NDOF {:3.1f} ".format(tunfolder.GetChi2A(),
+                                                                           tunfolder.GetChi2L(),
+                                                                           tunfolder.GetNdf()))
+        return self.tau
+
+    def _process_results(self, scan_mode):
+        """Create graphs etc from ScanTau output
+
+        User shouldn't call this, only internal
+        """
+        # these need to be arrays to go into TGraph later
+        # t here is log_10(tau)
+        x, y, t, rho = array('d'), array('d'), array('d'), array('d')
+
+        # Get best scan point & make graph of it
+        t0 = ROOT.Double(0.0)
+        rho0 = ROOT.Double(0.0)
+        self.scan_results.GetKnot(self.ind_best_point, t0, rho0)
+        t.append(t0)
+        rho.append(rho0)
+        self.graph_best_scan_point = ROOT.TGraph(1, t, rho)
+
+        # x0 = ROOT.Double(0.0)
+        # y0 = ROOT.Double(0.0)
+        # self.l_curve.GetPoint(self.ind_best_point, x0, y0)
+        # x.append(x0)
+        # y.append(y0)
+        print("t[0] =", t[0])
+        print("rho[0] =", rho[0])
+        # print("x[0] =", x[0])
+        # print("y[0] =", y[0])
+        print("10^log_10(tau) = tau =", math.pow(10., float(t0)))
+
+        # Make graph of all the points scanned
+        t_all, rho_all = array('d'), array('d')
+        n_scan = self.scan_results.GetNp()
+        for i in range(n_scan):
+            tt = ROOT.Double(0.0)
+            rr = ROOT.Double(0.0)
+            self.scan_results.GetKnot(i, tt, rr)
+            t_all.append(tt)
+            rho_all.append(rr)
+
+        self.graph_all_scan_points = ROOT.TGraph(int(n_scan), t_all, rho_all)
+
+        tau_mode_dict = {
+            ROOT.TUnfoldDensity.kEScanTauRhoAvg: "average (stat+bgr) global correlation (#rho)",
+            ROOT.TUnfoldDensity.kEScanTauRhoAvgSys: "average (stat+bgr+sys) global correlation (#rho)",
+            ROOT.TUnfoldDensity.kEScanTauRhoMax: "maximum (stat+bgr) global correlation (#rho)",
+            ROOT.TUnfoldDensity.kEScanTauRhoMaxSys: "maximum (stat+bgr+sys) global correlation (#rho)",
+            ROOT.TUnfoldDensity.kEScanTauRhoSquareAvg: "average (stat+bgr) global correlation (#rho) squared",
+            ROOT.TUnfoldDensity.kEScanTauRhoSquareAvgSys: "average (stat+bgr+sys) global correlation (#rho) squared",
+        }
+        self.graph_all_scan_points.SetTitle("Optimization of Regularization Parameter, #tau : Scan of {}".format(tau_mode_dict[scan_mode]))
+
+    def plot_scan_tau(self, output_filename):
+        """Plot graph of scan results, and optimum tau"""
+        canv_tau_scan = ROOT.TCanvas("canv_tau_scan"+str(self.tau), "canv_tau_scan"+str(self.tau))
+
+        self.graph_all_scan_points.SetLineColor(ROOT.kBlue+3)
+        self.graph_all_scan_points.Draw()
+
+        self.graph_best_scan_point.SetMarkerColor(ROOT.kRed)
+        self.graph_best_scan_point.Draw("* same")
+
+        self.graph_all_scan_points.GetXaxis().SetTitle("log_{10}(#tau)")
+        self.graph_all_scan_points.GetYaxis().SetTitle(" #rho")
+
+        leg = ROOT.TLegend(0.59, 0.6, 0.74, 0.89)
+        leg.SetFillColor(0)
+        leg.SetFillStyle(0)
+        leg.SetBorderSize(0)
+        leg.SetTextSize(0.026)
+        leg.AddEntry(self.graph_all_scan_points, 'Scan over #tau', 'l')
+        leg.AddEntry(self.graph_all_scan_points, 'Chosen point: #tau = {}'.format(self.tau), 'P')
+        leg.Draw()
+
+        canv_tau_scan.Print(output_filename)
+
+
 class MyUnfolder(object):
     # Control plot output format
     OUTPUT_FMT = "pdf"
@@ -151,96 +262,6 @@ class MyUnfolder(object):
 
     def setInput(self, hist):
         self.tunfolder.SetInput(hist)
-
-    def doScanTau(self, output_dir, n_scan=300, tau_min=1E-14, tau_max=1E-4, scan_mode=ROOT.TUnfoldDensity.kEScanTauRhoMax):
-        """Figure out best tau by scanning tau curve
-        Taken from Ashley's code
-        """
-
-        # Graphs to save output from scan over tau
-        scanresults = ROOT.MakeNullPointer(ROOT.TSpline)
-        lCurve = ROOT.MakeNullPointer(ROOT.TGraph)
-        LogTauX = ROOT.MakeNullPointer(ROOT.TSpline)
-        LogTauY = ROOT.MakeNullPointer(ROOT.TSpline)
-
-        iBestAvg = self.tunfolder.ScanTau(n_scan,
-                                         tau_min,
-                                         tau_max,
-                                         scanresults,
-                                         scan_mode,
-                                         # "generator",
-                                         "generatordistribution",
-                                         self.axisSteering,
-                                         lCurve,
-                                         LogTauX,
-                                         LogTauY)
-        tau = self.tunfolder.GetTau()
-
-        x, y, t, rho = array('d'), array('d'), array('d'), array('d')
-        t0 = ROOT.Double(0.0)
-        rho0 = ROOT.Double(0.0)
-        scanresults.GetKnot(iBestAvg, t0, rho0)
-        t.append(t0)
-        rho.append(rho0)
-
-        x0 = ROOT.Double(0.0)
-        y0 = ROOT.Double(0.0)
-        lCurve.GetPoint(iBestAvg, x0, y0)
-        x.append(x0)
-        y.append(y0)
-        print("t[0] = {}, type = {}".format(t[0], type(t)))
-        print("rho[0] = {}".format(rho[0]))
-        print("x[0] = {}".format(x[0]))
-        print("y[0] = {}".format(y[0]))
-        bestRhoLogTau = ROOT.TGraph(1, t, rho)
-        print("10^log_10(tau) = tau = {}".format(math.pow(10., float(t0))))
-        bestLCurve = ROOT.TGraph(1, x, y)
-
-        tAll, rhoAll = array('d'), array('d')
-        for i in range(n_scan):
-            tt = ROOT.Double(0.0)
-            rr = ROOT.Double(0.0)
-            scanresults.GetKnot(i, tt, rr)
-            tAll.append(tt)
-            rhoAll.append(rr)
-
-        knots = ROOT.TGraph(int(n_scan), tAll, rhoAll)
-        print("chi**2 A {:3.1f} + chi**2 L {:3.1f} / NDOF {:3.1f} ".format(self.tunfolder.GetChi2A(),
-                                                                           self.tunfolder.GetChi2L(),
-                                                                           self.tunfolder.GetNdf()))
-
-        print("doScanTau value is {}".format(tau))
-
-        canv_tauScan = ROOT.TCanvas("canv_tauScan"+str(tau), "canv_tauScan"+str(tau))
-
-        knots.SetLineColor(ROOT.kBlue+3)
-
-        bestRhoLogTau.SetMarkerColor(ROOT.kRed)
-
-        knots.Draw()
-        bestRhoLogTau.Draw("* same")
-        knots.GetXaxis().SetTitle("log_{10}(#tau)")
-        knots.GetYaxis().SetTitle(" #rho")
-        tauoptname = 'NONE'
-        if scan_mode == ROOT.TUnfoldDensity.kEScanTauRhoMax:
-            tauoptname = 'Max'
-        else:
-            tauoptname = 'Average'
-        knots.SetTitle("Optimization of Regularization Parameter, #tau : Scan of {} #rho".format(tauoptname))
-
-        leg1 = ROOT.TLegend(0.59, 0.6, 0.74, 0.89)
-        leg1.SetFillColor(0)
-        leg1.SetFillStyle(0)
-        leg1.SetBorderSize(0)
-        leg1.SetTextSize(0.026)
-        leg1.AddEntry(knots, '{} #rho: #tau = {}'.format(tauoptname,  tau), 'l')
-        leg1.Draw()
-
-        canv_tauScan.Modified()
-        canv_tauScan.Update()
-        canv_tauScan.Print("%s/scantau_%s.%s" % (output_dir, self.variable_name, self.OUTPUT_FMT))
-        return tau
-
 
     def doScanL(self, output_dir, n_scan=300, tau_min=1E-14, tau_max=0.1):
         """Figure out best tau by doing scan over L curve
@@ -1151,7 +1172,7 @@ if __name__ == "__main__":
     if args.useAltResponse:
         append += "_altResponse"
 
-    output_dir = os.path.join(src_dir, "unfolding_better_regularise%s_target0p5%s%s_densityModeBinWidth_constraintArea%s" % (str(REGULARIZE).capitalize(), mc_append, sub_append, append))
+    output_dir = os.path.join(src_dir, "unfolding_better_regularise%s_target0p5%s%s_densityModeBinWidth_constraintArea%s_signalRegionOnly" % (str(REGULARIZE).capitalize(), mc_append, sub_append, append))
     if args.outputDir:
         output_dir = args.outputDir
     cu.check_dir_exists_create(output_dir)
@@ -1398,18 +1419,26 @@ if __name__ == "__main__":
             # ---------------------
             # tau = 1E-10
             tau = 0
+            n_scan = 100
+            scan_mode = ROOT.TUnfoldDensity.kEScanTauRhoAvgSys
+            scan_distribution = "generatordistribution"
             if REGULARIZE == "L":
-                print("Regularizing with doScanL, please be patient...")
-                tau = unfolder.doScanL(output_dir=this_output_dir, n_scan=100,
+                print("Regularizing with ScanL, please be patient...")
+                tau = unfolder.doScanL(output_dir=this_output_dir, n_scan=n_scan,
                                        tau_min=1E-14, tau_max=1E-4)
                 print("Found tau:", tau)
             elif REGULARIZE == "tau":
-                print("Regularizing with doScanTau, please be patient...")
-                tau = unfolder.doScanTau(output_dir=this_output_dir, n_scan=100,
-                                         tau_min=region['tau_limits'][angle.var][0],
-                                         tau_max=region['tau_limits'][angle.var][1],
-                                         scan_mode=ROOT.TUnfoldDensity.kEScanTauRhoAvgSys)
+                print("Regularizing with ScanTau, please be patient...")
+                tau_scanner = TauScanner()
+                tau = tau_scanner.scan_tau(tunfolder=unfolder.tunfolder,
+                                           n_scan=n_scan,
+                                           tau_min=region['tau_limits'][angle.var][0],
+                                           tau_max=region['tau_limits'][angle.var][1],
+                                           scan_mode=scan_mode,
+                                           distribution=scan_distribution,
+                                           axis_steering=unfolder.axisSteering)
                 print("Found tau:", tau)
+                tau_scanner.plot_scan_tau(output_filename="%s/scantau_%s.%s" % (this_output_dir, unfolder.variable_name, OUTPUT_FMT))
 
             # Do unfolding!
             # ---------------------
@@ -1459,7 +1488,7 @@ if __name__ == "__main__":
                         h_syst = unfolder.tunfolder.GetDeltaSysSource(syst_label,
                                                                       '%s_%s_shift_%s' % (region['name'], angle.var, syst_label),
                                                                       "",
-                                                                      "generator",
+                                                                      "generator",  # must be the same as what's used in get_output
                                                                       unfolder.axisSteering,
                                                                       unfolder.use_axis_binning)
                         systematic_shift_hists.append(h_syst)
