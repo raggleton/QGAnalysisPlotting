@@ -900,6 +900,10 @@ if __name__ == "__main__":
     if not any([args.doDijetCentral, args.doDijetForward, args.doDijetCentralGroomed, args.doDijetForwardGroomed, args.doZPJ, args.doZPJGroomed]):
         raise RuntimeError("You need to specify at least one signal region e.g. --doDijetCentral")
 
+    if args.useAltResponse and args.doSysts:
+        args.doSysts = False
+        print("You cannot use both --useAltResponse and --doSysts: disabling doSysts")
+
     # Setup files and regions to unfold
     # --------------------------------------------------------------------------
     src_dir = "workdir_ak4puppi_data_trigBinningBetter2_jetAsymCut_pt1RecoConstituents_V11JEC_JER_tUnfoldBetter_target0p5_wta_groomed_fwdcenDijet"
@@ -922,6 +926,7 @@ if __name__ == "__main__":
             "label": "Dijet",
             "data_tfile": input_jetht_tfile,
             "mc_tfile": input_mc_qcd_mgpythia_tfile,
+            "mc_label": "MG+Pythia8",
             "alt_mc_tfile": input_mc_qcd_herwig_tfile,
             "alt_mc_label": "Herwig++",
             "tau_limits": {
@@ -1263,11 +1268,7 @@ if __name__ == "__main__":
             mc_hname_append = "split" if MC_SPLIT else "all"
             hist_mc_reco = cu.get_from_tfile(region['mc_tfile'], "%s/hist_%s_reco_%s" % (region['dirname'], angle_shortname, mc_hname_append))
             hist_mc_gen = cu.get_from_tfile(region['mc_tfile'], "%s/hist_%s_truth_%s" % (region['dirname'], angle_shortname, mc_hname_append))
-            hist_mc_gen_reco_map = None
-            if args.useAltResponse:
-                hist_mc_gen_reco_map = cu.get_from_tfile(region['alt_mc_tfile'], "%s/tu_%s_GenReco_%s" % (region['dirname'], angle_shortname, mc_hname_append))
-            else:
-                hist_mc_gen_reco_map = cu.get_from_tfile(region['mc_tfile'], "%s/tu_%s_GenReco_%s" % (region['dirname'], angle_shortname, mc_hname_append))
+            hist_mc_gen_reco_map = cu.get_from_tfile(region['mc_tfile'], "%s/tu_%s_GenReco_%s" % (region['dirname'], angle_shortname, mc_hname_append))
 
             # Actual distribution to be unfolded
             reco_1d = hist_mc_reco.Clone() if MC_INPUT else hist_data_reco
@@ -1329,29 +1330,6 @@ if __name__ == "__main__":
 
                 hist_mc_reco_gen_binning_bg_subtracted = hist_mc_reco_gen_binning.Clone(hist_mc_reco_gen_binning.GetName() + "_bgrSubtracted")
                 hist_mc_reco_gen_binning_bg_subtracted.Add(hist_mc_fakes_reco_gen_binning, -1)  # should this be hist_fakes_reco_gen_binning? depends on what we want to see...
-
-
-            # Alternate MC
-            # mc_hname_append = ""  # FIXME consistency in unfold hist module!
-            # alt_hist_mc_reco = cu.get_from_tfile(region['alt_mc_tfile'], "%s/hist_%s_reco_all" % (region['dirname'], angle_shortname))
-            # alt_hist_mc_gen = cu.get_from_tfile(region['alt_mc_tfile'], "%s/hist_%s_truth_all" % (region['dirname'], angle_shortname))
-            # if SUBTRACT_FAKES:
-            #     alt_hist_mc_fakes_reco = cu.get_from_tfile(region['alt_mc_tfile'], "%s/hist_%s_reco_fake_all" % (region['dirname'], angle_shortname))
-            #     alt_hist_fakes_reco = alt_hist_mc_fakes_reco.Clone("alt_hist_%s_fakes" % angle_shortname)
-            # alt_hist_mc_reco_bg_subtracted = alt_hist_mc_reco.Clone(alt_hist_mc_reco.GetName() + "_bgrSubtracted")
-            # alt_hist_mc_reco_bg_subtracted.Add(alt_hist_fakes_reco, -1)
-
-            # alt_hist_mc_reco_gen_binning = cu.get_from_tfile(region['alt_mc_tfile'], "%s/hist_%s_reco_gen_binning" % (region['dirname'], angle_shortname))
-            # if SUBTRACT_FAKES:
-            #     alt_hist_mc_fakes_reco_gen_binning = cu.get_from_tfile(region['alt_mc_tfile'], "%s/hist_%s_reco_fake_gen_binning" % (region['dirname'], angle_shortname))
-            #     # create template as above, but with gen binning
-            #     hist_fakes_reco_gen_binning = alt_hist_mc_fakes_reco_gen_binning.Clone("hist_%s_fakes_gen_binning" % angle_shortname)
-            #     hist_fakes_reco_gen_binning.Divide(hist_mc_reco_gen_binning)
-            #     hist_fakes_reco_gen_binning.Multiply(reco_1d_gen_binning)
-
-            #     alt_hist_mc_reco_gen_binning_bg_subtracted = alt_hist_mc_reco_gen_binning.Clone(alt_hist_mc_reco_gen_binning.GetName() + "_bgrSubtracted")
-            #     alt_hist_mc_reco_gen_binning_bg_subtracted.Add(alt_hist_mc_fakes_reco_gen_binning, -1)
-
 
             # Setup unfolder object
             # ---------------------
@@ -1623,6 +1601,88 @@ if __name__ == "__main__":
 
             summary_1d_entries = []  # for final summary plot
 
+            # Do unfolding again, this time using alternate response matrix
+            # ------------------------------------------------------------------
+            alt_unfolded_1d = None
+            alt_hist_mc_gen = None
+            alt_tau = 0
+            if args.useAltResponse:
+                print("*** Unfolding with alternate response matrix ***")
+                alt_hist_mc_gen = cu.get_from_tfile(region['alt_mc_tfile'], "%s/hist_%s_truth_all" % (region['dirname'], angle_shortname))
+                hist_mc_gen_reco_map_alt = cu.get_from_tfile(region['alt_mc_tfile'], "%s/tu_%s_GenReco_all" % (region['dirname'], angle_shortname))
+                alt_unfolder = MyUnfolder(response_map=hist_mc_gen_reco_map_alt,
+                                          variable_bin_edges_reco=unfolder.variable_bin_edges_reco,
+                                          variable_bin_edges_gen=unfolder.variable_bin_edges_gen,
+                                          variable_name=unfolder.variable_name,
+                                          pt_bin_edges_reco=unfolder.pt_bin_edges_reco,
+                                          pt_bin_edges_gen=unfolder.pt_bin_edges_gen,
+                                          pt_bin_edges_underflow_reco=unfolder.pt_bin_edges_underflow_reco,
+                                          pt_bin_edges_underflow_gen=unfolder.pt_bin_edges_underflow_gen,
+                                          orientation=unfolder.orientation,
+                                          constraintMode=unfolder.constraintMode,
+                                          regMode=unfolder.regMode,
+                                          densityFlags=unfolder.densityFlags,
+                                          axisSteering=unfolder.axisSteering)
+
+                # Subtract fakes (treat as background)
+                # --------------------------------------------------------------
+                if SUBTRACT_FAKES:
+                    alt_unfolder.tunfolder.SubtractBackground(hist_fakes_reco, "fakes")
+
+                # Set what is to be unfolded
+                # --------------------------------------------------------------
+                alt_unfolder.setInput(reco_1d)
+
+                # Save important stuff to TFile
+                # --------------------------------------------------------------
+                this_tdir.WriteTObject(hist_mc_gen_reco_map_alt, "alt_response_map")  # response map
+
+                # Do any regularization
+                # --------------------------------------------------------------
+                alt_tau = 0
+                if REGULARIZE == "L":
+                    print("Regularizing alternative with ScanL, please be patient...")
+                    alt_tau = alt_unfolder.doScanL(output_dir=this_output_dir, n_scan=100,
+                                           tau_min=1E-14, tau_max=1E-4)
+                    print("Found tau:", tau)
+                elif REGULARIZE == "tau":
+                    print("Regularizing alternative with ScanTau, please be patient...")
+                    alt_tau_scanner = TauScanner()
+                    alt_tau = alt_tau_scanner.scan_tau(tunfolder=alt_unfolder.tunfolder,
+                                                       n_scan=n_scan,
+                                                       tau_min=region['tau_limits'][angle.var][0],
+                                                       tau_max=region['tau_limits'][angle.var][1],
+                                                       scan_mode=scan_mode,
+                                                       distribution=scan_distribution,
+                                                       axis_steering=alt_unfolder.axisSteering)
+                    print("Found tau for alt matrix:", alt_tau)
+                    alt_tau_scanner.plot_scan_tau(output_filename="%s/scantau_alt_%s.%s" % (this_output_dir, alt_unfolder.variable_name, OUTPUT_FMT))
+
+                # Do unfolding!
+                # --------------------------------------------------------------
+                alt_unfolder.do_unfolding(alt_tau)
+                alt_unfolded_1d = alt_unfolder.get_output()
+                alt_unfolded_1d.SetName("alt_unfolded_1d")
+                print("Bin %d:" % chosen_bin, alt_unfolded_1d.GetBinContent(chosen_bin))
+                print("original uncert:", alt_unfolded_1d.GetBinError(chosen_bin))
+
+                # Get error matrix to update errors
+                # --------------------------------------------------------------
+                alt_ematrix_total = alt_unfolder.get_ematrix_total()
+                alt_error_total_1d = make_hist_from_diagonal_errors(ematrix_total, do_sqrt=True) # note that bin contents = 0, only bin errors are non-0
+                this_tdir.WriteTObject(alt_ematrix_total, "alt_ematrix_total_1d")
+                this_tdir.WriteTObject(alt_error_total_1d, "alt_error_total_1d")
+                print("total uncert:", alt_error_total_1d.GetBinError(chosen_bin))
+
+                # Update errors to big unfolded 1D
+                update_hist_bin_error(h_orig=alt_error_total_1d, h_to_be_updated=alt_unfolded_1d)
+                print("new uncert:", alt_unfolded_1d.GetBinError(chosen_bin))
+                this_tdir.WriteTObject(alt_unfolded_1d)
+
+            # ------------------------------------------------------------------
+            # PLOTTING LOTS OF THINGS
+            # ------------------------------------------------------------------
+
             # Some common plotting vars
             # ------------------------------------------------------------------
             detector_title = "Detector-level " + angle_str
@@ -1641,6 +1701,9 @@ if __name__ == "__main__":
                 # Unfolded hists
                 mc_gen_hist_bin = unfolder.get_var_hist_pt_binned(hist_mc_gen, ibin_pt, binning_scheme="generator")
                 this_pt_bin_tdir.WriteTObject(mc_gen_hist_bin, "mc_gen_hist_bin")
+
+                alt_mc_gen_hist_bin = unfolder.get_var_hist_pt_binned(alt_hist_mc_gen, ibin_pt, binning_scheme="generator")
+                this_pt_bin_tdir.WriteTObject(alt_mc_gen_hist_bin, "alt_mc_gen_hist_bin")
 
                 unfolded_hist_bin = unfolder.get_var_hist_pt_binned(unfolded_1d, ibin_pt, binning_scheme="generator")
                 this_pt_bin_tdir.WriteTObject(unfolded_hist_bin, "unfolded_hist_bin")
@@ -1673,7 +1736,7 @@ if __name__ == "__main__":
 
                 # Make lots of plots
                 # ------------------------------------------------------------
-                lw = 1
+                lw = 2
                 # common hist settings
                 title = "%s\n%s region\n%g < p_{T}^{jet} < %g GeV" % (jet_algo, region['label'], pt_bin_edges_gen[ibin_pt], pt_bin_edges_gen[ibin_pt+1])
                 common_hist_args = dict(
@@ -1800,6 +1863,102 @@ if __name__ == "__main__":
                              marker_color=gen_colour, marker_size=0,
                              normalise_hist=True)),  # generator
                 ])
+
+                # Repeat unfolded plots but with alternate response matrix results also shown,
+                # and alternate MC gen level to compare
+                # (is the difference between unfolded results < diff at gen level?)
+                if args.useAltResponse:
+                    alt_mc_gen_hist_bin = alt_unfolder.get_var_hist_pt_binned(alt_hist_mc_gen, ibin_pt, binning_scheme="generator")
+                    alt_unfolded_hist_bin_total_errors = alt_unfolder.get_var_hist_pt_binned(alt_unfolded_1d, ibin_pt, binning_scheme="generator")
+                    this_pt_bin_tdir.WriteTObject(alt_unfolded_hist_bin_total_errors, "alt_unfolded_hist_bin_total_errors")
+
+                    alt_gen_colour = ROOT.kBlack
+                    alt_colour = ROOT.kBlue
+
+                    entries = [
+                        Contribution(mc_gen_hist_bin, label="Generator (%s)" % (region['mc_label']),
+                                     line_color=gen_colour, line_width=lw,
+                                     marker_color=gen_colour, marker_size=0,
+                                     # subplot=unfolded_hist_bin_total_errors,
+                                     normalise_hist=True),
+                        Contribution(alt_mc_gen_hist_bin, label="Generator (%s)" % (region['alt_mc_label']),
+                                     line_color=alt_gen_colour, line_width=lw,
+                                     marker_color=alt_gen_colour, marker_size=0,
+                                     # subplot=unfolded_hist_bin_total_errors,
+                                     normalise_hist=True),
+                        # Contribution(unfolded_hist_bin_total_errors, label="Unfolded (#tau = %.3g) (total err)" % (tau),
+                        #              line_color=unfolded_total_colour, line_width=lw, line_style=1,
+                        #              marker_color=unfolded_total_colour, marker_style=20, marker_size=0.75,
+                        #              subplot=mc_gen_hist_bin,
+                        #              normalise_hist=True),
+                        Contribution(unfolded_hist_bin_stat_errors, label="Unfolded (#tau = %.3g) (stat err)\n(%s response matrix)" % (tau, region['mc_label']),
+                                     line_color=unfolded_stat_colour, line_width=lw, line_style=2,
+                                     marker_color=unfolded_stat_colour, marker_size=0,
+                                     subplot=mc_gen_hist_bin,
+                                     normalise_hist=True),
+                        Contribution(alt_unfolded_hist_bin_total_errors, label="Unfolded (#tau = %.3g) (stat err)\n(%s response matrix)" % (alt_tau, region['alt_mc_label']),
+                                     line_color=alt_colour, line_width=lw, line_style=3,
+                                     marker_color=alt_colour, marker_size=0,
+                                     subplot=mc_gen_hist_bin,
+                                     normalise_hist=True),
+                    ]
+                    if not check_entries(entries, "%s %d" % (append, ibin_pt)):
+                        continue
+                    plot = Plot(entries,
+                                xtitle=particle_title,
+                                ytitle=normalised_differential_label,
+                                subplot_title='#splitline{Unfolded / Gen}{(%s)}' % (region['mc_label']),
+                                **common_hist_args)
+                    plot.legend.SetX1(0.55)
+                    plot.legend.SetY1(0.72)
+                    plot.legend.SetX2(0.98)
+                    plot.legend.SetY2(0.88)
+                    plot.plot("NOSTACK E1")
+                    plot.save("%s/unfolded_%s_alt_response_bin_%d.%s" % (this_output_dir, append, ibin_pt, OUTPUT_FMT))
+
+                    # Do a version where divided by bin width
+                    alt_mc_gen_hist_bin_div_bin_width = qgp.hist_divide_bin_width(alt_mc_gen_hist_bin)
+                    alt_unfolded_hist_bin_total_errors_div_bin_width = qgp.hist_divide_bin_width(alt_unfolded_hist_bin_total_errors)
+                    entries = [
+                        Contribution(mc_gen_hist_bin_div_bin_width, label="Generator (%s)" % (region['mc_label']),
+                                     line_color=gen_colour, line_width=lw,
+                                     marker_color=gen_colour, marker_size=0,
+                                     # subplot=unfolded_hist_bin_total_errors_div_bin_width,
+                                     normalise_hist=True),
+                        Contribution(alt_mc_gen_hist_bin_div_bin_width, label="Generator (%s)" % (region['alt_mc_label']),
+                                     line_color=alt_gen_colour, line_width=lw,
+                                     marker_color=alt_gen_colour, marker_size=0,
+                                     # subplot=unfolded_hist_bin_total_errors_div_bin_width,
+                                     normalise_hist=True),
+                        # Contribution(unfolded_hist_bin_total_errors_div_bin_width, label="Unfolded (#tau = %.3g) (total err)" % (tau),
+                        #              line_color=unfolded_total_colour, line_width=lw, line_style=1,
+                        #              marker_color=unfolded_total_colour, marker_style=20, marker_size=0.75,
+                        #              subplot=mc_gen_hist_bin_div_bin_width,
+                        #              normalise_hist=True),
+                        Contribution(unfolded_hist_bin_stat_errors_div_bin_width, label="Unfolded (#tau = %.3g) (stat err)\n(%s response matrix)" % (tau, region['mc_label']),
+                                     line_color=unfolded_stat_colour, line_width=lw, line_style=2,
+                                     marker_color=unfolded_stat_colour, marker_size=0,
+                                     subplot=mc_gen_hist_bin_div_bin_width,
+                                     normalise_hist=True),
+                        Contribution(alt_unfolded_hist_bin_total_errors_div_bin_width, label="Unfolded (#tau = %.3g) (stat err)\n(%s response matrix)" % (alt_tau, region['alt_mc_label']),
+                                     line_color=alt_colour, line_width=lw, line_style=3,
+                                     marker_color=alt_colour, marker_size=0,
+                                     subplot=mc_gen_hist_bin_div_bin_width,
+                                     normalise_hist=True),
+                    ]
+                    if not check_entries(entries, "%s %d" % (append, ibin_pt)):
+                        continue
+                    plot = Plot(entries,
+                                xtitle=particle_title,
+                                ytitle=normalised_differential_label,
+                                subplot_title='#splitline{Unfolded / Gen}{(%s)}' % (region['mc_label']),
+                                **common_hist_args)
+                    plot.legend.SetX1(0.55)
+                    plot.legend.SetY1(0.72)
+                    plot.legend.SetX2(0.98)
+                    plot.legend.SetY2(0.88)
+                    plot.plot("NOSTACK E1")
+                    plot.save("%s/unfolded_%s_alt_response_bin_%d_divBinWidth.%s" % (this_output_dir, append, ibin_pt, OUTPUT_FMT))
 
                 # PLOT UNCERTAINTY SHIFTS
                 # --------------------------------------------------------------
