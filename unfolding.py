@@ -935,7 +935,7 @@ if __name__ == "__main__":
             "alt_mc_tfile": input_mc_qcd_herwig_tfile,
             "alt_mc_label": "Herwig++",
             "tau_limits": {
-                'jet_puppiMultiplicity': (1E-13, 1E-10),
+                'jet_puppiMultiplicity': (1E-11, 1E-9),
                 'jet_pTD': (1E-13, 1E-10),
                 'jet_LHA': (1E-13, 1E-10),
                 'jet_width': (1E-13, 1E-10),
