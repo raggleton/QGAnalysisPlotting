@@ -141,7 +141,7 @@ class TauScanner(object):
         self.graph_all_scan_points.GetXaxis().SetTitle("log_{10}(#tau)")
         self.graph_all_scan_points.GetYaxis().SetTitle(" #rho")
 
-        leg = ROOT.TLegend(0.1, 0.6, 0.25, 0.89)
+        leg = ROOT.TLegend(0.2, 0.6, 0.35, 0.89)
         leg.SetFillColor(0)
         leg.SetFillStyle(0)
         leg.SetBorderSize(0)
