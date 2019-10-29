@@ -1417,6 +1417,8 @@ if __name__ == "__main__":
                                            axis_steering=unfolder.axisSteering)
                 print("Found tau:", tau)
                 tau_scanner.plot_scan_tau(output_filename="%s/scantau_%s.%s" % (this_output_dir, unfolder.variable_name, OUTPUT_FMT))
+                this_tdir.WriteTObject(tau_scanner.graph_all_scan_points, "regularize_all_scan_points")
+                this_tdir.WriteTObject(tau_scanner.graph_best_scan_point, "regularize_best_scan_point")
 
             # Do unfolding!
             # ---------------------
