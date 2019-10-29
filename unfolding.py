@@ -1007,6 +1007,44 @@ if __name__ == "__main__":
                     "colour": ROOT.kBlue-4,
                     "linestyle": 2,
                 },
+
+                # model systs
+                # {
+                #     "label": "muR up, muF nominal",
+                #     "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'ScaleVariationMuRUp_ScaleVariationMuFNominal', qgc.QCD_FILENAME)),
+                #     "systematic_type": "model",
+                #     "colour": ROOT.kAzure,
+                # },
+                # {
+                #     "label": "muR down, muF nominal",
+                #     "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'ScaleVariationMuRDown_ScaleVariationMuFNominal', qgc.QCD_FILENAME)),
+                #     "systematic_type": "model",
+                #     "colour": ROOT.kAzure+1,
+                # },
+                # {
+                #     "label": "muR nominal, muF up",
+                #     "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'ScaleVariationMuRNominal_ScaleVariationMuFUp', qgc.QCD_FILENAME)),
+                #     "systematic_type": "model",
+                #     "colour": ROOT.kAzure+2,
+                # },
+                # {
+                #     "label": "muR nominal, muF down",
+                #     "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'ScaleVariationMuRNominal_ScaleVariationMuFDown', qgc.QCD_FILENAME)),
+                #     "systematic_type": "model",
+                #     "colour": ROOT.kAzure+3,
+                # },
+                # {
+                #     "label": "muR down, muF down",
+                #     "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'ScaleVariationMuRDown_ScaleVariationMuFDown', qgc.QCD_FILENAME)),
+                #     "systematic_type": "model",
+                #     "colour": ROOT.kAzure+4,
+                # },
+                # {
+                #     "label": "muR up, muF up",
+                #     "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'ScaleVariationMuRUp_ScaleVariationMuFUp', qgc.QCD_FILENAME)),
+                #     "systematic_type": "model",
+                #     "colour": ROOT.kAzure+5,
+                # },
             ]
         }
 
@@ -1273,6 +1311,8 @@ if __name__ == "__main__":
             # Actual distribution to be unfolded
             reco_1d = hist_mc_reco.Clone() if MC_INPUT else hist_data_reco
 
+            hist_fakes_reco_fraction = None
+
             if SUBTRACT_FAKES:
                 # to construct our "fakes" template, we use the ratio as predicted by MC, and apply it to data
                 # this way we ensure we don't have -ve values, and avoid any issue with cross sections
@@ -1281,7 +1321,8 @@ if __name__ == "__main__":
                 hist_fakes_reco.Divide(hist_mc_reco)
 
                 # plot fake fraction before multiplting by 'data'
-                plot_fake_fraction(hist_fakes_reco,
+                hist_fakes_reco_fraction = hist_fakes_reco.Clone("hist_fakes_reco_fraction")
+                plot_fake_fraction(hist_fakes_reco_fraction,
                                    output_filename="%s/fake_fraction_%s.%s" % (this_output_dir, append, OUTPUT_FMT),
                                    title="%s region, %s" % (region['label'], angle_str))
 
@@ -1682,6 +1723,112 @@ if __name__ == "__main__":
                 this_tdir.WriteTObject(alt_unfolded_1d)
 
             # ------------------------------------------------------------------
+            # MODEL INPUT VARIATIONS
+            # ------------------------------------------------------------------
+            # For each model variation, we unfold using the same settings as
+            # the nominal one, just changing the input 1D hist
+            if DO_SYSTS:
+                for syst_dict in region['systematics']:
+                    if syst_dict['systematic_type'] != 'model':
+                        continue
+                    syst_label = syst_dict['label']
+                    syst_label_no_spaces = syst_dict['label'].replace(" ", "_")
+
+                    print("*** Unfolding with alternate input:", syst_label, "***")
+
+                    hist_syst_reco = cu.get_from_tfile(syst_dict['tfile'], "%s/hist_%s_reco_all" % (region['dirname'], angle_shortname))
+
+                    syst_unfolder = MyUnfolder(response_map=unfolder.response_map,
+                                               variable_bin_edges_reco=unfolder.variable_bin_edges_reco,
+                                               variable_bin_edges_gen=unfolder.variable_bin_edges_gen,
+                                               variable_name=unfolder.variable_name,
+                                               pt_bin_edges_reco=unfolder.pt_bin_edges_reco,
+                                               pt_bin_edges_gen=unfolder.pt_bin_edges_gen,
+                                               pt_bin_edges_underflow_reco=unfolder.pt_bin_edges_underflow_reco,
+                                               pt_bin_edges_underflow_gen=unfolder.pt_bin_edges_underflow_gen,
+                                               orientation=unfolder.orientation,
+                                               constraintMode=unfolder.constraintMode,
+                                               regMode=unfolder.regMode,
+                                               densityFlags=unfolder.densityFlags,
+                                               axisSteering=unfolder.axisSteering)
+
+                    # Subtract fakes (treat as background)
+                    # --------------------------------------------------------------
+                    if SUBTRACT_FAKES:
+                        # Use the background template from the nominal MC
+                        # (since we're only testing different input shapes,
+                        # and our bkg estimate is always from MC)
+                        hist_fakes_syst = hist_fakes_reco_fraction.Clone("hist_fakes_syst_%s" % syst_label_no_spaces)
+                        hist_fakes_syst.Multiply(hist_syst_reco)
+                        syst_unfolder.tunfolder.SubtractBackground(hist_fakes_syst, "fakes")
+
+                    # Add systematic errors as different response matrices
+                    # ----------------------------------------------------
+                    chosen_rsp_bin = (18, 18)
+                    print("nominal response bin content for", chosen_rsp_bin, syst_unfolder.response_map.GetBinContent(*chosen_rsp_bin))
+                    for syst_dict in region['systematics']:
+                        if 'tfile' in syst_dict and syst_dict['systematic_type'] == 'response':
+                            map_syst = cu.get_from_tfile(syst_dict['tfile'], "%s/tu_%s_GenReco_all" % (region['dirname'], angle_shortname))
+                            print("Adding systematic:", syst_dict['label'])
+                            print("    syst bin", chosen_rsp_bin, map_syst.GetBinContent(*chosen_rsp_bin))
+                            syst_unfolder.tunfolder.AddSysError(map_syst, syst_dict['label'], syst_unfolder.orientation, ROOT.TUnfoldDensity.kSysErrModeMatrix)
+
+                    # Set what is to be unfolded
+                    # --------------------------------------------------------------
+                    syst_unfolder.setInput(hist_syst_reco)
+
+                    # Save important stuff to TFile
+                    # --------------------------------------------------------------
+                    this_tdir.WriteTObject(hist_syst_reco, "syst_%s_unfold_input" % (syst_label_no_spaces))
+
+                    # Do any regularization
+                    # --------------------------------------------------------------
+                    syst_tau = 0
+                    syst_output_dir = "%s/%s/%s" % (output_dir, region['name'], angle.var)
+                    if REGULARIZE == "L":
+                        print("Regularizing systematic model with ScanL, please be patient...")
+                        syst_tau = syst_unfolder.doScanL(output_dir=this_output_dir, n_scan=100,
+                                                         tau_min=1E-14, tau_max=1E-4)
+                        print("Found tau:", tau)
+                    elif REGULARIZE == "tau":
+                        print("Regularizing systematic model with ScanTau, please be patient...")
+                        syst_tau_scanner = TauScanner()
+                        syst_tau = syst_tau_scanner.scan_tau(tunfolder=syst_unfolder.tunfolder,
+                                                             n_scan=n_scan,
+                                                             tau_min=region['tau_limits'][angle.var][0],
+                                                             tau_max=region['tau_limits'][angle.var][1],
+                                                             scan_mode=scan_mode,
+                                                             distribution=scan_distribution,
+                                                             axis_steering=syst_unfolder.axisSteering)
+                        print("Found tau for syst matrix:", syst_tau)
+                        syst_tau_scanner.plot_scan_tau(output_filename="%s/scantau_syst_%s_%s.%s" % (this_output_dir, syst_label_no_spaces, syst_unfolder.variable_name, OUTPUT_FMT))
+
+                    syst_dict['tau'] = syst_tau
+
+                    # Do unfolding!
+                    # --------------------------------------------------------------
+                    syst_unfolder.do_unfolding(syst_tau)
+                    syst_unfolded_1d = syst_unfolder.get_output()
+                    syst_unfolded_1d.SetName("syst_%s_unfolded_1d" % (syst_label_no_spaces))
+                    print("Bin %d:" % (chosen_bin), syst_unfolded_1d.GetBinContent(chosen_bin))
+                    print("original uncert:", syst_unfolded_1d.GetBinError(chosen_bin))
+
+                    # Get error matrix to update errors
+                    # --------------------------------------------------------------
+                    syst_ematrix_total = syst_unfolder.get_ematrix_total()
+                    syst_error_total_1d = make_hist_from_diagonal_errors(ematrix_total, do_sqrt=True) # note that bin contents = 0, only bin errors are non-0
+                    this_tdir.WriteTObject(syst_ematrix_total, "syst_%s_ematrix_total_1d" % (syst_label_no_spaces))
+                    this_tdir.WriteTObject(syst_error_total_1d, "syst_%s_error_total_1d" % (syst_label_no_spaces))
+                    print("total uncert:", syst_error_total_1d.GetBinError(chosen_bin))
+
+                    # Update errors to big unfolded 1D
+                    update_hist_bin_error(h_orig=syst_error_total_1d, h_to_be_updated=syst_unfolded_1d)
+                    print("new uncert:", syst_unfolded_1d.GetBinError(chosen_bin))
+                    this_tdir.WriteTObject(syst_unfolded_1d)
+
+                    syst_dict['unfolded_1d'] = syst_unfolded_1d
+
+            # ------------------------------------------------------------------
             # PLOTTING LOTS OF THINGS
             # ------------------------------------------------------------------
 
@@ -2021,75 +2168,76 @@ if __name__ == "__main__":
                                          normalise_hist=False),
                         )
 
-                    entries = [
-                        Contribution(mc_gen_hist_bin,
-                                     label="Generator (%s)" % (region['mc_label']),
-                                     line_color=gen_colour, line_width=lw,
-                                     marker_color=gen_colour, marker_size=0,
-                                     normalise_hist=True),
-                        Contribution(unfolded_hist_bin_total_errors,
-                                     label="Unfolded (#tau = %.3g) (total err)" % (tau),
-                                     line_color=unfolded_total_colour, line_width=lw, line_style=1,
-                                     marker_color=unfolded_total_colour, marker_style=20, marker_size=0.75,
-                                     normalise_hist=True),
-                        Contribution(unfolded_hist_bin_stat_errors,
-                                     label="Unfolded (#tau = %.3g) (stat err)" % (tau),
-                                     line_color=unfolded_stat_colour, line_width=lw, line_style=1,
-                                     marker_color=unfolded_stat_colour, marker_size=0,
-                                     normalise_hist=True),
-                    ]
-                    entries.extend(syst_entries)
-                    if not check_entries(entries, "%s %d" % (append, ibin_pt)):
-                        continue
-                    plot = Plot(entries,
-                                xtitle=particle_title,
-                                ytitle=normalised_differential_label,
-                                subplot_title='#splitline{Unfolded / Gen}{(%s)}' % (region['mc_label']),
-                                **common_hist_args)
-                    plot.legend.SetX1(0.55)
-                    plot.legend.SetY1(0.72)
-                    plot.legend.SetX2(0.98)
-                    plot.legend.SetY2(0.88)
-                    plot.legend.SetNColumns(3)
-                    plot.plot("NOSTACK E1")
-                    plot.save("%s/unfolded_%s_syst_model_bin_%d.%s" % (this_output_dir, append, ibin_pt, OUTPUT_FMT))
+                    if len(syst_entries):
+                        entries = [
+                            Contribution(mc_gen_hist_bin,
+                                         label="Generator (%s)" % (region['mc_label']),
+                                         line_color=gen_colour, line_width=lw,
+                                         marker_color=gen_colour, marker_size=0,
+                                         normalise_hist=True),
+                            Contribution(unfolded_hist_bin_total_errors,
+                                         label="Unfolded (#tau = %.3g) (total err)" % (tau),
+                                         line_color=unfolded_total_colour, line_width=lw, line_style=1,
+                                         marker_color=unfolded_total_colour, marker_style=20, marker_size=0.75,
+                                         normalise_hist=True),
+                            Contribution(unfolded_hist_bin_stat_errors,
+                                         label="Unfolded (#tau = %.3g) (stat err)" % (tau),
+                                         line_color=unfolded_stat_colour, line_width=lw, line_style=1,
+                                         marker_color=unfolded_stat_colour, marker_size=0,
+                                         normalise_hist=True),
+                        ]
+                        entries.extend(syst_entries)
+                        if not check_entries(entries, "%s %d" % (append, ibin_pt)):
+                            continue
+                        plot = Plot(entries,
+                                    xtitle=particle_title,
+                                    ytitle=normalised_differential_label,
+                                    subplot_title='#splitline{Unfolded / Gen}{(%s)}' % (region['mc_label']),
+                                    **common_hist_args)
+                        plot.legend.SetX1(0.55)
+                        plot.legend.SetY1(0.72)
+                        plot.legend.SetX2(0.98)
+                        plot.legend.SetY2(0.88)
+                        plot.legend.SetNColumns(3)
+                        plot.plot("NOSTACK E1")
+                        plot.save("%s/unfolded_%s_syst_model_bin_%d.%s" % (this_output_dir, append, ibin_pt, OUTPUT_FMT))
 
-                    # Do a version where divided by bin width
-                    mc_gen_hist_bin_div_bin_width = qgp.hist_divide_bin_width(mc_gen_hist_bin)
-                    unfolded_hist_bin_stat_errors_div_bin_width = qgp.hist_divide_bin_width(unfolded_hist_bin_stat_errors)
-                    unfolded_hist_bin_total_errors_div_bin_width = qgp.hist_divide_bin_width(unfolded_hist_bin_total_errors)
-                    entries_div_bin_width = [
-                        Contribution(mc_gen_hist_bin_div_bin_width,
-                                     label="Generator (%s)" % (region['mc_label']),
-                                     line_color=gen_colour, line_width=lw,
-                                     marker_color=gen_colour, marker_size=0,
-                                     normalise_hist=False),
-                        Contribution(unfolded_hist_bin_total_errors_div_bin_width,
-                                     label="Unfolded (#tau = %.3g) (total err)" % (tau),
-                                     line_color=unfolded_total_colour, line_width=lw, line_style=1,
-                                     marker_color=unfolded_total_colour, marker_style=20, marker_size=0.75,
-                                     normalise_hist=False),
-                        Contribution(unfolded_hist_bin_stat_errors_div_bin_width,
-                                     label="Unfolded (#tau = %.3g) (stat err)" % (tau),
-                                     line_color=unfolded_stat_colour, line_width=lw, line_style=1,
-                                     marker_color=unfolded_stat_colour, marker_size=0,
-                                     normalise_hist=False),
-                    ]
-                    entries_div_bin_width.extend(syst_entries_div_bin_width)
-                    if not check_entries(entries_div_bin_width, "%s %d" % (append, ibin_pt)):
-                        continue
-                    plot = Plot(entries_div_bin_width,
-                                xtitle=particle_title,
-                                ytitle=normalised_differential_label,
-                                subplot_title='#splitline{Unfolded / Gen}{(%s)}' % (region['mc_label']),
-                                **common_hist_args)
-                    plot.legend.SetX1(0.55)
-                    plot.legend.SetY1(0.72)
-                    plot.legend.SetX2(0.98)
-                    plot.legend.SetY2(0.88)
-                    plot.legend.SetNColumns(3)
-                    plot.plot("NOSTACK E1")
-                    plot.save("%s/unfolded_%s_syst_model_bin_%d_divBinWidth.%s" % (this_output_dir, append, ibin_pt, OUTPUT_FMT))
+                        # Do a version where divided by bin width
+                        mc_gen_hist_bin_div_bin_width = qgp.hist_divide_bin_width(mc_gen_hist_bin)
+                        unfolded_hist_bin_stat_errors_div_bin_width = qgp.hist_divide_bin_width(unfolded_hist_bin_stat_errors)
+                        unfolded_hist_bin_total_errors_div_bin_width = qgp.hist_divide_bin_width(unfolded_hist_bin_total_errors)
+                        entries_div_bin_width = [
+                            Contribution(mc_gen_hist_bin_div_bin_width,
+                                         label="Generator (%s)" % (region['mc_label']),
+                                         line_color=gen_colour, line_width=lw,
+                                         marker_color=gen_colour, marker_size=0,
+                                         normalise_hist=False),
+                            Contribution(unfolded_hist_bin_total_errors_div_bin_width,
+                                         label="Unfolded (#tau = %.3g) (total err)" % (tau),
+                                         line_color=unfolded_total_colour, line_width=lw, line_style=1,
+                                         marker_color=unfolded_total_colour, marker_style=20, marker_size=0.75,
+                                         normalise_hist=False),
+                            Contribution(unfolded_hist_bin_stat_errors_div_bin_width,
+                                         label="Unfolded (#tau = %.3g) (stat err)" % (tau),
+                                         line_color=unfolded_stat_colour, line_width=lw, line_style=1,
+                                         marker_color=unfolded_stat_colour, marker_size=0,
+                                         normalise_hist=False),
+                        ]
+                        entries_div_bin_width.extend(syst_entries_div_bin_width)
+                        if not check_entries(entries_div_bin_width, "%s %d" % (append, ibin_pt)):
+                            continue
+                        plot = Plot(entries_div_bin_width,
+                                    xtitle=particle_title,
+                                    ytitle=normalised_differential_label,
+                                    subplot_title='#splitline{Unfolded / Gen}{(%s)}' % (region['mc_label']),
+                                    **common_hist_args)
+                        plot.legend.SetX1(0.55)
+                        plot.legend.SetY1(0.72)
+                        plot.legend.SetX2(0.98)
+                        plot.legend.SetY2(0.88)
+                        plot.legend.SetNColumns(3)
+                        plot.plot("NOSTACK E1")
+                        plot.save("%s/unfolded_%s_syst_model_bin_%d_divBinWidth.%s" % (this_output_dir, append, ibin_pt, OUTPUT_FMT))
 
 
                 # --------------------------------------------------------------
