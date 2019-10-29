@@ -1733,15 +1733,17 @@ if __name__ == "__main__":
             # For each model variation, we unfold using the same settings as
             # the nominal one, just changing the input 1D hist
             if DO_SYSTS:
-                for syst_dict in region['systematics']:
+                for ind, syst_dict in enumerate(region['systematics']):
                     if syst_dict['systematic_type'] != 'model':
                         continue
                     syst_label = syst_dict['label']
                     syst_label_no_spaces = syst_dict['label'].replace(" ", "_")
 
                     print("*** Unfolding with alternate input:", syst_label, "***")
-
-                    hist_syst_reco = cu.get_from_tfile(syst_dict['tfile'], "%s/hist_%s_reco_all" % (region['dirname'], angle_shortname))
+                    
+                    mc_hname_append = "split" if MC_SPLIT else "all"
+                    hist_syst_reco = cu.get_from_tfile(syst_dict['tfile'], "%s/hist_%s_reco_%s" % (region['dirname'], angle_shortname, mc_hname_append))
+                    hist_syst_gen = cu.get_from_tfile(syst_dict['tfile'], "%s/hist_%s_truth_%s" % (region['dirname'], angle_shortname, mc_hname_append))
 
                     syst_unfolder = MyUnfolder(response_map=unfolder.response_map,
                                                variable_bin_edges_reco=unfolder.variable_bin_edges_reco,
@@ -1788,8 +1790,8 @@ if __name__ == "__main__":
 
                     # Do any regularization
                     # --------------------------------------------------------------
-                    syst_tau = 0
                     syst_output_dir = "%s/%s/%s" % (output_dir, region['name'], angle.var)
+                    syst_tau = 0
                     if REGULARIZE == "L":
                         print("Regularizing systematic model with ScanL, please be patient...")
                         syst_tau = syst_unfolder.doScanL(output_dir=this_output_dir, n_scan=100,
@@ -1808,7 +1810,7 @@ if __name__ == "__main__":
                         print("Found tau for syst matrix:", syst_tau)
                         syst_tau_scanner.plot_scan_tau(output_filename="%s/scantau_syst_%s_%s.%s" % (this_output_dir, syst_label_no_spaces, syst_unfolder.variable_name, OUTPUT_FMT))
 
-                    syst_dict['tau'] = syst_tau
+                    region['systematics'][ind]['tau'] = syst_tau
 
                     # Do unfolding!
                     # --------------------------------------------------------------
@@ -1831,7 +1833,8 @@ if __name__ == "__main__":
                     print("new uncert:", syst_unfolded_1d.GetBinError(chosen_bin))
                     this_tdir.WriteTObject(syst_unfolded_1d)
 
-                    syst_dict['unfolded_1d'] = syst_unfolded_1d
+                    region['systematics'][ind]['unfolded_1d'] = syst_unfolded_1d
+                    region['systematics'][ind]['gen_1d'] = hist_syst_gen
 
             # ------------------------------------------------------------------
             # PLOTTING LOTS OF THINGS
