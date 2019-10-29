@@ -141,13 +141,13 @@ class TauScanner(object):
         self.graph_all_scan_points.GetXaxis().SetTitle("log_{10}(#tau)")
         self.graph_all_scan_points.GetYaxis().SetTitle(" #rho")
 
-        leg = ROOT.TLegend(0.59, 0.6, 0.74, 0.89)
+        leg = ROOT.TLegend(0.1, 0.6, 0.25, 0.89)
         leg.SetFillColor(0)
         leg.SetFillStyle(0)
         leg.SetBorderSize(0)
         leg.SetTextSize(0.026)
         leg.AddEntry(self.graph_all_scan_points, 'Scan over #tau', 'l')
-        leg.AddEntry(self.graph_all_scan_points, 'Chosen point: #tau = {}'.format(self.tau), 'P')
+        leg.AddEntry(self.graph_best_scan_point, 'Chosen point: #tau = {}'.format(self.tau), 'P')
         leg.Draw()
 
         canv_tau_scan.Print(output_filename)
