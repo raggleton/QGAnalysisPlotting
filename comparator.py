@@ -685,4 +685,4 @@ class Plot(object):
         if not os.path.isdir(os.path.dirname(filename)):
             os.makedirs(os.path.dirname(filename))
         self.canvas.SaveAs(filename)
-        del self.canvas
+        # del self.canvas
