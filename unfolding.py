@@ -2447,23 +2447,26 @@ if __name__ == "__main__":
                 reco_mc_colour = ROOT.kGreen+2
                 reco_data_colour = ROOT.kRed
                 reco_folded_colour = ROOT.kAzure+1
+                mc_reco_bin_hist = mc_reco_hist_bg_subtracted_bin_reco_binning if SUBTRACT_FAKES else mc_reco_hist_bin_reco_binning
+                reco_bin_hist = reco_hist_bg_subtracted_bin_reco_binning if SUBTRACT_FAKES else reco_hist_bin_reco_binning
+
                 entries = [
-                    Contribution(mc_reco_hist_bg_subtracted_bin_reco_binning if SUBTRACT_FAKES else mc_reco_hist_bin_reco_binning,
+                    Contribution(mc_reco_bin_hist,
                                  label="MC (reco, bg-subtracted)" if SUBTRACT_FAKES else "MC (reco)",
                                  line_color=reco_mc_colour, line_width=lw,
                                  marker_color=reco_mc_colour, marker_size=0,
                                  normalise_hist=True),
-                    Contribution(reco_hist_bg_subtracted_bin_reco_binning if SUBTRACT_FAKES else reco_hist_bin_reco_binning,
+                    Contribution(reco_bin_hist,
                                  label="Data (reco, bg-subtracted)" if SUBTRACT_FAKES else "Data (reco)",
                                  line_color=reco_data_colour, line_width=lw,
                                  marker_color=reco_data_colour, marker_size=0,
-                                 subplot=mc_reco_hist_bin_reco_binning,
+                                 subplot=mc_reco_bin_hist,
                                  normalise_hist=True),
                     Contribution(folded_unfolded_hist_bin_reco_binning,
                                  label="Folded unfolded data (#tau = %.3g)" % (tau),
                                  line_color=reco_folded_colour, line_width=lw,
                                  marker_color=reco_folded_colour, marker_size=0,
-                                 subplot=mc_reco_hist_bin_reco_binning,
+                                 subplot=mc_reco_bin_hist,
                                  normalise_hist=True),
                 ]
                 if not check_entries(entries, "%s %d" % (append, ibin_pt)):
@@ -2482,7 +2485,7 @@ if __name__ == "__main__":
 
                 # Folded, but only comparing data with data to check it is sane
                 entries = [
-                    Contribution(reco_hist_bg_subtracted_bin_reco_binning if SUBTRACT_FAKES else reco_hist_bin_reco_binning,
+                    Contribution(reco_bin_hist,
                                  label="Data (reco, bg-subtracted)" if SUBTRACT_FAKES else "Data (reco)",
                                  line_color=reco_data_colour, line_width=lw,
                                  marker_color=reco_data_colour, marker_size=0,
@@ -2491,7 +2494,7 @@ if __name__ == "__main__":
                                  label="Folded unfolded data (#tau = %.3g)" % (tau),
                                  line_color=reco_folded_colour, line_width=lw,
                                  marker_color=reco_folded_colour, marker_size=0,
-                                 subplot=reco_hist_bin_reco_binning,
+                                 subplot=reco_bin_hist,
                                  normalise_hist=True),
                 ]
                 if not check_entries(entries, "%s %d" % (append, ibin_pt)):
@@ -2507,6 +2510,36 @@ if __name__ == "__main__":
                 plot.legend.SetY2(0.9)
                 plot.plot("NOSTACK E1")
                 plot.save("%s/detector_folded_only_data_%s_bin_%d.%s" % (this_output_dir, append, ibin_pt, OUTPUT_FMT))
+
+                # Same but divided by bin width
+                reco_bin_hist_div_bin_width = qgp.hist_divide_bin_width(reco_bin_hist)
+                folded_unfolded_hist_bin_reco_binning_div_bin_width = qgp.hist_divide_bin_width(folded_unfolded_hist_bin_reco_binning)
+                entries = [
+                    Contribution(reco_bin_hist_div_bin_width,
+                                 label="Data (reco, bg-subtracted)" if SUBTRACT_FAKES else "Data (reco)",
+                                 line_color=reco_data_colour, line_width=lw,
+                                 marker_color=reco_data_colour, marker_size=0,
+                                 normalise_hist=False),
+                    Contribution(folded_unfolded_hist_bin_reco_binning_div_bin_width,
+                                 label="Folded unfolded data (#tau = %.3g)" % (tau),
+                                 line_color=reco_folded_colour, line_width=lw,
+                                 marker_color=reco_folded_colour, marker_size=0,
+                                 subplot=reco_bin_hist_div_bin_width,
+                                 normalise_hist=False),
+                ]
+                if not check_entries(entries, "%s %d" % (append, ibin_pt)):
+                    continue
+                plot = Plot(entries,
+                            xtitle=detector_title,
+                            ytitle=normalised_differential_label,
+                            subplot_title='Folded unfolded / reco',
+                            **common_hist_args)
+                plot.legend.SetX1(0.6)
+                plot.legend.SetY1(0.75)
+                plot.legend.SetX2(0.98)
+                plot.legend.SetY2(0.9)
+                plot.plot("NOSTACK E1")
+                plot.save("%s/detector_folded_only_data_%s_bin_%d_divBinWidth.%s" % (this_output_dir, append, ibin_pt, OUTPUT_FMT))
 
 
             # DO SUMMARY PLOT
