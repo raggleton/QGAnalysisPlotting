@@ -407,6 +407,7 @@ class Plot(object):
             ax = self.container.GetYaxis()
             if ax:
                 ax.SetMoreLogLabels()
+
         # if self.subplot_container:
         #     ax = self.subplot_container.GetYaxis()
         #     if ax:
@@ -414,6 +415,33 @@ class Plot(object):
 
     def set_logz(self, state=True):
         self.main_pad.SetLogz(int(state))
+    
+    def get_modifier(self):
+        if self.plot_what != 'function':
+            modifier = self.container
+        else:
+            modifier = self.container.Mod()
+        return modifier
+
+    def _set_automatic_y_limits(self):
+        # urgh why doesnt THStack.GetMaximum() return the actual maximum
+        # GetYaxis().GetXmax() doesnt work either
+
+        modifier = self.get_modifier()
+        ymax = max([o.GetMaximum() for o in self.contributions_objs])
+        if self.main_pad.GetLogy():
+            modifier.SetMaximum(ymax * self.y_padding_max_log)
+        else:
+            modifier.SetMaximum(ymax * self.y_padding_max_linear)
+
+        # somehow broken
+        # ymin = min([o.GetMinimum() for o in self.contributions_objs])
+        # if self.main_pad.GetLogy():
+        #     pass
+        #     # if ymin > 0:
+        #     #     modifier.SetMinimum(ymin * self.y_padding_min_log)
+        # else:
+        #     modifier.SetMinimum(ymin * self.y_padding_min_linear)
 
     def plot(self, draw_opts=None):
         """Make the plot.
@@ -495,11 +523,8 @@ class Plot(object):
         self.container.Draw(draw_opts)
 
         # Customise
-        if self.plot_what != 'function':
-            modifier = self.container
-        else:
-            modifier = self.container.Mod()
-
+        modifier = self.get_modifier()
+        
         # Use the x/y axis labels from the first contribution as defaults
         if not self.xtitle:
             self.xtitle = self.contributions_objs[0].GetXaxis().GetTitle()
@@ -525,24 +550,9 @@ class Plot(object):
             modifier.SetMinimum(self.ylim[0])  # use this, not SetRangeUser()
             modifier.SetMaximum(self.ylim[1])
         else:
-            # add some padding
+            # add some padding to the y limits
             self.canvas.Update()
-            # urgh why doesnt THStack.GetMaximum() return the actual maximum
-            # GetYaxis().GetXmax() doesnt work either
-            ymax = max([o.GetMaximum() for o in self.contributions_objs])
-            if self.main_pad.GetLogy():
-                modifier.SetMaximum(ymax * self.y_padding_max_log)
-            else:
-                modifier.SetMaximum(ymax * self.y_padding_max_linear)
-
-            # somehow broken
-            # ymin = min([o.GetMinimum() for o in self.contributions_objs])
-            # if self.main_pad.GetLogy():
-            #     pass
-            #     # if ymin > 0:
-            #     #     modifier.SetMinimum(ymin * self.y_padding_min_log)
-            # else:
-            #     modifier.SetMinimum(ymin * self.y_padding_min_linear)
+            self._set_automatic_y_limits(modifier)
 
         # Draw it again to update
         if self.plot_what == "graph":
