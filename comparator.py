@@ -552,7 +552,7 @@ class Plot(object):
         else:
             # add some padding to the y limits
             self.canvas.Update()
-            self._set_automatic_y_limits(modifier)
+            self._set_automatic_y_limits()
 
         # Draw it again to update
         if self.plot_what == "graph":
