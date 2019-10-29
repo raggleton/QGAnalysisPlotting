@@ -2155,26 +2155,42 @@ if __name__ == "__main__":
                         syst_unfolded_1d = syst_dict['unfolded_1d']
                         syst_unfolded_hist_bin_total_errors = unfolder.get_var_hist_pt_binned(syst_unfolded_1d, ibin_pt, binning_scheme="generator")
                         this_pt_bin_tdir.WriteTObject(syst_unfolded_hist_bin_total_errors, "syst_%s_unfolded_hist_bin_total_errors" % (syst_label_no_spaces))
+                        
+                        syst_gen_1d = syst_dict['gen_1d']
+                        syst_gen_1d_bin = unfolder.get_var_hist_pt_binned(syst_gen_1d, ibin_pt, binning_scheme="generator")
 
-                        syst_entries.append(
+                        syst_entries.extend([
                             Contribution(syst_unfolded_hist_bin_total_errors,
-                                         label="Unfolded (#tau = %.3g) (total err)\n(%s)" % (syst_tau, syst_label),
+                                         label="Unfolded (#tau = %.3g) (total err) (%s)" % (syst_tau, syst_label),
                                          line_color=syst_dict['colour'], line_width=lw, line_style=1,
                                          marker_color=syst_dict['colour'], marker_size=0,
-                                         subplot=mc_gen_hist_bin,
+                                         subplot=syst_gen_1d_bin,
                                          normalise_hist=True),
-                        )
+                            Contribution(syst_gen_1d_bin,
+                                         label="Generator (%s)" % (syst_label),
+                                         line_color=syst_dict['colour'], line_width=lw, line_style=2,
+                                         marker_color=syst_dict['colour'], marker_size=0,
+                                         # subplot=mc_gen_hist_bin,
+                                         normalise_hist=True),
+                        ])
                         # already normalised to 1
                         # do not use normalise_hist!
                         syst_unfolded_hist_bin_total_errors_div_bin_width = qgp.hist_divide_bin_width(syst_unfolded_hist_bin_total_errors)
-                        syst_entries_div_bin_width.append(
+                        syst_gen_1d_bin_div_bin_width = qgp.hist_divide_bin_width(syst_gen_1d_bin)
+                        syst_entries_div_bin_width.extend([
                             Contribution(syst_unfolded_hist_bin_total_errors_div_bin_width,
-                                         label="Unfolded (#tau = %.3g) (total err)\n(%s)" % (syst_tau, syst_label),
+                                         label="Unfolded (#tau = %.3g) (total err) (%s)" % (syst_tau, syst_label),
                                          line_color=syst_dict['colour'], line_width=lw, line_style=1,
                                          marker_color=syst_dict['colour'], marker_size=0,
-                                         subplot=mc_gen_hist_bin_div_bin_width,
+                                         subplot=syst_gen_1d_bin_div_bin_width,
                                          normalise_hist=False),
-                        )
+                            Contribution(syst_gen_1d_bin_div_bin_width,
+                                         label="Generator (%s)" % (syst_label),
+                                         line_color=syst_dict['colour'], line_width=lw, line_style=2,
+                                         marker_color=syst_dict['colour'], marker_size=0,
+                                         # subplot=mc_gen_hist_bin_div_bin_width,
+                                         normalise_hist=False),
+                        ])
 
                     if len(syst_entries):
                         entries = [
@@ -2187,6 +2203,7 @@ if __name__ == "__main__":
                                          label="Unfolded (#tau = %.3g) (total err)" % (tau),
                                          line_color=unfolded_total_colour, line_width=lw, line_style=1,
                                          marker_color=unfolded_total_colour, marker_style=20, marker_size=0.75,
+                                         subplot=mc_gen_hist_bin,
                                          normalise_hist=True),
                             Contribution(unfolded_hist_bin_stat_errors,
                                          label="Unfolded (#tau = %.3g) (stat err)" % (tau),
@@ -2200,7 +2217,7 @@ if __name__ == "__main__":
                         plot = Plot(entries,
                                     xtitle=particle_title,
                                     ytitle=normalised_differential_label,
-                                    subplot_title='#splitline{Unfolded / Gen}{(%s)}' % (region['mc_label']),
+                                    subplot_title='Unfolded / Gen',
                                     **common_hist_args)
                         plot.legend.SetX1(0.55)
                         plot.legend.SetY1(0.72)
@@ -2224,6 +2241,7 @@ if __name__ == "__main__":
                                          label="Unfolded (#tau = %.3g) (total err)" % (tau),
                                          line_color=unfolded_total_colour, line_width=lw, line_style=1,
                                          marker_color=unfolded_total_colour, marker_style=20, marker_size=0.75,
+                                         subplot=mc_gen_hist_bin_div_bin_width,
                                          normalise_hist=False),
                             Contribution(unfolded_hist_bin_stat_errors_div_bin_width,
                                          label="Unfolded (#tau = %.3g) (stat err)" % (tau),
@@ -2237,7 +2255,7 @@ if __name__ == "__main__":
                         plot = Plot(entries_div_bin_width,
                                     xtitle=particle_title,
                                     ytitle=normalised_differential_label,
-                                    subplot_title='#splitline{Unfolded / Gen}{(%s)}' % (region['mc_label']),
+                                    subplot_title='Unfolded / Gen',
                                     **common_hist_args)
                         plot.legend.SetX1(0.55)
                         plot.legend.SetY1(0.72)
