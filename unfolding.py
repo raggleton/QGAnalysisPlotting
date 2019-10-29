@@ -1821,6 +1821,8 @@ if __name__ == "__main__":
                 plot.save("%s/unfolded_%s_bin_%d.%s" % (this_output_dir, append, ibin_pt, OUTPUT_FMT))
 
                 # Do a version where divided by bin width
+                # Note that these hists are already normalised to 1!
+                # Do not use normalise_hist!
                 mc_gen_hist_bin_div_bin_width = qgp.hist_divide_bin_width(mc_gen_hist_bin)
                 unfolded_hist_bin_stat_errors_div_bin_width = qgp.hist_divide_bin_width(unfolded_hist_bin_stat_errors)
                 unfolded_hist_bin_total_errors_div_bin_width = qgp.hist_divide_bin_width(unfolded_hist_bin_total_errors)
@@ -1830,17 +1832,17 @@ if __name__ == "__main__":
                                  line_color=gen_colour, line_width=lw,
                                  marker_color=gen_colour, marker_size=0,
                                  subplot=unfolded_hist_bin_total_errors_div_bin_width,
-                                 normalise_hist=True),
+                                 normalise_hist=False),
                     Contribution(unfolded_hist_bin_total_errors_div_bin_width,
                                  label="Unfolded (#tau = %.3g) (total err)" % (tau),
                                  line_color=unfolded_total_colour, line_width=lw, line_style=1,
                                  marker_color=unfolded_total_colour, marker_style=20, marker_size=0.75,
-                                 normalise_hist=True),
+                                 normalise_hist=False),
                     Contribution(unfolded_hist_bin_stat_errors_div_bin_width,
                                  label="Unfolded (#tau = %.3g) (stat err)" % (tau),
                                  line_color=unfolded_stat_colour, line_width=lw, line_style=1,
                                  marker_color=unfolded_stat_colour, marker_size=0,
-                                 normalise_hist=True),
+                                 normalise_hist=False),
                 ]
                 if not check_entries(entries, "%s %d" % (append, ibin_pt)):
                     continue
@@ -1929,21 +1931,26 @@ if __name__ == "__main__":
                     plot.save("%s/unfolded_%s_alt_response_bin_%d.%s" % (this_output_dir, append, ibin_pt, OUTPUT_FMT))
 
                     # Do a version where divided by bin width
+                    # Note that inputs are already normalised to 1
+                    # Do not use normalise_hist!
                     alt_mc_gen_hist_bin_div_bin_width = qgp.hist_divide_bin_width(alt_mc_gen_hist_bin)
                     alt_unfolded_hist_bin_total_errors_div_bin_width = qgp.hist_divide_bin_width(alt_unfolded_hist_bin_total_errors)
+                    unfolded_hist_bin_stat_errors_div_bin_width = qgp.hist_divide_bin_width(unfolded_hist_bin_stat_errors)
+                    # unfolded_hist_bin_total_errors_div_bin_width = qgp.hist_divide_bin_width(unfolded_hist_bin_total_errors)
+
                     entries = [
                         Contribution(mc_gen_hist_bin_div_bin_width,
                                      label="Generator (%s)" % (region['mc_label']),
                                      line_color=gen_colour, line_width=lw,
                                      marker_color=gen_colour, marker_size=0,
                                      # subplot=unfolded_hist_bin_total_errors_div_bin_width,
-                                     normalise_hist=True),
+                                     normalise_hist=False),
                         Contribution(alt_mc_gen_hist_bin_div_bin_width,
                                      label="Generator (%s)" % (region['alt_mc_label']),
                                      line_color=alt_gen_colour, line_width=lw,
                                      marker_color=alt_gen_colour, marker_size=0,
                                      # subplot=unfolded_hist_bin_total_errors_div_bin_width,
-                                     normalise_hist=True),
+                                     normalise_hist=False),
                         # Contribution(unfolded_hist_bin_total_errors_div_bin_width,
                         #              label="Unfolded (#tau = %.3g) (total err)" % (tau),
                         #              line_color=unfolded_total_colour, line_width=lw, line_style=1,
@@ -1955,13 +1962,13 @@ if __name__ == "__main__":
                                      line_color=unfolded_stat_colour, line_width=lw, line_style=2,
                                      marker_color=unfolded_stat_colour, marker_size=0,
                                      subplot=mc_gen_hist_bin_div_bin_width,
-                                     normalise_hist=True),
+                                     normalise_hist=False),
                         Contribution(alt_unfolded_hist_bin_total_errors_div_bin_width,
                                      label="Unfolded (#tau = %.3g) (stat err)\n(%s response matrix)" % (alt_tau, region['alt_mc_label']),
                                      line_color=alt_colour, line_width=lw, line_style=3,
                                      marker_color=alt_colour, marker_size=0,
                                      subplot=mc_gen_hist_bin_div_bin_width,
-                                     normalise_hist=True),
+                                     normalise_hist=False),
                     ]
                     if not check_entries(entries, "%s %d" % (append, ibin_pt)):
                         continue
@@ -1977,6 +1984,113 @@ if __name__ == "__main__":
                     plot.plot("NOSTACK E1")
                     plot.save("%s/unfolded_%s_alt_response_bin_%d_divBinWidth.%s" % (this_output_dir, append, ibin_pt, OUTPUT_FMT))
 
+                # Unfolded plots with variations in input model systematics plotted
+                # --------------------------------------------------------------
+                if DO_SYSTS:
+                    syst_entries = []
+                    syst_entries_div_bin_width = []
+                    for syst_dict in region['systematics']:
+                        if syst_dict['systematic_type'] != 'model':
+                            continue
+                        syst_label = syst_dict['label']
+                        syst_label_no_spaces = syst_dict['label'].replace(" ", "_")
+                        syst_tau = syst_dict['tau']
+                        syst_unfolded_1d = syst_dict['unfolded_1d']
+                        syst_unfolded_hist_bin_total_errors = unfolder.get_var_hist_pt_binned(syst_unfolded_1d, ibin_pt, binning_scheme="generator")
+                        this_pt_bin_tdir.WriteTObject(syst_unfolded_hist_bin_total_errors, "syst_%s_unfolded_hist_bin_total_errors" % (syst_label_no_spaces))
+
+                        syst_entries.append(
+                            Contribution(syst_unfolded_hist_bin_total_errors,
+                                         label="Unfolded (#tau = %.3g) (total err)\n(%s)" % (syst_tau, syst_label),
+                                         line_color=syst_dict['colour'], line_width=lw, line_style=1,
+                                         marker_color=syst_dict['colour'], marker_size=0,
+                                         subplot=mc_gen_hist_bin,
+                                         normalise_hist=True),
+                        )
+                        # already normalised to 1
+                        # do not use normalise_hist!
+                        syst_unfolded_hist_bin_total_errors_div_bin_width = qgp.hist_divide_bin_width(syst_unfolded_hist_bin_total_errors)
+                        syst_entries_div_bin_width.append(
+                            Contribution(syst_unfolded_hist_bin_total_errors_div_bin_width,
+                                         label="Unfolded (#tau = %.3g) (total err)\n(%s)" % (syst_tau, syst_label),
+                                         line_color=syst_dict['colour'], line_width=lw, line_style=1,
+                                         marker_color=syst_dict['colour'], marker_size=0,
+                                         subplot=mc_gen_hist_bin_div_bin_width,
+                                         normalise_hist=False),
+                        )
+
+                    entries = [
+                        Contribution(mc_gen_hist_bin,
+                                     label="Generator (%s)" % (region['mc_label']),
+                                     line_color=gen_colour, line_width=lw,
+                                     marker_color=gen_colour, marker_size=0,
+                                     normalise_hist=True),
+                        Contribution(unfolded_hist_bin_total_errors,
+                                     label="Unfolded (#tau = %.3g) (total err)" % (tau),
+                                     line_color=unfolded_total_colour, line_width=lw, line_style=1,
+                                     marker_color=unfolded_total_colour, marker_style=20, marker_size=0.75,
+                                     normalise_hist=True),
+                        Contribution(unfolded_hist_bin_stat_errors,
+                                     label="Unfolded (#tau = %.3g) (stat err)" % (tau),
+                                     line_color=unfolded_stat_colour, line_width=lw, line_style=1,
+                                     marker_color=unfolded_stat_colour, marker_size=0,
+                                     normalise_hist=True),
+                    ]
+                    entries.extend(syst_entries)
+                    if not check_entries(entries, "%s %d" % (append, ibin_pt)):
+                        continue
+                    plot = Plot(entries,
+                                xtitle=particle_title,
+                                ytitle=normalised_differential_label,
+                                subplot_title='#splitline{Unfolded / Gen}{(%s)}' % (region['mc_label']),
+                                **common_hist_args)
+                    plot.legend.SetX1(0.55)
+                    plot.legend.SetY1(0.72)
+                    plot.legend.SetX2(0.98)
+                    plot.legend.SetY2(0.88)
+                    plot.legend.SetNColumns(3)
+                    plot.plot("NOSTACK E1")
+                    plot.save("%s/unfolded_%s_syst_model_bin_%d.%s" % (this_output_dir, append, ibin_pt, OUTPUT_FMT))
+
+                    # Do a version where divided by bin width
+                    mc_gen_hist_bin_div_bin_width = qgp.hist_divide_bin_width(mc_gen_hist_bin)
+                    unfolded_hist_bin_stat_errors_div_bin_width = qgp.hist_divide_bin_width(unfolded_hist_bin_stat_errors)
+                    unfolded_hist_bin_total_errors_div_bin_width = qgp.hist_divide_bin_width(unfolded_hist_bin_total_errors)
+                    entries_div_bin_width = [
+                        Contribution(mc_gen_hist_bin_div_bin_width,
+                                     label="Generator (%s)" % (region['mc_label']),
+                                     line_color=gen_colour, line_width=lw,
+                                     marker_color=gen_colour, marker_size=0,
+                                     normalise_hist=False),
+                        Contribution(unfolded_hist_bin_total_errors_div_bin_width,
+                                     label="Unfolded (#tau = %.3g) (total err)" % (tau),
+                                     line_color=unfolded_total_colour, line_width=lw, line_style=1,
+                                     marker_color=unfolded_total_colour, marker_style=20, marker_size=0.75,
+                                     normalise_hist=False),
+                        Contribution(unfolded_hist_bin_stat_errors_div_bin_width,
+                                     label="Unfolded (#tau = %.3g) (stat err)" % (tau),
+                                     line_color=unfolded_stat_colour, line_width=lw, line_style=1,
+                                     marker_color=unfolded_stat_colour, marker_size=0,
+                                     normalise_hist=False),
+                    ]
+                    entries_div_bin_width.extend(syst_entries_div_bin_width)
+                    if not check_entries(entries_div_bin_width, "%s %d" % (append, ibin_pt)):
+                        continue
+                    plot = Plot(entries_div_bin_width,
+                                xtitle=particle_title,
+                                ytitle=normalised_differential_label,
+                                subplot_title='#splitline{Unfolded / Gen}{(%s)}' % (region['mc_label']),
+                                **common_hist_args)
+                    plot.legend.SetX1(0.55)
+                    plot.legend.SetY1(0.72)
+                    plot.legend.SetX2(0.98)
+                    plot.legend.SetY2(0.88)
+                    plot.legend.SetNColumns(3)
+                    plot.plot("NOSTACK E1")
+                    plot.save("%s/unfolded_%s_syst_model_bin_%d_divBinWidth.%s" % (this_output_dir, append, ibin_pt, OUTPUT_FMT))
+
+
+                # --------------------------------------------------------------
                 # PLOT UNCERTAINTY SHIFTS
                 # --------------------------------------------------------------
                 systematic_shift_hists_bin = [unfolder.get_var_hist_pt_binned(h, ibin_pt, binning_scheme='generator')
