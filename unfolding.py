@@ -1740,7 +1740,7 @@ if __name__ == "__main__":
                     syst_label_no_spaces = syst_dict['label'].replace(" ", "_")
 
                     print("*** Unfolding with alternate input:", syst_label, "***")
-                    
+
                     mc_hname_append = "split" if MC_SPLIT else "all"
                     hist_syst_reco = cu.get_from_tfile(syst_dict['tfile'], "%s/hist_%s_reco_%s" % (region['dirname'], angle_shortname, mc_hname_append))
                     hist_syst_gen = cu.get_from_tfile(syst_dict['tfile'], "%s/hist_%s_truth_%s" % (region['dirname'], angle_shortname, mc_hname_append))
@@ -2155,7 +2155,7 @@ if __name__ == "__main__":
                         syst_unfolded_1d = syst_dict['unfolded_1d']
                         syst_unfolded_hist_bin_total_errors = unfolder.get_var_hist_pt_binned(syst_unfolded_1d, ibin_pt, binning_scheme="generator")
                         this_pt_bin_tdir.WriteTObject(syst_unfolded_hist_bin_total_errors, "syst_%s_unfolded_hist_bin_total_errors" % (syst_label_no_spaces))
-                        
+
                         syst_gen_1d = syst_dict['gen_1d']
                         syst_gen_1d_bin = unfolder.get_var_hist_pt_binned(syst_gen_1d, ibin_pt, binning_scheme="generator")
 
@@ -2314,6 +2314,36 @@ if __name__ == "__main__":
                 plot.plot("NOSTACK E1")
                 plot.save("%s/detector_gen_binning_%s_bin_%d.%s" % (this_output_dir, append, ibin_pt, OUTPUT_FMT))
 
+                # Again but divided by bin width
+                mc_reco_hist_bin_gen_binning_div_bin_width = qgp.hist_divide_bin_width(mc_reco_hist_bin_gen_binning)
+                reco_hist_bin_gen_binning_div_bin_width = qgp.hist_divide_bin_width(reco_hist_bin_gen_binning)
+                entries = [
+                    Contribution(mc_reco_hist_bin_gen_binning_div_bin_width,
+                                 label="MC",
+                                 line_color=reco_mc_colour, line_width=lw,
+                                 marker_color=reco_mc_colour, marker_size=0,
+                                 normalise_hist=False),
+                    Contribution(reco_hist_bin_gen_binning_div_bin_width,
+                                 label="Data",
+                                 line_color=reco_data_colour, line_width=lw,
+                                 marker_color=reco_data_colour, marker_style=20, marker_size=0.75,
+                                 subplot=mc_reco_hist_bin_gen_binning_div_bin_width,
+                                 normalise_hist=False),
+                ]
+                if not check_entries(entries, "%s %d" % (append, ibin_pt)):
+                    continue
+                plot = Plot(entries,
+                            xtitle=detector_title,
+                            ytitle=normalised_differential_label,
+                            subplot_title='Data / MC',
+                            **common_hist_args)
+                plot.legend.SetX1(0.6)
+                plot.legend.SetY1(0.75)
+                plot.legend.SetX2(0.98)
+                plot.legend.SetY2(0.9)
+                plot.plot("NOSTACK E1")
+                plot.save("%s/detector_gen_binning_%s_bin_%d_divBinWidth.%s" % (this_output_dir, append, ibin_pt, OUTPUT_FMT))
+
                 if SUBTRACT_FAKES:
                     # Same but background-subtracted
                     entries = [
@@ -2342,6 +2372,35 @@ if __name__ == "__main__":
                     plot.legend.SetY2(0.9)
                     plot.plot("NOSTACK E1")
                     plot.save("%s/detector_gen_binning_bg_subtracted_%s_bin_%d.%s" % (this_output_dir, append, ibin_pt, OUTPUT_FMT))
+
+                    mc_reco_hist_bg_subtracted_bin_gen_binning_div_bin_width = qgp.hist_divide_bin_width(mc_reco_hist_bg_subtracted_bin_gen_binning)
+                    reco_hist_bg_subtracted_bin_gen_binning_div_bin_width = qgp.hist_divide_bin_width(reco_hist_bg_subtracted_bin_gen_binning)
+                    entries = [
+                        Contribution(mc_reco_hist_bg_subtracted_bin_gen_binning_div_bin_width,
+                                     label="MC (bg-subtracted)",
+                                     line_color=reco_mc_colour, line_width=lw,
+                                     marker_color=reco_mc_colour, marker_size=0,
+                                     normalise_hist=False),
+                        Contribution(reco_hist_bg_subtracted_bin_gen_binning_div_bin_width,
+                                     label="Data (bg-subtracted)",
+                                     line_color=reco_data_colour, line_width=lw,
+                                     marker_color=reco_data_colour, marker_style=20, marker_size=0.75,
+                                     subplot=mc_reco_hist_bg_subtracted_bin_gen_binning_div_bin_width,
+                                     normalise_hist=False),
+                    ]
+                    if not check_entries(entries, "%s %d" % (append, ibin_pt)):
+                        continue
+                    plot = Plot(entries,
+                                xtitle=detector_title,
+                                ytitle=normalised_differential_label,
+                                subplot_title='Data / MC',
+                                **common_hist_args)
+                    plot.legend.SetX1(0.6)
+                    plot.legend.SetY1(0.75)
+                    plot.legend.SetX2(0.98)
+                    plot.legend.SetY2(0.9)
+                    plot.plot("NOSTACK E1")
+                    plot.save("%s/detector_gen_binning_bg_subtracted_%s_bin_%d_divBinWidth.%s" % (this_output_dir, append, ibin_pt, OUTPUT_FMT))
 
 
             # Draw individual pt bin plots - RECO binning
@@ -2411,6 +2470,36 @@ if __name__ == "__main__":
                 plot.plot("NOSTACK E1")
                 plot.save("%s/detector_reco_binning_%s_bin_%d.%s" % (this_output_dir, append, ibin_pt, OUTPUT_FMT))
 
+                # same but divided by bin width
+                mc_reco_hist_bin_reco_binning_div_bin_width = qgp.hist_divide_bin_width(mc_reco_hist_bin_reco_binning)
+                reco_hist_bin_reco_binning_div_bin_width = qgp.hist_divide_bin_width(reco_hist_bin_reco_binning)
+                entries = [
+                    Contribution(mc_reco_hist_bin_reco_binning_div_bin_width,
+                                 label="MC",
+                                 line_color=reco_mc_colour, line_width=lw,
+                                 marker_color=reco_mc_colour, marker_size=0,
+                                 normalise_hist=False),
+                    Contribution(reco_hist_bin_reco_binning_div_bin_width,
+                                 label="Data",
+                                 line_color=reco_data_colour, line_width=lw,
+                                 marker_color=reco_data_colour, marker_style=20, marker_size=0.75,
+                                 subplot=mc_reco_hist_bin_reco_binning_div_bin_width,
+                                 normalise_hist=False),
+                ]
+                if not check_entries(entries, "%s %d" % (append, ibin_pt)):
+                    continue
+                plot = Plot(entries,
+                            xtitle=detector_title,
+                            ytitle=normalised_differential_label,
+                            subplot_title='Data / MC',
+                            **common_hist_args)
+                plot.legend.SetX1(0.6)
+                plot.legend.SetY1(0.75)
+                plot.legend.SetX2(0.98)
+                plot.legend.SetY2(0.9)
+                plot.plot("NOSTACK E1")
+                plot.save("%s/detector_reco_binning_%s_bin_%d_divBinWidth.%s" % (this_output_dir, append, ibin_pt, OUTPUT_FMT))
+
                 if SUBTRACT_FAKES:
                     # Same but background-subtracted
                     entries = [
@@ -2430,7 +2519,7 @@ if __name__ == "__main__":
                         continue
                     plot = Plot(entries,
                                 xtitle=detector_title,
-                                ytitle="p.d.f.",
+                                ytitle=normalised_differential_label,
                                 subplot_title='Data / MC',
                                 **common_hist_args)
                     plot.legend.SetX1(0.6)
@@ -2439,6 +2528,36 @@ if __name__ == "__main__":
                     plot.legend.SetY2(0.9)
                     plot.plot("NOSTACK E1")
                     plot.save("%s/detector_reco_binning_bg_subtracted_%s_bin_%d.%s" % (this_output_dir, append, ibin_pt, OUTPUT_FMT))
+
+                    # again but divided by bin width
+                    mc_reco_hist_bg_subtracted_bin_reco_binning_div_bin_width = qgp.hist_divide_bin_width(mc_reco_hist_bg_subtracted_bin_reco_binning)
+                    reco_hist_bg_subtracted_bin_reco_binning_div_bin_width = qgp.hist_divide_bin_width(reco_hist_bg_subtracted_bin_reco_binning)
+                    entries = [
+                        Contribution(mc_reco_hist_bg_subtracted_bin_reco_binning_div_bin_width,
+                                     label="MC (bg-subtracted)",
+                                     line_color=reco_mc_colour, line_width=lw,
+                                     marker_color=reco_mc_colour, marker_size=0,
+                                     normalise_hist=False),
+                        Contribution(reco_hist_bg_subtracted_bin_reco_binning_div_bin_width,
+                                     label="Data (bg-subtracted)",
+                                     line_color=reco_data_colour, line_width=lw,
+                                     marker_color=reco_data_colour, marker_style=20, marker_size=0.75,
+                                     subplot=mc_reco_hist_bg_subtracted_bin_reco_binning_div_bin_width,
+                                     normalise_hist=False),
+                    ]
+                    if not check_entries(entries, "%s %d" % (append, ibin_pt)):
+                        continue
+                    plot = Plot(entries,
+                                xtitle=detector_title,
+                                ytitle=normalised_differential_label,
+                                subplot_title='Data / MC',
+                                **common_hist_args)
+                    plot.legend.SetX1(0.6)
+                    plot.legend.SetY1(0.75)
+                    plot.legend.SetX2(0.98)
+                    plot.legend.SetY2(0.9)
+                    plot.plot("NOSTACK E1")
+                    plot.save("%s/detector_reco_binning_bg_subtracted_%s_bin_%d_divBinWidth.%s" % (this_output_dir, append, ibin_pt, OUTPUT_FMT))
 
                 # PLOT FOLDED UNFOLDED DATA
                 # --------------------------------------------------------------
@@ -2512,8 +2631,45 @@ if __name__ == "__main__":
                 plot.save("%s/detector_folded_only_data_%s_bin_%d.%s" % (this_output_dir, append, ibin_pt, OUTPUT_FMT))
 
                 # Same but divided by bin width
+                # Do not normalise again!
+                # data + folded + MC
+                mc_reco_bin_hist_div_bin_width = qgp.hist_divide_bin_width(mc_reco_bin_hist)
                 reco_bin_hist_div_bin_width = qgp.hist_divide_bin_width(reco_bin_hist)
                 folded_unfolded_hist_bin_reco_binning_div_bin_width = qgp.hist_divide_bin_width(folded_unfolded_hist_bin_reco_binning)
+                entries = [
+                    Contribution(mc_reco_bin_hist_div_bin_width,
+                                 label="MC (reco, bg-subtracted)" if SUBTRACT_FAKES else "MC (reco)",
+                                 line_color=reco_mc_colour, line_width=lw,
+                                 marker_color=reco_mc_colour, marker_size=0,
+                                 normalise_hist=False),
+                    Contribution(reco_bin_hist_div_bin_width,
+                                 label="Data (reco, bg-subtracted)" if SUBTRACT_FAKES else "Data (reco)",
+                                 line_color=reco_data_colour, line_width=lw,
+                                 marker_color=reco_data_colour, marker_size=0,
+                                 subplot=mc_reco_bin_hist_div_bin_width,
+                                 normalise_hist=False),
+                    Contribution(folded_unfolded_hist_bin_reco_binning_div_bin_width,
+                                 label="Folded unfolded data (#tau = %.3g)" % (tau),
+                                 line_color=reco_folded_colour, line_width=lw,
+                                 marker_color=reco_folded_colour, marker_size=0,
+                                 subplot=mc_reco_bin_hist_div_bin_width,
+                                 normalise_hist=False),
+                ]
+                if not check_entries(entries, "%s %d" % (append, ibin_pt)):
+                    continue
+                plot = Plot(entries,
+                            xtitle=detector_title,
+                            ytitle=normalised_differential_label,
+                            subplot_title='Data / MC',
+                            **common_hist_args)
+                plot.legend.SetX1(0.56)
+                plot.legend.SetY1(0.72)
+                plot.legend.SetX2(0.98)
+                plot.legend.SetY2(0.9)
+                plot.plot("NOSTACK E1")
+                plot.save("%s/detector_folded_%s_bin_%d_divBinWidth.%s" % (this_output_dir, append, ibin_pt, OUTPUT_FMT))
+
+                # data + folded
                 entries = [
                     Contribution(reco_bin_hist_div_bin_width,
                                  label="Data (reco, bg-subtracted)" if SUBTRACT_FAKES else "Data (reco)",
@@ -2534,7 +2690,7 @@ if __name__ == "__main__":
                             ytitle=normalised_differential_label,
                             subplot_title='Folded unfolded / reco',
                             **common_hist_args)
-                plot.legend.SetX1(0.6)
+                plot.legend.SetX1(0.56)
                 plot.legend.SetY1(0.75)
                 plot.legend.SetX2(0.98)
                 plot.legend.SetY2(0.9)
