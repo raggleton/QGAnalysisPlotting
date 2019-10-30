@@ -864,6 +864,10 @@ if __name__ == "__main__":
                         choices=['None', 'tau', 'L'],
                         default='None',
                         help='Regularization scheme')
+    parser.add_argument("--nScan",
+                        type=int,
+                        default=100,
+                        help='Number of scan points for regularization')
 
     parser.add_argument("--MCinput",
                         type=lambda x:bool(distutils.util.strtobool(x)),
@@ -1443,19 +1447,18 @@ if __name__ == "__main__":
             # ---------------------
             # tau = 1E-10
             tau = 0
-            n_scan = 100
             scan_mode = ROOT.TUnfoldDensity.kEScanTauRhoAvgSys
             scan_distribution = "generatordistribution"
             if REGULARIZE == "L":
                 print("Regularizing with ScanL, please be patient...")
-                tau = unfolder.doScanL(output_dir=this_output_dir, n_scan=n_scan,
+                tau = unfolder.doScanL(output_dir=this_output_dir, n_scan=args.nScan,
                                        tau_min=1E-14, tau_max=1E-4)
                 print("Found tau:", tau)
             elif REGULARIZE == "tau":
                 print("Regularizing with ScanTau, please be patient...")
                 tau_scanner = TauScanner()
                 tau = tau_scanner.scan_tau(tunfolder=unfolder.tunfolder,
-                                           n_scan=n_scan,
+                                           n_scan=args.nScan,
                                            tau_min=region['tau_limits'][angle.var][0],
                                            tau_max=region['tau_limits'][angle.var][1],
                                            scan_mode=scan_mode,
@@ -1690,14 +1693,14 @@ if __name__ == "__main__":
                 alt_tau = 0
                 if REGULARIZE == "L":
                     print("Regularizing alternative with ScanL, please be patient...")
-                    alt_tau = alt_unfolder.doScanL(output_dir=this_output_dir, n_scan=100,
+                    alt_tau = alt_unfolder.doScanL(output_dir=this_output_dir, n_scan=args.nScan,
                                            tau_min=1E-14, tau_max=1E-4)
                     print("Found tau:", tau)
                 elif REGULARIZE == "tau":
                     print("Regularizing alternative with ScanTau, please be patient...")
                     alt_tau_scanner = TauScanner()
                     alt_tau = alt_tau_scanner.scan_tau(tunfolder=alt_unfolder.tunfolder,
-                                                       n_scan=n_scan,
+                                                       n_scan=args.nScan,
                                                        tau_min=region['tau_limits'][angle.var][0],
                                                        tau_max=region['tau_limits'][angle.var][1],
                                                        scan_mode=scan_mode,
@@ -2156,7 +2159,6 @@ if __name__ == "__main__":
                                          label="Generator (%s)" % (syst_label),
                                          line_color=syst_dict['colour'], line_width=lw, line_style=2,
                                          marker_color=syst_dict['colour'], marker_size=0,
-                                         # subplot=mc_gen_hist_bin,
                                          normalise_hist=True),
                         ])
                         # already normalised to 1
@@ -2174,7 +2176,6 @@ if __name__ == "__main__":
                                          label="Generator (%s)" % (syst_label),
                                          line_color=syst_dict['colour'], line_width=lw, line_style=2,
                                          marker_color=syst_dict['colour'], marker_size=0,
-                                         # subplot=mc_gen_hist_bin_div_bin_width,
                                          normalise_hist=False),
                         ])
 
