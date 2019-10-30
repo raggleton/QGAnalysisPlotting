@@ -1780,14 +1780,14 @@ if __name__ == "__main__":
                     syst_tau = 0
                     if REGULARIZE == "L":
                         print("Regularizing systematic model with ScanL, please be patient...")
-                        syst_tau = syst_unfolder.doScanL(output_dir=this_output_dir, n_scan=100,
+                        syst_tau = syst_unfolder.doScanL(output_dir=this_output_dir, n_scan=args.nScan,
                                                          tau_min=1E-14, tau_max=1E-4)
                         print("Found tau:", tau)
                     elif REGULARIZE == "tau":
                         print("Regularizing systematic model with ScanTau, please be patient...")
                         syst_tau_scanner = TauScanner()
                         syst_tau = syst_tau_scanner.scan_tau(tunfolder=syst_unfolder.tunfolder,
-                                                             n_scan=n_scan,
+                                                             n_scan=args.nScan,
                                                              tau_min=region['tau_limits'][angle.var][0],
                                                              tau_max=region['tau_limits'][angle.var][1],
                                                              scan_mode=scan_mode,
