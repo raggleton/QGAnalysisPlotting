@@ -841,72 +841,77 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("source",
                         help="Source directory with ROOT files")
-    parser.add_argument("--doDijetCentral",
-                        action='store_true',
-                        help='Do unfolding for dijet (central) jets')
-    parser.add_argument("--doDijetForward",
-                        action='store_true',
-                        help='Do unfolding for dijet (forward) jets')
-    parser.add_argument("--doDijetCentralGroomed",
-                        action='store_true',
-                        help='Do unfolding for groomed dijet (central) jets')
-    parser.add_argument("--doDijetForwardGroomed",
-                        action='store_true',
-                        help='Do unfolding for groomed dijet (forward) jets')
-    parser.add_argument("--doZPJ",
-                        action='store_true',
-                        help='Do unfolding for Z+jet jets')
-    parser.add_argument("--doZPJGroomed",
-                        action='store_true',
-                        help='Do unfolding for groomed Z+jet jets')
 
-    parser.add_argument("--regularize",
-                        choices=['None', 'tau', 'L'],
-                        default='None',
-                        help='Regularization scheme')
-    parser.add_argument("--nScan",
-                        type=int,
-                        default=100,
-                        help='Number of scan points for regularization')
-
-    parser.add_argument("--MCinput",
-                        type=lambda x:bool(distutils.util.strtobool(x)),
-                        default=False,
-                        help='Unfold MC instead of data')
-
-    parser.add_argument("--MCsplit",
-                        type=lambda x:bool(distutils.util.strtobool(x)),
-                        default=False,
-                        help='Split MC between response & 1D reco, good for testing procedure')
-
-    parser.add_argument("--doExperimentalSysts",
-                        type=lambda x:bool(distutils.util.strtobool(x)),
-                        default=True,
-                        help='Do experimental systematics (i.e. those that modify response matrix)')
-
-    parser.add_argument("--doModelSysts",
-                        type=lambda x:bool(distutils.util.strtobool(x)),
-                        default=True,
-                        help='Do model systematics (i.e. those that modify input to be unfolded)')
+    parser.add_argument("--angles",
+                        choices=list(qgc.VAR_UNFOLD_DICT.keys()),
+                        nargs='+',
+                        help="Lambda angles to unfold")
 
     parser.add_argument("--doSummaryPlot",
                         type=lambda x:bool(distutils.util.strtobool(x)),
                         default=False,
                         help='Do summary plot')
 
-    parser.add_argument("--useAltResponse",
-                        type=lambda x:bool(distutils.util.strtobool(x)),
-                        default=False,
-                        help='Use alternate response matrix to unfold')
-
     parser.add_argument("--outputDir",
                         default='',
                         help='Output directory')
 
-    parser.add_argument("--angles",
-                        choices=list(qgc.VAR_UNFOLD_DICT.keys()),
-                        nargs='+',
-                        help="Lambda angles to unfold")
+    region_group = parser.add_argument_group('Region selection')
+    region_group.add_argument("--doDijetCentral",
+                              action='store_true',
+                              help='Do unfolding for dijet (central) jets')
+    region_group.add_argument("--doDijetForward",
+                              action='store_true',
+                              help='Do unfolding for dijet (forward) jets')
+    region_group.add_argument("--doDijetCentralGroomed",
+                              action='store_true',
+                              help='Do unfolding for groomed dijet (central) jets')
+    region_group.add_argument("--doDijetForwardGroomed",
+                              action='store_true',
+                              help='Do unfolding for groomed dijet (forward) jets')
+    region_group.add_argument("--doZPJ",
+                              action='store_true',
+                              help='Do unfolding for Z+jet jets')
+    region_group.add_argument("--doZPJGroomed",
+                              action='store_true',
+                              help='Do unfolding for groomed Z+jet jets')
+
+    regularization_group = parser.add_argument_group('Regularization options')
+    regularization_group.add_argument("--regularize",
+                                      choices=['None', 'tau', 'L'],
+                                      default='None',
+                                      help='Regularization scheme')
+    regularization_group.add_argument("--nScan",
+                                      type=int,
+                                      default=100,
+                                      help='Number of scan points for regularization')
+
+    mc_group = parser.add_argument_group('MC input options')
+    mc_group.add_argument("--MCinput",
+                          type=lambda x:bool(distutils.util.strtobool(x)),
+                          default=False,
+                          help='Unfold MC instead of data')
+
+    mc_group.add_argument("--MCsplit",
+                          type=lambda x:bool(distutils.util.strtobool(x)),
+                          default=False,
+                          help='Split MC between response & 1D reco, good for testing procedure')
+
+    syst_group = parser.add_argument_group('Systematics options')
+    syst_group.add_argument("--doExperimentalSysts",
+                            type=lambda x:bool(distutils.util.strtobool(x)),
+                            default=True,
+                            help='Do experimental systematics (i.e. those that modify response matrix)')
+
+    syst_group.add_argument("--doModelSysts",
+                            type=lambda x:bool(distutils.util.strtobool(x)),
+                            default=True,
+                            help='Do model systematics (i.e. those that modify input to be unfolded)')
+
+    syst_group.add_argument("--useAltResponse",
+                            type=lambda x:bool(distutils.util.strtobool(x)),
+                            default=False,
+                            help='Use alternate response matrix to unfold')
 
     args = parser.parse_args()
     print(args)
