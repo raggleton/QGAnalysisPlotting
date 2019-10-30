@@ -1170,6 +1170,36 @@ if __name__ == "__main__":
                 },
             ],
             "model_systematics": [
+                {
+                    "label": "muR up, muF nominal",
+                    "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'ScaleVariationMuRUp_ScaleVariationMuFNominal', qgc.DY_FILENAME)),
+                    "colour": ROOT.kAzure,
+                },
+                {
+                    "label": "muR down, muF nominal",
+                    "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'ScaleVariationMuRDown_ScaleVariationMuFNominal', qgc.DY_FILENAME)),
+                    "colour": ROOT.kAzure+1,
+                },
+                {
+                    "label": "muR nominal, muF up",
+                    "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'ScaleVariationMuRNominal_ScaleVariationMuFUp', qgc.DY_FILENAME)),
+                    "colour": ROOT.kAzure+2,
+                },
+                {
+                    "label": "muR nominal, muF down",
+                    "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'ScaleVariationMuRNominal_ScaleVariationMuFDown', qgc.DY_FILENAME)),
+                    "colour": ROOT.kAzure+3,
+                },
+                {
+                    "label": "muR down, muF down",
+                    "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'ScaleVariationMuRDown_ScaleVariationMuFDown', qgc.DY_FILENAME)),
+                    "colour": ROOT.kAzure+4,
+                },
+                {
+                    "label": "muR up, muF up",
+                    "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'ScaleVariationMuRUp_ScaleVariationMuFUp', qgc.DY_FILENAME)),
+                    "colour": ROOT.kAzure+5,
+                },
             ]
         }
 
