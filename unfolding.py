@@ -919,14 +919,17 @@ if __name__ == "__main__":
     if not any([args.doDijetCentral, args.doDijetForward, args.doDijetCentralGroomed, args.doDijetForwardGroomed, args.doZPJ, args.doZPJGroomed]):
         raise RuntimeError("You need to specify at least one signal region e.g. --doDijetCentral")
 
-    if args.useAltResponse and args.doExperimentalSysts:
-        args.doExperimentalSysts = False
-        print("You cannot use both --useAltResponse and --doExperimentalSysts: disabling doExperimentalSysts")
+    if not args.MCinput and args.doModelSysts:
+        raise RuntimeError("You cannot do both model systs and run on data")
 
-    # TODO handle both?
-    if args.useAltResponse and args.doModelSysts:
-        args.doExperimentalSysts = False
-        print("You cannot use both --useAltResponse and --doModelSysts: disabling doModelSysts")
+    # if args.useAltResponse and args.doExperimentalSysts:
+    #     args.doExperimentalSysts = False
+    #     print("You cannot use both --useAltResponse and --doExperimentalSysts: disabling doExperimentalSysts")
+
+    # # TODO handle both?
+    # if args.useAltResponse and args.doModelSysts:
+    #     args.doExperimentalSysts = False
+    #     print("You cannot use both --useAltResponse and --doModelSysts: disabling doModelSysts")
 
     # Setup files and regions to unfold
     # --------------------------------------------------------------------------
