@@ -144,6 +144,115 @@ class TauScanner(object):
         canv_tau_scan.Print(output_filename)
 
 
+class LCurveScanner(object):
+    """Class to handle doing ScanLcurve on a TUnfoldBinning object,
+    since it produces many associated objects & values.
+
+    Can also plot results from scanning.
+    """
+    def __init__(self):
+        self.scanned_l_curve = ROOT.MakeNullPointer(ROOT.TGraph)
+        self.log_tau_x = ROOT.MakeNullPointer(ROOT.TSpline3) # spline of L-curve x-coord as a func of log_10(tau)
+        self.log_tau_y = ROOT.MakeNullPointer(ROOT.TSpline3) # spline of L-curve y-coord as a func of log_10(tau)
+        self.log_tau_curvature = ROOT.MakeNullPointer(ROOT.TSpline3)
+        self.graph_log_tau_curvature = None  # to hold graph of log_tau_curvature
+        self.graph_log_tau_curvature_best = None
+        self.tau = 0
+        self.graph_best_scan_point = None # in terms of LcurveY vs LcurveX
+
+    def scan_L(self, tunfolder, n_scan, tau_min, tau_max):
+        ind_best_point = tunfolder.ScanLcurve(n_scan,
+                                              tau_min,
+                                              tau_max,
+                                              self.scanned_l_curve,
+                                              self.log_tau_x,
+                                              self.log_tau_y,
+                                              self.log_tau_curvature)
+        self.tau = tunfolder.GetTau()
+        self._process_results(ind_best_point)
+        return self.tau
+
+    def _process_results(self, ind_best_point):
+        """Create graphs etc from ScanLcurve output
+
+        User shouldn't call this, only internal
+        """
+        # Get best scan point & make graph of it
+        t_0 = ROOT.Double(0.0)  # is log_10(tau)
+        x_0 = ROOT.Double(0.0)
+        y_0 = ROOT.Double(0.0)
+        self.log_tau_x.GetKnot(ind_best_point, t_0, x_0)
+        self.log_tau_y.GetKnot(ind_best_point, t_0, y_0)
+        self.graph_best_scan_point = ROOT.TGraph(1, array('d', [x_0]), array('d', [y_0]))
+
+        # Create graph of curvature
+        t_all, c_all = array('d'), array('d')
+        n_scan = self.log_tau_curvature.GetNp()
+        for i in range(n_scan):
+            t = ROOT.Double(0.0)  # is log_10(tau)
+            c = ROOT.Double(0.0)
+            self.log_tau_curvature.GetKnot(i, t, c)
+            t_all.append(t)
+            c_all.append(c)
+
+        self.graph_log_tau_curvature = ROOT.TGraph(n_scan, t_all, c_all)
+
+        # Get best scan point in terms of curvature vs log(tau)
+        # you cannot use the index, it doesn't correspond to this graph
+        c_0 = self.log_tau_curvature.Eval(t_0)
+        self.graph_log_tau_curvature_best = ROOT.TGraph(1, array('d', [t_0]), array('d', [c_0]))
+
+    def plot_scan_L_curve(self, output_filename):
+        """Plot graph of scan results, and optimum tau"""
+        canv_L_scan = ROOT.TCanvas("canv_L_scan_"+str(self.tau), "canv_L_scan_"+str(self.tau))
+
+        self.scanned_l_curve.SetTitle("Optimization of Regularization Parameter, #tau : Scan of L curve")
+        self.scanned_l_curve.SetLineColor(ROOT.kBlue+3)
+        self.scanned_l_curve.Draw()
+
+        self.graph_best_scan_point.SetMarkerColor(ROOT.kRed)
+        self.graph_best_scan_point.Draw("* same")
+
+        self.scanned_l_curve.GetXaxis().SetTitle("log_{10}(L_{1})")
+        self.scanned_l_curve.GetYaxis().SetTitle("log_{10}(#frac{L_{2}}{#tau^{2}})")
+
+        leg = ROOT.TLegend(0.5, 0.6, 0.85, 0.89)
+        leg.SetFillColor(0)
+        leg.SetFillStyle(0)
+        leg.SetBorderSize(0)
+        leg.SetTextSize(0.026)
+        leg.AddEntry(self.scanned_l_curve, 'Scan over #tau', 'l')
+        leg.AddEntry(self.graph_best_scan_point, 'Chosen point: #tau = {}'.format(self.tau), 'P')
+        leg.Draw()
+
+        canv_L_scan.Print(output_filename)
+
+    def plot_scan_L_curvature(self, output_filename):
+        """Plot graph of L curvature & optimum point"""
+        canv_L_curvature = ROOT.TCanvas("canv_L_curvature_"+str(self.tau), "canv_L_curvature_"+str(self.tau))
+
+        self.graph_log_tau_curvature.SetTitle("Optimization of Regularization Parameter, #tau : Scan of L curvature")
+        self.graph_log_tau_curvature.SetLineColor(ROOT.kBlue+3)
+        self.graph_log_tau_curvature.Draw()
+        self.graph_log_tau_curvature.GetXaxis().SetTitle("log_{10}(#tau)")
+        self.graph_log_tau_curvature.GetYaxis().SetTitle("L-curve curvature C")
+
+        self.graph_log_tau_curvature_best.SetLineColor(ROOT.kRed)
+        self.graph_log_tau_curvature_best.SetMarkerColor(ROOT.kRed)
+        self.graph_log_tau_curvature_best.Draw("* same")
+
+        leg = ROOT.TLegend(0.5, 0.6, 0.85, 0.89)
+        leg.SetFillColor(0)
+        leg.SetFillStyle(0)
+        leg.SetBorderSize(0)
+        leg.SetTextSize(0.026)
+        leg.AddEntry(self.graph_log_tau_curvature, 'Curvature', 'l')
+        leg.AddEntry(self.graph_log_tau_curvature_best, 'Chosen point: #tau = {}'.format(self.tau), 'P')
+        leg.Draw()
+
+        canv_L_curvature.Print(output_filename)
+
+
 class MyUnfolder(object):
     # Control plot output format
     OUTPUT_FMT = "pdf"
@@ -188,6 +297,7 @@ class MyUnfolder(object):
         var_uf, var_of = False, False
         pt_uf, pt_of = False, False  # handle pt uder/over flow ourselves
         self.detector_binning = ROOT.TUnfoldBinning("detector")
+
         self.detector_distribution_underflow = self.detector_binning.AddBinning("detectordistribution_underflow")
         if self.variable_bin_edges_reco is not None:
             self.detector_distribution_underflow.AddAxis(self.variable_name, self.nbins_variable_reco, self.variable_bin_edges_reco, var_uf, var_of)
@@ -205,6 +315,7 @@ class MyUnfolder(object):
         if self.variable_bin_edges_gen is not None:
             self.generator_distribution_underflow.AddAxis(self.variable_name, self.nbins_variable_gen, self.variable_bin_edges_gen, var_uf, var_of)
         self.generator_distribution_underflow.AddAxis("pt", self.nbins_pt_underflow_gen, self.pt_bin_edges_underflow_gen, pt_uf, pt_of)
+
         self.generator_distribution = self.generator_binning.AddBinning("generatordistribution")
         if self.variable_bin_edges_gen is not None:
             self.generator_distribution.AddAxis(self.variable_name, self.nbins_variable_gen, self.variable_bin_edges_gen, var_uf, var_of)
@@ -254,71 +365,6 @@ class MyUnfolder(object):
     def setInput(self, hist):
         self.tunfolder.SetInput(hist)
 
-    def doScanL(self, output_dir, n_scan=300, tau_min=1E-14, tau_max=0.1):
-        """Figure out best tau by doing scan over L curve
-        Taken from Ashley's code
-        """
-        scannedlcurve = ROOT.MakeNullPointer(ROOT.TGraph)
-        logTauX = ROOT.MakeNullPointer(ROOT.TSpline3)
-        logTauY = ROOT.MakeNullPointer(ROOT.TSpline3)
-        logTauCurvature = ROOT.MakeNullPointer(ROOT.TSpline3)
-
-        best = self.tunfolder.ScanLcurve(n_scan,
-                                        tau_min,
-                                        tau_max,
-                                        scannedlcurve,
-                                        logTauX,
-                                        logTauY,
-                                        logTauCurvature)
-
-        xx, yy, tt = array('d'), array('d'), array('d')
-        # save graphs with one point to visualize best choice of tau
-        X0, Y0, T0 = ROOT.Double(0.0), ROOT.Double(0.0), ROOT.Double(0.0)
-
-        for i in range(n_scan):
-            logTauX.GetKnot(i, T0, X0)
-            logTauY.GetKnot(i, T0, Y0)
-            tt.append(T0)
-            xx.append(X0)
-            yy.append(Y0)
-        print("printing X0 Y0 and T0 : ")
-        print(T0)
-        print(X0)
-        print(Y0)
-
-        bestLcurve = ROOT.TGraph(len(xx), xx, yy)  # int(nScan),xx,yy);
-        bestLogTauLogChi2 = ROOT.TGraph(best, xx, yy)
-        tau = self.tunfolder.GetTau()
-        print("doScanL value is {}".format(tau))
-        print("Returned the TUnfoldDensity object.")
-
-        canv_lScan = ROOT.TCanvas("canv_lScan"+str(tau), "canv_lScan"+str(tau))
-
-        bestLcurve.SetLineColor(ROOT.kBlue+2)
-
-        bestLogTauLogChi2.SetMarkerColor(ROOT.kRed)
-
-        bestLcurve.Draw("")
-        bestLogTauLogChi2.Draw("* same")
-        bestLcurve.GetXaxis().SetTitle("log_{10}(L_{1})")
-        bestLcurve.GetYaxis().SetTitle("log_{10}(#frac{L_{2}}{#tau^{2}})")  # frac{Theory}{Unfolded MC}
-
-        bestLcurve.SetTitle("Optimization of Regularization Parameter, #tau : Scan of L Curve")
-
-        leg1 = ROOT.TLegend(0.5, 0.6, 0.7, 0.94)
-        leg1.SetFillColor(0)
-        leg1.SetFillStyle(0)
-        leg1.SetBorderSize(0)
-        leg1.SetTextSize(0.026)
-        leg1.AddEntry(bestLcurve, 'L Curve Scan: #tau = {}'.format(tau), 'l')
-        leg1.Draw()
-
-        canv_lScan.Modified()
-        canv_lScan.Update()
-
-        canv_lScan.Print("%s/scanL_%s.%s" % (output_dir, self.variable_name, self.OUTPUT_FMT))
-        return tau
-
     def do_unfolding(self, tau):
         print(">>> Unfolding with tau =", tau)
         self.tunfolder.DoUnfold(tau)
@@ -328,7 +374,6 @@ class MyUnfolder(object):
         # print("( " + str(self.tunfolder.GetChi2A()) + " + " + str(self.tunfolder.GetChi2L()) + ") / " + str(self.tunfolder.GetNdf()))
         # use "generator" for signal + underflow region, "generatordistribution" for only signal region
         return self.tunfolder.GetOutput("unfolded_" + cu.get_unique_str(), "", "generator", "*[]", self.use_axis_binning)
-
 
     def get_bias(self):
         return self.tunfolder.GetBias("bias_"+cu.get_unique_str(), "", "generator", "*[]", self.use_axis_binning)
@@ -347,6 +392,9 @@ class MyUnfolder(object):
 
     def get_probability_matrix(self):
         return self.tunfolder.GetProbabilityMatrix("prob_matrix_"+cu.get_unique_str(), "", self.use_axis_binning)
+
+    def get_covariance_matrix(self):
+        return self.tunfolder.GetVxx()
 
     def get_var_hist_pt_binned(self, hist1d, ibin_pt, binning_scheme='generator'):
         """Get hist of variable for given pt bin from massive 1D hist that TUnfold makes"""
@@ -1466,10 +1514,16 @@ if __name__ == "__main__":
             scan_mode = ROOT.TUnfoldDensity.kEScanTauRhoAvgSys
             scan_distribution = "generatordistribution"
             if REGULARIZE == "L":
-                print("Regularizing with ScanL, please be patient...")
-                tau = unfolder.doScanL(output_dir=this_output_dir, n_scan=args.nScan,
-                                       tau_min=1E-14, tau_max=1E-4)
+                print("Regularizing with ScanLcurve, please be patient...")
+                l_scanner = LCurveScanner()
+                tau = l_scanner.scan_L(tunfolder=unfolder.tunfolder,
+                                       n_scan=args.nScan,
+                                       tau_min=region['tau_limits'][angle.var][0],
+                                       tau_max=region['tau_limits'][angle.var][1])
                 print("Found tau:", tau)
+                l_scanner.plot_scan_L_curve(output_filename="%s/scanL_%s.%s" % (this_output_dir, unfolder.variable_name, OUTPUT_FMT))
+                l_scanner.plot_scan_L_curvature(output_filename="%s/scanLcurvature_%s.%s" % (this_output_dir, unfolder.variable_name, OUTPUT_FMT))
+
             elif REGULARIZE == "tau":
                 print("Regularizing with ScanTau, please be patient...")
                 tau_scanner = TauScanner()
@@ -1708,9 +1762,15 @@ if __name__ == "__main__":
                 alt_tau = 0
                 if REGULARIZE == "L":
                     print("Regularizing alternative with ScanL, please be patient...")
-                    alt_tau = alt_unfolder.doScanL(output_dir=this_output_dir, n_scan=args.nScan,
-                                           tau_min=1E-14, tau_max=1E-4)
-                    print("Found tau:", tau)
+                    alt_L_scanner = LCurveScanner()
+                    alt_tau = l_scanner.scan_L(tunfolder=unfolder.tunfolder,
+                                               n_scan=args.nScan,
+                                               tau_min=region['tau_limits'][angle.var][0],
+                                               tau_max=region['tau_limits'][angle.var][1])
+                    print("Found tau:", alt_tau)
+                    l_scanner.plot_scan_L_curve(output_filename="%s/scanL_alt_%s.%s" % (this_output_dir, unfolder.variable_name, OUTPUT_FMT))
+                    l_scanner.plot_scan_L_curvature(output_filename="%s/scanLcurvature_alt_%s.%s" % (this_output_dir, unfolder.variable_name, OUTPUT_FMT))
+
                 elif REGULARIZE == "tau":
                     print("Regularizing alternative with ScanTau, please be patient...")
                     alt_tau_scanner = TauScanner()
@@ -1809,9 +1869,14 @@ if __name__ == "__main__":
                     syst_tau = 0
                     if REGULARIZE == "L":
                         print("Regularizing systematic model with ScanL, please be patient...")
-                        syst_tau = syst_unfolder.doScanL(output_dir=this_output_dir, n_scan=args.nScan,
-                                                         tau_min=1E-14, tau_max=1E-4)
-                        print("Found tau:", tau)
+                        syst_l_scanner = LCurveScanner()
+                        syst_tau = syst_l_scanner.scan_L(tunfolder=unfolder.tunfolder,
+                                                         n_scan=args.nScan,
+                                                         tau_min=region['tau_limits'][angle.var][0],
+                                                         tau_max=region['tau_limits'][angle.var][1])
+                        print("Found tau:", syst_tau)
+                        syst_l_scanner.plot_scan_L_curve(output_filename="%s/scanL_syst_%s_%s.%s" % (this_output_dir, syst_label_no_spaces, unfolder.variable_name, OUTPUT_FMT))
+                        syst_l_scanner.plot_scan_L_curvature(output_filename="%s/scanLcurvature_syst_%s_%s.%s" % (this_output_dir, syst_label_no_spaces, unfolder.variable_name, OUTPUT_FMT))
                     elif REGULARIZE == "tau":
                         print("Regularizing systematic model with ScanTau, please be patient...")
                         syst_tau_scanner = TauScanner()
