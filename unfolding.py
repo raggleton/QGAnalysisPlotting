@@ -1999,7 +1999,7 @@ if __name__ == "__main__":
                 plot.legend.SetX2(0.98)
                 plot.legend.SetY2(0.9)
                 plot.plot("NOSTACK E1")
-                plot.save("%s/unfolded_%s_bin_%d.%s" % (this_output_dir, append, ibin_pt, OUTPUT_FMT))
+                # plot.save("%s/unfolded_%s_bin_%d.%s" % (this_output_dir, append, ibin_pt, OUTPUT_FMT))
 
                 # Do a version where divided by bin width
                 # Note that these hists are already normalised to 1!
@@ -2102,7 +2102,7 @@ if __name__ == "__main__":
                     plot.legend.SetX2(0.98)
                     plot.legend.SetY2(0.88)
                     plot.plot("NOSTACK E1")
-                    plot.save("%s/unfolded_%s_alt_response_bin_%d.%s" % (this_output_dir, append, ibin_pt, OUTPUT_FMT))
+                    # plot.save("%s/unfolded_%s_alt_response_bin_%d.%s" % (this_output_dir, append, ibin_pt, OUTPUT_FMT))
 
                     # Do a version where divided by bin width
                     # Note that inputs are already normalised to 1
@@ -2231,7 +2231,7 @@ if __name__ == "__main__":
                         plot.legend.SetY2(0.88)
                         plot.legend.SetNColumns(3)
                         plot.plot("NOSTACK E1")
-                        plot.save("%s/unfolded_%s_syst_model_bin_%d.%s" % (this_output_dir, append, ibin_pt, OUTPUT_FMT))
+                        # plot.save("%s/unfolded_%s_syst_model_bin_%d.%s" % (this_output_dir, append, ibin_pt, OUTPUT_FMT))
 
                         # Do a version where divided by bin width
                         mc_gen_hist_bin_div_bin_width = qgp.hist_divide_bin_width(mc_gen_hist_bin)
@@ -2318,7 +2318,7 @@ if __name__ == "__main__":
                 plot.legend.SetX2(0.98)
                 plot.legend.SetY2(0.9)
                 plot.plot("NOSTACK E1")
-                plot.save("%s/detector_gen_binning_%s_bin_%d.%s" % (this_output_dir, append, ibin_pt, OUTPUT_FMT))
+                # plot.save("%s/detector_gen_binning_%s_bin_%d.%s" % (this_output_dir, append, ibin_pt, OUTPUT_FMT))
 
                 # Again but divided by bin width
                 mc_reco_hist_bin_gen_binning_div_bin_width = qgp.hist_divide_bin_width(mc_reco_hist_bin_gen_binning)
@@ -2377,7 +2377,7 @@ if __name__ == "__main__":
                     plot.legend.SetX2(0.98)
                     plot.legend.SetY2(0.9)
                     plot.plot("NOSTACK E1")
-                    plot.save("%s/detector_gen_binning_bg_subtracted_%s_bin_%d.%s" % (this_output_dir, append, ibin_pt, OUTPUT_FMT))
+                    # plot.save("%s/detector_gen_binning_bg_subtracted_%s_bin_%d.%s" % (this_output_dir, append, ibin_pt, OUTPUT_FMT))
 
                     mc_reco_hist_bg_subtracted_bin_gen_binning_div_bin_width = qgp.hist_divide_bin_width(mc_reco_hist_bg_subtracted_bin_gen_binning)
                     reco_hist_bg_subtracted_bin_gen_binning_div_bin_width = qgp.hist_divide_bin_width(reco_hist_bg_subtracted_bin_gen_binning)
@@ -2474,7 +2474,7 @@ if __name__ == "__main__":
                 plot.legend.SetX2(0.98)
                 plot.legend.SetY2(0.9)
                 plot.plot("NOSTACK E1")
-                plot.save("%s/detector_reco_binning_%s_bin_%d.%s" % (this_output_dir, append, ibin_pt, OUTPUT_FMT))
+                # plot.save("%s/detector_reco_binning_%s_bin_%d.%s" % (this_output_dir, append, ibin_pt, OUTPUT_FMT))
 
                 # same but divided by bin width
                 mc_reco_hist_bin_reco_binning_div_bin_width = qgp.hist_divide_bin_width(mc_reco_hist_bin_reco_binning)
@@ -2533,7 +2533,7 @@ if __name__ == "__main__":
                     plot.legend.SetX2(0.98)
                     plot.legend.SetY2(0.9)
                     plot.plot("NOSTACK E1")
-                    plot.save("%s/detector_reco_binning_bg_subtracted_%s_bin_%d.%s" % (this_output_dir, append, ibin_pt, OUTPUT_FMT))
+                    # plot.save("%s/detector_reco_binning_bg_subtracted_%s_bin_%d.%s" % (this_output_dir, append, ibin_pt, OUTPUT_FMT))
 
                     # again but divided by bin width
                     mc_reco_hist_bg_subtracted_bin_reco_binning_div_bin_width = qgp.hist_divide_bin_width(mc_reco_hist_bg_subtracted_bin_reco_binning)
@@ -2606,7 +2606,7 @@ if __name__ == "__main__":
                 plot.legend.SetX2(0.98)
                 plot.legend.SetY2(0.9)
                 plot.plot("NOSTACK E1")
-                plot.save("%s/detector_folded_%s_bin_%d.%s" % (this_output_dir, append, ibin_pt, OUTPUT_FMT))
+                # plot.save("%s/detector_folded_%s_bin_%d.%s" % (this_output_dir, append, ibin_pt, OUTPUT_FMT))
 
                 # Folded, but only comparing data with data to check it is sane
                 entries = [
@@ -2634,7 +2634,7 @@ if __name__ == "__main__":
                 plot.legend.SetX2(0.98)
                 plot.legend.SetY2(0.9)
                 plot.plot("NOSTACK E1")
-                plot.save("%s/detector_folded_only_data_%s_bin_%d.%s" % (this_output_dir, append, ibin_pt, OUTPUT_FMT))
+                # plot.save("%s/detector_folded_only_data_%s_bin_%d.%s" % (this_output_dir, append, ibin_pt, OUTPUT_FMT))
 
                 # Same but divided by bin width
                 # Do not normalise again!
