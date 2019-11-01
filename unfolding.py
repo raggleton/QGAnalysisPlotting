@@ -2160,12 +2160,17 @@ if __name__ == "__main__":
                         syst_label = syst_dict['label']
                         syst_label_no_spaces = syst_dict['label'].replace(" ", "_")
                         syst_tau = syst_dict['tau']
-                        syst_unfolded_1d = syst_dict['unfolded_1d']
+                        syst_unfolded_1d = syst_dict.get('unfolded_1d', None)
+                        if not syst_unfolded_1d:
+                            continue
                         syst_unfolded_hist_bin_total_errors = unfolder.get_var_hist_pt_binned(syst_unfolded_1d, ibin_pt, binning_scheme="generator")
                         this_pt_bin_tdir.WriteTObject(syst_unfolded_hist_bin_total_errors, "syst_%s_unfolded_hist_bin_total_errors" % (syst_label_no_spaces))
 
-                        syst_gen_1d = syst_dict['gen_1d']
+                        syst_gen_1d = syst_dict.get('gen_1d', None)
+                        if not syst_gen_1d:
+                            continue
                         syst_gen_1d_bin = unfolder.get_var_hist_pt_binned(syst_gen_1d, ibin_pt, binning_scheme="generator")
+                        this_pt_bin_tdir.WriteTObject(syst_gen_1d_bin, "syst_%s_gen_hist_bin" % (syst_label_no_spaces))
 
                         syst_entries.extend([
                             Contribution(syst_unfolded_hist_bin_total_errors,
