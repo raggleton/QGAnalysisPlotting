@@ -584,7 +584,7 @@ def plot_simple_detector(reco_data, reco_data_fake, reco_mc, reco_mc_fake, outpu
     plot.main_pad.SetLogy(1)
     ymax = max(h.GetMaximum() for h in [reco_mc, reco_mc_fake, reco_data] if h)
     plot.container.SetMaximum(ymax * 100)
-    plot.container.SetMinimum(0.1)
+    plot.container.SetMinimum(0.001)
     plot.legend.SetY1NDC(0.77)
     plot.legend.SetX1NDC(0.65)
     plot.legend.SetX2NDC(0.88)
@@ -2717,10 +2717,11 @@ if __name__ == "__main__":
                 xlim = (50, 2000)
                 if "ZPlusJets" in region['name']:
                     xlim = (50, 614)
+                region_label = region['label'].replace("Dijet", "dijet")  # to ensure correct capitalisation
                 qgp.do_mean_rms_summary_plot(summary_1d_entries, bins,
                                              "%s/%s_box_dijet_mpl.%s" % (this_output_dir, v, OUTPUT_FMT),
                                              var_label=var_label,
                                              xlim=xlim,
-                                             region_title=region['label'].lower())
+                                             region_title=region_label)
 
     print("Saved hists to", output_tfile.GetName())
