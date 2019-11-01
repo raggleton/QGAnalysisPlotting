@@ -53,57 +53,48 @@ class TauScanner(object):
         self.l_curve = ROOT.MakeNullPointer(ROOT.TGraph)
         self.log_tau_x = ROOT.MakeNullPointer(ROOT.TSpline)
         self.log_tau_y = ROOT.MakeNullPointer(ROOT.TSpline)
-        self.ind_best_point = 0
         self.tau = 0
         self.scan_mode = ""
         self.graph_all_scan_points = None
         self.graph_best_scan_point = None
 
     def scan_tau(self, tunfolder, n_scan, tau_min, tau_max, scan_mode, distribution, axis_steering):
-        self.ind_best_point = tunfolder.ScanTau(n_scan,
-                                                tau_min,
-                                                tau_max,
-                                                self.scan_results,
-                                                scan_mode,
-                                                distribution,
-                                                axis_steering,
-                                                self.l_curve,
-                                                self.log_tau_x,
-                                                self.log_tau_y)
+        ind_best_point = tunfolder.ScanTau(n_scan,
+                                            tau_min,
+                                            tau_max,
+                                            self.scan_results,
+                                            scan_mode,
+                                            distribution,
+                                            axis_steering,
+                                            self.l_curve,
+                                            self.log_tau_x,
+                                            self.log_tau_y)
         self.tau = tunfolder.GetTau()
-        self._process_results(scan_mode)
+        self._process_results(scan_mode, ind_best_point)
         print("scan_tau value is {}".format(self.tau))
         print("chi**2 A {:3.1f} + chi**2 L {:3.1f} / NDOF {:3.1f} ".format(tunfolder.GetChi2A(),
                                                                            tunfolder.GetChi2L(),
                                                                            tunfolder.GetNdf()))
         return self.tau
 
-    def _process_results(self, scan_mode):
+    def _process_results(self, scan_mode, ind_best_point):
         """Create graphs etc from ScanTau output
 
         User shouldn't call this, only internal
         """
-        # these need to be arrays to go into TGraph later
-        # t here is log_10(tau)
-        x, y, t, rho = array('d'), array('d'), array('d'), array('d')
 
         # Get best scan point & make graph of it
+        # t here is log_10(tau)
+        t, rho = array('d'), array('d')  # array obj needed to make TGraph
         t0 = ROOT.Double(0.0)
         rho0 = ROOT.Double(0.0)
-        self.scan_results.GetKnot(self.ind_best_point, t0, rho0)
+        self.scan_results.GetKnot(ind_best_point, t0, rho0)
         t.append(t0)
         rho.append(rho0)
         self.graph_best_scan_point = ROOT.TGraph(1, t, rho)
 
-        # x0 = ROOT.Double(0.0)
-        # y0 = ROOT.Double(0.0)
-        # self.l_curve.GetPoint(self.ind_best_point, x0, y0)
-        # x.append(x0)
-        # y.append(y0)
         print("t[0] =", t[0])
         print("rho[0] =", rho[0])
-        # print("x[0] =", x[0])
-        # print("y[0] =", y[0])
         print("10^log_10(tau) = tau =", math.pow(10., float(t0)))
 
         # Make graph of all the points scanned
@@ -130,7 +121,7 @@ class TauScanner(object):
 
     def plot_scan_tau(self, output_filename):
         """Plot graph of scan results, and optimum tau"""
-        canv_tau_scan = ROOT.TCanvas("canv_tau_scan"+str(self.tau), "canv_tau_scan"+str(self.tau))
+        canv_tau_scan = ROOT.TCanvas("canv_tau_scan_"+str(self.tau), "canv_tau_scan_"+str(self.tau))
 
         self.graph_all_scan_points.SetLineColor(ROOT.kBlue+3)
         self.graph_all_scan_points.Draw()
