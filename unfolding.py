@@ -2520,6 +2520,8 @@ if __name__ == "__main__":
                     syst_entries_div_bin_width = []
                     for syst_dict in region['pdf_systematics']:
                         syst_label = syst_dict['label']
+                        if syst_label.startswith("_"):
+                            continue
                         syst_label_no_spaces = syst_dict['label'].replace(" ", "_")
                         syst_tau = syst_dict['tau']
                         syst_unfolded_1d = syst_dict.get('unfolded_1d', None)
