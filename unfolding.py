@@ -986,8 +986,8 @@ if __name__ == "__main__":
     if any([args.doDijetCentral, args.doDijetForward, args.doDijetCentralGroomed, args.doDijetForwardGroomed]):
         # FOR DIJET:
         input_mc_qcd_mgpythia_tfile = cu.open_root_file(os.path.join(src_dir, qgc.QCD_FILENAME))
-        input_mc_qcd_pythia_tfile = cu.open_root_file(os.path.join(src_dir, qgc.QCD_PYTHIA_ONLY_FILENAME))
-        input_mc_qcd_herwig_tfile = cu.open_root_file(os.path.join(src_dir, qgc.QCD_HERWIG_FILENAME))
+        # input_mc_qcd_pythia_tfile = cu.open_root_file(os.path.join(src_dir, qgc.QCD_PYTHIA_ONLY_FILENAME))
+        input_mc_qcd_herwig_tfile = os.path.join(src_dir, qgc.QCD_HERWIG_FILENAME)
 
         input_jetht_tfile = cu.open_root_file(os.path.join(src_dir, qgc.JETHT_ZB_FILENAME))
 
@@ -1015,56 +1015,56 @@ if __name__ == "__main__":
             "experimental_systematics": [
                 {
                     "label": "Neutral hadron up",
-                    "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'neutralHadronShiftUp', qgc.QCD_FILENAME)),
+                    "tfile": os.path.join(src_dir_systs, 'neutralHadronShiftUp', qgc.QCD_FILENAME),
                     "colour": ROOT.kOrange-3,
                 },
                 {
                     "label": "Neutral hadron down",
-                    "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'neutralHadronShiftDown', qgc.QCD_FILENAME)),
+                    "tfile": os.path.join(src_dir_systs, 'neutralHadronShiftDown', qgc.QCD_FILENAME),
                     "colour": ROOT.kOrange-3,
                     "linestyle": 2,
                 },
                 {
                     "label": "Photon up",
-                    "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'photonShiftUp', qgc.QCD_FILENAME)),
+                    "tfile": os.path.join(src_dir_systs, 'photonShiftUp', qgc.QCD_FILENAME),
                     "colour": ROOT.kMagenta-3,
                 },
                 {
                     "label": "Photon down",
-                    "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'photonShiftDown', qgc.QCD_FILENAME)),
+                    "tfile": os.path.join(src_dir_systs, 'photonShiftDown', qgc.QCD_FILENAME),
                     "colour": ROOT.kMagenta-3,
                     "linestyle": 2,
                 },
                 {
                     "label": "JEC up",
-                    "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'jecsmear_directionUp', qgc.QCD_FILENAME)),
+                    "tfile": os.path.join(src_dir_systs, 'jecsmear_directionUp', qgc.QCD_FILENAME),
                     "colour": ROOT.kGreen+2,
                 },
                 {
                     "label": "JEC down",
-                    "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'jecsmear_directionDown', qgc.QCD_FILENAME)),
+                    "tfile": os.path.join(src_dir_systs, 'jecsmear_directionDown', qgc.QCD_FILENAME),
                     "colour": ROOT.kGreen+2,
                     "linestyle": 2,
                 },
                 {
                     "label": "JER up",
-                    "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'jersmear_directionUp', qgc.QCD_FILENAME)),
+                    "tfile": os.path.join(src_dir_systs, 'jersmear_directionUp', qgc.QCD_FILENAME),
                     "colour": ROOT.kOrange+3,
                 },
                 {
                     "label": "JER down",
-                    "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'jersmear_directionDown', qgc.QCD_FILENAME)),
+                    "tfile": os.path.join(src_dir_systs, 'jersmear_directionDown', qgc.QCD_FILENAME),
                     "colour": ROOT.kOrange+3,
                     "linestyle": 2,
                 },
                 {
                     "label": "Pileup up",
-                    "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'pileup_directionUp', qgc.QCD_FILENAME)),
+                    "tfile": os.path.join(src_dir_systs, 'pileup_directionUp', qgc.QCD_FILENAME),
                     "colour": ROOT.kBlue-4,
                 },
                 {
                     "label": "Pileup down",
-                    "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'pileup_directionDown', qgc.QCD_FILENAME)),
+                    "tfile": os.path.join(src_dir_systs, 'pileup_directionDown', qgc.QCD_FILENAME),
                     "colour": ROOT.kBlue-4,
                     "linestyle": 2,
                 },
@@ -1072,40 +1072,45 @@ if __name__ == "__main__":
             "model_systematics": [
                 {
                     "label": "muR up, muF nominal",
-                    "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'ScaleVariationMuRUp_ScaleVariationMuFNominal', qgc.QCD_FILENAME)),
+                    "tfile": os.path.join(src_dir_systs, 'ScaleVariationMuRUp_ScaleVariationMuFNominal', qgc.QCD_FILENAME),
                     "colour": ROOT.kAzure,
                 },
                 {
                     "label": "muR down, muF nominal",
-                    "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'ScaleVariationMuRDown_ScaleVariationMuFNominal', qgc.QCD_FILENAME)),
+                    "tfile": os.path.join(src_dir_systs, 'ScaleVariationMuRDown_ScaleVariationMuFNominal', qgc.QCD_FILENAME),
                     "colour": ROOT.kAzure+1,
                 },
                 {
                     "label": "muR nominal, muF up",
-                    "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'ScaleVariationMuRNominal_ScaleVariationMuFUp', qgc.QCD_FILENAME)),
+                    "tfile": os.path.join(src_dir_systs, 'ScaleVariationMuRNominal_ScaleVariationMuFUp', qgc.QCD_FILENAME),
                     "colour": ROOT.kAzure+2,
                 },
                 {
                     "label": "muR nominal, muF down",
-                    "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'ScaleVariationMuRNominal_ScaleVariationMuFDown', qgc.QCD_FILENAME)),
+                    "tfile": os.path.join(src_dir_systs, 'ScaleVariationMuRNominal_ScaleVariationMuFDown', qgc.QCD_FILENAME),
                     "colour": ROOT.kAzure+3,
                 },
                 {
                     "label": "muR down, muF down",
-                    "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'ScaleVariationMuRDown_ScaleVariationMuFDown', qgc.QCD_FILENAME)),
+                    "tfile": os.path.join(src_dir_systs, 'ScaleVariationMuRDown_ScaleVariationMuFDown', qgc.QCD_FILENAME),
                     "colour": ROOT.kAzure+4,
                 },
                 {
                     "label": "muR up, muF up",
-                    "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'ScaleVariationMuRUp_ScaleVariationMuFUp', qgc.QCD_FILENAME)),
+                    "tfile": os.path.join(src_dir_systs, 'ScaleVariationMuRUp_ScaleVariationMuFUp', qgc.QCD_FILENAME),
                     "colour": ROOT.kAzure+5,
+                },
+                {
+                    "label": "Herwig++",
+                    "tfile": input_mc_qcd_herwig_tfile,
+                    "colour": ROOT.kOrange-3,
                 },
             ],
             "pdf_systematics": [
                 {
                     "label": "PDF",
-                    "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'PDFvariationsTrue', qgc.QCD_FILENAME)),
-                    "colour": ROOT.kMagenta+5,
+                    "tfile": os.path.join(src_dir_systs, 'PDFvariationsTrue', qgc.QCD_FILENAME),
+                    "colour": ROOT.kCyan+2,
                     "variations": range(100),
                 },
             ]
@@ -1170,56 +1175,56 @@ if __name__ == "__main__":
             "experimental_systematics": [
                 {
                     "label": "Neutral hadron up",
-                    "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'neutralHadronShiftUp', qgc.DY_FILENAME)),
+                    "tfile": os.path.join(src_dir_systs, 'neutralHadronShiftUp', qgc.DY_FILENAME),
                     "colour": ROOT.kOrange-3,
                 },
                 {
                     "label": "Neutral hadron down",
-                    "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'neutralHadronShiftDown', qgc.DY_FILENAME)),
+                    "tfile": os.path.join(src_dir_systs, 'neutralHadronShiftDown', qgc.DY_FILENAME),
                     "colour": ROOT.kOrange-3,
                     "linestyle": 2,
                 },
                 {
                     "label": "Photon up",
-                    "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'photonShiftUp', qgc.DY_FILENAME)),
+                    "tfile": os.path.join(src_dir_systs, 'photonShiftUp', qgc.DY_FILENAME),
                     "colour": ROOT.kMagenta-3,
                 },
                 {
                     "label": "Photon down",
-                    "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'photonShiftDown', qgc.DY_FILENAME)),
+                    "tfile": os.path.join(src_dir_systs, 'photonShiftDown', qgc.DY_FILENAME),
                     "colour": ROOT.kMagenta-3,
                     "linestyle": 2,
                 },
                 {
                     "label": "JEC up",
-                    "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'jecsmear_directionUp', qgc.DY_FILENAME)),
+                    "tfile": os.path.join(src_dir_systs, 'jecsmear_directionUp', qgc.DY_FILENAME),
                     "colour": ROOT.kGreen+2,
                 },
                 {
                     "label": "JEC down",
-                    "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'jecsmear_directionDown', qgc.DY_FILENAME)),
+                    "tfile": os.path.join(src_dir_systs, 'jecsmear_directionDown', qgc.DY_FILENAME),
                     "colour": ROOT.kGreen+2,
                     "linestyle": 2,
                 },
                 {
                     "label": "JER up",
-                    "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'jersmear_directionUp', qgc.DY_FILENAME)),
+                    "tfile": os.path.join(src_dir_systs, 'jersmear_directionUp', qgc.DY_FILENAME),
                     "colour": ROOT.kOrange+3,
                 },
                 {
                     "label": "JER down",
-                    "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'jersmear_directionDown', qgc.DY_FILENAME)),
+                    "tfile": os.path.join(src_dir_systs, 'jersmear_directionDown', qgc.DY_FILENAME),
                     "colour": ROOT.kOrange+3,
                     "linestyle": 2,
                 },
                 {
                     "label": "Pileup up",
-                    "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'pileup_directionUp', qgc.DY_FILENAME)),
+                    "tfile": os.path.join(src_dir_systs, 'pileup_directionUp', qgc.DY_FILENAME),
                     "colour": ROOT.kBlue-4,
                 },
                 {
                     "label": "Pileup down",
-                    "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'pileup_directionDown', qgc.DY_FILENAME)),
+                    "tfile": os.path.join(src_dir_systs, 'pileup_directionDown', qgc.DY_FILENAME),
                     "colour": ROOT.kBlue-4,
                     "linestyle": 2,
                 },
@@ -1227,33 +1232,41 @@ if __name__ == "__main__":
             "model_systematics": [
                 {
                     "label": "muR up, muF nominal",
-                    "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'ScaleVariationMuRUp_ScaleVariationMuFNominal', qgc.DY_FILENAME)),
+                    "tfile": os.path.join(src_dir_systs, 'ScaleVariationMuRUp_ScaleVariationMuFNominal', qgc.DY_FILENAME),
                     "colour": ROOT.kAzure,
                 },
                 {
                     "label": "muR down, muF nominal",
-                    "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'ScaleVariationMuRDown_ScaleVariationMuFNominal', qgc.DY_FILENAME)),
+                    "tfile": os.path.join(src_dir_systs, 'ScaleVariationMuRDown_ScaleVariationMuFNominal', qgc.DY_FILENAME),
                     "colour": ROOT.kAzure+1,
                 },
                 {
                     "label": "muR nominal, muF up",
-                    "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'ScaleVariationMuRNominal_ScaleVariationMuFUp', qgc.DY_FILENAME)),
+                    "tfile": os.path.join(src_dir_systs, 'ScaleVariationMuRNominal_ScaleVariationMuFUp', qgc.DY_FILENAME),
                     "colour": ROOT.kAzure+2,
                 },
                 {
                     "label": "muR nominal, muF down",
-                    "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'ScaleVariationMuRNominal_ScaleVariationMuFDown', qgc.DY_FILENAME)),
+                    "tfile": os.path.join(src_dir_systs, 'ScaleVariationMuRNominal_ScaleVariationMuFDown', qgc.DY_FILENAME),
                     "colour": ROOT.kAzure+3,
                 },
                 {
                     "label": "muR down, muF down",
-                    "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'ScaleVariationMuRDown_ScaleVariationMuFDown', qgc.DY_FILENAME)),
+                    "tfile": os.path.join(src_dir_systs, 'ScaleVariationMuRDown_ScaleVariationMuFDown', qgc.DY_FILENAME),
                     "colour": ROOT.kAzure+4,
                 },
                 {
                     "label": "muR up, muF up",
-                    "tfile": cu.open_root_file(os.path.join(src_dir_systs, 'ScaleVariationMuRUp_ScaleVariationMuFUp', qgc.DY_FILENAME)),
+                    "tfile": os.path.join(src_dir_systs, 'ScaleVariationMuRUp_ScaleVariationMuFUp', qgc.DY_FILENAME),
                     "colour": ROOT.kAzure+5,
+                },
+            ],
+            "pdf_systematics": [
+                {
+                    "label": "PDF",
+                    "tfile": os.path.join(src_dir_systs, 'PDFvariationsTrue', qgc.DY_FILENAME),
+                    "colour": ROOT.kCyan+2,
+                    "variations": range(100),
                 },
             ]
         }
@@ -1493,7 +1506,9 @@ if __name__ == "__main__":
             if args.doExperimentalSysts:
                 chosen_rsp_bin = (18, 18)
                 print("nominal response bin content for", chosen_rsp_bin, hist_mc_gen_reco_map.GetBinContent(*chosen_rsp_bin))
-                for syst_dict in region['experimental_systematics']:
+                for syst_ind, syst_dict in enumerate(region['experimental_systematics']):
+                    if not isinstance(syst_dict['tfile'], ROOT.TFile):
+                        syst_dict['tfile'] = cu.open_root_file(syst_dict['tfile'])
                     map_syst = cu.get_from_tfile(syst_dict['tfile'], "%s/tu_%s_GenReco_all" % (region['dirname'], angle_shortname))
                     print("Adding systematic:", syst_dict['label'])
                     print("    syst bin", chosen_rsp_bin, map_syst.GetBinContent(*chosen_rsp_bin))
@@ -1744,6 +1759,8 @@ if __name__ == "__main__":
             alt_tau = 0
             if args.useAltResponse:
                 print("*** Unfolding with alternate response matrix ***")
+                if not isinstance(region['alt_mc_tfile'], ROOT.TFile):
+                    region['alt_mc_tfile'] = cu.open_root_file(region['alt_mc_tfile'])
                 alt_hist_mc_gen = cu.get_from_tfile(region['alt_mc_tfile'], "%s/hist_%s_truth_all" % (region['dirname'], angle_shortname))
                 hist_mc_gen_reco_map_alt = cu.get_from_tfile(region['alt_mc_tfile'], "%s/tu_%s_GenReco_all" % (region['dirname'], angle_shortname))
                 alt_unfolder = MyUnfolder(response_map=hist_mc_gen_reco_map_alt,
@@ -1831,9 +1848,12 @@ if __name__ == "__main__":
                     syst_label = syst_dict['label']
                     syst_label_no_spaces = syst_dict['label'].replace(" ", "_")
 
-                    print("*** Unfolding with alternate input:", syst_label, "***")
+                    print("*** Unfolding with alternate input:", syst_label, "(%d/%d) ***" % (ind+1, len(region['model_systematics'])))
 
                     mc_hname_append = "split" if MC_SPLIT else "all"
+                    mc_hname_append = "all"
+                    if not isinstance(syst_dict['tfile'], ROOT.TFile):
+                        syst_dict['tfile'] = cu.open_root_file(syst_dict['tfile'])
                     hist_syst_reco = cu.get_from_tfile(syst_dict['tfile'], "%s/hist_%s_reco_%s" % (region['dirname'], angle_shortname, mc_hname_append))
                     hist_syst_gen = cu.get_from_tfile(syst_dict['tfile'], "%s/hist_%s_truth_%s" % (region['dirname'], angle_shortname, mc_hname_append))
 
@@ -1863,13 +1883,16 @@ if __name__ == "__main__":
 
                     # Add systematic errors as different response matrices
                     # ----------------------------------------------------
-                    chosen_rsp_bin = (18, 18)
-                    print("nominal response bin content for", chosen_rsp_bin, syst_unfolder.response_map.GetBinContent(*chosen_rsp_bin))
-                    for syst_dict in region['experimental_systematics']:
-                        map_syst = cu.get_from_tfile(syst_dict['tfile'], "%s/tu_%s_GenReco_all" % (region['dirname'], angle_shortname))
-                        print("Adding systematic:", syst_dict['label'])
-                        print("    syst bin", chosen_rsp_bin, map_syst.GetBinContent(*chosen_rsp_bin))
-                        syst_unfolder.tunfolder.AddSysError(map_syst, syst_dict['label'], syst_unfolder.orientation, ROOT.TUnfoldDensity.kSysErrModeMatrix)
+                    if args.doExperimentalSysts:
+                        chosen_rsp_bin = (18, 18)
+                        print("nominal response bin content for", chosen_rsp_bin, syst_unfolder.response_map.GetBinContent(*chosen_rsp_bin))
+                        for exp_dict in region['experimental_systematics']:
+                            if not isinstance(exp_dict['tfile'], ROOT.TFile):
+                                exp_dict['tfile'] = cu.open_root_file(exp_dict['tfile'])
+                            map_syst = cu.get_from_tfile(exp_dict['tfile'], "%s/tu_%s_GenReco_all" % (region['dirname'], angle_shortname))
+                            print("Adding systematic:", exp_dict['label'])
+                            print("    syst bin", chosen_rsp_bin, map_syst.GetBinContent(*chosen_rsp_bin))
+                            syst_unfolder.tunfolder.AddSysError(map_syst, exp_dict['label'], syst_unfolder.orientation, ROOT.TUnfoldDensity.kSysErrModeMatrix)
 
                     # Set what is to be unfolded
                     # --------------------------------------------------------------
@@ -1932,14 +1955,18 @@ if __name__ == "__main__":
                     region['model_systematics'][ind]['unfolded_1d'] = syst_unfolded_1d
                     region['model_systematics'][ind]['gen_1d'] = hist_syst_gen
 
-            # DO PDF SYSTEMATICS
+            # ------------------------------------------------------------------
+            # DO PDF VARIATIONS
             # ------------------------------------------------------------------
             if args.doPDFSysts:
                 # first construct all new systematic variations
                 original_pdf_dict = region['pdf_systematics'][0]
                 original_pdf_dict['label'] = '_PDF_template'  # initial _ to ignore it later on
-                region['pdf_systematics']  = []
                 tfile = original_pdf_dict['tfile']
+                if not isinstance(tfile, ROOT.TFile):
+                    tfile = cu.open_root_file(tfile)
+                
+                region['pdf_systematics']  = []
                 for pdf_ind in original_pdf_dict['variations']:
                     # mc_hname_append = "split" if MC_SPLIT else "all"
                     mc_hname_append = "all"
@@ -1998,13 +2025,16 @@ if __name__ == "__main__":
 
                     # Add systematic errors as different response matrices
                     # ----------------------------------------------------
-                    chosen_rsp_bin = (18, 18)
-                    print("nominal response bin content for", chosen_rsp_bin, syst_unfolder.response_map.GetBinContent(*chosen_rsp_bin))
-                    for exp_dict in region['experimental_systematics']:
-                        map_syst = cu.get_from_tfile(exp_dict['tfile'], "%s/tu_%s_GenReco_all" % (region['dirname'], angle_shortname))
-                        print("Adding systematic:", exp_dict['label'])
-                        print("    syst bin", chosen_rsp_bin, map_syst.GetBinContent(*chosen_rsp_bin))
-                        syst_unfolder.tunfolder.AddSysError(map_syst, exp_dict['label'], syst_unfolder.orientation, ROOT.TUnfoldDensity.kSysErrModeMatrix)
+                    if args.doExperimentalSysts:
+                        chosen_rsp_bin = (18, 18)
+                        print("nominal response bin content for", chosen_rsp_bin, syst_unfolder.response_map.GetBinContent(*chosen_rsp_bin))
+                        for exp_dict in region['experimental_systematics']:
+                            if not isinstance(exp_dict['tfile'], ROOT.TFile):
+                                exp_dict['tfile'] = cu.open_root_file(exp_dict['tfile'])
+                            map_syst = cu.get_from_tfile(exp_dict['tfile'], "%s/tu_%s_GenReco_all" % (region['dirname'], angle_shortname))
+                            print("Adding systematic:", exp_dict['label'])
+                            print("    syst bin", chosen_rsp_bin, map_syst.GetBinContent(*chosen_rsp_bin))
+                            syst_unfolder.tunfolder.AddSysError(map_syst, exp_dict['label'], syst_unfolder.orientation, ROOT.TUnfoldDensity.kSysErrModeMatrix)
 
                     # Set what is to be unfolded
                     # --------------------------------------------------------------
