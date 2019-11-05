@@ -421,11 +421,148 @@ class MyUnfolder(object):
     def get_folded_output(self, hist_name):
         return self.tunfolder.GetFoldedOutput(hist_name)
 
+    @staticmethod
+    def th1_to_ndarray(hist_A, oflow_x=False):
+        """Convert TH1 to numpy ndarray"""
+        ncol = hist_A.GetNbinsX()
+        if oflow_x:
+            ncol += 2
+        result = np.zeros(shape=(1, ncol), dtype=float)
+        errors = np.zeros(shape=(1, ncol), dtype=float)
+
+        # Get ROOT indices to loop over
+        x_start = 0 if oflow_x else 1
+        x_end = hist_A.GetNbinsX()
+        if oflow_x:
+            x_end += 1
+
+        # x_ind for numpy as always starts at 0
+        # ix for ROOT
+        for x_ind, ix in enumerate(range(x_start, x_end+1)):
+            result[0][x_ind] = hist_A.GetBinContent(ix)
+            errors[0][x_ind] = hist_A.GetBinError(ix)
+
+        # check sparsity
+        return result, errors
+
+    @staticmethod
+    def ndarray_to_th1(nd_array, has_oflow_x=False):
+        """Convert numpy ndarray row vector to TH1, with shape (1, nbins)
+
+        Use has_oflow_x to include the under/overflow bins
+        """
+        nbinsx = nd_array.shape[1]
+        nbins_hist = nbinsx
+        if has_oflow_x:
+            nbins_hist -= 2
+
+        # need the 0.5 offset to match TUnfold
+        h = ROOT.TH1F(cu.get_unique_str(), "", nbins_hist, 0.5, nbins_hist+0.5)
+
+        x_start = 1
+        x_end = nbins_hist
+
+        if has_oflow_x:
+            x_start = 0
+            x_end = nbins_hist+1
+
+        for x_ind, ix in enumerate(range(x_start, x_end+1)):
+            h.SetBinContent(ix, nd_array[0][x_ind])
+            h.SetBinError(ix, math.sqrt(nd_array[0][x_ind]))
+            #FIXME how to do errors
+        return h
+
+    @staticmethod
+    def th2_to_ndarray(hist_A, oflow_x=False, oflow_y=False):
+        """Convert TH2 to numpy ndarray
+
+        Don't use verison in common_utils - wrong axes?
+        """
+        ncol = hist_A.GetNbinsX()
+        if oflow_x:
+            ncol += 2
+        nrow = hist_A.GetNbinsY()
+        if oflow_y:
+            nrow += 2
+
+        result = np.zeros(shape=(nrow, ncol), dtype=float)
+        errors = np.zeros(shape=(nrow, ncol), dtype=float)
+        # access via result[irow][icol]
+
+        # Get ROOT indices to loop over
+        y_start = 0 if oflow_y else 1
+        y_end = hist_A.GetNbinsY()
+        if oflow_y:
+            y_end += 1
+
+        x_start = 0 if oflow_x else 1
+        x_end = hist_A.GetNbinsX()
+        if oflow_x:
+            x_end += 1
+
+        # y_ind, x_ind for numpy as always starts at 0
+        # iy, ix for ROOT
+        for y_ind, iy in enumerate(range(y_start, y_end+1)):
+            for x_ind, ix in enumerate(range(x_start, x_end+1)):
+                result[y_ind][x_ind] = hist_A.GetBinContent(ix, iy)
+                errors[y_ind][x_ind] = hist_A.GetBinError(ix, iy)
+
+        # check sparsity
+        num_empty = np.count_nonzero(result == 0)
+        num_entries = result.size
+        sparsity = num_empty / float(num_entries)
+        # print("Converting TH2 to ndarray...")
+        # print("num_empty:", num_empty)
+        # print("num_entries:", num_entries)
+        # print("sparsity:", sparsity)
+        if (sparsity > 0.5):
+            print("Matrix has %d/%d empty entries - consider using sparse matrix (which I don't know how to do yet)" % (num_empty, num_entries))
+
+        return result, errors
+
+    @staticmethod
+    def normalise_ndarray(matrix, by):
+        if by == 'col':
+            matrix = matrix.T # makes life a bit easier
+        for i in range(matrix.shape[0]):
+            row_sum = matrix[i].sum()
+            if row_sum != 0:
+                matrix[i] = matrix[i] / row_sum
+        if by == 'col':
+            return matrix.T
+        else:
+            return matrix
+
+    def get_folded_hist(self, hist_gen):
+        """Fold hist_gen using the stored respone matrix, ie do matrix * vector"""
+        oflow = True
+        # Convert map to matrix
+        response_matrix, response_matrix_err = self.th2_to_ndarray(self.response_map, oflow_x=oflow, oflow_y=oflow)
+
+        # Normalise response_matrix so that bins represent prob to go from
+        # given gen bin to a reco bin
+        # ASSUMES GEN ON X AXIS!
+        norm_by = 'col' if self.orientation == ROOT.TUnfold.kHistMapOutputHoriz else 'row'
+        response_matrix_normed = self.normalise_ndarray(response_matrix, by='col')
+
+        # Convert hist to vector
+        gen_vec, gen_vec_err = self.th1_to_ndarray(hist_gen, oflow_x=oflow)
+
+        # Multiply
+        # Note that we need to transpose from row vec to column vec
+        folded_vec = response_matrix_normed.dot(gen_vec.T)
+
+        # Convert vector to TH1
+        folded_hist = self.ndarray_to_th1(folded_vec.T, has_oflow_x=oflow)
+
+        return folded_hist
+
+
 
 def generate_2d_canvas(size=(800, 600)):
     canv = ROOT.TCanvas(cu.get_unique_str(), "", *size)
     canv.SetTicks(1, 1)
-    canv.SetRightMargin(1.5)
+    canv.SetRightMargin(19) # this does nothing?!
     canv.SetLeftMargin(0.9)
     return canv
 
@@ -732,35 +869,43 @@ def draw_projection_comparison(h_orig, h_projection, title, xtitle, output_filen
     plot.save(output_filename)
 
 
-def draw_reco_folded(hist_folded, tau, hist_reco_data, hist_reco_mc, title, xtitle, output_filename):
-    entries = [
-        Contribution(hist_reco_mc, label="MC (detector, bg-subtracted)",
-                     line_color=ROOT.kBlack, line_width=1,
-                     marker_color=ROOT.kBlack, marker_size=0,
-                     normalise_hist=False),
-        Contribution(hist_reco_data, label="Data (detector, bg-subtracted)",
-                     line_color=ROOT.kBlue, line_width=1,
-                     marker_color=ROOT.kBlue, marker_size=0,
-                     normalise_hist=False),
-        Contribution(hist_folded, label="Unfolded data (#tau = %.3g, folded)" % (tau),
-                     line_color=ROOT.kRed, line_width=1,
-                     marker_color=ROOT.kRed, marker_size=0,
-                     normalise_hist=False,
-                     subplot=hist_reco_data),
-    ]
+def draw_reco_folded(hist_folded, tau, hist_reco_data, hist_reco_mc, title, xtitle, output_filename, folded_subplot=None, folded_subplot_name=""):
+    entries = []
+    if hist_reco_mc:
+        entries.append(
+            Contribution(hist_reco_mc, label="MC (detector, bg-subtracted)",
+                         line_color=ROOT.kBlack, line_width=1,
+                         marker_color=ROOT.kBlack, marker_size=0,
+                         normalise_hist=False)
+            )
+    if hist_reco_data:
+        entries.append(
+            Contribution(hist_reco_data, label="Data (detector, bg-subtracted)",
+                         line_color=ROOT.kBlue, line_width=1,
+                         marker_color=ROOT.kBlue, marker_size=0,
+                         normalise_hist=False)
+            )
+    if hist_folded:
+        entries.append(
+            Contribution(hist_folded, label="Folded data (#tau = %.3g)" % (tau),
+                         line_color=ROOT.kRed, line_width=1,
+                         marker_color=ROOT.kRed, marker_size=0,
+                         normalise_hist=False,
+                         subplot=folded_subplot)
+            )
     plot = Plot(entries,
                 what='hist',
                 title=title,
                 xtitle=xtitle,
                 ytitle="N",
-                subplot_type='ratio',
-                subplot_title='Folded / Data',
+                subplot_type='ratio' if folded_subplot else None,
+                subplot_title='Folded / %s' % (folded_subplot_name),
                 subplot_limits=(0.8, 1.2))
     plot.default_canvas_size = (800, 600)
     plot.plot("NOSTACK HIST")
     plot.main_pad.SetLogy(1)
-    ymax = max(h.GetMaximum() for h in [hist_reco_data, hist_reco_mc, hist_folded])
-    plot.container.SetMaximum(ymax * 50)
+    ymax = max(h.GetMaximum() for h in [hist_reco_data, hist_reco_mc, hist_folded] if h)
+    plot.container.SetMaximum(ymax * 200)
     # plot.container.SetMinimum(1E-8)
     plot.legend.SetY1NDC(0.77)
     plot.legend.SetX2NDC(0.85)
@@ -1752,17 +1897,33 @@ if __name__ == "__main__":
 
             # Do forward-folding to check unfolding
             # ------------------------------------------------------------------
-            hist_data_folded = unfolder.get_folded_output(hist_name="folded_%s" % (append))
-            this_tdir.WriteTObject(hist_data_folded, "folded_1d")
-            draw_reco_folded(hist_folded=hist_data_folded,
+            # Do it on the unfolded result
+            hist_data_folded_unfolded = unfolder.get_folded_output(hist_name="folded_unfolded_%s" % (append))
+            this_tdir.WriteTObject(hist_data_folded_unfolded, "folded_unfolded_1d")
+            draw_reco_folded(hist_folded=hist_data_folded_unfolded,
                              tau=tau,
                              hist_reco_data=reco_1d_bg_subtracted if SUBTRACT_FAKES else reco_1d,
                              hist_reco_mc=hist_mc_reco_bg_subtracted if SUBTRACT_FAKES else hist_mc_reco,
+                             folded_subplot=reco_1d_bg_subtracted if SUBTRACT_FAKES else reco_1d,
+                             folded_subplot_name='Data',
                              title="%s\n%s region" % (jet_algo, region['label']),
                              xtitle="%s, Detector binning" % (angle_str),
-                             output_filename="%s/folded_%s.%s" % (this_output_dir, append, OUTPUT_FMT))
+                             output_filename="%s/folded_unfolded_%s.%s" % (this_output_dir, append, OUTPUT_FMT))
 
-            summary_1d_entries = []  # for final summary plot
+            hist_gen_folded = None
+            if MC_INPUT:
+                hist_gen_folded = unfolder.get_folded_hist(hist_mc_gen)
+                this_tdir.WriteTObject(hist_gen_folded, "folded_gen_1d")
+                draw_reco_folded(hist_folded=hist_gen_folded,
+                                 tau=0,
+                                 hist_reco_data=None,
+                                 hist_reco_mc=hist_mc_reco_bg_subtracted if SUBTRACT_FAKES else hist_mc_reco,
+                                 folded_subplot=hist_mc_reco_bg_subtracted if SUBTRACT_FAKES else hist_mc_reco,
+                                 folded_subplot_name='MC',
+                                 title="%s\n%s region" % (jet_algo, region['label']),
+                                 xtitle="%s, Detector binning" % (angle_str),
+                                 output_filename="%s/folded_gen_%s.%s" % (this_output_dir, append, OUTPUT_FMT))
+
 
             # ------------------------------------------------------------------
             # Do unfolding using alternate response matrix
@@ -2126,6 +2287,7 @@ if __name__ == "__main__":
             detector_title = "Detector-level " + angle_str
             particle_title = "Particle-level " + angle_str
             normalised_differential_label = "#frac{1}{#sigma} #frac{d#sigma}{d%s}" % angle.lambda_str
+            summary_1d_entries = []  # for final summary plot
 
             # Draw individual pt bin plots - GEN binning
             # ------------------------------------------------------------------
@@ -2807,7 +2969,7 @@ if __name__ == "__main__":
 
                 # Get 1D hists
                 # The folded unfolded result
-                folded_unfolded_hist_bin_reco_binning = unfolder.get_var_hist_pt_binned(hist_data_folded, ibin_pt, binning_scheme="detector")
+                folded_unfolded_hist_bin_reco_binning = unfolder.get_var_hist_pt_binned(hist_data_folded_unfolded, ibin_pt, binning_scheme="detector")
                 this_pt_bin_tdir.WriteTObject(folded_unfolded_hist_bin_reco_binning, "folded_unfolded_hist_bin_reco_binning")
 
                 # here this is the thing to be unfolded, should be data or MC depending on MC_INPUT flag
@@ -2829,7 +2991,7 @@ if __name__ == "__main__":
                 # Do the plots
                 # --------------------------------------------------------------
                 # common hist settings
-                lw = 1
+                lw = 2
                 title = "%s\n%s region\n%g < p_{T}^{Jet} < %g GeV" % (jet_algo, region['label'], pt_bin_edges_reco[ibin_pt], pt_bin_edges_reco[ibin_pt+1])
                 common_hist_args = dict(
                     what="hist",
@@ -3093,6 +3255,72 @@ if __name__ == "__main__":
                 plot.plot("NOSTACK E1")
                 plot.save("%s/detector_folded_unfolded_only_data_%s_bin_%d_divBinWidth.%s" % (this_output_dir, append, ibin_pt, OUTPUT_FMT))
 
+                # PLOT FOLDED GEN MC
+                # --------------------------------------------------------------
+                if MC_INPUT and hist_gen_folded:
+                    # Get 1D hists
+                    # The folded result
+                    folded_gen_hist_bin_reco_binning = unfolder.get_var_hist_pt_binned(hist_gen_folded, ibin_pt, binning_scheme="detector")
+                    this_pt_bin_tdir.WriteTObject(folded_gen_hist_bin_reco_binning, "folded_gen_hist_bin_reco_binning")
+
+                    # Folded gen, comparing to original reco
+                    entries = [
+                        Contribution(mc_reco_bin_hist,
+                                     label="MC (reco, bg-subtracted)" if SUBTRACT_FAKES else "MC (reco)",
+                                     line_color=reco_data_colour, line_width=lw,
+                                     marker_color=reco_data_colour, marker_size=0,
+                                     normalise_hist=True),
+                        Contribution(folded_gen_hist_bin_reco_binning,
+                                     label="Folded particle-level MC",
+                                     line_color=reco_folded_colour, line_width=lw,
+                                     marker_color=reco_folded_colour, marker_size=0,
+                                     subplot=reco_bin_hist,
+                                     normalise_hist=True),
+                    ]
+                    if not check_entries(entries, "%s %d" % (append, ibin_pt)):
+                        continue
+                    plot = Plot(entries,
+                                xtitle=detector_title,
+                                ytitle=normalised_differential_label,
+                                subplot_title='Folded gen / reco',
+                                **common_hist_args)
+                    plot.legend.SetX1(0.6)
+                    plot.legend.SetY1(0.75)
+                    plot.legend.SetX2(0.98)
+                    plot.legend.SetY2(0.9)
+                    plot.plot("NOSTACK E1")
+                    # plot.save("%s/detector_folded_gen_only_data_%s_bin_%d.%s" % (this_output_dir, append, ibin_pt, OUTPUT_FMT))
+
+                    # Same but divided by bin width
+                    # Do not normalise again!
+                    mc_reco_bin_hist_div_bin_width = qgp.hist_divide_bin_width(mc_reco_bin_hist)
+                    folded_gen_hist_bin_reco_binning_div_bin_width = qgp.hist_divide_bin_width(folded_gen_hist_bin_reco_binning)
+                    entries = [
+                        Contribution(mc_reco_bin_hist_div_bin_width,
+                                     label="MC (reco, bg-subtracted)" if SUBTRACT_FAKES else "MC (reco)",
+                                     line_color=reco_mc_colour, line_width=lw,
+                                     marker_color=reco_mc_colour, marker_size=0,
+                                     normalise_hist=False),
+                        Contribution(folded_gen_hist_bin_reco_binning_div_bin_width,
+                                     label="Folded particle-level MC",
+                                     line_color=reco_folded_colour, line_width=lw,
+                                     marker_color=reco_folded_colour, marker_size=0,
+                                     subplot=mc_reco_bin_hist_div_bin_width,
+                                     normalise_hist=False),
+                    ]
+                    if not check_entries(entries, "%s %d" % (append, ibin_pt)):
+                        continue
+                    plot = Plot(entries,
+                                xtitle=detector_title,
+                                ytitle=normalised_differential_label,
+                                subplot_title='Folded gen / reco',
+                                **common_hist_args)
+                    plot.legend.SetX1(0.56)
+                    plot.legend.SetY1(0.72)
+                    plot.legend.SetX2(0.98)
+                    plot.legend.SetY2(0.9)
+                    plot.plot("NOSTACK E1")
+                    plot.save("%s/detector_folded_gen_%s_bin_%d_divBinWidth.%s" % (this_output_dir, append, ibin_pt, OUTPUT_FMT))
 
             # DO SUMMARY PLOT
             # ------------------------------------------------------------------
