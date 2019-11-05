@@ -997,6 +997,8 @@ if __name__ == "__main__":
             "data_tfile": input_jetht_tfile,
             "mc_tfile": input_mc_qcd_mgpythia_tfile,
             "mc_label": "MG+Pythia8",
+            # "mc_tfile": input_mc_qcd_herwig_tfile,
+            # "mc_label": "Herwig++",
             "alt_mc_tfile": input_mc_qcd_herwig_tfile,
             "alt_mc_label": "Herwig++",
             "tau_limits": {
@@ -1107,10 +1109,10 @@ if __name__ == "__main__":
             ],
             "pdf_systematics": [
                 {
-                    "label": "PDF",
+                    "label": "PDF",  # this is a tempalte entry, used for future
                     "tfile": os.path.join(src_dir_systs, 'PDFvariationsTrue', qgc.QCD_FILENAME),
                     "colour": ROOT.kCyan+2,
-                    "variations": range(100),
+                    "variations": range(100),  # list of all the variation #s to be used
                 },
             ]
         }
@@ -1365,6 +1367,8 @@ if __name__ == "__main__":
 
         # hist_data_reco = cu.get_from_tfile(region['data_tfile'], "%s/hist_pt_reco_all" % (region['dirname']))
         mc_hname_append = "split" if MC_SPLIT else "all"
+        if isinstance(region['mc_tfile'], str):
+            region['mc_tfile'] = cu.open_root_file(region['mc_tfile'])
         # hist_mc_reco = cu.get_from_tfile(region['mc_tfile'], "%s/hist_pt_reco_%s" % (region['dirname'], mc_hname_append))
         # hist_mc_gen = cu.get_from_tfile(region['mc_tfile'], "%s/hist_pt_truth_%s" % (region['dirname'], mc_hname_append))
         hist_mc_gen_pt = cu.get_from_tfile(region['mc_tfile'], "%s/hist_pt_truth_%s" % (region['dirname'], mc_hname_append))
@@ -1410,6 +1414,11 @@ if __name__ == "__main__":
             hist_mc_gen = cu.get_from_tfile(region['mc_tfile'], "%s/hist_%s_truth_%s" % (region['dirname'], angle_shortname, mc_hname_append))
             hist_mc_gen_reco_map = cu.get_from_tfile(region['mc_tfile'], "%s/tu_%s_GenReco_%s" % (region['dirname'], angle_shortname, mc_hname_append))
 
+            # Need to scale if using H++ as input
+            # hist_mc_gen_reco_map.Scale(1E8)
+            # hist_mc_gen.Scale(1E8)
+            # hist_mc_reco.Scale(1E8)
+
             # Actual distribution to be unfolded
             reco_1d = hist_mc_reco.Clone() if MC_INPUT else hist_data_reco
 
@@ -1419,6 +1428,7 @@ if __name__ == "__main__":
                 # to construct our "fakes" template, we use the ratio as predicted by MC, and apply it to data
                 # this way we ensure we don't have -ve values, and avoid any issue with cross sections
                 hist_mc_fakes_reco = cu.get_from_tfile(region['mc_tfile'], "%s/hist_%s_reco_fake_%s" % (region['dirname'], angle_shortname, mc_hname_append))
+                # hist_mc_fakes_reco.Scale(1E8)
                 hist_fakes_reco = hist_mc_fakes_reco.Clone("hist_%s_fakes" % angle_shortname)
                 hist_fakes_reco.Divide(hist_mc_reco)
 
@@ -1451,6 +1461,9 @@ if __name__ == "__main__":
             mc_hname_append = "_split" if MC_SPLIT else ""  # FIXME consistency in unfold hist module!
             hist_data_reco_gen_binning = cu.get_from_tfile(region['data_tfile'], "%s/hist_%s_reco_gen_binning" % (region['dirname'], angle_shortname))
             hist_mc_reco_gen_binning = cu.get_from_tfile(region['mc_tfile'], "%s/hist_%s_reco_gen_binning%s" % (region['dirname'], angle_shortname, mc_hname_append))
+
+            # hist_data_reco_gen_binning.Scale(1e8)
+            # hist_mc_reco_gen_binning.Scale(1e8)
 
             # Actual distribution to be unfolded, but with gen binning
             reco_1d_gen_binning = hist_mc_reco_gen_binning.Clone() if MC_INPUT else hist_data_reco_gen_binning
@@ -1751,7 +1764,8 @@ if __name__ == "__main__":
 
             summary_1d_entries = []  # for final summary plot
 
-            # Do unfolding again, this time using alternate response matrix
+            # ------------------------------------------------------------------
+            # Do unfolding using alternate response matrix
             # ------------------------------------------------------------------
             alt_unfolded_1d = None
             alt_hist_mc_gen = None
@@ -1850,7 +1864,7 @@ if __name__ == "__main__":
                     print("*** Unfolding with alternate input:", syst_label, "(%d/%d) ***" % (ind+1, len(region['model_systematics'])))
 
                     mc_hname_append = "split" if MC_SPLIT else "all"
-                    mc_hname_append = "all"
+                    # mc_hname_append = "all"
                     if not isinstance(syst_dict['tfile'], ROOT.TFile):
                         syst_dict['tfile'] = cu.open_root_file(syst_dict['tfile'])
                     hist_syst_reco = cu.get_from_tfile(syst_dict['tfile'], "%s/hist_%s_reco_%s" % (region['dirname'], angle_shortname, mc_hname_append))
@@ -1879,6 +1893,13 @@ if __name__ == "__main__":
                         hist_fakes_syst = hist_fakes_reco_fraction.Clone("hist_fakes_syst_%s" % syst_label_no_spaces)
                         hist_fakes_syst.Multiply(hist_syst_reco)
                         syst_unfolder.tunfolder.SubtractBackground(hist_fakes_syst, "fakes")
+
+                    plot_simple_detector(reco_data=hist_syst_reco,
+                                         reco_mc=hist_mc_reco,
+                                         reco_mc_fake=None,
+                                         reco_data_fake=None,
+                                         output_filename="%s/detector_reco_binning_bg_subtracted_model_%s_%s.%s" % (this_output_dir, syst_label_no_spaces, append, OUTPUT_FMT),
+                                         title="%s region, %s" % (region['label'], angle_str))
 
                     # Add systematic errors as different response matrices
                     # ----------------------------------------------------
@@ -1964,10 +1985,10 @@ if __name__ == "__main__":
                 tfile = original_pdf_dict['tfile']
                 if not isinstance(tfile, ROOT.TFile):
                     tfile = cu.open_root_file(tfile)
-                
+
                 region['pdf_systematics']  = []
                 for pdf_ind in original_pdf_dict['variations']:
-                    # mc_hname_append = "split" if MC_SPLIT else "all"
+                    mc_hname_append = "split" if MC_SPLIT else "all"
                     mc_hname_append = "all"
                     region['pdf_systematics'].append(
                         {
@@ -2152,6 +2173,7 @@ if __name__ == "__main__":
                 # ------------------------------------------------------------
                 lw = 2
                 # common hist settings
+                # title = "%s\n%s region\n%g < #LT p_{T}^{jet} #GT < %g GeV" % (jet_algo, region['label'], pt_bin_edges_gen[ibin_pt], pt_bin_edges_gen[ibin_pt+1])
                 title = "%s\n%s region\n%g < p_{T}^{jet} < %g GeV" % (jet_algo, region['label'], pt_bin_edges_gen[ibin_pt], pt_bin_edges_gen[ibin_pt+1])
                 common_hist_args = dict(
                     what="hist",
@@ -2283,7 +2305,7 @@ if __name__ == "__main__":
                              subplot=mc_gen_hist_bin,
                              normalise_hist=True)),  # unfolded data
                     (mc_gen_hist_bin_div_bin_width,
-                        dict(label="MG+Pythia8",
+                        dict(label=region['mc_label'],
                              line_color=gen_colour, line_width=lw,
                              marker_color=gen_colour, marker_size=0,
                              normalise_hist=True)),  # generator
@@ -2974,7 +2996,7 @@ if __name__ == "__main__":
                 plot.legend.SetX2(0.98)
                 plot.legend.SetY2(0.9)
                 plot.plot("NOSTACK E1")
-                # plot.save("%s/detector_folded_%s_bin_%d.%s" % (this_output_dir, append, ibin_pt, OUTPUT_FMT))
+                # plot.save("%s/detector_folded_unfolded_%s_bin_%d.%s" % (this_output_dir, append, ibin_pt, OUTPUT_FMT))
 
                 # Folded, but only comparing data with data to check it is sane
                 entries = [
@@ -3002,7 +3024,7 @@ if __name__ == "__main__":
                 plot.legend.SetX2(0.98)
                 plot.legend.SetY2(0.9)
                 plot.plot("NOSTACK E1")
-                # plot.save("%s/detector_folded_only_data_%s_bin_%d.%s" % (this_output_dir, append, ibin_pt, OUTPUT_FMT))
+                # plot.save("%s/detector_folded_unfolded_only_data_%s_bin_%d.%s" % (this_output_dir, append, ibin_pt, OUTPUT_FMT))
 
                 # Same but divided by bin width
                 # Do not normalise again!
@@ -3041,7 +3063,7 @@ if __name__ == "__main__":
                 plot.legend.SetX2(0.98)
                 plot.legend.SetY2(0.9)
                 plot.plot("NOSTACK E1")
-                plot.save("%s/detector_folded_%s_bin_%d_divBinWidth.%s" % (this_output_dir, append, ibin_pt, OUTPUT_FMT))
+                plot.save("%s/detector_folded_unfolded_%s_bin_%d_divBinWidth.%s" % (this_output_dir, append, ibin_pt, OUTPUT_FMT))
 
                 # data + folded
                 entries = [
@@ -3069,7 +3091,7 @@ if __name__ == "__main__":
                 plot.legend.SetX2(0.98)
                 plot.legend.SetY2(0.9)
                 plot.plot("NOSTACK E1")
-                plot.save("%s/detector_folded_only_data_%s_bin_%d_divBinWidth.%s" % (this_output_dir, append, ibin_pt, OUTPUT_FMT))
+                plot.save("%s/detector_folded_unfolded_only_data_%s_bin_%d_divBinWidth.%s" % (this_output_dir, append, ibin_pt, OUTPUT_FMT))
 
 
             # DO SUMMARY PLOT
