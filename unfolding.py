@@ -430,63 +430,58 @@ def generate_2d_canvas(size=(800, 600)):
     return canv
 
 
-def draw_response_matrix(rsp_map, region_name, variable_name, output_filename):
+def draw_2d_matrix(h2d, title, output_filename, logz=True, z_min=None, z_max=None):
     canv = generate_2d_canvas()
-    canv.SetLogz()
-
-    rsp_map.SetTitle("Response matrix, %s region, %s;Generator Bin;Detector Bin" % (region_name, variable_name))
-    rsp_map.GetYaxis().SetTitleOffset(1.5)
-    rsp_map.GetXaxis().SetTitleOffset(1.5)
-    rsp_map.Draw("COLZ")
+    if logz:
+        canv.SetLogz()
+    canv.SetRightMargin(2.5)
+    canv.Draw()
+    this_title = "%s;Generator bin;Generator bin" % (title)
+    h2d.SetTitle(this_title)
+    h2d.GetYaxis().SetTitleOffset(1.5)
+    h2d.GetXaxis().SetTitleOffset(1.5)
+    ROOT.gPad.SetRightMargin(2.5)
+    h2d.Draw("COLZ")
+    if z_max:
+        h2d.SetMaximum(z_max)
+    if z_min:
+        h2d.SetMinimum(z_min)
+    else:
+        h2d.SetMinimum(h2d.GetMinimum(1E-40) / 10.)
+    ROOT.gPad.SetRightMargin(2.5)
+    ROOT.gPad.Update()
+    ROOT.gPad.Modified()
     canv.SaveAs(output_filename)
+
+
+def draw_response_matrix(rsp_map, region_name, variable_name, output_filename):
+    title = "Response matrix, %s region, %s" % (region_name, variable_name)
+    draw_2d_matrix(rsp_map, title, variable_name, output_filename)
+    canv = generate_2d_canvas()
 
 
 def draw_probability_matrix(prob_map, region_name, variable_name, output_filename):
+    title = "Probability map, %s region, %s" % (region_name, variable_name)
+    draw_2d_matrix(prob_map, title, variable_name, output_filename)
     canv = generate_2d_canvas()
-    canv.SetLogz()
-
-    title = "Probability map, %s region, %s;Generator Bin;Detector Bin" % (region_name, variable_name)
-    prob_map.SetTitle(title)
-    prob_map.GetYaxis().SetTitleOffset(1.5)
-    prob_map.GetXaxis().SetTitleOffset(1.5)
-    prob_map.Draw("COLZ")
-    canv.SaveAs(output_filename)
 
 
 def draw_error_matrix_input(err_map, region_name, variable_name, output_filename):
+    title = "Error matrix (input), %s region, %s" % (region_name, variable_name)
+    draw_2d_matrix(err_map, title, variable_name, output_filename)
     canv = generate_2d_canvas()
-    canv.SetLogz()
-
-    title = "Error matrix (input), %s region, %s;Generator bin;Generator bin" % (region_name, variable_name)
-    err_map.SetTitle(title)
-    err_map.GetYaxis().SetTitleOffset(1.5)
-    err_map.GetXaxis().SetTitleOffset(1.5)
-    err_map.Draw("COLZ")
-    canv.SaveAs(output_filename)
 
 
 def draw_error_matrix_sys_uncorr(err_map, region_name, variable_name, output_filename):
+    title = "Error matrix (sys uncorr), %s region, %s" % (region_name, variable_name)
+    draw_2d_matrix(err_map, title, variable_name, output_filename)
     canv = generate_2d_canvas()
-    canv.SetLogz()
-
-    title = "Error matrix (sys uncorr), %s region, %s;Generator bin;Generator bin" % (region_name, variable_name)
-    err_map.SetTitle(title)
-    err_map.GetYaxis().SetTitleOffset(1.5)
-    err_map.GetXaxis().SetTitleOffset(1.5)
-    err_map.Draw("COLZ")
-    canv.SaveAs(output_filename)
 
 
 def draw_error_matrix_total(err_map, region_name, variable_name, output_filename):
+    title = "Error matrix (total), %s region, %s" % (region_name, variable_name)
+    draw_2d_matrix(err_map, title, variable_name, output_filename)
     canv = generate_2d_canvas()
-    canv.SetLogz()
-
-    title = "Error matrix (total), %s region, %s;Generator bin;Generator bin" % (region_name, variable_name)
-    err_map.SetTitle(title)
-    err_map.GetYaxis().SetTitleOffset(1.5)
-    err_map.GetXaxis().SetTitleOffset(1.5)
-    err_map.Draw("COLZ")
-    canv.SaveAs(output_filename)
 
 
 def draw_correlation_matrix(corr_map, region_name, variable_name, output_filename):
