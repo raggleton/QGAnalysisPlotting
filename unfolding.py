@@ -1679,19 +1679,18 @@ if __name__ == "__main__":
                                   # constraintMode=ROOT.TUnfold.kEConstraintArea,
                                   constraintMode=ROOT.TUnfold.kEConstraintNone,
                                   regMode=ROOT.TUnfold.kRegModeCurvature,
-                                  densityFlags=ROOT.TUnfoldDensity.kDensityModeBinWidth,
-                                  # densityFlags=ROOT.TUnfoldDensity.kDensityModeNone,
+                                  densityFlags=ROOT.TUnfoldDensity.kDensityModeBinWidth, # important as we have varying bin sizes!
                                   axisSteering='*[B]')
 
             unfolder.save_binning(txt_filename="%s/binning_scheme.txt" % (this_output_dir), print_xml=False)
 
             # Subtract fakes (treat as background)
-            # ------------------------------------
+            # ------------------------------------------------------------------
             if SUBTRACT_FAKES:
                 unfolder.tunfolder.SubtractBackground(hist_fakes_reco, "fakes")
 
             # Add systematic errors as different response matrices
-            # ----------------------------------------------------
+            # ------------------------------------------------------------------
             if args.doExperimentalSysts:
                 chosen_rsp_bin = (18, 18)
                 print("nominal response bin content for", chosen_rsp_bin, hist_mc_gen_reco_map.GetBinContent(*chosen_rsp_bin))
@@ -1704,7 +1703,7 @@ if __name__ == "__main__":
                     unfolder.tunfolder.AddSysError(map_syst, syst_dict['label'], unfolder.orientation, ROOT.TUnfoldDensity.kSysErrModeMatrix)
 
             # Set what is to be unfolded
-            # ---------------------
+            # ------------------------------------------------------------------
             unfolder.setInput(reco_1d, args.biasFactor)
 
             # Save important stuff to TFile
@@ -2385,8 +2384,9 @@ if __name__ == "__main__":
                 # ------------------------------------------------------------
                 lw = 2
                 # common hist settings
-                # title = "%s\n%s region\n%g < #LT p_{T}^{jet} #GT < %g GeV" % (jet_algo, region['label'], pt_bin_edges_gen[ibin_pt], pt_bin_edges_gen[ibin_pt+1])
                 title = "%s\n%s region\n%g < p_{T}^{jet} < %g GeV" % (jet_algo, region['label'], pt_bin_edges_gen[ibin_pt], pt_bin_edges_gen[ibin_pt+1])
+                if "ptavebinning" in src_dir.lower():
+                    title = "%s\n%s region\n%g < #LT p_{T}^{jet} #GT < %g GeV" % (jet_algo, region['label'], pt_bin_edges_gen[ibin_pt], pt_bin_edges_gen[ibin_pt+1])
                 common_hist_args = dict(
                     what="hist",
                     title=title,
