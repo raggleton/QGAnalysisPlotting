@@ -1149,11 +1149,11 @@ if __name__ == "__main__":
 
     if any([args.doDijetCentral, args.doDijetForward, args.doDijetCentralGroomed, args.doDijetForwardGroomed]):
         # FOR DIJET:
-        input_mc_qcd_mgpythia_tfile = cu.open_root_file(os.path.join(src_dir, qgc.QCD_FILENAME))
+        input_mc_qcd_mgpythia_tfile = os.path.join(src_dir, qgc.QCD_FILENAME)
         # input_mc_qcd_pythia_tfile = cu.open_root_file(os.path.join(src_dir, qgc.QCD_PYTHIA_ONLY_FILENAME))
         input_mc_qcd_herwig_tfile = os.path.join(src_dir, qgc.QCD_HERWIG_FILENAME)
 
-        input_jetht_tfile = cu.open_root_file(os.path.join(src_dir, qgc.JETHT_ZB_FILENAME))
+        input_jetht_tfile = os.path.join(src_dir, qgc.JETHT_ZB_FILENAME)
 
         dijet_region_dict_template = {
             "name": "Dijet",
@@ -1312,11 +1312,11 @@ if __name__ == "__main__":
 
     if any([args.doZPJ, args.doZPJGroomed]):
         # FOR Z+JETS:
-        input_mc_dy_mgpythia_tfile = cu.open_root_file(os.path.join(src_dir, qgc.DY_FILENAME))
-        input_mc_dy_mgherwig_tfile = cu.open_root_file(os.path.join(src_dir, qgc.DY_MG_HERWIG_FILENAME))
-        input_mc_dy_herwig_tfile = cu.open_root_file(os.path.join(src_dir, qgc.DY_HERWIG_FILENAME))
+        input_mc_dy_mgpythia_tfile = os.path.join(src_dir, qgc.DY_FILENAME)
+        input_mc_dy_mgherwig_tfile = os.path.join(src_dir, qgc.DY_MG_HERWIG_FILENAME)
+        input_mc_dy_herwig_tfile = os.path.join(src_dir, qgc.DY_HERWIG_FILENAME)
 
-        input_singlemu_tfile = cu.open_root_file(os.path.join(src_dir, qgc.SINGLE_MU_FILENAME))
+        input_singlemu_tfile = os.path.join(src_dir, qgc.SINGLE_MU_FILENAME)
 
         zpj_region_dict = {
             "name": "ZPlusJets",
@@ -1583,6 +1583,8 @@ if __name__ == "__main__":
             angle_bin_edges_gen = LAMBDA_VAR_DICTS[angle.var]['gen']
             angle_shortname = angle.var.replace("jet_", "")
 
+            if not isinstance(region['data_tfile'], ROOT.TFile):
+                region['data_tfile'] = cu.open_root_file(region['data_tfile'])
             hist_data_reco = cu.get_from_tfile(region['data_tfile'], "%s/hist_%s_reco_all" % (region['dirname'], angle_shortname))
             mc_hname_append = "split" if MC_SPLIT else "all"
             hist_mc_reco = cu.get_from_tfile(region['mc_tfile'], "%s/hist_%s_reco_%s" % (region['dirname'], angle_shortname, mc_hname_append))
