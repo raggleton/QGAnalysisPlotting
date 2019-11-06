@@ -2061,13 +2061,17 @@ if __name__ == "__main__":
                     syst_label_no_spaces = syst_dict['label'].replace(" ", "_")
 
                     print("*** Unfolding with alternate input:", syst_label, "(%d/%d) ***" % (ind+1, len(region['model_systematics'])))
+                    is_herwig = "Herwig" in syst_label
 
                     mc_hname_append = "split" if MC_SPLIT else "all"
-                    # mc_hname_append = "all"
+                    if is_herwig:
+                        # use all the stats!
+                        mc_hname_append = "all"
                     if not isinstance(syst_dict['tfile'], ROOT.TFile):
                         syst_dict['tfile'] = cu.open_root_file(syst_dict['tfile'])
                     hist_syst_reco = cu.get_from_tfile(syst_dict['tfile'], "%s/hist_%s_reco_%s" % (region['dirname'], angle_shortname, mc_hname_append))
                     hist_syst_gen = cu.get_from_tfile(syst_dict['tfile'], "%s/hist_%s_truth_%s" % (region['dirname'], angle_shortname, mc_hname_append))
+
 
                     syst_unfolder = MyUnfolder(response_map=unfolder.response_map,
                                                variable_bin_edges_reco=unfolder.variable_bin_edges_reco,
@@ -2082,6 +2086,14 @@ if __name__ == "__main__":
                                                regMode=unfolder.regMode,
                                                densityFlags=unfolder.densityFlags,
                                                axisSteering=unfolder.axisSteering)
+
+                    if is_herwig:
+                        herwig_sf = 1E8  # should've done this earlier
+                        hist_syst_reco.Scale(herwig_sf)
+                        hist_syst_gen.Scale(herwig_sf)
+                        # SetEpsMatrix ensures rank properly calcualted when inverting
+                        # "rank of matrix E 55 expect 170"
+                        syst_unfolder.tunfolder.SetEpsMatrix(1E-18)
 
                     # Subtract fakes (treat as background)
                     # --------------------------------------------------------------
