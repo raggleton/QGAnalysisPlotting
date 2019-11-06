@@ -1486,8 +1486,8 @@ if __name__ == "__main__":
 
     bias_str = "%g" % args.biasFactor
     bias_str = bias_str.replace(".", "p")
-    output_dir = os.path.join(src_dir, "unfolding_better_regularise%s_target0p5%s%s_densityModeBinWidth_constraintNone%s_signalRegionOnly_biasFactor%s" % (str(REGULARIZE).capitalize(), mc_append, sub_append, append, bias_str))
-    # output_dir = os.path.join(src_dir, "unfolding_better_regularise%s_target0p5%s%s_densityModeBinWidth_constraintNone%s_signalRegionOnly_HerwigNominal" % (str(REGULARIZE).capitalize(), mc_append, sub_append, append))
+    output_dir = os.path.join(src_dir, "unfolding_better_regularise%s%s%s_densityModeBinWidth_constraintNone%s_signalRegionOnly_biasFactor%s" % (str(REGULARIZE).capitalize(), mc_append, sub_append, append, bias_str))
+    # output_dir = os.path.join(src_dir, "unfolding_better_regularise%s%s%s_densityModeBinWidth_constraintNone%s_signalRegionOnly_biasFactor%s_HerwigNominal" % (str(REGULARIZE).capitalize(), mc_append, sub_append, append, bias_str))
     if args.outputDir:
         output_dir = args.outputDir
     cu.check_dir_exists_create(output_dir)
@@ -1995,7 +1995,7 @@ if __name__ == "__main__":
 
                 # Set what is to be unfolded
                 # --------------------------------------------------------------
-                alt_unfolder.setInput(reco_1d)
+                alt_unfolder.setInput(reco_1d, args.biasFactor)
 
                 # Save important stuff to TFile
                 # --------------------------------------------------------------
@@ -2126,7 +2126,7 @@ if __name__ == "__main__":
 
                     # Set what is to be unfolded
                     # --------------------------------------------------------------
-                    syst_unfolder.setInput(hist_syst_reco)
+                    syst_unfolder.setInput(hist_syst_reco, args.biasFactor)
 
                     # Save important stuff to TFile
                     # --------------------------------------------------------------
@@ -2268,7 +2268,7 @@ if __name__ == "__main__":
 
                     # Set what is to be unfolded
                     # --------------------------------------------------------------
-                    syst_unfolder.setInput(hist_syst_reco)
+                    syst_unfolder.setInput(hist_syst_reco, args.biasFactor)
 
                     # Save important stuff to TFile
                     # --------------------------------------------------------------
