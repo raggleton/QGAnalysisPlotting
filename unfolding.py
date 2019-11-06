@@ -1504,6 +1504,13 @@ if __name__ == "__main__":
 
     print("Running TUnfold version", ROOT.TUnfold.GetTUnfoldVersion())
 
+    LAMBDA_VAR_DICTS = qgc.VAR_UNFOLD_DICT
+    if 'target0p5' in src_dir:
+        LAMBDA_VAR_DICTS = qgc.VAR_UNFOLD_DICT_TARGET0p5
+    elif 'target0p6' in src_dir:
+        LAMBDA_VAR_DICTS = qgc.VAR_UNFOLD_DICT_TARGET0p6
+
+
     # Do unfolding per signal region
     # --------------------------------------------------------------------------
     for region in regions[:]:
@@ -1572,8 +1579,8 @@ if __name__ == "__main__":
 
             # Setup MyUnfolder object to do unfolding etc
             # -------------------------------------------
-            angle_bin_edges_reco = qgc.VAR_UNFOLD_DICT[angle.var]['reco']
-            angle_bin_edges_gen = qgc.VAR_UNFOLD_DICT[angle.var]['gen']
+            angle_bin_edges_reco = LAMBDA_VAR_DICTS[angle.var]['reco']
+            angle_bin_edges_gen = LAMBDA_VAR_DICTS[angle.var]['gen']
             angle_shortname = angle.var.replace("jet_", "")
 
             hist_data_reco = cu.get_from_tfile(region['data_tfile'], "%s/hist_%s_reco_all" % (region['dirname'], angle_shortname))

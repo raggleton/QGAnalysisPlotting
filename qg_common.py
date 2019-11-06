@@ -197,7 +197,7 @@ VAR_UNFOLD_DICT = {
 }
 
 # WTA axis, no dijet eta split
-VAR_UNFOLD_DICT = {
+VAR_UNFOLD_DICT_TARGET0p5 = {
     'jet_puppiMultiplicity': {
         'gen': np.array([0, 9, 15, 22, 35, 50, 75, 100, 150], dtype='d'),
         'reco': None
@@ -286,6 +286,53 @@ VAR_UNFOLD_DICT = {
 #     },
 # }
 
+# Target 0.6, using mainly forward ungroomed jets
+VAR_UNFOLD_DICT_TARGET0p6 = {
+    'jet_puppiMultiplicity': {
+        'gen': np.array([0.0, 11.0, 18.0, 25.0, 150.0 ], dtype='d'),
+        'reco': None
+    },
+    'jet_pTD': {
+        'gen': np.array([0.0, 0.1, 0.17, 0.4, 1.0], dtype='d'),
+        'reco': None
+    },
+    'jet_LHA': {
+        'gen': np.array([0.0, 0.19, 0.29, 0.38, 0.49, 0.6, 0.75, 1.0], dtype='d'),
+        'reco': None
+    },
+    'jet_width': {
+        'gen': np.array([0.0, 0.12, 0.2, 0.32, 0.45, 0.64, 1.0], dtype='d'),
+        'reco': None
+    },
+    'jet_thrust': {
+        'gen': np.array([0.0, 0.06, 0.16, 0.3, 0.51, 1.0], dtype='d'),
+        'reco': None
+    },
+
+    'jet_puppiMultiplicity_charged': {
+        'gen': np.array([0.0, 4.0, 6.0, 9.0, 12.0, 16.0, 23.0, 150.0], dtype='d'),
+        'reco': None
+    },
+    'jet_pTD_charged': {
+        'gen': np.array([0.0, 0.09, 0.12, 0.16, 0.21, 0.29, 0.41, 0.6, 1.0], dtype='d'),
+        'reco': None
+    },
+    'jet_LHA_charged': {
+        'gen': np.array([0.0, 0.11, 0.17, 0.24, 0.32, 0.42, 0.54, 0.69, 1.0], dtype='d'),
+        'reco': None
+    },
+    'jet_width_charged': {
+        'gen': np.array([0.0, 0.04, 0.07, 0.11, 0.16, 0.22, 0.3, 0.41, 0.57, 1.0], dtype='d'),
+        'reco': None
+    },
+    'jet_thrust_charged': {
+        'gen': np.array([0.0, 0.01, 0.02, 0.04, 0.07, 0.11, 0.18, 0.29, 0.48, 1.0], dtype='d'),
+        'reco': None
+    },
+}
+
+VAR_UNFOLD_DICT = VAR_UNFOLD_DICT_TARGET0p5
+VAR_UNFOLD_DICT = VAR_UNFOLD_DICT_TARGET0p6
 
 def construct_fine_binning(coarse_bin_edges):
     fine_bin_edges = []
@@ -295,12 +342,18 @@ def construct_fine_binning(coarse_bin_edges):
     fine_bin_edges.append(coarse_bin_edges[-1])
     return np.array(fine_bin_edges, dtype='d')
 
-# Construct fine binning from splitting coarser bins
-# Coarser bins dervied from determine_lambda_binning.py
-for angle_name, angle_dict in VAR_UNFOLD_DICT.items():
-    if angle_dict['reco'] is None:
-        angle_dict['reco'] = construct_fine_binning(angle_dict['gen'])
-    VAR_UNFOLD_DICT[angle_name] = angle_dict
+
+def construct_all_fine_binnings(var_dict):
+    # Construct fine binning from splitting coarser bins
+    # Coarser bins dervied from determine_lambda_binning.py
+    for angle_name, angle_dict in var_dict.items():
+        if angle_dict['reco'] is None:
+            angle_dict['reco'] = construct_fine_binning(angle_dict['gen'])
+        var_dict[angle_name] = angle_dict
+
+
+construct_all_fine_binnings(VAR_UNFOLD_DICT_TARGET0p5)
+construct_all_fine_binnings(VAR_UNFOLD_DICT_TARGET0p6)
 
 
 for pt_name in list(PT_UNFOLD_DICT.keys()):
