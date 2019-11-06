@@ -2057,7 +2057,7 @@ if __name__ == "__main__":
             if args.doModelSysts:
                 for ind, syst_dict in enumerate(region['model_systematics']):
                     syst_label = syst_dict['label']
-                    syst_label_no_spaces = syst_dict['label'].replace(" ", "_")
+                    syst_label_no_spaces = syst_dict['label'].replace(", ", "_").replace(" ", "_")
 
                     print("*** Unfolding with alternate input:", syst_label, "(%d/%d) ***" % (ind+1, len(region['model_systematics'])))
                     is_herwig = "Herwig" in syst_label
@@ -2391,7 +2391,8 @@ if __name__ == "__main__":
                     what="hist",
                     title=title,
                     subplot_type='ratio',
-                    subplot_limits=(0.5, 1.5),
+                    # subplot_limits=(0.5, 1.5),
+                    subplot_limits=(0.75, 1.25),
                 )
 
                 # PLOT UNFOLDED DATA
@@ -2444,12 +2445,12 @@ if __name__ == "__main__":
                                  label="Generator (MG+Pythia8)",
                                  line_color=gen_colour, line_width=lw,
                                  marker_color=gen_colour, marker_size=0,
-                                 subplot=unfolded_hist_bin_total_errors,
                                  normalise_hist=True),
                     Contribution(unfolded_hist_bin_total_errors,
                                  label="Unfolded (#tau = %.3g) (total err)" % (tau),
                                  line_color=unfolded_total_colour, line_width=lw, line_style=1,
                                  marker_color=unfolded_total_colour, marker_style=20, marker_size=0.75,
+                                 subplot=mc_gen_hist_bin,
                                  normalise_hist=True),
                     Contribution(unfolded_hist_bin_stat_errors,
                                  label="Unfolded (#tau = %.3g) (stat err)" % (tau),
@@ -2462,7 +2463,7 @@ if __name__ == "__main__":
                 plot = Plot(entries,
                             xtitle=particle_title,
                             ytitle=normalised_differential_label,
-                            subplot_title='Gen / Unfolded',
+                            subplot_title='Unfolded / Gen',
                             **common_hist_args)
                 plot.legend.SetX1(0.6)
                 plot.legend.SetY1(0.68)
@@ -2482,12 +2483,12 @@ if __name__ == "__main__":
                                  label="Generator (MG+Pythia8)",
                                  line_color=gen_colour, line_width=lw,
                                  marker_color=gen_colour, marker_size=0,
-                                 subplot=unfolded_hist_bin_total_errors_div_bin_width,
                                  normalise_hist=False),
                     Contribution(unfolded_hist_bin_total_errors_div_bin_width,
                                  label="Unfolded (#tau = %.3g) (total err)" % (tau),
                                  line_color=unfolded_total_colour, line_width=lw, line_style=1,
                                  marker_color=unfolded_total_colour, marker_style=20, marker_size=0.75,
+                                 subplot=mc_gen_hist_bin_div_bin_width,
                                  normalise_hist=False),
                     Contribution(unfolded_hist_bin_stat_errors_div_bin_width,
                                  label="Unfolded (#tau = %.3g) (stat err)" % (tau),
@@ -2500,7 +2501,7 @@ if __name__ == "__main__":
                 plot = Plot(entries,
                             xtitle=particle_title,
                             ytitle=normalised_differential_label,
-                            subplot_title='Gen / Unfolded',
+                            subplot_title='Unfolded / Gen',
                             **common_hist_args)
                 plot.legend.SetX1(0.6)
                 plot.legend.SetY1(0.68)
@@ -3047,7 +3048,8 @@ if __name__ == "__main__":
                     what="hist",
                     title=title,
                     subplot_type='ratio',
-                    subplot_limits=(0.5, 1.5),
+                    # subplot_limits=(0.5, 1.5),
+                    subplot_limits=(0.75, 1.25),
                 )
 
                 # Reco only, detector-binning
