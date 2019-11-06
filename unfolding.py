@@ -371,6 +371,12 @@ class MyUnfolder(object):
 
     def get_output(self):
         """Get 1D unfolded histogram covering all bins"""
+        print("Ndf:", self.tunfolder.GetNdf())
+        print("Npar:", self.tunfolder.GetNpar())
+        print("chi2sys:", self.tunfolder.GetChi2Sys())
+        print("chi2A:", self.tunfolder.GetChi2A())
+        print("chi2L:", self.tunfolder.GetChi2L())
+
         # print("( " + str(self.tunfolder.GetChi2A()) + " + " + str(self.tunfolder.GetChi2L()) + ") / " + str(self.tunfolder.GetNdf()))
         # use "generator" for signal + underflow region, "generatordistribution" for only signal region
         return self.tunfolder.GetOutput("unfolded_" + cu.get_unique_str(), "", "generator", "*[]", self.use_axis_binning)
