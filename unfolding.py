@@ -2399,6 +2399,7 @@ if __name__ == "__main__":
                     # subplot_limits=(0.5, 1.5),
                     subplot_limits=(0.75, 1.25),
                 )
+                subplot_title = "Unfolded / Gen"
 
                 # PLOT UNFOLDED DATA
                 # --------------------------------------------------------------
@@ -2406,6 +2407,13 @@ if __name__ == "__main__":
                 unfolded_basic_colour = ROOT.kAzure+7
                 unfolded_stat_colour = ROOT.kGreen+2
                 unfolded_total_colour = ROOT.kBlack
+
+                def _modify_plot(this_plot):
+                    this_plot.legend.SetX1(0.6)
+                    this_plot.legend.SetY1(0.68)
+                    this_plot.legend.SetX2(0.98)
+                    this_plot.legend.SetY2(0.9)
+                    this_plot.left_margin = 0.13
 
                 # unnormalised version
                 entries = [
@@ -2433,12 +2441,8 @@ if __name__ == "__main__":
                             xtitle=particle_title,
                             ytitle="N",
                             subplot_title='Unfolded / gen',
-                            **common_hist_args
-                            )
-                plot.legend.SetX1(0.6)
-                plot.legend.SetY1(0.68)
-                plot.legend.SetX2(0.98)
-                plot.legend.SetY2(0.9)
+                            **common_hist_args)
+                _modify_plot(plot)
                 plot.plot("NOSTACK E1")
                 plot.save("%s/unfolded_unnormalised_%s_bin_%d.%s" % (this_output_dir, append, ibin_pt, OUTPUT_FMT))
 
@@ -2468,12 +2472,9 @@ if __name__ == "__main__":
                 plot = Plot(entries,
                             xtitle=particle_title,
                             ytitle=normalised_differential_label,
-                            subplot_title='Unfolded / Gen',
+                            subplot_title=subplot_title,
                             **common_hist_args)
-                plot.legend.SetX1(0.6)
-                plot.legend.SetY1(0.68)
-                plot.legend.SetX2(0.98)
-                plot.legend.SetY2(0.9)
+                _modify_plot(plot)
                 plot.plot("NOSTACK E1")
                 # plot.save("%s/unfolded_%s_bin_%d.%s" % (this_output_dir, append, ibin_pt, OUTPUT_FMT))
 
@@ -2506,27 +2507,24 @@ if __name__ == "__main__":
                 plot = Plot(entries,
                             xtitle=particle_title,
                             ytitle=normalised_differential_label,
-                            subplot_title='Unfolded / Gen',
+                            subplot_title=subplot_title,
                             **common_hist_args)
-                plot.legend.SetX1(0.6)
-                plot.legend.SetY1(0.68)
-                plot.legend.SetX2(0.98)
-                plot.legend.SetY2(0.9)
+                _modify_plot(plot)
                 plot.plot("NOSTACK E1")
                 plot.save("%s/unfolded_%s_bin_%d_divBinWidth.%s" % (this_output_dir, append, ibin_pt, OUTPUT_FMT))
 
                 summary_1d_entries.append([
+                    (mc_gen_hist_bin_div_bin_width,
+                        dict(label=region['mc_label'],
+                             line_color=gen_colour, line_width=lw,
+                             marker_color=gen_colour, marker_size=0,
+                             normalise_hist=True)),  # generator
                     (unfolded_hist_bin_total_errors_div_bin_width,
                         dict(label="Unfolded\n($\\tau = %.3g$)" % (tau),
                              line_color=unfolded_total_colour, line_width=lw, line_style=3,
                              marker_color=unfolded_total_colour, marker_style=20, marker_size=0.75,
                              subplot=mc_gen_hist_bin,
                              normalise_hist=True)),  # unfolded data
-                    (mc_gen_hist_bin_div_bin_width,
-                        dict(label=region['mc_label'],
-                             line_color=gen_colour, line_width=lw,
-                             marker_color=gen_colour, marker_size=0,
-                             normalise_hist=True)),  # generator
                 ])
 
                 # Unfolded plots with alternate response matrix results as well
@@ -2704,7 +2702,7 @@ if __name__ == "__main__":
                         plot = Plot(entries,
                                     xtitle=particle_title,
                                     ytitle=normalised_differential_label,
-                                    subplot_title='Unfolded / Gen',
+                                    subplot_title=subplot_title,
                                     **common_hist_args)
                         plot.legend.SetX1(0.55)
                         plot.legend.SetY1(0.72)
@@ -2742,7 +2740,7 @@ if __name__ == "__main__":
                         plot = Plot(entries_div_bin_width,
                                     xtitle=particle_title,
                                     ytitle=normalised_differential_label,
-                                    subplot_title='Unfolded / Gen',
+                                    subplot_title=subplot_title,
                                     **common_hist_args)
                         plot.legend.SetX1(0.55)
                         plot.legend.SetY1(0.72)
@@ -2831,7 +2829,7 @@ if __name__ == "__main__":
                         plot = Plot(entries,
                                     xtitle=particle_title,
                                     ytitle=normalised_differential_label,
-                                    subplot_title='Unfolded / Gen',
+                                    subplot_title=subplot_title,
                                     **common_hist_args)
                         plot.legend.SetX1(0.55)
                         plot.legend.SetY1(0.72)
@@ -2869,7 +2867,7 @@ if __name__ == "__main__":
                         plot = Plot(entries_div_bin_width,
                                     xtitle=particle_title,
                                     ytitle=normalised_differential_label,
-                                    subplot_title='Unfolded / Gen',
+                                    subplot_title=subplot_title,
                                     **common_hist_args)
                         plot.legend.SetX1(0.55)
                         plot.legend.SetY1(0.72)
