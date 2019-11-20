@@ -2340,7 +2340,7 @@ if __name__ == "__main__":
             # ------------------------------------------------------------------
             detector_title = "Detector-level " + angle_str
             particle_title = "Particle-level " + angle_str
-            normalised_differential_label = "#frac{1}{#sigma} #frac{d#sigma}{d%s}" % angle.lambda_str
+            normalised_differential_label = "#frac{1}{#sigma} #frac{d^{2}#sigma}{dp_{T} d%s}" % angle.lambda_str
             summary_1d_entries = []  # for final summary plot
 
             # Draw individual pt bin plots - GEN binning
