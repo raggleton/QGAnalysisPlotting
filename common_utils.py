@@ -39,8 +39,13 @@ def open_pdf(pdf_filename):
 # Filepath/directory fns
 #
 def cleanup_filepath(filepath):
-    """Resolve any env vars, ~, etc, and return absolute path."""
-    return os.path.abspath(os.path.expandvars(os.path.expanduser(filepath)))
+    """Resolve any sym links, env vars, ~, etc, and return absolute path."""
+    thing = os.path.abspath(os.path.expandvars(os.path.expanduser(filepath)))
+    if os.path.islink(thing):
+        # because otherwise readlink throws if not a link
+        return os.readlink(thing)
+    else:
+        return thing
 
 
 def get_full_path(filepath):
@@ -70,12 +75,13 @@ def check_dir_exists_create(filepath):
 #
 def open_root_file(filename, mode="READ"):
     """Safe way to open ROOT file. Could be improved."""
+    clean_filename = cleanup_filepath(filename)
     if mode in ["READ", "UPDATE"]:
-        if not check_file_exists(filename):
-            raise IOError("No such file %s" % filename)
-    f = ROOT.TFile(filename, mode)
+        if not check_file_exists(clean_filename):
+            raise IOError("No such file %s" % clean_filename)
+    f = ROOT.TFile(clean_filename, mode)
     if f.IsZombie() or not f:
-        raise IOError("Can't open TFile %s" % filename)
+        raise IOError("Can't open TFile %s" % clean_filename)
     return f
 
 
