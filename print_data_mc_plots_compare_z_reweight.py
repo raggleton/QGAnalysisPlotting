@@ -45,16 +45,18 @@ OUTPUT_FMT = "pdf"
 TOTAL_LUMI = 35918
 
 
-def make_1d_plot(root_dir, histname, jet_str):
+def make_1d_plot(root_dir, histname, jet_str, gen_only=False):
     entries = []
     lw = 2
     data_line_width = lw
     msize = 1.1
-    zpj_data_hist = grab_obj(os.path.join(root_dir, qgc.SINGLE_MU_FILENAME), histname)
-    dy_kwargs_data = dict(line_color=qgc.SINGLE_MU_COLOUR, line_width=data_line_width, fill_color=qgc.SINGLE_MU_COLOUR,
-                          marker_color=qgc.SINGLE_MU_COLOUR, marker_style=cu.Marker.get(qgc.DY_MARKER), marker_size=msize,
-                          label="Data")
-    entries.append((zpj_data_hist, dy_kwargs_data))
+    zpj_data_hist = None
+    if not gen_only:
+        zpj_data_hist = grab_obj(os.path.join(root_dir, qgc.SINGLE_MU_FILENAME), histname)
+        dy_kwargs_data = dict(line_color=qgc.SINGLE_MU_COLOUR, line_width=data_line_width, fill_color=qgc.SINGLE_MU_COLOUR,
+                              marker_color=qgc.SINGLE_MU_COLOUR, marker_style=cu.Marker.get(qgc.DY_MARKER), marker_size=msize,
+                              label="Data")
+        entries.append((zpj_data_hist, dy_kwargs_data))
 
     # PYTHIA DY MC WITH k FACTORS
     h_dyj_mc = grab_obj(os.path.join(root_dir, qgc.DY_FILENAME), histname)
@@ -81,7 +83,7 @@ def make_1d_plot(root_dir, histname, jet_str):
                                             subplot_type='ratio',
                                             subplot_title="MC / Data",
                                             subplot_limits=(0.5, 1.5))
-    output_filename = os.path.join(root_dir, "plots_dy_vs_qcd_mc_vs_data", "zpj_%s.%s" % (os.path.split(histname)[1], OUTPUT_FMT))
+    output_filename = os.path.join(root_dir, "plots_dy_vs_qcd_mc_vs_data_z_reweight", "zpj_%s.%s" % (histname.replace("/", "_"), OUTPUT_FMT))
     draw_opt = "NOSTACK HISTE"
     p.plot(draw_opt)
     p.set_logx()
@@ -98,7 +100,7 @@ def make_1d_plot(root_dir, histname, jet_str):
                                             subplot_type='ratio',
                                             subplot_title="MC / Data",
                                             subplot_limits=(0.5, 1.5))
-    output_filename = os.path.join(root_dir, "plots_dy_vs_qcd_mc_vs_data", "zpj_%s_normed.%s" % (os.path.split(histname)[1], OUTPUT_FMT))
+    output_filename = os.path.join(root_dir, "plots_dy_vs_qcd_mc_vs_data_z_reweight", "zpj_%s_normed.%s" % (histname.replace("/", "_"), OUTPUT_FMT))
     p.plot(draw_opt)
     p.set_logx()
     p.set_logy()
@@ -122,6 +124,8 @@ def do_plots(root_dir):
 
         # do a pt plot just for sanity
         if gr_append == "":
+            make_1d_plot(root_dir, "ZPlusJets_gen/pt_jet1", jet_str, gen_only=True)
+            make_1d_plot(root_dir, "ZPlusJets_gen/pt_mumu", jet_str, gen_only=True)
             make_1d_plot(root_dir, "ZPlusJets/pt_jet1", jet_str)
             make_1d_plot(root_dir, "ZPlusJets/pt_mumu", jet_str)
 
@@ -241,7 +245,7 @@ def do_plots(root_dir):
                 # elif "lha" in v_lower:
                     # ylim = (0, 5)
 
-                plot_dir = os.path.join(root_dir, "plots_dy_vs_qcd_mc_vs_data%s" % (gr_append))
+                plot_dir = os.path.join(root_dir, "plots_dy_vs_qcd_mc_vs_data%s_z_reweight" % (gr_append))
 
                 subplot_title = "MC / Data"
                 subplot_limits = (0.5, 1.5)
