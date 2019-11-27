@@ -542,7 +542,7 @@ class Plot(object):
         for ob in self.contributions_objs:
             # who knows which actually sets the thing?
             ob.GetXaxis().SetTitle(self.xtitle)
-            ob.GetXaxis().SetTitle(self.ytitle)
+            ob.GetYaxis().SetTitle(self.ytitle)
 
         if self.xlim:
             if self.plot_what == "graph":
