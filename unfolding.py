@@ -604,7 +604,7 @@ def draw_response_matrix(rsp_map, region_name, variable_name, output_filename):
 
 def draw_probability_matrix(prob_map, region_name, variable_name, output_filename):
     title = "Probability map, %s region, %s" % (region_name, variable_name)
-    draw_2d_matrix(prob_map, title, output_filename)
+    draw_2d_matrix(prob_map, title, output_filename, z_min=1E-4)
 
 
 def draw_error_matrix_input(err_map, region_name, variable_name, output_filename):
@@ -1108,7 +1108,7 @@ if __name__ == "__main__":
     syst_group = parser.add_argument_group('Systematics options')
     syst_group.add_argument("--doExperimentalSysts",
                             type=lambda x:bool(distutils.util.strtobool(x)),
-                            default=True,
+                            default=False,
                             help='Do experimental systematics (i.e. those that modify response matrix)')
 
     syst_group.add_argument("--doModelSysts",
@@ -1146,7 +1146,6 @@ if __name__ == "__main__":
 
     # Setup files and regions to unfold
     # --------------------------------------------------------------------------
-    src_dir = "workdir_ak4puppi_data_trigBinningBetter2_jetAsymCut_pt1RecoConstituents_V11JEC_JER_tUnfoldBetter_target0p5_wta_groomed_fwdcenDijet"
     src_dir = args.source
     src_dir_systs = os.path.join(src_dir, "systematics_files")
 
@@ -1157,6 +1156,7 @@ if __name__ == "__main__":
         input_mc_qcd_mgpythia_tfile = os.path.join(src_dir, qgc.QCD_FILENAME)
         # input_mc_qcd_pythia_tfile = cu.open_root_file(os.path.join(src_dir, qgc.QCD_PYTHIA_ONLY_FILENAME))
         input_mc_qcd_herwig_tfile = os.path.join(src_dir, qgc.QCD_HERWIG_FILENAME)
+        # input_mc_qcd_herwig_tfile = os.path.join(src_dir, "uhh2.AnalysisModuleRunner.MC.MC_HERWIG_QCD_PtReweight.root")
 
         input_jetht_tfile = os.path.join(src_dir, qgc.JETHT_ZB_FILENAME)
 
@@ -1170,6 +1170,7 @@ if __name__ == "__main__":
             # "mc_tfile": input_mc_qcd_herwig_tfile,
             # "mc_label": "Herwig++",
             "alt_mc_tfile": input_mc_qcd_herwig_tfile,
+            # "alt_mc_label": "Herwig++ (p_{T} reweight)",
             "alt_mc_label": "Herwig++",
             "tau_limits": {
                 'jet_puppiMultiplicity': (1E-11, 1E-9),
@@ -1329,12 +1330,13 @@ if __name__ == "__main__":
             "label": "Z+jets",
             "data_tfile": input_singlemu_tfile,
             "mc_tfile": input_mc_dy_mgpythia_tfile,
+            "mc_label": "MG+Pythia8",
             "alt_mc_tfile": input_mc_dy_mgherwig_tfile,
             "alt_mc_label": "MG+Herwig++",
             "tau_limits": {
                 'jet_puppiMultiplicity': (1E-10, 1E-4),
                 'jet_pTD': (1E-10, 1E-4),
-                'jet_LHA': (1E-8, 1E-6),
+                'jet_LHA': (1E-7, 1E-4),
                 'jet_width': (1E-10, 1E-4),
                 'jet_thrust': (1E-10, 1E-4),
                 'jet_puppiMultiplicity_charged': (1E-10, 1E-4),
@@ -2095,7 +2097,7 @@ if __name__ == "__main__":
                         herwig_sf = 1E8  # should've done this earlier
                         hist_syst_reco.Scale(herwig_sf)
                         hist_syst_gen.Scale(herwig_sf)
-                        # SetEpsMatrix ensures rank properly calcualted when inverting
+                        # SetEpsMatrix ensures rank properly calculated when inverting
                         # "rank of matrix E 55 expect 170"
                         syst_unfolder.tunfolder.SetEpsMatrix(1E-18)
 
