@@ -28,24 +28,28 @@ ROOT.gStyle.SetOptStat(0)
 # ROOT.gErrorIgnoreLevel = ROOT.kWarning
 
 
-tfile_data = cu.open_root_file("workdir_ak4puppi_data_trigBinningBetter2_jetAsymCut_pt1RecoConstituents_V11JEC_JER_tUnfoldBetter_target0p5_wta_groomed_fwdcenDijet/uhh2.AnalysisModuleRunner.DATA.Data_SingleMu.root")
-tfile_dy = cu.open_root_file("workdir_ak4puppi_data_trigBinningBetter2_jetAsymCut_pt1RecoConstituents_V11JEC_JER_tUnfoldBetter_target0p5_wta_groomed_fwdcenDijet/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL.root")
+# zpj_dir = "workdir_ak4puppi_data_trigBinningBetter2_jetAsymCut_pt1RecoConstituents_V11JEC_JER_tUnfoldBetter_target0p5_wta_groomed_fwdcenDijet"
+# tfile_data = cu.open_root_file("%s/uhh2.AnalysisModuleRunner.DATA.Data_SingleMu.root" % (zpj_dir))
+# tfile_ww = cu.open_root_file("%s/uhh2.AnalysisModuleRunner.MC.MC_WW.root" % (zpj_dir))
+# tfile_wz = cu.open_root_file("%s/uhh2.AnalysisModuleRunner.MC.MC_WZ.root" % (zpj_dir))
+# tfile_zz = cu.open_root_file("%s/uhh2.AnalysisModuleRunner.MC.MC_ZZ.root" % (zpj_dir))
+# tfile_tt = cu.open_root_file("%s/uhh2.AnalysisModuleRunner.MC.MC_TTBAR.root" % (zpj_dir))
+# tfile_st_t = cu.open_root_file("%s/uhh2.AnalysisModuleRunner.MC.MC_ST_T.root" % (zpj_dir))
+# tfile_st_tw = cu.open_root_file("%s/uhh2.AnalysisModuleRunner.MC.MC_ST_TW.root" % (zpj_dir))
+# tfile_st_s = cu.open_root_file("%s/uhh2.AnalysisModuleRunner.MC.MC_ST_S.root" % (zpj_dir))
+# zpj_dir = "workdir_ak4puppi_mgpythia_newFlav_jetAsymCut_chargedVars_pt1RecoConstituents_V11JEC_JER_target0p5_ZReweight_wta_groomed_fwdcenDijet_betterLargeWeightVeto"
+# tfile_dy = cu.open_root_file("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL.root" % (zpj_dir))
 # tfile_dy = cu.open_root_file("workdir_ak4puppi_mgpythia_newFlav_jetAsymCut_chargedVars_pt1RecoConstituents_V11JEC_JER_target0p5_ZReweight_wta_groomed_fwdcenDijet_betterLargeWeightVeto/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL.root")
-tfile_ww = cu.open_root_file("workdir_ak4puppi_data_trigBinningBetter2_jetAsymCut_pt1RecoConstituents_V11JEC_JER_tUnfoldBetter_target0p5_wta_groomed_fwdcenDijet/uhh2.AnalysisModuleRunner.MC.MC_WW.root")
-tfile_wz = cu.open_root_file("workdir_ak4puppi_data_trigBinningBetter2_jetAsymCut_pt1RecoConstituents_V11JEC_JER_tUnfoldBetter_target0p5_wta_groomed_fwdcenDijet/uhh2.AnalysisModuleRunner.MC.MC_WZ.root")
-tfile_zz = cu.open_root_file("workdir_ak4puppi_data_trigBinningBetter2_jetAsymCut_pt1RecoConstituents_V11JEC_JER_tUnfoldBetter_target0p5_wta_groomed_fwdcenDijet/uhh2.AnalysisModuleRunner.MC.MC_ZZ.root")
-tfile_tt = cu.open_root_file("workdir_ak4puppi_data_trigBinningBetter2_jetAsymCut_pt1RecoConstituents_V11JEC_JER_tUnfoldBetter_target0p5_wta_groomed_fwdcenDijet/uhh2.AnalysisModuleRunner.MC.MC_TTBAR.root")
-# tfile_st_t = cu.open_root_file("workdir_ak4puppi_data_trigBinningBetter2_jetAsymCut_pt1RecoConstituents_V11JEC_JER_tUnfoldBetter_target0p5_wta_groomed_fwdcenDijet/uhh2.AnalysisModuleRunner.MC.MC_ST_T.root")
-# tfile_st_tw = cu.open_root_file("workdir_ak4puppi_data_trigBinningBetter2_jetAsymCut_pt1RecoConstituents_V11JEC_JER_tUnfoldBetter_target0p5_wta_groomed_fwdcenDijet/uhh2.AnalysisModuleRunner.MC.MC_ST_TW.root")
-# tfile_st_s = cu.open_root_file("workdir_ak4puppi_data_trigBinningBetter2_jetAsymCut_pt1RecoConstituents_V11JEC_JER_tUnfoldBetter_target0p5_wta_groomed_fwdcenDijet/uhh2.AnalysisModuleRunner.MC.MC_ST_S.root")
 
-
-tfile_data = cu.open_root_file("workdir_ak4puppi_mgpythia_newFlav_jetAsymCut_chargedVars_pt1RecoConstituents_V11JEC_JER_target0p5_noZReweight_wta_groomed_fwdcenDijet_betterLargeWeightVeto_noZjet2Cut/uhh2.AnalysisModuleRunner.DATA.Data_SingleMu.root")
-tfile_dy = cu.open_root_file("workdir_ak4puppi_mgpythia_newFlav_jetAsymCut_chargedVars_pt1RecoConstituents_V11JEC_JER_target0p5_noZReweight_wta_groomed_fwdcenDijet_betterLargeWeightVeto_noZjet2Cut/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL.root")
-tfile_ww = cu.open_root_file("workdir_ak4puppi_mgpythia_newFlav_jetAsymCut_chargedVars_pt1RecoConstituents_V11JEC_JER_target0p5_noZReweight_wta_groomed_fwdcenDijet_betterLargeWeightVeto_noZjet2Cut/uhh2.AnalysisModuleRunner.MC.MC_WW.root")
-tfile_wz = cu.open_root_file("workdir_ak4puppi_mgpythia_newFlav_jetAsymCut_chargedVars_pt1RecoConstituents_V11JEC_JER_target0p5_noZReweight_wta_groomed_fwdcenDijet_betterLargeWeightVeto_noZjet2Cut/uhh2.AnalysisModuleRunner.MC.MC_WZ.root")
-tfile_zz = cu.open_root_file("workdir_ak4puppi_mgpythia_newFlav_jetAsymCut_chargedVars_pt1RecoConstituents_V11JEC_JER_target0p5_noZReweight_wta_groomed_fwdcenDijet_betterLargeWeightVeto_noZjet2Cut/uhh2.AnalysisModuleRunner.MC.MC_ZZ.root")
-tfile_tt = cu.open_root_file("workdir_ak4puppi_mgpythia_newFlav_jetAsymCut_chargedVars_pt1RecoConstituents_V11JEC_JER_target0p5_noZReweight_wta_groomed_fwdcenDijet_betterLargeWeightVeto_noZjet2Cut/uhh2.AnalysisModuleRunner.MC.MC_TTBAR.root")
+zpj_dir = "workdir_ak4puppi_mgpythia_newFlav_jetAsymCut_chargedVars_pt1RecoConstituents_V11JEC_JER_target0p5_noZReweight_wta_groomed_fwdcenDijet_betterLargeWeightVeto_noZjet2Cut"
+tfile_data = cu.open_root_file("%s/uhh2.AnalysisModuleRunner.DATA.Data_SingleMu.root" % (zpj_dir))
+tfile_ww = cu.open_root_file("%s/uhh2.AnalysisModuleRunner.MC.MC_WW.root" % (zpj_dir))
+tfile_wz = cu.open_root_file("%s/uhh2.AnalysisModuleRunner.MC.MC_WZ.root" % (zpj_dir))
+tfile_zz = cu.open_root_file("%s/uhh2.AnalysisModuleRunner.MC.MC_ZZ.root" % (zpj_dir))
+tfile_tt = cu.open_root_file("%s/uhh2.AnalysisModuleRunner.MC.MC_TTBAR.root" % (zpj_dir))
+# zpj_dir = "workdir_ak4puppi_mgpythia_newFlav_jetAsymCut_chargedVars_pt1RecoConstituents_V11JEC_JER_target0p5_ZReweight_wta_groomed_fwdcenDijet_betterLargeWeightVeto_noZjet2Cut"
+# tfile_dy = cu.open_root_file("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL.root" % (zpj_dir))
+tfile_dy = cu.open_root_file("workdir_ak4puppi_mgpythia_newFlav_jetAsymCut_chargedVars_pt1RecoConstituents_V11JEC_JER_target0p5_ZReweight_wta_groomed_fwdcenDijet_betterLargeWeightVeto_noZjet2Cut/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL.root")
 
 
 class Entry(object):
@@ -332,7 +336,7 @@ COMPONENTS = [
 make_data_mc_plot(COMPONENTS,
                   hist_name="ZPlusJets/pt_jet1",
                   x_label="p_{T}^{jet} [GeV]",
-                  output_filename="workdir_ak4puppi_mgpythia_newFlav_jetAsymCut_chargedVars_pt1RecoConstituents_V11JEC_JER_target0p5_noZReweight_wta_groomed_fwdcenDijet_betterLargeWeightVeto_noZjet2Cut/zpj_ptJ_noKfactor.pdf",
+                  output_filename="%s/zpj_ptJ_Kfactor.pdf" % (zpj_dir),
                   rebin=1,
                   do_logx=True, x_min=20, x_max=3E3,
                   do_logy=True, y_min=1E-1, y_max=1E6)
@@ -340,7 +344,7 @@ make_data_mc_plot(COMPONENTS,
 make_data_mc_plot(COMPONENTS,
                   hist_name="ZPlusJets/pt_mumu",
                   x_label="p_{T}^{#mu#mu} [GeV]",
-                  output_filename="workdir_ak4puppi_mgpythia_newFlav_jetAsymCut_chargedVars_pt1RecoConstituents_V11JEC_JER_target0p5_noZReweight_wta_groomed_fwdcenDijet_betterLargeWeightVeto_noZjet2Cut/zpj_ptZ_noKfactor.pdf",
+                  output_filename="%s/zpj_ptZ_Kfactor.pdf" % (zpj_dir),
                   rebin=1,
                   do_logx=True, x_min=10, x_max=3E3,
                   do_logy=True, y_min=1E-1, y_max=1E6)
