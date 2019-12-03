@@ -96,10 +96,24 @@ def print_data_bg_stats(data_entries, mc_entries):
     print('--'*80)
 
 
+def _rescale_plot_labels(container, factor, left_margin):
+    # Eurgh, why does ROOT scale all these sizes?
+    container.GetXaxis().SetLabelSize(container.GetXaxis().GetLabelSize()/factor)
+    container.GetXaxis().SetTitleSize(container.GetXaxis().GetTitleSize()/factor)
+    container.GetXaxis().SetTitleOffset(container.GetXaxis().GetTitleOffset()*factor)  # doesn't seem to work?
+    container.GetXaxis().SetTickLength(container.GetXaxis().GetTickLength()/factor)
+
+    container.GetYaxis().SetLabelSize(container.GetYaxis().GetLabelSize()/factor)
+    container.GetYaxis().SetTitleSize(container.GetYaxis().GetTitleSize()/factor)
+    # magic numbers: 0.1 is the default margin, but scaling against that gives too much, so we knock it down by a bit
+    container.GetYaxis().SetTitleOffset(container.GetYaxis().GetTitleOffset()*factor*(0.85*left_margin/0.1))
+    # container.GetYaxis().SetTickLength(0.03/factor)
+
+
 def make_data_mc_plot(entries, hist_name, x_label, output_filename, rebin=1,
                       do_logx=True, x_min=None, x_max=None,
                       do_logy=True, y_min=1E-1, y_max=1E6):
-    """Make data-MC plot
+    """Make data-MC plot with ratio subplot
 
     Automatically sorts contributions by integral.
     Entries with 'is_data' = True are not stacked, and plotted as points.
@@ -137,7 +151,8 @@ def make_data_mc_plot(entries, hist_name, x_label, output_filename, rebin=1,
     mc_entries = []
 
     for ent in entries:
-        hist = hist=cu.get_from_tfile(ent['tfile'], hist_name)
+        hist = cu.get_from_tfile(ent['tfile'], hist_name)
+        hist.SetName(hist.GetName() + "_" + ent['label'])
         hist.SetLineColor(ent['style']['line_color'])
         hist.SetLineStyle(ent['style'].get('line_style', 1))
 
@@ -169,14 +184,45 @@ def make_data_mc_plot(entries, hist_name, x_label, output_filename, rebin=1,
 
     print_data_bg_stats(data_entries, mc_entries)
 
+    # Set up canvases etc
     canv = ROOT.TCanvas("c"+cu.get_unique_str(), "", 800, 600)
-    canv.SetTicks(1, 1)
-    if do_logx:
-        canv.SetLogx()
-    if do_logy:
-        canv.SetLogy()
-    canv.SetLeftMargin(0.12)
+    canv.cd()
+    right_margin = 0.03
+    left_margin = 0.08 # use ROOT default
+    top_margin = 0.1
+    subplot_pad_height = 0.32
+    subplot_pad_fudge = 0.01  # to get non-overlapping subplot axis
+    main_pad = ROOT.TPad("main_pad", "", 0, subplot_pad_height+subplot_pad_fudge, 1, 1)
+    ROOT.SetOwnership(main_pad, False)
+    main_pad.SetTicks(1, 1)
+    main_pad.SetBottomMargin(2*subplot_pad_fudge)
+    main_pad.SetTopMargin(top_margin / (1-subplot_pad_height))
+    main_pad.SetRightMargin(right_margin / (1-subplot_pad_height))
+    main_pad.SetLeftMargin(left_margin / (1-subplot_pad_height))
+    canv.cd()
+    main_pad.Draw()
+    subplot_pad = ROOT.TPad("subplot_pad", "", 0, 0, 1, subplot_pad_height-subplot_pad_fudge)
+    ROOT.SetOwnership(subplot_pad, False)
+    subplot_pad.SetTicks(1, 1)
+    subplot_pad.SetFillColor(0)
+    subplot_pad.SetFillStyle(0)
+    subplot_pad.SetTopMargin(4*subplot_pad_fudge)
+    subplot_pad.SetRightMargin(right_margin / (1-subplot_pad_height))
+    subplot_pad.SetBottomMargin(0.35)
+    subplot_pad.SetLeftMargin(left_margin / (1-subplot_pad_height))
+    canv.cd()
+    subplot_pad.Draw()
 
+    if do_logx:
+        main_pad.SetLogx()
+        subplot_pad.SetLogx()
+    if do_logy:
+        main_pad.SetLogy()
+
+    canv.cd()
+    main_pad.cd()
+
+    # Do main plot: MC stack, data, legend
     hst = ROOT.THStack("hst", ";%s;N" % (x_label))
     for ent in mc_entries[::-1]:
         # Add in reverse order to add smallest first (bottom of stack)
@@ -194,22 +240,89 @@ def make_data_mc_plot(entries, hist_name, x_label, output_filename, rebin=1,
     hst.SetMaximum(y_max)
     hst.SetMinimum(y_min)
     if x_min and x_max:
-        hst.GetXaxis().SetLimits(x_min, x_max)
-    hst.GetYaxis().SetTitleOffset(1.2)
+        hst.GetXaxis().SetRangeUser(x_min, x_max)
+        # hst.GetXaxis().SetLimits(x_min, x_max)  # SetLimits obeys you, SetRangeUser does some rounding?! But SetLimits makes poitns that don't align in the ratio plot
+    # hst.GetYaxis().SetTitleOffset(1.2)
     for ent in data_entries:
         ent.hist.Draw("SAME E")
-    leg.Draw()
 
     canv.cd()
+    leg.Draw()
+
+    # Some text stuff
     cms_latex = ROOT.TLatex()
     cms_latex.SetTextAlign(ROOT.kHAlignLeft + ROOT.kVAlignBottom)
     cms_latex.SetTextFont(42)
     cms_latex.SetTextSize(0.035)
-    latex_height = 0.91
+    latex_height = 0.915
     start_x = 0.12
     cms_latex.DrawLatexNDC(start_x, latex_height, "#font[62]{CMS}#font[52]{ Preliminary}")
     cms_latex.SetTextAlign(ROOT.kHAlignRight + ROOT.kVAlignBottom)
     cms_latex.DrawLatexNDC(0.95, latex_height, " 35.9 fb^{-1} (13 TeV)")
+
+    _rescale_plot_labels(hst, 1-subplot_pad_height, left_margin)
+    # Get rid of main plot x axis labels
+    hst.GetHistogram().GetXaxis().SetLabelSize(0)
+    hst.GetXaxis().SetLabelSize(0)
+    hst.GetHistogram().GetXaxis().SetTitleSize(0)
+    hst.GetXaxis().SetTitleSize(0)
+
+    # Construct & plot subplot
+    subplot_pad.cd()
+    ratio_hists = [ent.hist.Clone(ent.hist.GetName()+"Ratio") for ent in data_entries]
+    hst_stack = hst.GetStack()
+    # Get sum hist - GetStack makes a cumulative stack
+    mc_total = hst_stack.Last().Clone(hst_stack.Last().GetName()+"Ratio")
+
+    # for i in range(1, mc_total.GetNbinsX()):
+        # print(i, mc_total.Integral(i, i+1), mc_total.GetXaxis().GetBinLowEdge(i))
+        # print(i, ratio_hists[0].Integral(i, i+1), ratio_hists[0].GetXaxis().GetBinLowEdge(i))
+        # if mc_total.Integral(i, i+1) > 0:
+        #     print(i, ratio_hists[0].Integral(i, i+1) / mc_total.Integral(i, i+1), ratio_hists[0].GetXaxis().GetBinLowEdge(i))
+
+    for ind, hist_ratio in enumerate(ratio_hists):
+        hist_ratio.Divide(mc_total)
+        # NB already styled from originals
+        # for i in range(1, hist_ratio.GetNbinsX()):
+        #     print(i, hist_ratio.GetBinContent(i))
+
+        draw_opt = "E"
+        if ind > 0:
+            draw_opt += " SAME"
+        hist_ratio.Draw(draw_opt)
+
+        hist_ratio.SetTitle(";%s;%s" % (hist_ratio.GetXaxis().GetTitle(), "%s / MC" % (data_entries[ind].label)))
+        if x_min and x_max:
+            hist_ratio.GetXaxis().SetRangeUser(x_min, x_max)
+            hist_ratio.SetMinimum(0.5)  # use this, not SetRangeUser()
+            hist_ratio.SetMaximum(1.5)  # use this, not SetRangeUser()
+
+    ratio_modifier = ratio_hists[0]
+
+    # Draw a line at 1
+    xax = ratio_modifier.GetXaxis()
+    subplot_line = ROOT.TLine(xax.GetXmin(), 1., xax.GetXmax(), 1.)  # make sure you use whatever ROOT has decided the x limits should be
+    subplot_line.SetLineStyle(2)
+    subplot_line.SetLineWidth(2)
+    subplot_line.SetLineColor(ROOT.kBlack)
+    subplot_line.Draw()
+
+    subplot_line_up = ROOT.TLine(xax.GetXmin(), 1.2, xax.GetXmax(), 1.2)
+    subplot_line_up.SetLineStyle(3)
+    subplot_line_up.SetLineWidth(2)
+    subplot_line_up.SetLineColor(ROOT.kBlack)
+    subplot_line_up.Draw()
+
+    subplot_line_down = ROOT.TLine(xax.GetXmin(), 0.8, xax.GetXmax(), 0.8)
+    subplot_line_down.SetLineStyle(3)
+    subplot_line_down.SetLineWidth(2)
+    subplot_line_down.SetLineColor(ROOT.kBlack)
+    subplot_line_down.Draw()
+
+    # Some resizing of subplot things
+    _rescale_plot_labels(ratio_modifier, subplot_pad_height, left_margin*1.7)  # last factor is a fudge. no idea why
+    ratio_modifier.GetXaxis().SetTitleOffset(ratio_modifier.GetXaxis().GetTitleOffset()*3)
+    ratio_modifier.GetYaxis().SetNdivisions(505)
 
     canv.Modified()
     canv.Update()
