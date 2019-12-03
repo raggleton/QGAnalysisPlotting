@@ -53,7 +53,7 @@ def make_1d_plot(root_dir, histname, jet_str, gen_only=False):
     zpj_data_hist = None
     if not gen_only:
         zpj_data_hist = grab_obj(os.path.join(root_dir, qgc.SINGLE_MU_FILENAME), histname)
-        dy_kwargs_data = dict(line_color=qgc.SINGLE_MU_COLOUR, line_width=data_line_width, fill_color=qgc.SINGLE_MU_COLOUR,
+        dy_kwargs_data = dict(line_color=qgc.SINGLE_MU_COLOUR, line_width=0, fill_color=qgc.SINGLE_MU_COLOUR,
                               marker_color=qgc.SINGLE_MU_COLOUR, marker_style=cu.Marker.get(qgc.DY_MARKER), marker_size=msize,
                               label="Data")
         entries.append((zpj_data_hist, dy_kwargs_data))
@@ -68,8 +68,8 @@ def make_1d_plot(root_dir, histname, jet_str, gen_only=False):
 
     # WIHTOUT K FACTORS
     h_dyj_mc_noWeight = grab_obj(os.path.join(root_dir, "uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_noZReweight.root"), histname)
-    dy_kwargs_mc = dict(line_color=qgc.DY_COLOURS[0], line_width=lw, fill_color=qgc.DY_COLOURS[0],
-                        marker_color=qgc.DY_COLOURS[0], marker_style=cu.Marker.get(qgc.DY_MARKER), marker_size=0,
+    dy_kwargs_mc = dict(line_color=qgc.QCD_COLOURS[0], line_width=lw, fill_color=qgc.QCD_COLOURS[0],
+                        marker_color=qgc.QCD_COLOURS[0], marker_style=cu.Marker.get(qgc.DY_MARKER), marker_size=0,
                         label="MG+PY8 (w/out k-factor)",
                         subplot=zpj_data_hist)
     entries.append((h_dyj_mc_noWeight, dy_kwargs_mc))
@@ -145,7 +145,7 @@ def do_plots(root_dir):
                 # Get all plots
                 lw = 2
                 msize = 1.1
-                data_line_width = lw
+                data_line_width = 0
 
                 ####################
                 # Z+JETS REGION
@@ -175,7 +175,7 @@ def do_plots(root_dir):
 
                 # WIHTOUT K FACTORS
                 h2d_dyj_mc_noWeight = grab_obj(os.path.join(root_dir, "uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_noZReweight.root"), "%s/%s" % (zpj_dirname, v))
-                dy_kwargs_mc_noWeight = dict(line_color=qgc.DY_COLOURS[0], line_width=lw, fill_color=qgc.DY_COLOURS[0],
+                dy_kwargs_mc_noWeight = dict(line_color=qgc.DY_COLOURS[0], line_width=lw, fill_color=qgc.DY_COLOURS[0], line_style=2,
                                     marker_color=qgc.DY_COLOURS[0], marker_style=cu.Marker.get(qgc.DY_MARKER), marker_size=0,
                                     label="MG+PY8 (w/out k-factor)",
                                     subplot=zpj_data_hist)

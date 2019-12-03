@@ -94,7 +94,7 @@ def make_1d_plot(root_dir, histname, jet_str, gen_only=False):
     # Must do un normed first, since it manipulates original objects
     rebin = 1
     p = qgp.make_comparison_plot_ingredients(entries, rebin=rebin, normalise_hist=False, mean_rel_error=0.4,
-                                            title="%s\n%s" % (jet_str, qgc.ZpJ_LABEL),
+                                            title="%s\n%s" % (jet_str, qgc.Dijet_LABEL),
                                             xlim=[0, 4000],
                                             ylim=[1E-1, 1E8],
                                             subplot_type='ratio',
@@ -111,7 +111,7 @@ def make_1d_plot(root_dir, histname, jet_str, gen_only=False):
     p.save(output_filename)
 
     p = qgp.make_comparison_plot_ingredients(entries, rebin=rebin, normalise_hist=True, mean_rel_error=0.4,
-                                            title="%s\n%s" % (jet_str, qgc.ZpJ_LABEL),
+                                            title="%s\n%s" % (jet_str, qgc.Dijet_LABEL),
                                             xlim=[10, 4000],
                                             ylim=[1E-10, 50],
                                             subplot_type='ratio',
