@@ -1,8 +1,15 @@
+*.a
+*.o
+*.out
 *.pdf
-*.root
-*.pyc
 *.png
+*.pyc
+*.root
+*.so
+*.svg
+*.xml
 
 workdir*
 unfolding_*
 notebooks
+TUnfold*
