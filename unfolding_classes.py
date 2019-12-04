@@ -363,14 +363,19 @@ class MyUnfolder(object):
             ROOT.TUnfoldBinningXML.ExportXML(self.generator_binning, ROOT.cout, False, True)
 
     def set_input(self, input_hist, *args):
-        """Set hist to be unfolded. 
+        """Set hist to be unfolded.
 
-        Also store version with generator-binning, 
-        and allow other args to be passed to TUnfoldSys::SetInput
+        Also allow other args to be passed to TUnfoldSys::SetInput
         """
         self.input_hist = input_hist
         # self.input_hist_gen_binning = input_hist_gen_binning
         self.tunfolder.SetInput(input_hist, *args)
+
+    def subtract_background(self, hist_bg, name, scale=1.0, scale_err=0.0):
+        """Subtract background source from input hist"""
+        self.input_hist_bg_subtracted = self.input_hist.Clone()
+        self.input_hist_bg_subtracted.Add(hist_bg, -scale)
+        self.tunfolder.SubtractBackground(hist_bg, name, scale, scale_err)
 
     def do_unfolding(self, tau):
         print(">>> Unfolding with tau =", tau)

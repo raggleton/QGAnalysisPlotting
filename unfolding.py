@@ -1183,9 +1183,9 @@ if __name__ == "__main__":
             unfolder.save_binning(txt_filename="%s/binning_scheme.txt" % (this_output_dir), print_xml=False)
 
             # Subtract fakes (treat as background)
+            # Set what is to be unfolded
             # ------------------------------------------------------------------
-            if SUBTRACT_FAKES:
-                unfolder.tunfolder.SubtractBackground(hist_fakes_reco, "fakes")
+            unfolder.set_input(reco_1d, args.biasFactor)
 
             # Add systematic errors as different response matrices
             # ------------------------------------------------------------------
@@ -1200,9 +1200,10 @@ if __name__ == "__main__":
                     print("    syst bin", chosen_rsp_bin, map_syst.GetBinContent(*chosen_rsp_bin))
                     unfolder.tunfolder.AddSysError(map_syst, syst_dict['label'], unfolder.orientation, ROOT.TUnfoldDensity.kSysErrModeMatrix)
 
-            # Set what is to be unfolded
+            # Subtract fakes (treat as background)
             # ------------------------------------------------------------------
-            unfolder.set_input(reco_1d, args.biasFactor)
+            if SUBTRACT_FAKES:
+                unfolder.subtract_background(hist_fakes_reco, "fakes")
 
             # Save important stuff to TFile
             # ------------------------------------------------------------------
@@ -1487,14 +1488,14 @@ if __name__ == "__main__":
                                           densityFlags=unfolder.densityFlags,
                                           axisSteering=unfolder.axisSteering)
 
-                # Subtract fakes (treat as background)
-                # --------------------------------------------------------------
-                if SUBTRACT_FAKES:
-                    alt_unfolder.tunfolder.SubtractBackground(hist_fakes_reco, "fakes")
-
                 # Set what is to be unfolded
                 # --------------------------------------------------------------
                 alt_unfolder.set_input(reco_1d, args.biasFactor)
+
+                # Subtract fakes (treat as background)
+                # --------------------------------------------------------------
+                if SUBTRACT_FAKES:
+                    alt_unfolder.subtract_background(hist_fakes_reco, "fakes")
 
                 # Save important stuff to TFile
                 # --------------------------------------------------------------
@@ -1593,6 +1594,10 @@ if __name__ == "__main__":
                         # "rank of matrix E 55 expect 170"
                         syst_unfolder.tunfolder.SetEpsMatrix(1E-18)
 
+                    # Set what is to be unfolded
+                    # --------------------------------------------------------------
+                    syst_unfolder.set_input(hist_syst_reco, args.biasFactor)
+
                     # Subtract fakes (treat as background)
                     # --------------------------------------------------------------
                     if SUBTRACT_FAKES:
@@ -1601,7 +1606,7 @@ if __name__ == "__main__":
                         # and our bkg estimate is always from MC)
                         hist_fakes_syst = hist_fakes_reco_fraction.Clone("hist_fakes_syst_%s" % syst_label_no_spaces)
                         hist_fakes_syst.Multiply(hist_syst_reco)
-                        syst_unfolder.tunfolder.SubtractBackground(hist_fakes_syst, "fakes")
+                        syst_unfolder.subtract_background(hist_fakes_syst, "fakes")
 
                     plot_simple_detector(reco_data=hist_syst_reco,
                                          reco_mc=hist_mc_reco,
@@ -1622,10 +1627,6 @@ if __name__ == "__main__":
                             print("Adding systematic:", exp_dict['label'])
                             print("    syst bin", chosen_rsp_bin, map_syst.GetBinContent(*chosen_rsp_bin))
                             syst_unfolder.tunfolder.AddSysError(map_syst, exp_dict['label'], syst_unfolder.orientation, ROOT.TUnfoldDensity.kSysErrModeMatrix)
-
-                    # Set what is to be unfolded
-                    # --------------------------------------------------------------
-                    syst_unfolder.set_input(hist_syst_reco, args.biasFactor)
 
                     # Save important stuff to TFile
                     # --------------------------------------------------------------
@@ -1735,6 +1736,10 @@ if __name__ == "__main__":
                                                densityFlags=unfolder.densityFlags,
                                                axisSteering=unfolder.axisSteering)
 
+                    # Set what is to be unfolded
+                    # --------------------------------------------------------------
+                    syst_unfolder.set_input(hist_syst_reco, args.biasFactor)
+
                     # Subtract fakes (treat as background)
                     # --------------------------------------------------------------
                     if SUBTRACT_FAKES:
@@ -1743,7 +1748,7 @@ if __name__ == "__main__":
                         # and our bkg estimate is always from MC)
                         hist_fakes_syst = hist_fakes_reco_fraction.Clone("hist_fakes_syst_%s" % syst_label_no_spaces)
                         hist_fakes_syst.Multiply(hist_syst_reco)
-                        syst_unfolder.tunfolder.SubtractBackground(hist_fakes_syst, "fakes")
+                        syst_unfolder.subtract_background(hist_fakes_syst, "fakes")
 
                     plot_simple_detector(reco_data=hist_syst_reco,
                                          reco_mc=hist_mc_reco,
@@ -1764,10 +1769,6 @@ if __name__ == "__main__":
                             print("Adding systematic:", exp_dict['label'])
                             print("    syst bin", chosen_rsp_bin, map_syst.GetBinContent(*chosen_rsp_bin))
                             syst_unfolder.tunfolder.AddSysError(map_syst, exp_dict['label'], syst_unfolder.orientation, ROOT.TUnfoldDensity.kSysErrModeMatrix)
-
-                    # Set what is to be unfolded
-                    # --------------------------------------------------------------
-                    syst_unfolder.set_input(hist_syst_reco, args.biasFactor)
 
                     # Save important stuff to TFile
                     # --------------------------------------------------------------
