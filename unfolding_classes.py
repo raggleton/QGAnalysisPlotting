@@ -400,26 +400,33 @@ class MyUnfolder(object):
         # use "generator" for signal + underflow region, "generatordistribution" for only signal region
         return self.tunfolder.GetOutput("unfolded_" + cu.get_unique_str(), "", "generator", "*[]", self.use_axis_binning)
 
-    def get_bias(self):
-        return self.tunfolder.GetBias("bias_"+cu.get_unique_str(), "", "generator", "*[]", self.use_axis_binning)
+    def get_bias_vector(self):
+        self.bias_vector = self.tunfolder.GetBias("bias_"+cu.get_unique_str(), "", "generator", "*[]", self.use_axis_binning)
+        return self.bias_vector
 
     def get_ematrix_input(self):
-        return self.tunfolder.GetEmatrixInput("ematrix_input_"+cu.get_unique_str(), "", "generator", "*[]", self.use_axis_binning)
+        self.ematrix_input = self.tunfolder.GetEmatrixInput("ematrix_input_"+cu.get_unique_str(), "", "generator", "*[]", self.use_axis_binning)
+        return self.ematrix_input
 
     def get_ematrix_sys_uncorr(self):
-        return self.tunfolder.GetEmatrixSysUncorr("ematrix_sys_uncorr_"+cu.get_unique_str(), "", "generator", "*[]", self.use_axis_binning)
+        self.ematrix_sys_uncorr = self.tunfolder.GetEmatrixSysUncorr("ematrix_sys_uncorr_"+cu.get_unique_str(), "", "generator", "*[]", self.use_axis_binning)
+        return self.ematrix_sys_uncorr
 
     def get_ematrix_total(self):
-        return self.tunfolder.GetEmatrixTotal("ematrix_total_"+cu.get_unique_str(), "", "generator", "*[]", self.use_axis_binning)
+        self.ematrix_total = self.tunfolder.GetEmatrixTotal("ematrix_total_"+cu.get_unique_str(), "", "generator", "*[]", self.use_axis_binning)
+        return self.ematrix_total
 
     def get_rhoij_total(self):
-        return self.tunfolder.GetRhoIJtotal("rhoij_total_"+cu.get_unique_str(), "", "generator", "*[]", self.use_axis_binning)
+        self.rhoij_total = self.tunfolder.GetRhoIJtotal("rhoij_total_"+cu.get_unique_str(), "", "generator", "*[]", self.use_axis_binning)
+        return self.rhoij_total
 
     def get_probability_matrix(self):
-        return self.tunfolder.GetProbabilityMatrix("prob_matrix_"+cu.get_unique_str(), "", self.use_axis_binning)
+        self.probability_matrix = self.tunfolder.GetProbabilityMatrix("prob_matrix_"+cu.get_unique_str(), "", self.use_axis_binning)
+        return self.probability_matrix
 
     def get_covariance_matrix(self):
-        return self.tunfolder.GetVxx()
+        self.covariance_matrix = self.tunfolder.GetVxx()
+        return self.covariance_matrix
 
     def get_var_hist_pt_binned(self, hist1d, ibin_pt, binning_scheme='generator'):
         """Get hist of variable for given pt bin from massive 1D hist that TUnfold makes"""
@@ -683,7 +690,7 @@ class MyUnfolderPlotter(object):
         if append != "":
             append = "_%s" % (append)
 
-        bias_hist = self.unfolder.tunfolder.GetBias("bias%s" % (append), "", "generator")
+        bias_hist = self.unfolder.get_bias_vector()
         entries = [
             Contribution(bias_hist,
                          label="Bias histogram",
@@ -705,7 +712,6 @@ class MyUnfolderPlotter(object):
         plot.save(output_filename)
 
     def draw_response_matrix(self, output_dir='.', append="", title=""):
-        # title = "Response matrix, %s region, %s" % (region_name, variable_name)
         output_filename = "%s/response_map_%s.%s" % (output_dir, append, self.output_fmt)
         self.draw_2d_hist(self.unfolder.response_map,
                           title=title,
