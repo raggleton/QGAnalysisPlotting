@@ -1,6 +1,8 @@
 *.a
+*.d
 *.o
 *.out
+*.pcm
 *.pdf
 *.png
 *.pyc
@@ -10,6 +12,6 @@
 *.xml
 
 workdir*
-unfolding_*
+# unfolding_*
 notebooks
 TUnfold*
