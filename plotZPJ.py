@@ -8,6 +8,7 @@ Make Z+jet data-background plots
 
 from __future__ import print_function
 
+from copy import deepcopy
 import ROOT
 from MyStyle import My_Style
 My_Style.cd()
@@ -16,8 +17,8 @@ os.nice(10)
 
 # My stuff
 # from comparator import Contribution, Plot, grab_obj
-# import qg_common as qgc
-# import qg_general_plots as qgg
+import qg_common as qgc
+import qg_general_plots as qgp
 import common_utils as cu
 
 
@@ -111,8 +112,10 @@ def _rescale_plot_labels(container, factor, left_margin):
 
 
 def make_data_mc_plot(entries, hist_name, x_label, output_filename, rebin=1,
+                      title="",
                       do_logx=True, x_min=None, x_max=None,
-                      do_logy=True, y_min=1E-1, y_max=1E6):
+                      do_logy=True, y_min=1E-1, y_max=1E6,
+                      do_compare_shapes=False):
     """Make data-MC plot with ratio subplot
 
     Automatically sorts contributions by integral.
@@ -133,6 +136,8 @@ def make_data_mc_plot(entries, hist_name, x_label, output_filename, rebin=1,
         Output filename
     rebin : int, optional
         To rebin hists
+    title : str, optional
+        Optional title to put on plot
     do_logx : bool, optional
         Logarithmic x-axis
     x_min : None, optional
@@ -145,13 +150,21 @@ def make_data_mc_plot(entries, hist_name, x_label, output_filename, rebin=1,
         y-axis minimum
     y_max : float, optional
         y-axis maximum
+    do_compare_shapes : bool, optional
+        Do not stack anything, just compare all shapes (i.e normalise each to unity)
     """
 
     data_entries = []
     mc_entries = []
 
     for ent in entries:
-        hist = cu.get_from_tfile(ent['tfile'], hist_name)
+        # use histogram if it comes with it, otherwise get from tfile
+        hist = ent.get('hist', None)
+        if not hist:
+            hist = cu.get_from_tfile(ent['tfile'], hist_name)
+        if do_compare_shapes:
+            if hist.Integral() > 0:
+                hist.Scale(1./hist.Integral())
         hist.SetName(hist.GetName() + "_" + ent['label'])
         hist.SetLineColor(ent['style']['line_color'])
         hist.SetLineStyle(ent['style'].get('line_style', 1))
@@ -161,7 +174,11 @@ def make_data_mc_plot(entries, hist_name, x_label, output_filename, rebin=1,
         hist.SetMarkerSize(ent['style'].get('marker_size', 1))
 
         hist.SetFillColor(ent['style']['fill_color'])
+
         hist.SetFillStyle(ent['style'].get('fill_style', 1001))
+        if do_compare_shapes:
+            hist.SetFillStyle(0)
+            hist.SetLineWidth(1)
 
         hist.Rebin(rebin)
         e = Entry(hist=hist,
@@ -173,9 +190,10 @@ def make_data_mc_plot(entries, hist_name, x_label, output_filename, rebin=1,
         else:
             mc_entries.append(e)
 
-    # Sort so largest contribution first
-    data_entries.sort(key=lambda entry: entry.integral, reverse=True)
-    mc_entries.sort(key=lambda entry: entry.integral, reverse=True)
+    if not do_compare_shapes:
+        # Sort so largest contribution first
+        data_entries.sort(key=lambda entry: entry.integral, reverse=True)
+        mc_entries.sort(key=lambda entry: entry.integral, reverse=True)
 
     for ent in data_entries:
         print(ent.label, ent.integral)
@@ -230,15 +248,37 @@ def make_data_mc_plot(entries, hist_name, x_label, output_filename, rebin=1,
 
     leg = ROOT.TLegend(0.7, 0.65, 0.88, 0.88)
     for ent in data_entries:
-        leg.AddEntry(ent.hist, "%s (%g)" % (ent.label, ent.integral), "P")
+        extra = "" if do_compare_shapes else " (%g)" % ent.integral
+        leg.AddEntry(ent.hist, "%s%s" % (ent.label, extra), "P")
 
     for ent in mc_entries:
         # Add largest first
-        leg.AddEntry(ent.hist, "%s (%g)" % (ent.label, ent.integral), "F")
+        extra = "" if do_compare_shapes else " (%g)" % ent.integral
+        leg.AddEntry(ent.hist, "%s%s" % (ent.label, extra), "L" if do_compare_shapes else "F")
 
-    hst.Draw("hist")
-    hst.SetMaximum(y_max)
-    hst.SetMinimum(y_min)
+    if do_compare_shapes:
+        hst.Draw("histe nostack")
+    else:
+        hst.Draw("hist")
+
+    hst_stack = hst.GetStack()
+    # Get sum hist - GetStack makes a cumulative stack
+    mc_total = hst_stack.Last().Clone(hst_stack.Last().GetName()+"Ratio")
+
+    if y_min and y_max:
+        hst.SetMaximum(y_max)
+        hst.SetMinimum(y_min)
+    else:
+        max_y = max(mc_total.GetMaximum(), max([ent.hist.GetMaximum() for ent in data_entries]))
+        min_y = min(mc_total.GetMinimum(1E-14), min([ent.hist.GetMinimum(1E-14) for ent in data_entries]))
+        print(min_y)
+        if do_logy:
+            hst.SetMaximum(10 * max_y)
+            hst.SetMinimum(0.5 * min_y)
+        else:
+            hst.SetMaximum(2 * max_y)
+            hst.SetMinimum(0.5 * min_y)
+
     if x_min and x_max:
         hst.GetXaxis().SetRangeUser(x_min, x_max)
         # hst.GetXaxis().SetLimits(x_min, x_max)  # SetLimits obeys you, SetRangeUser does some rounding?! But SetLimits makes poitns that don't align in the ratio plot
@@ -260,6 +300,17 @@ def make_data_mc_plot(entries, hist_name, x_label, output_filename, rebin=1,
     cms_latex.SetTextAlign(ROOT.kHAlignRight + ROOT.kVAlignBottom)
     cms_latex.DrawLatexNDC(0.95, latex_height, " 35.9 fb^{-1} (13 TeV)")
 
+    # Add title to plot
+    text_latex = ROOT.TLatex()
+    text_latex.SetTextAlign(ROOT.kHAlignLeft + ROOT.kVAlignTop)
+    text_latex.SetTextFont(42)
+    text_latex.SetTextSize(0.03)
+    start_y = 0.87
+    diff_y = 0.05
+    if title != "":
+        for ind, line in enumerate(title.split('\n')):
+            text_latex.DrawLatex(start_x + 0.04, start_y - (ind*diff_y), line)
+
     _rescale_plot_labels(hst, 1-subplot_pad_height, left_margin)
     # Get rid of main plot x axis labels
     hst.GetHistogram().GetXaxis().SetLabelSize(0)
@@ -269,31 +320,42 @@ def make_data_mc_plot(entries, hist_name, x_label, output_filename, rebin=1,
 
     # Construct & plot subplot
     subplot_pad.cd()
-    ratio_hists = [ent.hist.Clone(ent.hist.GetName()+"Ratio") for ent in data_entries]
-    hst_stack = hst.GetStack()
-    # Get sum hist - GetStack makes a cumulative stack
-    mc_total = hst_stack.Last().Clone(hst_stack.Last().GetName()+"Ratio")
+    ratio_hists = []
+    if do_compare_shapes:
+        # compare all mc shapes to data
+        ratio_hists = [ent.hist.Clone(ent.hist.GetName()+"Ratio") for ent in mc_entries]
+        for ind, hist_ratio in enumerate(ratio_hists):
+            hist_ratio.Divide(data_entries[0].hist)
 
-    # for i in range(1, mc_total.GetNbinsX()):
-        # print(i, mc_total.Integral(i, i+1), mc_total.GetXaxis().GetBinLowEdge(i))
-        # print(i, ratio_hists[0].Integral(i, i+1), ratio_hists[0].GetXaxis().GetBinLowEdge(i))
-        # if mc_total.Integral(i, i+1) > 0:
-        #     print(i, ratio_hists[0].Integral(i, i+1) / mc_total.Integral(i, i+1), ratio_hists[0].GetXaxis().GetBinLowEdge(i))
+            draw_opt = "HISTE"
+            if ind > 0:
+                draw_opt += " SAME"
+            hist_ratio.Draw(draw_opt)
 
-    for ind, hist_ratio in enumerate(ratio_hists):
-        hist_ratio.Divide(mc_total)
-        # NB already styled from originals
-        # for i in range(1, hist_ratio.GetNbinsX()):
-        #     print(i, hist_ratio.GetBinContent(i))
+            hist_ratio.SetTitle(";%s;%s" % (hist_ratio.GetXaxis().GetTitle(), "Data / MC"))
+            if x_min and x_max:
+                hist_ratio.GetXaxis().SetRangeUser(x_min, x_max)
 
-        draw_opt = "E"
-        if ind > 0:
-            draw_opt += " SAME"
-        hist_ratio.Draw(draw_opt)
+            hist_ratio.SetMinimum(0)  # use this, not SetRangeUser()
+            hist_ratio.SetMaximum(2)  # use this, not SetRangeUser()
 
-        hist_ratio.SetTitle(";%s;%s" % (hist_ratio.GetXaxis().GetTitle(), "%s / MC" % (data_entries[ind].label)))
-        if x_min and x_max:
-            hist_ratio.GetXaxis().SetRangeUser(x_min, x_max)
+    else:
+        # compare all data shapes to mc sum
+        ratio_hists = [ent.hist.Clone(ent.hist.GetName()+"Ratio") for ent in data_entries]
+
+        for ind, hist_ratio in enumerate(ratio_hists):
+            hist_ratio.Divide(mc_total)
+            # NB already styled from originals
+
+            draw_opt = "E"
+            if ind > 0:
+                draw_opt += " SAME"
+            hist_ratio.Draw(draw_opt)
+
+            hist_ratio.SetTitle(";%s;%s" % (hist_ratio.GetXaxis().GetTitle(), "%s / MC" % (data_entries[ind].label)))
+            if x_min and x_max:
+                hist_ratio.GetXaxis().SetRangeUser(x_min, x_max)
+
             hist_ratio.SetMinimum(0.5)  # use this, not SetRangeUser()
             hist_ratio.SetMaximum(1.5)  # use this, not SetRangeUser()
 
@@ -320,7 +382,7 @@ def make_data_mc_plot(entries, hist_name, x_label, output_filename, rebin=1,
     subplot_line_down.Draw()
 
     # Some resizing of subplot things
-    _rescale_plot_labels(ratio_modifier, subplot_pad_height, left_margin*1.7)  # last factor is a fudge. no idea why
+    _rescale_plot_labels(ratio_modifier, subplot_pad_height, left_margin)  # last factor is a fudge. no idea why
     ratio_modifier.GetXaxis().SetTitleOffset(ratio_modifier.GetXaxis().GetTitleOffset()*3)
     ratio_modifier.GetYaxis().SetNdivisions(505)
 
@@ -329,135 +391,265 @@ def make_data_mc_plot(entries, hist_name, x_label, output_filename, rebin=1,
     canv.SaveAs(output_filename)
 
 
-COMPONENTS = [
+def make_binned_data_mc_plots(entries, hist_name, x_label,
+                              bins, bin_variable,
+                              output_filename, rebin=1,
+                              do_logx=False, x_min=None, x_max=None,
+                              do_logy=False, y_min=None, y_max=None,
+                              do_compare_shapes=False):
+    """Do data/MC plots, but binned by some variable"""
 
-{
-    'tfile': tfile_data,
-    'label': "Data",
-    'is_data': True,
-    'style': {
-        'fill_color': ROOT.kBlack,
-        'fill_style': 0,
-        'marker_color': ROOT.kBlack,
-        'marker_size': 1,
-        'marker_style': 20,
-        'line_color': ROOT.kBlack,
-        'line_width': 0,
-    }
-},
-{
-    'tfile': tfile_dy,
-    'label': "DY#rightarrowLL",
-    'is_data': False,
-    'is_bkg': False,
-    'style': {
-        'fill_color': ROOT.kAzure+6,
-        'marker_color': ROOT.kAzure+6,
-        'marker_size': 0,
-        'line_color': ROOT.kAzure+6,
-        'line_width': 0,
-    }
-},
-{
-    'tfile': tfile_ww,
-    'label': "WW",
-    'is_data': False,
-    'style': {
-        'fill_color': ROOT.kGreen+1,
-        'marker_color': ROOT.kGreen+1,
-        'marker_size': 0,
-        'line_color': ROOT.kGreen+1,
-        'line_width': 0,
-    }
-},
-{
-    'tfile': tfile_wz,
-    'label': "WZ",
-    'is_data': False,
-    'style': {
-        'fill_color': ROOT.kRed,
-        'marker_color': ROOT.kRed,
-        'marker_size': 0,
-        'line_color': ROOT.kRed,
-        'line_width': 0,
-    }
-},
-{
-    'tfile': tfile_zz,
-    'label': "ZZ",
-    'is_data': False,
-    'style': {
-        'fill_color': ROOT.kBlue,
-        'marker_color': ROOT.kBlue,
-        'marker_size': 0,
-        'line_color': ROOT.kBlue,
-        'line_width': 0,
-    }
-},
-{
-    'tfile': tfile_tt,
-    'label': "t#bar{t}",
-    'is_data': False,
-    'style': {
-        'fill_color': ROOT.kOrange,
-        'marker_color': ROOT.kOrange,
-        'marker_size': 0,
-        'line_color': ROOT.kOrange,
-        'line_width': 0,
-    }
-},
-# {
-#     'tfile': tfile_st_t,
-#     'label': "Single-top t",
-#     'is_data': False,
-#     'style': {
-#         'fill_color': ROOT.kCyan,
-#         'marker_color': ROOT.kCyan,
-#         'marker_size': 0,
-#         'line_color': ROOT.kCyan,
-#         'line_width': 0,
-#     }
-# },
-# {
-#     'tfile': tfile_st_tW,
-#     'label': "Single-top tW",
-#     'is_data': False,
-#     'style': {
-#         'fill_color': ROOT.kGray,
-#         'marker_color': ROOT.kGray,
-#         'marker_size': 0,
-#         'line_color': ROOT.kGray,
-#         'line_width': 0,
-#     }
-# },
-# {
-#     'tfile': tfile_st_s,
-#     'label': "Single-top s",
-#     'is_data': False,
-#     'style': {
-#         'fill_color': ROOT.kMagenta,
-#         'marker_color': ROOT.kMagenta,
-#         'marker_size': 0,
-#         'line_color': ROOT.kMagenta,
-#         'line_width': 0,
-#     }
-# },
+    # Make a copy of entries with the big 2D hsit
+    original_entries = deepcopy(entries)
+    for ind, ent in enumerate(entries):
+        # original_entries[ind]['tfile'] = ent['tfile']
+        original_entries[ind]['hist'] = cu.get_from_tfile(ent['tfile'], hist_name)
 
-]
+    # For each bin, make a copy, but replace the hist value with the 1D projection for this bin
+    for bin_ind, (bin_low, bin_high) in enumerate(bins):
+        print("----- bin", bin_ind)
+        bin_entries = deepcopy(original_entries)
+        for ind, ent in enumerate(original_entries):
+            bin_entries[ind]['hist'] = qgp.get_projection_plot(ent['hist'], bin_low, bin_high, 'y')
+        title = "%s #in [%g, %g]" % (bin_variable, bin_low, bin_high)
+        output_filename_stem, ext = os.path.splitext(output_filename)
+        this_output_filename = "%s_%d%s" % (output_filename_stem, bin_ind, ext)
+        make_data_mc_plot(bin_entries,
+                          hist_name=hist_name,
+                          x_label=x_label,
+                          title=title,
+                          output_filename=this_output_filename,
+                          rebin=rebin,
+                          do_logx=do_logx, x_min=x_min, x_max=x_max,
+                          do_logy=do_logy, y_min=y_min, y_max=y_max,
+                          do_compare_shapes=do_compare_shapes)
 
 
-make_data_mc_plot(COMPONENTS,
-                  hist_name="ZPlusJets/pt_jet1",
-                  x_label="p_{T}^{jet} [GeV]",
-                  output_filename="%s/zpj_ptJ_Kfactor.pdf" % (zpj_dir),
-                  rebin=1,
-                  do_logx=True, x_min=20, x_max=3E3,
-                  do_logy=True, y_min=1E-1, y_max=1E6)
+if __name__ == "__main__":
+    COMPONENTS = [
 
-make_data_mc_plot(COMPONENTS,
-                  hist_name="ZPlusJets/pt_mumu",
-                  x_label="p_{T}^{#mu#mu} [GeV]",
-                  output_filename="%s/zpj_ptZ_Kfactor.pdf" % (zpj_dir),
-                  rebin=1,
-                  do_logx=True, x_min=10, x_max=3E3,
-                  do_logy=True, y_min=1E-1, y_max=1E6)
+    {
+        'tfile': tfile_data,
+        'label': "Data",
+        'is_data': True,
+        'style': {
+            'fill_color': ROOT.kBlack,
+            'fill_style': 0,
+            'marker_color': ROOT.kBlack,
+            'marker_size': 1,
+            'marker_style': 20,
+            'line_color': ROOT.kBlack,
+            'line_width': 0,
+        }
+    },
+    {
+        'tfile': tfile_dy,
+        'label': "DY#rightarrowLL",
+        'is_data': False,
+        'is_bkg': False,
+        'style': {
+            'fill_color': ROOT.kAzure+6,
+            'marker_color': ROOT.kAzure+6,
+            'marker_size': 0,
+            'line_color': ROOT.kAzure+6,
+            'line_width': 0,
+        }
+    },
+    {
+        'tfile': tfile_ww,
+        'label': "WW",
+        'is_data': False,
+        'style': {
+            'fill_color': ROOT.kGreen+1,
+            'marker_color': ROOT.kGreen+1,
+            'marker_size': 0,
+            'line_color': ROOT.kGreen+1,
+            'line_width': 0,
+        }
+    },
+    {
+        'tfile': tfile_wz,
+        'label': "WZ",
+        'is_data': False,
+        'style': {
+            'fill_color': ROOT.kRed,
+            'marker_color': ROOT.kRed,
+            'marker_size': 0,
+            'line_color': ROOT.kRed,
+            'line_width': 0,
+        }
+    },
+    {
+        'tfile': tfile_zz,
+        'label': "ZZ",
+        'is_data': False,
+        'style': {
+            'fill_color': ROOT.kBlue,
+            'marker_color': ROOT.kBlue,
+            'marker_size': 0,
+            'line_color': ROOT.kBlue,
+            'line_width': 0,
+        }
+    },
+    {
+        'tfile': tfile_tt,
+        'label': "t#bar{t}",
+        'is_data': False,
+        'style': {
+            'fill_color': ROOT.kOrange,
+            'marker_color': ROOT.kOrange,
+            'marker_size': 0,
+            'line_color': ROOT.kOrange,
+            'line_width': 0,
+        }
+    },
+    # {
+    #     'tfile': tfile_st_t,
+    #     'label': "Single-top t",
+    #     'is_data': False,
+    #     'style': {
+    #         'fill_color': ROOT.kCyan,
+    #         'marker_color': ROOT.kCyan,
+    #         'marker_size': 0,
+    #         'line_color': ROOT.kCyan,
+    #         'line_width': 0,
+    #     }
+    # },
+    # {
+    #     'tfile': tfile_st_tW,
+    #     'label': "Single-top tW",
+    #     'is_data': False,
+    #     'style': {
+    #         'fill_color': ROOT.kGray,
+    #         'marker_color': ROOT.kGray,
+    #         'marker_size': 0,
+    #         'line_color': ROOT.kGray,
+    #         'line_width': 0,
+    #     }
+    # },
+    # {
+    #     'tfile': tfile_st_s,
+    #     'label': "Single-top s",
+    #     'is_data': False,
+    #     'style': {
+    #         'fill_color': ROOT.kMagenta,
+    #         'marker_color': ROOT.kMagenta,
+    #         'marker_size': 0,
+    #         'line_color': ROOT.kMagenta,
+    #         'line_width': 0,
+    #     }
+    # },
+
+    ]
+
+
+    # make_data_mc_plot(COMPONENTS,
+    #                   hist_name="ZPlusJets/pt_jet1",
+    #                   x_label="p_{T}^{jet} [GeV]",
+    #                   output_filename="%s/zpj_ptJ_Kfactor.pdf" % (zpj_dir),
+    #                   rebin=1,
+    #                   do_logx=True, x_min=20, x_max=3E3,
+    #                   do_logy=True, y_min=1E-1, y_max=1E6)
+
+    # make_data_mc_plot(COMPONENTS,
+    #                   hist_name="ZPlusJets/pt_mumu",
+    #                   x_label="p_{T}^{#mu#mu} [GeV]",
+    #                   output_filename="%s/zpj_ptZ_Kfactor.pdf" % (zpj_dir),
+    #                   rebin=1,
+    #                   do_logx=True, x_min=10, x_max=3E3,
+    #                   do_logy=True, y_min=1E-1, y_max=1E6)
+
+    # pt_jet1_z_ratio_vs_pt_z
+    # pt_jet1_z_ratio_vs_pt_jet1
+
+    # jet1_z_asym_vs_pt_z
+    # jet1_z_asym_vs_pt_jet1
+
+    # Do pt-binned plots
+    make_binned_data_mc_plots(COMPONENTS,
+                             hist_name="ZPlusJets/pt_jet1_z_ratio_vs_pt_z",
+                             bins=qgc.PT_BINS_ZPJ,
+                             bin_variable="p_{T}^{#mu#mu} [GeV]",
+                             x_label="p_{T}^{jet 1} / p_{T}^{#mu#mu}",
+                             output_filename="%s/zpj_ptJ_ptZ_ratio_binned_by_ptZ_Kfactor.pdf" % (zpj_dir),
+                             rebin=1,
+                             do_logx=False,
+                             do_logy=True,
+                             do_compare_shapes=False)
+
+    make_binned_data_mc_plots(COMPONENTS,
+                             hist_name="ZPlusJets/pt_jet1_z_ratio_vs_pt_z",
+                             bins=qgc.PT_BINS_ZPJ,
+                             bin_variable="p_{T}^{#mu#mu} [GeV]",
+                             x_label="p_{T}^{jet 1} / p_{T}^{#mu#mu}",
+                             output_filename="%s/zpj_ptJ_ptZ_ratio_binned_by_ptZ_Kfactor_shapes.pdf" % (zpj_dir),
+                             rebin=1,
+                             do_logx=False,
+                             do_logy=True,
+                             do_compare_shapes=True)
+
+    # make_binned_data_mc_plots(COMPONENTS,
+    #                          hist_name="ZPlusJets/jet1_z_asym_vs_pt_z",
+    #                          bins=qgc.PT_BINS_ZPJ,
+    #                          bin_variable="p_{T}^{#mu#mu} [GeV]",
+    #                          x_label="(p_{T}^{jet 1} - p_{T}^{#mu#mu}) / (p_{T}^{jet 1} + p_{T}^{#mu#mu})",
+    #                          output_filename="%s/zpj_ptJ_ptZ_asym_binned_by_ptZ_Kfactor.pdf" % (zpj_dir),
+    #                          rebin=1,
+    #                          do_logx=False,
+                             # do_logy=True,
+                             # do_compare_shapes=False)
+
+    # make_binned_data_mc_plots(COMPONENTS,
+    #                          hist_name="ZPlusJets/jet1_z_asym_vs_pt_z",
+    #                          bins=qgc.PT_BINS_ZPJ,
+    #                          bin_variable="p_{T}^{#mu#mu} [GeV]",
+    #                          x_label="(p_{T}^{jet 1} - p_{T}^{#mu#mu}) / (p_{T}^{jet 1} + p_{T}^{#mu#mu})",
+    #                          output_filename="%s/zpj_ptJ_ptZ_asym_binned_by_ptZ_Kfactor_shapes.pdf" % (zpj_dir),
+    #                          rebin=1,
+    #                          do_logx=False,
+                             # do_logy=True,
+                             # do_compare_shapes=True)
+
+    # make_binned_data_mc_plots(COMPONENTS,
+    #                          hist_name="ZPlusJets/pt_jet1_z_ratio_vs_pt_jet1",
+    #                          bins=qgc.PT_BINS_ZPJ,
+    #                          bin_variable="p_{T}^{jet 1} [GeV]",
+    #                          x_label="p_{T}^{jet 1} / p_{T}^{#mu#mu}",
+    #                          output_filename="%s/zpj_ptJ_ptZ_ratio_binned_by_ptJ_Kfactor.pdf" % (zpj_dir),
+    #                          rebin=1,
+    #                          do_logx=False,
+    #                          do_logy=True)
+
+
+    # make_binned_data_mc_plots(COMPONENTS,
+    #                          hist_name="ZPlusJets/pt_jet1_z_ratio_vs_pt_jet1",
+    #                          bins=qgc.PT_BINS_ZPJ,
+    #                          bin_variable="p_{T}^{jet 1} [GeV]",
+    #                          x_label="p_{T}^{jet 1} / p_{T}^{#mu#mu}",
+    #                          output_filename="%s/zpj_ptJ_ptZ_ratio_binned_by_ptJ_Kfactor_shapes.pdf" % (zpj_dir),
+    #                          rebin=1,
+    #                          do_logx=False,
+    #                          do_logy=True,
+    #                          do_compare_shapes=True)
+
+    # make_binned_data_mc_plots(COMPONENTS,
+    #                          hist_name="ZPlusJets/jet1_z_asym_vs_pt_jet1",
+    #                          bins=qgc.PT_BINS_ZPJ,
+    #                          bin_variable="p_{T}^{jet 1} [GeV]",
+    #                          x_label="(p_{T}^{jet 1} - p_{T}^{#mu#mu}) / (p_{T}^{jet 1} + p_{T}^{#mu#mu})",
+    #                          output_filename="%s/zpj_ptJ_ptZ_asym_binned_by_ptJ_Kfactor.pdf" % (zpj_dir),
+    #                          rebin=1,
+    #                          do_logx=False,
+    #                          do_logy=True)
+    #
+    # make_binned_data_mc_plots(COMPONENTS,
+    #                          hist_name="ZPlusJets/jet1_z_asym_vs_pt_jet1",
+    #                          bins=qgc.PT_BINS_ZPJ,
+    #                          bin_variable="p_{T}^{jet 1} [GeV]",
+    #                          x_label="(p_{T}^{jet 1} - p_{T}^{#mu#mu}) / (p_{T}^{jet 1} + p_{T}^{#mu#mu})",
+    #                          output_filename="%s/zpj_ptJ_ptZ_asym_binned_by_ptJ_Kfactor_shapes.pdf" % (zpj_dir),
+    #                          rebin=1,
+    #                          do_logx=False,
+    #                          do_logy=True,
+    #                          do_compare_shapes=True)
+

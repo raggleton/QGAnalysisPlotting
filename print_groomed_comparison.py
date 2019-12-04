@@ -44,8 +44,8 @@ if __name__ == "__main__":
     data_dir = "workdir_ak4puppi_data_trigBinningBetter2_jetAsymCut_pt1RecoConstituents_V11JEC_JER_tUnfoldBetter_target0p5_wta_groomed_fwdcenDijet"
 
     # pythia_dir = "workdir_ak8chs_pythia_newFlav_jetAsymCut_chargedVars_pt1RecoConstituents_V11JEC_JER_tUnfoldBetter_target0p5_noZReweight_wta_groomed_fwdcenDijet_betterLargeWeightVeto"
-    pythia_dir = "workdir_ak8puppi_data_trigBinningBetter2_jetAsymCut_pt1RecoConstituents_V11JEC_JER_tUnfoldBetter_target0p5_wta_groomed_fwdcenDijet"
-    data_dir = "workdir_ak8puppi_data_trigBinningBetter2_jetAsymCut_pt1RecoConstituents_V11JEC_JER_tUnfoldBetter_target0p5_wta_groomed_fwdcenDijet"
+    # pythia_dir = "workdir_ak8puppi_data_trigBinningBetter2_jetAsymCut_pt1RecoConstituents_V11JEC_JER_tUnfoldBetter_target0p5_wta_groomed_fwdcenDijet"
+    # data_dir = "workdir_ak8puppi_data_trigBinningBetter2_jetAsymCut_pt1RecoConstituents_V11JEC_JER_tUnfoldBetter_target0p5_wta_groomed_fwdcenDijet"
 
     mc_sources = [
         {"root_dir": pythia_dir ,
@@ -160,7 +160,7 @@ if __name__ == "__main__":
 
     title = qgc.extract_jet_config(pythia_dir)
     # Do Z+jets region only
-    print("Doing Z+J ungroomed")
+    # print("Doing Z+J ungroomed")
     # qgp.do_all_exclusive_plots_comparison(sources=all_sources[:2],
     #                                       var_list=qgc.COMMON_VARS[:],
     #                                       plot_dir=os.path.join(pythia_dir, "ungroomed_jet_zpj"),
