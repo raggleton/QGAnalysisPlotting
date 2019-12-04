@@ -250,7 +250,7 @@ class Plot(object):
         self.default_canvas_size = (600, 800)
         # self.default_canvas_size = (800, 600)
         self.right_margin = 0.03
-        self.left_margin = 0.12 # use ROOT default
+        self.left_margin = 0.11 # use ROOT default
         self.top_margin = 0.1
         self.main_pad = None
         self.subplot = subplot
@@ -530,7 +530,7 @@ class Plot(object):
 
         # Customise
         modifier = self.get_modifier()
-        
+
         # Use the x/y axis labels from the first contribution as defaults
         if not self.xtitle:
             self.xtitle = self.contributions_objs[0].GetXaxis().GetTitle()

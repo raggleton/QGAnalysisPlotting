@@ -66,7 +66,7 @@ My_Style.SetTitleSize(0.04, "XYZ")
 # My_Style.SetTitleXSize(Float_t size = 0.02) # Another way to set the size?
 # My_Style.SetTitleYSize(Float_t size = 0.02)
 My_Style.SetTitleXOffset(1.3)
-My_Style.SetTitleYOffset(1.7)
+My_Style.SetTitleYOffset(1.6)
 
 # For the statistics box:
 My_Style.SetOptFile(0)
