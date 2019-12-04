@@ -29,7 +29,7 @@ ROOT.gErrorIgnoreLevel = ROOT.kWarning
 import common_utils as cu
 import qg_common as qgc
 import qg_general_plots as qgp
-from unfolding_classes import TauScanner, LCurveScanner, MyUnfolder
+from unfolding_classes import TauScanner, LCurveScanner, MyUnfolder, MyUnfolderPlotter
 
 
 ROOT.PyConfig.IgnoreCommandLineOptions = True
@@ -1182,7 +1182,8 @@ if __name__ == "__main__":
 
             unfolder.save_binning(txt_filename="%s/binning_scheme.txt" % (this_output_dir), print_xml=False)
 
-            # Subtract fakes (treat as background)
+            unfolder_plotter = MyUnfolderPlotter(unfolder)
+
             # Set what is to be unfolded
             # ------------------------------------------------------------------
             unfolder.set_input(reco_1d, args.biasFactor)
@@ -1226,10 +1227,8 @@ if __name__ == "__main__":
                 this_tdir.WriteTObject(hist_mc_reco_gen_binning_bg_subtracted, "mc_reco_gen_binning_bg_subtracted")
 
             # Plot bias vector
-            bias_hist = unfolder.tunfolder.GetBias("bias_%s" % (append), "", "generator")
-            plot_bias_hist(bias_hist,
-                           output_filename="%s/bias_hist_%s.%s" % (this_output_dir, append, OUTPUT_FMT),
-                           title="%s region, %s" % (region['label'], angle_str))
+            title = "%s region, %s" % (region['label'], angle_str)
+            unfolder_plotter.plot_bias_hist(output_dir=this_output_dir, append=append, title=title)
 
             # Do any regularization
             # ---------------------

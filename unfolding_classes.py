@@ -378,6 +378,7 @@ class MyUnfolder(object):
         self.tunfolder.SubtractBackground(hist_bg, name, scale, scale_err)
 
     def do_unfolding(self, tau):
+        """Carry out unfolding with given regularisastion parameter"""
         print(">>> Unfolding with tau =", tau)
         self.tau = tau
         self.tunfolder.DoUnfold(tau)
@@ -638,4 +639,39 @@ class MyUnfolder(object):
         folded_hist = self.ndarray_to_th1(folded_vec.T, has_oflow_x=oflow)
 
         return folded_hist
+
+
+class MyUnfolderPlotter(object):
+
+    """Class to do all sort of plots about a given MyUnfolder obj"""
+
+    def __init__(self, unfolder):
+        self.unfolder = unfolder
+        self.output_fmt = 'pdf'
+
+    def plot_bias_hist(self, output_dir='.', append="", title=""):
+        """Plot bias vector"""
+        if append != "":
+            append = "_%s" % (append)
+
+        bias_hist = self.unfolder.tunfolder.GetBias("bias%s" % (append), "", "generator")
+        entries = [
+            Contribution(bias_hist, 
+                         label="Bias histogram",
+                         line_color=ROOT.kBlack, line_width=1,
+                         marker_color=ROOT.kBlack, marker_size=0,
+                         normalise_hist=False),
+        ]
+        plot = Plot(entries,
+                    what='hist',
+                    title=title,
+                    xtitle="Generator bin",
+                    ytitle="Bias")
+        plot.default_canvas_size = (800, 600)
+        plot.plot("NOSTACK HIST")
+        plot.set_logy()
+        plot.legend.SetY1NDC(0.77)
+        plot.legend.SetX2NDC(0.85)
+        output_filename = "%s/bias_hist%s.%s" % (output_dir, append, self.output_fmt)
+        plot.save(output_filename)
 
