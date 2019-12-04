@@ -663,7 +663,7 @@ def draw_response_matrix(rsp_map, region_name, variable_name, output_filename):
 
 def draw_probability_matrix(prob_map, region_name, variable_name, output_filename):
     title = "Probability map, %s region, %s" % (region_name, variable_name)
-    draw_2d_matrix(prob_map, title, output_filename, z_min=1E-4)
+    draw_2d_matrix(prob_map, title, output_filename, z_min=1E-4, ytitle='Detector bin')
 
 
 def draw_error_matrix_input(err_map, region_name, variable_name, output_filename):
