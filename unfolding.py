@@ -61,87 +61,6 @@ def calculate_chi2(hist_test, hist_truth, hist_covariance=None):
     # covariance_matrix = th2_to_ndarray(hist_covariance)
 
 
-def generate_2d_canvas(size=(800, 600)):
-    canv = ROOT.TCanvas(cu.get_unique_str(), "", *size)
-    canv.SetTicks(1, 1)
-    canv.SetRightMargin(19) # this does nothing?!
-    canv.SetLeftMargin(0.9)
-    return canv
-
-
-def draw_2d_matrix(h2d, title, output_filename, logz=True, z_min=None, z_max=None, xtitle="Generator bin", ytitle="Generator bin"):
-    canv = generate_2d_canvas()
-    if logz:
-        canv.SetLogz()
-    this_title = "%s;%s;%s" % (title, xtitle, ytitle)
-    h2d.SetTitle(this_title)
-    h2d.GetYaxis().SetTitleOffset(1.5)
-    h2d.GetXaxis().SetTitleOffset(1.5)
-    h2d.Draw("COLZ")
-    if z_max:
-        h2d.SetMaximum(z_max)
-    if z_min:
-        h2d.SetMinimum(z_min)
-    else:
-        h2d.SetMinimum(h2d.GetMinimum(1E-40) / 10.)
-    # print("Saving to", output_filename)
-    canv.SaveAs(output_filename)
-
-
-def draw_response_matrix(rsp_map, region_name, variable_name, output_filename):
-    title = "Response matrix, %s region, %s" % (region_name, variable_name)
-    draw_2d_matrix(rsp_map, title, output_filename, ytitle='Detector bin')
-
-
-def draw_probability_matrix(prob_map, region_name, variable_name, output_filename):
-    title = "Probability map, %s region, %s" % (region_name, variable_name)
-    draw_2d_matrix(prob_map, title, output_filename, z_min=1E-4, ytitle='Detector bin')
-
-
-def draw_error_matrix_input(err_map, region_name, variable_name, output_filename):
-    title = "Error matrix (input), %s region, %s" % (region_name, variable_name)
-    draw_2d_matrix(err_map, title, output_filename)
-
-
-def draw_error_matrix_sys_uncorr(err_map, region_name, variable_name, output_filename):
-    title = "Error matrix (sys uncorr), %s region, %s" % (region_name, variable_name)
-    draw_2d_matrix(err_map, title, output_filename)
-
-
-def draw_error_matrix_total(err_map, region_name, variable_name, output_filename):
-    title = "Error matrix (total), %s region, %s" % (region_name, variable_name)
-    draw_2d_matrix(err_map, title, output_filename)
-
-
-def draw_correlation_matrix(corr_map, region_name, variable_name, output_filename):
-    # Custom colour scheme - french flag colouring
-    NRGBs = 3
-    NCont = 99
-    stops = [ 0.00, 0.53, 1.00 ]
-    red = [ 0.00, 1.00, 1.00]
-    green = [ 0.00, 1.00, 0.00 ]
-    blue = [ 1.00, 1.00, 0.00 ]
-    stopsArray = array('d', stops)
-    redArray = array('d', red)
-    greenArray = array('d', green)
-    blueArray = array('d', blue)
-    ROOT.TColor.CreateGradientColorTable(NRGBs, stopsArray, redArray, greenArray, blueArray, NCont)
-
-    canv = generate_2d_canvas()
-
-    title = "Correlation map, %s region, %s;Generator Bin;Generator Bin" % (region_name, variable_name)
-    corr_map.SetTitle(title)
-    corr_map.GetYaxis().SetTitleOffset(1.5)
-    corr_map.GetXaxis().SetTitleOffset(1.5)
-    # ROOT.gStyle.SetPalette(ROOT.kLightTemperature)
-    corr_map.SetMinimum(-1)
-    corr_map.SetMaximum(1)
-    corr_map.SetMarkerSize(0.05)
-    corr_map.Draw("COLZ0 TEXT45")
-    canv.SaveAs(output_filename)
-    ROOT.gStyle.SetPalette(ROOT.kBird)
-
-
 def plot_simple_unfolded(unfolded, tau, reco, gen, fake, output_filename, title=""):
     """Simple plot of unfolded, reco, gen, by bin number (ie non physical axes)"""
     entries = []
@@ -1396,40 +1315,26 @@ if __name__ == "__main__":
                            print_bin_comparison=False)
 
             # Draw matrices
-            # ---------------------
-            draw_response_matrix(unfolder.response_map,
-                                 region['label'],
-                                 angle_str,
-                                 "%s/response_map_%s.%s" % (this_output_dir, append, OUTPUT_FMT))
+            # ------------------------------------------------------------------
+            plot_args = dict(output_dir=this_output_dir, append=append)
+            
+            title = "Response matrix, %s region, %s" % (region['label'], angle_str)
+            unfolder_plotter.draw_response_matrix(title=title, **plot_args)
 
-            prob_map = unfolder.get_probability_matrix()
-            this_tdir.WriteTObject(prob_map, "prob_matrix")
-            draw_probability_matrix(prob_map,
-                                    region['label'],
-                                    angle_str,
-                                    "%s/probability_map_%s.%s" % (this_output_dir, append, OUTPUT_FMT))
+            title = "Probability matrix, %s region, %s" % (region['label'], angle_str)
+            unfolder_plotter.draw_probability_matrix(title=title, **plot_args)
 
-            rhoij = unfolder.get_rhoij_total()
-            this_tdir.WriteTObject(rhoij, "rhoij")
-            draw_correlation_matrix(rhoij,
-                                    region['label'],
-                                    angle_str,
-                                    "%s/rho_map_%s.%s" % (this_output_dir, append, OUTPUT_FMT))
+            title = "Correlation matrix, %s region, %s" % (region['label'], angle_str)
+            unfolder_plotter.draw_correlation_matrix(title=title, **plot_args)
 
-            draw_error_matrix_input(ematrix_input,
-                                    region['label'],
-                                    angle_str,
-                                    "%s/err_map_sys_input_%s.%s" % (this_output_dir, append, OUTPUT_FMT))
+            title = "Error matrix (input), %s region, %s" % (region['label'], angle_str)
+            unfolder_plotter.draw_error_matrix_input(title=title, **plot_args)
 
-            draw_error_matrix_sys_uncorr(ematrix_sys_uncorr,
-                                         region['label'],
-                                         angle_str,
-                                         "%s/err_map_sys_uncorr_%s.%s" % (this_output_dir, append, OUTPUT_FMT))
+            title = "Error matrix (sys uncorr), %s region, %s" % (region['label'], angle_str)
+            unfolder_plotter.draw_error_matrix_sys_uncorr(title=title, **plot_args)
 
-            draw_error_matrix_total(ematrix_total,
-                                    region['label'],
-                                    angle_str,
-                                    "%s/err_map_total_%s.%s" % (this_output_dir, append, OUTPUT_FMT))
+            title = "Error matrix (total), %s region, %s" % (region['label'], angle_str)
+            unfolder_plotter.draw_error_matrix_total(title=title, **plot_args)
 
             # Do forward-folding to check unfolding
             # ------------------------------------------------------------------

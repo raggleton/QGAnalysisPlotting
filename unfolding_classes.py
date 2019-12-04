@@ -649,6 +649,35 @@ class MyUnfolderPlotter(object):
         self.unfolder = unfolder
         self.output_fmt = 'pdf'
 
+    @staticmethod
+    def generate_2d_canvas(size=(800, 600)):
+        canv = ROOT.TCanvas(cu.get_unique_str(), "", *size)
+        canv.SetTicks(1, 1)
+        canv.SetLeftMargin(0.11)
+        canv.SetRightMargin(0.12)
+        return canv
+
+    @staticmethod
+    def draw_2d_hist(h2d, title, output_filename,
+                     logz=True, z_min=None, z_max=None,
+                     xtitle="Generator bin",
+                     ytitle="Generator bin"):
+        canv = MyUnfolderPlotter.generate_2d_canvas()
+        if logz:
+            canv.SetLogz()
+        this_title = "%s;%s;%s" % (title, xtitle, ytitle)
+        h2d.SetTitle(this_title)
+        h2d.GetYaxis().SetTitleOffset(1.5)
+        h2d.GetXaxis().SetTitleOffset(1.5)
+        h2d.Draw("COLZ")
+        if z_max:
+            h2d.SetMaximum(z_max)
+        if z_min:
+            h2d.SetMinimum(z_min)
+        else:
+            h2d.SetMinimum(h2d.GetMinimum(1E-40) / 10.)
+        canv.SaveAs(output_filename)
+
     def plot_bias_hist(self, output_dir='.', append="", title=""):
         """Plot bias vector"""
         if append != "":
@@ -656,7 +685,7 @@ class MyUnfolderPlotter(object):
 
         bias_hist = self.unfolder.tunfolder.GetBias("bias%s" % (append), "", "generator")
         entries = [
-            Contribution(bias_hist, 
+            Contribution(bias_hist,
                          label="Bias histogram",
                          line_color=ROOT.kBlack, line_width=1,
                          marker_color=ROOT.kBlack, marker_size=0,
@@ -675,3 +704,60 @@ class MyUnfolderPlotter(object):
         output_filename = "%s/bias_hist%s.%s" % (output_dir, append, self.output_fmt)
         plot.save(output_filename)
 
+    def draw_response_matrix(self, output_dir='.', append="", title=""):
+        # title = "Response matrix, %s region, %s" % (region_name, variable_name)
+        output_filename = "%s/response_map_%s.%s" % (output_dir, append, self.output_fmt)
+        self.draw_2d_hist(self.unfolder.response_map,
+                          title=title,
+                          output_filename=output_filename,
+                          xtitle='Generator bin', ytitle='Detector bin')
+
+    def draw_probability_matrix(self, output_dir='.', append="", title=""):
+        output_filename = "%s/probability_map_%s.%s" % (output_dir, append, self.output_fmt)
+        self.draw_2d_hist(self.unfolder.get_probability_matrix(),
+                          title=title,
+                          output_filename=output_filename,
+                          z_min=1E-4, z_max=1,
+                          xtitle='Generator bin', ytitle='Detector bin')
+
+    # TODO: generalise to some "draw_2d_hist()"?
+    def draw_error_matrix_input(self, output_dir='.', append="", title=""):
+        output_filename = "%s/err_map_sys_input_%s.%s" % (output_dir, append, self.output_fmt)
+        self.draw_2d_hist(self.unfolder.get_ematrix_input(), title, output_filename)
+
+    def draw_error_matrix_sys_uncorr(self, output_dir='.', append="", title=""):
+        output_filename = "%s/err_map_sys_uncorr_%s.%s" % (output_dir, append, self.output_fmt)
+        self.draw_2d_hist(self.unfolder.get_ematrix_sys_uncorr(), title, output_filename)
+
+    def draw_error_matrix_total(self, output_dir='.', append="", title=""):
+        output_filename = "%s/err_map_total_%s.%s" % (output_dir, append, self.output_fmt)
+        self.draw_2d_hist(self.unfolder.get_ematrix_total(), title, output_filename)
+
+    def draw_correlation_matrix(self, output_dir='.', append="", title=""):
+        # Custom colour scheme - french flag colouring
+        NRGBs = 3
+        NCont = 99
+        stops = [ 0.00, 0.53, 1.00 ]
+        red = [ 0.00, 1.00, 1.00]
+        green = [ 0.00, 1.00, 0.00 ]
+        blue = [ 1.00, 1.00, 0.00 ]
+        stopsArray = array('d', stops)
+        redArray = array('d', red)
+        greenArray = array('d', green)
+        blueArray = array('d', blue)
+        ROOT.TColor.CreateGradientColorTable(NRGBs, stopsArray, redArray, greenArray, blueArray, NCont)
+
+        canv = self.generate_2d_canvas()
+        canv.SetLeftMargin(0.11)
+        canv.SetRightMargin(0.12)
+        corr_map = self.unfolder.get_rhoij_total()
+        corr_map.SetTitle(title+";Generator bin;Generator bin")
+        corr_map.GetYaxis().SetTitleOffset(1)
+        # corr_map.GetXaxis().SetTitleOffset(1.5)
+        corr_map.SetMinimum(-1)
+        corr_map.SetMaximum(1)
+        corr_map.SetMarkerSize(0.05)
+        corr_map.Draw("COLZ0 TEXT45")
+        output_filename = "%s/rho_map_%s.%s" % (output_dir, append, self.output_fmt)
+        canv.SaveAs(output_filename)
+        ROOT.gStyle.SetPalette(ROOT.kBird)
