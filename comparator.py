@@ -405,21 +405,18 @@ class Plot(object):
             raise
 
         # Don't make subplot log y...we never want that
-        # if self.subplot_pad:
-            # self.subplot_pad.SetLogy(int(state))
         if self.container:
             ax = self.container.GetYaxis()
-            if ax:
+            if ax and state:
                 ax.SetMoreLogLabels()
 
-        # if self.subplot_container:
-        #     ax = self.subplot_container.GetYaxis()
-        #     if ax:
-        #         ax.SetMoreLogLabels()
+        # update y limits since padding different for log/lin
+        if not self.ylim:
+            self._set_automatic_y_limits()
 
     def set_logz(self, state=True):
         self.main_pad.SetLogz(int(state))
-    
+
     def get_modifier(self):
         if self.plot_what != 'function':
             modifier = self.container
