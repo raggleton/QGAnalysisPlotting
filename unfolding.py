@@ -273,6 +273,7 @@ class MyUnfolder(object):
                  axisSteering='*[b]'):
 
         self.response_map = response_map
+        self.response_map_matrix = self.th2_to_tmatrixd(response_map)
         self.variable_name = variable_name
         self.variable_name_safe = variable_name.replace(" ", "_")
 
@@ -431,6 +432,64 @@ class MyUnfolder(object):
 
     def get_folded_output(self, hist_name):
         return self.tunfolder.GetFoldedOutput(hist_name)
+
+    @staticmethod
+    def th2_to_tmatrixd(hist, include_uflow=False, include_oflow=False):
+        n_rows = hist.GetNbinsY()
+        n_cols = hist.GetNbinsX()
+
+        # ignore for now as too complicated
+        # if include_uflow:
+        #     n_rows += 1
+        #     n_cols += 1
+        # if include_oflow:
+        #     n_rows += 1
+        #     n_cols += 1
+
+        # taken from https://root.cern.ch/doc/master/TH2_8cxx_source.html#l03739
+        m = ROOT.TMatrixD(n_rows, n_cols)
+        ilow = m.GetRowLwb()
+        iup  = m.GetRowUpb()
+        jlow = m.GetColLwb()
+        jup  = m.GetColUpb()
+        for i in range(ilow, iup+1):
+            for j in range(jlow, jup+1):
+                m[i,j] = hist.GetBinContent(j-jlow+1,i-ilow+1)
+        return m
+
+    @staticmethod
+    def calculate_condition_num(matrix):
+        """Calculate condition number as per StatsComm guidelines
+
+        Defined as sigma_max / max(0, sigma_min), where sigma_{max/min} are the
+        largest/smallest singular values.
+
+        These are found using TDecompSVD.
+        (we ignore the builtin condition() method as it calculates it differently)
+        """
+        if matrix.GetNcols() > matrix.GetNrows():
+            raise RuntimeError("Condition number only for matrix where # rows >= # cols")
+
+        svd = ROOT.TDecompSVD(matrix)
+        sig = svd.GetSig()  # by construction, ordered descending
+        sigma_max = sig[0]
+        sigma_min = max(0, sig[sig.GetNrows()-1])
+        if sigma_min == 0:
+            print("Minmum singular value = 0, condition number = Infinity")
+            return 999999999999999999999
+        print("sigma_max:", sigma_max, "sigma_min:", sigma_min)
+        return sigma_max / sigma_min
+
+    def print_condition_number(self):
+        """Print response matrix condition number and some advice"""
+        num = self.calculate_condition_num(self.response_map_matrix)
+        print("Condition number:", num)
+        if num < 50:
+            print(" - You probably shouldn't regularize this")
+        elif num > 1E5:
+            print(" - You probably should regularize this")
+        else:
+            print(" - You probably should look into regularization")
 
     @staticmethod
     def th1_to_ndarray(hist_A, oflow_x=False):
@@ -1741,6 +1800,7 @@ if __name__ == "__main__":
 
             # Do any regularization
             # ---------------------
+            unfolder.print_condition_number()
             # tau = 1E-10
             tau = 0
             scan_mode = ROOT.TUnfoldDensity.kEScanTauRhoAvgSys
