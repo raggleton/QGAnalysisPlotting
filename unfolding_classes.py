@@ -328,6 +328,15 @@ class MyUnfolder(object):
 
         self.use_axis_binning = False  # for things like get_probability_matrix()
 
+        # hists that will be assigned later
+        self.input_hist = None
+        self.input_hist_bg_subtracted = None
+
+        self.input_hist_gen_binning = None
+        self.input_hist_gen_binning_bg_subtracted = None
+
+        self.hist_fakes = None
+        self.hist_fakes_gen_binning = None
     def save_binning(self, print_xml=True, txt_filename=None):
         """Save binning scheme to txt and/or print XML to screen"""
         if txt_filename:
@@ -350,8 +359,15 @@ class MyUnfolder(object):
             ROOT.TUnfoldBinningXML.ExportXML(self.detector_binning, ROOT.cout, True, False)
             ROOT.TUnfoldBinningXML.ExportXML(self.generator_binning, ROOT.cout, False, True)
 
-    def setInput(self, *args):
-        self.tunfolder.SetInput(*args)
+    def set_input(self, input_hist, *args):
+        """Set hist to be unfolded. 
+
+        Also store version with generator-binning, 
+        and allow other args to be passed to TUnfoldSys::SetInput
+        """
+        self.input_hist = input_hist
+        # self.input_hist_gen_binning = input_hist_gen_binning
+        self.tunfolder.SetInput(input_hist, *args)
 
     def do_unfolding(self, tau):
         print(">>> Unfolding with tau =", tau)

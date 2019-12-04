@@ -1202,7 +1202,7 @@ if __name__ == "__main__":
 
             # Set what is to be unfolded
             # ------------------------------------------------------------------
-            unfolder.setInput(reco_1d, args.biasFactor)
+            unfolder.set_input(reco_1d, args.biasFactor)
 
             # Save important stuff to TFile
             # ------------------------------------------------------------------
@@ -1494,7 +1494,7 @@ if __name__ == "__main__":
 
                 # Set what is to be unfolded
                 # --------------------------------------------------------------
-                alt_unfolder.setInput(reco_1d, args.biasFactor)
+                alt_unfolder.set_input(reco_1d, args.biasFactor)
 
                 # Save important stuff to TFile
                 # --------------------------------------------------------------
@@ -1625,7 +1625,7 @@ if __name__ == "__main__":
 
                     # Set what is to be unfolded
                     # --------------------------------------------------------------
-                    syst_unfolder.setInput(hist_syst_reco, args.biasFactor)
+                    syst_unfolder.set_input(hist_syst_reco, args.biasFactor)
 
                     # Save important stuff to TFile
                     # --------------------------------------------------------------
@@ -1767,7 +1767,7 @@ if __name__ == "__main__":
 
                     # Set what is to be unfolded
                     # --------------------------------------------------------------
-                    syst_unfolder.setInput(hist_syst_reco, args.biasFactor)
+                    syst_unfolder.set_input(hist_syst_reco, args.biasFactor)
 
                     # Save important stuff to TFile
                     # --------------------------------------------------------------
