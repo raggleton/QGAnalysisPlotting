@@ -337,6 +337,9 @@ class MyUnfolder(object):
 
         self.hist_fakes = None
         self.hist_fakes_gen_binning = None
+
+        self.tau = 0  # to be set by user later, via TauScanner or LCurveScanner
+
     def save_binning(self, print_xml=True, txt_filename=None):
         """Save binning scheme to txt and/or print XML to screen"""
         if txt_filename:
@@ -371,6 +374,7 @@ class MyUnfolder(object):
 
     def do_unfolding(self, tau):
         print(">>> Unfolding with tau =", tau)
+        self.tau = tau
         self.tunfolder.DoUnfold(tau)
 
     def get_output(self):
