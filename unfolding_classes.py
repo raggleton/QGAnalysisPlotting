@@ -685,8 +685,8 @@ class MyUnfolderPlotter(object):
             h2d.SetMinimum(h2d.GetMinimum(1E-40) / 10.)
         canv.SaveAs(output_filename)
 
-    def plot_bias_hist(self, output_dir='.', append="", title=""):
-        """Plot bias vector"""
+    def plot_bias_vector(self, output_dir='.', append="", title=""):
+        """Plot bias vector used in regularisation (if it exists)"""
         if append != "":
             append = "_%s" % (append)
 

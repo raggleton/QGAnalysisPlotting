@@ -431,26 +431,6 @@ def plot_uncertainty_shifts(total_hist, stat_hist, syst_shifts, systs, output_fi
     plot.save(log_filename+"_log"+ext)
 
 
-def plot_bias_hist(bias_hist, title, output_filename):
-    entries = [
-        Contribution(bias_hist, label="Bias histogram",
-                     line_color=ROOT.kBlack, line_width=1,
-                     marker_color=ROOT.kBlack, marker_size=0,
-                     normalise_hist=False),
-    ]
-    plot = Plot(entries,
-                what='hist',
-                title=title,
-                xtitle="Generator bin",
-                ytitle="Bias")
-    plot.default_canvas_size = (800, 600)
-    plot.plot("NOSTACK HIST")
-    plot.set_logy()
-    plot.legend.SetY1NDC(0.77)
-    plot.legend.SetX2NDC(0.85)
-    plot.save(output_filename)
-
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("source",
@@ -1145,10 +1125,6 @@ if __name__ == "__main__":
                 this_tdir.WriteTObject(hist_mc_reco_bg_subtracted, "mc_reco_bg_subtracted")
                 this_tdir.WriteTObject(hist_mc_reco_gen_binning_bg_subtracted, "mc_reco_gen_binning_bg_subtracted")
 
-            # Plot bias vector
-            title = "%s region, %s" % (region['label'], angle_str)
-            unfolder_plotter.plot_bias_hist(output_dir=this_output_dir, append=append, title=title)
-
             # Do any regularization
             # ---------------------
             unfolder.print_condition_number()
@@ -1317,7 +1293,10 @@ if __name__ == "__main__":
             # Draw matrices
             # ------------------------------------------------------------------
             plot_args = dict(output_dir=this_output_dir, append=append)
-            
+
+            title = "%s region, %s" % (region['label'], angle_str)
+            unfolder_plotter.plot_bias_vector(title=title, **plot_args)
+
             title = "Response matrix, %s region, %s" % (region['label'], angle_str)
             unfolder_plotter.draw_response_matrix(title=title, **plot_args)
 
