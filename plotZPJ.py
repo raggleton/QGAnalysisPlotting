@@ -456,18 +456,6 @@ if __name__ == "__main__":
         }
     },
     {
-        'tfile': tfile_ww,
-        'label': "WW",
-        'is_data': False,
-        'style': {
-            'fill_color': ROOT.kGreen+1,
-            'marker_color': ROOT.kGreen+1,
-            'marker_size': 0,
-            'line_color': ROOT.kGreen+1,
-            'line_width': 0,
-        }
-    },
-    {
         'tfile': tfile_wz,
         'label': "WZ",
         'is_data': False,
@@ -500,6 +488,18 @@ if __name__ == "__main__":
             'marker_color': ROOT.kOrange,
             'marker_size': 0,
             'line_color': ROOT.kOrange,
+            'line_width': 0,
+        }
+    },
+    {
+        'tfile': tfile_ww,
+        'label': "WW",
+        'is_data': False,
+        'style': {
+            'fill_color': ROOT.kGreen+1,
+            'marker_color': ROOT.kGreen+1,
+            'marker_size': 0,
+            'line_color': ROOT.kGreen+1,
             'line_width': 0,
         }
     },
@@ -543,28 +543,59 @@ if __name__ == "__main__":
     ]
 
 
-    # make_data_mc_plot(COMPONENTS,
-    #                   hist_name="ZPlusJets/pt_jet1",
-    #                   x_label="p_{T}^{jet} [GeV]",
-    #                   output_filename="%s/zpj_ptJ_Kfactor.pdf" % (zpj_dir),
-    #                   rebin=1,
-    #                   do_logx=True, x_min=20, x_max=3E3,
-    #                   do_logy=True, y_min=1E-1, y_max=1E6)
+    make_data_mc_plot(COMPONENTS,
+                      hist_name="ZPlusJets/pt_jet1",
+                      x_label="p_{T}^{jet} [GeV]",
+                      output_filename="%s/zpj_ptJ_Kfactor.pdf" % (zpj_dir),
+                      rebin=5,
+                      do_logx=True, x_min=20, x_max=3E3,
+                      do_logy=True, y_min=1E-1, y_max=1E6)
 
-    # make_data_mc_plot(COMPONENTS,
-    #                   hist_name="ZPlusJets/pt_mumu",
-    #                   x_label="p_{T}^{#mu#mu} [GeV]",
-    #                   output_filename="%s/zpj_ptZ_Kfactor.pdf" % (zpj_dir),
-    #                   rebin=1,
-    #                   do_logx=True, x_min=10, x_max=3E3,
-    #                   do_logy=True, y_min=1E-1, y_max=1E6)
+    make_data_mc_plot(COMPONENTS,
+                      hist_name="ZPlusJets/pt_jet1",
+                      x_label="p_{T}^{jet} [GeV]",
+                      output_filename="%s/zpj_ptJ_Kfactor_shapes.pdf" % (zpj_dir),
+                      rebin=10,
+                      do_compare_shapes=True,
+                      do_logx=True, x_min=20, x_max=3E3,
+                      do_logy=True)
 
-    # pt_jet1_z_ratio_vs_pt_z
-    # pt_jet1_z_ratio_vs_pt_jet1
+    make_data_mc_plot(COMPONENTS,
+                      hist_name="ZPlusJets/pt_jet1",
+                      x_label="p_{T}^{jet} [GeV]",
+                      output_filename="%s/zpj_ptJ_Kfactor_shapes_linY.pdf" % (zpj_dir),
+                      rebin=10,
+                      do_compare_shapes=True,
+                      do_logx=True, x_min=20, x_max=3E3,
+                      do_logy=False, y_min=0, y_max=0.4)
 
-    # jet1_z_asym_vs_pt_z
-    # jet1_z_asym_vs_pt_jet1
+    make_data_mc_plot(COMPONENTS,
+                      hist_name="ZPlusJets/pt_mumu",
+                      x_label="p_{T}^{#mu#mu} [GeV]",
+                      output_filename="%s/zpj_ptZ_Kfactor.pdf" % (zpj_dir),
+                      rebin=2,
+                      do_logx=True, x_min=10, x_max=3E3,
+                      do_logy=True, y_min=1E-1, y_max=1E6)
+    
+    make_data_mc_plot(COMPONENTS,
+                      hist_name="ZPlusJets/pt_mumu",
+                      x_label="p_{T}^{#mu#mu} [GeV]",
+                      output_filename="%s/zpj_ptZ_Kfactor_shapes.pdf" % (zpj_dir),
+                      rebin=10,
+                      do_compare_shapes=True,
+                      do_logx=True, x_min=10, x_max=3E3,
+                      do_logy=True)
+    
+    make_data_mc_plot(COMPONENTS,
+                      hist_name="ZPlusJets/pt_mumu",
+                      x_label="p_{T}^{#mu#mu} [GeV]",
+                      output_filename="%s/zpj_ptZ_Kfactor_shapes_linY.pdf" % (zpj_dir),
+                      rebin=10,
+                      do_compare_shapes=True,
+                      do_logx=True, x_min=10, x_max=3E3,
+                      do_logy=False, y_min=0, y_max=0.3)
 
+    # exit()
     # Do pt-binned plots
     make_binned_data_mc_plots(COMPONENTS,
                              hist_name="ZPlusJets/pt_jet1_z_ratio_vs_pt_z",
@@ -572,84 +603,84 @@ if __name__ == "__main__":
                              bin_variable="p_{T}^{#mu#mu} [GeV]",
                              x_label="p_{T}^{jet 1} / p_{T}^{#mu#mu}",
                              output_filename="%s/zpj_ptJ_ptZ_ratio_binned_by_ptZ_Kfactor.pdf" % (zpj_dir),
-                             rebin=1,
+                             rebin=2,
                              do_logx=False,
                              do_logy=True,
                              do_compare_shapes=False)
 
-    make_binned_data_mc_plots(COMPONENTS,
+    make_binned_data_mc_plots(COMPONENTS[:-1],
                              hist_name="ZPlusJets/pt_jet1_z_ratio_vs_pt_z",
                              bins=qgc.PT_BINS_ZPJ,
                              bin_variable="p_{T}^{#mu#mu} [GeV]",
                              x_label="p_{T}^{jet 1} / p_{T}^{#mu#mu}",
                              output_filename="%s/zpj_ptJ_ptZ_ratio_binned_by_ptZ_Kfactor_shapes.pdf" % (zpj_dir),
-                             rebin=1,
+                             rebin=2,
                              do_logx=False,
                              do_logy=True,
                              do_compare_shapes=True)
 
-    # make_binned_data_mc_plots(COMPONENTS,
-    #                          hist_name="ZPlusJets/jet1_z_asym_vs_pt_z",
-    #                          bins=qgc.PT_BINS_ZPJ,
-    #                          bin_variable="p_{T}^{#mu#mu} [GeV]",
-    #                          x_label="(p_{T}^{jet 1} - p_{T}^{#mu#mu}) / (p_{T}^{jet 1} + p_{T}^{#mu#mu})",
-    #                          output_filename="%s/zpj_ptJ_ptZ_asym_binned_by_ptZ_Kfactor.pdf" % (zpj_dir),
-    #                          rebin=1,
-    #                          do_logx=False,
-                             # do_logy=True,
-                             # do_compare_shapes=False)
+    make_binned_data_mc_plots(COMPONENTS,
+                             hist_name="ZPlusJets/jet1_z_asym_vs_pt_z",
+                             bins=qgc.PT_BINS_ZPJ,
+                             bin_variable="p_{T}^{#mu#mu} [GeV]",
+                             x_label="(p_{T}^{jet 1} - p_{T}^{#mu#mu}) / (p_{T}^{jet 1} + p_{T}^{#mu#mu})",
+                             output_filename="%s/zpj_ptJ_ptZ_asym_binned_by_ptZ_Kfactor.pdf" % (zpj_dir),
+                             rebin=2,
+                             do_logx=False,
+                             do_logy=True,
+                             do_compare_shapes=False)
 
-    # make_binned_data_mc_plots(COMPONENTS,
-    #                          hist_name="ZPlusJets/jet1_z_asym_vs_pt_z",
-    #                          bins=qgc.PT_BINS_ZPJ,
-    #                          bin_variable="p_{T}^{#mu#mu} [GeV]",
-    #                          x_label="(p_{T}^{jet 1} - p_{T}^{#mu#mu}) / (p_{T}^{jet 1} + p_{T}^{#mu#mu})",
-    #                          output_filename="%s/zpj_ptJ_ptZ_asym_binned_by_ptZ_Kfactor_shapes.pdf" % (zpj_dir),
-    #                          rebin=1,
-    #                          do_logx=False,
-                             # do_logy=True,
-                             # do_compare_shapes=True)
+    make_binned_data_mc_plots(COMPONENTS[:-1],
+                             hist_name="ZPlusJets/jet1_z_asym_vs_pt_z",
+                             bins=qgc.PT_BINS_ZPJ,
+                             bin_variable="p_{T}^{#mu#mu} [GeV]",
+                             x_label="(p_{T}^{jet 1} - p_{T}^{#mu#mu}) / (p_{T}^{jet 1} + p_{T}^{#mu#mu})",
+                             output_filename="%s/zpj_ptJ_ptZ_asym_binned_by_ptZ_Kfactor_shapes.pdf" % (zpj_dir),
+                             rebin=2,
+                             do_logx=False,
+                             do_logy=True,
+                             do_compare_shapes=True)
 
-    # make_binned_data_mc_plots(COMPONENTS,
-    #                          hist_name="ZPlusJets/pt_jet1_z_ratio_vs_pt_jet1",
-    #                          bins=qgc.PT_BINS_ZPJ,
-    #                          bin_variable="p_{T}^{jet 1} [GeV]",
-    #                          x_label="p_{T}^{jet 1} / p_{T}^{#mu#mu}",
-    #                          output_filename="%s/zpj_ptJ_ptZ_ratio_binned_by_ptJ_Kfactor.pdf" % (zpj_dir),
-    #                          rebin=1,
-    #                          do_logx=False,
-    #                          do_logy=True)
+    make_binned_data_mc_plots(COMPONENTS,
+                             hist_name="ZPlusJets/pt_jet1_z_ratio_vs_pt_jet1",
+                             bins=qgc.PT_BINS_ZPJ,
+                             bin_variable="p_{T}^{jet 1} [GeV]",
+                             x_label="p_{T}^{jet 1} / p_{T}^{#mu#mu}",
+                             output_filename="%s/zpj_ptJ_ptZ_ratio_binned_by_ptJ_Kfactor.pdf" % (zpj_dir),
+                             rebin=2,
+                             do_logx=False,
+                             do_logy=True)
 
 
-    # make_binned_data_mc_plots(COMPONENTS,
-    #                          hist_name="ZPlusJets/pt_jet1_z_ratio_vs_pt_jet1",
-    #                          bins=qgc.PT_BINS_ZPJ,
-    #                          bin_variable="p_{T}^{jet 1} [GeV]",
-    #                          x_label="p_{T}^{jet 1} / p_{T}^{#mu#mu}",
-    #                          output_filename="%s/zpj_ptJ_ptZ_ratio_binned_by_ptJ_Kfactor_shapes.pdf" % (zpj_dir),
-    #                          rebin=1,
-    #                          do_logx=False,
-    #                          do_logy=True,
-    #                          do_compare_shapes=True)
+    make_binned_data_mc_plots(COMPONENTS[:-1],
+                             hist_name="ZPlusJets/pt_jet1_z_ratio_vs_pt_jet1",
+                             bins=qgc.PT_BINS_ZPJ,
+                             bin_variable="p_{T}^{jet 1} [GeV]",
+                             x_label="p_{T}^{jet 1} / p_{T}^{#mu#mu}",
+                             output_filename="%s/zpj_ptJ_ptZ_ratio_binned_by_ptJ_Kfactor_shapes.pdf" % (zpj_dir),
+                             rebin=2,
+                             do_logx=False,
+                             do_logy=True,
+                             do_compare_shapes=True)
 
-    # make_binned_data_mc_plots(COMPONENTS,
-    #                          hist_name="ZPlusJets/jet1_z_asym_vs_pt_jet1",
-    #                          bins=qgc.PT_BINS_ZPJ,
-    #                          bin_variable="p_{T}^{jet 1} [GeV]",
-    #                          x_label="(p_{T}^{jet 1} - p_{T}^{#mu#mu}) / (p_{T}^{jet 1} + p_{T}^{#mu#mu})",
-    #                          output_filename="%s/zpj_ptJ_ptZ_asym_binned_by_ptJ_Kfactor.pdf" % (zpj_dir),
-    #                          rebin=1,
-    #                          do_logx=False,
-    #                          do_logy=True)
-    #
-    # make_binned_data_mc_plots(COMPONENTS,
-    #                          hist_name="ZPlusJets/jet1_z_asym_vs_pt_jet1",
-    #                          bins=qgc.PT_BINS_ZPJ,
-    #                          bin_variable="p_{T}^{jet 1} [GeV]",
-    #                          x_label="(p_{T}^{jet 1} - p_{T}^{#mu#mu}) / (p_{T}^{jet 1} + p_{T}^{#mu#mu})",
-    #                          output_filename="%s/zpj_ptJ_ptZ_asym_binned_by_ptJ_Kfactor_shapes.pdf" % (zpj_dir),
-    #                          rebin=1,
-    #                          do_logx=False,
-    #                          do_logy=True,
-    #                          do_compare_shapes=True)
+    make_binned_data_mc_plots(COMPONENTS,
+                             hist_name="ZPlusJets/jet1_z_asym_vs_pt_jet1",
+                             bins=qgc.PT_BINS_ZPJ,
+                             bin_variable="p_{T}^{jet 1} [GeV]",
+                             x_label="(p_{T}^{jet 1} - p_{T}^{#mu#mu}) / (p_{T}^{jet 1} + p_{T}^{#mu#mu})",
+                             output_filename="%s/zpj_ptJ_ptZ_asym_binned_by_ptJ_Kfactor.pdf" % (zpj_dir),
+                             rebin=2,
+                             do_logx=False,
+                             do_logy=True)
+    
+    make_binned_data_mc_plots(COMPONENTS[:-1],
+                             hist_name="ZPlusJets/jet1_z_asym_vs_pt_jet1",
+                             bins=qgc.PT_BINS_ZPJ,
+                             bin_variable="p_{T}^{jet 1} [GeV]",
+                             x_label="(p_{T}^{jet 1} - p_{T}^{#mu#mu}) / (p_{T}^{jet 1} + p_{T}^{#mu#mu})",
+                             output_filename="%s/zpj_ptJ_ptZ_asym_binned_by_ptJ_Kfactor_shapes.pdf" % (zpj_dir),
+                             rebin=2,
+                             do_logx=False,
+                             do_logy=True,
+                             do_compare_shapes=True)
 
