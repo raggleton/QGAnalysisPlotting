@@ -114,7 +114,7 @@ def _rescale_plot_labels(container, factor, left_margin):
 def make_data_mc_plot(entries, hist_name, x_label, output_filename, rebin=1,
                       title="",
                       do_logx=True, x_min=None, x_max=None,
-                      do_logy=True, y_min=1E-1, y_max=1E6,
+                      do_logy=True, y_min=None, y_max=None,
                       do_compare_shapes=False):
     """Make data-MC plot with ratio subplot
 
@@ -265,7 +265,7 @@ def make_data_mc_plot(entries, hist_name, x_label, output_filename, rebin=1,
     # Get sum hist - GetStack makes a cumulative stack
     mc_total = hst_stack.Last().Clone(hst_stack.Last().GetName()+"Ratio")
 
-    if y_min and y_max:
+    if y_min is not None and y_max is not None:
         hst.SetMaximum(y_max)
         hst.SetMinimum(y_min)
     else:
@@ -279,7 +279,7 @@ def make_data_mc_plot(entries, hist_name, x_label, output_filename, rebin=1,
             hst.SetMaximum(2 * max_y)
             hst.SetMinimum(0.5 * min_y)
 
-    if x_min and x_max:
+    if x_min is not None and x_max is not None:
         hst.GetXaxis().SetRangeUser(x_min, x_max)
         # hst.GetXaxis().SetLimits(x_min, x_max)  # SetLimits obeys you, SetRangeUser does some rounding?! But SetLimits makes poitns that don't align in the ratio plot
     # hst.GetYaxis().SetTitleOffset(1.2)
@@ -333,7 +333,7 @@ def make_data_mc_plot(entries, hist_name, x_label, output_filename, rebin=1,
             hist_ratio.Draw(draw_opt)
 
             hist_ratio.SetTitle(";%s;%s" % (hist_ratio.GetXaxis().GetTitle(), "Data / MC"))
-            if x_min and x_max:
+            if x_min is not None and x_max is not None:
                 hist_ratio.GetXaxis().SetRangeUser(x_min, x_max)
 
             hist_ratio.SetMinimum(0)  # use this, not SetRangeUser()
@@ -353,7 +353,7 @@ def make_data_mc_plot(entries, hist_name, x_label, output_filename, rebin=1,
             hist_ratio.Draw(draw_opt)
 
             hist_ratio.SetTitle(";%s;%s" % (hist_ratio.GetXaxis().GetTitle(), "%s / MC" % (data_entries[ind].label)))
-            if x_min and x_max:
+            if x_min is not None and x_max is not None:
                 hist_ratio.GetXaxis().SetRangeUser(x_min, x_max)
 
             hist_ratio.SetMinimum(0.5)  # use this, not SetRangeUser()
