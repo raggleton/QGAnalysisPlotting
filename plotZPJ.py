@@ -12,6 +12,7 @@ from copy import deepcopy
 import ROOT
 from MyStyle import My_Style
 My_Style.cd()
+from array import array
 import os
 os.nice(10)
 
@@ -20,6 +21,7 @@ os.nice(10)
 import qg_common as qgc
 import qg_general_plots as qgp
 import common_utils as cu
+from comparator import Plot, Contribution
 
 
 ROOT.PyConfig.IgnoreCommandLineOptions = True
@@ -401,7 +403,8 @@ def make_data_mc_plot(entries, hist_name, x_label, output_filename, rebin=1,
 
 def make_binned_data_mc_plots(entries, hist_name, x_label,
                               bins, bin_variable,
-                              output_filename, rebin=1,
+                              output_filename,
+                              rebin=1,
                               do_logx=False, x_min=None, x_max=None,
                               do_logy=False, y_min=None, y_max=None,
                               do_compare_shapes=False):
@@ -431,6 +434,129 @@ def make_binned_data_mc_plots(entries, hist_name, x_label,
                           do_logx=do_logx, x_min=x_min, x_max=x_max,
                           do_logy=do_logy, y_min=y_min, y_max=y_max,
                           do_compare_shapes=do_compare_shapes)
+
+
+def make_efficiency_purity_vs_variable(entries,
+                                       hist_name,
+                                       bins,
+                                       bin_variable,
+                                       cut_values,
+                                       var_label,
+                                       output_filename,
+                                       do_logx=True, x_min=None, x_max=None,
+                                       ):
+    """Make plots of efficiency & purity vs bin_variable, for 1 or more cut values
+
+    Ignores entries with is_data =True
+
+    efficiency = sum(MC !is_bkg, post-cut) / sum(MC !is_bkg, pre-cut)
+    purity = sum(MC !is_bkg) / sum(MC), all post-cut
+    """
+
+    # Make a copy of entries with the big 2D hsit
+    original_entries = deepcopy(entries)
+    for ind, ent in enumerate(entries):
+        original_entries[ind]['hist'] = cu.get_from_tfile(ent['tfile'], hist_name)
+
+    efficiency_contributions = []
+    purity_contributions = []
+
+    for cut_value in cut_values:
+        efficiency_values = []
+        purity_values = []
+
+        # For each bin, make a copy, but replace the hist value with the 1D projection for this bin
+        for bin_ind, (bin_low, bin_high) in enumerate(bins):
+            print("----- bin", bin_ind)
+            bin_entries = deepcopy(original_entries)
+            for ind, ent in enumerate(original_entries):
+                # get 1D projection hist for this bin, and convert to Entry object
+                bin_entries[ind] = Entry(hist=qgp.get_projection_plot(ent['hist'], bin_low, bin_high, 'y'),
+                                         label=ent['label'],
+                                         is_data=ent['is_data'],
+                                         is_bkg=ent.get('is_bkg', False if ent['is_data'] else True))  # assumes bkg unless otherwise stated
+
+            cut_bin = bin_entries[0].hist.GetXaxis().FindBin(cut_value)
+            # print('cut bin:', bin_entries[0].hist.GetXaxis().GetBinLowEdge(cut_bin))
+            # important to have 0 to nbins+1 to account for overflow
+            signal_pre_cut = sum([ent.hist.Integral(0, ent.hist.GetNbinsX()+1)
+                                  for ent in bin_entries
+                                  if not ent.is_bkg and not ent.is_data])
+            signal_post_cut = sum([ent.hist.Integral(0, cut_bin)
+                                   for ent in bin_entries
+                                   if not ent.is_bkg and not ent.is_data])
+            bg_post_cut = sum([ent.hist.Integral(0, cut_bin)
+                               for ent in bin_entries
+                               if ent.is_bkg and not ent.is_data])
+            all_post_cut = sum([ent.hist.Integral(0, cut_bin)
+                                for ent in bin_entries
+                                if not ent.is_data])
+
+            this_efficiency = signal_post_cut / signal_pre_cut
+            efficiency_values.append(this_efficiency)
+
+            this_purity = signal_post_cut / all_post_cut
+            purity_values.append(this_purity)
+
+        # plot efficiency
+        n = len(efficiency_values)
+        bin_centers = [0.5*(x + y) for x,y in bins]
+        x_err = [0.5*(y-x) for x,y in bins]
+        y_err = [0.] * n
+        efficiency_gr = ROOT.TGraphErrors(n, array('d', bin_centers), array('d', efficiency_values), array('d', x_err), array('d', y_err))
+        purity_gr = ROOT.TGraphErrors(n, array('d', bin_centers), array('d', purity_values), array('d', x_err), array('d', y_err))
+
+        efficiency_contributions.append(
+            Contribution(efficiency_gr,
+                         label='< %g' % (cut_value),
+                         line_width=2)
+        )
+        purity_contributions.append(
+            Contribution(purity_gr,
+                         label='< %g' % (cut_value),
+                         line_width=2)
+        )
+
+    output_filename_stem, ext = os.path.splitext(output_filename)
+    efficiency_output_filename = "%s_efficiency%s" % (output_filename_stem, ext)
+    purity_output_filename = "%s_purity%s" % (output_filename_stem, ext)
+
+    ROOT.gStyle.SetPalette(55)
+    title = "%s\nCut on\n%s" % (qgc.ZpJ_LABEL, var_label)
+    p = Plot(efficiency_contributions, what='graph',
+             xtitle=bin_variable, ytitle='Efficiency ( = # DY post-cut / # DY pre-cut)',
+             title=title,
+             xlim=(x_min, x_max),
+             ylim=(0, 1.5),
+             legend=True,
+             has_data=False)
+    p.plot("AP PLC PMC")
+    if len(cut_values) > 4:
+        p.legend.SetNColumns(3)
+        p.legend.SetX1(0.55)
+        p.legend.SetX2(0.9)
+        p.legend.SetY1(0.75)
+    if do_logx:
+        p.set_logx()
+    p.save(efficiency_output_filename)
+
+    # plot purity
+    p = Plot(purity_contributions, what='graph',
+             xtitle=bin_variable, ytitle='Purity ( = # DY post-cut / # All post-cut)',
+             title=title,
+             xlim=(x_min, x_max),
+             ylim=(0.96, 1.02),
+             legend=True,
+             has_data=False)
+    p.plot("AP PLC PMC")
+    if len(cut_values) > 4:
+        p.legend.SetNColumns(3)
+        p.legend.SetX1(0.55)
+        p.legend.SetX2(0.9)
+        p.legend.SetY1(0.75)
+    if do_logx:
+        p.set_logx()
+    p.save(purity_output_filename)
 
 
 if __name__ == "__main__":
@@ -550,7 +676,7 @@ if __name__ == "__main__":
 
     ]
 
-
+    """
     make_data_mc_plot(COMPONENTS,
                       hist_name="ZPlusJets/pt_jet1",
                       x_label="p_{T}^{jet} [GeV]",
@@ -584,7 +710,7 @@ if __name__ == "__main__":
                       rebin=2,
                       do_logx=True, x_min=10, x_max=3E3,
                       do_logy=True, y_min=1E-1, y_max=1E6)
-    
+
     make_data_mc_plot(COMPONENTS,
                       hist_name="ZPlusJets/pt_mumu",
                       x_label="p_{T}^{#mu#mu} [GeV]",
@@ -593,7 +719,7 @@ if __name__ == "__main__":
                       do_compare_shapes=True,
                       do_logx=True, x_min=10, x_max=3E3,
                       do_logy=True)
-    
+
     make_data_mc_plot(COMPONENTS,
                       hist_name="ZPlusJets/pt_mumu",
                       x_label="p_{T}^{#mu#mu} [GeV]",
@@ -604,7 +730,12 @@ if __name__ == "__main__":
                       do_logy=False, y_min=0, y_max=0.3)
 
     # exit()
+
     # Do pt-binned plots
+
+    # THINGS BINNED BY PT Z
+    # ------------------------
+
     make_binned_data_mc_plots(COMPONENTS,
                              hist_name="ZPlusJets/pt_jet1_z_ratio_vs_pt_z",
                              bins=qgc.PT_BINS_ZPJ,
@@ -649,6 +780,9 @@ if __name__ == "__main__":
                              do_logy=True,
                              do_compare_shapes=True)
 
+    # THINGS BINNED BY PT JET1
+    # ------------------------
+
     make_binned_data_mc_plots(COMPONENTS,
                              hist_name="ZPlusJets/pt_jet1_z_ratio_vs_pt_jet1",
                              bins=qgc.PT_BINS_ZPJ,
@@ -680,7 +814,7 @@ if __name__ == "__main__":
                              rebin=2,
                              do_logx=False,
                              do_logy=True)
-    
+
     make_binned_data_mc_plots(COMPONENTS[:-1],
                              hist_name="ZPlusJets/jet1_z_asym_vs_pt_jet1",
                              bins=qgc.PT_BINS_ZPJ,
@@ -691,4 +825,32 @@ if __name__ == "__main__":
                              do_logx=False,
                              do_logy=True,
                              do_compare_shapes=True)
+    """
+    # DO CUT PLOTS, BINNED BY PT JET1
+    # ---------------------------------
+    # make_efficiency_purity_vs_variable(COMPONENTS,
+    #                                    hist_name="ZPlusJets/pt_jet1_z_ratio_vs_pt_jet1",
+    #                                    bins=qgc.PT_BINS_ZPJ,
+    #                                    bin_variable="p_{T}^{jet 1} [GeV]",
+    #                                    var_label="p_{T}^{jet 1} / p_{T}^{#mu#mu}",
+    #                                    cut_values=[1.2],
+    #                                    output_filename="%s/zpj_ptJ_ptZ_ratio_binned_by_ptJ_Kfactor_lt1p2.pdf" % (zpj_dir),
+    #                                    do_logx=True, x_min=30, x_max=6.5E3)
 
+    make_efficiency_purity_vs_variable(COMPONENTS,
+                                       hist_name="ZPlusJets/pt_jet1_z_ratio_vs_pt_jet1",
+                                       bins=qgc.PT_BINS_ZPJ,
+                                       bin_variable="p_{T}^{jet 1} [GeV]",
+                                       var_label="p_{T}^{jet 1} / p_{T}^{#mu#mu}",
+                                       cut_values=[1, 1.1, 1.2, 1.4, 2, 2.5, 100],
+                                       output_filename="%s/zpj_ptJ_ptZ_ratio_binned_by_ptJ_Kfactor.pdf" % (zpj_dir),
+                                       do_logx=True, x_min=30, x_max=6.5E3)
+
+    make_efficiency_purity_vs_variable(COMPONENTS,
+                                       hist_name="ZPlusJets/jet1_z_asym_vs_pt_jet1",
+                                       bins=qgc.PT_BINS_ZPJ,
+                                       bin_variable="p_{T}^{jet 1} [GeV]",
+                                       var_label="(p_{T}^{jet 1} - p_{T}^{#mu#mu}) / (p_{T}^{jet 1} + p_{T}^{#mu#mu})",
+                                       cut_values=[0., 0.1, 0.2, 0.3, 0.4, 0.5, 1],
+                                       output_filename="%s/zpj_jet1_z_asym_binned_by_ptJ_Kfactor.pdf" % (zpj_dir),
+                                       do_logx=True, x_min=30, x_max=6.5E3)
