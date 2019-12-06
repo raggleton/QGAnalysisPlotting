@@ -250,7 +250,7 @@ class Plot(object):
         self.default_canvas_size = (600, 800)
         # self.default_canvas_size = (800, 600)
         self.right_margin = 0.03
-        self.left_margin = 0.11 # use ROOT default
+        self.left_margin = 0.12 # use ROOT default
         self.top_margin = 0.1
         self.main_pad = None
         self.subplot = subplot
@@ -584,7 +584,8 @@ class Plot(object):
         cms_latex.SetTextSize(0.035)
         latex_height = 0.91
         left_offset = (self.left_margin - 0.08)  # to account for left margin, magic numbers ahoy
-        start_x = 0.14 + left_offset
+        left_offset = 0.01
+        start_x = self.left_margin + left_offset
         if self.is_preliminary:
             if self.has_data:
                 cms_latex.DrawLatex(start_x, latex_height, "#font[62]{CMS}#font[52]{ Preliminary}")
