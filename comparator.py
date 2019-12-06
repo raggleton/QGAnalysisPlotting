@@ -454,9 +454,16 @@ class Plot(object):
         if len(self.contributions) == 0:
             raise ZeroContributions("Contributions list is empty")
 
-        has_entries = [c.obj.GetEntries() > 0 for c in self.contributions]
-        if not any(has_entries):
-            raise ZeroContributions("All contributions have 0 entries")
+        if self.plot_what == 'hist':
+            # check hists have data in them
+            has_entries = [c.obj.GetEntries() > 0 for c in self.contributions]
+            if not any(has_entries):
+                raise ZeroContributions("All contributions have 0 entries")
+        elif self.plot_what == 'graph':
+            # check graphs have data in them
+            has_entries = [c.obj.GetN() > 0 for c in self.contributions]
+            if not any(has_entries):
+                raise ZeroContributions("All contributions have 0 entries")
 
         if not self.container:
             # First make a container
