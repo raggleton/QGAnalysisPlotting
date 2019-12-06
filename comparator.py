@@ -548,12 +548,12 @@ class Plot(object):
             ob.GetXaxis().SetTitle(self.xtitle)
             ob.GetYaxis().SetTitle(self.ytitle)
 
-        if self.xlim:
+        if self.xlim and all([x is not None for x in self.xlim]):
             if self.plot_what == "graph":
                 modifier.GetXaxis().SetLimits(*self.xlim)
             else:
                 modifier.GetXaxis().SetRangeUser(*self.xlim)
-        if self.ylim:
+        if self.ylim and all([x is not None for x in self.ylim]):
             # dont use the SetLimits for graphs, that doesnt work properly.
             # no idea, ROOT is fucking insane
             modifier.GetYaxis().SetRangeUser(*self.ylim)
@@ -670,7 +670,7 @@ class Plot(object):
                 # Draw a line at 1
                 xax = modifier.GetXaxis()
                 self.subplot_line = ROOT.TLine(xax.GetXmin(), 1., xax.GetXmax(), 1.)
-                if self.xlim:
+                if self.xlim and all([x is not None for x in self.xlim]):
                     self.subplot_line = ROOT.TLine(self.xlim[0], 1., self.xlim[1], 1.)
                 self.subplot_line.SetLineStyle(2)
                 self.subplot_line.SetLineWidth(2)
