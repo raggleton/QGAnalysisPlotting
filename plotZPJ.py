@@ -8,6 +8,7 @@ Make Z+jet data-background plots
 
 from __future__ import print_function
 
+import numpy as np
 from copy import deepcopy
 import ROOT
 from MyStyle import My_Style
@@ -54,7 +55,15 @@ ROOT.gStyle.SetOptStat(0)
 # tfile_dy = cu.open_root_file("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL.root" % (zpj_dir))
 # tfile_dy = cu.open_root_file("workdir_ak4puppi_mgpythia_newFlav_jetAsymCut_chargedVars_pt1RecoConstituents_V11JEC_JER_target0p5_ZReweight_wta_groomed_fwdcenDijet_betterLargeWeightVeto_noZjet2Cut/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL.root")
 
-zpj_dir = "workdir_ak4puppi_data_trigBinningBetter2_jetAsymCut_pt1RecoConstituents_V11JEC_JER_tUnfoldBetter_target0p5_wta_groomed_fwdcenDijet_Zreweight_noZjet2Cut"
+# zpj_dir = "workdir_ak4puppi_data_trigBinningBetter2_jetAsymCut_pt1RecoConstituents_V11JEC_JER_tUnfoldBetter_target0p5_wta_groomed_fwdcenDijet_Zreweight_noZjet2Cut"
+# tfile_data = cu.open_root_file("%s/uhh2.AnalysisModuleRunner.DATA.Data_SingleMu.root" % (zpj_dir))
+# tfile_ww = cu.open_root_file("%s/uhh2.AnalysisModuleRunner.MC.MC_WW.root" % (zpj_dir))
+# tfile_wz = cu.open_root_file("%s/uhh2.AnalysisModuleRunner.MC.MC_WZ.root" % (zpj_dir))
+# tfile_zz = cu.open_root_file("%s/uhh2.AnalysisModuleRunner.MC.MC_ZZ.root" % (zpj_dir))
+# tfile_tt = cu.open_root_file("%s/uhh2.AnalysisModuleRunner.MC.MC_TTBAR.root" % (zpj_dir))
+# tfile_dy = cu.open_root_file("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL.root" % (zpj_dir))
+
+zpj_dir = "workdir_ak4puppi_data_trigBinningBetter2_jetAsymCut_pt1RecoConstituents_V11JEC_JER_tUnfoldBetter_target0p5_wta_groomed_fwdcenDijet_Zreweight_noZjet2Cut_zPt30"
 tfile_data = cu.open_root_file("%s/uhh2.AnalysisModuleRunner.DATA.Data_SingleMu.root" % (zpj_dir))
 tfile_ww = cu.open_root_file("%s/uhh2.AnalysisModuleRunner.MC.MC_WW.root" % (zpj_dir))
 tfile_wz = cu.open_root_file("%s/uhh2.AnalysisModuleRunner.MC.MC_WZ.root" % (zpj_dir))
@@ -292,7 +301,9 @@ def make_data_mc_plot(entries, hist_name, x_label, output_filename, rebin=1,
     if x_min is not None and x_max is not None:
         hst.GetXaxis().SetRangeUser(x_min, x_max)
         # hst.GetXaxis().SetLimits(x_min, x_max)  # SetLimits obeys you, SetRangeUser does some rounding?! But SetLimits makes poitns that don't align in the ratio plot
-    # hst.GetYaxis().SetTitleOffset(1.2)
+    
+    hst.GetYaxis().SetTitleOffset(1.5)
+    
     for ent in data_entries:
         ent.hist.Draw("SAME E")
 
@@ -837,18 +848,24 @@ if __name__ == "__main__":
     #                                    output_filename="%s/zpj_ptJ_ptZ_ratio_binned_by_ptJ_Kfactor_lt1p2.pdf" % (zpj_dir),
     #                                    do_logx=True, x_min=30, x_max=6.5E3)
 
+    # bins = qgc.PT_BINS_ZPJ
+    bins = [(30, 50), (50, 75), (75, 100), (100, 150), (150, 200), (200, 250), (250, 300), (300, 400), (400, 500), (500, 750), (750, 6500)]
+    last_pt_bin = 800
+    bins = np.logspace(np.log10(30), np.log10(last_pt_bin), 11)
+    bins = [(b, bb) for b, bb in zip(bins[:-1], bins[1:])]
+    bins.append((last_pt_bin, 6500))
     make_efficiency_purity_vs_variable(COMPONENTS,
                                        hist_name="ZPlusJets/pt_jet1_z_ratio_vs_pt_jet1",
-                                       bins=qgc.PT_BINS_ZPJ,
+                                       bins=bins,
                                        bin_variable="p_{T}^{jet 1} [GeV]",
                                        var_label="p_{T}^{jet 1} / p_{T}^{#mu#mu}",
-                                       cut_values=[1, 1.1, 1.2, 1.4, 2, 2.5, 100],
+                                       cut_values=[1, 1.1, 1.2, 1.4, 1.6, 1.8, 2, 2.5, 100],
                                        output_filename="%s/zpj_ptJ_ptZ_ratio_binned_by_ptJ_Kfactor.pdf" % (zpj_dir),
                                        do_logx=True, x_min=30, x_max=6.5E3)
 
     make_efficiency_purity_vs_variable(COMPONENTS,
                                        hist_name="ZPlusJets/jet1_z_asym_vs_pt_jet1",
-                                       bins=qgc.PT_BINS_ZPJ,
+                                       bins=bins,
                                        bin_variable="p_{T}^{jet 1} [GeV]",
                                        var_label="(p_{T}^{jet 1} - p_{T}^{#mu#mu}) / (p_{T}^{jet 1} + p_{T}^{#mu#mu})",
                                        cut_values=[0., 0.1, 0.2, 0.3, 0.4, 0.5, 1],
