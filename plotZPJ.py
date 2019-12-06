@@ -301,9 +301,9 @@ def make_data_mc_plot(entries, hist_name, x_label, output_filename, rebin=1,
     if x_min is not None and x_max is not None:
         hst.GetXaxis().SetRangeUser(x_min, x_max)
         # hst.GetXaxis().SetLimits(x_min, x_max)  # SetLimits obeys you, SetRangeUser does some rounding?! But SetLimits makes poitns that don't align in the ratio plot
-    
+
     hst.GetYaxis().SetTitleOffset(1.5)
-    
+
     for ent in data_entries:
         ent.hist.Draw("SAME E")
 
@@ -447,16 +447,11 @@ def make_binned_data_mc_plots(entries, hist_name, x_label,
                           do_compare_shapes=do_compare_shapes)
 
 
-def make_efficiency_purity_vs_variable(entries,
-                                       hist_name,
-                                       bins,
-                                       bin_variable,
-                                       cut_values,
-                                       var_label,
-                                       output_filename,
-                                       do_logx=True, x_min=None, x_max=None,
-                                       ):
-    """Make plots of efficiency & purity vs bin_variable, for 1 or more cut values
+def get_efficiency_purity_vs_variable(entries,
+                                      hist_name,
+                                      bins,
+                                      cut_values):
+    """Get arrays of efficiency & purity vs bin_variable, for 1 or more cut values
 
     Ignores entries with is_data =True
 
@@ -469,8 +464,8 @@ def make_efficiency_purity_vs_variable(entries,
     for ind, ent in enumerate(entries):
         original_entries[ind]['hist'] = cu.get_from_tfile(ent['tfile'], hist_name)
 
-    efficiency_contributions = []
-    purity_contributions = []
+    efficiencies = []
+    purities = []
 
     for cut_value in cut_values:
         efficiency_values = []
@@ -478,7 +473,7 @@ def make_efficiency_purity_vs_variable(entries,
 
         # For each bin, make a copy, but replace the hist value with the 1D projection for this bin
         for bin_ind, (bin_low, bin_high) in enumerate(bins):
-            print("----- bin", bin_ind)
+            # print("----- bin", bin_ind)
             bin_entries = deepcopy(original_entries)
             for ind, ent in enumerate(original_entries):
                 # get 1D projection hist for this bin, and convert to Entry object
@@ -506,36 +501,55 @@ def make_efficiency_purity_vs_variable(entries,
             this_efficiency = signal_post_cut / signal_pre_cut
             efficiency_values.append(this_efficiency)
 
-            this_purity = signal_post_cut / all_post_cut
+            if all_post_cut > 0:
+                this_purity = signal_post_cut / all_post_cut
+            else:
+                this_purity = 0
             purity_values.append(this_purity)
 
-        # plot efficiency
-        n = len(efficiency_values)
-        bin_centers = [0.5*(x + y) for x,y in bins]
-        x_err = [0.5*(y-x) for x,y in bins]
-        y_err = [0.] * n
-        efficiency_gr = ROOT.TGraphErrors(n, array('d', bin_centers), array('d', efficiency_values), array('d', x_err), array('d', y_err))
-        purity_gr = ROOT.TGraphErrors(n, array('d', bin_centers), array('d', purity_values), array('d', x_err), array('d', y_err))
+        efficiencies.append(efficiency_values)
+        purities.append(purity_values)
 
-        efficiency_contributions.append(
-            Contribution(efficiency_gr,
-                         label='< %g' % (cut_value),
-                         line_width=2)
-        )
-        purity_contributions.append(
-            Contribution(purity_gr,
-                         label='< %g' % (cut_value),
-                         line_width=2)
-        )
+    # convert to numpy arrays for easier slicing
+    efficiencies = np.array(efficiencies)
+    purities = np.array(purities)
+    print(efficiencies.shape)
+    return efficiencies, purities
+
+
+def make_efficiency_purity_vs_variable_plots(efficiencies,
+                                             purities,
+                                             bins,
+                                             bin_variable,
+                                             cut_values,
+                                             var_label,
+                                             output_filename,
+                                             do_logx=True, x_min=None, x_max=None):
+
+    # common things to make graphs
+    bin_centers = [0.5*(x + y) for x,y in bins]
+    n = len(bin_centers)
+    x_err = [0.5*(y-x) for x,y in bins]
+    y_err = [0.] * n
 
     output_filename_stem, ext = os.path.splitext(output_filename)
-    efficiency_output_filename = "%s_efficiency%s" % (output_filename_stem, ext)
-    purity_output_filename = "%s_purity%s" % (output_filename_stem, ext)
 
     ROOT.gStyle.SetPalette(55)
     title = "%s\nCut on\n%s" % (qgc.ZpJ_LABEL, var_label)
+
+    marker = cu.Marker()
+
+    # plot efficiency
+    efficiency_contributions = [
+        Contribution(ROOT.TGraphErrors(n, array('d', bin_centers), eff, array('d', x_err), array('d', y_err)),
+                     label='< %g' % (cut_value),
+                     line_width=2,
+                     marker_style=mark)
+        for cut_value, eff, mark in zip(cut_values, efficiencies, marker.cycle())
+    ]
     p = Plot(efficiency_contributions, what='graph',
-             xtitle=bin_variable, ytitle='Efficiency ( = # DY post-cut / # DY pre-cut)',
+             xtitle=bin_variable,
+             ytitle='Efficiency ( = # DY post-cut / # DY pre-cut)',
              title=title,
              xlim=(x_min, x_max),
              ylim=(0, 1.5),
@@ -549,14 +563,24 @@ def make_efficiency_purity_vs_variable(entries,
         p.legend.SetY1(0.75)
     if do_logx:
         p.set_logx()
+    efficiency_output_filename = "%s_efficiency%s" % (output_filename_stem, ext)
     p.save(efficiency_output_filename)
 
     # plot purity
+    marker = cu.Marker()
+    purity_contributions = [
+        Contribution(ROOT.TGraphErrors(n, array('d', bin_centers), array('d', purity), array('d', x_err), array('d', y_err)),
+                     label='< %g' % (cut_value),
+                     line_width=2,
+                     marker_style=mark)
+        for cut_value, purity, mark in zip(cut_values, purities, marker.cycle())
+    ]
     p = Plot(purity_contributions, what='graph',
-             xtitle=bin_variable, ytitle='Purity ( = # DY post-cut / # All post-cut)',
+             xtitle=bin_variable,
+             ytitle='Purity ( = # DY post-cut / # All post-cut)',
              title=title,
              xlim=(x_min, x_max),
-             ylim=(0.96, 1.02),
+             ylim=(0.96, 1.01),
              legend=True,
              has_data=False)
     p.plot("AP PLC PMC")
@@ -567,125 +591,171 @@ def make_efficiency_purity_vs_variable(entries,
         p.legend.SetY1(0.75)
     if do_logx:
         p.set_logx()
+    purity_output_filename = "%s_purity%s" % (output_filename_stem, ext)
     p.save(purity_output_filename)
+
+
+def make_roc_curves(efficiencies,
+                    purities,
+                    bins,
+                    bin_variable,
+                    var_labels,
+                    output_filename):
+
+    output_filename_stem, ext = os.path.splitext(output_filename)
+    for bin_ind, (bin_low, bin_high) in enumerate(bins):  # loop over pt bin
+
+        # for each pt bin, make a ROC curve of efficiency vs purity, comparing the two variables
+        roc_conts = [Contribution(ROOT.TGraph(eff[:,bin_ind].shape[0], array('d', eff[:,bin_ind]), array('d', pur[:,bin_ind])),
+                                  label=var_label,
+                                  line_width=2,
+                                  marker_size=1.2,
+                                  marker_style=20+ind)
+                     for ind, (var_label, eff, pur)
+                     in enumerate(zip(var_labels, efficiencies, purities))]
+        title = "%s #in [%g, %g]" % (bin_variable, bin_low, bin_high)
+        ROOT.gStyle.SetPalette(55)
+        x_min = min([eff[:,bin_ind].min() for eff in efficiencies])
+        x_max = max([eff[:,bin_ind].max() for eff in efficiencies])
+        p = Plot(roc_conts, what='graph',
+                 xtitle="Efficiency ( = # DY post-cut / # DY pre-cut)",
+                 ytitle="Purity ( = # DY post-cut / # All post-cut)",
+                 title=title,
+                 xlim=[x_min*0.8, x_max*1.2],
+                 # ylim=[0, 1.02])
+                 ylim=[0.96, 1.01],
+                 has_data=False)
+        p.legend.SetY1(0.7)
+        p.legend.SetX1(0.65)
+        p.plot("ALP PLC PMC")
+        roc_output_filename = "%s_roc_%d%s" % (output_filename_stem, bin_ind, ext)
+        p.save(roc_output_filename)
 
 
 if __name__ == "__main__":
     COMPONENTS = [
 
-    {
-        'tfile': tfile_data,
-        'label': "Data",
-        'is_data': True,
-        'style': {
-            'fill_color': ROOT.kBlack,
-            'fill_style': 0,
-            'marker_color': ROOT.kBlack,
-            'marker_size': 1,
-            'marker_style': 20,
-            'line_color': ROOT.kBlack,
-            'line_width': 0,
-        }
-    },
-    {
-        'tfile': tfile_dy,
-        'label': "DY#rightarrowLL",
-        'is_data': False,
-        'is_bkg': False,
-        'style': {
-            'fill_color': ROOT.kAzure+6,
-            'marker_color': ROOT.kAzure+6,
-            'marker_size': 0,
-            'line_color': ROOT.kAzure+6,
-            'line_width': 0,
-        }
-    },
-    {
-        'tfile': tfile_wz,
-        'label': "WZ",
-        'is_data': False,
-        'style': {
-            'fill_color': ROOT.kRed,
-            'marker_color': ROOT.kRed,
-            'marker_size': 0,
-            'line_color': ROOT.kRed,
-            'line_width': 0,
-        }
-    },
-    {
-        'tfile': tfile_zz,
-        'label': "ZZ",
-        'is_data': False,
-        'style': {
-            'fill_color': ROOT.kBlue,
-            'marker_color': ROOT.kBlue,
-            'marker_size': 0,
-            'line_color': ROOT.kBlue,
-            'line_width': 0,
-        }
-    },
-    {
-        'tfile': tfile_tt,
-        'label': "t#bar{t}",
-        'is_data': False,
-        'style': {
-            'fill_color': ROOT.kOrange,
-            'marker_color': ROOT.kOrange,
-            'marker_size': 0,
-            'line_color': ROOT.kOrange,
-            'line_width': 0,
-        }
-    },
-    {
-        'tfile': tfile_ww,
-        'label': "WW",
-        'is_data': False,
-        'style': {
-            'fill_color': ROOT.kGreen+1,
-            'marker_color': ROOT.kGreen+1,
-            'marker_size': 0,
-            'line_color': ROOT.kGreen+1,
-            'line_width': 0,
-        }
-    },
-    # {
-    #     'tfile': tfile_st_t,
-    #     'label': "Single-top t",
-    #     'is_data': False,
-    #     'style': {
-    #         'fill_color': ROOT.kCyan,
-    #         'marker_color': ROOT.kCyan,
-    #         'marker_size': 0,
-    #         'line_color': ROOT.kCyan,
-    #         'line_width': 0,
-    #     }
-    # },
-    # {
-    #     'tfile': tfile_st_tW,
-    #     'label': "Single-top tW",
-    #     'is_data': False,
-    #     'style': {
-    #         'fill_color': ROOT.kGray,
-    #         'marker_color': ROOT.kGray,
-    #         'marker_size': 0,
-    #         'line_color': ROOT.kGray,
-    #         'line_width': 0,
-    #     }
-    # },
-    # {
-    #     'tfile': tfile_st_s,
-    #     'label': "Single-top s",
-    #     'is_data': False,
-    #     'style': {
-    #         'fill_color': ROOT.kMagenta,
-    #         'marker_color': ROOT.kMagenta,
-    #         'marker_size': 0,
-    #         'line_color': ROOT.kMagenta,
-    #         'line_width': 0,
-    #     }
-    # },
+        {
+            'tfile': tfile_data,
+            'label': "Data",
+            'is_data': True,
+            'style': {
+                'fill_color': ROOT.kBlack,
+                'fill_style': 0,
+                'marker_color': ROOT.kBlack,
+                'marker_size': 1,
+                'marker_style': 20,
+                'line_color': ROOT.kBlack,
+                'line_width': 0,
+            }
+        },
+        {
+            'tfile': tfile_dy,
+            'label': "DY#rightarrowLL",
+            'is_data': False,
+            'is_bkg': False,
+            'style': {
+                'fill_color': ROOT.kAzure+6,
+                'marker_color': ROOT.kAzure+6,
+                'marker_size': 0,
+                'line_color': ROOT.kAzure+6,
+                'line_width': 0,
+            }
+        },
+        {
+            'tfile': tfile_wz,
+            'label': "WZ",
+            'is_data': False,
+            'style': {
+                'fill_color': ROOT.kRed,
+                'marker_color': ROOT.kRed,
+                'marker_size': 0,
+                'line_color': ROOT.kRed,
+                'line_width': 0,
+            }
+        },
+        {
+            'tfile': tfile_zz,
+            'label': "ZZ",
+            'is_data': False,
+            'style': {
+                'fill_color': ROOT.kBlue,
+                'marker_color': ROOT.kBlue,
+                'marker_size': 0,
+                'line_color': ROOT.kBlue,
+                'line_width': 0,
+            }
+        },
+        {
+            'tfile': tfile_tt,
+            'label': "t#bar{t}",
+            'is_data': False,
+            'style': {
+                'fill_color': ROOT.kOrange,
+                'marker_color': ROOT.kOrange,
+                'marker_size': 0,
+                'line_color': ROOT.kOrange,
+                'line_width': 0,
+            }
+        },
+        {
+            'tfile': tfile_ww,
+            'label': "WW",
+            'is_data': False,
+            'style': {
+                'fill_color': ROOT.kGreen+1,
+                'marker_color': ROOT.kGreen+1,
+                'marker_size': 0,
+                'line_color': ROOT.kGreen+1,
+                'line_width': 0,
+            }
+        },
+        # {
+        #     'tfile': tfile_st_t,
+        #     'label': "Single-top t",
+        #     'is_data': False,
+        #     'style': {
+        #         'fill_color': ROOT.kCyan,
+        #         'marker_color': ROOT.kCyan,
+        #         'marker_size': 0,
+        #         'line_color': ROOT.kCyan,
+        #         'line_width': 0,
+        #     }
+        # },
+        # {
+        #     'tfile': tfile_st_tW,
+        #     'label': "Single-top tW",
+        #     'is_data': False,
+        #     'style': {
+        #         'fill_color': ROOT.kGray,
+        #         'marker_color': ROOT.kGray,
+        #         'marker_size': 0,
+        #         'line_color': ROOT.kGray,
+        #         'line_width': 0,
+        #     }
+        # },
+        # {
+        #     'tfile': tfile_st_s,
+        #     'label': "Single-top s",
+        #     'is_data': False,
+        #     'style': {
+        #         'fill_color': ROOT.kMagenta,
+        #         'marker_color': ROOT.kMagenta,
+        #         'marker_size': 0,
+        #         'line_color': ROOT.kMagenta,
+        #         'line_width': 0,
+        #     }
+        # },
 
     ]
+
+    pt_jet1_str = "p_{T}^{jet 1}"
+    pt_jet1_gev_str = pt_jet1_str + " [GeV]"
+    pt_z_str = "p_{T}^{#mu#mu}"
+    pt_z_gev_str = pt_z_str + " [GeV]"
+
+    pt_jet1_z_ratio_str = "{ptJ} / {ptZ}".format(ptJ=pt_jet1_str, ptZ=pt_z_str)
+    jet1_z_asym_str = "({ptJ} - {ptZ}) / ({ptJ} + {ptZ})".format(ptJ=pt_jet1_str, ptZ=pt_z_str)
 
     """
     make_data_mc_plot(COMPONENTS,
@@ -837,6 +907,7 @@ if __name__ == "__main__":
                              do_logy=True,
                              do_compare_shapes=True)
     """
+
     # DO CUT PLOTS, BINNED BY PT JET1
     # ---------------------------------
     # make_efficiency_purity_vs_variable(COMPONENTS,
@@ -848,26 +919,63 @@ if __name__ == "__main__":
     #                                    output_filename="%s/zpj_ptJ_ptZ_ratio_binned_by_ptJ_Kfactor_lt1p2.pdf" % (zpj_dir),
     #                                    do_logx=True, x_min=30, x_max=6.5E3)
 
-    # bins = qgc.PT_BINS_ZPJ
-    bins = [(30, 50), (50, 75), (75, 100), (100, 150), (150, 200), (200, 250), (250, 300), (300, 400), (400, 500), (500, 750), (750, 6500)]
+    # bins = [(30, 50), (50, 75), (75, 100), (100, 150), (150, 200), (200, 250), (250, 300), (300, 400), (400, 500), (500, 750), (750, 6500)]
     last_pt_bin = 800
     bins = np.logspace(np.log10(30), np.log10(last_pt_bin), 11)
     bins = [(b, bb) for b, bb in zip(bins[:-1], bins[1:])]
     bins.append((last_pt_bin, 6500))
-    make_efficiency_purity_vs_variable(COMPONENTS,
-                                       hist_name="ZPlusJets/pt_jet1_z_ratio_vs_pt_jet1",
-                                       bins=bins,
-                                       bin_variable="p_{T}^{jet 1} [GeV]",
-                                       var_label="p_{T}^{jet 1} / p_{T}^{#mu#mu}",
-                                       cut_values=[1, 1.1, 1.2, 1.4, 1.6, 1.8, 2, 2.5, 100],
-                                       output_filename="%s/zpj_ptJ_ptZ_ratio_binned_by_ptJ_Kfactor.pdf" % (zpj_dir),
-                                       do_logx=True, x_min=30, x_max=6.5E3)
+    bins = qgc.PT_BINS_ZPJ
 
-    make_efficiency_purity_vs_variable(COMPONENTS,
-                                       hist_name="ZPlusJets/jet1_z_asym_vs_pt_jet1",
-                                       bins=bins,
-                                       bin_variable="p_{T}^{jet 1} [GeV]",
-                                       var_label="(p_{T}^{jet 1} - p_{T}^{#mu#mu}) / (p_{T}^{jet 1} + p_{T}^{#mu#mu})",
-                                       cut_values=[0., 0.1, 0.2, 0.3, 0.4, 0.5, 1],
-                                       output_filename="%s/zpj_jet1_z_asym_binned_by_ptJ_Kfactor.pdf" % (zpj_dir),
-                                       do_logx=True, x_min=30, x_max=6.5E3)
+    pt_jet1_z_ratio_vs_pt_jet1_eff, pt_jet1_z_ratio_vs_pt_jet1_purity = get_efficiency_purity_vs_variable(
+        COMPONENTS,
+        hist_name="ZPlusJets/pt_jet1_z_ratio_vs_pt_jet1",
+        bins=bins,
+        cut_values=[1, 1.1, 1.2, 1.4, 1.6, 1.8, 2, 2.5, 100],
+    )
+
+    make_efficiency_purity_vs_variable_plots(efficiencies=pt_jet1_z_ratio_vs_pt_jet1_eff,
+                                             purities=pt_jet1_z_ratio_vs_pt_jet1_purity,
+                                             bins=bins,
+                                             bin_variable=pt_jet1_gev_str,
+                                             var_label=pt_jet1_z_ratio_str,
+                                             cut_values=[1, 1.1, 1.2, 1.4, 1.6, 1.8, 2, 2.5, 100],
+                                             output_filename="%s/zpj_ptJ_ptZ_ratio_binned_by_ptJ_Kfactor.pdf" % (zpj_dir),
+                                             do_logx=True, x_min=50, x_max=6.5E3)
+
+    jet1_z_asym_vs_pt_jet1_eff, jet1_z_asym_vs_pt_jet1_purity = get_efficiency_purity_vs_variable(
+        COMPONENTS,
+        hist_name="ZPlusJets/jet1_z_asym_vs_pt_jet1",
+        bins=bins,
+        cut_values=[0., 0.1, 0.2, 0.3, 0.4, 0.5, 1],
+    )
+
+    make_efficiency_purity_vs_variable_plots(efficiencies=jet1_z_asym_vs_pt_jet1_eff,
+                                             purities=jet1_z_asym_vs_pt_jet1_purity,
+                                             bins=bins,
+                                             bin_variable=pt_jet1_gev_str,
+                                             var_label=jet1_z_asym_str,
+                                             cut_values=[0., 0.1, 0.2, 0.3, 0.4, 0.5, 1],
+                                             output_filename="%s/zpj_jet1_z_asym_binned_by_ptJ_Kfactor.pdf" % (zpj_dir),
+                                             do_logx=True, x_min=50, x_max=6.5E3)
+
+    # finer binning for ROC curves
+    # pt_jet1_z_ratio_vs_pt_jet1_eff, pt_jet1_z_ratio_vs_pt_jet1_purity = get_efficiency_purity_vs_variable(
+    #     COMPONENTS,
+    #     hist_name="ZPlusJets/pt_jet1_z_ratio_vs_pt_jet1",
+    #     bins=bins,
+    #     cut_values=np.append(np.arange(0.1, 4., 0.1), np.arange(4, 9, 1)),
+    # )
+
+    # jet1_z_asym_vs_pt_jet1_eff, jet1_z_asym_vs_pt_jet1_purity = get_efficiency_purity_vs_variable(
+    #     COMPONENTS,
+    #     hist_name="ZPlusJets/jet1_z_asym_vs_pt_jet1",
+    #     bins=bins,
+    #     cut_values=np.arange(0.1, 0.9, 0.05),
+    # )
+
+    # make_roc_curves(efficiencies=[pt_jet1_z_ratio_vs_pt_jet1_eff, jet1_z_asym_vs_pt_jet1_eff],
+    #                 purities=[pt_jet1_z_ratio_vs_pt_jet1_purity, jet1_z_asym_vs_pt_jet1_purity],
+    #                 bins=bins,
+    #                 bin_variable=pt_jet1_gev_str,
+    #                 var_labels=[pt_jet1_z_ratio_str, jet1_z_asym_str],
+    #                 output_filename="%s/zpj_roc_binned_by_ptJ_Kfactor.pdf" % (zpj_dir))
