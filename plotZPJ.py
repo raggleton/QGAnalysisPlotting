@@ -134,6 +134,7 @@ def make_data_mc_plot(entries, hist_name, x_label, output_filename, rebin=1,
                       title="",
                       do_logx=True, x_min=None, x_max=None,
                       do_logy=True, y_min=None, y_max=None,
+                      leg_location=None,
                       do_compare_shapes=False):
     """Make data-MC plot with ratio subplot
 
@@ -151,7 +152,7 @@ def make_data_mc_plot(entries, hist_name, x_label, output_filename, rebin=1,
         Name of hist object in TFiles to be plotted
     x_label : str
         x axis label
-    output_filename : st
+    output_filename : str
         Output filename
     rebin : int, optional
         To rebin hists
@@ -169,6 +170,8 @@ def make_data_mc_plot(entries, hist_name, x_label, output_filename, rebin=1,
         y-axis minimum
     y_max : float, optional
         y-axis maximum
+    leg_location : None, optional
+        If a 4-tuple is provided, sets location of legend
     do_compare_shapes : bool, optional
         Do not stack anything, just compare all shapes (i.e normalise each to unity)
     """
@@ -308,6 +311,12 @@ def make_data_mc_plot(entries, hist_name, x_label, output_filename, rebin=1,
         ent.hist.Draw("SAME E")
 
     canv.cd()
+    if leg_location:
+        x1, y1, x2, y2 = leg_location
+        leg.SetX1(x1)
+        leg.SetX2(x2)
+        leg.SetY1(y1)
+        leg.SetY2(y2)
     leg.Draw()
 
     # Some text stuff
@@ -418,6 +427,7 @@ def make_binned_data_mc_plots(entries, hist_name, x_label,
                               rebin=1,
                               do_logx=False, x_min=None, x_max=None,
                               do_logy=False, y_min=None, y_max=None,
+                              leg_location=None,
                               do_compare_shapes=False):
     """Do data/MC plots, but binned by some variable"""
 
@@ -444,6 +454,7 @@ def make_binned_data_mc_plots(entries, hist_name, x_label,
                           rebin=rebin,
                           do_logx=do_logx, x_min=x_min, x_max=x_max,
                           do_logy=do_logy, y_min=y_min, y_max=y_max,
+                          leg_location=leg_location,
                           do_compare_shapes=do_compare_shapes)
 
 
@@ -1045,7 +1056,8 @@ if __name__ == "__main__":
                              bin_variable=pt_jet1_gev_str,
                              x_label=jet1_z_asym_str,
                              output_filename="%s/zpj_ptJ_ptZ_asym_binned_by_ptJ_Kfactor.pdf" % (zpj_dir),
-                             rebin=2,
+                             rebin=1,
+                             leg_location=(0.75, 0.35, 0.89, 0.55),
                              do_logx=False,
                              do_logy=True)
 
@@ -1055,7 +1067,8 @@ if __name__ == "__main__":
                              bin_variable=pt_jet1_gev_str,
                              x_label=jet1_z_asym_str,
                              output_filename="%s/zpj_ptJ_ptZ_asym_binned_by_ptJ_Kfactor_shapes.pdf" % (zpj_dir),
-                             rebin=2,
+                             rebin=1,
+                             leg_location=(0.75, 0.35, 0.89, 0.55),
                              do_logx=False,
                              do_logy=True,
                              do_compare_shapes=True)
