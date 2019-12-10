@@ -616,7 +616,7 @@ def make_roc_curves(efficiencies,
                      for ind, (var_label, eff, pur)
                      in enumerate(zip(var_labels, efficiencies, purities))]
         title = "%s #in [%g, %g]" % (bin_variable, bin_low, bin_high)
-        ROOT.gStyle.SetPalette(55)
+        ROOT.gStyle.SetPalette(51)
         x_min = min([eff[:,bin_ind].min() for eff in efficiencies])
         x_max = max([eff[:,bin_ind].max() for eff in efficiencies])
         p = Plot(roc_conts, what='graph',
@@ -634,18 +634,115 @@ def make_roc_curves(efficiencies,
         p.save(roc_output_filename)
 
 
+def get_bin_ind(hist_1d, value, axis='x'):
+    ax = hist_1d.GetXaxis()
+    axis = axis.lower()
+    if axis == 'y':
+        ax = hist_1d.GetYaxis()
+    cut_bin = ax.FindBin(value)
+    if ax.GetBinLowEdge(cut_bin) == value and cut_bin != 0 and cut_bin < ax.GetNbins()+1:
+        cut_bin -= 1
+    return cut_bin
 
-def make_flav_frac_vs_pt():
-    """For a given cut value, make a plot of flavour fractions vs pt
-    
-    Can do Z+jets, dijet (cen), dijet (fwd)
+
+def get_binned_cut_integrals(hist_2d, x_bins, y_bins):
+    """Get 2D array of integrals for various ybin, xbin cuts
+    y_bins is pairs of bin edges e.g. [(50, 65), ... ]
+    whilst x_bins is an upper limit e.g. [0, 1, 2]
+
+    Integral is calculated from lowest bin to the bin for that value
+
+    output is a 2D array [y bin index][x bin index]
     """
-    pass
+    results = []
+    for bin_ind, (bin_low, bin_high) in enumerate(y_bins):
+        hist_1d = qgp.get_projection_plot(hist_2d, bin_low, bin_high, 'y')
+        this_bin_results = [hist_1d.Integral(0, get_bin_ind(hist_1d, cut_val)) for cut_val in x_bins]
+        results.append(this_bin_results)
+    return np.array(results)
+    # TODO just used the Integral that takes 2D args?
 
 
-def make_flav_frac_vs_cut_binned(zpj_component,
-                                 hist_name_q,
-                                 hist_name_g,
+def make_zpj_flav_frac_vs_pt(entries,
+                             bins,
+                             bin_variable,
+                             var_label,
+                             cut_values,
+                             output_filename):
+    """For a given cut value, make a plot of flavour fractions vs pt
+
+    Also does a plot of all cut values on a single plot.
+
+    Can do any number of entrues
+    Useful for comparing flavour fractions to the other channels, for
+    chosen cut values
+    """
+    output_filename_stem, ext = os.path.splitext(output_filename)
+    all_conts = []  # to store all contributions for all cut values
+    ROOT.gStyle.SetPalette(55)
+
+    for cut_ind, cut_val in enumerate(cut_values):
+        conts = []
+        bin_centers = [0.5*(x + y) for x,y in bins]
+        n = len(bin_centers)
+        x_err = [0.5*(y-x) for x,y in bins]
+        y_err = [0.] * n
+
+        # for each component, create a q fraction graph, add it to the things to be plotted
+        marker = cu.Marker()
+        for ent_ind, (ent, mark) in enumerate(zip(entries, marker.cycle())):
+            if not ent:
+                continue
+            total = ent['counts_q'][:,cut_ind] + ent['counts_g'][:,cut_ind]
+            frac_q = ent['counts_q'][:,cut_ind] / total
+            conts.append(Contribution(ROOT.TGraphErrors(n, array('d', bin_centers), frac_q, array('d', x_err), array('d', y_err)),
+                                      label=ent['label'],
+                                      line_color=ent['color'],
+                                      line_width=2,
+                                      marker_color=ent['color'],
+                                      marker_style=mark))
+
+        all_conts.extend(conts)
+        title = "%s < %g" % (var_label, cut_val)
+        p = Plot(conts, what='graph',
+                 xtitle=bin_variable,
+                 ytitle='q flavour fraction',
+                 title=title,
+                 xlim=[30, 6.5E3],
+                 ylim=[0, 1.2],
+                 has_data=False)
+        p.plot("ALP PMC PLC")
+        p.set_logx()
+        this_output_filename = "%s_bin_%d%s" % (output_filename_stem, cut_ind, ext)
+        p.save(this_output_filename)
+
+    # Now do a plot of ALL cut values on the same plot
+    # update labels for legend
+    for ind, (contrib, cut_val, mark) in enumerate(zip(all_conts, cut_values, cu.Marker().cycle())):
+        contrib.label += "\n%s < %g" % (var_label, cut_val)
+        contrib.obj.SetMarkerStyle(mark)
+
+    title = "Cut on\n%s" % (var_label)
+    p = Plot(all_conts, what='graph',
+             xtitle=bin_variable,
+             ytitle='q flavour fraction',
+             title=title,
+             xlim=[30, 6.5E3],
+             ylim=[0, 1.2],
+             has_data=False)
+    if len(all_conts) > 6:
+        p.legend.SetNColumns(2)
+        p.legend.SetX1(0.55)
+        p.legend.SetY1(0.63)
+        p.legend.SetY2(0.88)
+    p.plot("ALP PMC PLC")
+
+    p.set_logx()
+    p.save(output_filename)
+
+
+def make_flav_frac_vs_cut_binned(counts_q,
+                                 counts_g,
                                  bins,
                                  bin_variable,
                                  var_label,
@@ -655,22 +752,17 @@ def make_flav_frac_vs_cut_binned(zpj_component,
 
     Only applicable for Z+J
     """
-    hist_2d_q = cu.get_from_tfile(zpj_component['tfile'], hist_name_q)
-    hist_2d_g = cu.get_from_tfile(zpj_component['tfile'], hist_name_g)
     output_filename_stem, ext = os.path.splitext(output_filename)
     for bin_ind, (bin_low, bin_high) in enumerate(bins):  # loop over pt bins
-        # get 1D projections
-        hist_1d_q = qgp.get_projection_plot(hist_2d_q, bin_low, bin_high, 'y')
-        hist_1d_g = qgp.get_projection_plot(hist_2d_g, bin_low, bin_high, 'y')
 
         # now get counts for the various cut values -> fractions
         # assumes pass = x < cut !
-        counts_q = [hist_1d_q.Integral(0, hist_1d_q.GetXaxis().FindBin(cut_value)) for cut_value in cut_values]
-        counts_g = [hist_1d_g.Integral(0, hist_1d_g.GetXaxis().FindBin(cut_value)) for cut_value in cut_values]
+        # (-1 as otherwise it includes the bin above)
+        this_counts_q = counts_q[bin_ind]
+        this_counts_g = counts_g[bin_ind]
 
-        frac_q = [q / (q+g) for q,g in zip(counts_q, counts_g)]
-        frac_g = [g / (q+g) for q,g in zip(counts_q, counts_g)]
-        total = [q+g for q,g in zip(counts_q, counts_g)]
+        total = this_counts_g + this_counts_q
+        frac_q = this_counts_q / total
 
         # convert to histograms, which we can then create a TEfficiency
         # hist_frac_q = ROOT.TH1D("h_frac_q_bin_%d" % (bin_ind), ";%s;N" % (var_label), )
@@ -689,7 +781,7 @@ def make_flav_frac_vs_cut_binned(zpj_component,
                  ylim=[0, 1.2],
                  has_data=False)
         p.plot('ALP')
-        this_output_filename = "%s_flav_frac_%d%s" % (output_filename_stem, bin_ind, ext)
+        this_output_filename = "%s_bin_%d%s" % (output_filename_stem, bin_ind, ext)
         p.save(this_output_filename)
 
 
@@ -978,11 +1070,14 @@ if __name__ == "__main__":
     bins.append((last_pt_bin, 6500))
     bins = qgc.PT_BINS_ZPJ
 
+    pt_jet1_z_ratio_cuts = [1, 1.1, 1.2, 1.4, 1.6, 1.8, 2, 2.5, 9]
+    jet1_z_asym_cuts = [0., 0.1, 0.2, 0.3, 0.4, 0.5, 1]
+
     pt_jet1_z_ratio_vs_pt_jet1_eff, pt_jet1_z_ratio_vs_pt_jet1_purity = get_efficiency_purity_vs_variable(
         COMPONENTS,
         hist_name="ZPlusJets/pt_jet1_z_ratio_vs_pt_jet1",
         bins=bins,
-        cut_values=[1, 1.1, 1.2, 1.4, 1.6, 1.8, 2, 2.5, 100],
+        cut_values=pt_jet1_z_ratio_cuts,
     )
 
     make_efficiency_purity_vs_variable_plots(efficiencies=pt_jet1_z_ratio_vs_pt_jet1_eff,
@@ -990,7 +1085,7 @@ if __name__ == "__main__":
                                              bins=bins,
                                              bin_variable=pt_jet1_gev_str,
                                              var_label=pt_jet1_z_ratio_str,
-                                             cut_values=[1, 1.1, 1.2, 1.4, 1.6, 1.8, 2, 2.5, 100],
+                                             cut_values=pt_jet1_z_ratio_cuts,
                                              output_filename="%s/zpj_ptJ_ptZ_ratio_binned_by_ptJ_Kfactor.pdf" % (zpj_dir),
                                              do_logx=True, x_min=50, x_max=6.5E3)
 
@@ -998,7 +1093,7 @@ if __name__ == "__main__":
         COMPONENTS,
         hist_name="ZPlusJets/jet1_z_asym_vs_pt_jet1",
         bins=bins,
-        cut_values=[0., 0.1, 0.2, 0.3, 0.4, 0.5, 1],
+        cut_values=jet1_z_asym_cuts,
     )
 
     make_efficiency_purity_vs_variable_plots(efficiencies=jet1_z_asym_vs_pt_jet1_eff,
@@ -1006,7 +1101,7 @@ if __name__ == "__main__":
                                              bins=bins,
                                              bin_variable=pt_jet1_gev_str,
                                              var_label=jet1_z_asym_str,
-                                             cut_values=[0., 0.1, 0.2, 0.3, 0.4, 0.5, 1],
+                                             cut_values=jet1_z_asym_cuts,
                                              output_filename="%s/zpj_jet1_z_asym_binned_by_ptJ_Kfactor.pdf" % (zpj_dir),
                                              do_logx=True, x_min=50, x_max=6.5E3)
 
@@ -1034,45 +1129,90 @@ if __name__ == "__main__":
 
 
 
-    # Do flavour vs pT for a given cut value
-    zpj_component = {
-        'tfile': tfile_dy,
-        'dirname': 'ZPlusJets',
-        'style': {
-            'fill_color': ROOT.kAzure+6,
-            'marker_color': ROOT.kAzure+6,
-            'marker_size': 0,
-            'line_color': ROOT.kAzure+6,
-            'line_width': 0,
-        }
+
+
+    # RATIO CUT FLAVOUR FRACTION PLOTS
+    # --------------------------------------------------------------------------
+    dy_pt_jet1_z_ratio_vs_pt_jet1_q = get_binned_cut_integrals(cu.get_from_tfile(tfile_dy, "ZPlusJets_q/pt_jet1_z_ratio_vs_pt_jet1"),
+                                                               x_bins=pt_jet1_z_ratio_cuts,
+                                                               y_bins=bins)
+    dy_pt_jet1_z_ratio_vs_pt_jet1_g = get_binned_cut_integrals(cu.get_from_tfile(tfile_dy, "ZPlusJets_g/pt_jet1_z_ratio_vs_pt_jet1"),
+                                                               x_bins=pt_jet1_z_ratio_cuts,
+                                                               y_bins=bins)
+
+    # Do flav frac vs pT, for individual cut values
+    zpj_entry = {
+        'counts_q': dy_pt_jet1_z_ratio_vs_pt_jet1_q,
+        'counts_g': dy_pt_jet1_z_ratio_vs_pt_jet1_g,
+        'color': ROOT.kAzure+6,
+        'label': 'DY#rightarrowLL',
     }
-    # dj_component = {
-    #     'tfile': tfile_qcd,
-    #     'style': {
-    #         'fill_color': ROOT.kAzure+6,
-    #         'marker_color': ROOT.kAzure+6,
-    #         'marker_size': 0,
-    #         'line_color': ROOT.kAzure+6,
-    #         'line_width': 0,
-    #     }
+
+    # dj_cen_entry = {
+    #     'counts_q': get_binned_cut_integrals(cu.get_from_tfile(tfile_dy, "Dijet_q/pt_jet1_z_ratio_vs_pt_jet1"),
+    #                                          x_bins=pt_jet1_z_ratio_cuts,
+    #                                          y_bins=bins),
+    #     'counts_g': ,
+    #     'color': ROOT.kRed,
+    #     'label': 'Dijet (central jet)',
     # }
-    # make_zpj_flav_frac_vs_pt()
+
+    # dj_fwd_entry = {
+    #     'counts_q': ,
+    #     'counts_g': ,
+    #     'color': ROOT.kBlack,
+    #     'label': 'Dijet (forward jet)',
+    # }
+
+    dj_cen_entry = None
+    dj_fwd_entry = None
+    make_zpj_flav_frac_vs_pt(entries=[zpj_entry, dj_cen_entry, dj_fwd_entry],
+                             bins=bins,
+                             bin_variable=pt_jet1_gev_str,
+                             var_label=pt_jet1_z_ratio_str,
+                             cut_values=pt_jet1_z_ratio_cuts,
+                             output_filename="%s/zpj_ptJ_ptZ_ratio_flav_frac_vs_ptJ_binned_by_cut_Kfactor.pdf" % (zpj_dir))
+
 
     # Do flavour vs cut value for a individual pt bins
-    make_flav_frac_vs_cut_binned(zpj_component,
-                                 hist_name_q="ZPlusJets_q/pt_jet1_z_ratio_vs_pt_jet1",
-                                 hist_name_g="ZPlusJets_g/pt_jet1_z_ratio_vs_pt_jet1",
+    make_flav_frac_vs_cut_binned(counts_q=dy_pt_jet1_z_ratio_vs_pt_jet1_q,
+                                 counts_g=dy_pt_jet1_z_ratio_vs_pt_jet1_g,
                                  bins=bins,
                                  bin_variable=pt_jet1_gev_str,
                                  var_label=pt_jet1_z_ratio_str,
-                                 cut_values=[1, 1.1, 1.2, 1.4, 1.6, 1.8, 2, 2.5, 9],
+                                 cut_values=pt_jet1_z_ratio_cuts,
                                  output_filename="%s/zpj_ptJ_ptZ_ratio_flav_frac_binned_by_ptJ_Kfactor.pdf" % (zpj_dir))
 
-    make_flav_frac_vs_cut_binned(zpj_component,
-                                 hist_name_q="ZPlusJets_q/jet1_z_asym_vs_pt_jet1",
-                                 hist_name_g="ZPlusJets_g/jet1_z_asym_vs_pt_jet1",
+
+    # ASYMMETRY CUT FLAVOUR FRACTION PLOTS
+    # --------------------------------------------------------------------------
+    dy_jet1_z_asym_vs_pt_jet1_q = get_binned_cut_integrals(cu.get_from_tfile(tfile_dy, "ZPlusJets_q/jet1_z_asym_vs_pt_jet1"),
+                                                           x_bins=jet1_z_asym_cuts,
+                                                           y_bins=bins)
+    dy_jet1_z_asym_vs_pt_jet1_g = get_binned_cut_integrals(cu.get_from_tfile(tfile_dy, "ZPlusJets_g/jet1_z_asym_vs_pt_jet1"),
+                                                           x_bins=jet1_z_asym_cuts,
+                                                           y_bins=bins)
+    # Do flav frac vs pT, for individual cut values
+    zpj_entry = {
+        'counts_q': dy_jet1_z_asym_vs_pt_jet1_q,
+        'counts_g': dy_jet1_z_asym_vs_pt_jet1_g,
+        'color': ROOT.kAzure+6,
+        'label': 'DY#rightarrowLL',
+    }
+    dj_cen_entry = None
+    dj_fwd_entry = None
+    make_zpj_flav_frac_vs_pt(entries=[zpj_entry, dj_cen_entry, dj_fwd_entry],
+                             bins=bins,
+                             bin_variable=pt_jet1_gev_str,
+                             var_label=jet1_z_asym_str,
+                             cut_values=jet1_z_asym_cuts,
+                             output_filename="%s/zpj_jet1_z_asym_flav_frac_vs_ptJ_binned_by_cut_Kfactor.pdf" % (zpj_dir))
+
+    # Do flavour vs cut value, for individual pt bins
+    make_flav_frac_vs_cut_binned(counts_q=dy_jet1_z_asym_vs_pt_jet1_q,
+                                 counts_g=dy_jet1_z_asym_vs_pt_jet1_g,
                                  bins=bins,
                                  bin_variable=pt_jet1_gev_str,
                                  var_label=jet1_z_asym_str,
-                                 cut_values=[0., 0.1, 0.2, 0.3, 0.4, 0.5, 1],
+                                 cut_values=jet1_z_asym_cuts,
                                  output_filename="%s/zpj_jet1_z_asym_flav_frac_binned_by_ptJ_Kfactor.pdf" % (zpj_dir))
