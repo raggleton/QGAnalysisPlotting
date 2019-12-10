@@ -632,6 +632,65 @@ def make_roc_curves(efficiencies,
         p.save(roc_output_filename)
 
 
+
+def make_flav_frac_vs_pt():
+    """For a given cut value, make a plot of flavour fractions vs pt
+    
+    Can do Z+jets, dijet (cen), dijet (fwd)
+    """
+    pass
+
+
+def make_flav_frac_vs_cut_binned(zpj_component,
+                                 hist_name_q,
+                                 hist_name_g,
+                                 bins,
+                                 bin_variable,
+                                 var_label,
+                                 cut_values,
+                                 output_filename):
+    """Iterating over pT bins, for each plot flav fraction vs cut value
+
+    Only applicable for Z+J
+    """
+    hist_2d_q = cu.get_from_tfile(zpj_component['tfile'], hist_name_q)
+    hist_2d_g = cu.get_from_tfile(zpj_component['tfile'], hist_name_g)
+    output_filename_stem, ext = os.path.splitext(output_filename)
+    for bin_ind, (bin_low, bin_high) in enumerate(bins):  # loop over pt bins
+        # get 1D projections
+        hist_1d_q = qgp.get_projection_plot(hist_2d_q, bin_low, bin_high, 'y')
+        hist_1d_g = qgp.get_projection_plot(hist_2d_g, bin_low, bin_high, 'y')
+
+        # now get counts for the various cut values -> fractions
+        # assumes pass = x < cut !
+        counts_q = [hist_1d_q.Integral(0, hist_1d_q.GetXaxis().FindBin(cut_value)) for cut_value in cut_values]
+        counts_g = [hist_1d_g.Integral(0, hist_1d_g.GetXaxis().FindBin(cut_value)) for cut_value in cut_values]
+
+        frac_q = [q / (q+g) for q,g in zip(counts_q, counts_g)]
+        frac_g = [g / (q+g) for q,g in zip(counts_q, counts_g)]
+        total = [q+g for q,g in zip(counts_q, counts_g)]
+
+        # convert to histograms, which we can then create a TEfficiency
+        # hist_frac_q = ROOT.TH1D("h_frac_q_bin_%d" % (bin_ind), ";%s;N" % (var_label), )
+
+        gr_frac_q = ROOT.TGraph(len(frac_q), array('d', cut_values), array('d', frac_q))
+        cont = Contribution(gr_frac_q,
+                            label="DY#rightarrowLL",
+                            line_width=2,
+                            marker_size=1.2,
+                            marker_style=20)
+        title = "%s #in [%g, %g]" % (bin_variable, bin_low, bin_high)
+        p = Plot([cont], what='graph',
+                 xtitle=var_label,
+                 ytitle="q flavour fraction",
+                 title=title,
+                 ylim=[0, 1.2],
+                 has_data=False)
+        p.plot('ALP')
+        this_output_filename = "%s_flav_frac_%d%s" % (output_filename_stem, bin_ind, ext)
+        p.save(this_output_filename)
+
+
 if __name__ == "__main__":
     COMPONENTS = [
 
@@ -970,3 +1029,48 @@ if __name__ == "__main__":
     #                 bin_variable=pt_jet1_gev_str,
     #                 var_labels=[pt_jet1_z_ratio_str, jet1_z_asym_str],
     #                 output_filename="%s/zpj_roc_binned_by_ptJ_Kfactor.pdf" % (zpj_dir))
+
+
+
+    # Do flavour vs pT for a given cut value
+    zpj_component = {
+        'tfile': tfile_dy,
+        'dirname': 'ZPlusJets',
+        'style': {
+            'fill_color': ROOT.kAzure+6,
+            'marker_color': ROOT.kAzure+6,
+            'marker_size': 0,
+            'line_color': ROOT.kAzure+6,
+            'line_width': 0,
+        }
+    }
+    # dj_component = {
+    #     'tfile': tfile_qcd,
+    #     'style': {
+    #         'fill_color': ROOT.kAzure+6,
+    #         'marker_color': ROOT.kAzure+6,
+    #         'marker_size': 0,
+    #         'line_color': ROOT.kAzure+6,
+    #         'line_width': 0,
+    #     }
+    # }
+    # make_zpj_flav_frac_vs_pt()
+
+    # Do flavour vs cut value for a individual pt bins
+    make_flav_frac_vs_cut_binned(zpj_component,
+                                 hist_name_q="ZPlusJets_q/pt_jet1_z_ratio_vs_pt_jet1",
+                                 hist_name_g="ZPlusJets_g/pt_jet1_z_ratio_vs_pt_jet1",
+                                 bins=bins,
+                                 bin_variable=pt_jet1_gev_str,
+                                 var_label=pt_jet1_z_ratio_str,
+                                 cut_values=[1, 1.1, 1.2, 1.4, 1.6, 1.8, 2, 2.5, 9],
+                                 output_filename="%s/zpj_ptJ_ptZ_ratio_flav_frac_binned_by_ptJ_Kfactor.pdf" % (zpj_dir))
+
+    make_flav_frac_vs_cut_binned(zpj_component,
+                                 hist_name_q="ZPlusJets_q/jet1_z_asym_vs_pt_jet1",
+                                 hist_name_g="ZPlusJets_g/jet1_z_asym_vs_pt_jet1",
+                                 bins=bins,
+                                 bin_variable=pt_jet1_gev_str,
+                                 var_label=jet1_z_asym_str,
+                                 cut_values=[0., 0.1, 0.2, 0.3, 0.4, 0.5, 1],
+                                 output_filename="%s/zpj_jet1_z_asym_flav_frac_binned_by_ptJ_Kfactor.pdf" % (zpj_dir))
