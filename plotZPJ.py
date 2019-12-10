@@ -483,6 +483,8 @@ def get_efficiency_purity_vs_variable(entries,
                                          is_bkg=ent.get('is_bkg', False if ent['is_data'] else True))  # assumes bkg unless otherwise stated
 
             cut_bin = bin_entries[0].hist.GetXaxis().FindBin(cut_value)
+            if cut_bin < bin_entries[0].hist.GetNbinsX():
+                cut_bin -= 1  # to account for the fact we include the bin above otherwise, but we don't want it if it's the last bin
             # print('cut bin:', bin_entries[0].hist.GetXaxis().GetBinLowEdge(cut_bin))
             # important to have 0 to nbins+1 to account for overflow
             signal_pre_cut = sum([ent.hist.Integral(0, ent.hist.GetNbinsX()+1)
