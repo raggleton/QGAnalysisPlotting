@@ -424,9 +424,8 @@ def plot_uncertainty_shifts(total_hist, stat_hist, syst_shifts, systs, output_fi
     plot.plot("NOSTACK HIST")
     plot.save(output_filename)
 
-    plot.set_logy()
     plot.y_padding_max_log = 50
-    plot._set_automatic_y_limits()
+    plot.set_logy()
     log_filename, ext = os.path.splitext(output_filename)
     plot.save(log_filename+"_log"+ext)
 
@@ -546,7 +545,7 @@ if __name__ == "__main__":
         input_mc_qcd_mgpythia_tfile = os.path.join(src_dir, qgc.QCD_FILENAME)
         # input_mc_qcd_pythia_tfile = cu.open_root_file(os.path.join(src_dir, qgc.QCD_PYTHIA_ONLY_FILENAME))
         input_mc_qcd_herwig_tfile = os.path.join(src_dir, qgc.QCD_HERWIG_FILENAME)
-        # input_mc_qcd_herwig_tfile = os.path.join(src_dir, "uhh2.AnalysisModuleRunner.MC.MC_HERWIG_QCD_PtReweight.root")
+        # input_mc_qcd_herwig_tfile_reweight = os.path.join(src_dir, "uhh2.AnalysisModuleRunner.MC.MC_HERWIG_QCD_PtReweight.root")
 
         input_jetht_tfile = os.path.join(src_dir, qgc.JETHT_ZB_FILENAME)
 
@@ -560,8 +559,9 @@ if __name__ == "__main__":
             # "mc_tfile": input_mc_qcd_herwig_tfile,
             # "mc_label": "Herwig++",
             "alt_mc_tfile": input_mc_qcd_herwig_tfile,
-            # "alt_mc_label": "Herwig++ (p_{T} reweight)",
             "alt_mc_label": "Herwig++",
+            # "alt_mc_tfile": input_mc_qcd_herwig_tfile_reweight,
+            # "alt_mc_label": "Herwig++ (p_{T} reweight)",
             "tau_limits": {
                 'jet_puppiMultiplicity': (1E-11, 1E-9),
                 'jet_pTD': (1E-13, 1E-10),
@@ -847,9 +847,6 @@ if __name__ == "__main__":
     # Setup various options
     # --------------------------------------------------------------------------
 
-    REGULARIZE = None
-    REGULARIZE = "tau"
-    # REGULARIZE = "L"
     REGULARIZE = args.regularize
 
     # Run with MC input instead of data
@@ -883,7 +880,7 @@ if __name__ == "__main__":
 
     bias_str = "%g" % args.biasFactor
     bias_str = bias_str.replace(".", "p")
-    output_dir = os.path.join(src_dir, "unfolding_better_regularise%s%s%s_densityModeBinWidth_constraintNone%s_signalRegionOnly_biasFactor%s" % (str(REGULARIZE).capitalize(), mc_append, sub_append, append, bias_str))
+    output_dir = os.path.join(src_dir, "unfolding_better_regularise%s%s%s_densityModeBinWidth_constraintNone%s_signalRegionOnly_biasFactor%s_noHerwigPtReweight" % (str(REGULARIZE).capitalize(), mc_append, sub_append, append, bias_str))
     # output_dir = os.path.join(src_dir, "unfolding_better_regularise%s%s%s_densityModeBinWidth_constraintNone%s_signalRegionOnly_biasFactor%s_HerwigNominal" % (str(REGULARIZE).capitalize(), mc_append, sub_append, append, bias_str))
     if args.outputDir:
         output_dir = args.outputDir
@@ -2765,9 +2762,7 @@ if __name__ == "__main__":
                 v = "%s_vs_pt" % (angle.var)
                 bins = [(pt_bin_edges_gen[i], pt_bin_edges_gen[i+1]) for i in range(len(pt_bin_edges_gen)-1)]
                 print("Making summary plot from pt bins:", bins)
-                xlim = (50, 2000)
-                if "ZPlusJets" in region['name']:
-                    xlim = (50, 614)
+                xlim = (50, 614) if "ZPlusJets" in region['name'] else (50, 2000)
                 region_label = region['label'].replace("Dijet", "dijet")  # to ensure correct capitalisation
                 qgp.do_mean_rms_summary_plot(summary_1d_entries, bins,
                                              "%s/%s_box_dijet_mpl.%s" % (this_output_dir, v, OUTPUT_FMT),
