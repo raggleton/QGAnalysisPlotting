@@ -439,6 +439,11 @@ JETHT_FILENAME = "uhh2.AnalysisModuleRunner.DATA.Data_JetHT.root"
 ZB_FILENAME = "uhh2.AnalysisModuleRunner.DATA.Data_ZeroBias.root"
 JETHT_ZB_FILENAME = "uhh2.AnalysisModuleRunner.DATA.Data_JetHT_ZeroBias.root"
 
+TTBAR_FILENAME = "uhh2.AnalysisModuleRunner.MC.MC_TTBAR.root"
+WW_FILENAME = "uhh2.AnalysisModuleRunner.MC.MC_WW.root"
+WZ_FILENAME = "uhh2.AnalysisModuleRunner.MC.MC_WZ.root"
+ZZ_FILENAME = "uhh2.AnalysisModuleRunner.MC.MC_ZZ.root"
+
 
 def get_parser():
     """Return a parser to loop over several input dirs"""
