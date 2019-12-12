@@ -1309,7 +1309,8 @@ if __name__ == "__main__":
             unfolder_plotter.draw_probability_matrix(title=title, **plot_args)
 
             title = "Correlation matrix, %s region, %s" % (region['label'], angle_str)
-            unfolder_plotter.draw_correlation_matrix(title=title, **plot_args)
+            unfolder_plotter.draw_correlation_matrix(title=title, draw_values=True, **plot_args)
+            unfolder_plotter.draw_correlation_matrix(title=title, draw_values=False, **plot_args)
 
             title = "Error matrix (input), %s region, %s" % (region['label'], angle_str)
             unfolder_plotter.draw_error_matrix_input(title=title, **plot_args)

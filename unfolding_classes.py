@@ -754,7 +754,7 @@ class MyUnfolderPlotter(object):
         output_filename = "%s/err_map_total_%s.%s" % (output_dir, append, self.output_fmt)
         self.draw_2d_hist(self.unfolder.get_ematrix_total(), title, output_filename)
 
-    def draw_correlation_matrix(self, output_dir='.', append="", title=""):
+    def draw_correlation_matrix(self, draw_values=False, output_dir='.', append="", title=""):
         # Custom colour scheme - french flag colouring
         NRGBs = 3
         NCont = 99
@@ -778,8 +778,13 @@ class MyUnfolderPlotter(object):
         corr_map.SetMinimum(-1)
         corr_map.SetMaximum(1)
         corr_map.SetMarkerSize(0.05)
-        corr_map.Draw("COLZ0 TEXT45")
-        output_filename = "%s/rho_map_%s.%s" % (output_dir, append, self.output_fmt)
+        val_str = ""
+        if draw_values:
+            val_str = "_withValues"
+            corr_map.Draw("COLZ0 TEXT45")
+        else:
+            corr_map.Draw("COLZ0")
+        output_filename = "%s/rho_map%s_%s.%s" % (output_dir, val_str, append, self.output_fmt)
         canv.SaveAs(output_filename)
         ROOT.gStyle.SetPalette(ROOT.kBird)
 
