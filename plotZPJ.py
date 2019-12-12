@@ -1083,8 +1083,8 @@ if __name__ == "__main__":
     bins.append((last_pt_bin, 6500))
     bins = qgc.PT_BINS_ZPJ
 
-    pt_jet1_z_ratio_cuts = [1, 1.1, 1.2, 1.4, 1.6, 1.8, 2, 2.5, 9]
-    jet1_z_asym_cuts = [0., 0.1, 0.2, 0.3, 0.4, 0.5, 1]
+    pt_jet1_z_ratio_cuts = [1.1, 1.2, 1.4, 1.6, 1.8, 2, 2.5, 2.75, 9]
+    jet1_z_asym_cuts = [0.1, 0.2, 0.3, 0.4, 0.45, 0.5, 1]
 
     pt_jet1_z_ratio_vs_pt_jet1_eff, pt_jet1_z_ratio_vs_pt_jet1_purity = get_efficiency_purity_vs_variable(
         COMPONENTS,
