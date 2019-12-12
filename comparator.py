@@ -245,6 +245,7 @@ class Plot(object):
         self.y_padding_min_log = 0.1  # factor to auto extend y lower limit for log scale
         self.do_legend = legend
         self.legend = ROOT.TLegend(0.65, 0.6, 0.94, 0.85) if legend else None
+        self.reverse_legend = False
         self.do_extend = extend
         self.container = None
         self.canvas = None
@@ -312,17 +313,6 @@ class Plot(object):
             self.container.Add(contrib.obj)
             self.contributions_objs.append(contrib.obj)
 
-            if self.do_legend:
-                # Split text by newline \n
-                # Add an entry for each line
-                opt = "LP" if self.plot_what == "hist" else "LP"
-                for i, substr in enumerate(contrib.label.split("\n")):
-                    if i == 0:
-                        self.legend.AddEntry(contrib.obj, substr, opt)
-                    else:
-                        self.legend.AddEntry(0, substr, "")
-
-
             # Add contributions for the subplot
             if self.subplot_type:
                 if self.subplot:
@@ -361,6 +351,23 @@ class Plot(object):
                         new_hist.Scale(0.5)
                     self.subplot_container.Add(new_hist)
                     self.subplot_contributions.append(new_hist)
+
+        # do legend separately, since we might want to reverse the order
+        # e.g stacking
+        iterable = self.contributions
+        if self.reverse_legend:
+            iterable = self.contributions[::-1]
+        for contrib in iterable:
+            if self.do_legend:
+                # Split text by newline \n
+                # Add an entry for each line
+                opt = "LP" if self.plot_what == "hist" else "LP"
+                for i, substr in enumerate(contrib.label.split("\n")):
+                    if i == 0:
+                        self.legend.AddEntry(contrib.obj, substr, opt)
+                    else:
+                        self.legend.AddEntry(0, substr, "")
+
 
     def _style_legend(self):
         # self.legend.SetBorderSize(0)
