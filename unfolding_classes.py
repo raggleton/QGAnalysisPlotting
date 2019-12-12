@@ -375,12 +375,12 @@ class MyUnfolder(object):
 
     def subtract_background(self, hist, name, scale=1.0, scale_err=0.0):
         """Subtract background source from input hist"""
-        # Save into dict of components
+        # Save into dict of components - needed? since TUnfoldDensity does this as well
         self.backgrounds[name] = hist.Clone()
         self.backgrounds[name].Scale(scale)
         # Also save total input subtracted
         self.input_hist_bg_subtracted.Add(hist, -1*scale)
-        self.tunfolder.SubtractBackground(hist, name, scale, scale_err)
+        self.tunfolder.SubtractBackground(hist.Clone(), name, scale, scale_err)
 
     def get_total_background(self):
         """Get total cumulative background"""
