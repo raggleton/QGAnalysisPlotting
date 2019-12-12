@@ -2685,7 +2685,7 @@ if __name__ == "__main__":
                 plot = Plot(entries,
                             xtitle=detector_title,
                             ytitle=normalised_differential_label,
-                            subplot_title='Folded unfolded / reco',
+                            subplot_title='#splitline{Folded unfolded}{/ reco}',
                             **common_hist_args)
                 plot.legend.SetX1(0.56)
                 plot.legend.SetY1(0.75)
@@ -2721,7 +2721,7 @@ if __name__ == "__main__":
                     plot = Plot(entries,
                                 xtitle=detector_title,
                                 ytitle=normalised_differential_label,
-                                subplot_title='Folded gen / reco',
+                                subplot_title='#splitline{Folded gen}{/ reco}',
                                 **common_hist_args)
                     plot.legend.SetX1(0.6)
                     plot.legend.SetY1(0.75)
@@ -2752,7 +2752,7 @@ if __name__ == "__main__":
                     plot = Plot(entries,
                                 xtitle=detector_title,
                                 ytitle=normalised_differential_label,
-                                subplot_title='Folded gen / reco',
+                                subplot_title='#splitline{Folded gen}{/ reco}',
                                 **common_hist_args)
                     plot.legend.SetX1(0.56)
                     plot.legend.SetY1(0.72)
