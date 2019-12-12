@@ -1229,12 +1229,21 @@ if __name__ == "__main__":
                                  title="%s region, %s" % (region['label'], angle_str))
 
             if SUBTRACT_FAKES:
-                # same plot but with background-subtracted reco
+                # same plot but with fakes-subtracted reco
                 plot_simple_detector(reco_data=reco_1d_bg_subtracted,
                                      reco_mc=hist_mc_reco_bg_subtracted,
                                      reco_mc_fake=hist_mc_fakes_reco,
                                      reco_data_fake=hist_fakes_reco,
-                                     output_filename="%s/detector_reco_binning_bg_subtracted_%s.%s" % (this_output_dir, append, OUTPUT_FMT),
+                                     output_filename="%s/detector_reco_binning_fakes_subtracted_%s.%s" % (this_output_dir, append, OUTPUT_FMT),
+                                     title="%s region, %s" % (region['label'], angle_str))
+
+            if SUBTRACT_FAKES and 'backgrounds' in region:
+                # same plot but with fakes & background-subtracted reco
+                plot_simple_detector(reco_data=unfolder.input_hist_bg_subtracted,
+                                     reco_mc=hist_mc_reco_bg_subtracted,
+                                     reco_mc_fake=hist_mc_fakes_reco,
+                                     reco_data_fake=hist_fakes_reco,
+                                     output_filename="%s/detector_reco_binning_bg_fakes_subtracted_%s.%s" % (this_output_dir, append, OUTPUT_FMT),
                                      title="%s region, %s" % (region['label'], angle_str))
 
             # reco using gen binning
