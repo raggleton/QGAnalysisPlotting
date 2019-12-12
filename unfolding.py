@@ -1060,13 +1060,25 @@ if __name__ == "__main__":
             if args.doExperimentalSysts:
                 chosen_rsp_bin = (18, 18)
                 print("nominal response bin content for", chosen_rsp_bin, hist_mc_gen_reco_map.GetBinContent(*chosen_rsp_bin))
+
                 for syst_ind, syst_dict in enumerate(region['experimental_systematics']):
-                    if not isinstance(syst_dict['tfile'], ROOT.TFile):
-                        syst_dict['tfile'] = cu.open_root_file(syst_dict['tfile'])
-                    map_syst = cu.get_from_tfile(syst_dict['tfile'], "%s/tu_%s_GenReco_all" % (region['dirname'], angle_shortname))
                     print("Adding systematic:", syst_dict['label'])
-                    print("    syst bin", chosen_rsp_bin, map_syst.GetBinContent(*chosen_rsp_bin))
-                    unfolder.tunfolder.AddSysError(map_syst, syst_dict['label'], unfolder.orientation, ROOT.TUnfoldDensity.kSysErrModeMatrix)
+                    if 'factor' in syst_dict:
+                        if 'lumi' in syst_dict['label'].lower() and (len(region.get('backgrounds', [])) == 0 or not args.subtractBackgrounds):
+                            # the luminosity one is only if we have backgrounds to be subtracted
+                            continue
+                        # special case for e.g. lumi - we construct a reponse hist, and add it using relative mode
+                        rel_map = unfolder.response_map.Clone(syst_dict['label']+"Map")
+                        for xbin, ybin in product(range(1, rel_map.GetNbinsX()+1), range(1, rel_map.GetNbinsY()+1)):
+                            rel_map.SetBinContent(xbin, ybin, syst_dict['factor'])
+                            rel_map.SetBinError(xbin, ybin, 0)
+                        unfolder.tunfolder.AddSysError(rel_map, syst_dict['label'], unfolder.orientation, ROOT.TUnfoldDensity.kSysErrModeRelative)
+                    else:
+                        if not isinstance(syst_dict['tfile'], ROOT.TFile):
+                            syst_dict['tfile'] = cu.open_root_file(syst_dict['tfile'])
+                        map_syst = cu.get_from_tfile(syst_dict['tfile'], "%s/tu_%s_GenReco_all" % (region['dirname'], angle_shortname))
+                        print("    syst bin", chosen_rsp_bin, map_syst.GetBinContent(*chosen_rsp_bin))
+                        unfolder.tunfolder.AddSysError(map_syst, syst_dict['label'], unfolder.orientation, ROOT.TUnfoldDensity.kSysErrModeMatrix)
 
             # Subtract fakes (treat as background)
             # ------------------------------------------------------------------
@@ -1199,6 +1211,8 @@ if __name__ == "__main__":
             systematic_shift_hists = []
             if args.doExperimentalSysts:
                 for syst_dict in region['experimental_systematics']:
+                    if 'lumi' in syst_dict['label'].lower() and (len(region.get('backgrounds', [])) == 0 or not args.subtractBackgrounds):
+                        continue
                     syst_label = syst_dict['label']
                     h_syst = unfolder.tunfolder.GetDeltaSysSource(syst_label,
                                                                   '%s_%s_shift_%s' % (region['name'], angle.var, syst_label),
@@ -1652,12 +1666,20 @@ if __name__ == "__main__":
                         chosen_rsp_bin = (18, 18)
                         print("nominal response bin content for", chosen_rsp_bin, syst_unfolder.response_map.GetBinContent(*chosen_rsp_bin))
                         for exp_dict in region['experimental_systematics']:
-                            if not isinstance(exp_dict['tfile'], ROOT.TFile):
-                                exp_dict['tfile'] = cu.open_root_file(exp_dict['tfile'])
-                            map_syst = cu.get_from_tfile(exp_dict['tfile'], "%s/tu_%s_GenReco_all" % (region['dirname'], angle_shortname))
                             print("Adding systematic:", exp_dict['label'])
-                            print("    syst bin", chosen_rsp_bin, map_syst.GetBinContent(*chosen_rsp_bin))
-                            syst_unfolder.tunfolder.AddSysError(map_syst, exp_dict['label'], syst_unfolder.orientation, ROOT.TUnfoldDensity.kSysErrModeMatrix)
+                            if 'factor' in exp_dict:
+                                # special case for e.g. lumi - we construct a reponse hist, and add it using relative mode
+                                rel_map = syst_unfolder.response_map.Clone(exp_dict['label']+"MapPDF")
+                                for xbin, ybin in product(range(1, rel_map.GetNbinsX()+1), range(1, rel_map.GetNbinsY()+1)):
+                                    rel_map.SetBinContent(xbin, ybin, exp_dict['factor'])
+                                    rel_map.SetBinError(xbin, ybin, 0)
+                                syst_unfolder.tunfolder.AddSysError(rel_map, exp_dict['label'], ROOT.TUnfold.kHistMapOutputHoriz, ROOT.TUnfoldDensity.kSysErrModeRelative)
+                            else:
+                                if not isinstance(exp_dict['tfile'], ROOT.TFile):
+                                    exp_dict['tfile'] = cu.open_root_file(exp_dict['tfile'])
+                                map_syst = cu.get_from_tfile(exp_dict['tfile'], "%s/tu_%s_GenReco_all" % (region['dirname'], angle_shortname))
+                                print("    syst bin", chosen_rsp_bin, map_syst.GetBinContent(*chosen_rsp_bin))
+                                syst_unfolder.tunfolder.AddSysError(map_syst, exp_dict['label'], syst_unfolder.orientation, ROOT.TUnfoldDensity.kSysErrModeMatrix)
 
                     # Save important stuff to TFile
                     # --------------------------------------------------------------
