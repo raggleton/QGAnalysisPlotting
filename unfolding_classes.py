@@ -398,7 +398,7 @@ class MyUnfolder(object):
         self.tau = tau
         self.tunfolder.DoUnfold(tau)
 
-    def get_output(self):
+    def get_output(self, update_with_ematrix_total=False):
         """Get 1D unfolded histogram covering all bins"""
         print("Ndf:", self.tunfolder.GetNdf())
         self.Ndf = self.tunfolder.GetNdf()
@@ -413,7 +413,33 @@ class MyUnfolder(object):
 
         # print("( " + str(self.tunfolder.GetChi2A()) + " + " + str(self.tunfolder.GetChi2L()) + ") / " + str(self.tunfolder.GetNdf()))
         # use "generator" for signal + underflow region, "generatordistribution" for only signal region
-        return self.tunfolder.GetOutput("unfolded_" + cu.get_unique_str(), "", "generator", "*[]", self.use_axis_binning)
+        self.unfolded = self.tunfolder.GetOutput("unfolded_" + cu.get_unique_str(), "", "generator", "*[]", self.use_axis_binning)
+        if update_with_ematrix_total:
+            self.update_unfolded_with_ematrix_total()
+        return self.unfolded
+
+    @staticmethod
+    def make_hist_from_diagonal_errors(h2d, do_sqrt=True):
+        nbins = h2d.GetNbinsX()
+        hnew = ROOT.TH1D("h_diag" + cu.get_unique_str(), "", nbins, 0, nbins)
+        for i in range(1, nbins+1):
+            err = h2d.GetBinContent(i, i)
+            if do_sqrt and err > 0:
+                err = math.sqrt(err)
+            hnew.SetBinError(i, err)
+        return hnew
+
+    @staticmethod
+    def update_hist_bin_error(h_orig, h_to_be_updated):
+        if h_orig.GetNbinsX() != h_to_be_updated.GetNbinsX():
+            raise RuntimeError("Need same # x bins, %d vs %s" % (h_orig.GetNbinsX(), h_to_be_updated.GetNbinsX()))
+        for i in range(0, h_orig.GetNbinsX()+2):
+            h_to_be_updated.SetBinError(i, h_orig.GetBinError(i))
+
+    def update_unfolded_with_ematrix_total(self):
+        ematrix_total = self.get_ematrix_total()
+        error_total_1d = self.make_hist_from_diagonal_errors(ematrix_total, do_sqrt=True) # note that bin contents = 0, only bin errors are non-0
+        update_hist_bin_error(h_orig=error_total_1d, h_to_be_updated=self.unfolded)
 
     def get_bias_vector(self):
         self.bias_vector = self.tunfolder.GetBias("bias_"+cu.get_unique_str(), "", "generator", "*[]", self.use_axis_binning)
