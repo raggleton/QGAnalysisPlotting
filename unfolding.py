@@ -177,24 +177,6 @@ def plot_simple_detector(reco_data, reco_data_fake, reco_mc, reco_mc_fake, outpu
     plot.save(output_filename)
 
 
-def plot_fake_fraction(hist, output_filename, title):
-    entries = [Contribution(hist,
-                            label='From MC',
-                            line_color=ROOT.kBlue, line_width=1,
-                            marker_color=ROOT.kBlue, marker_size=0)]
-    plot = Plot(entries,
-                what='hist',
-                title=title,
-                xtitle='Bin number',
-                ytitle='Fake fraction')
-    plot.default_canvas_size = (800, 600)
-    plot.plot('NOSTACK HIST')
-    plot.set_logy()
-    plot.container.SetMaximum(hist.GetMaximum() * 100)
-    plot.container.SetMinimum(hist.GetMinimum(1E-12) * 0.1)
-    plot.save(output_filename)
-
-
 def create_hist_with_errors(hist, err_matrix):
     hnew = hist.Clone(cu.get_unique_str())
     nbins = hist.GetNbinsX()
@@ -494,6 +476,12 @@ if __name__ == "__main__":
                           default=False,
                           help='Split MC between response & 1D reco, good for testing procedure')
 
+    bg_group = parser.add_argument_group("Backgrounds options")
+    bg_group.add_argument("--subtractBackgrounds",
+                          type=lambda x:bool(distutils.util.strtobool(x)),
+                          default=False,
+                          help='Subtract true backgrounds (e.g. ttbar)')
+
     syst_group = parser.add_argument_group('Systematics options')
     syst_group.add_argument("--doExperimentalSysts",
                             type=lambda x:bool(distutils.util.strtobool(x)),
@@ -523,6 +511,10 @@ if __name__ == "__main__":
 
     if not args.MCinput and args.doModelSysts:
         raise RuntimeError("You cannot do both model systs and run on data")
+
+    if args.MCinput and args.subtractBackgrounds:
+        print("Cannot subtract backgrounds while using MC input, ignoring for now")
+        args.subtractBackgrounds = False
 
     # if args.useAltResponse and args.doExperimentalSysts:
     #     args.doExperimentalSysts = False
@@ -735,61 +727,41 @@ if __name__ == "__main__":
                 'jet_width_charged': (1E-10, 1E-4),
                 'jet_thrust_charged': (1E-10, 1E-4),
             },
+            "backgrounds": [
+                {
+                    "name": "t#bar{t}",
+                    "tfile": os.path.join(src_dir, qgc.TTBAR_FILENAME),
+                    "rate_unc": 1.,
+                },
+                {
+                    "name": "WW",
+                    "tfile": os.path.join(src_dir, qgc.WW_FILENAME),
+                    "rate_unc": 1.
+                },
+                {
+                    "name": "WZ",
+                    "tfile": os.path.join(src_dir, qgc.WZ_FILENAME),
+                    "rate_unc": 1.
+                },
+                {
+                    "name": "ZZ",
+                    "tfile": os.path.join(src_dir, qgc.ZZ_FILENAME),
+                    "rate_unc": 1.
+                },
+            ],
             "experimental_systematics": [
                 {
-                    "label": "Neutral hadron up",
-                    "tfile": os.path.join(src_dir_systs, 'neutralHadronShiftUp', qgc.DY_FILENAME),
-                    "colour": ROOT.kOrange-3,
+                    "label": "Luminosity up",
+                    "tfile": None,
+                    "factor": 0.025,
+                    "colour": ROOT.kCyan,
                 },
                 {
-                    "label": "Neutral hadron down",
-                    "tfile": os.path.join(src_dir_systs, 'neutralHadronShiftDown', qgc.DY_FILENAME),
-                    "colour": ROOT.kOrange-3,
-                    "linestyle": 2,
-                },
-                {
-                    "label": "Photon up",
-                    "tfile": os.path.join(src_dir_systs, 'photonShiftUp', qgc.DY_FILENAME),
-                    "colour": ROOT.kMagenta-3,
-                },
-                {
-                    "label": "Photon down",
-                    "tfile": os.path.join(src_dir_systs, 'photonShiftDown', qgc.DY_FILENAME),
-                    "colour": ROOT.kMagenta-3,
-                    "linestyle": 2,
-                },
-                {
-                    "label": "JEC up",
-                    "tfile": os.path.join(src_dir_systs, 'jecsmear_directionUp', qgc.DY_FILENAME),
-                    "colour": ROOT.kGreen+2,
-                },
-                {
-                    "label": "JEC down",
-                    "tfile": os.path.join(src_dir_systs, 'jecsmear_directionDown', qgc.DY_FILENAME),
-                    "colour": ROOT.kGreen+2,
-                    "linestyle": 2,
-                },
-                {
-                    "label": "JER up",
-                    "tfile": os.path.join(src_dir_systs, 'jersmear_directionUp', qgc.DY_FILENAME),
-                    "colour": ROOT.kOrange+3,
-                },
-                {
-                    "label": "JER down",
-                    "tfile": os.path.join(src_dir_systs, 'jersmear_directionDown', qgc.DY_FILENAME),
-                    "colour": ROOT.kOrange+3,
-                    "linestyle": 2,
-                },
-                {
-                    "label": "Pileup up",
-                    "tfile": os.path.join(src_dir_systs, 'pileup_directionUp', qgc.DY_FILENAME),
-                    "colour": ROOT.kBlue-4,
-                },
-                {
-                    "label": "Pileup down",
-                    "tfile": os.path.join(src_dir_systs, 'pileup_directionDown', qgc.DY_FILENAME),
-                    "colour": ROOT.kBlue-4,
-                    "linestyle": 2,
+                    "label": "Luminosity down",
+                    "tfile": None,
+                    "factor": -0.025,
+                    "colour": ROOT.kCyan,
+                    'linestyle': 2,
                 },
             ],
             "model_systematics": [
@@ -865,7 +837,9 @@ if __name__ == "__main__":
 
     append = ""
 
-    # Add in systematics
+    if args.subtractBackgrounds:
+        append += "_subBkg"
+
     if args.doExperimentalSysts:
         append += "_experimentalSyst"
 
@@ -1005,10 +979,6 @@ if __name__ == "__main__":
 
                 # plot fake fraction before multiplting by 'data'
                 hist_fakes_reco_fraction = hist_fakes_reco.Clone("hist_fakes_reco_fraction")
-                plot_fake_fraction(hist_fakes_reco_fraction,
-                                   output_filename="%s/fake_fraction_%s.%s" % (this_output_dir, append, OUTPUT_FMT),
-                                   title="%s region, %s" % (region['label'], angle_str))
-
                 hist_fakes_reco.Multiply(reco_1d)
 
                 # background-subtracted reco hists, only for plotting purposes, not for TUnfold (that does background subtraction internally)
@@ -1079,6 +1049,7 @@ if __name__ == "__main__":
             unfolder.save_binning(txt_filename="%s/binning_scheme.txt" % (this_output_dir), print_xml=False)
 
             unfolder_plotter = MyUnfolderPlotter(unfolder)
+            plot_args = dict(output_dir=this_output_dir, append=append)
 
             # Set what is to be unfolded
             # ------------------------------------------------------------------
@@ -1100,7 +1071,37 @@ if __name__ == "__main__":
             # Subtract fakes (treat as background)
             # ------------------------------------------------------------------
             if SUBTRACT_FAKES:
-                unfolder.subtract_background(hist_fakes_reco, "fakes")
+                unfolder.subtract_background(hist_fakes_reco, "Signal fakes", scale=1., scale_err=0.0)
+
+            # Subtract actual backgrounds if necessary
+            # ------------------------------------------------------------------
+            background_reco_1d = None
+            background_gen_1d = None
+            if "backgrounds" in region and args.subtractBackgrounds:
+                for bg_ind, bg_dict in enumerate(region['backgrounds']):
+                    print("Subtracting", bg_dict['name'], 'background')
+                    if not isinstance(bg_dict['tfile'], ROOT.TFile):
+                        bg_dict['tfile'] = cu.open_root_file(bg_dict['tfile'])
+
+                    mc_hname_append = "split" if MC_SPLIT else "all"
+                    bg_hist = cu.get_from_tfile(bg_dict['tfile'], "%s/hist_%s_reco_%s" % (region['dirname'], angle_shortname, mc_hname_append))
+                    bg_hist_gen = cu.get_from_tfile(bg_dict['tfile'], "%s/hist_%s_truth_%s" % (region['dirname'], angle_shortname, mc_hname_append))
+                    bg_dict['hist'] = bg_hist
+                    bg_dict['hist_gen'] = bg_hist
+
+                    if not background_reco_1d:
+                        background_reco_1d = bg_hist.Clone()
+                        background_gen_1d = bg_hist_gen.Clone()
+                    else:
+                        background_reco_1d.Add(bg_hist, bg_dict.get('rate', 1.))
+                        background_gen_1d.Add(bg_hist_gen, bg_dict.get('rate', 1.))
+                    unfolder.subtract_background(hist=bg_hist,
+                                                 name=bg_dict['name'],
+                                                 scale=bg_dict.get('rate', 1.),
+                                                 scale_err=bg_dict.get('rate_unc', 0.))
+
+            title = "%s region, %s" % (region['label'], angle_str)
+            unfolder_plotter.draw_background_fractions(title=title, **plot_args)
 
             # Save important stuff to TFile
             # ------------------------------------------------------------------
@@ -1289,8 +1290,6 @@ if __name__ == "__main__":
 
             # Draw matrices
             # ------------------------------------------------------------------
-            plot_args = dict(output_dir=this_output_dir, append=append)
-
             title = "%s region, %s" % (region['label'], angle_str)
             unfolder_plotter.plot_bias_vector(title=title, **plot_args)
 

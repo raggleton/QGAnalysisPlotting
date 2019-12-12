@@ -339,6 +339,7 @@ class MyUnfolder(object):
         self.hist_fakes_gen_binning = None
 
         self.tau = 0  # to be set by user later, via TauScanner or LCurveScanner
+        self.backgrounds = {}  # gets filled with subtract_background()
 
     def save_binning(self, print_xml=True, txt_filename=None):
         """Save binning scheme to txt and/or print XML to screen"""
@@ -368,14 +369,28 @@ class MyUnfolder(object):
         Also allow other args to be passed to TUnfoldSys::SetInput
         """
         self.input_hist = input_hist
+        self.input_hist_bg_subtracted = input_hist.Clone()
         # self.input_hist_gen_binning = input_hist_gen_binning
         self.tunfolder.SetInput(input_hist, *args)
 
-    def subtract_background(self, hist_bg, name, scale=1.0, scale_err=0.0):
+    def subtract_background(self, hist, name, scale=1.0, scale_err=0.0):
         """Subtract background source from input hist"""
-        self.input_hist_bg_subtracted = self.input_hist.Clone()
-        self.input_hist_bg_subtracted.Add(hist_bg, -scale)
-        self.tunfolder.SubtractBackground(hist_bg, name, scale, scale_err)
+        # Save into dict of components
+        self.backgrounds[name] = hist.Clone()
+        self.backgrounds[name].Scale(scale)
+        # Also save total input subtracted
+        self.input_hist_bg_subtracted.Add(hist, -1*scale)
+        self.tunfolder.SubtractBackground(hist, name, scale, scale_err)
+
+    def get_total_background(self):
+        """Get total cumulative background"""
+        total_bg_hist = None
+        for name, hist in self.backgrounds.items():
+            if total_bg_hist is None:
+                total_bg_hist = hist.Clone()
+            else:
+                total_bg_hist.Add(hist)
+        return total_bg_hist
 
     def do_unfolding(self, tau):
         """Carry out unfolding with given regularisastion parameter"""
@@ -766,4 +781,59 @@ class MyUnfolderPlotter(object):
         corr_map.Draw("COLZ0 TEXT45")
         output_filename = "%s/rho_map_%s.%s" % (output_dir, append, self.output_fmt)
         canv.SaveAs(output_filename)
+        ROOT.gStyle.SetPalette(ROOT.kBird)
+
+    def draw_background_fractions(self, output_dir='.', append="", title=""):
+        """Do plot of individual background fractions, a cumulative one, and one with all sources non-cumulative"""
+        all_contributions = []
+        frac_min, frac_max = 3E-4, 5
+        # Do individual plots for each bg source
+        for bg_name, bg_hist in self.unfolder.backgrounds.items():
+            this_fraction = bg_hist.Clone()
+            this_fraction.Divide(self.unfolder.input_hist)
+            entries = [Contribution(this_fraction,
+                        label=bg_name,
+                        line_color=ROOT.kBlue, line_width=1,
+                        marker_color=ROOT.kBlue, marker_size=0)]
+            all_contributions.extend(entries)
+            plot = Plot(entries,
+                        what='hist',
+                        title=title,
+                        xtitle='Detector bin number',
+                        ytitle='Background fraction',
+                        ylim=(frac_min, frac_max))
+            plot.default_canvas_size = (800, 600)
+            plot.plot('NOSTACK HIST')
+            plot.set_logy()
+            plot.legend.SetX1(0.75)
+            plot.legend.SetY1(0.75)
+            output_filename = "%s/bg_fraction_%s_%s.%s" % (output_dir, bg_name.replace(" ", "_").lower(), append, self.output_fmt)
+            plot.save(output_filename)
+
+        # Now do one with all stacked
+        # sort by ascending size
+        all_contributions = sorted(all_contributions, key=lambda x: x.obj.Integral(), reverse=False)
+        plot = Plot(all_contributions,
+                    what='hist',
+                    title=title,
+                    xtitle='Detector bin number',
+                    ytitle='Cumulative background fraction',
+                    ylim=(frac_min, frac_max))
+        plot.default_canvas_size = (800, 600)
+        plot.reverse_legend = True
+        ROOT.gStyle.SetPalette(ROOT.kCMYK)
+        # ROOT.gStyle.SetPalette(ROOT.kPastel)
+        # ROOT.gStyle.SetPalette(ROOT.kVisibleSpectrum)
+        plot.plot("HIST PLC PMC")
+        plot.set_logy()
+        plot.legend.SetNColumns(2)
+        plot.legend.SetY1(0.75)
+        plot.legend.SetY2(0.88)
+        output_filename = "%s/bg_fraction_all_stack_%s.%s" % (output_dir, append, self.output_fmt)
+        plot.save(output_filename)
+
+        plot.ytitle = "Individual background fraction"
+        plot.plot("NOSTACK HIST PLC")
+        output_filename = "%s/bg_fraction_all_nostack_%s.%s" % (output_dir, append, self.output_fmt)
+        plot.save(output_filename)
         ROOT.gStyle.SetPalette(ROOT.kBird)
