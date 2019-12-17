@@ -1489,13 +1489,23 @@ if __name__ == "__main__":
                                                densityFlags=unfolder.densityFlags,
                                                axisSteering=unfolder.axisSteering)
 
-                    if is_herwig:
-                        herwig_sf = 1E8  # should've done this earlier
-                        hist_syst_reco.Scale(herwig_sf)
-                        hist_syst_gen.Scale(herwig_sf)
+                    # if is_herwig:
+                        # herwig_sf = 1E6  # should've done this earlier
+                        # hist_syst_reco.Scale(herwig_sf)
+                        # hist_syst_gen.Scale(herwig_sf)
                         # SetEpsMatrix ensures rank properly calculated when inverting
                         # "rank of matrix E 55 expect 170"
-                        syst_unfolder.tunfolder.SetEpsMatrix(1E-18)
+                        # syst_unfolder.tunfolder.SetEpsMatrix(1E-18)
+
+                    # because we only care about shape, not overall normalisation 
+                    # (which can artificially increase/decrease errors)
+                    # we normalise to the nominal integral
+                    # Note that we use the scaling from gen level, to take
+                    # into account any reco-dependent efficiencies
+                    # TODO: is this right?
+                    sf = hist_mc_gen.Integral() / hist_syst_gen.Integral()
+                    hist_syst_reco.Scale(sf)
+                    hist_syst_gen.Scale(sf)
 
                     # Set what is to be unfolded
                     # --------------------------------------------------------------
