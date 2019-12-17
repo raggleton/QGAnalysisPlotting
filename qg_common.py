@@ -433,6 +433,7 @@ ZPJ_ALL_FILENAME = "uhh2.AnalysisModuleRunner.MC.MC_MGPYTHIA_DYJetsToLL_M-50_HT-
 QCD_HERWIG_FILENAME = "uhh2.AnalysisModuleRunner.MC.MC_HERWIG_QCD.root"
 DY_HERWIG_FILENAME = "uhh2.AnalysisModuleRunner.MC.MC_HERWIG_DYJetsToLL.root"
 DY_MG_HERWIG_FILENAME = "uhh2.AnalysisModuleRunner.MC.MC_MG_HERWIG_DYJetsToLL.root"
+DY_AMCATNLO_FILENAME = "uhh2.AnalysisModuleRunner.MC.MC_AMCATNLO_DYJetsToLL.root"
 
 SINGLE_MU_FILENAME = "uhh2.AnalysisModuleRunner.DATA.Data_SingleMu.root"
 JETHT_FILENAME = "uhh2.AnalysisModuleRunner.DATA.Data_JetHT.root"

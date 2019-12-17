@@ -70,6 +70,7 @@ tfile_wz = cu.open_root_file("%s/uhh2.AnalysisModuleRunner.MC.MC_WZ.root" % (zpj
 tfile_zz = cu.open_root_file("%s/uhh2.AnalysisModuleRunner.MC.MC_ZZ.root" % (zpj_dir))
 tfile_tt = cu.open_root_file("%s/uhh2.AnalysisModuleRunner.MC.MC_TTBAR.root" % (zpj_dir))
 tfile_dy = cu.open_root_file("%s/uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL.root" % (zpj_dir))
+tfile_qcd = cu.open_root_file("%s/uhh2.AnalysisModuleRunner.MC.MC_QCD.root" % (zpj_dir))
 
 
 class Entry(object):
@@ -800,7 +801,6 @@ def make_flav_frac_vs_cut_binned(counts_q,
 
 if __name__ == "__main__":
     COMPONENTS = [
-
         {
             'tfile': tfile_data,
             'label': "Data",
@@ -812,7 +812,7 @@ if __name__ == "__main__":
                 'marker_size': 1,
                 'marker_style': 20,
                 'line_color': ROOT.kBlack,
-                'line_width': 0,
+                'line_width': 1,
             }
         },
         {
@@ -1027,54 +1027,54 @@ if __name__ == "__main__":
                              do_logy=True,
                              do_compare_shapes=True)
 
+    """
     # THINGS BINNED BY PT JET1
     # ------------------------
 
-    make_binned_data_mc_plots(COMPONENTS,
-                             hist_name="ZPlusJets/pt_jet1_z_ratio_vs_pt_jet1",
-                             bins=qgc.PT_BINS_ZPJ,
-                             bin_variable=pt_jet1_gev_str,
-                             x_label=pt_jet1_z_ratio_str,
-                             output_filename="%s/zpj_ptJ_ptZ_ratio_binned_by_ptJ_Kfactor.pdf" % (zpj_dir),
-                             rebin=2,
-                             do_logx=False,
-                             do_logy=True)
+    # make_binned_data_mc_plots(COMPONENTS,
+    #                          hist_name="ZPlusJets/pt_jet1_z_ratio_vs_pt_jet1",
+    #                          bins=qgc.PT_BINS_ZPJ,
+    #                          bin_variable=pt_jet1_gev_str,
+    #                          x_label=pt_jet1_z_ratio_str,
+    #                          output_filename="%s/zpj_ptJ_ptZ_ratio_binned_by_ptJ_Kfactor.pdf" % (zpj_dir),
+    #                          rebin=1,
+    #                          do_logx=False,
+    #                          do_logy=True)
 
 
-    make_binned_data_mc_plots(COMPONENTS[:-1],
-                             hist_name="ZPlusJets/pt_jet1_z_ratio_vs_pt_jet1",
-                             bins=qgc.PT_BINS_ZPJ,
-                             bin_variable=pt_jet1_gev_str,
-                             x_label=pt_jet1_z_ratio_str,
-                             output_filename="%s/zpj_ptJ_ptZ_ratio_binned_by_ptJ_Kfactor_shapes.pdf" % (zpj_dir),
-                             rebin=2,
-                             do_logx=False,
-                             do_logy=True,
-                             do_compare_shapes=True)
+    # make_binned_data_mc_plots(COMPONENTS[:-1],
+    #                          hist_name="ZPlusJets/pt_jet1_z_ratio_vs_pt_jet1",
+    #                          bins=qgc.PT_BINS_ZPJ,
+    #                          bin_variable=pt_jet1_gev_str,
+    #                          x_label=pt_jet1_z_ratio_str,
+    #                          output_filename="%s/zpj_ptJ_ptZ_ratio_binned_by_ptJ_Kfactor_shapes.pdf" % (zpj_dir),
+    #                          rebin=1,
+    #                          do_logx=False,
+    #                          do_logy=True,
+    #                          do_compare_shapes=True)
 
-    make_binned_data_mc_plots(COMPONENTS,
-                             hist_name="ZPlusJets/jet1_z_asym_vs_pt_jet1",
-                             bins=qgc.PT_BINS_ZPJ,
-                             bin_variable=pt_jet1_gev_str,
-                             x_label=jet1_z_asym_str,
-                             output_filename="%s/zpj_ptJ_ptZ_asym_binned_by_ptJ_Kfactor.pdf" % (zpj_dir),
-                             rebin=1,
-                             leg_location=(0.75, 0.35, 0.89, 0.55),
-                             do_logx=False,
-                             do_logy=True)
+    # make_binned_data_mc_plots(COMPONENTS,
+    #                          hist_name="ZPlusJets/jet1_z_asym_vs_pt_jet1",
+    #                          bins=qgc.PT_BINS_ZPJ,
+    #                          bin_variable=pt_jet1_gev_str,
+    #                          x_label=jet1_z_asym_str,
+    #                          output_filename="%s/zpj_ptJ_ptZ_asym_binned_by_ptJ_Kfactor.pdf" % (zpj_dir),
+    #                          rebin=1,
+    #                          leg_location=(0.75, 0.35, 0.89, 0.55),
+    #                          do_logx=False,
+    #                          do_logy=True)
 
-    make_binned_data_mc_plots(COMPONENTS[:-1],
-                             hist_name="ZPlusJets/jet1_z_asym_vs_pt_jet1",
-                             bins=qgc.PT_BINS_ZPJ,
-                             bin_variable=pt_jet1_gev_str,
-                             x_label=jet1_z_asym_str,
-                             output_filename="%s/zpj_ptJ_ptZ_asym_binned_by_ptJ_Kfactor_shapes.pdf" % (zpj_dir),
-                             rebin=1,
-                             leg_location=(0.75, 0.35, 0.89, 0.55),
-                             do_logx=False,
-                             do_logy=True,
-                             do_compare_shapes=True)
-    """
+    # make_binned_data_mc_plots(COMPONENTS[:-1],
+    #                          hist_name="ZPlusJets/jet1_z_asym_vs_pt_jet1",
+    #                          bins=qgc.PT_BINS_ZPJ,
+    #                          bin_variable=pt_jet1_gev_str,
+    #                          x_label=jet1_z_asym_str,
+    #                          output_filename="%s/zpj_ptJ_ptZ_asym_binned_by_ptJ_Kfactor_shapes.pdf" % (zpj_dir),
+    #                          rebin=1,
+    #                          leg_location=(0.75, 0.35, 0.89, 0.55),
+    #                          do_logx=False,
+    #                          do_logy=True,
+    #                          do_compare_shapes=True)
 
     # DO CUT PLOTS, BINNED BY PT JET1
 
@@ -1088,37 +1088,37 @@ if __name__ == "__main__":
     pt_jet1_z_ratio_cuts = [1.1, 1.2, 1.4, 1.6, 1.8, 2, 2.5, 2.75, 9]
     jet1_z_asym_cuts = [0.1, 0.2, 0.3, 0.4, 0.45, 0.5, 1]
 
-    pt_jet1_z_ratio_vs_pt_jet1_eff, pt_jet1_z_ratio_vs_pt_jet1_purity = get_efficiency_purity_vs_variable(
-        COMPONENTS,
-        hist_name="ZPlusJets/pt_jet1_z_ratio_vs_pt_jet1",
-        bins=bins,
-        cut_values=pt_jet1_z_ratio_cuts,
-    )
+    # pt_jet1_z_ratio_vs_pt_jet1_eff, pt_jet1_z_ratio_vs_pt_jet1_purity = get_efficiency_purity_vs_variable(
+    #     COMPONENTS,
+    #     hist_name="ZPlusJets/pt_jet1_z_ratio_vs_pt_jet1",
+    #     bins=bins,
+    #     cut_values=pt_jet1_z_ratio_cuts,
+    # )
 
-    make_efficiency_purity_vs_variable_plots(efficiencies=pt_jet1_z_ratio_vs_pt_jet1_eff,
-                                             purities=pt_jet1_z_ratio_vs_pt_jet1_purity,
-                                             bins=bins,
-                                             bin_variable=pt_jet1_gev_str,
-                                             var_label=pt_jet1_z_ratio_str,
-                                             cut_values=pt_jet1_z_ratio_cuts,
-                                             output_filename="%s/zpj_ptJ_ptZ_ratio_binned_by_ptJ_Kfactor.pdf" % (zpj_dir),
-                                             do_logx=True, x_min=50, x_max=6.5E3)
+    # make_efficiency_purity_vs_variable_plots(efficiencies=pt_jet1_z_ratio_vs_pt_jet1_eff,
+    #                                          purities=pt_jet1_z_ratio_vs_pt_jet1_purity,
+    #                                          bins=bins,
+    #                                          bin_variable=pt_jet1_gev_str,
+    #                                          var_label=pt_jet1_z_ratio_str,
+    #                                          cut_values=pt_jet1_z_ratio_cuts,
+    #                                          output_filename="%s/zpj_ptJ_ptZ_ratio_binned_by_ptJ_Kfactor.pdf" % (zpj_dir),
+    #                                          do_logx=True, x_min=50, x_max=6.5E3)
 
-    jet1_z_asym_vs_pt_jet1_eff, jet1_z_asym_vs_pt_jet1_purity = get_efficiency_purity_vs_variable(
-        COMPONENTS,
-        hist_name="ZPlusJets/jet1_z_asym_vs_pt_jet1",
-        bins=bins,
-        cut_values=jet1_z_asym_cuts,
-    )
+    # jet1_z_asym_vs_pt_jet1_eff, jet1_z_asym_vs_pt_jet1_purity = get_efficiency_purity_vs_variable(
+    #     COMPONENTS,
+    #     hist_name="ZPlusJets/jet1_z_asym_vs_pt_jet1",
+    #     bins=bins,
+    #     cut_values=jet1_z_asym_cuts,
+    # )
 
-    make_efficiency_purity_vs_variable_plots(efficiencies=jet1_z_asym_vs_pt_jet1_eff,
-                                             purities=jet1_z_asym_vs_pt_jet1_purity,
-                                             bins=bins,
-                                             bin_variable=pt_jet1_gev_str,
-                                             var_label=jet1_z_asym_str,
-                                             cut_values=jet1_z_asym_cuts,
-                                             output_filename="%s/zpj_jet1_z_asym_binned_by_ptJ_Kfactor.pdf" % (zpj_dir),
-                                             do_logx=True, x_min=50, x_max=6.5E3)
+    # make_efficiency_purity_vs_variable_plots(efficiencies=jet1_z_asym_vs_pt_jet1_eff,
+    #                                          purities=jet1_z_asym_vs_pt_jet1_purity,
+    #                                          bins=bins,
+    #                                          bin_variable=pt_jet1_gev_str,
+    #                                          var_label=jet1_z_asym_str,
+    #                                          cut_values=jet1_z_asym_cuts,
+    #                                          output_filename="%s/zpj_jet1_z_asym_binned_by_ptJ_Kfactor.pdf" % (zpj_dir),
+    #                                          do_logx=True, x_min=50, x_max=6.5E3)
 
     # finer binning for ROC curves
     # pt_jet1_z_ratio_vs_pt_jet1_eff, pt_jet1_z_ratio_vs_pt_jet1_purity = get_efficiency_purity_vs_variable(
@@ -1148,20 +1148,20 @@ if __name__ == "__main__":
 
     # RATIO CUT FLAVOUR FRACTION PLOTS
     # --------------------------------------------------------------------------
-    dy_pt_jet1_z_ratio_vs_pt_jet1_q = get_binned_cut_integrals(cu.get_from_tfile(tfile_dy, "ZPlusJets_q/pt_jet1_z_ratio_vs_pt_jet1"),
-                                                               x_bins=pt_jet1_z_ratio_cuts,
-                                                               y_bins=bins)
-    dy_pt_jet1_z_ratio_vs_pt_jet1_g = get_binned_cut_integrals(cu.get_from_tfile(tfile_dy, "ZPlusJets_g/pt_jet1_z_ratio_vs_pt_jet1"),
-                                                               x_bins=pt_jet1_z_ratio_cuts,
-                                                               y_bins=bins)
+    # dy_pt_jet1_z_ratio_vs_pt_jet1_q = get_binned_cut_integrals(cu.get_from_tfile(tfile_dy, "ZPlusJets_q/pt_jet1_z_ratio_vs_pt_jet1"),
+    #                                                            x_bins=pt_jet1_z_ratio_cuts,
+    #                                                            y_bins=bins)
+    # dy_pt_jet1_z_ratio_vs_pt_jet1_g = get_binned_cut_integrals(cu.get_from_tfile(tfile_dy, "ZPlusJets_g/pt_jet1_z_ratio_vs_pt_jet1"),
+    #                                                            x_bins=pt_jet1_z_ratio_cuts,
+    #                                                            y_bins=bins)
 
-    # Do flav frac vs pT, for individual cut values
-    zpj_entry = {
-        'counts_q': dy_pt_jet1_z_ratio_vs_pt_jet1_q,
-        'counts_g': dy_pt_jet1_z_ratio_vs_pt_jet1_g,
-        'color': ROOT.kAzure+6,
-        'label': 'DY#rightarrowLL',
-    }
+    # # Do flav frac vs pT, for individual cut values
+    # zpj_entry = {
+    #     'counts_q': dy_pt_jet1_z_ratio_vs_pt_jet1_q,
+    #     'counts_g': dy_pt_jet1_z_ratio_vs_pt_jet1_g,
+    #     'color': ROOT.kAzure+6,
+    #     'label': 'DY#rightarrowLL',
+    # }
 
     # dj_cen_entry = {
     #     'counts_q': get_binned_cut_integrals(cu.get_from_tfile(tfile_dy, "Dijet_q/pt_jet1_z_ratio_vs_pt_jet1"),
@@ -1181,53 +1181,150 @@ if __name__ == "__main__":
 
     dj_cen_entry = None
     dj_fwd_entry = None
-    make_zpj_flav_frac_vs_pt(entries=[zpj_entry, dj_cen_entry, dj_fwd_entry],
-                             bins=bins,
-                             bin_variable=pt_jet1_gev_str,
-                             var_label=pt_jet1_z_ratio_str,
-                             cut_values=pt_jet1_z_ratio_cuts,
-                             output_filename="%s/zpj_ptJ_ptZ_ratio_flav_frac_vs_ptJ_binned_by_cut_Kfactor.pdf" % (zpj_dir))
+    # make_zpj_flav_frac_vs_pt(entries=[zpj_entry, dj_cen_entry, dj_fwd_entry],
+    #                          bins=bins,
+    #                          bin_variable=pt_jet1_gev_str,
+    #                          var_label=pt_jet1_z_ratio_str,
+    #                          cut_values=pt_jet1_z_ratio_cuts,
+    #                          output_filename="%s/zpj_ptJ_ptZ_ratio_flav_frac_vs_ptJ_binned_by_cut_Kfactor.pdf" % (zpj_dir))
 
 
     # Do flavour vs cut value for a individual pt bins
-    make_flav_frac_vs_cut_binned(counts_q=dy_pt_jet1_z_ratio_vs_pt_jet1_q,
-                                 counts_g=dy_pt_jet1_z_ratio_vs_pt_jet1_g,
-                                 bins=bins,
-                                 bin_variable=pt_jet1_gev_str,
-                                 var_label=pt_jet1_z_ratio_str,
-                                 cut_values=pt_jet1_z_ratio_cuts,
-                                 output_filename="%s/zpj_ptJ_ptZ_ratio_flav_frac_binned_by_ptJ_Kfactor.pdf" % (zpj_dir))
+    # make_flav_frac_vs_cut_binned(counts_q=dy_pt_jet1_z_ratio_vs_pt_jet1_q,
+    #                              counts_g=dy_pt_jet1_z_ratio_vs_pt_jet1_g,
+    #                              bins=bins,
+    #                              bin_variable=pt_jet1_gev_str,
+    #                              var_label=pt_jet1_z_ratio_str,
+    #                              cut_values=pt_jet1_z_ratio_cuts,
+    #                              output_filename="%s/zpj_ptJ_ptZ_ratio_flav_frac_binned_by_ptJ_Kfactor.pdf" % (zpj_dir))
 
 
     # ASYMMETRY CUT FLAVOUR FRACTION PLOTS
     # --------------------------------------------------------------------------
-    dy_jet1_z_asym_vs_pt_jet1_q = get_binned_cut_integrals(cu.get_from_tfile(tfile_dy, "ZPlusJets_q/jet1_z_asym_vs_pt_jet1"),
-                                                           x_bins=jet1_z_asym_cuts,
-                                                           y_bins=bins)
-    dy_jet1_z_asym_vs_pt_jet1_g = get_binned_cut_integrals(cu.get_from_tfile(tfile_dy, "ZPlusJets_g/jet1_z_asym_vs_pt_jet1"),
-                                                           x_bins=jet1_z_asym_cuts,
-                                                           y_bins=bins)
+    # dy_jet1_z_asym_vs_pt_jet1_q = get_binned_cut_integrals(cu.get_from_tfile(tfile_dy, "ZPlusJets_q/jet1_z_asym_vs_pt_jet1"),
+    #                                                        x_bins=jet1_z_asym_cuts,
+    #                                                        y_bins=bins)
+    # dy_jet1_z_asym_vs_pt_jet1_g = get_binned_cut_integrals(cu.get_from_tfile(tfile_dy, "ZPlusJets_g/jet1_z_asym_vs_pt_jet1"),
+    #                                                        x_bins=jet1_z_asym_cuts,
+    #                                                        y_bins=bins)
     # Do flav frac vs pT, for individual cut values
-    zpj_entry = {
-        'counts_q': dy_jet1_z_asym_vs_pt_jet1_q,
-        'counts_g': dy_jet1_z_asym_vs_pt_jet1_g,
-        'color': ROOT.kAzure+6,
-        'label': 'DY#rightarrowLL',
-    }
+    # zpj_entry = {
+    #     'counts_q': dy_jet1_z_asym_vs_pt_jet1_q,
+    #     'counts_g': dy_jet1_z_asym_vs_pt_jet1_g,
+    #     'color': ROOT.kAzure+6,
+    #     'label': 'DY#rightarrowLL',
+    # }
     dj_cen_entry = None
     dj_fwd_entry = None
-    make_zpj_flav_frac_vs_pt(entries=[zpj_entry, dj_cen_entry, dj_fwd_entry],
-                             bins=bins,
-                             bin_variable=pt_jet1_gev_str,
-                             var_label=jet1_z_asym_str,
-                             cut_values=jet1_z_asym_cuts,
-                             output_filename="%s/zpj_jet1_z_asym_flav_frac_vs_ptJ_binned_by_cut_Kfactor.pdf" % (zpj_dir))
+    # make_zpj_flav_frac_vs_pt(entries=[zpj_entry, dj_cen_entry, dj_fwd_entry],
+    #                          bins=bins,
+    #                          bin_variable=pt_jet1_gev_str,
+    #                          var_label=jet1_z_asym_str,
+    #                          cut_values=jet1_z_asym_cuts,
+    #                          output_filename="%s/zpj_jet1_z_asym_flav_frac_vs_ptJ_binned_by_cut_Kfactor.pdf" % (zpj_dir))
 
     # Do flavour vs cut value, for individual pt bins
-    make_flav_frac_vs_cut_binned(counts_q=dy_jet1_z_asym_vs_pt_jet1_q,
-                                 counts_g=dy_jet1_z_asym_vs_pt_jet1_g,
-                                 bins=bins,
-                                 bin_variable=pt_jet1_gev_str,
-                                 var_label=jet1_z_asym_str,
-                                 cut_values=jet1_z_asym_cuts,
-                                 output_filename="%s/zpj_jet1_z_asym_flav_frac_binned_by_ptJ_Kfactor.pdf" % (zpj_dir))
+    # make_flav_frac_vs_cut_binned(counts_q=dy_jet1_z_asym_vs_pt_jet1_q,
+    #                              counts_g=dy_jet1_z_asym_vs_pt_jet1_g,
+    #                              bins=bins,
+    #                              bin_variable=pt_jet1_gev_str,
+    #                              var_label=jet1_z_asym_str,
+    #                              cut_values=jet1_z_asym_cuts,
+    #                              output_filename="%s/zpj_jet1_z_asym_flav_frac_binned_by_ptJ_Kfactor.pdf" % (zpj_dir))
+
+    # COMPARE MC
+    # --------------------------------------------------------------------------
+    tfile_dy_amcatnlo = cu.open_root_file("%s/%s" % (zpj_dir, qgc.DY_AMCATNLO_FILENAME))
+    tfile_dy_herwig = cu.open_root_file("%s/%s" % (zpj_dir, qgc.DY_HERWIG_FILENAME))
+    tfile_dy_mg_herwig = cu.open_root_file("%s/%s" % (zpj_dir, qgc.DY_MG_HERWIG_FILENAME))
+    lw = 2
+    MC_COMPONENTS = [
+        {
+            'tfile': tfile_data,
+            'label': "Data",
+            'is_data': True,
+            'style': {
+                'fill_color': ROOT.kBlack,
+                'fill_style': 0,
+                'marker_color': ROOT.kBlack,
+                'marker_size': 1,
+                'marker_style': 20,
+                'line_color': ROOT.kBlack,
+                'line_width': 2,
+            }
+        },
+        {
+            'tfile': tfile_dy,
+            'label': "DY#rightarrowLL (MG+Pythi8)",
+            'is_data': False,
+            'is_bkg': False,
+            'style': {
+                'fill_color': ROOT.kAzure+6,
+                'marker_color': ROOT.kAzure+6,
+                'marker_size': 0,
+                'line_color': ROOT.kAzure+6,
+                'line_width': lw,
+            }
+        },
+        {
+            'tfile': tfile_dy_amcatnlo,
+            'label': "DY#rightarrowLL (aMC@NLO)",
+            'is_data': False,
+            'is_bkg': False,
+            'style': {
+                'fill_color': ROOT.kGreen+3,
+                'marker_color': ROOT.kGreen+3,
+                'marker_size': 0,
+                'line_color': ROOT.kGreen+3,
+                'line_width': lw,
+            }
+        },
+        {
+            'tfile': tfile_dy_herwig,
+            'label': "DY#rightarrowLL (Herwig++)",
+            'is_data': False,
+            'is_bkg': False,
+            'style': {
+                'fill_color': ROOT.kOrange-3,
+                'marker_color': ROOT.kOrange-3,
+                'marker_size': 0,
+                'line_color': ROOT.kOrange-3,
+                'line_width': lw,
+            }
+        },
+        {
+            'tfile': tfile_dy_mg_herwig,
+            'label': "DY#rightarrowLL (MG+Herwig++)",
+            'is_data': False,
+            'is_bkg': False,
+            'style': {
+                'fill_color': ROOT.kRed-7,
+                'marker_color': ROOT.kRed-7,
+                'marker_size': 0,
+                'line_color': ROOT.kRed-7,
+                'line_width': lw,
+            }
+        },
+    ]
+    make_binned_data_mc_plots(MC_COMPONENTS,
+                             hist_name="ZPlusJets/pt_jet1_z_ratio_vs_pt_jet1",
+                             bins=qgc.PT_BINS_ZPJ,
+                             bin_variable=pt_jet1_gev_str,
+                             x_label=pt_jet1_z_ratio_str,
+                             output_filename="%s/dy_only_zpj_ptJ_ptZ_ratio_binned_by_ptJ_shapes.pdf" % (zpj_dir),
+                             rebin=2,
+                             do_logx=False,
+                             do_logy=True,
+                             do_compare_shapes=True)
+
+    make_binned_data_mc_plots(MC_COMPONENTS,
+                             hist_name="ZPlusJets/jet1_z_asym_vs_pt_jet1",
+                             bins=qgc.PT_BINS_ZPJ,
+                             bin_variable=pt_jet1_gev_str,
+                             x_label=jet1_z_asym_str,
+                             output_filename="%s/dy_only_zpj_ptJ_ptZ_asym_binned_by_ptJ_shapes.pdf" % (zpj_dir),
+                             rebin=1,
+                             leg_location=(0.75, 0.35, 0.89, 0.55),
+                             do_logx=False,
+                             do_logy=True,
+                             do_compare_shapes=True)
