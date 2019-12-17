@@ -190,6 +190,7 @@ def make_data_mc_plot(entries, hist_name, x_label, output_filename, rebin=1,
         hist.SetName(hist.GetName() + "_" + ent['label'])
         hist.SetLineColor(ent['style']['line_color'])
         hist.SetLineStyle(ent['style'].get('line_style', 1))
+        hist.SetLineWidth(ent['style'].get('line_width', 1))
 
         hist.SetMarkerColor(ent['style']['marker_color'])
         hist.SetMarkerStyle(ent['style'].get('marker_style', 19))
@@ -200,7 +201,7 @@ def make_data_mc_plot(entries, hist_name, x_label, output_filename, rebin=1,
         hist.SetFillStyle(ent['style'].get('fill_style', 1001))
         if do_compare_shapes:
             hist.SetFillStyle(0)
-            hist.SetLineWidth(1)
+            # hist.SetLineWidth(1)
 
         hist.Rebin(rebin)
         e = Entry(hist=hist,
@@ -263,7 +264,8 @@ def make_data_mc_plot(entries, hist_name, x_label, output_filename, rebin=1,
     main_pad.cd()
 
     # Do main plot: MC stack, data, legend
-    hst = ROOT.THStack("hst", ";%s;N" % (x_label))
+    y_label = "#DeltaN / N" if do_compare_shapes else "N"
+    hst = ROOT.THStack("hst", ";%s;%s" % (x_label, y_label))
     for ent in mc_entries[::-1]:
         # Add in reverse order to add smallest first (bottom of stack)
         hst.Add(ent.hist)
@@ -271,7 +273,7 @@ def make_data_mc_plot(entries, hist_name, x_label, output_filename, rebin=1,
     leg = ROOT.TLegend(0.7, 0.65, 0.88, 0.88)
     for ent in data_entries:
         extra = "" if do_compare_shapes else " (%g)" % ent.integral
-        leg.AddEntry(ent.hist, "%s%s" % (ent.label, extra), "P")
+        leg.AddEntry(ent.hist, "%s%s" % (ent.label, extra), "PL")
 
     for ent in mc_entries:
         # Add largest first
