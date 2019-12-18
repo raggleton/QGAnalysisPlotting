@@ -1136,6 +1136,12 @@ if __name__ == "__main__":
                 this_tdir.WriteTObject(hist_mc_reco_bg_subtracted, "mc_reco_bg_subtracted")
                 this_tdir.WriteTObject(hist_mc_reco_gen_binning_bg_subtracted, "mc_reco_gen_binning_bg_subtracted")
 
+            if "backgrounds" in region and args.subtractBackgrounds:
+                for bg_dict in region['backgrounds']:
+                    print("Subtracting", bg_dict['name'], 'background')
+                    this_tdir.WriteTObject(bg_dict['hist'], 'background_reco_%s' % (bg_dict['name'].replace(" ", "_")))
+                    this_tdir.WriteTObject(bg_dict['hist_gen'], 'background_gen_%s' % (bg_dict['name'].replace(" ", "_")))
+
             # Do any regularization
             # ---------------------
             unfolder.print_condition_number()
