@@ -818,9 +818,9 @@ class MyUnfolderPlotter(object):
         val_str = ""
         if draw_values:
             val_str = "_withValues"
-            corr_map.Draw("COLZ0 TEXT45")
+            corr_map.Draw("COL1Z TEXT45")
         else:
-            corr_map.Draw("COLZ0")
+            corr_map.Draw("COL1Z")
         output_filename = "%s/rho_map%s_%s.%s" % (output_dir, val_str, append, self.output_fmt)
         canv.SaveAs(output_filename)
         ROOT.gStyle.SetPalette(ROOT.kBird)
