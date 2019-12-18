@@ -537,15 +537,16 @@ class MyUnfolder(object):
         sig = svd.GetSig()  # by construction, ordered descending
         sigma_max = sig[0]
         sigma_min = max(0, sig[sig.GetNrows()-1])
+        print("sigma_max:", sigma_max, "sigma_min:", sigma_min)
         if sigma_min == 0:
             print("Minmum singular value = 0, condition number = Infinity")
             return 999999999999999999999
-        print("sigma_max:", sigma_max, "sigma_min:", sigma_min)
         return sigma_max / sigma_min
 
     def print_condition_number(self):
         """Print response matrix condition number and some advice"""
-        num = self.calculate_condition_num(self.response_map_matrix)
+        # num = self.calculate_condition_num(self.response_map_matrix)
+        num = self.calculate_condition_num(self.th2_to_tmatrixd(self.get_probability_matrix()))
         print("Condition number:", num)
         if num < 50:
             print(" - You probably shouldn't regularize this")
