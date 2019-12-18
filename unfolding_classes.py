@@ -712,7 +712,8 @@ class MyUnfolderPlotter(object):
     def draw_2d_hist(h2d, title, output_filename,
                      logz=True, z_min=None, z_max=None,
                      xtitle="Generator bin",
-                     ytitle="Generator bin"):
+                     ytitle="Generator bin",
+                     draw_values=False):
         canv = MyUnfolderPlotter.generate_2d_canvas()
         if logz:
             canv.SetLogz()
@@ -720,12 +721,16 @@ class MyUnfolderPlotter(object):
         h2d.SetTitle(this_title)
         h2d.GetYaxis().SetTitleOffset(1.5)
         h2d.GetXaxis().SetTitleOffset(1.5)
-        h2d.Draw("COLZ")
+        if draw_values:
+            h2d.SetMarkerSize(0.5)
+            h2d.Draw("COLZ TEXT45")
+        else:
+            h2d.Draw("COLZ")
         if z_max:
             h2d.SetMaximum(z_max)
         if z_min:
             h2d.SetMinimum(z_min)
-        else:
+        elif logz:
             h2d.SetMinimum(h2d.GetMinimum(1E-40) / 10.)
 
         odir = os.path.dirname(os.path.abspath(output_filename))
@@ -874,3 +879,70 @@ class MyUnfolderPlotter(object):
         output_filename = "%s/bg_fraction_all_nostack_%s.%s" % (output_dir, append, self.output_fmt)
         plot.save(output_filename)
         ROOT.gStyle.SetPalette(ROOT.kBird)
+
+    def draw_L_matrix(self, output_dir='.', append="", title=""):
+        """Draw L matrix used for regularisation"""
+        Lmatrix = self.unfolder.tunfolder.GetL("hist_Lmatrix_%s" % (append), title)
+        # Custom colour scheme - french flag colouring
+        NRGBs = 5
+        NCont = 256
+        # Set max & min such that 0 is in the middle
+        stops = [ 0.00, 0.49, 0.5, 0.51, 1.00 ]
+        red = [ 0.00, 1.00, 1.00, 1.00, 1.00]
+        green = [ 0.00, 1.00, 1.00, 1.00, 0.00 ]
+        blue = [ 1.00, 1.00, 1.00, 1.00, 0.00 ]
+        stopsArray = array('d', stops)
+        redArray = array('d', red)
+        greenArray = array('d', green)
+        blueArray = array('d', blue)
+        ROOT.TColor.CreateGradientColorTable(NRGBs, stopsArray, redArray, greenArray, blueArray, NCont)
+
+        canv = MyUnfolderPlotter.generate_2d_canvas()
+        this_title = "%s;%s;%s" % (title, "Generator bin", "n_{R} bin")
+        Lmatrix.SetTitle(this_title)
+        h_lim = max(abs(Lmatrix.GetMinimum()), Lmatrix.GetMaximum())
+        Lmatrix.SetMaximum(-h_lim)
+        Lmatrix.SetMaximum(h_lim)
+        Lmatrix.GetYaxis().SetTitleOffset(1.5)
+        Lmatrix.GetXaxis().SetTitleOffset(1.5)
+        Lmatrix.Draw("COL1 Z CJUST")
+        output_filename = "%s/L_matrix_%s.%s" % (output_dir, append, self.output_fmt)
+        cu.check_dir_exists_create(output_dir)
+        canv.SaveAs(output_filename)
+        ROOT.gStyle.SetPalette(ROOT.kBird)
+
+    def draw_L_matrix_squared(self, output_dir='.', append="", title=""):
+        """Draw L^T L, used for regularisation"""
+        output_filename = "%s/L_matrix_squared_%s.%s" % (output_dir, append, self.output_fmt)
+        Lmatrix = ROOT.TUnfoldBinning.CreateHistogramOfMigrations(
+            self.unfolder.generator_binning,
+            self.unfolder.generator_binning,
+            "hist_Lmatrix_squared_%s" % (append),
+            True,
+            True,
+            title)
+        self.unfolder.tunfolder.GetLsquared(Lmatrix)
+        print("Lmatrix squared:", Lmatrix.GetNbinsX())
+        print("Lmatrix squared:", Lmatrix.GetNbinsY())
+        self.draw_2d_hist(Lmatrix, title=title, output_filename=output_filename,
+                          draw_values=False,
+                          xtitle="Generator bin", ytitle="Generator bin")
+
+    def draw_Lx_minus_bias(self, output_dir='.', append="", title=""):
+        """Draw L * (x - bias_scale*bias_vec)
+
+        NB can only do after doing ScanTau or ScanLCurve, otherwise crashes
+        """
+        output_filename = "%s/Lx_minus_bias_%s.%s" % (output_dir, append, self.output_fmt)
+        hist_Lx_minus_bias = self.unfolder.tunfolder.GetLxMinusBias("hist_Lx_minus_bias_%s" % (append), title)
+        conts = [Contribution(hist_Lx_minus_bias)]
+        plot = Plot(conts,
+                    what='hist',
+                    title=title,
+                    xtitle="n_{R} bin",
+                    ytitle="L(x-f_{b}x_{0})"
+                    )
+        plot.y_padding_min_linear = 0.8
+        plot.left_margin = 0.15
+        plot.plot("HISTE")
+        plot.save(output_filename)

@@ -1175,6 +1175,14 @@ if __name__ == "__main__":
                 this_tdir.WriteTObject(tau_scanner.graph_all_scan_points, "regularize_all_scan_points")
                 this_tdir.WriteTObject(tau_scanner.graph_best_scan_point, "regularize_best_scan_point")
 
+            if REGULARIZE != "None":
+                title = "L matrix, %s region, %s" % (region['label'], angle_str)
+                unfolder_plotter.draw_L_matrix(title=title, **plot_args)
+                title = "L^{T}L matrix, %s region, %s" % (region['label'], angle_str)
+                unfolder_plotter.draw_L_matrix_squared(title=title, **plot_args)
+                title = "L * (x - bias vector), %s region, %s" % (region['label'], angle_str)
+                unfolder_plotter.draw_Lx_minus_bias(title=title, **plot_args)
+
             # Do unfolding!
             # ---------------------
             unfolder.do_unfolding(tau)
@@ -1399,6 +1407,10 @@ if __name__ == "__main__":
                                           distribution=unfolder.distribution,
                                           axisSteering=unfolder.axisSteering)
 
+                alt_unfolder_plotter = MyUnfolderPlotter(alt_unfolder)
+                alt_plot_args = dict(output_dir=this_output_dir+"/altResponse",
+                                     append=append)
+
                 # Set what is to be unfolded
                 # --------------------------------------------------------------
                 alt_unfolder.set_input(reco_1d, args.biasFactor)
@@ -1438,6 +1450,14 @@ if __name__ == "__main__":
                                                        axis_steering=alt_unfolder.axisSteering)
                     print("Found tau for alt matrix:", alt_tau)
                     alt_tau_scanner.plot_scan_tau(output_filename="%s/scantau_alt_%s.%s" % (this_output_dir, alt_unfolder.variable_name, OUTPUT_FMT))
+
+                if REGULARIZE != "None":
+                    title = "L matrix, %s region, %s, alt. response (%s)" % (region['label'], angle_str, region['alt_mc_label'])
+                    alt_unfolder_plotter.draw_L_matrix(title=title, **alt_plot_args)
+                    title = "L^{T}L matrix, %s region, %s, alt. response (%s)" % (region['label'], angle_str, region['alt_mc_label'])
+                    alt_unfolder_plotter.draw_L_matrix_squared(title=title, **alt_plot_args)
+                    title = "L * (x - bias vector), %s region, %s,  alt. response (%s)" % (region['label'], angle_str, region['alt_mc_label'])
+                    alt_unfolder_plotter.draw_Lx_minus_bias(title=title, **alt_plot_args)
 
                 # Do unfolding!
                 # --------------------------------------------------------------
@@ -1498,6 +1518,10 @@ if __name__ == "__main__":
                                                distribution=unfolder.distribution,
                                                axisSteering=unfolder.axisSteering)
 
+                    syst_unfolder_plotter = MyUnfolderPlotter(syst_unfolder)
+                    syst_plot_args = dict(output_dir=this_output_dir+"/modelSyst_"+syst_label_no_spaces,
+                                          append=append)
+
                     # if is_herwig:
                         # herwig_sf = 1E6  # should've done this earlier
                         # hist_syst_reco.Scale(herwig_sf)
@@ -1506,7 +1530,7 @@ if __name__ == "__main__":
                         # "rank of matrix E 55 expect 170"
                         # syst_unfolder.tunfolder.SetEpsMatrix(1E-18)
 
-                    # because we only care about shape, not overall normalisation 
+                    # because we only care about shape, not overall normalisation
                     # (which can artificially increase/decrease errors)
                     # we normalise to the nominal integral
                     # Note that we use the scaling from gen level, to take
@@ -1535,7 +1559,7 @@ if __name__ == "__main__":
                                          reco_mc_fake=None,
                                          reco_data_fake=None,
                                          output_filename="%s/detector_reco_binning_bg_subtracted_model_%s_%s.%s" % (this_output_dir, syst_label_no_spaces, append, OUTPUT_FMT),
-                                         title="%s region, %s" % (region['label'], angle_str))
+                                         title="%s region, %s, %s" % (region['label'], angle_str, syst_label))
 
                     # Add systematic errors as different response matrices
                     # ----------------------------------------------------
@@ -1582,6 +1606,14 @@ if __name__ == "__main__":
                         syst_tau_scanner.plot_scan_tau(output_filename="%s/scantau_syst_%s_%s.%s" % (this_output_dir, syst_label_no_spaces, syst_unfolder.variable_name, OUTPUT_FMT))
 
                     region['model_systematics'][ind]['tau'] = syst_tau
+
+                    if REGULARIZE != "None":
+                        title = "L matrix, %s region, %s,\n%s" % (region['label'], angle_str, syst_label)
+                        syst_unfolder_plotter.draw_L_matrix(title=title, **syst_plot_args)
+                        title = "L^{T}L matrix, %s region, %s,\n%s" % (region['label'], angle_str, syst_label)
+                        syst_unfolder_plotter.draw_L_matrix_squared(title=title, **syst_plot_args)
+                        title = "L * (x - bias vector), %s region, %s,\n%s" % (region['label'], angle_str, syst_label)
+                        syst_unfolder_plotter.draw_Lx_minus_bias(title=title, **syst_plot_args)
 
                     # Do unfolding!
                     # --------------------------------------------------------------
