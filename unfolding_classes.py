@@ -10,12 +10,12 @@ from __future__ import print_function, division
 from array import array
 import numpy as np
 import math
+import os
 
 import ROOT
 from MyStyle import My_Style
 from comparator import Contribution, Plot
 My_Style.cd()
-ROOT.gErrorIgnoreLevel = ROOT.kWarning
 
 import common_utils as cu
 import qg_common as qgc
@@ -724,6 +724,9 @@ class MyUnfolderPlotter(object):
             h2d.SetMinimum(z_min)
         else:
             h2d.SetMinimum(h2d.GetMinimum(1E-40) / 10.)
+
+        odir = os.path.dirname(os.path.abspath(output_filename))
+        cu.check_dir_exists_create(odir)
         canv.SaveAs(output_filename)
 
     def plot_bias_vector(self, output_dir='.', append="", title=""):
