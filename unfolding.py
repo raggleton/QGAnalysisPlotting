@@ -1045,6 +1045,7 @@ if __name__ == "__main__":
                                   regMode=ROOT.TUnfold.kRegModeCurvature,
                                   densityFlags=ROOT.TUnfoldDensity.kDensityModeBinWidth, # important as we have varying bin sizes!
                                   axisSteering='*[B]')
+                                  distribution='generatordistribution',
 
             unfolder.save_binning(txt_filename="%s/binning_scheme.txt" % (this_output_dir), print_xml=False)
 
@@ -1141,7 +1142,7 @@ if __name__ == "__main__":
             # tau = 1E-10
             tau = 0
             scan_mode = ROOT.TUnfoldDensity.kEScanTauRhoAvgSys
-            scan_distribution = "generatordistribution"
+            scan_distribution = unfolder.distribution
             if REGULARIZE == "L":
                 print("Regularizing with ScanLcurve, please be patient...")
                 l_scanner = LCurveScanner()
@@ -1389,6 +1390,7 @@ if __name__ == "__main__":
                                           constraintMode=unfolder.constraintMode,
                                           regMode=unfolder.regMode,
                                           densityFlags=unfolder.densityFlags,
+                                          distribution=unfolder.distribution,
                                           axisSteering=unfolder.axisSteering)
 
                 # Set what is to be unfolded
@@ -1487,6 +1489,7 @@ if __name__ == "__main__":
                                                constraintMode=unfolder.constraintMode,
                                                regMode=unfolder.regMode,
                                                densityFlags=unfolder.densityFlags,
+                                               distribution=unfolder.distribution,
                                                axisSteering=unfolder.axisSteering)
 
                     # if is_herwig:
@@ -1647,6 +1650,7 @@ if __name__ == "__main__":
                                                constraintMode=unfolder.constraintMode,
                                                regMode=unfolder.regMode,
                                                densityFlags=unfolder.densityFlags,
+                                               distribution=unfolder.distribution,
                                                axisSteering=unfolder.axisSteering)
 
                     # Set what is to be unfolded

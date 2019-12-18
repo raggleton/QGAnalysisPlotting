@@ -257,6 +257,7 @@ class MyUnfolder(object):
                  constraintMode=ROOT.TUnfold.kEConstraintArea,
                  regMode=ROOT.TUnfold.kRegModeCurvature,
                  densityFlags=ROOT.TUnfoldDensity.kDensityModeBinWidth,
+                 distribution='generatordistribution',
                  axisSteering='*[b]'):
 
         self.response_map = response_map
@@ -313,18 +314,19 @@ class MyUnfolder(object):
         self.constraintMode = constraintMode
         self.regMode = regMode
         self.densityFlags = densityFlags
+        self.distribution = distribution
         self.axisSteering = axisSteering
 
         self.tunfolder = ROOT.TUnfoldDensity(response_map,
-                                            orientation,
-                                            regMode,
-                                            constraintMode,
-                                            densityFlags,
-                                            self.generator_binning,
-                                            self.detector_binning)
-                                            # hmm comment these out when scanL or scanTau?
-                                            # "generator",
-                                            # self.axisSteering)
+                                             self.orientation,
+                                             self.regMode,
+                                             self.constraintMode,
+                                             self.densityFlags,
+                                             self.generator_binning,
+                                             self.detector_binning,
+                                             # hmm these take preference over whatever is use for scantau?
+                                             self.distribution,
+                                             self.axisSteering)
 
         self.use_axis_binning = False  # for things like get_probability_matrix()
 
