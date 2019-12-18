@@ -456,6 +456,10 @@ if __name__ == "__main__":
                                       choices=['None', 'tau', 'L'],
                                       default='None',
                                       help='Regularization scheme')
+    regularization_group.add_argument("--regularizeAxis",
+                                      choices=['both', 'pt', 'lambda'],
+                                      default='both',
+                                      help='Axis to regularize')
     regularization_group.add_argument("--nScan",
                                       type=int,
                                       default=100,
@@ -557,7 +561,9 @@ if __name__ == "__main__":
             "tau_limits": {
                 'jet_puppiMultiplicity': (1E-11, 1E-9),
                 'jet_pTD': (1E-13, 1E-10),
-                'jet_LHA': (1E-13, 1E-10),
+                # 'jet_LHA': (1E-13, 1E-10), # reg angle + pt
+                # 'jet_LHA': (1E-10, 1E-8), # only reg angle
+                'jet_LHA': (1E-10, 1E-8) if args.regularizeAxis == 'lambda' else (1E-13, 1E-10),
                 'jet_width': (1E-13, 1E-10),
                 'jet_thrust': (1E-13, 1E-10),
                 'jet_puppiMultiplicity_charged': (1E-13, 1E-10),
@@ -852,9 +858,20 @@ if __name__ == "__main__":
     if args.useAltResponse:
         append += "_altResponse"
 
-    bias_str = "%g" % args.biasFactor
-    bias_str = bias_str.replace(".", "p")
-    output_dir = os.path.join(src_dir, "unfolding_better_regularise%s%s%s_densityModeBinWidth_constraintNone%s_signalRegionOnly_biasFactor%s_noHerwigPtReweight" % (str(REGULARIZE).capitalize(), mc_append, sub_append, append, bias_str))
+    bias_str = ""
+    if args.biasFactor != 0:
+        bias_str = "_biasFactor%g" % args.biasFactor
+        bias_str = bias_str.replace(".", "p")
+
+    reg_axis_str = ""
+    if REGULARIZE != "None":
+        if args.regularizeAxis == 'pt':
+            reg_axis_str = '_onlyRegPt'
+        elif args.regularizeAxis == 'lambda':
+            reg_axis_str = '_onlyRegLambda'
+
+    # output_dir = os.path.join(src_dir, "unfolding_better_regularise%s%s%s_densityModeBinWidth_constraintNone%s_signalRegionOnly_biasFactor%s_noHerwigPtReweight_onlyRegAngle" % (str(REGULARIZE).capitalize(), mc_append, sub_append, append, bias_str))
+    output_dir = os.path.join(src_dir, "unfolding_better_regularise%s%s%s_densityModeBinWidth_constraintNone%s_signalRegionOnly%s_noHerwigPtReweight%s" % (str(REGULARIZE).capitalize(), mc_append, sub_append, append, bias_str, reg_axis_str))
     # output_dir = os.path.join(src_dir, "unfolding_better_regularise%s%s%s_densityModeBinWidth_constraintNone%s_signalRegionOnly_biasFactor%s_HerwigNominal" % (str(REGULARIZE).capitalize(), mc_append, sub_append, append, bias_str))
     if args.outputDir:
         output_dir = args.outputDir
@@ -1031,6 +1048,12 @@ if __name__ == "__main__":
             # Setup unfolder object
             # ---------------------
             variable_name = "%s%s" % (angle_prepend, angle.name)
+            axis_steering = '*[B]'
+            if args.regularizeAxis == 'pt':
+                axis_steering = 'pt[B];%s[N]' % variable_name
+            elif args.regularizeAxis == 'lambda':
+                axis_steering = 'pt[N];%s[B]' % variable_name
+
             unfolder = MyUnfolder(response_map=hist_mc_gen_reco_map,
                                   variable_bin_edges_reco=angle_bin_edges_reco,
                                   variable_bin_edges_gen=angle_bin_edges_gen,
@@ -1040,12 +1063,12 @@ if __name__ == "__main__":
                                   pt_bin_edges_underflow_reco=pt_bin_edges_underflow_reco,
                                   pt_bin_edges_underflow_gen=pt_bin_edges_underflow_gen,
                                   orientation=ROOT.TUnfold.kHistMapOutputHoriz,
-                                  # constraintMode=ROOT.TUnfold.kEConstraintArea,
-                                  constraintMode=ROOT.TUnfold.kEConstraintNone,
+                                  constraintMode=ROOT.TUnfold.kEConstraintArea,
+                                  # constraintMode=ROOT.TUnfold.kEConstraintNone,
                                   regMode=ROOT.TUnfold.kRegModeCurvature,
                                   densityFlags=ROOT.TUnfoldDensity.kDensityModeBinWidth, # important as we have varying bin sizes!
-                                  axisSteering='*[B]')
                                   distribution='generatordistribution',
+                                  axisSteering=axis_steering)
 
             unfolder.save_binning(txt_filename="%s/binning_scheme.txt" % (this_output_dir), print_xml=False)
 
