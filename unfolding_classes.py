@@ -829,6 +829,7 @@ class MyUnfolderPlotter(object):
         """Do plot of individual background fractions, a cumulative one, and one with all sources non-cumulative"""
         all_contributions = []
         frac_min, frac_max = 3E-4, 5
+        cu.check_dir_exists_create(output_dir)
         # Do individual plots for each bg source
         for bg_name, bg_hist in self.unfolder.backgrounds.items():
             this_fraction = bg_hist.Clone()
