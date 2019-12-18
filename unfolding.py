@@ -45,21 +45,42 @@ OUTPUT_FMT = "pdf"
 
 
 def calculate_chi2(hist_test, hist_truth, hist_covariance=None):
-    """Calculate chi2 = (test - truth)T inv(covariance) (test - truth)
+    """Calculate the chi2 between 2 histograms, given a covariance matrix
+
+    = (hist1 - hist2)T * cov^-1 * (hist1 - hist2)
 
     Parameters
     ----------
-    hist_test : TYPE
-        Description
-    hist_truth : TYPE
-        Description
-    hist_covariance : TH2, optional
-        If None, assumes covariance = diagonals of hist_truth
+    hist1 : list, np.array
+        List of bin values for one histogram
+    hist2 : list, np.array
+        List of bin values for other histogram
+    cov : np.array
+        Covariance matrix
+
+    Returns
+    -------
+    float
     """
-    pass
-    # test_vector, test_err = th1_to_ndarray(hist_test)
-    # truth_vector, truth_err = th1_to_ndarray(hist_truth)
-    # covariance_matrix = th2_to_ndarray(hist_covariance)
+    diff = hist1 - hist2
+    diff = diff.reshape(len(diff), 1)
+    # for now, hack the inversion, since we know it's diagonal
+    inv_cov = np.zeros_like(cov)
+    # if True:
+    #     for i, e in enumerate(range(cov.shape[0])):
+    #         cov_entry = cov[i][i]
+    #         if cov_entry != 0:
+    #             inv_cov[i][i] = 1./cov_entry
+    #         else:
+    #             inv_cov[i][i] = 0
+    # else:
+    inv_cov = np.linalg.inv(cov)
+    # print('inv_cov', inv_cov)
+    part = np.dot(inv_cov, diff)
+    # print('part', part)
+    result = np.dot(diff.T, part)
+    # print('result', result)
+    return result[0][0]
 
 
 def plot_simple_unfolded(unfolded, tau, reco, gen, fake, output_filename, title=""):
@@ -1126,12 +1147,14 @@ if __name__ == "__main__":
                     bg_dict['hist'] = bg_hist
                     bg_dict['hist_gen'] = bg_hist
 
+                    # keep one big hist
                     if not background_reco_1d:
                         background_reco_1d = bg_hist.Clone()
                         background_gen_1d = bg_hist_gen.Clone()
                     else:
                         background_reco_1d.Add(bg_hist, bg_dict.get('rate', 1.))
                         background_gen_1d.Add(bg_hist_gen, bg_dict.get('rate', 1.))
+
                     unfolder.subtract_background(hist=bg_hist,
                                                  name=bg_dict['name'],
                                                  scale=bg_dict.get('rate', 1.),
@@ -1169,6 +1192,7 @@ if __name__ == "__main__":
             # Do any regularization
             # ---------------------
             unfolder.print_condition_number()
+
             # tau = 1E-10
             tau = 0
             scan_mode = ROOT.TUnfoldDensity.kEScanTauRhoAvgSys
@@ -1239,6 +1263,12 @@ if __name__ == "__main__":
             this_tdir.WriteTObject(ematrix_total, "ematrix_total_1d")
             this_tdir.WriteTObject(error_total_1d, "error_total_1d")
             print("total uncert:", error_total_1d.GetBinError(chosen_bin))
+
+            hist1, err1 = cu.th1_to_arr(unfolded_1d)
+            hist2, err2 = cu.th1_to_arr(hist_mc_gen)
+            # cov, cov_err = cu.th2_to_arr(ematrix_total)
+            # chi2 = calculate_chi2(hist1, hist2, cov)
+            # print("my chi2 =", chi2)
 
             # Update errors to big unfolded 1D
             update_hist_bin_error(h_orig=error_total_1d, h_to_be_updated=unfolded_1d)
