@@ -102,6 +102,11 @@ def print_data_bg_stats(data_entries, mc_entries):
     print('BKG / DATA:', bg_total / data_total)
     print('BKG / MC:', bg_total / mc_total)
     print('--'*80)
+    signal_yield = sum(h.integral for h in mc_entries if not h.is_bkg)
+    for h in mc_entries:
+        if h.is_bkg:
+            print(h.label, "%.2f%%" % ((h.integral / signal_yield)*100))
+    print('--'*80)
     data_bins = [sum(ent.hist.Integral(i, i+1) for ent in data_entries) for i in range(1, data_entries[0].hist.GetNbinsX()+1)]
     bg_bins = [sum(ent.hist.Integral(i, i+1) for ent in mc_entries if ent.is_bkg) for i in range(1, mc_entries[0].hist.GetNbinsX()+1)]
     # calculate bin-by-bin fractions of bg / data, but only for pt < 1000 to avoid big errors
