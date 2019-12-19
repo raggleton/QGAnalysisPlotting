@@ -593,6 +593,7 @@ class Plot(object):
         latex_height = 0.91
         # left_offset = (self.left_margin - 0.08)  # to account for left margin, magic numbers ahoy
         left_offset = self.left_margin * (0.055/0.12)
+        left_offset = 0
         start_x = self.left_margin + left_offset
         if self.is_preliminary:
             if self.has_data:
@@ -617,7 +618,7 @@ class Plot(object):
         start_y = 0.87
         diff_y = 0.04
         for ind, line in enumerate(self.title.split('\n')):
-            text_latex.DrawLatex(0.18 + left_offset, start_y - (ind*diff_y), line)
+            text_latex.DrawLatex(0.18 + 0.02 + left_offset, start_y - (ind*diff_y), line)
 
         # Do subplot
         if self.subplot_type:

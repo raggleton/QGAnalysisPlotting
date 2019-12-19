@@ -396,6 +396,7 @@ def make_data_mc_plot(entries, hist_name, x_label, output_filename, rebin=1,
 
             hist_ratio.SetMinimum(0.5)  # use this, not SetRangeUser()
             hist_ratio.SetMaximum(1.5)  # use this, not SetRangeUser()
+            hist_ratio.GetYaxis().SetTitleOffset(1.5)
 
     ratio_modifier = ratio_hists[0]
 
