@@ -422,7 +422,7 @@ if __name__ == "__main__":
                                       default='None',
                                       help='Regularization scheme')
     regularization_group.add_argument("--regularizeAxis",
-                                      choices=['both', 'pt', 'lambda'],
+                                      choices=['both', 'pt', 'angle'],
                                       default='both',
                                       help='Axis to regularize')
     regularization_group.add_argument("--nScan",
@@ -528,7 +528,7 @@ if __name__ == "__main__":
                 'jet_pTD': (1E-13, 1E-10),
                 # 'jet_LHA': (1E-13, 1E-10), # reg angle + pt
                 # 'jet_LHA': (1E-10, 1E-8), # only reg angle
-                'jet_LHA': (1E-10, 1E-8) if args.regularizeAxis == 'lambda' else (1E-13, 1E-10),
+                'jet_LHA': (1E-10, 1E-8) if args.regularizeAxis == 'angle' else (1E-13, 1E-10),
                 'jet_width': (1E-13, 1E-10),
                 'jet_thrust': (1E-13, 1E-10),
                 'jet_puppiMultiplicity_charged': (1E-13, 1E-10),
@@ -832,8 +832,8 @@ if __name__ == "__main__":
     if REGULARIZE != "None":
         if args.regularizeAxis == 'pt':
             reg_axis_str = '_onlyRegPt'
-        elif args.regularizeAxis == 'lambda':
-            reg_axis_str = '_onlyRegLambda'
+        elif args.regularizeAxis == 'angle':
+            reg_axis_str = '_onlyRegAngle'
 
     regularize_str = "regularize%s%s%s" % (str(REGULARIZE).capitalize(), bias_str, reg_axis_str)
 
@@ -1023,7 +1023,7 @@ if __name__ == "__main__":
             axis_steering = '*[B]'
             if args.regularizeAxis == 'pt':
                 axis_steering = 'pt[B];%s[N]' % variable_name
-            elif args.regularizeAxis == 'lambda':
+            elif args.regularizeAxis == 'angle':
                 axis_steering = 'pt[N];%s[B]' % variable_name
 
             unfolder = MyUnfolder(response_map=hist_mc_gen_reco_map,
