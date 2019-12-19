@@ -544,9 +544,10 @@ def make_efficiency_purity_vs_variable_plots(efficiencies,
                                              bins,
                                              bin_variable,
                                              cut_values,
-                                             var_label,
+                                             var_label,  # if None, then don't use it - good for generic purity plots
                                              output_filename,
-                                             do_logx=True, x_min=None, x_max=None):
+                                             do_logx=True, x_min=None, x_max=None,
+                                             jet_label='AK4 jets'):
 
     # common things to make graphs
     bin_centers = [0.5*(x + y) for x,y in bins]
@@ -557,7 +558,10 @@ def make_efficiency_purity_vs_variable_plots(efficiencies,
     output_filename_stem, ext = os.path.splitext(output_filename)
 
     ROOT.gStyle.SetPalette(55)
-    title = "%s\nCut on\n%s" % (qgc.ZpJ_LABEL, var_label)
+    if var_label is not None:
+        title = "%s, %s\nCut on\n%s" % (qgc.ZpJ_LABEL, jet_label, var_label)
+    else:
+        title = "%s, %s" % (qgc.ZpJ_LABEL, jet_label)
 
     marker = cu.Marker()
 
@@ -592,19 +596,21 @@ def make_efficiency_purity_vs_variable_plots(efficiencies,
     marker = cu.Marker()
     purity_contributions = [
         Contribution(ROOT.TGraphErrors(n, array('d', bin_centers), array('d', purity), array('d', x_err), array('d', y_err)),
-                     label='< %g' % (cut_value),
+                     label='< %g' % (cut_value) if var_label is not None else 'DY#rightarrowLL',
                      line_width=2,
                      marker_style=mark)
         for cut_value, purity, mark in zip(cut_values, purities, marker.cycle())
     ]
     p = Plot(purity_contributions, what='graph',
              xtitle=bin_variable,
-             ytitle='Purity ( = # DY post-cut / # All post-cut)',
+             ytitle='Purity ( = # DY post-cut / # All post-cut)' if var_label is not None else 'Purity ( = # DY / # all SM)',
              title=title,
              xlim=(x_min, x_max),
              ylim=(0.96, 1.01),
              legend=True,
              has_data=False)
+    p.default_canvas_size = (800, 600)
+    p.left_margin = 0.16
     p.plot("AP PLC PMC")
     if len(cut_values) > 4:
         p.legend.SetNColumns(3)
@@ -930,11 +936,14 @@ if __name__ == "__main__":
     jet1_z_asym_str = "({ptJ} - {ptZ}) / ({ptJ} + {ptZ})".format(ptJ=pt_jet1_str, ptZ=pt_z_str)
 
     """
+    jet_label = 'AK4 jets'
+
     make_data_mc_plot(COMPONENTS,
                       hist_name="ZPlusJets/pt_jet1",
                       x_label=pt_jet1_gev_str,
                       output_filename="%s/zpj_ptJ_Kfactor.pdf" % (zpj_dir),
                       rebin=5,
+                      title='%s, %s' % (qgc.ZpJ_LABEL, jet_label),
                       do_logx=True, x_min=20, x_max=3E3,
                       do_logy=True, y_min=1E-1, y_max=1E6)
 
@@ -960,7 +969,8 @@ if __name__ == "__main__":
                       hist_name="ZPlusJets/pt_mumu",
                       x_label=pt_z_gev_str,
                       output_filename="%s/zpj_ptZ_Kfactor.pdf" % (zpj_dir),
-                      rebin=2,
+                      rebin=5,
+                      title='%s, %s' % (qgc.ZpJ_LABEL, jet_label),
                       do_logx=True, x_min=10, x_max=3E3,
                       do_logy=True, y_min=1E-1, y_max=1E6)
 
@@ -1093,6 +1103,22 @@ if __name__ == "__main__":
 
     pt_jet1_z_ratio_cuts = [1.1, 1.2, 1.4, 1.6, 1.8, 2, 2.5, 2.75, 9]
     jet1_z_asym_cuts = [0.1, 0.2, 0.3, 0.4, 0.45, 0.5, 1]
+
+    # dummy one just to get uncut purity
+    pt_jet1_z_ratio_vs_pt_jet1_eff, pt_jet1_z_ratio_vs_pt_jet1_purity = get_efficiency_purity_vs_variable(
+        COMPONENTS,
+        hist_name="ZPlusJets/pt_jet1_z_ratio_vs_pt_jet1",
+        bins=bins,
+        cut_values=[999999],
+    )
+    make_efficiency_purity_vs_variable_plots(efficiencies=pt_jet1_z_ratio_vs_pt_jet1_eff,
+                                             purities=pt_jet1_z_ratio_vs_pt_jet1_purity,
+                                             bins=bins,
+                                             bin_variable=pt_jet1_gev_str,
+                                             var_label=None,  # magic option to avoid var labels
+                                             cut_values=[999999],
+                                             output_filename="%s/zpj_purity_binned_by_ptJ_Kfactor.pdf" % (zpj_dir),
+                                             do_logx=True, x_min=50, x_max=6.5E3)
 
     # pt_jet1_z_ratio_vs_pt_jet1_eff, pt_jet1_z_ratio_vs_pt_jet1_purity = get_efficiency_purity_vs_variable(
     #     COMPONENTS,
