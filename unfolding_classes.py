@@ -340,8 +340,14 @@ class MyUnfolder(object):
         self.hist_fakes = None
         self.hist_fakes_gen_binning = None
 
+        self.gen_hist = None
+
         self.tau = 0  # to be set by user later, via TauScanner or LCurveScanner
         self.backgrounds = {}  # gets filled with subtract_background()
+
+        self.unfolded = None  # set in get_output()
+
+
 
     def save_binning(self, print_xml=True, txt_filename=None):
         """Save binning scheme to txt and/or print XML to screen"""
@@ -947,3 +953,62 @@ class MyUnfolderPlotter(object):
         plot.left_margin = 0.15
         plot.plot("HISTE")
         plot.save(output_filename)
+
+    def draw_unfolded_1d(self, do_gen=True, do_unfolded=True, output_dir='.', append='', title=''):
+        """Simple plot of unfolded & gen, by bin number (ie non physical axes)"""
+        entries = []
+
+        # if do_reco and self.unfolder.input_hist:
+        #     entries.append(
+        #         Contribution(self.unfolder.input_hist, label="Reco",
+        #                      line_color=ROOT.kGreen+2, line_width=1,
+        #                      marker_color=ROOT.kGreen+2, marker_size=0,
+        #                      normalise_hist=False),
+        #     )
+
+        if do_gen and self.unfolder.gen_hist:
+            entries.append(
+                Contribution(self.unfolder.gen_hist, label="Gen",
+                             line_color=ROOT.kBlue, line_width=1,
+                             marker_color=ROOT.kBlue, marker_size=0,
+                             normalise_hist=False),
+            )
+
+        # if do_bg:
+        #     entries.append(
+        #         Contribution(fake, label="Fakes",
+        #                      line_color=ROOT.kOrange+4, line_width=1,
+        #                      marker_color=ROOT.kOrange+4, marker_size=0,
+        #                      normalise_hist=False),
+        #     )
+
+        if do_unfolded and self.unfolder.unfolded:
+            subplot = self.unfolder.gen_hist if (do_gen and self.unfolder.gen_hist) else None
+            entries.append(
+                Contribution(self.unfolder.unfolded, label="Unfolded (#tau = %.3g)" % (self.unfolder.tau),
+                             line_color=ROOT.kRed, line_width=0,
+                             marker_color=ROOT.kRed, marker_size=0.6, marker_style=20,
+                             normalise_hist=False, subplot=subplot),
+            )
+
+        plot = Plot(entries,
+                    what='hist',
+                    title=title,
+                    xtitle="Generator bin number",
+                    ytitle="N",
+                    subplot_type='ratio',
+                    subplot_title='#splitline{Unfolded Data /}{MC Gen}',
+                    subplot_limits=(0.8, 1.2))
+        plot.default_canvas_size = (800, 600)
+        plot.plot("NOSTACK HISTE")
+        plot.main_pad.SetLogy(1)
+        ymax = max(c.obj.GetMaximum() for c in entries)
+        plot.container.SetMaximum(ymax * 100)
+        ymin = min(c.obj.GetMinimum(1E-8) for c in entries)
+        plot.container.SetMinimum(ymin*0.1)
+        plot.legend.SetY1NDC(0.77)
+        plot.legend.SetX1NDC(0.65)
+        plot.legend.SetX2NDC(0.88)
+        output_filename = "%s/unfolded_%s.%s" % (output_dir, append, self.output_fmt)
+        plot.save(output_filename)
+

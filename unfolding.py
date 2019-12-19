@@ -83,63 +83,6 @@ def calculate_chi2(hist_test, hist_truth, hist_covariance=None):
     return result[0][0]
 
 
-def plot_simple_unfolded(unfolded, tau, reco, gen, fake, output_filename, title=""):
-    """Simple plot of unfolded, reco, gen, by bin number (ie non physical axes)"""
-    entries = []
-
-    if reco:
-        entries.append(
-            Contribution(reco, label="Reco",
-                         line_color=ROOT.kGreen+2, line_width=1,
-                         marker_color=ROOT.kGreen+2, marker_size=0,
-                         normalise_hist=False),
-        )
-
-    if gen:
-        entries.append(
-            Contribution(gen, label="Gen",
-                         line_color=ROOT.kBlue, line_width=1,
-                         marker_color=ROOT.kBlue, marker_size=0,
-                         normalise_hist=False),
-        )
-
-    if fake:
-        entries.append(
-            Contribution(fake, label="Fakes",
-                         line_color=ROOT.kOrange+4, line_width=1,
-                         marker_color=ROOT.kOrange+4, marker_size=0,
-                         normalise_hist=False),
-        )
-
-    if unfolded:
-        entries.append(
-            Contribution(unfolded, label="Unfolded (#tau = %.3g)" % (tau),
-                         line_color=ROOT.kRed, line_width=0,
-                         marker_color=ROOT.kRed, marker_size=0.6, marker_style=20,
-                         normalise_hist=False, subplot=gen),
-        )
-
-    plot = Plot(entries,
-                what='hist',
-                title=title,
-                xtitle="Bin number",
-                ytitle="N",
-                subplot_type='ratio',
-                subplot_title='Data / MC',
-                subplot_limits=(0.8, 1.2))
-    plot.default_canvas_size = (800, 600)
-    plot.plot("NOSTACK HISTE")
-    plot.main_pad.SetLogy(1)
-    ymax = max(h.GetMaximum() for h in [reco, gen, fake, unfolded] if h)
-    plot.container.SetMaximum(ymax * 100)
-    ymin = min(h.GetMinimum(1E-8) for h in [reco, gen, fake, unfolded] if h)
-    plot.container.SetMinimum(ymin*0.1)
-    plot.legend.SetY1NDC(0.77)
-    plot.legend.SetX1NDC(0.65)
-    plot.legend.SetX2NDC(0.88)
-    plot.save(output_filename)
-
-
 def plot_simple_detector(reco_data, reco_data_fake, reco_mc, reco_mc_fake, output_filename, title):
     """Plot detector-level quantities for data & MC, by bin number (ie non physical axes)"""
     entries = []
@@ -1100,6 +1043,7 @@ if __name__ == "__main__":
             # Set what is to be unfolded
             # ------------------------------------------------------------------
             unfolder.set_input(reco_1d, args.biasFactor)
+            unfolder.gen_hist = hist_mc_gen
 
             # Add systematic errors as different response matrices
             # ------------------------------------------------------------------
@@ -1292,16 +1236,10 @@ if __name__ == "__main__":
                     systematic_shift_hists.append(h_syst)
                     this_tdir.WriteTObject(h_syst)
 
-            # Draw unified unfolded distributions
+            # Draw big 1D distributions
             # ------------------------------------------------------------------
-            # unfolded, gen, and reco for comparison
-            plot_simple_unfolded(unfolded=unfolded_1d,
-                                 tau=tau,
-                                 reco=None,
-                                 gen=hist_mc_gen,
-                                 fake=None,
-                                 output_filename="%s/unfolded_%s.%s" % (this_output_dir, append, OUTPUT_FMT),
-                                 title="%s region, %s" % (region['label'], angle_str))
+            title = "%s region, %s" % (region['label'], angle_str)
+            unfolder_plotter.draw_unfolded_1d(output_dir=this_output_dir, append=append, title=title)
 
             # reco using detector binning
             plot_simple_detector(reco_data=reco_1d,
@@ -1468,6 +1406,7 @@ if __name__ == "__main__":
                 # Set what is to be unfolded
                 # --------------------------------------------------------------
                 alt_unfolder.set_input(reco_1d, args.biasFactor)
+                alt_unfolder.gen_hist = unfolder.gen_hist.Clone()
 
                 # Subtract fakes (treat as background)
                 # --------------------------------------------------------------
@@ -1534,6 +1473,9 @@ if __name__ == "__main__":
                 print("new uncert:", alt_unfolded_1d.GetBinError(chosen_bin))
                 this_tdir.WriteTObject(alt_unfolded_1d)
 
+                alt_title = "%s region, %s, %s response map" % (region['label'], angle_str, region['alt_mc_label'])
+                alt_unfolder_plotter.draw_unfolded_1d(title=alt_title, **alt_plot_args)
+
             # ------------------------------------------------------------------
             # MODEL INPUT VARIATIONS
             # ------------------------------------------------------------------
@@ -1597,6 +1539,7 @@ if __name__ == "__main__":
                     # Set what is to be unfolded
                     # --------------------------------------------------------------
                     syst_unfolder.set_input(hist_syst_reco, args.biasFactor)
+                    syst_unfolder.gen_hist = hist_syst_gen
 
                     # Subtract fakes (treat as background)
                     # --------------------------------------------------------------
@@ -1692,6 +1635,9 @@ if __name__ == "__main__":
 
                     region['model_systematics'][ind]['unfolded_1d'] = syst_unfolded_1d
                     region['model_systematics'][ind]['gen_1d'] = hist_syst_gen
+
+                    syst_title = "%s region, %s, %s input" % (region['label'], angle_str, syst_label)
+                    syst_unfolder_plotter.draw_unfolded_1d(title=syst_title, **syst_plot_args)
 
             # ------------------------------------------------------------------
             # DO PDF VARIATIONS
