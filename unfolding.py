@@ -835,9 +835,16 @@ if __name__ == "__main__":
         elif args.regularizeAxis == 'lambda':
             reg_axis_str = '_onlyRegLambda'
 
-    # output_dir = os.path.join(src_dir, "unfolding_better_regularise%s%s%s_densityModeBinWidth_constraintNone%s_signalRegionOnly_biasFactor%s_noHerwigPtReweight_onlyRegAngle" % (str(REGULARIZE).capitalize(), mc_append, sub_append, append, bias_str))
-    output_dir = os.path.join(src_dir, "unfolding_better_regularise%s%s%s_densityModeBinWidth_constraintNone%s_signalRegionOnly%s_noHerwigPtReweight%s" % (str(REGULARIZE).capitalize(), mc_append, sub_append, append, bias_str, reg_axis_str))
-    # output_dir = os.path.join(src_dir, "unfolding_better_regularise%s%s%s_densityModeBinWidth_constraintNone%s_signalRegionOnly_biasFactor%s_HerwigNominal" % (str(REGULARIZE).capitalize(), mc_append, sub_append, append, bias_str))
+    regularize_str = "regularize%s%s%s" % (str(REGULARIZE).capitalize(), bias_str, reg_axis_str)
+
+    str_parts = dict(
+        regularize_str=regularize_str,
+        mc_append=mc_append,
+        append=append,
+        sub_append=sub_append,
+    )
+    output_dir = os.path.join(src_dir, "unfolding_{regularize_str}{mc_append}{sub_append}_densityModeBinWidth_constraintArea{append}_signalRegionOnly_noHerwigPtReweight".format(**str_parts))
+
     if args.outputDir:
         output_dir = args.outputDir
     cu.check_dir_exists_create(output_dir)
