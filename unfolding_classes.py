@@ -340,7 +340,8 @@ class MyUnfolder(object):
         self.hist_fakes = None
         self.hist_fakes_gen_binning = None
 
-        self.gen_hist = None
+        # generator-level MC truth
+        self.hist_truth = None  # gen truth
 
         self.tau = 0  # to be set by user later, via TauScanner or LCurveScanner
         self.backgrounds = {}  # gets filled with subtract_background()
@@ -967,8 +968,9 @@ class MyUnfolderPlotter(object):
         #     )
 
         if do_gen and self.unfolder.gen_hist:
+        if do_gen and self.unfolder.hist_truth:
             entries.append(
-                Contribution(self.unfolder.gen_hist, label="Gen",
+                Contribution(self.unfolder.hist_truth, label="Gen",
                              line_color=ROOT.kBlue, line_width=1,
                              marker_color=ROOT.kBlue, marker_size=0,
                              normalise_hist=False),

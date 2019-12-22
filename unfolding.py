@@ -1050,7 +1050,7 @@ if __name__ == "__main__":
             # Set what is to be unfolded
             # ------------------------------------------------------------------
             unfolder.set_input(reco_1d, args.biasFactor)
-            unfolder.gen_hist = hist_mc_gen
+            unfolder.hist_truth = hist_mc_gen
 
             # Add systematic errors as different response matrices
             # ------------------------------------------------------------------
@@ -1413,7 +1413,7 @@ if __name__ == "__main__":
                 # Set what is to be unfolded
                 # --------------------------------------------------------------
                 alt_unfolder.set_input(reco_1d, args.biasFactor)
-                alt_unfolder.gen_hist = unfolder.gen_hist.Clone()
+                alt_unfolder.hist_truth = unfolder.hist_truth.Clone()
 
                 # Subtract fakes (treat as background)
                 # --------------------------------------------------------------
@@ -1546,7 +1546,7 @@ if __name__ == "__main__":
                     # Set what is to be unfolded
                     # --------------------------------------------------------------
                     syst_unfolder.set_input(hist_syst_reco, args.biasFactor)
-                    syst_unfolder.gen_hist = hist_syst_gen
+                    syst_unfolder.hist_truth = hist_syst_gen
 
                     # Subtract fakes (treat as background)
                     # --------------------------------------------------------------
