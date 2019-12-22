@@ -11,6 +11,7 @@ from array import array
 import numpy as np
 import math
 import os
+from itertools import chain
 
 import ROOT
 from MyStyle import My_Style
