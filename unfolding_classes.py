@@ -967,7 +967,17 @@ class MyUnfolderPlotter(object):
         #                      normalise_hist=False),
         #     )
 
-        if do_gen and self.unfolder.gen_hist:
+        if do_unfolded and self.unfolder.unfolded:
+            subplot = self.unfolder.hist_truth if (do_gen and self.unfolder.hist_truth) else None
+            entries.append(
+                Contribution(self.unfolder.unfolded, label="Unfolded (#tau = %.3g)" % (self.unfolder.tau),
+                             line_color=ROOT.kRed, line_width=1,
+                             marker_color=ROOT.kRed, marker_size=0.6, marker_style=20,
+                             subplot_line_color=ROOT.kRed, subplot_line_width=1,
+                             subplot_marker_color=ROOT.kRed, subplot_marker_size=0, subplot_marker_style=20,
+                             normalise_hist=False, subplot=subplot),
+            )
+
         if do_gen and self.unfolder.hist_truth:
             entries.append(
                 Contribution(self.unfolder.hist_truth, label="Gen",
@@ -983,15 +993,6 @@ class MyUnfolderPlotter(object):
         #                      marker_color=ROOT.kOrange+4, marker_size=0,
         #                      normalise_hist=False),
         #     )
-
-        if do_unfolded and self.unfolder.unfolded:
-            subplot = self.unfolder.gen_hist if (do_gen and self.unfolder.gen_hist) else None
-            entries.append(
-                Contribution(self.unfolder.unfolded, label="Unfolded (#tau = %.3g)" % (self.unfolder.tau),
-                             line_color=ROOT.kRed, line_width=0,
-                             marker_color=ROOT.kRed, marker_size=0.6, marker_style=20,
-                             normalise_hist=False, subplot=subplot),
-            )
 
         plot = Plot(entries,
                     what='hist',

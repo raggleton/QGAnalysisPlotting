@@ -97,6 +97,9 @@ class Contribution(object):
                  line_width=1, line_color=ROOT.kRed, line_style=1,
                  fill_color=ROOT.kRed, fill_style=0,
                  marker_size=1, marker_color=ROOT.kRed, marker_style=1,
+                 subplot_line_width=None, subplot_line_color=None, subplot_line_style=None,
+                 subplot_fill_color=None, subplot_fill_style=None,
+                 subplot_marker_size=None, subplot_marker_color=None, subplot_marker_style=None,
                  fit_match_style=True,
                  normalise_hist=False, divide_bin_width=False,
                  rebin_hist=None, subplot=None):
@@ -146,6 +149,16 @@ class Contribution(object):
         self.marker_color = marker_color
         self.marker_style = marker_style
         self.subplot = subplot
+
+        # subplot-specific stylings - inherit from main stylings by default
+        self.subplot_line_width = subplot_line_width or self.line_width
+        self.subplot_line_color = subplot_line_color or self.line_color
+        self.subplot_line_style = subplot_line_style or self.line_style
+        self.subplot_fill_color = subplot_fill_color or self.fill_color
+        self.subplot_fill_style = subplot_fill_style or self.fill_style
+        self.subplot_marker_size = subplot_marker_size or self.marker_size
+        self.subplot_marker_color = subplot_marker_color or self.marker_color
+        self.subplot_marker_style = subplot_marker_style or self.marker_style
 
         self.obj.SetLineWidth(self.line_width)
         self.obj.SetLineColor(self.line_color)
@@ -315,6 +328,7 @@ class Plot(object):
 
             # Add contributions for the subplot
             if self.subplot_type:
+                new_hist = None
                 if self.subplot:
                     # Use one reference object for all entries
                     subplot_obj = self.subplot.obj.Clone()
@@ -332,8 +346,6 @@ class Plot(object):
                             sum_hist.Add(subplot_obj)
                             new_hist.Divide(sum_hist)
                             new_hist.Scale(0.5)
-                        self.subplot_container.Add(new_hist)
-                        self.subplot_contributions.append(new_hist)
                 elif contrib.subplot is not None:
                     new_hist = contrib.obj.Clone()
                     ref_obj = contrib.subplot
@@ -349,6 +361,16 @@ class Plot(object):
                         sum_hist.Add(ref_obj)
                         new_hist.Divide(sum_hist)
                         new_hist.Scale(0.5)
+                if new_hist:
+                    # style it
+                    new_hist.SetLineWidth(contrib.subplot_line_width)
+                    new_hist.SetLineColor(contrib.subplot_line_color)
+                    new_hist.SetLineStyle(contrib.subplot_line_style)
+                    new_hist.SetFillColor(contrib.subplot_fill_color)
+                    new_hist.SetFillStyle(contrib.subplot_fill_style)
+                    new_hist.SetMarkerSize(contrib.subplot_marker_size)
+                    new_hist.SetMarkerColor(contrib.subplot_marker_color)
+                    new_hist.SetMarkerStyle(contrib.subplot_marker_style)
                     self.subplot_container.Add(new_hist)
                     self.subplot_contributions.append(new_hist)
 
