@@ -424,7 +424,7 @@ class Plot(object):
             if ax:
                 ax.SetMoreLogLabels()
 
-    def set_logy(self, state=True):
+    def set_logy(self, state=True, do_more_labels=True):
         # Call AFTER plot()
         try:
             self.main_pad.SetLogy(int(state))
@@ -439,7 +439,7 @@ class Plot(object):
         # Don't make subplot log y...we never want that
         if self.container:
             ax = self.container.GetYaxis()
-            if ax and state:
+            if ax and state and do_more_labels:
                 ax.SetMoreLogLabels()
 
         # update y limits since padding different for log/lin
