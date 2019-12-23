@@ -53,8 +53,9 @@ def make_1d_plot(root_dir, histname, jet_str, gen_only=False):
     zpj_data_hist = None
     if not gen_only:
         zpj_data_hist = grab_obj(os.path.join(root_dir, qgc.SINGLE_MU_FILENAME), histname)
-        dy_kwargs_data = dict(line_color=qgc.SINGLE_MU_COLOUR, line_width=0, fill_color=qgc.SINGLE_MU_COLOUR,
-                              marker_color=qgc.SINGLE_MU_COLOUR, marker_style=cu.Marker.get(qgc.DY_MARKER), marker_size=msize,
+        SINGLE_MU_COLOUR = ROOT.kBlack
+        dy_kwargs_data = dict(line_color=SINGLE_MU_COLOUR, line_width=2, fill_color=SINGLE_MU_COLOUR,
+                              marker_color=SINGLE_MU_COLOUR, marker_style=cu.Marker.get(qgc.DY_MARKER), marker_size=msize,
                               label="Data")
         entries.append((zpj_data_hist, dy_kwargs_data))
 
@@ -62,23 +63,23 @@ def make_1d_plot(root_dir, histname, jet_str, gen_only=False):
     h_dyj_mc = grab_obj(os.path.join(root_dir, qgc.DY_FILENAME), histname)
     dy_kwargs_mc = dict(line_color=qgc.DY_COLOUR, line_width=lw, fill_color=qgc.DY_COLOUR,
                         marker_color=qgc.DY_COLOUR, marker_style=cu.Marker.get(qgc.DY_MARKER), marker_size=0,
-                        label="MG+PY8 (w/ k-factor)",
+                        label="MG+PY8 (with k-factor)",
                         subplot=zpj_data_hist)
     entries.append((h_dyj_mc, dy_kwargs_mc))
 
-    # WIHTOUT K FACTORS
+    # WITHOUT K FACTORS
     h_dyj_mc_noWeight = grab_obj(os.path.join(root_dir, "uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_noZReweight.root"), histname)
     dy_kwargs_mc = dict(line_color=qgc.QCD_COLOURS[0], line_width=lw, fill_color=qgc.QCD_COLOURS[0],
                         marker_color=qgc.QCD_COLOURS[0], marker_style=cu.Marker.get(qgc.DY_MARKER), marker_size=0,
-                        label="MG+PY8 (w/out k-factor)",
+                        label="MG+PY8 (without k-factor)",
                         subplot=zpj_data_hist)
     entries.append((h_dyj_mc_noWeight, dy_kwargs_mc))
 
     # Must do un normed first, since it manipulates original objects
-    rebin = 1
+    rebin = 10
     p = qgp.make_comparison_plot_ingredients(entries, rebin=rebin, normalise_hist=False, mean_rel_error=0.4,
                                             title="%s\n%s" % (jet_str, qgc.ZpJ_LABEL),
-                                            xlim=[0, 4000],
+                                            xlim=[30, 4000],
                                             ylim=[1E-1, 1E8],
                                             subplot_type='ratio',
                                             subplot_title="MC / Data",
@@ -87,15 +88,15 @@ def make_1d_plot(root_dir, histname, jet_str, gen_only=False):
     draw_opt = "NOSTACK HISTE"
     p.plot(draw_opt)
     p.set_logx()
-    p.set_logy()
+    p.set_logy(do_more_labels=False)
     dirname = os.path.dirname(output_filename)
     if not os.path.isdir(dirname):
         os.makedirs(dirname)
     p.save(output_filename)
 
-    p = qgp.make_comparison_plot_ingredients(entries, rebin=rebin, normalise_hist=True, mean_rel_error=0.4,
+    p = qgp.make_comparison_plot_ingredients(entries, rebin=1, normalise_hist=True, mean_rel_error=0.4,
                                             title="%s\n%s" % (jet_str, qgc.ZpJ_LABEL),
-                                            xlim=[0, 4000],
+                                            xlim=[30, 4000],
                                             ylim=[1E-6, 50],
                                             subplot_type='ratio',
                                             subplot_title="MC / Data",
@@ -103,7 +104,7 @@ def make_1d_plot(root_dir, histname, jet_str, gen_only=False):
     output_filename = os.path.join(root_dir, "plots_dy_vs_qcd_mc_vs_data_z_reweight", "zpj_%s_normed.%s" % (histname.replace("/", "_"), OUTPUT_FMT))
     p.plot(draw_opt)
     p.set_logx()
-    p.set_logy()
+    p.set_logy(do_more_labels=False)
     p.save(output_filename)
 
 
@@ -128,6 +129,8 @@ def do_plots(root_dir):
             make_1d_plot(root_dir, "ZPlusJets_gen/pt_mumu", jet_str, gen_only=True)
             make_1d_plot(root_dir, "ZPlusJets/pt_jet1", jet_str)
             make_1d_plot(root_dir, "ZPlusJets/pt_mumu", jet_str)
+
+        continue
 
         zpj_dirname = "ZPlusJets_QG%s" % (gr_append)
 
