@@ -31,7 +31,7 @@ ROOT.gStyle.SetOptFit(1111)
 ROOT.gErrorIgnoreLevel = ROOT.kWarning
 
 # My stuff
-import qg_general_plots as qgg
+import qg_general_plots as qgp
 import qg_common as qgc
 from comparator import Contribution, Plot
 import common_utils as cu
@@ -353,8 +353,8 @@ def make_plots(h2d, var_dict, plot_dir, append="",
     if var_dict.get('log', False):
         h2d.GetXaxis().SetLimits(1, 150)
         h2d.GetYaxis().SetLimits(1, 150)
-    if "title" in var_dict:
-        h2d.SetTitle(var_dict['title'].replace("\n", ", "))
+    title = "%s;%s (GEN);%s (RECO)" % (var_dict.get('title', '').replace("\n", ", "), var_dict['var_label'], var_dict['var_label'])
+    h2d.SetTitle(title)
     h2d.Draw("COLZ")
     output_filename = os.path.join(plot_dir, var_dict['name']+"_%s.%s" % (append, OUTPUT_FMT))
     output_dir = os.path.dirname(output_filename)
@@ -414,7 +414,7 @@ def make_plots(h2d, var_dict, plot_dir, append="",
     # Plot migrations as 1D hists
     if plot_migrations:
         output_filename = os.path.join(plot_dir, "%s_%s_migration_summary.%s" % (var_dict['name'], append, OUTPUT_FMT))
-        qgg.make_migration_summary_plot(h2d_renorm_x=h2d_renorm_x,
+        qgp.make_migration_summary_plot(h2d_renorm_x=h2d_renorm_x,
                                         h2d_renorm_y=h2d_renorm_y,
                                         xlabel=var_dict['var_label'],
                                         output_filename=output_filename,
@@ -434,6 +434,9 @@ def make_plots(h2d, var_dict, plot_dir, append="",
         plot = Plot(conts, what='hist', has_data=False,
                     title=var_dict.get('title', ''),
                     xtitle=var_dict['var_label'], ytitle='p.d.f.')
+        plot.default_canvas_size = (700, 600)
+        plot.legend.SetX1(0.75)
+        plot.legend.SetY1(0.75)
         plot.plot("NOSTACK HISTE")
         bits = []
         if plot_reco:
@@ -443,6 +446,18 @@ def make_plots(h2d, var_dict, plot_dir, append="",
         content = "_".join(bits)
         output_filename = os.path.join(plot_dir, "%s_%s_1d_%s.%s" % (var_dict['name'], append, content, OUTPUT_FMT))
         plot.save(output_filename)
+
+
+def get_summed_hists(tfile, hist_names):
+    first_hist = cu.get_from_tfile(tfile, hist_names[0])
+    if len(hist_names) == 1:
+        return first_hist
+    else:
+        first_hist = first_hist.Clone()
+        for hname in hist_names:
+            this_hist = cu.get_from_tfile(tfile, hname)
+            first_hist.Add(this_hist)
+        return first_hist
 
 
 if __name__ == "__main__":
@@ -491,10 +506,11 @@ if __name__ == "__main__":
     source_plot_dir_names = None
     region_labels = None
     if "qcd" in args.input.lower():
-        source_plot_dir_names = ["Dijet_QG_central_tighter", "Dijet_QG_forward_tighter", "Dijet_QG_central_tighter_groomed", "Dijet_QG_forward_tighter_groomed"]
-        region_labels = [qgc.QCD_Dijet_CEN_LABEL, qgc.QCD_Dijet_FWD_LABEL, qgc.QCD_Dijet_CEN_GROOMED_LABEL, qgc.QCD_Dijet_FWD_GROOMED_LABEL]
+        source_plot_dir_names = [("Dijet_QG_central_tighter", "Dijet_QG_forward_tighter"), ("Dijet_QG_central_tighter_groomed", "Dijet_QG_forward_tighter_groomed")]
+        # region_labels = [qgc.QCD_Dijet_CEN_LABEL, qgc.QCD_Dijet_FWD_LABEL, qgc.QCD_Dijet_CEN_GROOMED_LABEL, qgc.QCD_Dijet_FWD_GROOMED_LABEL]
+        region_labels = [qgc.Dijet_LABEL, qgc.Dijet_GROOMED_LABEL]
     elif "dyjetstoll" in args.input.lower():
-        source_plot_dir_names = ["ZPlusJets_QG"]
+        source_plot_dir_names = [("ZPlusJets_QG"), ("ZPlusJets_QG_groomed")]
         region_labels = [qgc.DY_ZpJ_LABEL]
     else:
         raise RuntimeError("No idea which region we're using")
@@ -520,34 +536,30 @@ if __name__ == "__main__":
         },
     ]
 
+    do_rel_response = False  # Use relative response instead - only makes sense with quantiles/gaussian fit?
+    
     input_tfile = cu.open_root_file(args.input)
 
     for angle in qgc.COMMON_VARS[:]:
 
         all_response_maps_dict = {}
 
-        for source_plot_dir_name, region_label in zip(source_plot_dir_names, region_labels):
-            var_prepend = "groomed" if "groomed" in source_plot_dir_name else ""
+        for source_plot_dir_name_list, region_label in zip(source_plot_dir_names, region_labels):
+            var_prepend = "Groomed " if "groomed" in source_plot_dir_name_list[0] else ""
+            total_plot_dir_name = "+".join(source_plot_dir_name_list)
 
             response_maps_dict = {} # store 2D maps for later
 
             for pt_region_dict in pt_regions[:]:
                 var_dict = {
-                    "name": "%s/%s%s" % (source_plot_dir_name, angle.var, pt_region_dict['append']),
+                    "name": "%s/%s%s" % (total_plot_dir_name, angle.var, pt_region_dict['append']),
                     "var_label": "%s%s (%s)" % (var_prepend, angle.name, angle.lambda_str),
                     "title": "%s\n%s" % (region_label, pt_region_dict['title']),
                 }
 
-                do_rel_response = False  # Use relative response instead - only makes sense with quantiles/gaussian fit?
-                full_var_name = var_dict['name']
-                if do_rel_response:
-                    full_var_name += "_rel_response"
-                else:
-                    full_var_name += "_response"
-
-                print(full_var_name)
-
-                h2d_orig = cu.get_from_tfile(input_tfile, full_var_name)
+                h_append = "_rel_response" if do_rel_response else "_response"
+                names = ["%s/%s%s%s" % (sname, angle.var, pt_region_dict['append'], h_append) for sname in source_plot_dir_name_list]
+                h2d_orig = get_summed_hists(input_tfile, names)
 
                 # Make plots with original fine equidistant binning
                 # -------------------------------------------------
@@ -587,7 +599,7 @@ if __name__ == "__main__":
                 # Now rebin any other input files with the same hist using the new binning
                 # ------------------------------------------------------------------------
                 if args.rebinThisInput and len(args.rebinThisInput) > 0:
-                    contributions = qgg.migration_plot_components(h2d_renorm_x, h2d_renorm_y, var_dict['var_label'])
+                    contributions = qgp.migration_plot_components(h2d_renorm_x, h2d_renorm_y, var_dict['var_label'])
 
                     lens = [len(x) for x in [args.rebinThisInput, args.rebinThisLabel, args.rebinThisOutputFile]]
                     if any(l != lens[0] for l in lens[1:]):
@@ -607,7 +619,7 @@ if __name__ == "__main__":
                         h2d_renorm_x_other = cu.make_normalised_TH2(h2d_rebin_other, 'X', recolour=False, do_errors=False)
                         tfile_other_out.WriteTObject(h2d_renorm_x_other)
                         h2d_renorm_y_other = cu.make_normalised_TH2(h2d_rebin_other, 'Y', recolour=False, do_errors=False)
-                        contributions_other = qgg.migration_plot_components(h2d_renorm_x_other, h2d_renorm_y_other, var_dict['var_label'])
+                        contributions_other = qgp.migration_plot_components(h2d_renorm_x_other, h2d_renorm_y_other, var_dict['var_label'])
                         for ind, c in enumerate(contributions_other):
                             c.obj.SetLineStyle(ind+2)
                             c.label += " [%s]" % other_label
@@ -713,13 +725,13 @@ if __name__ == "__main__":
                                plot_migrations=True)
 
 
-                # Apply binning scheme dervied from one ungroomed region to groomed
+                # Apply binning scheme derived from one ungroomed region to groomed
                 # And use the reference pt region
                 # ---------------------------------------------------------
                 rebin_other_groomed_regions = True
-                if "groomed" in source_plot_dir_name and rebin_other_groomed_regions:
+                if "groomed" in source_plot_dir_name_list[0] and rebin_other_groomed_regions:
                     # Find rebinning scheme
-                    ungroomed_source_plot_dir_name = source_plot_dir_name.replace("_groomed", "")
+                    ungroomed_source_plot_dir_name = "+".join([s.replace("_groomed", "") for s in source_plot_dir_name_list])
                     key = "%s/%s%s" % (ungroomed_source_plot_dir_name, angle.var, reference_pt_region)
                     print("key", key)
                     if key not in rebin_results_dict:
@@ -734,14 +746,14 @@ if __name__ == "__main__":
                         # print("angle.var", angle.var)
                         if ("_renorm" in hname
                             or angle.var not in hname
-                            or source_plot_dir_name not in hname):
+                            or source_plot_dir_name_list[0] not in hname):
                             continue
 
                         print("Rebinning groomed", hname)
                         h2d_rebin = make_rebinned_2d_hist(h2d, reference_binning, use_half_width_y=False)
                         var_dict = {
                             "name": hname,
-                            "var_label": "groomed %s (%s)" % (angle.name, angle.lambda_str),
+                            "var_label": "Groomed %s (%s)" % (angle.name, angle.lambda_str),
                             "title": h2d.GetTitle() + "\n(rebinned for %s, ungroomed)" % this_pt_dict['title'],
                         }
                         make_plots(h2d_rebin, var_dict, plot_dir=plot_dir,
@@ -751,7 +763,7 @@ if __name__ == "__main__":
                 # Now rebin any other input files with the same hist using the new binning
                 # ------------------------------------------------------------------------
                 if args.rebinThisInput and len(args.rebinThisInput) > 0:
-                    # contributions = qgg.migration_plot_components(h2d_renorm_x, h2d_renorm_y, var_dict['var_label'])
+                    # contributions = qgp.migration_plot_components(h2d_renorm_x, h2d_renorm_y, var_dict['var_label'])
 
                     lens = [len(x) for x in [args.rebinThisInput, args.rebinThisLabel, args.rebinThisOutputFile]]
                     if any(l != lens[0] for l in lens[1:]):
@@ -759,28 +771,23 @@ if __name__ == "__main__":
 
 
                     for pt_region_dict in pt_regions[:]:
-
                         var_dict = {
-                            "name": "%s/%s%s" % (source_plot_dir_name, angle.var, pt_region_dict['append']),
-                            "var_label": "%s (%s)" % (angle.name, angle.lambda_str),
+                            "name": "%s/%s%s" % (total_plot_dir_name, angle.var, pt_region_dict['append']),
+                            "var_label": "%s%s (%s)" % (var_prepend, angle.name, angle.lambda_str),
                             "title": "%s\n%s\n(rebinned for %s)" % (region_label, pt_region_dict['title'], this_pt_dict['title']),
                         }
                         contributions = []
 
-                        full_var_name = var_dict['name']
-                        if do_rel_response:
-                            full_var_name += "_rel_response"
-                        else:
-                            full_var_name += "_response"
-
                         print(var_dict)
+                        h_append = "_rel_response" if do_rel_response else "_response"
+                        names = ["%s/%s%s%s" % (sname, angle.var, pt_region_dict['append'], h_append) for sname in source_plot_dir_name_list]
 
                         for ind, (other_input, other_label, other_output_filename) in enumerate(zip(args.rebinThisInput, args.rebinThisLabel, args.rebinThisOutputFile)):
                             print(other_label)
                             tfile_other = cu.open_root_file(other_input)
                             tfile_other_out = cu.open_root_file(other_output_filename, 'RECREATE')
 
-                            h2d_other = cu.get_from_tfile(tfile_other, full_var_name)
+                            h2d_orig = get_summed_hists(tfile_other, names)
                             h2d_rebin_other = make_rebinned_2d_hist(h2d_other, reference_binning, use_half_width_y=False)
                             print(h2d_other)
                             print(h2d_rebin_other)
@@ -792,7 +799,7 @@ if __name__ == "__main__":
                             h2d_renorm_x_other = cu.make_normalised_TH2(h2d_rebin_other, 'X', recolour=False, do_errors=False)
                             tfile_other_out.WriteTObject(h2d_renorm_x_other)
                             h2d_renorm_y_other = cu.make_normalised_TH2(h2d_rebin_other, 'Y', recolour=False, do_errors=False)
-                            contributions_other = qgg.migration_plot_components(h2d_renorm_x_other, h2d_renorm_y_other, var_dict['var_label'])
+                            contributions_other = qgp.migration_plot_components(h2d_renorm_x_other, h2d_renorm_y_other, var_dict['var_label'])
                             for ind, c in enumerate(contributions_other):
                                 # c.obj.SetLineStyle(ind+2)
                                 c.label += " [%s]" % other_label

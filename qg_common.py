@@ -386,6 +386,7 @@ QCD_ZpJ_QFLAV_LABEL = "QCD MC, Z+jets region\n(uds-matched)"
 QCD_ZpJ_GFLAV_LABEL = "QCD MC, Z+jets region\n(g-matched)"
 
 Dijet_LABEL = "Dijet region"
+Dijet_GROOMED_LABEL = "Dijet region (groomed)"
 QCD_Dijet_LABEL = "QCD MC, Dijet region"
 QCD_Dijet_GEN_LABEL = "QCD MC, Dijet region\n(GenJets)"
 QCD_Dijet_QFLAV_LABEL = "QCD MC, Dijet region\n(uds-matched)"
