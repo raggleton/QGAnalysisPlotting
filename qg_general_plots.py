@@ -1030,13 +1030,13 @@ def migration_plot_components(h2d_renorm_x, h2d_renorm_y, xlabel):
     col_xfer_up2 = ROOT.kAzure+8
     col_xfer_up3 = ROOT.kOrange
     contributions = [
-        Contribution(hist_purity, label="Purity (gen right)", line_color=col_purity, marker_color=col_purity),
-        Contribution(hist_stability, label="Stability (reco right)", line_color=col_stability, marker_color=col_stability),
-        Contribution(hist_xfer_down, label="-1 reco bin", line_color=col_xfer_down, marker_color=col_xfer_down),
-        Contribution(hist_xfer_down2, label="-2 reco bin", line_color=col_xfer_down2, marker_color=col_xfer_down2),
+        Contribution(hist_purity, label="Purity (gen correct)", line_color=col_purity, marker_color=col_purity),
+        Contribution(hist_stability, label="Stability (reco correct)", line_color=col_stability, marker_color=col_stability),
+        Contribution(hist_xfer_down, label="-1 reco bin", line_color=col_xfer_down, marker_color=col_xfer_down, line_style=2),
+        Contribution(hist_xfer_down2, label="-2 reco bin", line_color=col_xfer_down2, marker_color=col_xfer_down2, line_style=3),
         # Contribution(hist_xfer_down3, label="3 lower reco bin", line_color=col_xfer_down3, marker_color=col_xfer_down3),
-        Contribution(hist_xfer_up, label="+1 reco bin", line_color=col_xfer_up, marker_color=col_xfer_up),
-        Contribution(hist_xfer_up2, label="+2 reco bin", line_color=col_xfer_up2, marker_color=col_xfer_up2),
+        Contribution(hist_xfer_up, label="+1 reco bin", line_color=col_xfer_up, marker_color=col_xfer_up, line_style=2),
+        Contribution(hist_xfer_up2, label="+2 reco bin", line_color=col_xfer_up2, marker_color=col_xfer_up2, line_style=3),
         # Contribution(hist_xfer_up3, label="3 higher reco bin", line_color=col_xfer_up3, marker_color=col_xfer_up3),
     ]
     return contributions
@@ -1048,11 +1048,12 @@ def make_migration_summary_plot(h2d_renorm_x, h2d_renorm_y, xlabel, output_filen
         c.obj.SetLineWidth(2)
     binning = [h2d_renorm_x.GetXaxis().GetBinLowEdge(bin_ind) for bin_ind in range(1, h2d_renorm_x.GetNbinsX()+2)]
     xlim = [binning[0], binning[-1]]
-    plot = Plot(contributions, what='hist', xlim=xlim, ylim=[5e-3, 5], xtitle=xlabel, has_data=False, title=title)
+    plot = Plot(contributions, what='hist', xlim=xlim, ylim=[1e-3, 10], xtitle=xlabel, has_data=False, title=title)
+    plot.default_canvas_size = (700, 600)
     y1 = 0.15
-    plot.legend.SetX1(0.5)
+    plot.legend.SetX1(0.55)
     plot.legend.SetY1(y1)
-    plot.legend.SetY2(y1+0.25)
+    plot.legend.SetY2(y1+0.2)
     plot.plot("NOSTACK HISTE")
     plot.legend.SetFillStyle(1001)
     plot.legend.SetFillColorAlpha(ROOT.kWhite, 0.75)
@@ -1061,7 +1062,7 @@ def make_migration_summary_plot(h2d_renorm_x, h2d_renorm_y, xlabel, output_filen
     plot.set_logy()
     plot.main_pad.cd()
     lines = []
-    for val in [1, 0.5, 0.4, 1e-1, 1e-2]:
+    for val in [1, 0.5, 1e-1, 1e-2]:
         line = ROOT.TLine(xlim[0], val, xlim[1], val)
         line.SetLineStyle(2)
         line.SetLineColor(ROOT.kGray+2)
