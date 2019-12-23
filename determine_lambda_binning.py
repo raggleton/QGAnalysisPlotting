@@ -424,12 +424,16 @@ def make_plots(h2d, var_dict, plot_dir, append="",
         conts = []
         if plot_reco:
             h_reco = h2d.ProjectionY(cu.get_unique_str(), 0, -1, "e")
-            conts.append(Contribution(h_reco, label="Reco", normalise_hist=True,
+            h_reco.Scale(1./h_reco.Integral())
+            h_reco_div_bin_width = qgp.hist_divide_bin_width(h_reco)
+            conts.append(Contribution(h_reco_div_bin_width, label="Reco", normalise_hist=False,
                                       line_color=ROOT.kRed, line_width=2))
         if plot_gen:
             h_gen = h2d.ProjectionX(cu.get_unique_str(), 0, -1, "e")
-            conts.append(Contribution(h_gen, label="Gen", normalise_hist=True,
-                                      line_color=ROOT.kBlue, line_width=2))
+            h_gen.Scale(1./h_gen.Integral())
+            h_gen_div_bin_width = qgp.hist_divide_bin_width(h_gen)
+            conts.append(Contribution(h_gen_div_bin_width, label="Gen", normalise_hist=False,
+                                      line_color=ROOT.kBlue, line_width=2, line_style=2 if plot_reco else 1))
 
         plot = Plot(conts, what='hist', has_data=False,
                     title=var_dict.get('title', ''),
