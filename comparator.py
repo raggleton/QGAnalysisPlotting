@@ -264,8 +264,10 @@ class Plot(object):
         self.canvas = None
         self.default_canvas_size = (600, 800)
         # self.default_canvas_size = (800, 600)
-        self.right_margin = 0.03
+        self.right_margin = 0.04
         self.left_margin = 0.12 # use ROOT default
+        self.text_left_offset = self.left_margin * (0.055/0.12)
+        self.text_left_offset = 0
         self.top_margin = 0.1
         self.main_pad = None
         self.subplot = subplot
@@ -531,9 +533,12 @@ class Plot(object):
                     ROOT.SetOwnership(self.main_pad, False)
                     self.main_pad.SetTicks(1, 1)
                     self.main_pad.SetBottomMargin(2*self.subplot_pad_fudge)
-                    self.main_pad.SetTopMargin(self.top_margin / (1-self.subplot_pad_height))
-                    self.main_pad.SetRightMargin(self.right_margin / (1-self.subplot_pad_height))
-                    self.main_pad.SetLeftMargin(self.left_margin / (1-self.subplot_pad_height))
+                    self.top_margin /= (1-self.subplot_pad_height)
+                    self.main_pad.SetTopMargin(self.top_margin)
+                    self.right_margin /= (1-self.subplot_pad_height)
+                    self.main_pad.SetRightMargin(self.right_margin)
+                    self.left_margin /= (1-self.subplot_pad_height)
+                    self.main_pad.SetLeftMargin(self.left_margin)
                     self.canvas.cd()
                     self.main_pad.Draw()
                     self.subplot_pad = ROOT.TPad("subplot_pad", "", 0, 0, 1, self.subplot_pad_height-self.subplot_pad_fudge)
@@ -542,9 +547,9 @@ class Plot(object):
                     self.subplot_pad.SetFillColor(0)
                     self.subplot_pad.SetFillStyle(0)
                     self.subplot_pad.SetTopMargin(4*self.subplot_pad_fudge)
-                    self.subplot_pad.SetRightMargin(self.right_margin / (1-self.subplot_pad_height))
+                    self.subplot_pad.SetRightMargin(self.right_margin)
                     self.subplot_pad.SetBottomMargin(0.35)
-                    self.subplot_pad.SetLeftMargin(self.left_margin / (1-self.subplot_pad_height))
+                    self.subplot_pad.SetLeftMargin(self.left_margin)
                     self.canvas.cd()
                     self.subplot_pad.Draw()
                 else:
@@ -614,9 +619,8 @@ class Plot(object):
         cms_latex.SetTextSize(0.035)
         latex_height = 0.91
         # left_offset = (self.left_margin - 0.08)  # to account for left margin, magic numbers ahoy
-        left_offset = self.left_margin * (0.055/0.12)
-        left_offset = 0
-        start_x = self.left_margin + left_offset
+
+        start_x = self.left_margin + self.text_left_offset
         if self.is_preliminary:
             if self.has_data:
                 cms_latex.DrawLatex(start_x, latex_height, "#font[62]{CMS}#font[52]{ Preliminary}")
@@ -640,7 +644,7 @@ class Plot(object):
         start_y = 0.87
         diff_y = 0.04
         for ind, line in enumerate(self.title.split('\n')):
-            text_latex.DrawLatex(0.18 + 0.02 + left_offset, start_y - (ind*diff_y), line)
+            text_latex.DrawLatex(self.left_margin + 0.03 + self.text_left_offset, start_y - (ind*diff_y), line)
 
         # Do subplot
         if self.subplot_type:
