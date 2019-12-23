@@ -116,6 +116,7 @@ def make_comparison_plot_ingredients(entries, rebin=1, normalise_hist=True, mean
             del plot_kwargs['subplot']
 
     ytitle = "p.d.f." if normalise_hist else "N"
+    ytitle = "#DeltaN/N" if normalise_hist else "N"
     p = Plot(conts, what="hist", ytitle=ytitle, legend=do_legend, **plot_kwargs)
     if do_legend:
         # ensure legend big enough, but not too big, depending on how long entries are
