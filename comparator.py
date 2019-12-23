@@ -515,6 +515,11 @@ class Plot(object):
             elif self.plot_what == "hist":
                 draw_opts = "NOSTACK"
 
+        if "STACK" in draw_opts and not "NOSTACK" in draw_opts:
+            draw_opts = draw_opts.replace("STACK", "")
+            print("WARNING: 'stack' is not a valid draw option - the default is "
+                  "stacking, so will draw with options '%s'" % (draw_opts))
+
         # Need a canvas before drawing
         # If we have "SAME" then we want to draw this Plot object
         # on the current canvas
