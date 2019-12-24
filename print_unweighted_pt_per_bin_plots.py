@@ -96,7 +96,7 @@ if __name__ == "__main__":
     # QCD HT plots
     # --------------------------------------------------------------------------
     # Unweighted pt, showing contributions from each HT bin
-    mc_ht_entries = [
+    qcd_ht_entries = [
         {
             'filename': '%s/uhh2.AnalysisModuleRunner.MC.MC_MGPYTHIA_QCD_HT50to100.root' % (input_dir),
             'label': 'HT50to100',
@@ -150,10 +150,73 @@ if __name__ == "__main__":
         "Dijet_tighter/pt_jet_unweighted", "Dijet_tighter/pt_jet1_unweighted",
         "Dijet_tighter/pt_jet", "Dijet_tighter/pt_jet1",
     ]
+    # for hname in hist_names:
+    #     output_filename = "%s/%s.%s" % (args.output, hname.replace("/", "-"), OUTPUT_FMT)
+    #     do_mc_plot(qcd_ht_entries,
+    #                hist_name=hname,
+    #                output_file=output_filename,
+    #                xlim=[30, 2000],
+    #                ylim=[10, 1E12])
+
+    # DY HT plots
+    # --------------------------------------------------------------------------
+    # Unweighted pt, showing contributions from each HT bin
+    dy_ht_entries = [
+        {
+            'filename': '%s/uhh2.AnalysisModuleRunner.MC.MC_MGPYTHIA_DYJetsToLL_M-50_HT-0to70.root' % (input_dir),
+            'label': 'HT0to70',
+            'color': ROOT.kAzure,
+        },
+        {
+            'filename': '%s/uhh2.AnalysisModuleRunner.MC.MC_MGPYTHIA_DYJetsToLL_M-50_HT-70to100.root' % (input_dir),
+            'label': 'HT70to100',
+            'color': ROOT.kOrange-2,
+        },
+        {
+            'filename': '%s/uhh2.AnalysisModuleRunner.MC.MC_MGPYTHIA_DYJetsToLL_M-50_HT-100to200.root' % (input_dir),
+            'label': 'HT100to200',
+            'color': ROOT.kGreen+2,
+        },
+        {
+            'filename': '%s/uhh2.AnalysisModuleRunner.MC.MC_MGPYTHIA_DYJetsToLL_M-50_HT-200to400.root' % (input_dir),
+            'label': 'HT200to400',
+            'color': ROOT.kMagenta+1,
+        },
+        {
+            'filename': '%s/uhh2.AnalysisModuleRunner.MC.MC_MGPYTHIA_DYJetsToLL_M-50_HT-400to600.root' % (input_dir),
+            'label': 'HT400to600',
+            'color': ROOT.kCyan,
+        },
+        {
+            'filename': '%s/uhh2.AnalysisModuleRunner.MC.MC_MGPYTHIA_DYJetsToLL_M-50_HT-600to800.root' % (input_dir),
+            'label': 'HT600to800',
+            'color': ROOT.kRed,
+        },
+        {
+            'filename': '%s/uhh2.AnalysisModuleRunner.MC.MC_MGPYTHIA_DYJetsToLL_M-50_HT-800to1200.root' % (input_dir),
+            'label': 'HT800to1200',
+            'color': ROOT.kAzure+6,
+        },
+        {
+            'filename': '%s/uhh2.AnalysisModuleRunner.MC.MC_MGPYTHIA_DYJetsToLL_M-50_HT-1200to2500.root' % (input_dir),
+            'label': 'HT1200to2500',
+            'color': ROOT.kOrange+3
+        },
+        {
+            'filename': '%s/uhh2.AnalysisModuleRunner.MC.MC_MGPYTHIA_DYJetsToLL_M-50_HT-2500toInf.root' % (input_dir),
+            'label': 'HT2500toInf',
+            'color': ROOT.kGreen-7,
+        },
+    ]
+
+    hist_names = [
+        "ZPlusJets_Presel/pt_jet1_unweighted", "ZPlusJets_Presel/pt_jet1",
+        "ZPlusJets/pt_jet1_unweighted", "ZPlusJets/pt_jet1",
+    ]
     for hname in hist_names:
         output_filename = "%s/%s.%s" % (args.output, hname.replace("/", "-"), OUTPUT_FMT)
-        do_mc_plot(mc_ht_entries,
+        do_mc_plot(dy_ht_entries,
                    hist_name=hname,
                    output_file=output_filename,
                    xlim=[30, 2000],
-                   ylim=[10, 1E12])
+                   ylim=[0.1, 1E8])
