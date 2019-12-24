@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 
-"""Make unweighted pt plots
+"""Make unweighted pt plots for QCD, data, DYJets
 
 Also make plots per HT bin, or per trigger, or per Run period
 """
@@ -40,9 +40,9 @@ ROOT.gStyle.SetPaintTextFormat(".3f")
 OUTPUT_FMT = "pdf"
 
 
-def do_data_plot(entries, output_file, hist_name=None, xlim=None, ylim=None):
+def do_plot(entries, output_file, hist_name=None, xlim=None, ylim=None, rebin=2, is_data=True):
     components = []
-    do_unweighted = any(["unweighted" in e['hist_name'] for e in entries])
+    do_unweighted = any(["unweighted" in e.get('hist_name', hist_name) for e in entries])
     for ent in entries:
         if 'tfile' not in ent:
             ent['tfile'] = cu.open_root_file(ent['filename'])
@@ -57,12 +57,12 @@ def do_data_plot(entries, output_file, hist_name=None, xlim=None, ylim=None):
                          marker_size=0,
                          line_width=2,
                          label=ent['label'],
-                         rebin_hist=2
+                         rebin_hist=rebin
                         )
         )
     plot = Plot(components,
                 what='hist',
-                has_data=True,
+                has_data=is_data,
                 xlim=xlim,
                 ylim=ylim,
                 ytitle="Unweighted N" if do_unweighted else 'N')
@@ -77,47 +77,7 @@ def do_data_plot(entries, output_file, hist_name=None, xlim=None, ylim=None):
     plot.set_logy(do_more_labels=False)
     plot.save(output_file)
 
-    stem, ext = os.path.splitext(output_file)
-    plot.plot("HISTE NOSTACK")
-    plot.set_logx()
-    plot.set_logy(do_more_labels=False)
-    plot.save(stem+"_nostack" + ext)
-
-
-def do_mc_plot(mc_entries, hist_name, output_file, xlim=None, ylim=None):
-    components = []
-    for ent in mc_entries:
-        if 'tfile' not in ent:
-            ent['tfile'] = cu.open_root_file(ent['filename'])
-        ent['hist'] = cu.get_from_tfile(ent['tfile'], hist_name)
-        components.append(
-            Contribution(ent['hist'],
-                         fill_color=ent['color'],
-                         line_color=ent['color'],
-                         marker_color=ent['color'],
-                         marker_size=0,
-                         line_width=2,
-                         label=ent['label'],
-                         rebin_hist=5
-                        )
-        )
-    plot = Plot(components,
-                what='hist',
-                has_data=False,
-                xlim=xlim,
-                ylim=ylim,
-                ytitle="Unweighted N" if "unweighted" in hist_name else 'N')
-    # plot.y_padding_min_log = 10 if 'unweighted' in hist_name else 10
-    plot.default_canvas_size = (700, 600)
-    plot.legend.SetNColumns(2)
-    plot.legend.SetX1(0.55)
-    plot.legend.SetY1(0.7)
-    plot.legend.SetY2(0.88)
-    plot.plot("HISTE")
-    plot.set_logx()
-    plot.set_logy(do_more_labels=False)
-    plot.save(output_file)
-
+    # do non-stacked version
     stem, ext = os.path.splitext(output_file)
     plot.plot("HISTE NOSTACK")
     plot.set_logx()
@@ -137,7 +97,7 @@ if __name__ == "__main__":
     zb_entry = {
         'filename': "%s/%s" % (input_dir, qgc.ZB_FILENAME),
         'label': 'HLT_ZeroBias',
-        'color': ROOT.kRed,
+        'color': ROOT.kMagenta-9,
         'scale': 35918219492.947 / 29048.362
     }
     jet_ht_filename = "%s/%s" % (input_dir, qgc.JETHT_FILENAME)
@@ -209,9 +169,11 @@ if __name__ == "__main__":
             this_data_entries.append(this_entry)
 
         output_filename = "%s/DataJetHTZB-%s.%s" % (args.output, zb_name.split("/", 1)[1], OUTPUT_FMT)
-        do_data_plot(this_data_entries, output_file=output_filename, xlim=[30, 2E3])
+        do_plot(this_data_entries,
+                output_file=output_filename,
+                xlim=[30, 2E3],
+                ylim=[10, 1E8] if 'unweighted' in ht_name else [1, 1E12])
 
-    exit()
     # QCD HT plots
     # --------------------------------------------------------------------------
     # Unweighted pt, showing contributions from each HT bin
@@ -271,11 +233,12 @@ if __name__ == "__main__":
     ]
     # for hname in hist_names:
     #     output_filename = "%s/%s.%s" % (args.output, hname.replace("/", "-"), OUTPUT_FMT)
-    #     do_mc_plot(qcd_ht_entries,
-    #                hist_name=hname,
-    #                output_file=output_filename,
-    #                xlim=[30, 2000],
-    #                ylim=[10, 1E12])
+    #     do_plot(qcd_ht_entries,
+    #             hist_name=hname,
+    #             output_file=output_filename,
+    #             xlim=[30, 2000],
+    #             ylim=[10, 1E12],
+    #             is_data=False)
 
     # DY HT plots
     # --------------------------------------------------------------------------
@@ -334,8 +297,9 @@ if __name__ == "__main__":
     ]
     # for hname in hist_names:
     #     output_filename = "%s/%s.%s" % (args.output, hname.replace("/", "-"), OUTPUT_FMT)
-    #     do_mc_plot(dy_ht_entries,
-    #                hist_name=hname,
-    #                output_file=output_filename,
-    #                xlim=[30, 2000],
-    #                ylim=[0.1, 1E8])
+    #     do_plot(dy_ht_entries,
+    #             hist_name=hname,
+    #             output_file=output_filename,
+    #             xlim=[30, 2000],
+    #             ylim=[0.1, 1E8],
+    #             is_data=False)
