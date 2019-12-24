@@ -468,14 +468,17 @@ class Plot(object):
         else:
             modifier.SetMaximum(ymax * self.y_padding_max_linear)
 
-        # somehow broken
-        # ymin = min([o.GetMinimum() for o in self.contributions_objs])
-        # if self.main_pad.GetLogy():
-        #     pass
-        #     # if ymin > 0:
-        #     #     modifier.SetMinimum(ymin * self.y_padding_min_log)
-        # else:
-        #     modifier.SetMinimum(ymin * self.y_padding_min_linear)
+        # this is tricky... how to handle various cases like -ve, ignoring 0s
+        ymin = min([o.GetMinimum(0) for o in self.contributions_objs])
+        
+        if ymin >= 0:
+            ymin = min([o.GetMinimum(1E-20) for o in self.contributions_objs])
+        
+        if self.main_pad.GetLogy():
+            if ymin > 0:
+                modifier.SetMinimum(ymin * self.y_padding_min_log)
+        else:
+            modifier.SetMinimum(ymin * self.y_padding_min_linear)
 
     def plot(self, draw_opts=None):
         """Make the plot.
