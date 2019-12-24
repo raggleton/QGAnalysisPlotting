@@ -410,19 +410,20 @@ class Plot(object):
         container.GetYaxis().SetTitleOffset(container.GetYaxis().GetTitleOffset()*factor*(0.85*self.left_margin/0.1))
         # container.GetYaxis().SetTickLength(0.03/factor)
 
-    def set_logx(self, state=True):
+    def set_logx(self, state=True, do_more_labels=True):
         # Call AFTER plot()
         self.main_pad.SetLogx(int(state))
         if self.subplot_pad:
             self.subplot_pad.SetLogx(int(state))
-        if self.container:
-            ax = self.container.GetXaxis()
-            if ax:
-                ax.SetMoreLogLabels()
-        if self.subplot_container:
-            ax = self.subplot_container.GetXaxis()
-            if ax:
-                ax.SetMoreLogLabels()
+        if do_more_labels:
+            if self.container:
+                ax = self.container.GetXaxis()
+                if ax:
+                    ax.SetMoreLogLabels()
+            if self.subplot_container:
+                ax = self.subplot_container.GetXaxis()
+                if ax:
+                    ax.SetMoreLogLabels()
 
     def set_logy(self, state=True, do_more_labels=True):
         # Call AFTER plot()
