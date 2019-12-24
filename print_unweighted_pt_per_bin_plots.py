@@ -13,6 +13,7 @@ import os
 os.nice(10)
 import sys
 import argparse
+from copy import deepcopy
 
 import ROOT
 from MyStyle import My_Style
@@ -39,9 +40,52 @@ ROOT.gStyle.SetPaintTextFormat(".3f")
 OUTPUT_FMT = "pdf"
 
 
+def do_data_plot(entries, output_file, hist_name=None, xlim=None, ylim=None):
+    components = []
+    do_unweighted = any(["unweighted" in e['hist_name'] for e in entries])
+    for ent in entries:
+        if 'tfile' not in ent:
+            ent['tfile'] = cu.open_root_file(ent['filename'])
+        ent['hist'] = cu.get_from_tfile(ent['tfile'], ent.get('hist_name', hist_name))
+        if not do_unweighted and 'scale' in ent:
+            ent['hist'].Scale(ent.get('scale', 1))
+        components.append(
+            Contribution(ent['hist'],
+                         fill_color=ent['color'],
+                         line_color=ent['color'],
+                         marker_color=ent['color'],
+                         marker_size=0,
+                         line_width=2,
+                         label=ent['label'],
+                         rebin_hist=2
+                        )
+        )
+    plot = Plot(components,
+                what='hist',
+                has_data=True,
+                xlim=xlim,
+                ylim=ylim,
+                ytitle="Unweighted N" if do_unweighted else 'N')
+    # plot.y_padding_min_log = 10 if 'unweighted' in hist_name else 10
+    plot.default_canvas_size = (700, 600)
+    plot.legend.SetNColumns(2)
+    plot.legend.SetX1(0.55)
+    plot.legend.SetY1(0.7)
+    plot.legend.SetY2(0.88)
+    plot.plot("HISTE")
+    plot.set_logx()
+    plot.set_logy(do_more_labels=False)
+    plot.save(output_file)
+
+    stem, ext = os.path.splitext(output_file)
+    plot.plot("HISTE NOSTACK")
+    plot.set_logx()
+    plot.set_logy(do_more_labels=False)
+    plot.save(stem+"_nostack" + ext)
+
+
 def do_mc_plot(mc_entries, hist_name, output_file, xlim=None, ylim=None):
     components = []
-    hst = ROOT.THStack("hst", "")
     for ent in mc_entries:
         if 'tfile' not in ent:
             ent['tfile'] = cu.open_root_file(ent['filename'])
@@ -89,10 +133,85 @@ if __name__ == "__main__":
     # DATA plots
     # --------------------------------------------------------------------------
     # Unweighted pt, showing contributions from different triggers
+    # Have to add in ZB manually
+    zb_entry = {
+        'filename': "%s/%s" % (input_dir, qgc.ZB_FILENAME),
+        'label': 'HLT_ZeroBias',
+        'color': ROOT.kRed,
+        'scale': 35918219492.947 / 29048.362
+    }
+    jet_ht_filename = "%s/%s" % (input_dir, qgc.JETHT_FILENAME)
+    jet_ht_entries = [
+        {
+            'filename': jet_ht_filename,
+            'ind': '0',
+            'label': "HLT_PFJet40",
+            'color': ROOT.kAzure,
+        },
+        {
+            'filename': jet_ht_filename,
+            'ind': '1',
+            'label': "HLT_PFJet60",
+            'color': ROOT.kOrange-2,
+        },
+        {
+            'filename': jet_ht_filename,
+            'ind': '2',
+            'label': "HLT_PFJet80",
+            'color': ROOT.kGreen+2,
+        },
+        {
+            'filename': jet_ht_filename,
+            'ind': '3',
+            'label': "HLT_PFJet140",
+            'color': ROOT.kMagenta+1,
+        },
+        {
+            'filename': jet_ht_filename,
+            'ind': '4',
+            'label': "HLT_PFJet200",
+            'color': ROOT.kCyan,
+        },
+        {
+            'filename': jet_ht_filename,
+            'ind': '5',
+            'label': "HLT_PFJet260",
+            'color': ROOT.kRed,
+        },
+        {
+            'filename': jet_ht_filename,
+            'ind': '6',
+            'label': "HLT_PFJet320",
+            'color': ROOT.kAzure+6,
+        },
+        {
+            'filename': jet_ht_filename,
+            'ind': '7',
+            'label': "HLT_PFJet400",
+            'color': ROOT.kOrange+3
+        },
+        {
+            'filename': jet_ht_filename,
+            'ind': '8',
+            'label': "HLT_PFJet450",
+            'color': ROOT.kGreen-7,
+        },
+    ]
+    zb_hist_names = ["Dijet_tighter/pt_jet1", "Dijet_tighter/pt_jet1_unweighted"]
+    jet_ht_hist_names = ["Dijet_jet_hist_{ind}/pt_1", "Dijet_jet_hist_unweighted_{ind}/pt_1"]
+    for zb_name, ht_name in  zip(zb_hist_names, jet_ht_hist_names):
+        this_zb_entry = deepcopy(zb_entry)
+        this_zb_entry['hist_name'] = zb_name
+        this_data_entries = [this_zb_entry]
+        for ent in jet_ht_entries:
+            this_entry = deepcopy(ent)
+            this_entry['hist_name'] = ht_name.format(ind=this_entry['ind'])
+            this_data_entries.append(this_entry)
 
+        output_filename = "%s/DataJetHTZB-%s.%s" % (args.output, zb_name.split("/", 1)[1], OUTPUT_FMT)
+        do_data_plot(this_data_entries, output_file=output_filename, xlim=[30, 2E3])
 
-    data_run_entries = []
-
+    exit()
     # QCD HT plots
     # --------------------------------------------------------------------------
     # Unweighted pt, showing contributions from each HT bin
@@ -213,10 +332,10 @@ if __name__ == "__main__":
         "ZPlusJets_Presel/pt_jet1_unweighted", "ZPlusJets_Presel/pt_jet1",
         "ZPlusJets/pt_jet1_unweighted", "ZPlusJets/pt_jet1",
     ]
-    for hname in hist_names:
-        output_filename = "%s/%s.%s" % (args.output, hname.replace("/", "-"), OUTPUT_FMT)
-        do_mc_plot(dy_ht_entries,
-                   hist_name=hname,
-                   output_file=output_filename,
-                   xlim=[30, 2000],
-                   ylim=[0.1, 1E8])
+    # for hname in hist_names:
+    #     output_filename = "%s/%s.%s" % (args.output, hname.replace("/", "-"), OUTPUT_FMT)
+    #     do_mc_plot(dy_ht_entries,
+    #                hist_name=hname,
+    #                output_file=output_filename,
+    #                xlim=[30, 2000],
+    #                ylim=[0.1, 1E8])
