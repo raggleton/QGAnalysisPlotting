@@ -39,7 +39,7 @@ ROOT.gStyle.SetPaintTextFormat(".3f")
 OUTPUT_FMT = "pdf"
 
 
-def do_mc_plot(mc_entries, hist_name, output_file):
+def do_mc_plot(mc_entries, hist_name, output_file, xlim=None, ylim=None):
     components = []
     hst = ROOT.THStack("hst", "")
     for ent in mc_entries:
@@ -57,11 +57,11 @@ def do_mc_plot(mc_entries, hist_name, output_file):
                          rebin_hist=5
                         )
         )
-    plot = Plot(components, 
-                what='hist', 
+    plot = Plot(components,
+                what='hist',
                 has_data=False,
-                xlim=[30, 2000],
-                ylim=[10, 1E12],
+                xlim=xlim,
+                ylim=ylim,
                 ytitle="Unweighted N" if "unweighted" in hist_name else 'N')
     # plot.y_padding_min_log = 10 if 'unweighted' in hist_name else 10
     plot.default_canvas_size = (700, 600)
@@ -79,7 +79,7 @@ def do_mc_plot(mc_entries, hist_name, output_file):
     plot.set_logx()
     plot.set_logy(do_more_labels=False)
     plot.save(stem+"_nostack" + ext)
-        
+
 
 if __name__ == "__main__":
     parser = qgc.get_parser()
@@ -154,4 +154,6 @@ if __name__ == "__main__":
         output_filename = "%s/%s.%s" % (args.output, hname.replace("/", "-"), OUTPUT_FMT)
         do_mc_plot(mc_ht_entries,
                    hist_name=hname,
-                   output_file=output_filename)
+                   output_file=output_filename,
+                   xlim=[30, 2000],
+                   ylim=[10, 1E12])
