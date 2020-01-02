@@ -724,13 +724,20 @@ class MyUnfolderPlotter(object):
         canv.SetRightMargin(0.12)
         return canv
 
-    @staticmethod
-    def draw_2d_hist(h2d, title, output_filename,
+    # @staticmethod
+    def draw_2d_hist(self, h2d, title, output_filename,
                      logz=True, z_min=None, z_max=None,
                      xtitle="Generator bin",
                      ytitle="Generator bin",
+                     canvas_size=(800, 600),
+                     draw_bin_lines_x=False,
+                     draw_bin_lines_y=False,
                      draw_values=False):
-        canv = MyUnfolderPlotter.generate_2d_canvas()
+        canv = MyUnfolderPlotter.generate_2d_canvas(canvas_size)
+        if draw_bin_lines_x:
+            canv.SetBottomMargin(0.18)
+        if draw_bin_lines_y:
+            canv.SetLeftMargin(0.18)
         if logz:
             canv.SetLogz()
         this_title = "%s;%s;%s" % (title, xtitle, ytitle)
@@ -741,6 +748,13 @@ class MyUnfolderPlotter(object):
             ROOT.gStyle.SetTitleAlign(23)
 
         h2d.GetXaxis().SetTitleOffset(1.5)
+        h2d.GetYaxis().SetTitleOffset(1.5)
+        if draw_bin_lines_x:
+            h2d.GetXaxis().SetTitleOffset(2.2)
+            h2d.GetXaxis().SetLabelOffset(999)
+        if draw_bin_lines_y:
+            h2d.GetYaxis().SetTitleOffset(2.1)
+            h2d.GetYaxis().SetLabelOffset(999)
         if draw_values:
             h2d.SetMarkerSize(0.5)
             h2d.Draw("COLZ TEXT45")
@@ -752,6 +766,22 @@ class MyUnfolderPlotter(object):
             h2d.SetMinimum(z_min)
         elif logz:
             h2d.SetMinimum(h2d.GetMinimum(1E-40) / 10.)
+
+        if draw_bin_lines_x:
+            lx, tx = self.draw_pt_binning_lines(h2d,
+                                                which='gen' if 'gen' in xtitle.lower() else 'reco',
+                                                axis='x',
+                                                do_underflow=True,
+                                                do_labels_inside=False,
+                                                do_labels_outside=True)
+
+        if draw_bin_lines_y:
+            ly, ty = self.draw_pt_binning_lines(h2d,
+                                                which='gen' if 'gen' in ytitle.lower() else 'reco',
+                                                axis='y',
+                                                do_underflow=True,
+                                                do_labels_inside=False,
+                                                do_labels_outside=True)
 
         odir = os.path.dirname(os.path.abspath(output_filename))
         cu.check_dir_exists_create(odir)
@@ -798,8 +828,13 @@ class MyUnfolderPlotter(object):
         self.draw_2d_hist(self.unfolder.get_probability_matrix(),
                           title=title,
                           output_filename=output_filename,
-                          z_min=1E-4, z_max=1,
-                          xtitle='Generator bin', ytitle='Detector bin')
+                          # z_min=1E-4, z_max=1,
+                          logz=False,
+                          draw_bin_lines_x=True,
+                          draw_bin_lines_y=True,
+                          canvas_size=(800, 700),
+                          xtitle='Generator bin',
+                          ytitle='Detector bin')
 
     # TODO: generalise to some "draw_2d_hist()"?
     def draw_error_matrix_input(self, output_dir='.', append="", title=""):
