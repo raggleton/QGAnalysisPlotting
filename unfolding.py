@@ -1333,7 +1333,8 @@ if __name__ == "__main__":
             title = "Response matrix, %s region, %s" % (region['label'], angle_str)
             unfolder_plotter.draw_response_matrix(title=title, **plot_args)
 
-            title = "Probability matrix, %s region, %s" % (region['label'], angle_str)
+            title = ("#splitline{Probability matrix, %s region, %s}{Condition number: #sigma_{max} / #sigma_{min} = %.3g / %.3g = %g}" 
+                        % (region['label'], angle_str, unfolder.sigma_max, unfolder.sigma_min, unfolder.condition_number))
             unfolder_plotter.draw_probability_matrix(title=title, **plot_args)
 
             title = "Correlation matrix, %s region, %s" % (region['label'], angle_str)

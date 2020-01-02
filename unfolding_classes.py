@@ -529,11 +529,8 @@ class MyUnfolder(object):
         return m
 
     @staticmethod
-    def calculate_condition_num(matrix):
-        """Calculate condition number as per StatsComm guidelines
-
-        Defined as sigma_max / max(0, sigma_min), where sigma_{max/min} are the
-        largest/smallest singular values.
+    def calculate_singular_max_min(matrix):
+        """Calculate max & min singular values condition number as per StatsComm guidelines
 
         These are found using TDecompSVD.
         (we ignore the builtin condition() method as it calculates it differently)
@@ -546,15 +543,26 @@ class MyUnfolder(object):
         sigma_max = sig[0]
         sigma_min = max(0, sig[sig.GetNrows()-1])
         print("sigma_max:", sigma_max, "sigma_min:", sigma_min)
-        if sigma_min == 0:
-            print("Minmum singular value = 0, condition number = Infinity")
-            return 999999999999999999999
-        return sigma_max / sigma_min
+        return sigma_max, sigma_min
 
     def print_condition_number(self):
-        """Print response matrix condition number and some advice"""
-        # num = self.calculate_condition_num(self.response_map_matrix)
-        num = self.calculate_condition_num(self.th2_to_tmatrixd(self.get_probability_matrix()))
+        """Store & print response matrix condition number and some advice
+
+        Defined as sigma_max / max(0, sigma_min), where sigma_{max/min} are the
+        largest/smallest singular values.
+        These are also stored for later usage if needed (since expensive to calc)
+        """
+        # num = self.calculate_singular_max_min(self.response_map_matrix)
+        sigma_max, sigma_min = self.calculate_singular_max_min(self.th2_to_tmatrixd(self.get_probability_matrix()))
+        if sigma_min == 0:
+            # avoid DivisionError
+            print("Minmum singular value = 0, condition number = Infinity")
+            num = np.inf
+        else:
+            num = sigma_max / sigma_min
+        self.sigma_max = sigma_max
+        self.sigma_min = sigma_min
+        self.condition_number = num
         print("Condition number:", num)
         if num < 50:
             print(" - You probably shouldn't regularize this")
@@ -727,7 +735,11 @@ class MyUnfolderPlotter(object):
             canv.SetLogz()
         this_title = "%s;%s;%s" % (title, xtitle, ytitle)
         h2d.SetTitle(this_title)
-        h2d.GetYaxis().SetTitleOffset(1.5)
+        orig_title_font_size = ROOT.gStyle.GetTitleFontSize()
+        if 'splitline' in title:
+            ROOT.gStyle.SetTitleFontSize(0.025)
+            ROOT.gStyle.SetTitleAlign(23)
+
         h2d.GetXaxis().SetTitleOffset(1.5)
         if draw_values:
             h2d.SetMarkerSize(0.5)
@@ -744,6 +756,9 @@ class MyUnfolderPlotter(object):
         odir = os.path.dirname(os.path.abspath(output_filename))
         cu.check_dir_exists_create(odir)
         canv.SaveAs(output_filename)
+        if 'splitline' in title:
+            ROOT.gStyle.SetTitleFontSize(orig_title_font_size)
+
 
     def plot_bias_vector(self, output_dir='.', append="", title=""):
         """Plot bias vector used in regularisation (if it exists)"""
