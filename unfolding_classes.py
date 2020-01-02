@@ -956,6 +956,179 @@ class MyUnfolderPlotter(object):
         plot.plot("HISTE")
         plot.save(output_filename)
 
+    def draw_pt_binning_lines(self, plot, which, axis, do_underflow=True, do_labels_inside=True, do_labels_outside=False):
+        """Draw lines marking pt bins
+
+        You MUST store the return lists of lines and text objects,
+        otherwise they will not appear on the saved plot - python GC cleans them up
+
+        Parameters
+        ----------
+        plot : Plot or TH2
+            Plot object to add lines/text to
+        which : str
+            "gen" or "reco"
+        axis : str
+            "x" or "y"
+        do_underflow : bool, optional
+            Include underflow bins
+        do_labels : bool, optional
+            Add pT bin labels
+
+        Raises
+        ------
+        ArgumentError
+            Description
+
+        Returns
+        -------
+        TYPE
+            Description
+        """
+        which = which.lower()
+        if which not in ['gen', 'reco']:
+            raise ArgumentError("'which' should be 'gen' or 'reco'")
+        axis = axis.lower()
+        if axis not in ['x', 'y']:
+            raise ArgumentError("'axis' should be 'x' or 'y'")
+
+        # setup bins, etc
+        signal_pt_bins = []
+        underflow_pt_bins = []
+        variable_bins = []
+        this_binning = None
+        dist_name = None
+
+        if which == 'gen':
+            signal_pt_bins = self.unfolder.pt_bin_edges_gen
+            underflow_pt_bins = self.unfolder.pt_bin_edges_underflow_gen
+            variable_bins = self.unfolder.variable_bin_edges_gen
+            this_binning = self.unfolder.generator_binning
+            dist_name = "generatordistribution"
+        else:
+            signal_pt_bins = self.unfolder.pt_bin_edges_reco
+            underflow_pt_bins = self.unfolder.pt_bin_edges_underflow_reco
+            variable_bins = self.unfolder.variable_bin_edges_reco
+            this_binning = self.unfolder.detector_binning
+            dist_name = "detectordistribution"
+
+        all_pt_bins = []
+        if do_underflow:
+            all_pt_bins.extend(underflow_pt_bins[:-1])
+        all_pt_bins.extend(signal_pt_bins)
+
+        axis_min, axis_max = 0, 0
+        if isinstance(plot, Plot):
+            obj = plot.container.GetHistogram()
+            if axis == 'x':
+                axis_low, axis_high = obj.GetMinimum(), obj.GetMaximum()
+            else:
+                axis_low, axis_high = obj.GetXaxis().GetXmin(), obj.GetXaxis().GetXmax()
+        else:
+            if axis == 'x':
+                axis_low, axis_high = plot.GetYaxis().GetXmin(), plot.GetYaxis().GetXmax()
+            else:
+                axis_low, axis_high = plot.GetXaxis().GetXmin(), plot.GetXaxis().GetXmax()
+
+        lines = []  # otherwise python kills them
+        texts = []
+        first_var = variable_bins[0]
+        last_var = variable_bins[-1]
+        # add line + text for each pt bin
+        for pt_val, pt_val_upper in zip(all_pt_bins[:-1], all_pt_bins[1:]):
+            # convert value to bin number
+            # what a load of rubbish, why cant I just ask generator_binning for it?!
+            binning = this_binning.FindNode("%s_underflow" % dist_name) if pt_val < signal_pt_bins[0] else this_binning.FindNode(dist_name)
+            pt_bin = binning.GetGlobalBinNumber(first_var+0.000001, pt_val+0.01) - 0.5 # -0.5 for offset, since the bins are centered on the bin number (e.g. bin 81 goes from 80.5 to 81.5)
+
+            if pt_val > all_pt_bins[0]:  # skip first value, as it probably aligns with lower axis limit
+                if axis == 'x':
+                    line = ROOT.TLine(pt_bin, axis_low, pt_bin, axis_high)
+                else:
+                    line = ROOT.TLine(axis_low, pt_bin, axis_high, pt_bin)
+                line.SetLineStyle(2)
+                line.SetLineColor(14)
+                line.Draw()
+                lines.append(line)
+
+            # draw text for pt bins
+            if do_labels_inside and axis == 'x':
+                pt_bin_higher = binning.GetGlobalBinNumber(last_var-0.00001, pt_val+0.01) - 0.5
+                pt_bin_interval = pt_bin_higher - pt_bin
+                text_x = pt_bin + 0.35*(pt_bin_interval)
+                text = ROOT.TPaveText(text_x, 1.05*axis_low, text_x + .5*pt_bin_interval, 10*axis_low)
+                text.SetBorderSize(0)
+                text.SetFillStyle(0)
+                contents = '%d < p_{T} < %d GeV' % (pt_val, pt_val_upper)
+                if pt_val_upper in underflow_pt_bins:
+                    contents += " (underflow)"
+                # You have to style the thing that is returned by AddText, not the TPaveText obj itself
+                # WTAF
+                t = text.AddText(contents)  # t is a TText
+                t.SetTextColor(14)
+                t.SetTextAngle(89)
+                t.SetTextSize(0.025)
+                t.SetTextAlign(ROOT.kHAlignLeft + ROOT.kVAlignTop)
+                text.Draw()
+                texts.append(text)
+
+            if do_labels_outside and axis == 'x':
+                pt_bin_higher = binning.GetGlobalBinNumber(last_var-0.00001, pt_val+0.01) - 0.5
+                pt_bin_interval = pt_bin_higher - pt_bin
+                text_x = pt_bin + 0.15*(pt_bin_interval)
+                text = ROOT.TPaveText(text_x, 0.5*axis_low, text_x + .35*pt_bin_interval, 0.55*axis_low)  # urgh at some point it jsut ignores this and puts it against the axis
+                text.SetBorderSize(0)
+                text.SetFillStyle(0)
+                contents = '[%d, %d] GeV   ' % (pt_val, pt_val_upper)  # spaces for alignment, since the text gets stuck against the axis
+                if pt_val_upper in underflow_pt_bins:
+                    contents = "#splitline{%s}{(underflow)   }" % (contents)
+                # You have to style the thing that is returned by AddText, not the TPaveText obj itself
+                # WTAF
+                t = text.AddText(contents)  # t is a TText
+                t.SetTextColor(14)
+                t.SetTextAngle(89)
+                t.SetTextSize(0.015)
+                t.SetTextAlign(ROOT.kHAlignRight + ROOT.kVAlignCenter)
+                text.Draw()
+                texts.append(text)
+
+            if do_labels_outside and axis == 'y':
+                pt_bin_higher = binning.GetGlobalBinNumber(last_var-0.00001, pt_val+0.01) - 0.5
+                pt_bin_interval = pt_bin_higher - pt_bin
+                text_y = pt_bin + 0.15*(pt_bin_interval)
+                text = ROOT.TPaveText(0.5*axis_low, text_y, 0.5*axis_low, text_y + .35*pt_bin_interval)  # urgh at some point it jsut ignores this and puts it against the axis
+                text.SetBorderSize(0)
+                text.SetFillStyle(0)
+                contents = '[%d, %d] GeV   ' % (pt_val, pt_val_upper)  # spaces for alignment, since the text gets stuck against the axis
+                if pt_val_upper in underflow_pt_bins:
+                    contents = contents.strip()
+                    contents += " (underflow)   "
+                # You have to style the thing that is returned by AddText, not the TPaveText obj itself
+                # WTAF
+                t = text.AddText(contents)  # t is a TText
+                t.SetTextColor(14)
+                # t.SetTextAngle(89)
+                t.SetTextSize(0.015)
+                t.SetTextAlign(ROOT.kHAlignRight + ROOT.kVAlignCenter)
+                text.Draw()
+                texts.append(text)
+
+        if isinstance(plot, Plot) and plot.subplot_pad and axis == 'x':
+                plot.subplot_pad.cd()
+                y_low, y_high = plot.subplot_container.GetHistogram().GetMinimum(), plot.subplot_container.GetHistogram().GetMaximum()  # BINGO
+                for pt_val in chain(self.unfolder.pt_bin_edges_underflow_gen[1:-1], self.unfolder.pt_bin_edges_gen[:-1]):
+                    # convert value to bin number
+                    # what a load of rubbish, why cant I just ask generator_binning for it?!
+                    binning = this_binning.FindNode("%s_underflow" % dist_name) if pt_val < signal_pt_bins[0] else this_binning.FindNode(dist_name)
+                    pt_bin = binning.GetGlobalBinNumber(first_var+0.000001, pt_val+0.01) - 0.5 # -0.5 for offset, since the bins are centered on the bin number (e.g. bin 81 goes from 80.5 to 81.5)
+                    line = ROOT.TLine(pt_bin, y_low, pt_bin, y_high)
+                    line.SetLineStyle(2)
+                    line.SetLineColor(14)
+                    line.Draw()
+                    lines.append(line)
+
+        return lines, texts
+
     def draw_unfolded_1d(self, do_gen=True, do_unfolded=True, output_dir='.', append='', title=''):
         """Simple plot of unfolded & gen, by bin number (ie non physical axes)"""
         entries = []
@@ -1004,75 +1177,20 @@ class MyUnfolderPlotter(object):
                     subplot_title='#splitline{Unfolded Data /}{MC Gen}',
                     subplot_limits=(0.8, 1.2))
         plot.default_canvas_size = (800, 600)
-        plot.text_left_offset = 0.05  # have to bodge this
+        # plot.text_left_offset = 0.05  # have to bodge this
         plot.plot("NOSTACK E")
         plot.main_pad.SetLogy(1)
         # plot.set_logy()
         ymax = max(c.obj.GetMaximum() for c in entries)
         plot.container.SetMaximum(ymax * 100)
         ymin = min(c.obj.GetMinimum(1E-8) for c in entries)
-        plot.container.SetMinimum(ymin*0.1)
+        plot.container.SetMinimum(ymin*0.001)  # space for bin labels as well
         plot.legend.SetY1NDC(0.77)
         plot.legend.SetX1NDC(0.65)
         plot.legend.SetX2NDC(0.88)
         # draw pt bin lines
         plot.main_pad.cd()
-        # y_low, y_high = plot.main_pad.GetUymin(), plot.main_pad.GetUymax()  # rubbish
-        # y_low, y_high = plot.container.GetMinimum(), plot.container.GetMaximum()  # rubbish
-        # y_low, y_high = plot.container.GetYaxis().GetXmin(), plot.container.GetYaxis().GetXmax()  # returns 0 and 1
-        y_low, y_high = plot.container.GetHistogram().GetMinimum(), plot.container.GetHistogram().GetMaximum()  # BINGO
-        lines = []  # otherwise python kills them
-        texts = []
-        all_pt_bins = list(self.unfolder.pt_bin_edges_underflow_gen[0:-1]) + list(self.unfolder.pt_bin_edges_gen)
-        # all_pt_bins = chain(self.unfolder.pt_bin_edges_underflow_gen[0:-1], self.unfolder.pt_bin_edges_gen)
-        for pt_val, pt_val_upper in zip(all_pt_bins[:-1], all_pt_bins[1:]):
-            # convert value to bin number
-            # what a load of rubbish, why cant I just ask generator_binning for it?!
-            gen_binning = self.unfolder.generator_binning
-            binning = gen_binning.FindNode("generatordistribution_underflow") if pt_val < self.unfolder.pt_bin_edges_gen[0] else gen_binning.FindNode("generatordistribution")
-            first_var = self.unfolder.variable_bin_edges_gen[0]
-            pt_bin = binning.GetGlobalBinNumber(first_var+0.000001, pt_val+0.01) - 0.5 # -0.5 for offset, since the bins are centered on the bin number (e.g. bin 81 goes from 80.5 to 81.5)
-            if pt_val > self.unfolder.pt_bin_edges_underflow_gen[0]:
-                line = ROOT.TLine(pt_bin, y_low, pt_bin, y_high)
-                line.SetLineStyle(2)
-                line.SetLineColor(14)
-                line.Draw()
-                lines.append(line)
-            # draw text for pt bins
-            last_var = self.unfolder.variable_bin_edges_gen[-1]
-            pt_bin_higher = binning.GetGlobalBinNumber(last_var-0.00001, pt_val+0.01) - 0.5
-            pt_bin_interval = pt_bin_higher - pt_bin
-            text_x = pt_bin + 0.25*(pt_bin_interval)
-            text = ROOT.TPaveText(text_x, 100*y_low, text_x + .5*pt_bin_interval, 10000*y_low)
-            text.SetBorderSize(0)
-            text.SetFillStyle(0)
-            contents = '%d < p_{T} < %d GeV' % (pt_val, pt_val_upper)
-            if pt_val_upper in self.unfolder.pt_bin_edges_underflow_gen:
-                contents += " (underflow)"
-            # You have to style the thing that is returned by AddText, not the TPaveText obj itself
-            # WTAF
-            t = text.AddText(contents)
-            t.SetTextColor(14)
-            t.SetTextAngle(89)
-            t.SetTextSize(0.025)
-            text.Draw()
-            texts.append(text)
-
-        if plot.subplot_pad:
-            plot.subplot_pad.cd()
-            y_low, y_high = plot.subplot_container.GetHistogram().GetMinimum(), plot.subplot_container.GetHistogram().GetMaximum()  # BINGO
-            for pt_val in chain(self.unfolder.pt_bin_edges_underflow_gen[1:-1], self.unfolder.pt_bin_edges_gen[:-1]):
-                # convert value to bin number
-                # what a load of rubbish, why cant I just ask generator_binning for it?!
-                gen_binning = self.unfolder.generator_binning
-                binning = gen_binning.FindNode("generatordistribution_underflow") if pt_val < self.unfolder.pt_bin_edges_gen[0] else gen_binning.FindNode("generatordistribution")
-                pt_bin = binning.GetGlobalBinNumber(0.00001, pt_val+0.01) - 0.5 # -0.5 for offset, since the bins are centered on the bin number (e.g. bin 81 goes from 80.5 to 81.5)
-                line = ROOT.TLine(pt_bin, y_low, pt_bin, y_high)
-                line.SetLineStyle(2)
-                line.SetLineColor(14)
-                line.Draw()
-                lines.append(line)
-
+        lines, text = self.draw_pt_binning_lines(plot, which='gen', axis='x', do_underflow=True)
         output_filename = "%s/unfolded_%s.%s" % (output_dir, append, self.output_fmt)
         plot.save(output_filename)
 
