@@ -1320,7 +1320,7 @@ class MyUnfolderPlotter(object):
                         do_reco_mc=False,
                         do_reco_mc_bg_sub=False,
                         output_dir='.', append="", title=""):
-        """Plot detector-level quantities for data & MC, by bin number (ie non physical axes)"""
+        """Plot detector-binned quantities for data & MC, by bin number (ie non physical axes)"""
         entries = []
 
         reco_mc = self.unfolder.hist_mc_reco
@@ -1393,5 +1393,9 @@ class MyUnfolderPlotter(object):
         plot.legend.SetY1NDC(0.77)
         plot.legend.SetX1NDC(0.65)
         plot.legend.SetX2NDC(0.88)
+        if append != "":
+            append = "_" + append
+        output_filename = "%s/detector_reco_binning%s.%s" % (output_dir, append, self.output_fmt)
+        plot.save(output_filename)
         output_filename = "%s/detector_%s.%s" % (output_dir, append, self.output_fmt)
         plot.save(output_filename)

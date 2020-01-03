@@ -1253,21 +1253,19 @@ if __name__ == "__main__":
             unfolder_plotter.draw_unfolded_1d(output_dir=this_output_dir, append=append, title=title)
 
             # reco using detector binning
-            this_append = 'reco_binning_%s' % append
             unfolder_plotter.draw_detector_1d(do_reco_mc=True,
                                               do_reco_data=not MC_INPUT,
                                               output_dir=this_output_dir,
-                                              append=this_append,
+                                              append=append,
                                               title=title)
 
             if SUBTRACT_FAKES:
                 # same plot but with bg-subtracted reco (incl fakes)
-                this_append = 'reco_binning_bg_fakes_subtracted_%s' % append
                 unfolder_plotter.draw_detector_1d(do_reco_data_bg_sub=not MC_INPUT,
                                                   do_reco_bg=SUBTRACT_FAKES,
                                                   do_reco_mc_bg_sub=True,
                                                   output_dir=this_output_dir,
-                                                  append=this_append,
+                                                  append='bg_fakes_subtracted_%s' % append,
                                                   title=title)
 
 
@@ -1576,7 +1574,7 @@ if __name__ == "__main__":
                                                            do_reco_mc=False,
                                                            do_reco_mc_bg_sub=True,
                                                            output_dir=syst_plot_args['output_dir'],
-                                                           append='reco_binning_bg_fakes_subtracted_%s' % append,
+                                                           append='bg_fakes_subtracted_%s' % append,
                                                            title="%s region, %s, %s" % (region['label'], angle_str, syst_label))
 
                     # Add systematic errors as different response matrices
@@ -1742,7 +1740,7 @@ if __name__ == "__main__":
                                                           do_reco_mc=False,
                                                           do_reco_mc_bg_sub=True,
                                                           output_dir=pdf_plot_args['output_dir'],
-                                                          append='reco_binning_bg_fakes_subtracted_%s' % append,
+                                                          append='bg_fakes_subtracted_%s' % append,
                                                           title="%s region, %s, %s" % (region['label'], angle_str, pdf_label))
 
                     # Add systematic errors as different response matrices
