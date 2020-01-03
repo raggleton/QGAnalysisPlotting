@@ -1680,80 +1680,92 @@ if __name__ == "__main__":
                 # Now run over all variations like for model systs
                 for ind, pdf_dict in enumerate(region['pdf_systematics']):
                     pdf_label = pdf_dict['label']
-                    syst_label_no_spaces = pdf_label.replace(" ", "_")
+                    pdf_label_no_spaces = pdf_label.replace(" ", "_")
 
                     if pdf_label.startswith("_"):
                         continue
 
                     print("*** Unfolding with alternate input:", pdf_label, "(%d/%d) ***" % (ind+1, len(region['pdf_systematics'])))
 
-                    hist_syst_reco = pdf_dict['hist_reco']
-                    hist_syst_gen = pdf_dict['hist_gen']
+                    hist_pdf_reco = pdf_dict['hist_reco']
+                    hist_pdf_gen = pdf_dict['hist_gen']
 
-                    syst_unfolder = MyUnfolder(response_map=unfolder.response_map,
-                                               variable_bin_edges_reco=unfolder.variable_bin_edges_reco,
-                                               variable_bin_edges_gen=unfolder.variable_bin_edges_gen,
-                                               variable_name=unfolder.variable_name,
-                                               pt_bin_edges_reco=unfolder.pt_bin_edges_reco,
-                                               pt_bin_edges_gen=unfolder.pt_bin_edges_gen,
-                                               pt_bin_edges_underflow_reco=unfolder.pt_bin_edges_underflow_reco,
-                                               pt_bin_edges_underflow_gen=unfolder.pt_bin_edges_underflow_gen,
-                                               orientation=unfolder.orientation,
-                                               constraintMode=unfolder.constraintMode,
-                                               regMode=unfolder.regMode,
-                                               densityFlags=unfolder.densityFlags,
-                                               distribution=unfolder.distribution,
-                                               axisSteering=unfolder.axisSteering)
+                    pdf_unfolder = MyUnfolder(response_map=unfolder.response_map,
+                                              variable_bin_edges_reco=unfolder.variable_bin_edges_reco,
+                                              variable_bin_edges_gen=unfolder.variable_bin_edges_gen,
+                                              variable_name=unfolder.variable_name,
+                                              pt_bin_edges_reco=unfolder.pt_bin_edges_reco,
+                                              pt_bin_edges_gen=unfolder.pt_bin_edges_gen,
+                                              pt_bin_edges_underflow_reco=unfolder.pt_bin_edges_underflow_reco,
+                                              pt_bin_edges_underflow_gen=unfolder.pt_bin_edges_underflow_gen,
+                                              orientation=unfolder.orientation,
+                                              constraintMode=unfolder.constraintMode,
+                                              regMode=unfolder.regMode,
+                                              densityFlags=unfolder.densityFlags,
+                                              distribution=unfolder.distribution,
+                                              axisSteering=unfolder.axisSteering)
 
-                    # Set what is to be unfolded
-                    # --------------------------------------------------------------
-                    syst_unfolder.set_input(hist_syst_reco, args.biasFactor)
+                    pdf_unfolder_plotter = MyUnfolderPlotter(pdf_unfolder)
+                    pdf_output_dir = this_output_dir+"/pdfSyst/"+pdf_label_no_spaces,
+                    pdf_plot_args = dict(output_dir=pdf_output_dir,
+                                         append=append)
 
-                    # Subtract fakes (treat as background)
-                    # --------------------------------------------------------------
                     if SUBTRACT_FAKES:
                         # Use the background template from the nominal MC
                         # (since we're only testing different input shapes,
                         # and our bkg estimate is always from MC)
-                        hist_fakes_syst = hist_fakes_reco_fraction.Clone("hist_fakes_syst_%s" % syst_label_no_spaces)
-                        hist_fakes_syst.Multiply(hist_syst_reco)
-                        syst_unfolder.subtract_background(hist_fakes_syst, "fakes")
+                        hist_fakes_pdf = hist_fakes_reco_fraction.Clone("hist_fakes_pdf_%s" % pdf_label_no_spaces)
+                        hist_fakes_pdf.Multiply(hist_pdf_reco)
 
-                    plot_simple_detector(reco_data=hist_syst_reco,
-                                         reco_mc=hist_mc_reco,
-                                         reco_mc_fake=None,
-                                         reco_data_fake=None,
-                                         output_filename="%s/detector_reco_binning_bg_subtracted_model_%s_%s.%s" % (this_output_dir, syst_label_no_spaces, append, OUTPUT_FMT),
-                                         title="%s region, %s" % (region['label'], angle_str))
+                    # Set what is to be unfolded
+                    # --------------------------------------------------------------
+                    pdf_unfolder.set_input(input_hist=hist_pdf_reco,
+                                           hist_truth=hist_pdf_gen,
+                                           hist_mc_reco=hist_pdf_reco,
+                                           hist_mc_reco_bg_subtracted=hist_fakes_pdf,
+                                           bias_factor=args.biasFactor)
+
+                    # Subtract fakes (treat as background)
+                    # --------------------------------------------------------------
+                    if SUBTRACT_FAKES:
+                        pdf_unfolder.subtract_background(hist_fakes_pdf, "fakes")
+
+                    pdf_unfolder_plotter.draw_detector_1d(do_reco_data=False,
+                                                          do_reco_data_bg_sub=False,
+                                                          do_reco_bg=True,
+                                                          do_reco_mc=False,
+                                                          do_reco_mc_bg_sub=True,
+                                                          output_dir=pdf_plot_args['output_dir'],
+                                                          append='reco_binning_bg_fakes_subtracted_%s' % append,
+                                                          title="%s region, %s, %s" % (region['label'], angle_str, pdf_label))
 
                     # Add systematic errors as different response matrices
                     # ----------------------------------------------------
                     if args.doExperimentalSysts:
                         chosen_rsp_bin = (18, 18)
-                        print("nominal response bin content for", chosen_rsp_bin, syst_unfolder.response_map.GetBinContent(*chosen_rsp_bin))
+                        print("nominal response bin content for", chosen_rsp_bin, pdf_unfolder.response_map.GetBinContent(*chosen_rsp_bin))
                         for exp_dict in region['experimental_systematics']:
                             print("Adding systematic:", exp_dict['label'])
                             if 'factor' in exp_dict:
                                 # special case for e.g. lumi - we construct a reponse hist, and add it using relative mode
-                                rel_map = syst_unfolder.response_map.Clone(exp_dict['label']+"MapPDF")
+                                rel_map = pdf_unfolder.response_map.Clone(exp_dict['label']+"MapPDF")
                                 for xbin, ybin in product(range(1, rel_map.GetNbinsX()+1), range(1, rel_map.GetNbinsY()+1)):
                                     rel_map.SetBinContent(xbin, ybin, exp_dict['factor'])
                                     rel_map.SetBinError(xbin, ybin, 0)
-                                syst_unfolder.tunfolder.AddSysError(rel_map, exp_dict['label'], ROOT.TUnfold.kHistMapOutputHoriz, ROOT.TUnfoldDensity.kSysErrModeRelative)
+                                pdf_unfolder.tunfolder.AddSysError(rel_map, exp_dict['label'], ROOT.TUnfold.kHistMapOutputHoriz, ROOT.TUnfoldDensity.kSysErrModeRelative)
                             else:
                                 if not isinstance(exp_dict['tfile'], ROOT.TFile):
                                     exp_dict['tfile'] = cu.open_root_file(exp_dict['tfile'])
                                 map_syst = cu.get_from_tfile(exp_dict['tfile'], "%s/tu_%s_GenReco_all" % (region['dirname'], angle_shortname))
                                 print("    syst bin", chosen_rsp_bin, map_syst.GetBinContent(*chosen_rsp_bin))
-                                syst_unfolder.tunfolder.AddSysError(map_syst, exp_dict['label'], syst_unfolder.orientation, ROOT.TUnfoldDensity.kSysErrModeMatrix)
+                                pdf_unfolder.tunfolder.AddSysError(map_syst, exp_dict['label'], pdf_unfolder.orientation, ROOT.TUnfoldDensity.kSysErrModeMatrix)
 
                     # Save important stuff to TFile
                     # --------------------------------------------------------------
-                    this_tdir.WriteTObject(hist_syst_reco, "syst_%s_unfold_input" % (syst_label_no_spaces))
+                    this_tdir.WriteTObject(hist_pdf_reco, "syst_%s_unfold_input" % (pdf_label_no_spaces))
 
                     # Do any regularization
                     # --------------------------------------------------------------
-                    syst_output_dir = "%s/%s/%s" % (output_dir, region['name'], angle.var)
                     syst_tau = 0
                     if REGULARIZE == "L":
                         print("Regularizing systematic model with ScanL, please be patient...")
@@ -1763,46 +1775,49 @@ if __name__ == "__main__":
                                                          tau_min=region['tau_limits'][angle.var][0],
                                                          tau_max=region['tau_limits'][angle.var][1])
                         print("Found tau:", syst_tau)
-                        syst_l_scanner.plot_scan_L_curve(output_filename="%s/scanL_syst_%s_%s.%s" % (this_output_dir, syst_label_no_spaces, unfolder.variable_name, OUTPUT_FMT))
-                        syst_l_scanner.plot_scan_L_curvature(output_filename="%s/scanLcurvature_syst_%s_%s.%s" % (this_output_dir, syst_label_no_spaces, unfolder.variable_name, OUTPUT_FMT))
+                        syst_l_scanner.plot_scan_L_curve(output_filename="%s/scanL_syst_%s_%s.%s" % (pdf_output_dir, pdf_label_no_spaces, unfolder.variable_name, OUTPUT_FMT))
+                        syst_l_scanner.plot_scan_L_curvature(output_filename="%s/scanLcurvature_syst_%s_%s.%s" % (pdf_output_dir, pdf_label_no_spaces, unfolder.variable_name, OUTPUT_FMT))
                     elif REGULARIZE == "tau":
                         print("Regularizing systematic model with ScanTau, please be patient...")
                         syst_tau_scanner = TauScanner()
-                        syst_tau = syst_tau_scanner.scan_tau(tunfolder=syst_unfolder.tunfolder,
+                        syst_tau = syst_tau_scanner.scan_tau(tunfolder=pdf_unfolder.tunfolder,
                                                              n_scan=args.nScan,
                                                              tau_min=region['tau_limits'][angle.var][0],
                                                              tau_max=region['tau_limits'][angle.var][1],
                                                              scan_mode=scan_mode,
                                                              distribution=scan_distribution,
-                                                             axis_steering=syst_unfolder.axisSteering)
+                                                             axis_steering=pdf_unfolder.axisSteering)
                         print("Found tau for syst matrix:", syst_tau)
-                        syst_tau_scanner.plot_scan_tau(output_filename="%s/scantau_syst_%s_%s.%s" % (this_output_dir, syst_label_no_spaces, syst_unfolder.variable_name, OUTPUT_FMT))
+                        syst_tau_scanner.plot_scan_tau(output_filename="%s/scantau_syst_%s_%s.%s" % (pdf_output_dir, pdf_label_no_spaces, pdf_unfolder.variable_name, OUTPUT_FMT))
 
                     region['pdf_systematics'][ind]['tau'] = syst_tau
 
                     # Do unfolding!
                     # --------------------------------------------------------------
-                    syst_unfolder.do_unfolding(syst_tau)
-                    syst_unfolded_1d = syst_unfolder.get_output()
-                    syst_unfolded_1d.SetName("syst_%s_unfolded_1d" % (syst_label_no_spaces))
-                    print("Bin %d:" % (chosen_bin), syst_unfolded_1d.GetBinContent(chosen_bin))
-                    print("original uncert:", syst_unfolded_1d.GetBinError(chosen_bin))
+                    pdf_unfolder.do_unfolding(syst_tau)
+                    pdf_unfolded_1d = pdf_unfolder.get_output()
+                    pdf_unfolded_1d.SetName("syst_%s_unfolded_1d" % (pdf_label_no_spaces))
+                    print("Bin %d:" % (chosen_bin), pdf_unfolded_1d.GetBinContent(chosen_bin))
+                    print("original uncert:", pdf_unfolded_1d.GetBinError(chosen_bin))
 
                     # Get error matrix to update errors
                     # --------------------------------------------------------------
-                    syst_ematrix_total = syst_unfolder.get_ematrix_total()
-                    syst_error_total_1d = make_hist_from_diagonal_errors(ematrix_total, do_sqrt=True) # note that bin contents = 0, only bin errors are non-0
-                    this_tdir.WriteTObject(syst_ematrix_total, "syst_%s_ematrix_total_1d" % (syst_label_no_spaces))
-                    this_tdir.WriteTObject(syst_error_total_1d, "syst_%s_error_total_1d" % (syst_label_no_spaces))
-                    print("total uncert:", syst_error_total_1d.GetBinError(chosen_bin))
+                    pdf_ematrix_total = pdf_unfolder.get_ematrix_total()
+                    pdf_error_total_1d = make_hist_from_diagonal_errors(pdf_ematrix_total, do_sqrt=True) # note that bin contents = 0, only bin errors are non-0
+                    this_tdir.WriteTObject(pdf_ematrix_total, "syst_%s_ematrix_total_1d" % (pdf_label_no_spaces))
+                    this_tdir.WriteTObject(pdf_error_total_1d, "syst_%s_error_total_1d" % (pdf_label_no_spaces))
+                    print("total uncert:", pdf_error_total_1d.GetBinError(chosen_bin))
 
                     # Update errors to big unfolded 1D
-                    update_hist_bin_error(h_orig=syst_error_total_1d, h_to_be_updated=syst_unfolded_1d)
-                    print("new uncert:", syst_unfolded_1d.GetBinError(chosen_bin))
-                    this_tdir.WriteTObject(syst_unfolded_1d)
+                    update_hist_bin_error(h_orig=pdf_error_total_1d, h_to_be_updated=pdf_unfolded_1d)
+                    print("new uncert:", pdf_unfolded_1d.GetBinError(chosen_bin))
+                    this_tdir.WriteTObject(pdf_unfolded_1d)
 
-                    region['pdf_systematics'][ind]['unfolded_1d'] = syst_unfolded_1d
-                    region['pdf_systematics'][ind]['gen_1d'] = hist_syst_gen
+                    region['pdf_systematics'][ind]['unfolded_1d'] = pdf_unfolded_1d
+                    region['pdf_systematics'][ind]['gen_1d'] = hist_pdf_gen
+
+                    pdf_title = "%s region, %s, %s input" % (region['label'], angle_str, pdf_label)
+                    pdf_unfolder_plotter.draw_unfolded_1d(title=pdf_title, **pdf_plot_args)
 
             # ------------------------------------------------------------------
             # PLOTTING LOTS OF THINGS
