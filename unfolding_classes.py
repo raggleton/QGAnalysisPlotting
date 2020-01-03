@@ -1018,7 +1018,7 @@ class MyUnfolderPlotter(object):
         plot.plot("HISTE")
         plot.save(output_filename)
 
-    def draw_pt_binning_lines(self, plot, which, axis, do_underflow=True, do_labels_inside=True, do_labels_outside=False):
+    def draw_pt_binning_lines(self, plot, which, axis, do_underflow=True, do_labels_inside=True, do_labels_outside=False, labels_inside_align='lower'):
         """Draw lines marking pt bins
 
         You MUST store the return lists of lines and text objects,
@@ -1034,8 +1034,12 @@ class MyUnfolderPlotter(object):
             "x" or "y"
         do_underflow : bool, optional
             Include underflow bins
-        do_labels : bool, optional
-            Add pT bin labels
+        do_labels_inside : bool, optional
+            Add pT bin labels outside the main plot area
+        do_labels_outside : bool, optional
+            Add pT bin labels outside the main plot area
+        labels_inside_align : str, optional
+            'lower' or 'higher' ie against bottom/left, or top/right
 
         Raises
         ------
@@ -1044,8 +1048,8 @@ class MyUnfolderPlotter(object):
 
         Returns
         -------
-        TYPE
-            Description
+        list, list
+            List of TLines, TTexts
         """
         which = which.lower()
         if which not in ['gen', 'reco']:
@@ -1053,6 +1057,9 @@ class MyUnfolderPlotter(object):
         axis = axis.lower()
         if axis not in ['x', 'y']:
             raise ArgumentError("'axis' should be 'x' or 'y'")
+        labels_inside_align = labels_inside_align.lower()
+        if labels_inside_align not in ['lower', 'higher']:
+            raise ArgumentError("'labels_inside_align' should be 'lower' or 'higher'")
 
         # setup bins, etc
         signal_pt_bins = []
@@ -1079,7 +1086,7 @@ class MyUnfolderPlotter(object):
             all_pt_bins.extend(underflow_pt_bins[:-1])
         all_pt_bins.extend(signal_pt_bins)
 
-        axis_min, axis_max = 0, 0
+        axis_min, axis_max = 0, 0  # to determine start, end of line
         if isinstance(plot, Plot):
             obj = plot.container.GetHistogram()
             if axis == 'x':
@@ -1096,6 +1103,8 @@ class MyUnfolderPlotter(object):
         texts = []
         first_var = variable_bins[0]
         last_var = variable_bins[-1]
+        if isinstance(plot, Plot):
+            plot.main_pad.cd()
         # add line + text for each pt bin
         for pt_val, pt_val_upper in zip(all_pt_bins[:-1], all_pt_bins[1:]):
             # convert value to bin number
@@ -1117,8 +1126,26 @@ class MyUnfolderPlotter(object):
             if do_labels_inside and axis == 'x':
                 pt_bin_higher = binning.GetGlobalBinNumber(last_var-0.00001, pt_val+0.01) - 0.5
                 pt_bin_interval = pt_bin_higher - pt_bin
-                text_x = pt_bin + 0.35*(pt_bin_interval)
-                text = ROOT.TPaveText(text_x, 1.05*axis_low, text_x + .5*pt_bin_interval, 10*axis_low)
+                text_x = pt_bin + 0.3*(pt_bin_interval)
+                axis_range = axis_high - axis_low
+                log_axis_range = math.log10(axis_high) - math.log10(axis_low)
+                # assumes logarithmic?
+                if ROOT.gPad.GetLogy():
+                    y_start = math.pow(10, 0.03*log_axis_range + math.log10(axis_low))
+                    y_end = 10*axis_low
+                else:
+                    y_start = 1.05*axis_low
+                    y_end = 10*axis_low
+
+                if labels_inside_align == 'higher':
+                    if ROOT.gPad.GetLogy():
+                        y_start = axis_high/10
+                        y_end = axis_high/1.05
+                    else:
+                        y_start = axis_high*0.8
+                        y_end = axis_high*0.9
+
+                text = ROOT.TPaveText(text_x, y_start, text_x + .5*pt_bin_interval, y_start)
                 text.SetBorderSize(0)
                 text.SetFillStyle(0)
                 contents = '%d < p_{T} < %d GeV' % (pt_val, pt_val_upper)
@@ -1130,7 +1157,12 @@ class MyUnfolderPlotter(object):
                 t.SetTextColor(14)
                 t.SetTextAngle(89)
                 t.SetTextSize(0.025)
-                t.SetTextAlign(ROOT.kHAlignLeft + ROOT.kVAlignTop)
+                if isinstance(plot, Plot) and not plot.subplot_pad:
+                    t.SetTextSize(0.015)  # account for the fact that a subplot makes things smaller
+                if labels_inside_align == 'lower':
+                    t.SetTextAlign(ROOT.kHAlignLeft + ROOT.kVAlignTop)
+                else:
+                    t.SetTextAlign(ROOT.kHAlignCenter + ROOT.kVAlignTop)
                 text.Draw()
                 texts.append(text)
 
@@ -1175,6 +1207,7 @@ class MyUnfolderPlotter(object):
                 text.Draw()
                 texts.append(text)
 
+        # lines on subplot if available
         if isinstance(plot, Plot) and plot.subplot_pad and axis == 'x':
                 plot.subplot_pad.cd()
                 y_low, y_high = plot.subplot_container.GetHistogram().GetMinimum(), plot.subplot_container.GetHistogram().GetMaximum()  # BINGO
