@@ -136,6 +136,10 @@ class TauScanner(object):
 
         canv_tau_scan.Print(output_filename)
 
+    def save_to_tfile(self, tfile):
+        tfile.WriteTObject(self.graph_all_scan_points, "regularize_all_scan_points")
+        tfile.WriteTObject(self.graph_best_scan_point, "regularize_best_scan_point")
+
 
 class LCurveScanner(object):
     """Class to handle doing ScanLcurve on a TUnfoldBinning object,
@@ -366,6 +370,16 @@ class MyUnfolder(object):
         self.backgrounds_gen_binning = {}  # gets filled with subtract_background_gen_binning()
 
         self.unfolded = None  # set in get_output()
+        self.unfolded_stat_err = None  # set in get_unfolded_with_ematrix_stat()
+
+        self.syst_maps = {}  # gets filled with add_sys_error()
+        self.syst_shifts = {}  # gets filled with get_sys_shift()
+
+        # use "generator" for signal + underflow region, "generatordistribution" for only signal region
+        self.output_distribution_name = "generator"
+
+        self.folded_unfolded = None  # set in get_folded_unfolded()
+        self.folded_mc_truth = None  # set in get_folded_mc_truth()
 
     def save_binning(self, print_xml=True, txt_filename=None):
         """Save binning scheme to txt and/or print XML to screen"""
@@ -388,6 +402,65 @@ class MyUnfolder(object):
             # don't know how to create a ofstream in python :( best we can do is ROOT.cout
             ROOT.TUnfoldBinningXML.ExportXML(self.detector_binning, ROOT.cout, True, False)
             ROOT.TUnfoldBinningXML.ExportXML(self.generator_binning, ROOT.cout, False, True)
+
+    @staticmethod
+    def _check_save_to_tfile(tfile, obj, name=None):
+        if obj:
+            if name is None:
+                name = obj.GetName()
+            tfile.WriteTObject(obj, name)
+        else:
+            print("Not saving", name, "as does not exist")
+
+    def save_to_tfile(self, tfile):
+        """Save important stuff to TFile/TDirectory"""
+        self._check_save_to_tfile(tfile, self.detector_binning)
+        self._check_save_to_tfile(tfile, self.generator_binning)
+        self._check_save_to_tfile(tfile, self.response_map, "response_map")
+
+        # all 1D input gen/reco etc hists
+        self._check_save_to_tfile(tfile, self.input_hist, "input_hist")
+        self._check_save_to_tfile(tfile, self.input_hist_bg_subtracted, "input_hist_bg_subtracted")
+        self._check_save_to_tfile(tfile, self.input_hist_gen_binning, "input_hist_gen_binning")
+        self._check_save_to_tfile(tfile, self.input_hist_gen_binning_bg_subtracted, "input_hist_gen_binning_bg_subtracted")
+        self._check_save_to_tfile(tfile, self.hist_truth, "hist_truth")
+        self._check_save_to_tfile(tfile, self.hist_mc_reco, "hist_mc_reco")
+        self._check_save_to_tfile(tfile, self.hist_mc_reco_bg_subtracted, "hist_mc_reco_bg_subtracted")
+        self._check_save_to_tfile(tfile, self.hist_mc_reco_gen_binning, "hist_mc_reco_gen_binning")
+        self._check_save_to_tfile(tfile, self.hist_mc_reco_gen_binning_bg_subtracted, "hist_mc_reco_gen_binning_bg_subtracted")
+
+        # save all backgrounds (incl fakes)
+        for name, hist in self.backgrounds.items():
+            self._check_save_to_tfile(tfile, hist, "background_reco_binning_%s" % name.replace(" ", "_"))
+        for name, hist in self.backgrounds_gen_binning.items():
+            self._check_save_to_tfile(tfile, hist, "background_gen_binning_%s" % name.replace(" ", "_"))
+
+        # save error matrices
+        self._check_save_to_tfile(tfile, self.ematrix_input, "ematrix_input")
+        self._check_save_to_tfile(tfile, self.ematrix_sys_uncorr, "ematrix_sys_uncorr")
+        self._check_save_to_tfile(tfile, self.ematrix_total, "ematrix_total")
+        self._check_save_to_tfile(tfile, self.ematrix_stat_sum, "ematrix_stat_sum")
+
+        # save other matrices
+        self._check_save_to_tfile(tfile, self.rhoij_total, "rhoij_total")
+        # self._check_save_to_tfile(tfile, self.covariance_matrix, "covariance_matrix")
+        self._check_save_to_tfile(tfile, self.probability_matrix, "probability_matrix")
+
+        # save systematic response matrices
+        for name, syst_map in self.syst_maps.items():
+            self._check_save_to_tfile(tfile, syst_map, "syst_map_%s" % name.replace(" ", "_"))
+
+        # save systematic shifts
+        for name, syst_shift in self.syst_shifts.items():
+            self._check_save_to_tfile(tfile, syst_shift, "syst_shift_%s" % name.replace(" ", "_"))
+
+        # Folded things
+        self._check_save_to_tfile(tfile, self.folded_unfolded, "folded_unfolded")
+        self._check_save_to_tfile(tfile, self.folded_mc_truth, "folded_mc_truth")
+
+        # Save unfolded
+        self._check_save_to_tfile(tfile, self.unfolded, "unfolded")
+        self._check_save_to_tfile(tfile, self.unfolded_stat_err, "unfolded_stat_err")
 
     def set_input(self,
                   input_hist,
@@ -459,7 +532,24 @@ class MyUnfolder(object):
         self.tau = tau
         self.tunfolder.DoUnfold(tau)
 
-    def get_output(self, update_with_ematrix_total=False):
+    def add_sys_error(self, map_syst, name, mode):
+        """Add systematic error via response map, arguments as per AddSysError()"""
+        self.syst_maps[name] = map_syst
+        self.tunfolder.AddSysError(map_syst, name, self.orientation, ROOT.TUnfoldDensity.kSysErrModeMatrix)
+
+    def get_delta_sys_shift(self, syst_label, hist_name, hist_title=""):
+        if syst_label not in self.syst_maps:
+            raise KeyError("No systematic %s, only have: %s" % (syst_label, ", ".join(self.syst_maps.keys())))
+        hist = self.tunfolder.GetDeltaSysSource(syst_label,
+                                                hist_name,
+                                                hist_title,
+                                                self.output_distribution_name, # must be the same as what's used in get_output
+                                                self.axisSteering,
+                                                self.use_axis_binning)
+        self.syst_shifts[syst_label] = hist
+        return hist
+
+    def get_output(self, hist_name='unfolded', update_with_ematrix_total=False):
         """Get 1D unfolded histogram covering all bins"""
         print("Ndf:", self.tunfolder.GetNdf())
         self.Ndf = self.tunfolder.GetNdf()
@@ -473,11 +563,24 @@ class MyUnfolder(object):
         self.chi2L = self.tunfolder.GetChi2L()
 
         # print("( " + str(self.tunfolder.GetChi2A()) + " + " + str(self.tunfolder.GetChi2L()) + ") / " + str(self.tunfolder.GetNdf()))
-        # use "generator" for signal + underflow region, "generatordistribution" for only signal region
-        self.unfolded = self.tunfolder.GetOutput("unfolded_" + cu.get_unique_str(), "", "generator", "*[]", self.use_axis_binning)
-        if update_with_ematrix_total:
-            self.update_unfolded_with_ematrix_total()
+
+        self.unfolded = self.tunfolder.GetOutput(hist_name, "", self.output_distribution_name, "*[]", self.use_axis_binning)
+        # if update_with_ematrix_total:
+        #     self.update_unfolded_with_ematrix_total()
         return self.unfolded
+
+    def _post_process(self):
+        """Do some standard things & store various things that are done after unfolding"""
+        self.get_ematrix_input()
+        self.get_ematrix_sys_uncorr()
+        self.get_ematrix_stat()
+        self.get_ematrix_total()
+        self.get_rhoij_total()
+        self.get_probability_matrix()
+        self.update_unfolded_with_ematrix_total()
+        self.get_unfolded_with_ematrix_stat()
+        self.get_folded_unfolded()
+        self.get_folded_mc_truth()
 
     @staticmethod
     def make_hist_from_diagonal_errors(h2d, do_sqrt=True):
@@ -498,48 +601,72 @@ class MyUnfolder(object):
             h_to_be_updated.SetBinError(i, h_orig.GetBinError(i))
 
     def update_unfolded_with_ematrix_total(self):
+        """Update unfolded hist with total errors from total error matrix"""
         ematrix_total = self.get_ematrix_total()
         error_total_1d = self.make_hist_from_diagonal_errors(ematrix_total, do_sqrt=True) # note that bin contents = 0, only bin errors are non-0
-        update_hist_bin_error(h_orig=error_total_1d, h_to_be_updated=self.unfolded)
+        self.update_hist_bin_error(h_orig=error_total_1d, h_to_be_updated=self.unfolded)
+
+    def get_unfolded_with_ematrix_stat(self):
+        """Make copy of unfolded, but only stat errors"""
+        if getattr(self, 'unfolded_stat_err', None) is None:
+            error_1d = self.make_hist_from_diagonal_errors(self.get_ematrix_stat(), do_sqrt=True) # note that bin contents = 0, only bin errors are non-0
+            self.unfolded_stat_err = self.unfolded.Clone("unfolded_stat_err")
+            self.update_hist_bin_error(h_orig=error_1d, h_to_be_updated=self.unfolded_stat_err)
+        return self.unfolded_stat_err
 
     def get_bias_vector(self):
-        self.bias_vector = self.tunfolder.GetBias("bias_"+cu.get_unique_str(), "", "generator", "*[]", self.use_axis_binning)
+        if getattr(self, "bias_vector", None) is None:
+            self.bias_vector = self.tunfolder.GetBias("bias_"+cu.get_unique_str(), "", "generator", "*[]", self.use_axis_binning)
         return self.bias_vector
 
     def get_ematrix_input(self):
-        self.ematrix_input = self.tunfolder.GetEmatrixInput("ematrix_input_"+cu.get_unique_str(), "", "generator", "*[]", self.use_axis_binning)
+        if getattr(self, "ematrix_input", None) is None:
+            self.ematrix_input = self.tunfolder.GetEmatrixInput("ematrix_input_"+cu.get_unique_str(), "", "generator", "*[]", self.use_axis_binning)
         return self.ematrix_input
 
     def get_ematrix_sys_uncorr(self):
-        self.ematrix_sys_uncorr = self.tunfolder.GetEmatrixSysUncorr("ematrix_sys_uncorr_"+cu.get_unique_str(), "", "generator", "*[]", self.use_axis_binning)
+        if getattr(self, "ematrix_sys_uncorr", None) is None:
+            self.ematrix_sys_uncorr = self.tunfolder.GetEmatrixSysUncorr("ematrix_sys_uncorr_"+cu.get_unique_str(), "", "generator", "*[]", self.use_axis_binning)
         return self.ematrix_sys_uncorr
 
     def get_ematrix_total(self):
-        self.ematrix_total = self.tunfolder.GetEmatrixTotal("ematrix_total_"+cu.get_unique_str(), "", "generator", "*[]", self.use_axis_binning)
+        if getattr(self, "ematrix_total", None) is None:
+            self.ematrix_total = self.tunfolder.GetEmatrixTotal("ematrix_total_"+cu.get_unique_str(), "", "generator", "*[]", self.use_axis_binning)
         return self.ematrix_total
 
+    def get_ematrix_stat(self):
+        if getattr(self, 'ematrix_stat', None) is None:
+            self.ematrix_stat_sum = self.get_ematrix_input().Clone("ematrix_stat_sum")
+            self.ematrix_stat_sum.Add(self.get_ematrix_sys_uncorr()) # total 'stat' errors
+        return self.ematrix_stat_sum
+
     def get_rhoij_total(self):
-        self.rhoij_total = self.tunfolder.GetRhoIJtotal("rhoij_total_"+cu.get_unique_str(), "", "generator", "*[]", self.use_axis_binning)
+        if getattr(self, "rhoij_total", None) is None:
+            self.rhoij_total = self.tunfolder.GetRhoIJtotal("rhoij_total_"+cu.get_unique_str(), "", "generator", "*[]", self.use_axis_binning)
         return self.rhoij_total
 
     def get_probability_matrix(self):
-        self.probability_matrix = self.tunfolder.GetProbabilityMatrix("prob_matrix_"+cu.get_unique_str(), "", self.use_axis_binning)
+        if getattr(self, "probability_matrix", None) is None:
+            self.probability_matrix = self.tunfolder.GetProbabilityMatrix("prob_matrix_"+cu.get_unique_str(), "", self.use_axis_binning)
         return self.probability_matrix
 
     def get_covariance_matrix(self):
-        self.covariance_matrix = self.tunfolder.GetVxx()
+        if getattr(self, "covariance_matrix", None) is None:
+            self.covariance_matrix = self.tunfolder.GetVxx()
         return self.covariance_matrix
 
     def get_var_hist_pt_binned(self, hist1d, ibin_pt, binning_scheme='generator'):
         """Get hist of variable for given pt bin from massive 1D hist that TUnfold makes"""
+        # FIXME: assume no underflow?!
         binning = self.generator_binning.FindNode("generatordistribution") if binning_scheme == "generator" else self.detector_binning.FindNode("detectordistribution")
         var_bins = np.array(binning.GetDistributionBinning(0))
         pt_bins = np.array(binning.GetDistributionBinning(1))
 
         # print("var_bins:", var_bins)
         # print("pt_bins:", pt_bins)
-        bin_num = binning.GetGlobalBinNumber(0.001, 49)
-        # print("Global bin num for (pt, lambda) = (49, 0.001) => %d" % (bin_num))
+        # bin_num = binning.GetGlobalBinNumber(0.001, 51)
+        # print("Global bin num for (pt, lambda) = (51, 0.001) => %d" % (bin_num))
+        # print("This bin goes from %g to %g" % (hist1d.GetXaxis().GetBinLowEdge(bin_num), hist1d.GetXaxis().GetBinLowEdge(bin_num+1)))
 
         # need the -1 on ibin_pt, as it references an array index, whereas ROOT bins start at 1
         h = ROOT.TH1D("h_%d_%s" % (ibin_pt, cu.get_unique_str()), "", len(var_bins)-1, var_bins)
@@ -552,8 +679,17 @@ class MyUnfolder(object):
             # print("Bin:", bin_num, this_val, pt_bins[ibin_pt], "=", hist1d.GetBinContent(bin_num), "+-", hist1d.GetBinError(bin_num))
         return h
 
-    def get_folded_output(self, hist_name):
-        return self.tunfolder.GetFoldedOutput(hist_name)
+    def get_folded_unfolded(self):
+        # don't use getfoldedoutput, because it doesn't have the updated errors from the total error matrix
+        # so we'll have to do it ourselves
+        # 1. Make unfolded hist into TVector/TMatrix
+
+        # 2. Make response 2d hist into matrix
+
+        # 3. Multiply the two, convert to TH1
+        if getattr(self, 'folded_unfolded', None) is None:
+            self.folded_unfolded = self.tunfolder.GetFoldedOutput("folded_unfolded")
+        return self.folded_unfolded
 
     @staticmethod
     def th2_to_tmatrixd(hist, include_uflow=False, include_oflow=False):
@@ -603,21 +739,22 @@ class MyUnfolder(object):
         largest/smallest singular values.
         These are also stored for later usage if needed (since expensive to calc)
         """
-        # num = self.calculate_singular_max_min(self.response_map_matrix)
-        sigma_max, sigma_min = self.calculate_singular_max_min(self.th2_to_tmatrixd(self.get_probability_matrix()))
-        if sigma_min == 0:
-            # avoid DivisionError
-            print("Minmum singular value = 0, condition number = Infinity")
-            num = np.inf
-        else:
-            num = sigma_max / sigma_min
-        self.sigma_max = sigma_max
-        self.sigma_min = sigma_min
-        self.condition_number = num
-        print("Condition number:", num)
-        if num < 50:
+        if getattr(self, 'condition_number', None) is None:
+            sigma_max, sigma_min = self.calculate_singular_max_min(self.th2_to_tmatrixd(self.get_probability_matrix()))
+            if sigma_min == 0:
+                # avoid DivisionError
+                print("Minmum singular value = 0, condition number = Infinity")
+                num = np.inf
+            else:
+                num = sigma_max / sigma_min
+            self.sigma_max = sigma_max
+            self.sigma_min = sigma_min
+            self.condition_number = num
+
+        print("Condition number:", self.condition_number)
+        if self.condition_number < 50:
             print(" - You probably shouldn't regularize this")
-        elif num > 1E5:
+        elif self.condition_number > 1E5:
             print(" - You probably should regularize this")
         else:
             print(" - You probably should look into regularization")
@@ -736,6 +873,9 @@ class MyUnfolder(object):
 
     def get_folded_hist(self, hist_gen):
         """Fold hist_gen using the stored respone matrix, ie do matrix * vector"""
+
+        # TODO: proper error propagation
+
         oflow = True
         # Convert map to matrix
         response_matrix, response_matrix_err = self.th2_to_ndarray(self.response_map, oflow_x=oflow, oflow_y=oflow)
@@ -757,6 +897,12 @@ class MyUnfolder(object):
         folded_hist = self.ndarray_to_th1(folded_vec.T, has_oflow_x=oflow)
 
         return folded_hist
+
+    def get_folded_mc_truth(self):
+        """Get response_matrix * MC truth"""
+        if getattr(self, 'folded_mc_truth', None) is None:
+            self.folded_mc_truth = self.get_folded_hist(self.hist_truth)
+        return self.folded_mc_truth
 
 
 class MyUnfolderPlotter(object):
@@ -874,6 +1020,16 @@ class MyUnfolderPlotter(object):
                           output_filename=output_filename,
                           xtitle='Generator bin', ytitle='Detector bin')
 
+    def draw_covariance_matrix(self, output_dir='.', append="", title=""):
+        output_filename = "%s/covariance_map_%s.%s" % (output_dir, append, self.output_fmt)
+        self.draw_2d_hist(self.unfolder.get_covariance_matrix(),
+                          title=title,
+                          output_filename=output_filename,
+                          draw_bin_lines_x=True,
+                          draw_bin_lines_y=True,
+                          canvas_size=(800, 700),
+                          xtitle='Generator bin', ytitle='Generator bin')
+
     def draw_probability_matrix(self, output_dir='.', append="", title=""):
         output_filename = "%s/probability_map_%s.%s" % (output_dir, append, self.output_fmt)
         self.draw_2d_hist(self.unfolder.get_probability_matrix(),
@@ -890,17 +1046,32 @@ class MyUnfolderPlotter(object):
     # TODO: generalise to some "draw_2d_hist()"?
     def draw_error_matrix_input(self, output_dir='.', append="", title=""):
         output_filename = "%s/err_map_sys_input_%s.%s" % (output_dir, append, self.output_fmt)
-        self.draw_2d_hist(self.unfolder.get_ematrix_input(), title, output_filename)
+        self.draw_2d_hist(self.unfolder.get_ematrix_input(),
+                          title=title,
+                          output_filename=output_filename,
+                          draw_bin_lines_x=True,
+                          draw_bin_lines_y=True,
+                          canvas_size=(800, 700))
 
     def draw_error_matrix_sys_uncorr(self, output_dir='.', append="", title=""):
         output_filename = "%s/err_map_sys_uncorr_%s.%s" % (output_dir, append, self.output_fmt)
-        self.draw_2d_hist(self.unfolder.get_ematrix_sys_uncorr(), title, output_filename)
+        self.draw_2d_hist(self.unfolder.get_ematrix_sys_uncorr(),
+                          title=title,
+                          output_filename=output_filename,
+                          draw_bin_lines_x=True,
+                          draw_bin_lines_y=True,
+                          canvas_size=(800, 700))
 
     def draw_error_matrix_total(self, output_dir='.', append="", title=""):
         output_filename = "%s/err_map_total_%s.%s" % (output_dir, append, self.output_fmt)
-        self.draw_2d_hist(self.unfolder.get_ematrix_total(), title, output_filename)
+        self.draw_2d_hist(self.unfolder.get_ematrix_total(),
+                          title=title,
+                          output_filename=output_filename,
+                          draw_bin_lines_x=True,
+                          draw_bin_lines_y=True,
+                          canvas_size=(800, 700))
 
-    def draw_correlation_matrix(self, draw_values=False, output_dir='.', append="", title=""):
+    def draw_correlation_matrix(self, draw_values=False, draw_binning_lines=True, output_dir='.', append="", title=""):
         # Custom colour scheme - french flag colouring
         NRGBs = 3
         NCont = 99
@@ -914,9 +1085,12 @@ class MyUnfolderPlotter(object):
         blueArray = array('d', blue)
         ROOT.TColor.CreateGradientColorTable(NRGBs, stopsArray, redArray, greenArray, blueArray, NCont)
 
-        canv = self.generate_2d_canvas()
+        canv = self.generate_2d_canvas((800, 700))
         canv.SetLeftMargin(0.11)
         canv.SetRightMargin(0.12)
+        if draw_binning_lines:
+            canv.SetBottomMargin(0.18)
+            canv.SetLeftMargin(0.18)
         corr_map = self.unfolder.get_rhoij_total()
         corr_map.SetTitle(title+";Generator bin;Generator bin")
         corr_map.GetYaxis().SetTitleOffset(1)
@@ -930,6 +1104,13 @@ class MyUnfolderPlotter(object):
             corr_map.Draw("COL1Z TEXT45")
         else:
             corr_map.Draw("COL1Z")
+        if draw_binning_lines:
+            corr_map.GetXaxis().SetTitleOffset(2.2)
+            corr_map.GetXaxis().SetLabelOffset(999)
+            corr_map.GetYaxis().SetTitleOffset(2.1)
+            corr_map.GetYaxis().SetLabelOffset(999)
+            lx, tx = self.draw_pt_binning_lines(corr_map, which='gen', axis='x', do_labels_inside=False, do_labels_outside=True)
+            ly, ty = self.draw_pt_binning_lines(corr_map, which='gen', axis='y', do_labels_inside=False, do_labels_outside=True)
         output_filename = "%s/rho_map%s_%s.%s" % (output_dir, val_str, append, self.output_fmt)
         canv.SaveAs(output_filename)
         ROOT.gStyle.SetPalette(ROOT.kBird)
@@ -1191,7 +1372,7 @@ class MyUnfolderPlotter(object):
                     y_start = math.pow(10, 0.03*log_axis_range + math.log10(axis_low))
                     y_end = 10*axis_low
                 else:
-                    y_start = 1.05*axis_low
+                    y_start = (0.02*axis_range) + axis_low
                     y_end = 10*axis_low
 
                 if labels_inside_align == 'higher':
@@ -1213,9 +1394,9 @@ class MyUnfolderPlotter(object):
                 t = text.AddText(contents)  # t is a TText
                 t.SetTextColor(14)
                 t.SetTextAngle(89)
-                t.SetTextSize(0.025)
-                if isinstance(plot, Plot) and not plot.subplot_pad:
-                    t.SetTextSize(0.015)  # account for the fact that a subplot makes things smaller
+                t.SetTextSize(0.0275)
+                if (isinstance(plot, Plot) and not plot.subplot_pad) or not isinstance(plot, Plot):
+                    t.SetTextSize(0.02)  # account for the fact that a subplot makes things smaller
                 if labels_inside_align == 'lower':
                     t.SetTextAlign(ROOT.kHAlignLeft + ROOT.kVAlignTop)
                 else:
@@ -1281,14 +1462,15 @@ class MyUnfolderPlotter(object):
 
         return lines, texts
 
-    def draw_unfolded_1d(self, do_gen=True, do_unfolded=True, output_dir='.', append='', title=''):
+    def draw_unfolded_1d(self, do_gen=True, do_unfolded=True, is_data=True, output_dir='.', append='', title=''):
         """Simple plot of unfolded & gen, by bin number (ie non physical axes)"""
         entries = []
 
         if do_unfolded and self.unfolder.unfolded:
             subplot = self.unfolder.hist_truth if (do_gen and self.unfolder.hist_truth) else None
+            label = 'data' if is_data else 'MC'
             entries.append(
-                Contribution(self.unfolder.unfolded, label="Unfolded (#tau = %.3g)" % (self.unfolder.tau),
+                Contribution(self.unfolder.unfolded, label="Unfolded %s (#tau = %.3g)" % (label, self.unfolder.tau),
                              line_color=ROOT.kRed, line_width=1,
                              marker_color=ROOT.kRed, marker_size=0.6, marker_style=20,
                              subplot_line_color=ROOT.kRed, subplot_line_width=1,
@@ -1310,17 +1492,18 @@ class MyUnfolderPlotter(object):
                     xtitle="Generator bin number",
                     ytitle="N",
                     subplot_type='ratio',
-                    subplot_title='#splitline{Unfolded Data /}{MC Gen}',
-                    subplot_limits=(0, 2))
+                    subplot_title='#splitline{Unfolded %s /}{MC Gen}' % label,
+                    subplot_limits=(0, 2),
+                    has_data=is_data)
         plot.default_canvas_size = (800, 600)
         # plot.text_left_offset = 0.05  # have to bodge this
         plot.plot("NOSTACK HISTE", "NOSTACK HISTE")
-        plot.main_pad.SetLogy(1)
-        # plot.set_logy()
-        ymax = max(c.obj.GetMaximum() for c in entries)
-        plot.container.SetMaximum(ymax * 100)
+        # plot.main_pad.SetLogy(1)
+        plot.set_logy(do_more_labels=False)
+        ymax = max([o.GetMaximum() for o in plot.contributions_objs])
+        plot.container.SetMaximum(ymax * 500)
         ymin = min(c.obj.GetMinimum(1E-8) for c in entries)
-        plot.container.SetMinimum(ymin*0.001)  # space for bin labels as well
+        plot.container.SetMinimum(ymin*0.01)  # space for bin labels as well
         plot.legend.SetY1NDC(0.77)
         plot.legend.SetX1NDC(0.65)
         plot.legend.SetX2NDC(0.88)
@@ -1400,7 +1583,7 @@ class MyUnfolderPlotter(object):
         plot.plot("NOSTACK HISTE")
         plot.set_logy(do_more_labels=False)
         ymax = max([o.GetMaximum() for o in plot.contributions_objs])
-        plot.container.SetMaximum(ymax * 100)
+        plot.container.SetMaximum(ymax * 200)
         ymin = max([o.GetMinimum(1E-10) for o in plot.contributions_objs])
         plot.container.SetMinimum(ymin*0.01)
         l, t = self.draw_pt_binning_lines(plot, which='reco', axis='x',
@@ -1498,7 +1681,7 @@ class MyUnfolderPlotter(object):
         plot.plot("NOSTACK HISTE")
         plot.set_logy(do_more_labels=False)
         ymax = max([o.GetMaximum() for o in plot.contributions_objs])
-        plot.container.SetMaximum(ymax * 100)
+        plot.container.SetMaximum(ymax * 200)
         ymin = max([o.GetMinimum(1E-10) for o in plot.contributions_objs])
         plot.container.SetMinimum(ymin*0.01)
         l, t = self.draw_pt_binning_lines(plot, which='gen', axis='x',
@@ -1512,4 +1695,114 @@ class MyUnfolderPlotter(object):
         plot.legend.SetX1NDC(0.65)
         plot.legend.SetX2NDC(0.88)
         output_filename = "%s/detector_gen_binning_%s.%s" % (output_dir, append, self.output_fmt)
+        plot.save(output_filename)
+
+    def draw_unfolded_folded(self, output_dir='.', append="", title=""):
+        """Draw big 1D plot of folded unfolded + original input (bg-subtracted if possible)"""
+        entries = []
+
+        hist_reco = self.unfolder.input_hist_bg_subtracted
+        is_bg_subtracted = True
+        if not hist_reco:
+            hist_reco = self.input_hist
+            is_bg_subtracted = False
+        if hist_reco:
+            entries.append(
+                Contribution(hist_reco,
+                             label="Unfolding input (background-subtracted)" if is_bg_subtracted else "Unfolding input",
+                             line_color=ROOT.kBlue, line_width=1,
+                             marker_color=ROOT.kBlue, marker_size=0,
+                             normalise_hist=False)
+                )
+
+        hist_folded = self.unfolder.get_folded_unfolded()
+        if hist_folded:
+            entries.append(
+                Contribution(hist_folded, label="Folded unfolded result (#tau = %.3g)" % (self.unfolder.tau),
+                             line_color=ROOT.kRed, line_width=1,
+                             marker_color=ROOT.kRed, marker_size=0,
+                             normalise_hist=False,
+                             subplot=hist_reco)
+                )
+
+        plot = Plot(entries,
+                    what='hist',
+                    title=title,
+                    xtitle="Detector binning",
+                    ytitle="N",
+                    subplot_type='ratio',
+                    subplot_title='#splitline{Folded /}{Unfolding input}',
+                    subplot_limits=(0.8, 1.2))
+        plot.default_canvas_size = (800, 600)
+        plot.plot("NOSTACK HIST")
+        plot.main_pad.SetLogy(1)
+        ymax = max([o.GetMaximum() for o in plot.contributions_objs])
+        plot.container.SetMaximum(ymax * 200)
+        # plot.container.SetMinimum(1E-8)
+        plot.legend.SetY1NDC(0.77)
+        plot.legend.SetX1NDC(0.6)
+        plot.legend.SetX2NDC(0.88)
+        plot.legend.SetY2NDC(0.87)
+
+        l, t = self.draw_pt_binning_lines(plot, which='reco', axis='x',
+                                          do_underflow=True,
+                                          do_labels_inside=True,
+                                          do_labels_outside=False)
+        output_filename = "%s/folded_unfolded_%s.%s" % (output_dir, append, self.output_fmt)
+        plot.save(output_filename)
+
+    def draw_truth_folded(self, output_dir='.', append="", title=""):
+        """Draw big 1D plot of folded truth + original input (bg-subtracted if possible)"""
+        # TODO assimilate with draw_unfolded_folded()
+        entries = []
+
+        hist_reco = self.unfolder.input_hist_bg_subtracted
+        is_bg_subtracted = True
+        if not hist_reco:
+            hist_reco = self.input_hist
+            is_bg_subtracted = False
+        if hist_reco:
+            entries.append(
+                Contribution(hist_reco,
+                             label="Unfolding input (background-subtracted)" if is_bg_subtracted else "Unfolding input",
+                             line_color=ROOT.kBlue, line_width=1,
+                             marker_color=ROOT.kBlue, marker_size=0,
+                             normalise_hist=False)
+                )
+
+        hist_folded = self.unfolder.get_folded_mc_truth()
+        if hist_folded:
+            entries.append(
+                Contribution(hist_folded, label="Folded generator",
+                             line_color=ROOT.kRed, line_width=1,
+                             marker_color=ROOT.kRed, marker_size=0,
+                             normalise_hist=False,
+                             subplot=hist_reco)
+                )
+
+        plot = Plot(entries,
+                    what='hist',
+                    title=title,
+                    xtitle="Detector binning",
+                    ytitle="N",
+                    subplot_type='ratio',
+                    subplot_title='#splitline{Folded /}{Unfolding input}',
+                    subplot_limits=(0.8, 1.2))
+        plot.default_canvas_size = (800, 600)
+        plot.plot("NOSTACK HIST")
+        plot.main_pad.SetLogy(1)
+        ymax = max([o.GetMaximum() for o in plot.contributions_objs])
+        plot.container.SetMaximum(ymax * 200)
+        # plot.container.SetMinimum(1E-8)
+        plot.legend.SetY1NDC(0.77)
+        plot.legend.SetX1NDC(0.6)
+        plot.legend.SetX2NDC(0.88)
+        plot.legend.SetY2NDC(0.87)
+
+
+        l, t = self.draw_pt_binning_lines(plot, which='reco', axis='x',
+                                          do_underflow=True,
+                                          do_labels_inside=True,
+                                          do_labels_outside=False)
+        output_filename = "%s/folded_gen_%s.%s" % (output_dir, append, self.output_fmt)
         plot.save(output_filename)

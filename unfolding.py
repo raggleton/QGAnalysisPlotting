@@ -169,49 +169,6 @@ def draw_projection_comparison(h_orig, h_projection, title, xtitle, output_filen
     plot.save(output_filename)
 
 
-def draw_reco_folded(hist_folded, tau, hist_reco_data, hist_reco_mc, title, xtitle, output_filename, folded_subplot=None, folded_subplot_name=""):
-    entries = []
-    if hist_reco_mc:
-        entries.append(
-            Contribution(hist_reco_mc, label="MC (detector, bg-subtracted)",
-                         line_color=ROOT.kBlack, line_width=1,
-                         marker_color=ROOT.kBlack, marker_size=0,
-                         normalise_hist=False)
-            )
-    if hist_reco_data:
-        entries.append(
-            Contribution(hist_reco_data, label="Data (detector, bg-subtracted)",
-                         line_color=ROOT.kBlue, line_width=1,
-                         marker_color=ROOT.kBlue, marker_size=0,
-                         normalise_hist=False)
-            )
-    if hist_folded:
-        entries.append(
-            Contribution(hist_folded, label="Folded data (#tau = %.3g)" % (tau),
-                         line_color=ROOT.kRed, line_width=1,
-                         marker_color=ROOT.kRed, marker_size=0,
-                         normalise_hist=False,
-                         subplot=folded_subplot)
-            )
-    plot = Plot(entries,
-                what='hist',
-                title=title,
-                xtitle=xtitle,
-                ytitle="N",
-                subplot_type='ratio' if folded_subplot else None,
-                subplot_title='Folded / %s' % (folded_subplot_name),
-                subplot_limits=(0.8, 1.2))
-    plot.default_canvas_size = (800, 600)
-    plot.plot("NOSTACK HIST")
-    plot.main_pad.SetLogy(1)
-    ymax = max(h.GetMaximum() for h in [hist_reco_data, hist_reco_mc, hist_folded] if h)
-    plot.container.SetMaximum(ymax * 200)
-    # plot.container.SetMinimum(1E-8)
-    plot.legend.SetY1NDC(0.77)
-    plot.legend.SetX2NDC(0.85)
-    plot.save(output_filename)
-
-
 def check_entries(entries, message=""):
     """Check that at least 1 Contribution has something in it"""
     has_entries = [c.obj.GetEntries() > 0 for c in entries]
@@ -760,7 +717,7 @@ if __name__ == "__main__":
         append += "_experimentalSyst"
 
     if args.doModelSysts:
-        append += "_modelSyst"
+        append += "_modelSystScale"
 
     if args.doPDFSysts:
         append += "_pdfSyst"
@@ -803,9 +760,6 @@ if __name__ == "__main__":
     if "ak8puppi" in src_dir:
         jet_algo = "AK8 PF PUPPI"
 
-    # Save hists etc to ROOT file for access later
-    output_tfile = ROOT.TFile("%s/unfolding_result.root" % (output_dir), "RECREATE")
-
     angles = [a for a in qgc.COMMON_VARS if a.var in args.angles]
     print(angles)
 
@@ -835,10 +789,10 @@ if __name__ == "__main__":
         pt_bin_edges_underflow_gen = qgc.PT_UNFOLD_DICT['underflow%s_gen' % (zpj_append)]
         pt_bin_edges_underflow_reco = qgc.PT_UNFOLD_DICT['underflow%s_reco' % (zpj_append)]
 
-        new_tdir = region['name']
-        output_tfile.mkdir(new_tdir)
-        region_tdir = output_tfile.Get(new_tdir)
-        region_tdir.cd()
+        # new_tdir = region['name']
+        # output_tfile.mkdir(new_tdir)
+        # region_tdir = output_tfile.Get(new_tdir)
+        # region_tdir.cd()
 
         # Do 1D unfolding of pt
         # ----------------------------------------------------------------------
@@ -862,7 +816,6 @@ if __name__ == "__main__":
         hist_mc_gen_pt_physical = ROOT.TH1F("mc_gen_pt", ";p_{T}^{jet} [GeV];N", len(all_pt_bins_gen)-1, array('d', all_pt_bins_gen))
         update_hist_bin_content(h_orig=hist_mc_gen_pt, h_to_be_updated=hist_mc_gen_pt_physical)
         update_hist_bin_error(h_orig=hist_mc_gen_pt, h_to_be_updated=hist_mc_gen_pt_physical)
-        region_tdir.WriteTObject(hist_mc_gen_pt_physical, "mc_gen_pt")
 
         # Do unfolding for each angle
         # ----------------------------------------------------------------------
@@ -875,14 +828,19 @@ if __name__ == "__main__":
             print("Region/var: %s" % (append))
             print("*"*80)
 
+            # put plots in subdir, to avoid overcrowding
+            this_output_dir = "%s/%s/%s" % (output_dir, region['name'], angle.var)
+            cu.check_dir_exists_create(this_output_dir)
+
+            # Save hists etc to ROOT file for access later
+            output_tfile = ROOT.TFile("%s/unfolding_result.root" % (this_output_dir), "RECREATE")
+
             new_tdir = "%s/%s" % (region['name'], angle.var)
             output_tfile.mkdir(new_tdir)
             this_tdir = output_tfile.Get(new_tdir)
             this_tdir.cd()
+            this_tdir.WriteTObject(hist_mc_gen_pt_physical, "mc_gen_pt")
 
-            # put plots in subdir, to avoid overcrowding
-            this_output_dir = "%s/%s/%s" % (output_dir, region['name'], angle.var)
-            cu.check_dir_exists_create(this_output_dir)
 
             # Setup MyUnfolder object to do unfolding etc
             # -------------------------------------------
@@ -947,7 +905,6 @@ if __name__ == "__main__":
 
             # Actual distribution to be unfolded, but with gen binning
             reco_1d_gen_binning = hist_mc_reco_gen_binning.Clone() if MC_INPUT else hist_data_reco_gen_binning
-            # reco_1d_gen_binning = hist_mc_reco_gen_binning # only for testing that everything is setup OK
 
             hist_fakes_reco_gen_binning = None
             if SUBTRACT_FAKES:
@@ -989,7 +946,7 @@ if __name__ == "__main__":
                                   constraintMode=area_constraint,
                                   regMode=ROOT.TUnfold.kRegModeCurvature,
                                   densityFlags=ROOT.TUnfoldDensity.kDensityModeBinWidth, # important as we have varying bin sizes!
-                                  distribution='generatordistribution',
+                                  distribution='generatordistribution',  # the one to use for actual final regularisation/unfolding
                                   axisSteering=axis_steering)
 
             unfolder.save_binning(txt_filename="%s/binning_scheme.txt" % (this_output_dir), print_xml=False)
@@ -1025,13 +982,15 @@ if __name__ == "__main__":
                         for xbin, ybin in product(range(1, rel_map.GetNbinsX()+1), range(1, rel_map.GetNbinsY()+1)):
                             rel_map.SetBinContent(xbin, ybin, syst_dict['factor'])
                             rel_map.SetBinError(xbin, ybin, 0)
-                        unfolder.tunfolder.AddSysError(rel_map, syst_dict['label'], unfolder.orientation, ROOT.TUnfoldDensity.kSysErrModeRelative)
+                        # unfolder.tunfolder.AddSysError(rel_map, syst_dict['label'], unfolder.orientation, ROOT.TUnfoldDensity.kSysErrModeRelative)
+                        unfolder.add_sys_error(rel_map, syst_dict['label'], ROOT.TUnfoldDensity.kSysErrModeRelative)
                     else:
                         if not isinstance(syst_dict['tfile'], ROOT.TFile):
                             syst_dict['tfile'] = cu.open_root_file(syst_dict['tfile'])
                         map_syst = cu.get_from_tfile(syst_dict['tfile'], "%s/tu_%s_GenReco_all" % (region['dirname'], angle_shortname))
                         print("    syst bin", chosen_rsp_bin, map_syst.GetBinContent(*chosen_rsp_bin))
-                        unfolder.tunfolder.AddSysError(map_syst, syst_dict['label'], unfolder.orientation, ROOT.TUnfoldDensity.kSysErrModeMatrix)
+                        # unfolder.tunfolder.AddSysError(map_syst, syst_dict['label'], unfolder.orientation, ROOT.TUnfoldDensity.kSysErrModeMatrix)
+                        unfolder.add_sys_error(map_syst, syst_dict['label'], ROOT.TUnfoldDensity.kSysErrModeMatrix)
 
             # Subtract fakes (treat as background)
             # ------------------------------------------------------------------
@@ -1068,40 +1027,13 @@ if __name__ == "__main__":
                                                  scale=bg_dict.get('rate', 1.),
                                                  scale_err=bg_dict.get('rate_unc', 0.))
 
-            title = "%s region, %s" % (region['label'], angle_str)
+            title = "%s\n%s region, %s" % (jet_algo, region['label'], angle_str)
             unfolder_plotter.draw_background_fractions(title=title, **plot_args)
-
-            # Save important stuff to TFile
-            # ------------------------------------------------------------------
-            this_tdir.WriteTObject(unfolder.detector_binning)
-            this_tdir.WriteTObject(unfolder.generator_binning)
-            this_tdir.WriteTObject(reco_1d, "unfold_input")
-            this_tdir.WriteTObject(reco_1d_gen_binning, "unfold_input_gen_binning")
-            this_tdir.WriteTObject(hist_mc_reco, "mc_reco")
-            this_tdir.WriteTObject(hist_mc_reco_gen_binning, "mc_reco_gen_binning")
-            this_tdir.WriteTObject(hist_mc_gen, "mc_gen")
-            this_tdir.WriteTObject(hist_mc_gen_reco_map, "response_map")  # response map
-            # this_tdir.WriteTObject(hist_mc_gen_reco_map.RebinY(2), "response_map_rebin")  # response map
-
-            if SUBTRACT_FAKES:
-                this_tdir.WriteTObject(hist_fakes_reco, "fakes")
-                this_tdir.WriteTObject(hist_fakes_reco_gen_binning, "fakes_gen_binning")
-                this_tdir.WriteTObject(reco_1d_bg_subtracted, "unfold_input_bg_subtracted")
-                this_tdir.WriteTObject(reco_1d_gen_binning_bg_subtracted, "unfold_input_gen_binning_bg_subtracted")
-                this_tdir.WriteTObject(hist_mc_reco_bg_subtracted, "mc_reco_bg_subtracted")
-                this_tdir.WriteTObject(hist_mc_reco_gen_binning_bg_subtracted, "mc_reco_gen_binning_bg_subtracted")
-
-            if "backgrounds" in region and args.subtractBackgrounds:
-                for bg_dict in region['backgrounds']:
-                    print("Subtracting", bg_dict['name'], 'background')
-                    this_tdir.WriteTObject(bg_dict['hist'], 'background_reco_%s' % (bg_dict['name'].replace(" ", "_")))
-                    this_tdir.WriteTObject(bg_dict['hist_gen'], 'background_gen_%s' % (bg_dict['name'].replace(" ", "_")))
 
             # Do any regularization
             # ---------------------
             unfolder.print_condition_number()
 
-            # tau = 1E-10
             tau = 0
             scan_mode = ROOT.TUnfoldDensity.kEScanTauRhoAvgSys
             scan_distribution = unfolder.distribution
@@ -1128,60 +1060,36 @@ if __name__ == "__main__":
                                            axis_steering=unfolder.axisSteering)
                 print("Found tau:", tau)
                 tau_scanner.plot_scan_tau(output_filename="%s/scantau_%s.%s" % (this_output_dir, unfolder.variable_name, OUTPUT_FMT))
-                this_tdir.WriteTObject(tau_scanner.graph_all_scan_points, "regularize_all_scan_points")
-                this_tdir.WriteTObject(tau_scanner.graph_best_scan_point, "regularize_best_scan_point")
+                tau_scanner.save_to_tfile(this_tdir)
 
             if REGULARIZE != "None":
-                title = "L matrix, %s region, %s" % (region['label'], angle_str)
+                title = "L matrix, %s, %s region, %s" % (jet_algo, region['label'], angle_str)
                 unfolder_plotter.draw_L_matrix(title=title, **plot_args)
-                title = "L^{T}L matrix, %s region, %s" % (region['label'], angle_str)
+                title = "L^{T}L matrix, %s, %s region, %s" % (jet_algo, region['label'], angle_str)
                 unfolder_plotter.draw_L_matrix_squared(title=title, **plot_args)
-                title = "L * (x - bias vector), %s region, %s" % (region['label'], angle_str)
+                title = "L * (x - bias vector), %s, %s region, %s" % (jet_algo, region['label'], angle_str)
                 unfolder_plotter.draw_Lx_minus_bias(title=title, **plot_args)
 
             # Do unfolding!
             # ---------------------
             unfolder.do_unfolding(tau)
-            unfolded_1d = unfolder.get_output()
-            unfolded_1d.SetName("unfolded_1d")
+            unfolded_1d = unfolder.get_output(hist_name="unfolded_1d")
             chosen_bin = 18
             print("Bin %d:" % chosen_bin, unfolded_1d.GetBinContent(chosen_bin))
             print("original uncert:", unfolded_1d.GetBinError(chosen_bin))
+            unfolder._post_process()
 
             # Get various error matrices
             # ------------------------------------------------------------------
             # stat errors only - do before or after systematics?
-            ematrix_input = unfolder.get_ematrix_input() # stat errors from input to be unfolded
-            print("ematrix_input uncert:", ematrix_input.GetBinContent(chosen_bin, chosen_bin))
-            this_tdir.WriteTObject(ematrix_input, "ematrix_input")
+            print("stat uncert:", unfolder.unfolded_stat_err.GetBinError(chosen_bin))
+            print("new uncert:", unfolder.unfolded.GetBinError(chosen_bin))
 
-            ematrix_sys_uncorr = unfolder.get_ematrix_sys_uncorr() # stat errors in response matrix
-            print("ematrix_sys_uncorr uncert:", ematrix_sys_uncorr.GetBinContent(chosen_bin, chosen_bin))
-            this_tdir.WriteTObject(ematrix_sys_uncorr, "ematrix_sys_uncorr")
-
-            ematrix_stat_sum = ematrix_input.Clone("ematrix_stat_sum")
-            ematrix_stat_sum.Add(ematrix_sys_uncorr) # total 'stat' errors
-
-            error_stat_1d = make_hist_from_diagonal_errors(ematrix_stat_sum, do_sqrt=True) # note that bin contents = 0, only bin errors are non-0
-            this_tdir.WriteTObject(error_stat_1d, "error_stat_1d")
-            print("stat uncert:", error_stat_1d.GetBinError(chosen_bin))
-
-            ematrix_total = unfolder.get_ematrix_total()
-            error_total_1d = make_hist_from_diagonal_errors(ematrix_total, do_sqrt=True) # note that bin contents = 0, only bin errors are non-0
-            this_tdir.WriteTObject(ematrix_total, "ematrix_total_1d")
-            this_tdir.WriteTObject(error_total_1d, "error_total_1d")
-            print("total uncert:", error_total_1d.GetBinError(chosen_bin))
-
-            hist1, err1 = cu.th1_to_arr(unfolded_1d)
-            hist2, err2 = cu.th1_to_arr(hist_mc_gen)
+            # hist1, err1 = cu.th1_to_arr(unfolded_1d)
+            # hist2, err2 = cu.th1_to_arr(hist_mc_gen)
             # cov, cov_err = cu.th2_to_arr(ematrix_total)
             # chi2 = calculate_chi2(hist1, hist2, cov)
             # print("my chi2 =", chi2)
-
-            # Update errors to big unfolded 1D
-            update_hist_bin_error(h_orig=error_total_1d, h_to_be_updated=unfolded_1d)
-            print("new uncert:", unfolded_1d.GetBinError(chosen_bin))
-            this_tdir.WriteTObject(unfolded_1d)
 
             # Get shifts due to systematics
             # ------------------------------------------------------------------
@@ -1191,19 +1099,15 @@ if __name__ == "__main__":
                     if 'lumi' in syst_dict['label'].lower() and (len(region.get('backgrounds', [])) == 0 or not args.subtractBackgrounds):
                         continue
                     syst_label = syst_dict['label']
-                    h_syst = unfolder.tunfolder.GetDeltaSysSource(syst_label,
-                                                                  '%s_%s_shift_%s' % (region['name'], angle.var, syst_label),
-                                                                  "",
-                                                                  "generator",  # must be the same as what's used in get_output
-                                                                  unfolder.axisSteering,
-                                                                  unfolder.use_axis_binning)
+                    h_syst = unfolder.get_delta_sys_shift(syst_label=syst_label,
+                                                          hist_name='%s_%s_shift_%s' % (region['name'], angle.var, syst_label),
+                                                          hist_title="")
                     systematic_shift_hists.append(h_syst)
-                    this_tdir.WriteTObject(h_syst)
 
             # Draw big 1D distributions
             # ------------------------------------------------------------------
-            title = "%s region, %s" % (region['label'], angle_str)
-            unfolder_plotter.draw_unfolded_1d(output_dir=this_output_dir, append=append, title=title)
+            title = "%s\n%s region, %s" % (jet_algo, region['label'], angle_str)
+            unfolder_plotter.draw_unfolded_1d(is_data=not args.MCinput, output_dir=this_output_dir, append=append, title=title)
 
             # reco using detector binning
             unfolder_plotter.draw_detector_1d(do_reco_mc=True,
@@ -1279,65 +1183,71 @@ if __name__ == "__main__":
 
             # Draw matrices
             # ------------------------------------------------------------------
-            title = "%s region, %s" % (region['label'], angle_str)
             unfolder_plotter.plot_bias_vector(title=title, **plot_args)
 
-            title = "Response matrix, %s region, %s" % (region['label'], angle_str)
+            title = "Response matrix, %s, %s region, %s" % (jet_algo, region['label'], angle_str)
             unfolder_plotter.draw_response_matrix(title=title, **plot_args)
 
-            title = ("#splitline{Probability matrix, %s region, %s}{Condition number: #sigma_{max} / #sigma_{min} = %.3g / %.3g = %g}"
-                        % (region['label'], angle_str, unfolder.sigma_max, unfolder.sigma_min, unfolder.condition_number))
+            # title = "Covariance matrix, %s region, %s" % (region['label'], angle_str)
+            # unfolder_plotter.draw_covariance_matrix(title=title, **plot_args)
+
+            title = ("#splitline{Probability matrix, %s, %s region, %s}{Condition number: #sigma_{max} / #sigma_{min} = %.3g / %.3g = %g}"
+                        % (jet_algo, region['label'], angle_str, unfolder.sigma_max, unfolder.sigma_min, unfolder.condition_number))
             unfolder_plotter.draw_probability_matrix(title=title, **plot_args)
 
-            title = "Correlation matrix, %s region, %s" % (region['label'], angle_str)
+            title = "Correlation matrix, %s, %s region, %s" % (jet_algo, region['label'], angle_str)
             unfolder_plotter.draw_correlation_matrix(title=title, draw_values=True, **plot_args)
             unfolder_plotter.draw_correlation_matrix(title=title, draw_values=False, **plot_args)
 
-            title = "Error matrix (input), %s region, %s" % (region['label'], angle_str)
+            title = "Error matrix (input), %s, %s region, %s" % (jet_algo, region['label'], angle_str)
             unfolder_plotter.draw_error_matrix_input(title=title, **plot_args)
 
-            title = "Error matrix (sys uncorr), %s region, %s" % (region['label'], angle_str)
+            title = "Error matrix (sys uncorr), %s, %s region, %s" % (jet_algo, region['label'], angle_str)
             unfolder_plotter.draw_error_matrix_sys_uncorr(title=title, **plot_args)
 
-            title = "Error matrix (total), %s region, %s" % (region['label'], angle_str)
+            title = "Error matrix (total), %s, %s region, %s" % (jet_algo, region['label'], angle_str)
             unfolder_plotter.draw_error_matrix_total(title=title, **plot_args)
 
             # Do forward-folding to check unfolding
             # ------------------------------------------------------------------
             # Do it on the unfolded result
-            hist_data_folded_unfolded = unfolder.get_folded_output(hist_name="folded_unfolded_%s" % (append))
-            this_tdir.WriteTObject(hist_data_folded_unfolded, "folded_unfolded_1d")
-            draw_reco_folded(hist_folded=hist_data_folded_unfolded,
-                             tau=tau,
-                             hist_reco_data=reco_1d_bg_subtracted if SUBTRACT_FAKES else reco_1d,
-                             hist_reco_mc=hist_mc_reco_bg_subtracted if SUBTRACT_FAKES else hist_mc_reco,
-                             folded_subplot=reco_1d_bg_subtracted if SUBTRACT_FAKES else reco_1d,
-                             folded_subplot_name='Data',
-                             title="%s\n%s region" % (jet_algo, region['label']),
-                             xtitle="%s, Detector binning" % (angle_str),
-                             output_filename="%s/folded_unfolded_%s.%s" % (this_output_dir, append, OUTPUT_FMT))
+            # draw_reco_folded(hist_folded=unfolder.get_folded_unfolded(),
+            #                  tau=tau,
+            #                  hist_reco_data=reco_1d_bg_subtracted if SUBTRACT_FAKES else reco_1d,
+            #                  hist_reco_mc=hist_mc_reco_bg_subtracted if SUBTRACT_FAKES else hist_mc_reco,
+            #                  folded_subplot=reco_1d_bg_subtracted if SUBTRACT_FAKES else reco_1d,
+            #                  folded_subplot_name='Data',
+            #                  title="%s\n%s region" % (jet_algo, region['label']),
+            #                  xtitle="%s, Detector binning" % (angle_str),
+            #                  output_filename="%s/folded_unfolded_%s.%s" % (this_output_dir, append, OUTPUT_FMT))
 
-            hist_gen_folded = None
+            title = "%s\n%s region, %s" % (jet_algo, region['label'], angle_str)
+            unfolder_plotter.draw_unfolded_folded(title=title, **plot_args)
+
             if MC_INPUT:
-                hist_gen_folded = unfolder.get_folded_hist(hist_mc_gen)
-                this_tdir.WriteTObject(hist_gen_folded, "folded_gen_1d")
-                draw_reco_folded(hist_folded=hist_gen_folded,
-                                 tau=0,
-                                 hist_reco_data=None,
-                                 hist_reco_mc=hist_mc_reco_bg_subtracted if SUBTRACT_FAKES else hist_mc_reco,
-                                 folded_subplot=hist_mc_reco_bg_subtracted if SUBTRACT_FAKES else hist_mc_reco,
-                                 folded_subplot_name='MC',
-                                 title="%s\n%s region" % (jet_algo, region['label']),
-                                 xtitle="%s, Detector binning" % (angle_str),
-                                 output_filename="%s/folded_gen_%s.%s" % (this_output_dir, append, OUTPUT_FMT))
+                title = "%s\n%s region, %s" % (jet_algo, region['label'], angle_str)
+                unfolder_plotter.draw_truth_folded(title=title, **plot_args)
 
+                # draw_reco_folded(hist_folded=unfolder.get_folded_mc_truth(),
+                #                  tau=0,
+                #                  hist_reco_data=None,
+                #                  hist_reco_mc=hist_mc_reco_bg_subtracted if SUBTRACT_FAKES else hist_mc_reco,
+                #                  folded_subplot=hist_mc_reco_bg_subtracted if SUBTRACT_FAKES else hist_mc_reco,
+                #                  folded_subplot_name='MC',
+                #                  title="%s\n%s region" % (jet_algo, region['label']),
+                #                  xtitle="%s, Detector binning" % (angle_str),
+                #                  output_filename="%s/folded_gen_%s.%s" % (this_output_dir, append, OUTPUT_FMT))
+
+            # Save everything to TFile
+            unfolder.save_to_tfile(this_tdir)
 
             # ------------------------------------------------------------------
-            # Do unfolding using alternate response matrix
+            # UNFOLDING WITH ALTERNATIVE RESPONSE MATRIX
             # ------------------------------------------------------------------
             alt_unfolded_1d = None
             alt_hist_mc_gen = None
             alt_tau = 0
+            alt_unfolder = None
             if args.useAltResponse:
                 print("*** Unfolding with alternate response matrix ***")
                 if not isinstance(region['alt_mc_tfile'], ROOT.TFile):
@@ -1359,6 +1269,10 @@ if __name__ == "__main__":
                                           distribution=unfolder.distribution,
                                           axisSteering=unfolder.axisSteering)
 
+                this_tdir.cd()
+                alt_tdir = this_tdir.mkdir("alt_response_%s" % region['alt_mc_label'].replace(" ", "-"))
+                alt_tdir.cd()
+
                 alt_unfolder_plotter = MyUnfolderPlotter(alt_unfolder)
                 alt_output_dir = this_output_dir+"/altResponse"
                 alt_plot_args = dict(output_dir=alt_output_dir,
@@ -1372,19 +1286,18 @@ if __name__ == "__main__":
                 # Set what is to be unfolded - same as main unfolder
                 # --------------------------------------------------------------
                 alt_unfolder.set_input(input_hist=reco_1d,
+                                       input_hist_gen_binning=reco_1d_gen_binning,
                                        hist_truth=unfolder.hist_truth.Clone(),
                                        hist_mc_reco=unfolder.hist_mc_reco.Clone(),
                                        hist_mc_reco_bg_subtracted=unfolder.hist_mc_reco_bg_subtracted.Clone(),
+                                       hist_mc_reco_gen_binning=unfolder.hist_mc_reco_gen_binning.Clone(),
+                                       hist_mc_reco_gen_binning_bg_subtracted=unfolder.hist_mc_reco_gen_binning_bg_subtracted.Clone(),
                                        bias_factor=args.biasFactor)
 
                 # Subtract fakes (treat as background)
                 # --------------------------------------------------------------
                 if SUBTRACT_FAKES:
                     alt_unfolder.subtract_background(hist_fakes_reco, "fakes")
-
-                # Save important stuff to TFile
-                # --------------------------------------------------------------
-                this_tdir.WriteTObject(hist_mc_gen_reco_map_alt, "alt_response_map")  # response map
 
                 # Do any regularization
                 # --------------------------------------------------------------
@@ -1412,6 +1325,7 @@ if __name__ == "__main__":
                                                        axis_steering=alt_unfolder.axisSteering)
                     print("Found tau for alt matrix:", alt_tau)
                     alt_tau_scanner.plot_scan_tau(output_filename="%s/scantau_alt_%s.%s" % (alt_output_dir, alt_unfolder.variable_name, OUTPUT_FMT))
+                    alt_tau_scanner.save_to_tfile(alt_tdir)
 
                 if REGULARIZE != "None":
                     title = "L matrix, %s region, %s, alt. response (%s)" % (region['label'], angle_str, region['alt_mc_label'])
@@ -1424,26 +1338,17 @@ if __name__ == "__main__":
                 # Do unfolding!
                 # --------------------------------------------------------------
                 alt_unfolder.do_unfolding(alt_tau)
-                alt_unfolded_1d = alt_unfolder.get_output()
-                alt_unfolded_1d.SetName("alt_unfolded_1d")
+                alt_unfolded_1d = alt_unfolder.get_output(hist_name="alt_unfolded_1d")
                 print("Bin %d:" % chosen_bin, alt_unfolded_1d.GetBinContent(chosen_bin))
                 print("original uncert:", alt_unfolded_1d.GetBinError(chosen_bin))
+                alt_unfolder._post_process()
 
-                # Get error matrix to update errors
+                alt_title = "%s\n%s region, %s, %s response map" % (jet_algo, region['label'], angle_str, region['alt_mc_label'])
+                alt_unfolder_plotter.draw_unfolded_1d(is_data=not args.MCinput, title=alt_title, **alt_plot_args)
+
+                # Save important stuff to TFile
                 # --------------------------------------------------------------
-                alt_ematrix_total = alt_unfolder.get_ematrix_total()
-                alt_error_total_1d = make_hist_from_diagonal_errors(ematrix_total, do_sqrt=True) # note that bin contents = 0, only bin errors are non-0
-                this_tdir.WriteTObject(alt_ematrix_total, "alt_ematrix_total_1d")
-                this_tdir.WriteTObject(alt_error_total_1d, "alt_error_total_1d")
-                print("total uncert:", alt_error_total_1d.GetBinError(chosen_bin))
-
-                # Update errors to big unfolded 1D
-                update_hist_bin_error(h_orig=alt_error_total_1d, h_to_be_updated=alt_unfolded_1d)
-                print("new uncert:", alt_unfolded_1d.GetBinError(chosen_bin))
-                this_tdir.WriteTObject(alt_unfolded_1d)
-
-                alt_title = "%s region, %s, %s response map" % (region['label'], angle_str, region['alt_mc_label'])
-                alt_unfolder_plotter.draw_unfolded_1d(title=alt_title, **alt_plot_args)
+                alt_unfolder.save_to_tfile(alt_tdir)
 
             # ------------------------------------------------------------------
             # MODEL INPUT VARIATIONS
@@ -1481,6 +1386,11 @@ if __name__ == "__main__":
                                                densityFlags=unfolder.densityFlags,
                                                distribution=unfolder.distribution,
                                                axisSteering=unfolder.axisSteering)
+
+                    this_tdir.cd()
+                    syst_tdir_name = "modelSyst_"+syst_label_no_spaces
+                    syst_tdir = this_tdir.mkdir(syst_tdir_name)
+                    syst_tdir.cd()
 
                     syst_output_dir = this_output_dir+"/modelSyst_"+syst_label_no_spaces
                     syst_unfolder_plotter = MyUnfolderPlotter(syst_unfolder)
@@ -1545,11 +1455,9 @@ if __name__ == "__main__":
                             map_syst = cu.get_from_tfile(exp_dict['tfile'], "%s/tu_%s_GenReco_all" % (region['dirname'], angle_shortname))
                             print("Adding systematic:", exp_dict['label'])
                             print("    syst bin", chosen_rsp_bin, map_syst.GetBinContent(*chosen_rsp_bin))
-                            syst_unfolder.tunfolder.AddSysError(map_syst, exp_dict['label'], syst_unfolder.orientation, ROOT.TUnfoldDensity.kSysErrModeMatrix)
+                            # syst_unfolder.tunfolder.AddSysError(map_syst, exp_dict['label'], syst_unfolder.orientation, ROOT.TUnfoldDensity.kSysErrModeMatrix)
+                            syst_unfolder.add_sys_error(map_syst, exp_dict['label'], ROOT.TUnfoldDensity.kSysErrModeMatrix)
 
-                    # Save important stuff to TFile
-                    # --------------------------------------------------------------
-                    this_tdir.WriteTObject(hist_syst_reco, "syst_%s_unfold_input" % (syst_label_no_spaces))
 
                     # Do any regularization
                     # --------------------------------------------------------------
@@ -1590,29 +1498,20 @@ if __name__ == "__main__":
                     # Do unfolding!
                     # --------------------------------------------------------------
                     syst_unfolder.do_unfolding(syst_tau)
-                    syst_unfolded_1d = syst_unfolder.get_output()
-                    syst_unfolded_1d.SetName("syst_%s_unfolded_1d" % (syst_label_no_spaces))
+                    syst_unfolded_1d = syst_unfolder.get_output(hist_name="syst_%s_unfolded_1d" % (syst_label_no_spaces))
                     print("Bin %d:" % (chosen_bin), syst_unfolded_1d.GetBinContent(chosen_bin))
                     print("original uncert:", syst_unfolded_1d.GetBinError(chosen_bin))
+                    syst_unfolder._post_process()
 
-                    # Get error matrix to update errors
+                    region['model_systematics'][ind]['unfolded_1d'] = syst_unfolder.unfolded
+                    region['model_systematics'][ind]['gen_1d'] = syst_unfolder.hist_truth
+
+                    syst_title = "%s\n%s region, %s, %s input" % (jet_algo, region['label'], angle_str, syst_label)
+                    syst_unfolder_plotter.draw_unfolded_1d(is_data=not args.MCinput, title=syst_title, **syst_plot_args)
+
+                    # Save important stuff to TFile
                     # --------------------------------------------------------------
-                    syst_ematrix_total = syst_unfolder.get_ematrix_total()
-                    syst_error_total_1d = make_hist_from_diagonal_errors(ematrix_total, do_sqrt=True) # note that bin contents = 0, only bin errors are non-0
-                    this_tdir.WriteTObject(syst_ematrix_total, "syst_%s_ematrix_total_1d" % (syst_label_no_spaces))
-                    this_tdir.WriteTObject(syst_error_total_1d, "syst_%s_error_total_1d" % (syst_label_no_spaces))
-                    print("total uncert:", syst_error_total_1d.GetBinError(chosen_bin))
-
-                    # Update errors to big unfolded 1D
-                    update_hist_bin_error(h_orig=syst_error_total_1d, h_to_be_updated=syst_unfolded_1d)
-                    print("new uncert:", syst_unfolded_1d.GetBinError(chosen_bin))
-                    this_tdir.WriteTObject(syst_unfolded_1d)
-
-                    region['model_systematics'][ind]['unfolded_1d'] = syst_unfolded_1d
-                    region['model_systematics'][ind]['gen_1d'] = hist_syst_gen
-
-                    syst_title = "%s region, %s, %s input" % (region['label'], angle_str, syst_label)
-                    syst_unfolder_plotter.draw_unfolded_1d(title=syst_title, **syst_plot_args)
+                    syst_unfolder.save_to_tfile(syst_tdir)
 
             # ------------------------------------------------------------------
             # DO PDF VARIATIONS
@@ -1666,6 +1565,11 @@ if __name__ == "__main__":
                                               distribution=unfolder.distribution,
                                               axisSteering=unfolder.axisSteering)
 
+                    this_tdir.cd()
+                    pdf_tdir_name = "pdfSyst_"+pdf_label_no_spaces
+                    pdf_tdir = this_tdir.mkdir(pdf_tdir_name)
+                    pdf_tdir.cd()
+
                     pdf_unfolder_plotter = MyUnfolderPlotter(pdf_unfolder)
                     pdf_output_dir = this_output_dir+"/pdfSyst/"+pdf_label_no_spaces,
                     pdf_plot_args = dict(output_dir=pdf_output_dir,
@@ -1713,17 +1617,15 @@ if __name__ == "__main__":
                                 for xbin, ybin in product(range(1, rel_map.GetNbinsX()+1), range(1, rel_map.GetNbinsY()+1)):
                                     rel_map.SetBinContent(xbin, ybin, exp_dict['factor'])
                                     rel_map.SetBinError(xbin, ybin, 0)
-                                pdf_unfolder.tunfolder.AddSysError(rel_map, exp_dict['label'], ROOT.TUnfold.kHistMapOutputHoriz, ROOT.TUnfoldDensity.kSysErrModeRelative)
+                                # pdf_unfolder.tunfolder.AddSysError(rel_map, exp_dict['label'], ROOT.TUnfold.kHistMapOutputHoriz, ROOT.TUnfoldDensity.kSysErrModeRelative)
+                                pdf_unfolder.add_sys_error(rel_map, exp_dict['label'], ROOT.TUnfoldDensity.kSysErrModeRelative)
                             else:
                                 if not isinstance(exp_dict['tfile'], ROOT.TFile):
                                     exp_dict['tfile'] = cu.open_root_file(exp_dict['tfile'])
                                 map_syst = cu.get_from_tfile(exp_dict['tfile'], "%s/tu_%s_GenReco_all" % (region['dirname'], angle_shortname))
                                 print("    syst bin", chosen_rsp_bin, map_syst.GetBinContent(*chosen_rsp_bin))
-                                pdf_unfolder.tunfolder.AddSysError(map_syst, exp_dict['label'], pdf_unfolder.orientation, ROOT.TUnfoldDensity.kSysErrModeMatrix)
-
-                    # Save important stuff to TFile
-                    # --------------------------------------------------------------
-                    this_tdir.WriteTObject(hist_pdf_reco, "syst_%s_unfold_input" % (pdf_label_no_spaces))
+                                # pdf_unfolder.tunfolder.AddSysError(map_syst, exp_dict['label'], pdf_unfolder.orientation, ROOT.TUnfoldDensity.kSysErrModeMatrix)
+                                pdf_unfolder.add_sys_error(map_syst, exp_dict['label'], ROOT.TUnfoldDensity.kSysErrModeMatrix)
 
                     # Do any regularization
                     # --------------------------------------------------------------
@@ -1756,29 +1658,20 @@ if __name__ == "__main__":
                     # Do unfolding!
                     # --------------------------------------------------------------
                     pdf_unfolder.do_unfolding(syst_tau)
-                    pdf_unfolded_1d = pdf_unfolder.get_output()
-                    pdf_unfolded_1d.SetName("syst_%s_unfolded_1d" % (pdf_label_no_spaces))
+                    pdf_unfolded_1d = pdf_unfolder.get_output(hist_name="syst_%s_unfolded_1d" % (pdf_label_no_spaces))
                     print("Bin %d:" % (chosen_bin), pdf_unfolded_1d.GetBinContent(chosen_bin))
                     print("original uncert:", pdf_unfolded_1d.GetBinError(chosen_bin))
+                    pdf_unfolder._post_process()
 
-                    # Get error matrix to update errors
-                    # --------------------------------------------------------------
-                    pdf_ematrix_total = pdf_unfolder.get_ematrix_total()
-                    pdf_error_total_1d = make_hist_from_diagonal_errors(pdf_ematrix_total, do_sqrt=True) # note that bin contents = 0, only bin errors are non-0
-                    this_tdir.WriteTObject(pdf_ematrix_total, "syst_%s_ematrix_total_1d" % (pdf_label_no_spaces))
-                    this_tdir.WriteTObject(pdf_error_total_1d, "syst_%s_error_total_1d" % (pdf_label_no_spaces))
-                    print("total uncert:", pdf_error_total_1d.GetBinError(chosen_bin))
+                    region['pdf_systematics'][ind]['unfolded_1d'] = pdf_unfolder.unfolded
+                    region['pdf_systematics'][ind]['gen_1d'] = pdf_unfolder.hist_truth
 
-                    # Update errors to big unfolded 1D
-                    update_hist_bin_error(h_orig=pdf_error_total_1d, h_to_be_updated=pdf_unfolded_1d)
-                    print("new uncert:", pdf_unfolded_1d.GetBinError(chosen_bin))
-                    this_tdir.WriteTObject(pdf_unfolded_1d)
+                    pdf_title = "%s\n%s region, %s, %s input" % (jet_algo, region['label'], angle_str, pdf_label)
+                    pdf_unfolder_plotter.draw_unfolded_1d(is_data=not args.MCinput, title=pdf_title, **pdf_plot_args)
 
-                    region['pdf_systematics'][ind]['unfolded_1d'] = pdf_unfolded_1d
-                    region['pdf_systematics'][ind]['gen_1d'] = hist_pdf_gen
-
-                    pdf_title = "%s region, %s, %s input" % (region['label'], angle_str, pdf_label)
-                    pdf_unfolder_plotter.draw_unfolded_1d(title=pdf_title, **pdf_plot_args)
+                    # Save important stuff to TFile
+                    # ----------------------------------------------------------
+                    pdf_unfolder.save_to_tfile(pdf_tdir)
 
             # ------------------------------------------------------------------
             # PLOTTING LOTS OF THINGS
@@ -1807,12 +1700,10 @@ if __name__ == "__main__":
                 unfolded_hist_bin = unfolder.get_var_hist_pt_binned(unfolded_1d, ibin_pt, binning_scheme="generator")
                 this_pt_bin_tdir.WriteTObject(unfolded_hist_bin, "unfolded_hist_bin")
 
-                unfolded_hist_bin_stat_errors = unfolder.get_var_hist_pt_binned(error_stat_1d, ibin_pt, binning_scheme="generator")
-                update_hist_bin_content(h_orig=unfolded_hist_bin, h_to_be_updated=unfolded_hist_bin_stat_errors)  # use stat errors, update central values
+                unfolded_hist_bin_stat_errors = unfolder.get_var_hist_pt_binned(unfolder.unfolded_stat_err, ibin_pt, binning_scheme="generator")
                 this_pt_bin_tdir.WriteTObject(unfolded_hist_bin_stat_errors, "unfolded_hist_bin_stat_errors")
 
-                unfolded_hist_bin_total_errors = unfolder.get_var_hist_pt_binned(error_total_1d, ibin_pt, binning_scheme="generator")
-                update_hist_bin_content(h_orig=unfolded_hist_bin, h_to_be_updated=unfolded_hist_bin_total_errors)  # use total errors, update central values
+                unfolded_hist_bin_total_errors = unfolder.get_var_hist_pt_binned(unfolder.unfolded, ibin_pt, binning_scheme="generator")
                 this_pt_bin_tdir.WriteTObject(unfolded_hist_bin_total_errors, "unfolded_hist_bin_total_errors") # same as unfolded_1d?
 
                 # Reco level but with gen binning
@@ -1853,7 +1744,7 @@ if __name__ == "__main__":
                 # --------------------------------------------------------------
                 gen_colour = ROOT.kRed
                 unfolded_basic_colour = ROOT.kAzure+7
-                unfolded_stat_colour = ROOT.kGreen+2
+                unfolded_stat_colour = ROOT.kAzure+7
                 unfolded_total_colour = ROOT.kBlack
 
                 def _modify_plot(this_plot):
@@ -1985,7 +1876,7 @@ if __name__ == "__main__":
                     this_pt_bin_tdir.WriteTObject(alt_unfolded_hist_bin_total_errors, "alt_unfolded_hist_bin_total_errors")
 
                     alt_gen_colour = ROOT.kBlack
-                    alt_colour = ROOT.kBlue
+                    alt_colour = ROOT.kBlue+1
 
                     entries = [
                         Contribution(mc_gen_hist_bin,
@@ -2331,8 +2222,8 @@ if __name__ == "__main__":
                 # --------------------------------------------------------------
                 systematic_shift_hists_bin = [unfolder.get_var_hist_pt_binned(h, ibin_pt, binning_scheme='generator')
                                               for h in systematic_shift_hists]
-                unfolded_stat_error_bin = unfolder.get_var_hist_pt_binned(error_stat_1d, ibin_pt, binning_scheme="generator")
-                unfolded_total_error_bin =  unfolder.get_var_hist_pt_binned(unfolded_1d, ibin_pt, binning_scheme="generator")
+                unfolded_stat_error_bin = unfolder.get_var_hist_pt_binned(unfolder.unfolded_stat_err, ibin_pt, binning_scheme="generator")
+                unfolded_total_error_bin =  unfolder.get_var_hist_pt_binned(unfolder.unfolded, ibin_pt, binning_scheme="generator")
                 plot_uncertainty_shifts(total_hist=unfolded_total_error_bin,
                                         stat_hist=unfolded_stat_error_bin,
                                         syst_shifts=systematic_shift_hists_bin,
@@ -2471,7 +2362,7 @@ if __name__ == "__main__":
 
                 # Get 1D hists
                 # The folded unfolded result
-                folded_unfolded_hist_bin_reco_binning = unfolder.get_var_hist_pt_binned(hist_data_folded_unfolded, ibin_pt, binning_scheme="detector")
+                folded_unfolded_hist_bin_reco_binning = unfolder.get_var_hist_pt_binned(unfolder.get_folded_unfolded(), ibin_pt, binning_scheme="detector")
                 this_pt_bin_tdir.WriteTObject(folded_unfolded_hist_bin_reco_binning, "folded_unfolded_hist_bin_reco_binning")
 
                 # here this is the thing to be unfolded, should be data or MC depending on MC_INPUT flag
@@ -2760,10 +2651,10 @@ if __name__ == "__main__":
 
                 # PLOT FOLDED GEN MC
                 # --------------------------------------------------------------
-                if MC_INPUT and hist_gen_folded:
+                if MC_INPUT and unfolder.get_folded_mc_truth():
                     # Get 1D hists
                     # The folded result
-                    folded_gen_hist_bin_reco_binning = unfolder.get_var_hist_pt_binned(hist_gen_folded, ibin_pt, binning_scheme="detector")
+                    folded_gen_hist_bin_reco_binning = unfolder.get_var_hist_pt_binned(unfolder.get_folded_mc_truth(), ibin_pt, binning_scheme="detector")
                     this_pt_bin_tdir.WriteTObject(folded_gen_hist_bin_reco_binning, "folded_gen_hist_bin_reco_binning")
 
                     # Folded gen, comparing to original reco
