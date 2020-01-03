@@ -1329,7 +1329,7 @@ if __name__ == "__main__":
             title = "Response matrix, %s region, %s" % (region['label'], angle_str)
             unfolder_plotter.draw_response_matrix(title=title, **plot_args)
 
-            title = ("#splitline{Probability matrix, %s region, %s}{Condition number: #sigma_{max} / #sigma_{min} = %.3g / %.3g = %g}" 
+            title = ("#splitline{Probability matrix, %s region, %s}{Condition number: #sigma_{max} / #sigma_{min} = %.3g / %.3g = %g}"
                         % (region['label'], angle_str, unfolder.sigma_max, unfolder.sigma_min, unfolder.condition_number))
             unfolder_plotter.draw_probability_matrix(title=title, **plot_args)
 
@@ -1404,10 +1404,16 @@ if __name__ == "__main__":
                                           axisSteering=unfolder.axisSteering)
 
                 alt_unfolder_plotter = MyUnfolderPlotter(alt_unfolder)
-                alt_plot_args = dict(output_dir=this_output_dir+"/altResponse",
+                alt_output_dir = this_output_dir+"/altResponse"
+                alt_plot_args = dict(output_dir=alt_output_dir,
                                      append=append)
 
-                # Set what is to be unfolded
+                title = ("#splitline{Probability matrix, %s region, %s, %s}{Condition number: #sigma_{max} / #sigma_{min} = %.3g / %.3g = %g}"
+                            % (region['label'], angle_str, region['alt_mc_label'], unfolder.sigma_max, unfolder.sigma_min, unfolder.condition_number))
+                alt_unfolder_plotter.draw_probability_matrix(title=title, **alt_plot_args)
+
+
+                # Set what is to be unfolded - same as main unfolder
                 # --------------------------------------------------------------
                 alt_unfolder.set_input(input_hist=reco_1d,
                                        hist_truth=unfolder.hist_truth.Clone(),
@@ -1435,8 +1441,8 @@ if __name__ == "__main__":
                                                tau_min=region['tau_limits'][angle.var][0],
                                                tau_max=region['tau_limits'][angle.var][1])
                     print("Found tau:", alt_tau)
-                    l_scanner.plot_scan_L_curve(output_filename="%s/scanL_alt_%s.%s" % (this_output_dir, unfolder.variable_name, OUTPUT_FMT))
-                    l_scanner.plot_scan_L_curvature(output_filename="%s/scanLcurvature_alt_%s.%s" % (this_output_dir, unfolder.variable_name, OUTPUT_FMT))
+                    l_scanner.plot_scan_L_curve(output_filename="%s/scanL_alt_%s.%s" % (alt_output_dir, unfolder.variable_name, OUTPUT_FMT))
+                    l_scanner.plot_scan_L_curvature(output_filename="%s/scanLcurvature_alt_%s.%s" % (alt_output_dir, unfolder.variable_name, OUTPUT_FMT))
 
                 elif REGULARIZE == "tau":
                     print("Regularizing alternative with ScanTau, please be patient...")
@@ -1449,7 +1455,7 @@ if __name__ == "__main__":
                                                        distribution=scan_distribution,
                                                        axis_steering=alt_unfolder.axisSteering)
                     print("Found tau for alt matrix:", alt_tau)
-                    alt_tau_scanner.plot_scan_tau(output_filename="%s/scantau_alt_%s.%s" % (this_output_dir, alt_unfolder.variable_name, OUTPUT_FMT))
+                    alt_tau_scanner.plot_scan_tau(output_filename="%s/scantau_alt_%s.%s" % (alt_output_dir, alt_unfolder.variable_name, OUTPUT_FMT))
 
                 if REGULARIZE != "None":
                     title = "L matrix, %s region, %s, alt. response (%s)" % (region['label'], angle_str, region['alt_mc_label'])
@@ -1591,7 +1597,6 @@ if __name__ == "__main__":
 
                     # Do any regularization
                     # --------------------------------------------------------------
-                    syst_output_dir = "%s/%s/%s" % (output_dir, region['name'], angle.var)
                     syst_tau = 0
                     if REGULARIZE == "L":
                         print("Regularizing systematic model with ScanL, please be patient...")
@@ -1601,8 +1606,8 @@ if __name__ == "__main__":
                                                          tau_min=region['tau_limits'][angle.var][0],
                                                          tau_max=region['tau_limits'][angle.var][1])
                         print("Found tau:", syst_tau)
-                        syst_l_scanner.plot_scan_L_curve(output_filename="%s/scanL_syst_%s_%s.%s" % (this_output_dir, syst_label_no_spaces, unfolder.variable_name, OUTPUT_FMT))
-                        syst_l_scanner.plot_scan_L_curvature(output_filename="%s/scanLcurvature_syst_%s_%s.%s" % (this_output_dir, syst_label_no_spaces, unfolder.variable_name, OUTPUT_FMT))
+                        syst_l_scanner.plot_scan_L_curve(output_filename="%s/scanL_syst_%s_%s.%s" % (syst_output_dir, syst_label_no_spaces, unfolder.variable_name, OUTPUT_FMT))
+                        syst_l_scanner.plot_scan_L_curvature(output_filename="%s/scanLcurvature_syst_%s_%s.%s" % (syst_output_dir, syst_label_no_spaces, unfolder.variable_name, OUTPUT_FMT))
                     elif REGULARIZE == "tau":
                         print("Regularizing systematic model with ScanTau, please be patient...")
                         syst_tau_scanner = TauScanner()
@@ -1614,7 +1619,7 @@ if __name__ == "__main__":
                                                              distribution=scan_distribution,
                                                              axis_steering=syst_unfolder.axisSteering)
                         print("Found tau for syst matrix:", syst_tau)
-                        syst_tau_scanner.plot_scan_tau(output_filename="%s/scantau_syst_%s_%s.%s" % (this_output_dir, syst_label_no_spaces, syst_unfolder.variable_name, OUTPUT_FMT))
+                        syst_tau_scanner.plot_scan_tau(output_filename="%s/scantau_syst_%s_%s.%s" % (syst_output_dir, syst_label_no_spaces, syst_unfolder.variable_name, OUTPUT_FMT))
 
                     region['model_systematics'][ind]['tau'] = syst_tau
 
