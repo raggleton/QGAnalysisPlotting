@@ -1252,30 +1252,23 @@ if __name__ == "__main__":
             unfolder_plotter.draw_unfolded_1d(output_dir=this_output_dir, append=append, title=title)
 
             # reco using detector binning
-            plot_simple_detector(reco_data=reco_1d,
-                                 reco_mc=hist_mc_reco,
-                                 reco_mc_fake=hist_mc_fakes_reco if SUBTRACT_FAKES else None,
-                                 reco_data_fake=hist_fakes_reco if SUBTRACT_FAKES else None,
-                                 output_filename="%s/detector_reco_binning_%s.%s" % (this_output_dir, append, OUTPUT_FMT),
-                                 title="%s region, %s" % (region['label'], angle_str))
+            this_append = 'reco_binning_%s' % append
+            unfolder_plotter.draw_detector_1d(do_reco_mc=True,
+                                              do_reco_data=not MC_INPUT,
+                                              output_dir=this_output_dir,
+                                              append=this_append,
+                                              title=title)
 
             if SUBTRACT_FAKES:
-                # same plot but with fakes-subtracted reco
-                plot_simple_detector(reco_data=reco_1d_bg_subtracted,
-                                     reco_mc=hist_mc_reco_bg_subtracted,
-                                     reco_mc_fake=hist_mc_fakes_reco,
-                                     reco_data_fake=hist_fakes_reco,
-                                     output_filename="%s/detector_reco_binning_fakes_subtracted_%s.%s" % (this_output_dir, append, OUTPUT_FMT),
-                                     title="%s region, %s" % (region['label'], angle_str))
+                # same plot but with bg-subtracted reco (incl fakes)
+                this_append = 'reco_binning_bg_fakes_subtracted_%s' % append
+                unfolder_plotter.draw_detector_1d(do_reco_data_bg_sub=not MC_INPUT,
+                                                  do_reco_bg=SUBTRACT_FAKES,
+                                                  do_reco_mc_bg_sub=True,
+                                                  output_dir=this_output_dir,
+                                                  append=this_append,
+                                                  title=title)
 
-            if SUBTRACT_FAKES and 'backgrounds' in region:
-                # same plot but with fakes & background-subtracted reco
-                plot_simple_detector(reco_data=unfolder.input_hist_bg_subtracted,
-                                     reco_mc=hist_mc_reco_bg_subtracted,
-                                     reco_mc_fake=hist_mc_fakes_reco,
-                                     reco_data_fake=hist_fakes_reco,
-                                     output_filename="%s/detector_reco_binning_bg_fakes_subtracted_%s.%s" % (this_output_dir, append, OUTPUT_FMT),
-                                     title="%s region, %s" % (region['label'], angle_str))
 
             # reco using gen binning
             plot_simple_detector(reco_data=reco_1d_gen_binning,
@@ -1512,7 +1505,6 @@ if __name__ == "__main__":
                     hist_syst_reco = cu.get_from_tfile(syst_dict['tfile'], "%s/hist_%s_reco_%s" % (region['dirname'], angle_shortname, mc_hname_append))
                     hist_syst_gen = cu.get_from_tfile(syst_dict['tfile'], "%s/hist_%s_truth_%s" % (region['dirname'], angle_shortname, mc_hname_append))
 
-
                     syst_unfolder = MyUnfolder(response_map=unfolder.response_map,
                                                variable_bin_edges_reco=unfolder.variable_bin_edges_reco,
                                                variable_bin_edges_gen=unfolder.variable_bin_edges_gen,
@@ -1528,8 +1520,9 @@ if __name__ == "__main__":
                                                distribution=unfolder.distribution,
                                                axisSteering=unfolder.axisSteering)
 
+                    syst_output_dir = this_output_dir+"/modelSyst_"+syst_label_no_spaces
                     syst_unfolder_plotter = MyUnfolderPlotter(syst_unfolder)
-                    syst_plot_args = dict(output_dir=this_output_dir+"/modelSyst_"+syst_label_no_spaces,
+                    syst_plot_args = dict(output_dir=syst_output_dir,
                                           append=append)
 
                     # if is_herwig:
@@ -1570,12 +1563,14 @@ if __name__ == "__main__":
                     if SUBTRACT_FAKES:
                         syst_unfolder.subtract_background(hist_fakes_syst, "fakes")
 
-                    plot_simple_detector(reco_data=hist_syst_reco,
-                                         reco_mc=hist_mc_reco,
-                                         reco_mc_fake=None,
-                                         reco_data_fake=None,
-                                         output_filename="%s/detector_reco_binning_bg_subtracted_model_%s_%s.%s" % (this_output_dir, syst_label_no_spaces, append, OUTPUT_FMT),
-                                         title="%s region, %s, %s" % (region['label'], angle_str, syst_label))
+                    syst_unfolder_plotter.draw_detector_1d(do_reco_data=False,
+                                                           do_reco_data_bg_sub=False,
+                                                           do_reco_bg=True,
+                                                           do_reco_mc=False,
+                                                           do_reco_mc_bg_sub=True,
+                                                           output_dir=syst_plot_args['output_dir'],
+                                                           append='reco_binning_bg_fakes_subtracted_%s' % append,
+                                                           title="%s region, %s, %s" % (region['label'], angle_str, syst_label))
 
                     # Add systematic errors as different response matrices
                     # ----------------------------------------------------

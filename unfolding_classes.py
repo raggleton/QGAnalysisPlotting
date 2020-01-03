@@ -1256,3 +1256,85 @@ class MyUnfolderPlotter(object):
         output_filename = "%s/unfolded_%s.%s" % (output_dir, append, self.output_fmt)
         plot.save(output_filename)
 
+    def draw_detector_1d(self,
+                        do_reco_data=False,
+                        do_reco_data_bg_sub=False,
+                        do_reco_bg=False,
+                        do_reco_mc=False,
+                        do_reco_mc_bg_sub=False,
+                        output_dir='.', append="", title=""):
+        """Plot detector-level quantities for data & MC, by bin number (ie non physical axes)"""
+        entries = []
+
+        reco_mc = self.unfolder.hist_mc_reco
+        if do_reco_mc and reco_mc:
+            entries.append(
+                Contribution(reco_mc, label="MC [detector-level]",
+                             line_color=ROOT.kAzure+2, line_width=1,
+                             marker_color=ROOT.kAzure+2, marker_size=0,
+                             normalise_hist=False),
+            )
+
+        reco_mc_bg_sub = self.unfolder.hist_mc_reco_bg_subtracted
+        if do_reco_mc_bg_sub and reco_mc_bg_sub:
+            entries.append(
+                Contribution(reco_mc_bg_sub, label="MC bg-subtracted [detector-level]",
+                             line_color=ROOT.kAzure+3, line_width=1,
+                             marker_color=ROOT.kAzure+3, marker_size=0,
+                             normalise_hist=False),
+            )
+
+        reco_data_bg = self.unfolder.get_total_background()
+        if do_reco_bg and reco_data_bg:
+            entries.append(
+                Contribution(reco_data_bg, label="Background [detector-level]",
+                             line_color=ROOT.kMagenta+2, line_width=1,
+                             marker_color=ROOT.kMagenta+2, marker_size=0,
+                             normalise_hist=False),
+            )
+
+        reco_data = self.unfolder.input_hist
+        if do_reco_data and reco_data:
+            entries.append(
+                Contribution(reco_data, label="Data [detector-level]",
+                             line_color=ROOT.kRed, line_width=0,
+                             marker_color=ROOT.kRed, marker_size=0.6, marker_style=20,
+                             normalise_hist=False, subplot=reco_mc if do_reco_mc else None),
+            )
+
+        reco_data_bg_sub = self.unfolder.input_hist_bg_subtracted
+        if do_reco_data_bg_sub and reco_data_bg_sub:
+            entries.append(
+                Contribution(reco_data_bg_sub, label="Data bg-subtracted [detector-level]",
+                             line_color=ROOT.kRed+3, line_width=0,
+                             marker_color=ROOT.kRed+3, marker_size=0.6, marker_style=20,
+                             normalise_hist=False, subplot=reco_mc_bg_sub if do_reco_mc_bg_sub else None),
+            )
+
+        plot = Plot(entries,
+                    what='hist',
+                    title=title,
+                    xtitle="Detector bin number",
+                    ytitle="N",
+                    subplot_type='ratio' if ((do_reco_mc and do_reco_data) or (do_reco_mc_bg_sub and do_reco_data_bg_sub)) else None,
+                    subplot_title='Data / MC',
+                    subplot_limits=(0.8, 1.2))
+        plot.default_canvas_size = (800, 600)
+        plot.plot("NOSTACK HISTE")
+        plot.set_logy(do_more_labels=False)
+        ymax = max([o.GetMaximum() for o in plot.contributions_objs])
+        plot.container.SetMaximum(ymax * 100)
+        ymin = max([o.GetMinimum(1E-10) for o in plot.contributions_objs])
+        plot.container.SetMinimum(ymin*0.01)
+        l, t = self.draw_pt_binning_lines(plot, which='reco', axis='x',
+                                          do_underflow=True,
+                                          do_labels_inside=True,
+                                          do_labels_outside=False,
+                                          labels_inside_align='lower'
+                                          )
+        # # plot.container.SetMinimum(0.001)
+        plot.legend.SetY1NDC(0.77)
+        plot.legend.SetX1NDC(0.65)
+        plot.legend.SetX2NDC(0.88)
+        output_filename = "%s/detector_%s.%s" % (output_dir, append, self.output_fmt)
+        plot.save(output_filename)
