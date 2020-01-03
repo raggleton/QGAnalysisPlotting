@@ -898,7 +898,7 @@ class MyUnfolderPlotter(object):
     def draw_background_fractions(self, output_dir='.', append="", title=""):
         """Do plot of individual background fractions, a cumulative one, and one with all sources non-cumulative"""
         all_contributions = []
-        frac_min, frac_max = 3E-4, 5
+        frac_min, frac_max = 3E-4, 3
         cu.check_dir_exists_create(output_dir)
         # Do individual plots for each bg source
         for bg_name, bg_hist in self.unfolder.backgrounds.items():
@@ -920,6 +920,10 @@ class MyUnfolderPlotter(object):
             plot.set_logy()
             plot.legend.SetX1(0.75)
             plot.legend.SetY1(0.75)
+            l, t = self.draw_pt_binning_lines(plot, which='reco', axis='x',
+                                              do_underflow=True,
+                                              do_labels_inside=True,
+                                              do_labels_outside=False)
             output_filename = "%s/bg_fraction_%s_%s.%s" % (output_dir, bg_name.replace(" ", "_").lower(), append, self.output_fmt)
             plot.save(output_filename)
 
@@ -942,11 +946,21 @@ class MyUnfolderPlotter(object):
         plot.legend.SetNColumns(2)
         plot.legend.SetY1(0.75)
         plot.legend.SetY2(0.88)
+        l, t = self.draw_pt_binning_lines(plot, which='reco', axis='x',
+                                          do_underflow=True,
+                                          do_labels_inside=True,
+                                          do_labels_outside=False)
+        print(l, t)
         output_filename = "%s/bg_fraction_all_stack_%s.%s" % (output_dir, append, self.output_fmt)
         plot.save(output_filename)
 
+        # And one not stacked
         plot.ytitle = "Individual background fraction"
         plot.plot("NOSTACK HIST PLC")
+        l, t = self.draw_pt_binning_lines(plot, which='reco', axis='x',
+                                          do_underflow=True,
+                                          do_labels_inside=True,
+                                          do_labels_outside=False)
         output_filename = "%s/bg_fraction_all_nostack_%s.%s" % (output_dir, append, self.output_fmt)
         plot.save(output_filename)
         ROOT.gStyle.SetPalette(ROOT.kBird)
@@ -977,6 +991,11 @@ class MyUnfolderPlotter(object):
         Lmatrix.GetYaxis().SetTitleOffset(1.5)
         Lmatrix.GetXaxis().SetTitleOffset(1.5)
         Lmatrix.Draw("COL1 Z CJUST")
+        l, t = self.draw_pt_binning_lines(Lmatrix, which='gen', axis='x',
+                                          do_underflow=True,
+                                          do_labels_inside=True,
+                                          labels_inside_align='higher',
+                                          do_labels_outside=False)
         output_filename = "%s/L_matrix_%s.%s" % (output_dir, append, self.output_fmt)
         cu.check_dir_exists_create(output_dir)
         canv.SaveAs(output_filename)
