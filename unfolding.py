@@ -84,65 +84,6 @@ def calculate_chi2(hist_test, hist_truth, hist_covariance=None):
     return result[0][0]
 
 
-def plot_simple_detector(reco_data, reco_data_fake, reco_mc, reco_mc_fake, output_filename, title):
-    """Plot detector-level quantities for data & MC, by bin number (ie non physical axes)"""
-    entries = []
-
-    if reco_mc:
-        entries.append(
-            Contribution(reco_mc, label="MC [detector-level]",
-                         line_color=ROOT.kGreen+2, line_width=1,
-                         marker_color=ROOT.kGreen+2, marker_size=0,
-                         normalise_hist=False),
-        )
-
-    if reco_mc_fake:
-        entries.append(
-            Contribution(reco_mc_fake, label="MC fakes [detector-level]",
-                         line_color=ROOT.kOrange+4, line_width=1,
-                         marker_color=ROOT.kOrange+4, marker_size=0,
-                         normalise_hist=False),
-        )
-
-    if reco_data_fake:
-        entries.append(
-            Contribution(reco_data_fake, label="Data fakes template [detector-level]",
-                         line_color=ROOT.kMagenta+2, line_width=1,
-                         marker_color=ROOT.kMagenta+2, marker_size=0,
-                         normalise_hist=False),
-        )
-
-    if reco_data:
-        entries.append(
-            Contribution(reco_data, label="Data [detector-level]",
-                         line_color=ROOT.kRed, line_width=0,
-                         marker_color=ROOT.kRed, marker_size=0.6, marker_style=20,
-                         normalise_hist=False, subplot=reco_mc),
-        )
-
-    plot = Plot(entries,
-                what='hist',
-                title=title,
-                xtitle="Bin number",
-                ytitle="N",
-                subplot_type='ratio',
-                subplot_title='Data / MC',
-                subplot_limits=(0.8, 1.2))
-    plot.default_canvas_size = (800, 600)
-    plot.plot("NOSTACK HISTE")
-    plot.main_pad.SetLogy(1)
-    ymax = max(h.GetMaximum() for h in [reco_mc, reco_mc_fake, reco_data] if h)
-    plot.container.SetMaximum(ymax * 100)
-    ymin = min(h.GetMinimum(1E-10) for h in [reco_mc, reco_mc_fake, reco_data] if h)
-    plot.container.SetMinimum(ymin*0.1)
-
-    # plot.container.SetMinimum(0.001)
-    plot.legend.SetY1NDC(0.77)
-    plot.legend.SetX1NDC(0.65)
-    plot.legend.SetX2NDC(0.88)
-    plot.save(output_filename)
-
-
 def create_hist_with_errors(hist, err_matrix):
     hnew = hist.Clone(cu.get_unique_str())
     nbins = hist.GetNbinsX()
@@ -1264,6 +1205,17 @@ if __name__ == "__main__":
                                               append=append,
                                               title=title)
 
+            # reco using gen binning
+            unfolder_plotter.draw_generator_1d(do_reco_data=not MC_INPUT,
+                                               do_reco_data_bg_sub=False,
+                                               do_reco_bg=False,
+                                               do_reco_mc=True,
+                                               do_reco_mc_bg_sub=False,
+                                               do_truth_mc=True,
+                                               output_dir=this_output_dir,
+                                               append=append,
+                                               title=title)
+
             if SUBTRACT_FAKES:
                 # same plot but with bg-subtracted reco (incl fakes)
                 unfolder_plotter.draw_detector_1d(do_reco_data_bg_sub=not MC_INPUT,
@@ -1273,23 +1225,16 @@ if __name__ == "__main__":
                                                   append='bg_fakes_subtracted_%s' % append,
                                                   title=title)
 
-
-            # reco using gen binning
-            plot_simple_detector(reco_data=reco_1d_gen_binning,
-                                 reco_mc=hist_mc_reco_gen_binning,
-                                 reco_mc_fake=hist_mc_fakes_reco_gen_binning if SUBTRACT_FAKES else None,
-                                 reco_data_fake=hist_fakes_reco_gen_binning if SUBTRACT_FAKES else None,
-                                 output_filename="%s/detector_gen_binning_%s.%s" % (this_output_dir, append, OUTPUT_FMT),
-                                 title="%s region, %s" % (region['label'], angle_str))
-
-            if SUBTRACT_FAKES:
-                # same but with background-subtracted
-                plot_simple_detector(reco_data=reco_1d_gen_binning_bg_subtracted,
-                                     reco_mc=hist_mc_reco_gen_binning_bg_subtracted,
-                                     reco_mc_fake=hist_mc_fakes_reco_gen_binning,
-                                     reco_data_fake=hist_fakes_reco_gen_binning,
-                                     output_filename="%s/detector_gen_binning_bg_subtracted_%s.%s" % (this_output_dir, append, OUTPUT_FMT),
-                                     title="%s region, %s" % (region['label'], angle_str))
+                # same but with generator-binning
+                unfolder_plotter.draw_generator_1d(do_reco_data=False,
+                                                   do_reco_data_bg_sub=not MC_INPUT,
+                                                   do_reco_bg=True,
+                                                   do_reco_mc=False,
+                                                   do_reco_mc_bg_sub=True,
+                                                   do_truth_mc=True,
+                                                   output_dir=this_output_dir,
+                                                   append='bg_fakes_subtracted_%s' % append,
+                                                   title=title)
 
             # Draw collapsed distributions
             # ---------------------
