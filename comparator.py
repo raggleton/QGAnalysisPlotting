@@ -480,11 +480,13 @@ class Plot(object):
         else:
             modifier.SetMinimum(ymin * self.y_padding_min_linear)
 
-    def plot(self, draw_opts=None):
+    def plot(self, draw_opts=None, subplot_draw_opts=None):
         """Make the plot.
 
         draw_opts: str
-            Same options as you would pass to Draw() in ROOT.
+            Same options as you would pass to Draw() in ROOT, for the main plot
+        subplot_draw_opts: str
+            Same options as you would pass to Draw() in ROOT, for the subplot
         """
         # Now add all the contributions to the container, styling as we go
         if len(self.contributions) == 0:
@@ -523,6 +525,9 @@ class Plot(object):
             draw_opts = draw_opts.replace("STACK", "")
             print("WARNING: 'stack' is not a valid draw option - the default is "
                   "stacking, so will draw with options '%s'" % (draw_opts))
+
+        if not subplot_draw_opts:
+            subplot_draw_opts = draw_opts
 
         # Need a canvas before drawing
         # If we have "SAME" then we want to draw this Plot object
@@ -666,7 +671,7 @@ class Plot(object):
             modifier.GetXaxis().SetTitleSize(0)
 
             self.subplot_pad.cd()
-            self.subplot_container.Draw(draw_opts)
+            self.subplot_container.Draw(subplot_draw_opts)
 
             if self.subplot_title == None:
                 if (self.subplot_type == "ratio"):
