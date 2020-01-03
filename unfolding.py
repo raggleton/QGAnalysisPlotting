@@ -843,7 +843,7 @@ if __name__ == "__main__":
         append=append,
         sub_append=sub_append,
     )
-    output_dir = os.path.join(src_dir, "unfolding_{regularize_str}{mc_append}{sub_append}_densityModeBinWidth_constraintArea{append}_signalRegionOnly_noHerwigPtReweight".format(**str_parts))
+    output_dir = os.path.join(src_dir, "unfolding_{regularize_str}{mc_append}{sub_append}_densityModeBinWidth_constraintNone{append}_signalRegionOnly_noHerwigPtReweight".format(**str_parts))
 
     if args.outputDir:
         output_dir = args.outputDir
@@ -1035,8 +1035,8 @@ if __name__ == "__main__":
                                   pt_bin_edges_underflow_reco=pt_bin_edges_underflow_reco,
                                   pt_bin_edges_underflow_gen=pt_bin_edges_underflow_gen,
                                   orientation=ROOT.TUnfold.kHistMapOutputHoriz,
-                                  constraintMode=ROOT.TUnfold.kEConstraintArea,
-                                  # constraintMode=ROOT.TUnfold.kEConstraintNone,
+                                  # constraintMode=ROOT.TUnfold.kEConstraintArea,
+                                  constraintMode=ROOT.TUnfold.kEConstraintNone,
                                   regMode=ROOT.TUnfold.kRegModeCurvature,
                                   densityFlags=ROOT.TUnfoldDensity.kDensityModeBinWidth, # important as we have varying bin sizes!
                                   distribution='generatordistribution',
