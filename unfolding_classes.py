@@ -1311,7 +1311,7 @@ class MyUnfolderPlotter(object):
                     ytitle="N",
                     subplot_type='ratio',
                     subplot_title='#splitline{Unfolded Data /}{MC Gen}',
-                    subplot_limits=(0.8, 1.2))
+                    subplot_limits=(0, 2))
         plot.default_canvas_size = (800, 600)
         # plot.text_left_offset = 0.05  # have to bodge this
         plot.plot("NOSTACK HISTE", "NOSTACK HISTE")
