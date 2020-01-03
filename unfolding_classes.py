@@ -22,12 +22,17 @@ import common_utils as cu
 import qg_common as qgc
 import qg_general_plots as qgp
 
+# This doesn't seem to work...sigh
+np.set_printoptions(edgeitems=3,infstr='Infinity',
+                    linewidth=75, nanstr='nan', precision=8,
+                    suppress=False, threshold=1000, formatter=None)
 
 ROOT.PyConfig.IgnoreCommandLineOptions = True
 ROOT.gROOT.SetBatch(1)
 ROOT.TH1.SetDefaultSumw2()
 ROOT.gStyle.SetOptStat(0)
 ROOT.gStyle.SetPaintTextFormat(".3f")
+ROOT.gStyle.SetHistTopMargin(0.)
 
 
 class TauScanner(object):
