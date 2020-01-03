@@ -741,6 +741,9 @@ if __name__ == "__main__":
     # If True, use part of MC for response matrix, and separate part for unfolding
     # as independent test
     # Should always be false for data
+    if not args.MCinput:
+        print("Ignoring your --MCsplit setting as running over data")
+
     MC_SPLIT = args.MCsplit if args.MCinput else False
     if MC_INPUT:
         mc_append += "_split" if MC_SPLIT else "_all"
@@ -777,15 +780,20 @@ if __name__ == "__main__":
         elif args.regularizeAxis == 'angle':
             reg_axis_str = '_onlyRegAngle'
 
+    area_constraint = ROOT.TUnfold.kEConstraintArea
+    area_constraint = ROOT.TUnfold.kEConstraintNone
+    area_constraint_str = "Area" if area_constraint == ROOT.TUnfold.kEConstraintArea else "None"
+
     regularize_str = "regularize%s%s%s" % (str(REGULARIZE).capitalize(), bias_str, reg_axis_str)
 
     str_parts = dict(
         regularize_str=regularize_str,
         mc_append=mc_append,
+        area=area_constraint_str,
         append=append,
         sub_append=sub_append,
     )
-    output_dir = os.path.join(src_dir, "unfolding_{regularize_str}{mc_append}{sub_append}_densityModeBinWidth_constraintNone{append}_signalRegionOnly_noHerwigPtReweight".format(**str_parts))
+    output_dir = os.path.join(src_dir, "unfolding_{regularize_str}{mc_append}{sub_append}_densityModeBinWidth_constraint{area}{append}_signalRegionOnly_noHerwigPtReweight".format(**str_parts))
 
     if args.outputDir:
         output_dir = args.outputDir
@@ -978,8 +986,7 @@ if __name__ == "__main__":
                                   pt_bin_edges_underflow_reco=pt_bin_edges_underflow_reco,
                                   pt_bin_edges_underflow_gen=pt_bin_edges_underflow_gen,
                                   orientation=ROOT.TUnfold.kHistMapOutputHoriz,
-                                  # constraintMode=ROOT.TUnfold.kEConstraintArea,
-                                  constraintMode=ROOT.TUnfold.kEConstraintNone,
+                                  constraintMode=area_constraint,
                                   regMode=ROOT.TUnfold.kRegModeCurvature,
                                   densityFlags=ROOT.TUnfoldDensity.kDensityModeBinWidth, # important as we have varying bin sizes!
                                   distribution='generatordistribution',
