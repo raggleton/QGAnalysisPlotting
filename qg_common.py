@@ -337,8 +337,53 @@ VAR_UNFOLD_DICT_TARGET0p6 = {
     },
 }
 
+# new version of WTA, cen+fwd dijet, target 0.5
+VAR_UNFOLD_DICT_TARGET0p5 = {
+    'jet_puppiMultiplicity': {
+        'gen': np.array([0.0, 10, 15, 20, 27, 50, 75, 100, 150], dtype='d'),
+        'reco': None
+    },
+    'jet_pTD': {
+        'gen': np.array([0.0, 0.07, 0.1, 0.15, 0.24, 0.45, 1.0], dtype='d'),
+        'reco': None
+    },
+    'jet_LHA': {
+        'gen': np.array([0.0, 0.14, 0.22, 0.29, 0.35, 0.42, 0.49, 0.56, 0.64, 0.75, 1.0], dtype='d'),
+        'reco': None
+    },
+    'jet_width': {
+        'gen': np.array([0.0, 0.09, 0.145, 0.205, 0.28, 0.36, 0.445, 0.545, 1.0 ], dtype='d'),
+        'reco': None
+    },
+    'jet_thrust': {
+        'gen': np.array([0.0, 0.04, 0.08, 0.145, 0.225, 0.32, 0.445, 0.795, 1.0], dtype='d'),
+        'reco': None
+    },
+
+    'jet_puppiMultiplicity_charged': {
+        'gen': np.array([0.0, 2.0, 3.0, 4.0, 5.0, 7.0, 9.0, 11.0, 13.0, 15.0, 18.0, 21.0, 25.0, 32.0, 91, 150.0], dtype='d'),
+        'reco': None
+    },
+    'jet_pTD_charged': {
+        'gen': np.array([0.0, 0.06, 0.08, 0.1, 0.12, 0.14, 0.17, 0.2, 0.24, 0.29, 0.34, 0.4, 0.47, 0.55, 0.65, 0.76, 0.89, 1.0], dtype='d'),
+        'reco': None
+    },
+    'jet_LHA_charged': {
+        'gen': np.array([0.0, 0.05, 0.09, 0.12, 0.15, 0.18, 0.22, 0.26, 0.31, 0.36, 0.42, 0.49, 0.56, 0.64, 0.75, 1.0], dtype='d'),
+        'reco': None
+    },
+    'jet_width_charged': {
+        'gen': np.array([0.0, 0.015, 0.025, 0.035, 0.05, 0.065, 0.085, 0.105, 0.13, 0.16, 0.195, 0.235, 0.28, 0.335, 0.4, 0.48, 0.585, 0.805, 1.0], dtype='d'),
+        'reco': None
+    },
+    'jet_thrust_charged': {
+        'gen': np.array([0.0, 0.005, 0.01, 0.015, 0.025, 0.035, 0.05, 0.065, 0.085, 0.115, 0.15, 0.2, 0.265, 0.355, 0.48, 0.725, 1.], dtype='d'),
+        'reco': None
+    },
+}
+
 VAR_UNFOLD_DICT = VAR_UNFOLD_DICT_TARGET0p5
-VAR_UNFOLD_DICT = VAR_UNFOLD_DICT_TARGET0p6
+# VAR_UNFOLD_DICT = VAR_UNFOLD_DICT_TARGET0p6
 
 def construct_fine_binning(coarse_bin_edges):
     fine_bin_edges = []
