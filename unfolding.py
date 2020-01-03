@@ -1049,8 +1049,11 @@ if __name__ == "__main__":
 
             # Set what is to be unfolded
             # ------------------------------------------------------------------
-            unfolder.set_input(reco_1d, args.biasFactor)
-            unfolder.hist_truth = hist_mc_gen
+            unfolder.set_input(input_hist=reco_1d,
+                               hist_truth=hist_mc_gen,
+                               hist_mc_reco=hist_mc_reco,
+                               hist_mc_reco_bg_subtracted=hist_mc_reco_bg_subtracted,
+                               bias_factor=args.biasFactor)
 
             # Add systematic errors as different response matrices
             # ------------------------------------------------------------------
@@ -1413,8 +1416,11 @@ if __name__ == "__main__":
 
                 # Set what is to be unfolded
                 # --------------------------------------------------------------
-                alt_unfolder.set_input(reco_1d, args.biasFactor)
-                alt_unfolder.hist_truth = unfolder.hist_truth.Clone()
+                alt_unfolder.set_input(input_hist=reco_1d,
+                                       hist_truth=unfolder.hist_truth.Clone(),
+                                       hist_mc_reco=unfolder.hist_mc_reco.Clone(),
+                                       hist_mc_reco_bg_subtracted=unfolder.hist_mc_reco_bg_subtracted.Clone(),
+                                       bias_factor=args.biasFactor)
 
                 # Subtract fakes (treat as background)
                 # --------------------------------------------------------------
@@ -1544,19 +1550,24 @@ if __name__ == "__main__":
                     hist_syst_reco.Scale(sf)
                     hist_syst_gen.Scale(sf)
 
-                    # Set what is to be unfolded
-                    # --------------------------------------------------------------
-                    syst_unfolder.set_input(hist_syst_reco, args.biasFactor)
-                    syst_unfolder.hist_truth = hist_syst_gen
-
-                    # Subtract fakes (treat as background)
-                    # --------------------------------------------------------------
                     if SUBTRACT_FAKES:
                         # Use the background template from the nominal MC
                         # (since we're only testing different input shapes,
                         # and our bkg estimate is always from MC)
                         hist_fakes_syst = hist_fakes_reco_fraction.Clone("hist_fakes_syst_%s" % syst_label_no_spaces)
                         hist_fakes_syst.Multiply(hist_syst_reco)
+
+                    # Set what is to be unfolded
+                    # --------------------------------------------------------------
+                    syst_unfolder.set_input(input_hist=hist_syst_reco,
+                                            hist_truth=hist_syst_gen,
+                                            hist_mc_reco=hist_syst_reco,
+                                            hist_mc_reco_bg_subtracted=hist_fakes_syst,
+                                            bias_factor=args.biasFactor)
+
+                    # Subtract fakes (treat as background)
+                    # --------------------------------------------------------------
+                    if SUBTRACT_FAKES:
                         syst_unfolder.subtract_background(hist_fakes_syst, "fakes")
 
                     plot_simple_detector(reco_data=hist_syst_reco,
