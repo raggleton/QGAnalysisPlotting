@@ -347,23 +347,25 @@ class MyUnfolder(object):
         self.input_hist_gen_binning_bg_subtracted = None
 
         # fakes
-        self.hist_fakes = None
-        self.hist_fakes_gen_binning = None
-        # for total bg, use get_total_background()
+        # for total bg, use get_total_background(),
+        # or get_total_background_gen_binning()
 
         # reco MC
         self.hist_mc_reco = None
         self.hist_mc_reco_bg_subtracted = None
+
+        # reco MC, but using gen binning
+        self.hist_mc_reco_gen_binning = None
+        self.hist_mc_reco_gen_binning_bg_subtracted = None
 
         # generator-level MC truth
         self.hist_truth = None  # gen truth
 
         self.tau = 0  # to be set by user later, via TauScanner or LCurveScanner
         self.backgrounds = {}  # gets filled with subtract_background()
+        self.backgrounds_gen_binning = {}  # gets filled with subtract_background_gen_binning()
 
         self.unfolded = None  # set in get_output()
-
-
 
     def save_binning(self, print_xml=True, txt_filename=None):
         """Save binning scheme to txt and/or print XML to screen"""
@@ -387,17 +389,28 @@ class MyUnfolder(object):
             ROOT.TUnfoldBinningXML.ExportXML(self.detector_binning, ROOT.cout, True, False)
             ROOT.TUnfoldBinningXML.ExportXML(self.generator_binning, ROOT.cout, False, True)
 
-    def set_input(self, input_hist, hist_truth=None, hist_mc_reco=None, hist_mc_reco_bg_subtracted=None, bias_factor=0):
-        """Set hist to be unfolded.
+    def set_input(self,
+                  input_hist,
+                  input_hist_gen_binning=None,
+                  hist_truth=None,
+                  hist_mc_reco=None,
+                  hist_mc_reco_bg_subtracted=None,
+                  hist_mc_reco_gen_binning=None,
+                  hist_mc_reco_gen_binning_bg_subtracted=None,
+                  bias_factor=0):
+        """Set hist to be unfolded, plus other basic hists
 
         Also allow other args to be passed to TUnfoldSys::SetInput
         """
         self.input_hist = input_hist.Clone()
         self.input_hist_bg_subtracted = input_hist.Clone()
+        self.input_hist_gen_binning = input_hist_gen_binning.Clone()
+        self.input_hist_gen_binning_bg_subtracted = input_hist_gen_binning.Clone()
         self.hist_truth = hist_truth
         self.hist_mc_reco = hist_mc_reco
         self.hist_mc_reco_bg_subtracted = hist_mc_reco_bg_subtracted
-        # self.input_hist_gen_binning = input_hist_gen_binning
+        self.hist_mc_reco_gen_binning = hist_mc_reco_gen_binning
+        self.hist_mc_reco_gen_binning_bg_subtracted = hist_mc_reco_gen_binning_bg_subtracted
         self.tunfolder.SetInput(input_hist, bias_factor)
 
     def subtract_background(self, hist, name, scale=1.0, scale_err=0.0):
@@ -409,10 +422,31 @@ class MyUnfolder(object):
         self.input_hist_bg_subtracted.Add(hist, -1*scale)
         self.tunfolder.SubtractBackground(hist.Clone(), name, scale, scale_err)
 
+    def subtract_background_gen_binning(self, hist, name, scale=1.0, scale_err=0.0):
+        """Subtract background source with gen binning from input hist
+
+        NB doesn't affect TUnfold, only for own book keeping
+        """
+        # Save into dict of components
+        self.backgrounds_gen_binning[name] = hist.Clone()
+        self.backgrounds_gen_binning[name].Scale(scale)
+        # Also save total input subtracted
+        self.input_hist_gen_binning_bg_subtracted.Add(hist, -1*scale)
+
     def get_total_background(self):
         """Get total cumulative background"""
         total_bg_hist = None
         for name, hist in self.backgrounds.items():
+            if total_bg_hist is None:
+                total_bg_hist = hist.Clone()
+            else:
+                total_bg_hist.Add(hist)
+        return total_bg_hist
+
+    def get_total_background_gen_binning(self):
+        """Get total cumulative background with generator binning"""
+        total_bg_hist = None
+        for name, hist in self.backgrounds_gen_binning.items():
             if total_bg_hist is None:
                 total_bg_hist = hist.Clone()
             else:

@@ -1000,6 +1000,7 @@ if __name__ == "__main__":
             reco_1d_gen_binning = hist_mc_reco_gen_binning.Clone() if MC_INPUT else hist_data_reco_gen_binning
             # reco_1d_gen_binning = hist_mc_reco_gen_binning # only for testing that everything is setup OK
 
+            hist_fakes_reco_gen_binning = None
             if SUBTRACT_FAKES:
                 mc_hname_append = "_split" if MC_SPLIT else ""  # FIXME consistency in unfold hist module!
                 hist_mc_fakes_reco_gen_binning = cu.get_from_tfile(region['mc_tfile'], "%s/hist_%s_reco_fake_gen_binning%s" % (region['dirname'], angle_shortname, mc_hname_append))
@@ -1051,9 +1052,12 @@ if __name__ == "__main__":
             # Set what is to be unfolded
             # ------------------------------------------------------------------
             unfolder.set_input(input_hist=reco_1d,
+                               input_hist_gen_binning=reco_1d_gen_binning,
                                hist_truth=hist_mc_gen,
                                hist_mc_reco=hist_mc_reco,
                                hist_mc_reco_bg_subtracted=hist_mc_reco_bg_subtracted,
+                               hist_mc_reco_gen_binning=hist_mc_reco_gen_binning,
+                               hist_mc_reco_gen_binning_bg_subtracted=hist_mc_reco_gen_binning_bg_subtracted,
                                bias_factor=args.biasFactor)
 
             # Add systematic errors as different response matrices
@@ -1085,6 +1089,7 @@ if __name__ == "__main__":
             # ------------------------------------------------------------------
             if SUBTRACT_FAKES:
                 unfolder.subtract_background(hist_fakes_reco, "Signal fakes", scale=1., scale_err=0.0)
+                unfolder.subtract_background_gen_binning(hist_fakes_reco_gen_binning, "Signal fakes", scale=1., scale_err=0.0)
 
             # Subtract actual backgrounds if necessary
             # ------------------------------------------------------------------
