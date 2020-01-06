@@ -830,8 +830,15 @@ if __name__ == "__main__":
         # ----------------------------------------------------------------------
         for angle in angles:
             angle_prepend = "groomed " if "groomed" in region['name'] else ""
-            append = "%s_%s%s" % (region['name'], angle_prepend.lower(), angle.var)  # common str to put on filenames, etc
-            angle_str = "%s%s (%s)" % (angle_prepend, angle.name, angle.lambda_str)
+            append = "%s_%s" % (region['name'], angle.var)  # common str to put on filenames, etc. don't need angle_prepend as 'groomed' in region name
+            this_angle_name = angle.name
+            if (angle_prepend != ""
+                and this_angle_name != 'LHA'
+                and "_{T}" not in this_angle_name
+                and "PUPPI" not in this_angle_name):
+                # lower case if Groomed..., but be careful of e.g. pTD, LHA
+                this_angle_name = this_angle_name[0].lower() + this_angle_name[1:]
+            angle_str = "%s%s (%s)" % (angle_prepend, this_angle_name, angle.lambda_str)
 
             print("*"*80)
             print("Region/var: %s" % (append))
@@ -1051,8 +1058,8 @@ if __name__ == "__main__":
                                        tau_min=region['tau_limits'][angle.var][0],
                                        tau_max=region['tau_limits'][angle.var][1])
                 print("Found tau:", tau)
-                l_scanner.plot_scan_L_curve(output_filename="%s/scanL_%s.%s" % (this_output_dir, unfolder.variable_name, OUTPUT_FMT))
-                l_scanner.plot_scan_L_curvature(output_filename="%s/scanLcurvature_%s.%s" % (this_output_dir, unfolder.variable_name, OUTPUT_FMT))
+                l_scanner.plot_scan_L_curve(output_filename="%s/scanL_%s.%s" % (this_output_dir, append, OUTPUT_FMT))
+                l_scanner.plot_scan_L_curvature(output_filename="%s/scanLcurvature_%s.%s" % (this_output_dir, append, OUTPUT_FMT))
                 l_scanner.save_to_tfile(this_tdir)
 
             elif REGULARIZE == "tau":
@@ -1066,7 +1073,7 @@ if __name__ == "__main__":
                                            distribution=scan_distribution,
                                            axis_steering=unfolder.axisSteering)
                 print("Found tau:", tau)
-                tau_scanner.plot_scan_tau(output_filename="%s/scantau_%s.%s" % (this_output_dir, unfolder.variable_name, OUTPUT_FMT))
+                tau_scanner.plot_scan_tau(output_filename="%s/scantau_%s.%s" % (this_output_dir, append, OUTPUT_FMT))
                 tau_scanner.save_to_tfile(this_tdir)
 
             if REGULARIZE != "None":
