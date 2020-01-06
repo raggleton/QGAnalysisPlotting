@@ -1053,6 +1053,7 @@ if __name__ == "__main__":
                 print("Found tau:", tau)
                 l_scanner.plot_scan_L_curve(output_filename="%s/scanL_%s.%s" % (this_output_dir, unfolder.variable_name, OUTPUT_FMT))
                 l_scanner.plot_scan_L_curvature(output_filename="%s/scanLcurvature_%s.%s" % (this_output_dir, unfolder.variable_name, OUTPUT_FMT))
+                l_scanner.save_to_tfile(this_tdir)
 
             elif REGULARIZE == "tau":
                 print("Regularizing with ScanTau, please be patient...")
@@ -1306,13 +1307,14 @@ if __name__ == "__main__":
                 if REGULARIZE == "L":
                     print("Regularizing alternative with ScanL, please be patient...")
                     alt_L_scanner = LCurveScanner()
-                    alt_tau = l_scanner.scan_L(tunfolder=unfolder.tunfolder,
+                    alt_tau = alt_l_scanner.scan_L(tunfolder=alt_unfolder.tunfolder,
                                                n_scan=args.nScan,
                                                tau_min=region['tau_limits'][angle.var][0],
                                                tau_max=region['tau_limits'][angle.var][1])
                     print("Found tau:", alt_tau)
-                    l_scanner.plot_scan_L_curve(output_filename="%s/scanL_alt_%s.%s" % (alt_output_dir, unfolder.variable_name, OUTPUT_FMT))
-                    l_scanner.plot_scan_L_curvature(output_filename="%s/scanLcurvature_alt_%s.%s" % (alt_output_dir, unfolder.variable_name, OUTPUT_FMT))
+                    alt_l_scanner.plot_scan_L_curve(output_filename="%s/scanL_alt_%s.%s" % (alt_output_dir, unfolder.variable_name, OUTPUT_FMT))
+                    alt_l_scanner.plot_scan_L_curvature(output_filename="%s/scanLcurvature_alt_%s.%s" % (alt_output_dir, unfolder.variable_name, OUTPUT_FMT))
+                    alt_l_scanner.save_to_tfile(alt_tdir)
 
                 elif REGULARIZE == "tau":
                     print("Regularizing alternative with ScanTau, please be patient...")
@@ -1466,13 +1468,15 @@ if __name__ == "__main__":
                     if REGULARIZE == "L":
                         print("Regularizing systematic model with ScanL, please be patient...")
                         syst_l_scanner = LCurveScanner()
-                        syst_tau = syst_l_scanner.scan_L(tunfolder=unfolder.tunfolder,
+                        syst_tau = syst_l_scanner.scan_L(tunfolder=syst_unfolder.tunfolder,
                                                          n_scan=args.nScan,
                                                          tau_min=region['tau_limits'][angle.var][0],
                                                          tau_max=region['tau_limits'][angle.var][1])
                         print("Found tau:", syst_tau)
                         syst_l_scanner.plot_scan_L_curve(output_filename="%s/scanL_syst_%s_%s.%s" % (syst_output_dir, syst_label_no_spaces, unfolder.variable_name, OUTPUT_FMT))
                         syst_l_scanner.plot_scan_L_curvature(output_filename="%s/scanLcurvature_syst_%s_%s.%s" % (syst_output_dir, syst_label_no_spaces, unfolder.variable_name, OUTPUT_FMT))
+                        syst_l_scanner.save_to_tfile(syst_tdir)
+
                     elif REGULARIZE == "tau":
                         print("Regularizing systematic model with ScanTau, please be patient...")
                         syst_tau_scanner = TauScanner()
@@ -1485,6 +1489,7 @@ if __name__ == "__main__":
                                                              axis_steering=syst_unfolder.axisSteering)
                         print("Found tau for syst matrix:", syst_tau)
                         syst_tau_scanner.plot_scan_tau(output_filename="%s/scantau_syst_%s_%s.%s" % (syst_output_dir, syst_label_no_spaces, syst_unfolder.variable_name, OUTPUT_FMT))
+                        syst_tau_scanner.save_to_tfile(syst_tdir)
 
                     region['model_systematics'][ind]['tau'] = syst_tau
 
@@ -1634,13 +1639,15 @@ if __name__ == "__main__":
                     if REGULARIZE == "L":
                         print("Regularizing systematic model with ScanL, please be patient...")
                         syst_l_scanner = LCurveScanner()
-                        syst_tau = syst_l_scanner.scan_L(tunfolder=unfolder.tunfolder,
+                        syst_tau = syst_l_scanner.scan_L(tunfolder=pdf_unfolder.tunfolder,
                                                          n_scan=args.nScan,
                                                          tau_min=region['tau_limits'][angle.var][0],
                                                          tau_max=region['tau_limits'][angle.var][1])
                         print("Found tau:", syst_tau)
                         syst_l_scanner.plot_scan_L_curve(output_filename="%s/scanL_syst_%s_%s.%s" % (pdf_output_dir, pdf_label_no_spaces, unfolder.variable_name, OUTPUT_FMT))
                         syst_l_scanner.plot_scan_L_curvature(output_filename="%s/scanLcurvature_syst_%s_%s.%s" % (pdf_output_dir, pdf_label_no_spaces, unfolder.variable_name, OUTPUT_FMT))
+                        syst_l_scanner.save_to_tfile(pdf_tdir)
+
                     elif REGULARIZE == "tau":
                         print("Regularizing systematic model with ScanTau, please be patient...")
                         syst_tau_scanner = TauScanner()
@@ -1653,6 +1660,7 @@ if __name__ == "__main__":
                                                              axis_steering=pdf_unfolder.axisSteering)
                         print("Found tau for syst matrix:", syst_tau)
                         syst_tau_scanner.plot_scan_tau(output_filename="%s/scantau_syst_%s_%s.%s" % (pdf_output_dir, pdf_label_no_spaces, pdf_unfolder.variable_name, OUTPUT_FMT))
+                        syst_tau_scanner.save_to_tfile(pdf_tdir)
 
                     region['pdf_systematics'][ind]['tau'] = syst_tau
 

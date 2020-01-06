@@ -249,6 +249,12 @@ class LCurveScanner(object):
 
         canv_L_curvature.Print(output_filename)
 
+    def save_to_tfile(self, tfile):
+        tfile.WriteTObject(self.scanned_l_curve, "scanned_l_curve")
+        tfile.WriteTObject(self.graph_best_scan_point, "graph_best_scan_point")
+        tfile.WriteTObject(self.graph_log_tau_curvature, "graph_log_tau_curvature")
+        tfile.WriteTObject(self.graph_log_tau_curvature_best, "graph_log_tau_curvature_best")
+
 
 class MyUnfolder(object):
     """Main class to handle unfolding input/outputs, all the associated objects"""
