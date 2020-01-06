@@ -909,9 +909,6 @@ if __name__ == "__main__":
                 hist_mc_reco_bg_subtracted = hist_mc_reco.Clone(hist_mc_reco.GetName() + "_bgrSubtracted")
                 hist_mc_reco_bg_subtracted.Add(hist_mc_fakes_reco, -1)  # should this be hist_fakes_reco? depends on what we want to see...
 
-            # hist_mc_gen_reco_neutralUp_map = cu.get_from_tfile(region['mc_neutralUp_tfile'], "%s/tu_%s_GenReco_all" % (region['dirname'], angle_shortname))
-            # hist_mc_gen_reco_neutralDown_map = cu.get_from_tfile(region['mc_neutralDown_tfile'], "%s/tu_%s_GenReco_all" % (region['dirname'], angle_shortname))
-
             mc_hname_append = "_split" if MC_SPLIT else ""  # FIXME consistency in unfold hist module!
             hist_data_reco_gen_binning = cu.get_from_tfile(region['data_tfile'], "%s/hist_%s_reco_gen_binning" % (region['dirname'], angle_shortname))
             hist_mc_reco_gen_binning = cu.get_from_tfile(region['mc_tfile'], "%s/hist_%s_reco_gen_binning%s" % (region['dirname'], angle_shortname, mc_hname_append))
@@ -1167,7 +1164,7 @@ if __name__ == "__main__":
                 proj_reco = hist_mc_gen_reco_map.ProjectionY("proj_reco_%s" % (append))
 
                 proj_gen = hist_mc_gen_reco_map.ProjectionX("proj_gen_%s" % (append))
-                draw_projection_comparison(hist_mc_gen, proj_gen,
+                draw_projection_comparison(unfolder.hist_truth, proj_gen,
                                            title="%s\n%s region" % (jet_algo, region['label']),
                                            xtitle="%s, Generator binning" % (angle_str),
                                            output_filename="%s/projection_gen_%s.%s" % (this_output_dir, append, OUTPUT_FMT))
@@ -1220,32 +1217,13 @@ if __name__ == "__main__":
             # Do forward-folding to check unfolding
             # ------------------------------------------------------------------
             # Do it on the unfolded result
-            # draw_reco_folded(hist_folded=unfolder.get_folded_unfolded(),
-            #                  tau=tau,
-            #                  hist_reco_data=reco_1d_bg_subtracted if SUBTRACT_FAKES else reco_1d,
-            #                  hist_reco_mc=hist_mc_reco_bg_subtracted if SUBTRACT_FAKES else hist_mc_reco,
-            #                  folded_subplot=reco_1d_bg_subtracted if SUBTRACT_FAKES else reco_1d,
-            #                  folded_subplot_name='Data',
-            #                  title="%s\n%s region" % (jet_algo, region['label']),
-            #                  xtitle="%s, Detector binning" % (angle_str),
-            #                  output_filename="%s/folded_unfolded_%s.%s" % (this_output_dir, append, OUTPUT_FMT))
-
             title = "%s\n%s region, %s" % (jet_algo, region['label'], angle_str)
             unfolder_plotter.draw_unfolded_folded(title=title, **plot_args)
 
             if MC_INPUT:
+                # Folded MC truth
                 title = "%s\n%s region, %s" % (jet_algo, region['label'], angle_str)
                 unfolder_plotter.draw_truth_folded(title=title, **plot_args)
-
-                # draw_reco_folded(hist_folded=unfolder.get_folded_mc_truth(),
-                #                  tau=0,
-                #                  hist_reco_data=None,
-                #                  hist_reco_mc=hist_mc_reco_bg_subtracted if SUBTRACT_FAKES else hist_mc_reco,
-                #                  folded_subplot=hist_mc_reco_bg_subtracted if SUBTRACT_FAKES else hist_mc_reco,
-                #                  folded_subplot_name='MC',
-                #                  title="%s\n%s region" % (jet_algo, region['label']),
-                #                  xtitle="%s, Detector binning" % (angle_str),
-                #                  output_filename="%s/folded_gen_%s.%s" % (this_output_dir, append, OUTPUT_FMT))
 
             # Save everything to TFile
             unfolder.save_to_tfile(this_tdir)
@@ -1253,9 +1231,7 @@ if __name__ == "__main__":
             # ------------------------------------------------------------------
             # UNFOLDING WITH ALTERNATIVE RESPONSE MATRIX
             # ------------------------------------------------------------------
-            alt_unfolded_1d = None
-            alt_hist_mc_gen = None
-            alt_tau = 0
+            alt_hist_mc_gen = None  # mc truth of the generator used to make reponse matrix
             alt_unfolder = None
             if args.useAltResponse:
                 print("*** Unfolding with alternate response matrix ***")
@@ -1287,10 +1263,11 @@ if __name__ == "__main__":
                 alt_plot_args = dict(output_dir=alt_output_dir,
                                      append=append)
 
+                # Only plot response matrix
+                # --------------------------------------------------------------
                 title = ("#splitline{Probability matrix, %s region, %s, %s}{Condition number: #sigma_{max} / #sigma_{min} = %.3g / %.3g = %g}"
                             % (region['label'], angle_str, region['alt_mc_label'], unfolder.sigma_max, unfolder.sigma_min, unfolder.condition_number))
                 alt_unfolder_plotter.draw_probability_matrix(title=title, **alt_plot_args)
-
 
                 # Set what is to be unfolded - same as main unfolder
                 # --------------------------------------------------------------
@@ -1702,19 +1679,16 @@ if __name__ == "__main__":
 
             # Draw individual pt bin plots - GEN binning
             # ------------------------------------------------------------------
-            for ibin_pt in range(0, len(pt_bin_edges_gen)-1):
+            for ibin_pt in range(0, len(unfolder.pt_bin_edges_gen)-1):
 
                 this_pt_bin_tdir = this_tdir.mkdir("gen_bin_%d" % (ibin_pt))
-                print("Individual gen bin", ibin_pt, "=", pt_bin_edges_gen[ibin_pt], pt_bin_edges_gen[ibin_pt+1])
+                print("Individual gen bin", ibin_pt, "=", unfolder.pt_bin_edges_gen[ibin_pt], unfolder.pt_bin_edges_gen[ibin_pt+1])
 
                 # Produce 1D hists for this pt bin
                 # --------------------------------------------------------------
                 # Unfolded hists
-                mc_gen_hist_bin = unfolder.get_var_hist_pt_binned(hist_mc_gen, ibin_pt, binning_scheme="generator")
+                mc_gen_hist_bin = unfolder.get_var_hist_pt_binned(unfolder.hist_truth, ibin_pt, binning_scheme="generator")
                 this_pt_bin_tdir.WriteTObject(mc_gen_hist_bin, "mc_gen_hist_bin")
-
-                unfolded_hist_bin = unfolder.get_var_hist_pt_binned(unfolded_1d, ibin_pt, binning_scheme="generator")
-                this_pt_bin_tdir.WriteTObject(unfolded_hist_bin, "unfolded_hist_bin")
 
                 unfolded_hist_bin_stat_errors = unfolder.get_var_hist_pt_binned(unfolder.unfolded_stat_err, ibin_pt, binning_scheme="generator")
                 this_pt_bin_tdir.WriteTObject(unfolded_hist_bin_stat_errors, "unfolded_hist_bin_stat_errors")
@@ -1724,19 +1698,19 @@ if __name__ == "__main__":
 
                 # Reco level but with gen binning
                 # For 'data'
-                reco_hist_bin_gen_binning = unfolder.get_var_hist_pt_binned(reco_1d_gen_binning, ibin_pt, binning_scheme="generator")
+                reco_hist_bin_gen_binning = unfolder.get_var_hist_pt_binned(unfolder.input_hist_gen_binning, ibin_pt, binning_scheme="generator")
                 this_pt_bin_tdir.WriteTObject(reco_hist_bin_gen_binning, "reco_hist_bin_gen_binning")
 
                 if SUBTRACT_FAKES:
-                    reco_hist_bg_subtracted_bin_gen_binning = unfolder.get_var_hist_pt_binned(reco_1d_gen_binning_bg_subtracted, ibin_pt, binning_scheme="generator")
+                    reco_hist_bg_subtracted_bin_gen_binning = unfolder.get_var_hist_pt_binned(unfolder.input_hist_gen_binning_bg_subtracted, ibin_pt, binning_scheme="generator")
                     this_pt_bin_tdir.WriteTObject(reco_hist_bg_subtracted_bin_gen_binning, "reco_hist_bg_subtracted_bin_gen_binning")
 
                 # For MC
-                mc_reco_hist_bin_gen_binning = unfolder.get_var_hist_pt_binned(hist_mc_reco_gen_binning, ibin_pt, binning_scheme="generator")
+                mc_reco_hist_bin_gen_binning = unfolder.get_var_hist_pt_binned(unfolder.hist_mc_reco_gen_binning, ibin_pt, binning_scheme="generator")
                 this_pt_bin_tdir.WriteTObject(mc_reco_hist_bin_gen_binning, "mc_reco_hist_bin_gen_binning")
 
                 if SUBTRACT_FAKES:
-                    mc_reco_hist_bg_subtracted_bin_gen_binning = unfolder.get_var_hist_pt_binned(hist_mc_reco_gen_binning_bg_subtracted, ibin_pt, binning_scheme="generator")
+                    mc_reco_hist_bg_subtracted_bin_gen_binning = unfolder.get_var_hist_pt_binned(unfolder.hist_mc_reco_gen_binning_bg_subtracted, ibin_pt, binning_scheme="generator")
                     this_pt_bin_tdir.WriteTObject(mc_reco_hist_bg_subtracted_bin_gen_binning, "mc_reco_hist_bg_subtracted_bin_gen_binning")
 
 
@@ -1744,9 +1718,9 @@ if __name__ == "__main__":
                 # ------------------------------------------------------------
                 lw = 2
                 # common hist settings
-                title = "%s\n%s region\n%g < p_{T}^{jet} < %g GeV" % (jet_algo, region['label'], pt_bin_edges_gen[ibin_pt], pt_bin_edges_gen[ibin_pt+1])
+                title = "%s\n%s region\n%g < p_{T}^{jet} < %g GeV" % (jet_algo, region['label'], unfolder.pt_bin_edges_gen[ibin_pt], unfolder.pt_bin_edges_gen[ibin_pt+1])
                 if "ptavebinning" in src_dir.lower():
-                    title = "%s\n%s region\n%g < #LT p_{T}^{jet} #GT < %g GeV" % (jet_algo, region['label'], pt_bin_edges_gen[ibin_pt], pt_bin_edges_gen[ibin_pt+1])
+                    title = "%s\n%s region\n%g < #LT p_{T}^{jet} #GT < %g GeV" % (jet_algo, region['label'], unfolder.pt_bin_edges_gen[ibin_pt], unfolder.pt_bin_edges_gen[ibin_pt+1])
                 common_hist_args = dict(
                     what="hist",
                     title=title,
@@ -1768,7 +1742,7 @@ if __name__ == "__main__":
                     this_plot.legend.SetY1(0.68)
                     this_plot.legend.SetX2(0.98)
                     this_plot.legend.SetY2(0.9)
-                    this_plot.left_margin = 0.13
+                    this_plot.left_margin = 0.16
 
                 # unnormalised version
                 entries = [
@@ -1888,7 +1862,7 @@ if __name__ == "__main__":
                 # (i.e. is the difference between unfolded results < diff at gen level?)
                 if args.useAltResponse:
                     alt_mc_gen_hist_bin = alt_unfolder.get_var_hist_pt_binned(alt_hist_mc_gen, ibin_pt, binning_scheme="generator")
-                    alt_unfolded_hist_bin_total_errors = alt_unfolder.get_var_hist_pt_binned(alt_unfolded_1d, ibin_pt, binning_scheme="generator")
+                    alt_unfolded_hist_bin_total_errors = alt_unfolder.get_var_hist_pt_binned(alt_unfolder.unfolded, ibin_pt, binning_scheme="generator")
                     this_pt_bin_tdir.WriteTObject(alt_unfolded_hist_bin_total_errors, "alt_unfolded_hist_bin_total_errors")
 
                     alt_gen_colour = ROOT.kBlack
@@ -1913,7 +1887,7 @@ if __name__ == "__main__":
                                      subplot=mc_gen_hist_bin,
                                      normalise_hist=True),
                         Contribution(alt_unfolded_hist_bin_total_errors,
-                                     label="Unfolded (#tau = %.3g) (stat err)\n(%s response matrix)" % (alt_tau, region['alt_mc_label']),
+                                     label="Unfolded (#tau = %.3g) (stat err)\n(%s response matrix)" % (alt_unfolder.tau, region['alt_mc_label']),
                                      line_color=alt_colour, line_width=lw, line_style=3,
                                      marker_color=alt_colour, marker_size=0,
                                      subplot=mc_gen_hist_bin,
@@ -1960,7 +1934,7 @@ if __name__ == "__main__":
                                      subplot=mc_gen_hist_bin_div_bin_width,
                                      normalise_hist=False),
                         Contribution(alt_unfolded_hist_bin_total_errors_div_bin_width,
-                                     label="Unfolded (#tau = %.3g) (stat err)\n(%s response matrix)" % (alt_tau, region['alt_mc_label']),
+                                     label="Unfolded (#tau = %.3g) (stat err)\n(%s response matrix)" % (alt_unfolder.tau, region['alt_mc_label']),
                                      line_color=alt_colour, line_width=lw, line_style=3,
                                      marker_color=alt_colour, marker_size=0,
                                      subplot=mc_gen_hist_bin_div_bin_width,
@@ -2372,9 +2346,9 @@ if __name__ == "__main__":
 
             # Draw individual pt bin plots - RECO binning
             # ------------------------------------------------------------------
-            for ibin_pt in range(0, len(pt_bin_edges_reco)-1):
+            for ibin_pt in range(0, len(unfolder.pt_bin_edges_reco)-1):
                 this_pt_bin_tdir = this_tdir.mkdir("reco_bin_%d" % (ibin_pt))
-                print("Individual detector bin", ibin_pt, "=", pt_bin_edges_reco[ibin_pt], pt_bin_edges_reco[ibin_pt+1])
+                print("Individual detector bin", ibin_pt, "=", unfolder.pt_bin_edges_reco[ibin_pt], unfolder.pt_bin_edges_reco[ibin_pt+1])
 
                 # Get 1D hists
                 # The folded unfolded result
@@ -2382,26 +2356,26 @@ if __name__ == "__main__":
                 this_pt_bin_tdir.WriteTObject(folded_unfolded_hist_bin_reco_binning, "folded_unfolded_hist_bin_reco_binning")
 
                 # here this is the thing to be unfolded, should be data or MC depending on MC_INPUT flag
-                reco_hist_bin_reco_binning = unfolder.get_var_hist_pt_binned(reco_1d, ibin_pt, binning_scheme="detector")
+                reco_hist_bin_reco_binning = unfolder.get_var_hist_pt_binned(unfolder.input_hist, ibin_pt, binning_scheme="detector")
                 this_pt_bin_tdir.WriteTObject(reco_hist_bin_reco_binning, "reco_hist_bin_reco_binning")
 
                 if SUBTRACT_FAKES:
-                    reco_hist_bg_subtracted_bin_reco_binning = unfolder.get_var_hist_pt_binned(reco_1d_bg_subtracted, ibin_pt, binning_scheme="detector")
+                    reco_hist_bg_subtracted_bin_reco_binning = unfolder.get_var_hist_pt_binned(unfolder.input_hist_bg_subtracted, ibin_pt, binning_scheme="detector")
                     this_pt_bin_tdir.WriteTObject(reco_hist_bg_subtracted_bin_reco_binning, "reco_hist_bg_subtracted_bin_reco_binning")
 
                 # Get MC hists
-                mc_reco_hist_bin_reco_binning = unfolder.get_var_hist_pt_binned(hist_mc_reco, ibin_pt, binning_scheme="detector")
+                mc_reco_hist_bin_reco_binning = unfolder.get_var_hist_pt_binned(unfolder.hist_mc_reco, ibin_pt, binning_scheme="detector")
                 this_pt_bin_tdir.WriteTObject(mc_reco_hist_bin_reco_binning, "mc_reco_hist_bin_reco_binning")
 
                 if SUBTRACT_FAKES:
-                    mc_reco_hist_bg_subtracted_bin_reco_binning = unfolder.get_var_hist_pt_binned(hist_mc_reco_bg_subtracted, ibin_pt, binning_scheme="detector")
+                    mc_reco_hist_bg_subtracted_bin_reco_binning = unfolder.get_var_hist_pt_binned(unfolder.hist_mc_reco_bg_subtracted, ibin_pt, binning_scheme="detector")
                     this_pt_bin_tdir.WriteTObject(mc_reco_hist_bg_subtracted_bin_reco_binning, "mc_reco_hist_bg_subtracted_bin_reco_binning")
 
                 # Do the plots
                 # --------------------------------------------------------------
                 # common hist settings
                 lw = 2
-                title = "%s\n%s region\n%g < p_{T}^{Jet} < %g GeV" % (jet_algo, region['label'], pt_bin_edges_reco[ibin_pt], pt_bin_edges_reco[ibin_pt+1])
+                title = "%s\n%s region\n%g < p_{T}^{Jet} < %g GeV" % (jet_algo, region['label'], unfolder.pt_bin_edges_reco[ibin_pt], unfolder.pt_bin_edges_reco[ibin_pt+1])
                 common_hist_args = dict(
                     what="hist",
                     title=title,
