@@ -542,18 +542,24 @@ class MyUnfolder(object):
         """Add systematic error via response map, arguments as per AddSysError()"""
         self.syst_maps[name] = map_syst
         self.tunfolder.AddSysError(map_syst, name, self.orientation, ROOT.TUnfoldDensity.kSysErrModeMatrix)
+        self.syst_shifts[name] = None  # setup for get_delta_sys_shift
 
-    def get_delta_sys_shift(self, syst_label, hist_name, hist_title=""):
-        if syst_label not in self.syst_maps:
-            raise KeyError("No systematic %s, only have: %s" % (syst_label, ", ".join(self.syst_maps.keys())))
-        hist = self.tunfolder.GetDeltaSysSource(syst_label,
-                                                hist_name,
-                                                hist_title,
-                                                self.output_distribution_name, # must be the same as what's used in get_output
-                                                self.axisSteering,
-                                                self.use_axis_binning)
-        self.syst_shifts[syst_label] = hist
-        return hist
+    def get_delta_sys_shift(self, syst_label):
+        """Get shift in result due to a particular systeamtic
+
+        Label must be same as used to add it in add_sys_error()
+        """
+        if syst_label not in self.syst_shifts:
+            raise KeyError("No systematic %s, only have: %s" % (syst_label, ", ".join(self.syst_shifts.keys())))
+        if self.syst_shifts[syst_label] is None:
+            hist = self.tunfolder.GetDeltaSysSource(syst_label,
+                                                    "syst_shift_%s" % (syst_label.replace(" ", "_")),
+                                                    "",
+                                                    self.output_distribution_name, # must be the same as what's used in get_output
+                                                    self.axisSteering,
+                                                    self.use_axis_binning)
+            self.syst_shifts[syst_label] = hist  # cache shifts
+        return self.syst_shifts[syst_label]
 
     def get_output(self, hist_name='unfolded', update_with_ematrix_total=False):
         """Get 1D unfolded histogram covering all bins"""
@@ -587,6 +593,8 @@ class MyUnfolder(object):
         self.get_unfolded_with_ematrix_stat()
         self.get_folded_unfolded()
         self.get_folded_mc_truth()
+        for syst_label in self.syst_shifts.keys():
+            self.get_delta_sys_shift(syst_label)
 
     @staticmethod
     def make_hist_from_diagonal_errors(h2d, do_sqrt=True):
