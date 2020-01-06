@@ -794,6 +794,15 @@ if __name__ == "__main__":
         # region_tdir = output_tfile.Get(new_tdir)
         # region_tdir.cd()
 
+        # Modify systematics as necessary
+        # ----------------------------------------------------------------------
+
+        # Remove the lumi one if we have no backgrounds, or the user has not said to remove backgrounds
+        region['experimental_systematics'] = [syst_dict for syst_dict in region['experimental_systematics']
+                                              if not ('lumi' in syst_dict['label'].lower()
+                                                       and (len(region.get('backgrounds', [])) == 0
+                                                            or not args.subtractBackgrounds))]
+
         # Do 1D unfolding of pt
         # ----------------------------------------------------------------------
         append = "%s_pt" % (region['name'])  # common str to put on filenames, etc
@@ -974,9 +983,6 @@ if __name__ == "__main__":
                 for syst_ind, syst_dict in enumerate(region['experimental_systematics']):
                     print("Adding systematic:", syst_dict['label'])
                     if 'factor' in syst_dict:
-                        if 'lumi' in syst_dict['label'].lower() and (len(region.get('backgrounds', [])) == 0 or not args.subtractBackgrounds):
-                            # the luminosity one is only if we have backgrounds to be subtracted
-                            continue
                         # special case for e.g. lumi - we construct a reponse hist, and add it using relative mode
                         rel_map = unfolder.response_map.Clone(syst_dict['label']+"Map")
                         for xbin, ybin in product(range(1, rel_map.GetNbinsX()+1), range(1, rel_map.GetNbinsY()+1)):
@@ -1096,12 +1102,7 @@ if __name__ == "__main__":
             systematic_shift_hists = []
             if args.doExperimentalSysts:
                 for syst_dict in region['experimental_systematics']:
-                    if 'lumi' in syst_dict['label'].lower() and (len(region.get('backgrounds', [])) == 0 or not args.subtractBackgrounds):
-                        continue
-                    syst_label = syst_dict['label']
-                    h_syst = unfolder.get_delta_sys_shift(syst_label=syst_label,
-                                                          hist_name='%s_%s_shift_%s' % (region['name'], angle.var, syst_label),
-                                                          hist_title="")
+                    h_syst = unfolder.get_delta_sys_shift(syst_label=syst_dict['label'])
                     systematic_shift_hists.append(h_syst)
 
             # Draw big 1D distributions
