@@ -1453,13 +1453,11 @@ if __name__ == "__main__":
                     syst_plot_args = dict(output_dir=syst_output_dir,
                                           append=append)
 
-                    # if is_herwig:
-                        # herwig_sf = 1E6  # should've done this earlier
-                        # hist_syst_reco.Scale(herwig_sf)
-                        # hist_syst_gen.Scale(herwig_sf)
+                    if is_herwig:
                         # SetEpsMatrix ensures rank properly calculated when inverting
-                        # "rank of matrix E 55 expect 170"
-                        # syst_unfolder.tunfolder.SetEpsMatrix(1E-18)
+                        # Needed if you get message "rank of matrix E 55 expect 170"
+                        # And unfolded looks wacko
+                        syst_unfolder.tunfolder.SetEpsMatrix(1E-18)
 
                     # because we only care about shape, not overall normalisation
                     # (which can artificially increase/decrease errors)
