@@ -2505,56 +2505,25 @@ if __name__ == "__main__":
                 # --------------------------------------------------------------
                 # Reco + folded, detector binning
                 # FIXME: shouldn't this use RECO gen bin
-                reco_mc_colour = ROOT.kGreen+2
-                reco_data_colour = ROOT.kRed
-                reco_folded_colour = ROOT.kAzure+1
+                reco_unfolding_input_colour = ROOT.kRed
+                reco_folded_unfolded_colour = ROOT.kAzure+1
+                reco_folded_truth_colour = ROOT.kGreen+2
+                reco_mc_colour = ROOT.kGreen
+
                 mc_reco_bin_hist = mc_reco_hist_bg_subtracted_bin_reco_binning if SUBTRACT_FAKES else mc_reco_hist_bin_reco_binning
                 reco_bin_hist = reco_hist_bg_subtracted_bin_reco_binning if SUBTRACT_FAKES else reco_hist_bin_reco_binning
-
-                entries = [
-                    Contribution(mc_reco_bin_hist,
-                                 label="MC (reco, bg-subtracted)" if SUBTRACT_FAKES else "MC (reco)",
-                                 line_color=reco_mc_colour, line_width=lw,
-                                 marker_color=reco_mc_colour, marker_size=0,
-                                 normalise_hist=True),
-                    Contribution(reco_bin_hist,
-                                 label="Data (reco, bg-subtracted)" if SUBTRACT_FAKES else "Data (reco)",
-                                 line_color=reco_data_colour, line_width=lw,
-                                 marker_color=reco_data_colour, marker_size=0,
-                                 subplot=mc_reco_bin_hist,
-                                 normalise_hist=True),
-                    Contribution(folded_unfolded_hist_bin_reco_binning,
-                                 label="Folded unfolded data (#tau = %.3g)" % (tau),
-                                 line_color=reco_folded_colour, line_width=lw,
-                                 marker_color=reco_folded_colour, marker_size=0,
-                                 subplot=mc_reco_bin_hist,
-                                 normalise_hist=True),
-                ]
-                if not check_entries(entries, "%s %d" % (append, ibin_pt)):
-                    continue
-                plot = Plot(entries,
-                            xtitle=detector_title,
-                            ytitle=normalised_differential_label,
-                            subplot_title='Data / MC',
-                            **common_hist_args)
-                plot.legend.SetX1(0.6)
-                plot.legend.SetY1(0.72)
-                plot.legend.SetX2(0.98)
-                plot.legend.SetY2(0.9)
-                plot.plot("NOSTACK E1")
-                # plot.save("%s/detector_folded_unfolded_%s_bin_%d.%s" % (this_output_dir, append, ibin_pt, OUTPUT_FMT))
 
                 # Folded, but only comparing data with data to check it is sane
                 entries = [
                     Contribution(reco_bin_hist,
-                                 label="Data (reco, bg-subtracted)" if SUBTRACT_FAKES else "Data (reco)",
-                                 line_color=reco_data_colour, line_width=lw,
-                                 marker_color=reco_data_colour, marker_size=0,
+                                 label="Unfolding input (bg-subtracted)" if SUBTRACT_FAKES else "Unfolding input",
+                                 line_color=reco_unfolding_input_colour, line_width=lw,
+                                 marker_color=reco_unfolding_input_colour, marker_size=0,
                                  normalise_hist=True),
                     Contribution(folded_unfolded_hist_bin_reco_binning,
-                                 label="Folded unfolded data (#tau = %.3g)" % (tau),
-                                 line_color=reco_folded_colour, line_width=lw,
-                                 marker_color=reco_folded_colour, marker_size=0,
+                                 label="Folded unfolded result (#tau = %.3g)" % (tau),
+                                 line_color=reco_folded_unfolded_colour, line_width=lw,
+                                 marker_color=reco_folded_unfolded_colour, marker_size=0,
                                  subplot=reco_bin_hist,
                                  normalise_hist=True),
                 ]
@@ -2585,15 +2554,15 @@ if __name__ == "__main__":
                                  marker_color=reco_mc_colour, marker_size=0,
                                  normalise_hist=False),
                     Contribution(reco_bin_hist_div_bin_width,
-                                 label="Data (reco, bg-subtracted)" if SUBTRACT_FAKES else "Data (reco)",
-                                 line_color=reco_data_colour, line_width=lw,
-                                 marker_color=reco_data_colour, marker_size=0,
+                                 label="Unfolding input (bg-subtracted)" if SUBTRACT_FAKES else "Unfolding input",
+                                 line_color=reco_unfolding_input_colour, line_width=lw,
+                                 marker_color=reco_unfolding_input_colour, marker_size=0,
                                  subplot=mc_reco_bin_hist_div_bin_width,
                                  normalise_hist=False),
                     Contribution(folded_unfolded_hist_bin_reco_binning_div_bin_width,
                                  label="Folded unfolded data (#tau = %.3g)" % (tau),
-                                 line_color=reco_folded_colour, line_width=lw,
-                                 marker_color=reco_folded_colour, marker_size=0,
+                                 line_color=reco_folded_unfolded_colour, line_width=lw,
+                                 marker_color=reco_folded_unfolded_colour, marker_size=0,
                                  subplot=mc_reco_bin_hist_div_bin_width,
                                  normalise_hist=False),
                 ]
@@ -2609,19 +2578,19 @@ if __name__ == "__main__":
                 plot.legend.SetX2(0.98)
                 plot.legend.SetY2(0.9)
                 plot.plot("NOSTACK E1")
-                plot.save("%s/detector_folded_unfolded_%s_bin_%d_divBinWidth.%s" % (this_output_dir, append, ibin_pt, OUTPUT_FMT))
+                # plot.save("%s/detector_folded_unfolded_%s_bin_%d_divBinWidth.%s" % (this_output_dir, append, ibin_pt, OUTPUT_FMT))
 
                 # data + folded
                 entries = [
                     Contribution(reco_bin_hist_div_bin_width,
-                                 label="Data (reco, bg-subtracted)" if SUBTRACT_FAKES else "Data (reco)",
-                                 line_color=reco_data_colour, line_width=lw,
-                                 marker_color=reco_data_colour, marker_size=0,
+                                 label="Unfolding input (bg-subtracted)" if SUBTRACT_FAKES else "Unfolding input",
+                                 line_color=reco_unfolding_input_colour, line_width=lw,
+                                 marker_color=reco_unfolding_input_colour, marker_size=0,
                                  normalise_hist=False),
                     Contribution(folded_unfolded_hist_bin_reco_binning_div_bin_width,
                                  label="Folded unfolded data (#tau = %.3g)" % (tau),
-                                 line_color=reco_folded_colour, line_width=lw,
-                                 marker_color=reco_folded_colour, marker_size=0,
+                                 line_color=reco_folded_unfolded_colour, line_width=lw,
+                                 marker_color=reco_folded_unfolded_colour, marker_size=0,
                                  subplot=reco_bin_hist_div_bin_width,
                                  normalise_hist=False),
                 ]
@@ -2650,14 +2619,14 @@ if __name__ == "__main__":
                     # Folded gen, comparing to original reco
                     entries = [
                         Contribution(mc_reco_bin_hist,
-                                     label="MC (reco, bg-subtracted)" if SUBTRACT_FAKES else "MC (reco)",
-                                     line_color=reco_data_colour, line_width=lw,
-                                     marker_color=reco_data_colour, marker_size=0,
+                                     label="Unfolding input (bg-subtracted)" if SUBTRACT_FAKES else "Unfolding input",
+                                     line_color=reco_unfolding_input_colour, line_width=lw,
+                                     marker_color=reco_unfolding_input_colour, marker_size=0,
                                      normalise_hist=True),
                         Contribution(folded_gen_hist_bin_reco_binning,
                                      label="Folded particle-level MC",
-                                     line_color=reco_folded_colour, line_width=lw,
-                                     marker_color=reco_folded_colour, marker_size=0,
+                                     line_color=reco_folded_truth_colour, line_width=lw,
+                                     marker_color=reco_folded_truth_colour, marker_size=0,
                                      subplot=reco_bin_hist,
                                      normalise_hist=True),
                     ]
@@ -2681,14 +2650,14 @@ if __name__ == "__main__":
                     folded_gen_hist_bin_reco_binning_div_bin_width = qgp.hist_divide_bin_width(folded_gen_hist_bin_reco_binning)
                     entries = [
                         Contribution(mc_reco_bin_hist_div_bin_width,
-                                     label="MC (reco, bg-subtracted)" if SUBTRACT_FAKES else "MC (reco)",
-                                     line_color=reco_mc_colour, line_width=lw,
-                                     marker_color=reco_mc_colour, marker_size=0,
+                                     label="Unfolding input (bg-subtracted)" if SUBTRACT_FAKES else "Unfolding input",
+                                     line_color=reco_unfolding_input_colour, line_width=lw,
+                                     marker_color=reco_unfolding_input_colour, marker_size=0,
                                      normalise_hist=False),
                         Contribution(folded_gen_hist_bin_reco_binning_div_bin_width,
                                      label="Folded particle-level MC",
-                                     line_color=reco_folded_colour, line_width=lw,
-                                     marker_color=reco_folded_colour, marker_size=0,
+                                     line_color=reco_folded_truth_colour, line_width=lw,
+                                     marker_color=reco_folded_truth_colour, marker_size=0,
                                      subplot=mc_reco_bin_hist_div_bin_width,
                                      normalise_hist=False),
                     ]
