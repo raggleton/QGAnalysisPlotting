@@ -1399,6 +1399,9 @@ if __name__ == "__main__":
                 alt_title = "%s\n%s region, %s, %s response map" % (jet_algo, region['label'], angle_str, region['alt_mc_label'])
                 alt_unfolder_plotter.draw_unfolded_1d(is_data=not args.MCinput, title=alt_title, **alt_plot_args)
 
+                title = "Correlation matrix, %s, %s region, %s, %s response map" % (jet_algo, region['label'], angle_str, region['alt_mc_label'])
+                alt_unfolder_plotter.draw_correlation_matrix(title=title, draw_values=False, **alt_plot_args)
+
                 # Save important stuff to TFile
                 # --------------------------------------------------------------
                 alt_unfolder.save_to_tfile(alt_tdir)
