@@ -333,7 +333,7 @@ class MyUnfolder(object):
         self.distribution = distribution
         self.axisSteering = axisSteering
 
-        self.tunfolder = ROOT.TUnfoldDensity(response_map,
+        self.tunfolder = ROOT.TUnfoldDensity(self.response_map,
                                              self.orientation,
                                              self.regMode,
                                              self.constraintMode,
@@ -347,6 +347,7 @@ class MyUnfolder(object):
         self.use_axis_binning = False  # for things like get_probability_matrix()
 
         # hists that will be assigned later
+        # TODO: change to properties? although still need to cache somewhere
 
         # reco, to be unfolded (data or MC)
         self.input_hist = None
@@ -896,9 +897,9 @@ class MyUnfolder(object):
 
         # Normalise response_matrix so that bins represent prob to go from
         # given gen bin to a reco bin
-        # ASSUMES GEN ON X AXIS!
+        # TODO: is this right?
         norm_by = 'col' if self.orientation == ROOT.TUnfold.kHistMapOutputHoriz else 'row'
-        response_matrix_normed = self.normalise_ndarray(response_matrix, by='col')
+        response_matrix_normed = self.normalise_ndarray(response_matrix, by=norm_by)
 
         # Convert hist to vector
         gen_vec, gen_vec_err = self.th1_to_ndarray(hist_gen, oflow_x=oflow)
