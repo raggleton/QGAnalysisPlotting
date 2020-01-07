@@ -1478,12 +1478,15 @@ if __name__ == "__main__":
                         hist_fakes_syst = hist_fakes_reco_fraction.Clone("hist_fakes_syst_%s" % syst_label_no_spaces)
                         hist_fakes_syst.Multiply(hist_syst_reco)
 
+                    hist_mc_reco_bg_subtracted = hist_syst_reco.Clone()
+                    hist_mc_reco_bg_subtracted.Add(hist_fakes_syst, -1)
+
                     # Set what is to be unfolded
                     # --------------------------------------------------------------
                     syst_unfolder.set_input(input_hist=hist_syst_reco,
                                             hist_truth=hist_syst_gen,
                                             hist_mc_reco=hist_syst_reco,
-                                            hist_mc_reco_bg_subtracted=hist_fakes_syst,
+                                            hist_mc_reco_bg_subtracted=hist_mc_reco_bg_subtracted,
                                             bias_factor=args.biasFactor)
 
                     # Subtract fakes (treat as background)
@@ -1643,12 +1646,15 @@ if __name__ == "__main__":
                         hist_fakes_pdf = hist_fakes_reco_fraction.Clone("hist_fakes_pdf_%s" % pdf_label_no_spaces)
                         hist_fakes_pdf.Multiply(hist_pdf_reco)
 
+                    hist_pdf_reco_bg_subtracted = hist_pdf_reco.Clone()
+                    hist_pdf_reco_bg_subtracted.Add(hist_fakes_pdf, -1)
+
                     # Set what is to be unfolded
                     # --------------------------------------------------------------
                     pdf_unfolder.set_input(input_hist=hist_pdf_reco,
                                            hist_truth=hist_pdf_gen,
                                            hist_mc_reco=hist_pdf_reco,
-                                           hist_mc_reco_bg_subtracted=hist_fakes_pdf,
+                                           hist_mc_reco_bg_subtracted=hist_pdf_reco_bg_subtracted,
                                            bias_factor=args.biasFactor)
 
                     # Subtract fakes (treat as background)
