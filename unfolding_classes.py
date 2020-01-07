@@ -482,9 +482,9 @@ class MyUnfolder(object):
         Also allow other args to be passed to TUnfoldSys::SetInput
         """
         self.input_hist = input_hist.Clone()
-        self.input_hist_bg_subtracted = input_hist.Clone()
-        self.input_hist_gen_binning = input_hist_gen_binning.Clone()
-        self.input_hist_gen_binning_bg_subtracted = input_hist_gen_binning.Clone()
+        self.input_hist_bg_subtracted = input_hist.Clone() if input_hist else None
+        self.input_hist_gen_binning = input_hist_gen_binning.Clone() if input_hist_gen_binning else None
+        self.input_hist_gen_binning_bg_subtracted = input_hist_gen_binning.Clone() if input_hist_gen_binning else None
         self.hist_truth = hist_truth
         self.hist_mc_reco = hist_mc_reco
         self.hist_mc_reco_bg_subtracted = hist_mc_reco_bg_subtracted
