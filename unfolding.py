@@ -1804,6 +1804,7 @@ if __name__ == "__main__":
                     subplot_type='ratio',
                     # subplot_limits=(0.5, 1.5),
                     subplot_limits=(0.75, 1.25),
+                    has_data=not MC_INPUT,
                 )
                 subplot_title = "Unfolded / Gen"
 
