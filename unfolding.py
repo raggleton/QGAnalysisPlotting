@@ -1944,8 +1944,9 @@ if __name__ == "__main__":
                     alt_unfolded_hist_bin_total_errors = alt_unfolder.get_var_hist_pt_binned(alt_unfolder.unfolded, ibin_pt, binning_scheme="generator")
                     this_pt_bin_tdir.WriteTObject(alt_unfolded_hist_bin_total_errors, "alt_unfolded_hist_bin_total_errors")
 
-                    alt_gen_colour = ROOT.kBlack
+                    alt_gen_colour = ROOT.kViolet+1
                     alt_colour = ROOT.kBlue+1
+                    # alt_colour = alt_gen_colour
 
                     entries = [
                         Contribution(mc_gen_hist_bin,
@@ -1955,19 +1956,19 @@ if __name__ == "__main__":
                                      normalise_hist=True),
                         Contribution(alt_mc_gen_hist_bin,
                                      label="Generator (%s)" % (region['alt_mc_label']),
-                                     line_color=alt_gen_colour, line_width=lw,
+                                     line_color=alt_gen_colour, line_width=lw, line_style=2,
                                      marker_color=alt_gen_colour, marker_size=0,
                                      subplot=mc_gen_hist_bin,
                                      normalise_hist=True),
-                        Contribution(unfolded_hist_bin_stat_errors,
-                                     label="Unfolded (#tau = %.3g) (stat err)\n(%s response matrix)" % (tau, region['mc_label']),
-                                     line_color=unfolded_stat_colour, line_width=lw, line_style=2,
-                                     marker_color=unfolded_stat_colour, marker_size=0,
+                        Contribution(unfolded_hist_bin_total_errors,
+                                     label="Unfolded (#tau = %.3g) (total err)\n(%s response matrix)" % (tau, region['mc_label']),
+                                     line_color=unfolded_total_colour, line_width=lw, line_style=1,
+                                     marker_color=unfolded_total_colour, marker_size=0,
                                      subplot=mc_gen_hist_bin,
                                      normalise_hist=True),
                         Contribution(alt_unfolded_hist_bin_total_errors,
-                                     label="Unfolded (#tau = %.3g) (stat err)\n(%s response matrix)" % (alt_unfolder.tau, region['alt_mc_label']),
-                                     line_color=alt_colour, line_width=lw, line_style=3,
+                                     label="Unfolded (#tau = %.3g) (total err)\n(%s response matrix)" % (alt_unfolder.tau, region['alt_mc_label']),
+                                     line_color=alt_colour, line_width=lw, line_style=1,
                                      marker_color=alt_colour, marker_size=0,
                                      subplot=mc_gen_hist_bin,
                                      normalise_hist=True),
@@ -1991,7 +1992,7 @@ if __name__ == "__main__":
                     # Do not use normalise_hist!
                     alt_mc_gen_hist_bin_div_bin_width = qgp.hist_divide_bin_width(alt_mc_gen_hist_bin)
                     alt_unfolded_hist_bin_total_errors_div_bin_width = qgp.hist_divide_bin_width(alt_unfolded_hist_bin_total_errors)
-                    unfolded_hist_bin_stat_errors_div_bin_width = qgp.hist_divide_bin_width(unfolded_hist_bin_stat_errors)
+                    # unfolded_hist_bin_stat_errors_div_bin_width = qgp.hist_divide_bin_width(unfolded_hist_bin_stat_errors)
                     # unfolded_hist_bin_total_errors_div_bin_width = qgp.hist_divide_bin_width(unfolded_hist_bin_total_errors)
 
                     entries = [
@@ -2002,19 +2003,19 @@ if __name__ == "__main__":
                                      normalise_hist=False),
                         Contribution(alt_mc_gen_hist_bin_div_bin_width,
                                      label="Generator (%s)" % (region['alt_mc_label']),
-                                     line_color=alt_gen_colour, line_width=lw,
+                                     line_color=alt_gen_colour, line_width=lw, line_style=2,
                                      marker_color=alt_gen_colour, marker_size=0,
                                      subplot=mc_gen_hist_bin_div_bin_width,
                                      normalise_hist=False),
-                        Contribution(unfolded_hist_bin_stat_errors_div_bin_width,
-                                     label="Unfolded (#tau = %.3g) (stat err)\n(%s response matrix)" % (tau, region['mc_label']),
-                                     line_color=unfolded_stat_colour, line_width=lw, line_style=2,
-                                     marker_color=unfolded_stat_colour, marker_size=0,
+                        Contribution(unfolded_hist_bin_total_errors_div_bin_width,
+                                     label="Unfolded (#tau = %.3g) (total err)\n(%s response matrix)" % (tau, region['mc_label']),
+                                     line_color=unfolded_total_colour, line_width=lw, line_style=1,
+                                     marker_color=unfolded_total_colour, marker_size=0,
                                      subplot=mc_gen_hist_bin_div_bin_width,
                                      normalise_hist=False),
                         Contribution(alt_unfolded_hist_bin_total_errors_div_bin_width,
-                                     label="Unfolded (#tau = %.3g) (stat err)\n(%s response matrix)" % (alt_unfolder.tau, region['alt_mc_label']),
-                                     line_color=alt_colour, line_width=lw, line_style=3,
+                                     label="Unfolded (#tau = %.3g) (total err)\n(%s response matrix)" % (alt_unfolder.tau, region['alt_mc_label']),
+                                     line_color=alt_colour, line_width=lw, line_style=1,
                                      marker_color=alt_colour, marker_size=0,
                                      subplot=mc_gen_hist_bin_div_bin_width,
                                      normalise_hist=False),
@@ -2098,11 +2099,11 @@ if __name__ == "__main__":
                                          marker_color=unfolded_total_colour, marker_style=20, marker_size=0.75,
                                          subplot=mc_gen_hist_bin,
                                          normalise_hist=True),
-                            Contribution(unfolded_hist_bin_stat_errors,
-                                         label="Unfolded (#tau = %.3g) (stat err)" % (tau),
-                                         line_color=unfolded_stat_colour, line_width=lw, line_style=1,
-                                         marker_color=unfolded_stat_colour, marker_size=0,
-                                         normalise_hist=True),
+                            # Contribution(unfolded_hist_bin_stat_errors,
+                            #              label="Unfolded (#tau = %.3g) (stat err)" % (tau),
+                            #              line_color=unfolded_stat_colour, line_width=lw, line_style=1,
+                            #              marker_color=unfolded_stat_colour, marker_size=0,
+                            #              normalise_hist=True),
                         ]
                         entries.extend(syst_entries)
                         if not check_entries(entries, "%s %d" % (append, ibin_pt)):
@@ -2136,11 +2137,11 @@ if __name__ == "__main__":
                                          marker_color=unfolded_total_colour, marker_style=20, marker_size=0.75,
                                          subplot=mc_gen_hist_bin_div_bin_width,
                                          normalise_hist=False),
-                            Contribution(unfolded_hist_bin_stat_errors_div_bin_width,
-                                         label="Unfolded (#tau = %.3g) (stat err)" % (tau),
-                                         line_color=unfolded_stat_colour, line_width=lw, line_style=1,
-                                         marker_color=unfolded_stat_colour, marker_size=0,
-                                         normalise_hist=False),
+                            # Contribution(unfolded_hist_bin_stat_errors_div_bin_width,
+                            #              label="Unfolded (#tau = %.3g) (stat err)" % (tau),
+                            #              line_color=unfolded_stat_colour, line_width=lw, line_style=1,
+                            #              marker_color=unfolded_stat_colour, marker_size=0,
+                            #              normalise_hist=False),
                         ]
                         entries_div_bin_width.extend(syst_entries_div_bin_width)
                         if not check_entries(entries_div_bin_width, "%s %d" % (append, ibin_pt)):
@@ -2154,7 +2155,8 @@ if __name__ == "__main__":
                         plot.legend.SetY1(0.72)
                         plot.legend.SetX2(0.98)
                         plot.legend.SetY2(0.88)
-                        plot.legend.SetNColumns(3)
+                        if len(entries_div_bin_width) > 5:
+                            plot.legend.SetNColumns(2)
                         plot.plot("NOSTACK E1")
                         plot.save("%s/unfolded_%s_syst_model_bin_%d_divBinWidth.%s" % (this_output_dir, append, ibin_pt, OUTPUT_FMT))
 
@@ -2225,11 +2227,11 @@ if __name__ == "__main__":
                                          marker_color=unfolded_total_colour, marker_style=20, marker_size=0.75,
                                          subplot=mc_gen_hist_bin,
                                          normalise_hist=True),
-                            Contribution(unfolded_hist_bin_stat_errors,
-                                         label="Unfolded (#tau = %.3g) (stat err)" % (tau),
-                                         line_color=unfolded_stat_colour, line_width=lw, line_style=1,
-                                         marker_color=unfolded_stat_colour, marker_size=0,
-                                         normalise_hist=True),
+                            # Contribution(unfolded_hist_bin_stat_errors,
+                            #              label="Unfolded (#tau = %.3g) (stat err)" % (tau),
+                            #              line_color=unfolded_stat_colour, line_width=lw, line_style=1,
+                            #              marker_color=unfolded_stat_colour, marker_size=0,
+                            #              normalise_hist=True),
                         ]
                         entries.extend(syst_entries)
                         if not check_entries(entries, "%s %d" % (append, ibin_pt)):
@@ -2263,11 +2265,11 @@ if __name__ == "__main__":
                                          marker_color=unfolded_total_colour, marker_style=20, marker_size=0.75,
                                          subplot=mc_gen_hist_bin_div_bin_width,
                                          normalise_hist=False),
-                            Contribution(unfolded_hist_bin_stat_errors_div_bin_width,
-                                         label="Unfolded (#tau = %.3g) (stat err)" % (tau),
-                                         line_color=unfolded_stat_colour, line_width=lw, line_style=1,
-                                         marker_color=unfolded_stat_colour, marker_size=0,
-                                         normalise_hist=False),
+                            # Contribution(unfolded_hist_bin_stat_errors_div_bin_width,
+                            #              label="Unfolded (#tau = %.3g) (stat err)" % (tau),
+                            #              line_color=unfolded_stat_colour, line_width=lw, line_style=1,
+                            #              marker_color=unfolded_stat_colour, marker_size=0,
+                            #              normalise_hist=False),
                         ]
                         entries_div_bin_width.extend(syst_entries_div_bin_width)
                         if not check_entries(entries_div_bin_width, "%s %d" % (append, ibin_pt)):
