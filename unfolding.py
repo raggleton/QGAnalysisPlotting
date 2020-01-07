@@ -481,6 +481,17 @@ if __name__ == "__main__":
             "tau_limits": tau_limits_central,
             "experimental_systematics": [
                 {
+                    "label": "Charged hadron up",
+                    "tfile": os.path.join(src_dir_systs, 'chargedHadronShiftUp', qgc.QCD_FILENAME),
+                    "colour": ROOT.kAzure+1,
+                },
+                {
+                    "label": "Charged hadron down",
+                    "tfile": os.path.join(src_dir_systs, 'chargedHadronShiftDown', qgc.QCD_FILENAME),
+                    "colour": ROOT.kAzure+1,
+                    "linestyle": 2,
+                },
+                {
                     "label": "Neutral hadron up",
                     "tfile": os.path.join(src_dir_systs, 'neutralHadronShiftUp', qgc.QCD_FILENAME),
                     "colour": ROOT.kOrange-3,
@@ -682,6 +693,17 @@ if __name__ == "__main__":
                 },
             ],
             "experimental_systematics": [
+                {
+                    "label": "Charged hadron up",
+                    "tfile": os.path.join(src_dir_systs, 'chargedHadronShiftUp', qgc.DY_FILENAME),
+                    "colour": ROOT.kAzure+1,
+                },
+                {
+                    "label": "Charged hadron down",
+                    "tfile": os.path.join(src_dir_systs, 'chargedHadronShiftDown', qgc.DY_FILENAME),
+                    "colour": ROOT.kAzure+1,
+                    "linestyle": 2,
+                },
                 {
                     "label": "Luminosity up",
                     "tfile": None,
