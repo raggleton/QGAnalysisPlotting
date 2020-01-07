@@ -409,6 +409,59 @@ if __name__ == "__main__":
 
         input_jetht_tfile = os.path.join(src_dir, qgc.JETHT_ZB_FILENAME)
 
+        # actually these are all pretty similar...
+        tau_limits_central = {
+            'jet_puppiMultiplicity': (1E-9, 1E-6),
+            'jet_pTD': (1E-12, 1E-8),
+            'jet_LHA': (1E-11, 1E-8) if args.regularizeAxis == 'angle' else (1E-13, 1E-10),
+            'jet_width': (1E-12, 1E-8),
+            'jet_thrust': (1E-12, 1E-8),
+            'jet_puppiMultiplicity_charged': (1E-12, 1E-8),
+            'jet_pTD_charged': (1E-12, 1E-8),
+            'jet_LHA_charged': (1E-10, 1E-8),
+            'jet_width_charged': (1E-13, 1E-8),
+            'jet_thrust_charged': (1E-12, 1E-9),
+        }
+
+        tau_limits_central_groomed = {
+            'jet_puppiMultiplicity': (1E-9, 1E-6),
+            'jet_pTD': (1E-12, 1E-8),
+            'jet_LHA': (1E-11, 1E-8) if args.regularizeAxis == 'angle' else (1E-13, 1E-10),
+            'jet_width': (1E-12, 1E-8),
+            'jet_thrust': (1E-12, 1E-8),
+            'jet_puppiMultiplicity_charged': (1E-12, 1E-8),
+            'jet_pTD_charged': (1E-12, 1E-8),
+            'jet_LHA_charged': (1E-10, 1E-8),
+            'jet_width_charged': (1E-13, 1E-8),
+            'jet_thrust_charged': (1E-12, 1E-9),
+        }
+
+        tau_limits_forward = {
+            'jet_puppiMultiplicity': (1E-9, 1E-6),
+            'jet_pTD': (1E-12, 1E-8),
+            'jet_LHA': (1E-11, 1E-8) if args.regularizeAxis == 'angle' else (1E-13, 1E-10),
+            'jet_width': (1E-12, 1E-8),
+            'jet_thrust': (1E-12, 1E-8),
+            'jet_puppiMultiplicity_charged': (1E-12, 1E-8),
+            'jet_pTD_charged': (1E-12, 1E-8),
+            'jet_LHA_charged': (1E-10, 1E-8),
+            'jet_width_charged': (1E-13, 1E-8),
+            'jet_thrust_charged': (1E-12, 1E-9),
+        }
+
+        tau_limits_forward_groomed = {
+            'jet_puppiMultiplicity': (1E-9, 1E-6),
+            'jet_pTD': (1E-12, 1E-8),
+            'jet_LHA': (1E-11, 1E-8) if args.regularizeAxis == 'angle' else (1E-13, 1E-10),
+            'jet_width': (1E-12, 1E-8),
+            'jet_thrust': (1E-12, 1E-8),
+            'jet_puppiMultiplicity_charged': (1E-12, 1E-8),
+            'jet_pTD_charged': (1E-12, 1E-8),
+            'jet_LHA_charged': (1E-10, 1E-8),
+            'jet_width_charged': (1E-13, 1E-8),
+            'jet_thrust_charged': (1E-12, 1E-9),
+        }
+
         dijet_region_dict_template = {
             "name": "Dijet",
             "dirname": "Dijet_QG_Unfold_central_tighter",
@@ -422,20 +475,7 @@ if __name__ == "__main__":
             "alt_mc_label": "Herwig++",
             # "alt_mc_tfile": input_mc_qcd_herwig_tfile_reweight,
             # "alt_mc_label": "Herwig++ (p_{T} reweight)",
-            "tau_limits": {
-                'jet_puppiMultiplicity': (1E-11, 1E-9),
-                'jet_pTD': (1E-13, 1E-10),
-                # 'jet_LHA': (1E-13, 1E-10), # reg angle + pt
-                # 'jet_LHA': (1E-10, 1E-8), # only reg angle
-                'jet_LHA': (1E-10, 1E-8) if args.regularizeAxis == 'angle' else (1E-13, 1E-10),
-                'jet_width': (1E-13, 1E-10),
-                'jet_thrust': (1E-13, 1E-10),
-                'jet_puppiMultiplicity_charged': (1E-13, 1E-10),
-                'jet_pTD_charged': (1E-13, 1E-10),
-                'jet_LHA_charged': (1E-13, 1E-10),
-                'jet_width_charged': (1E-13, 1E-10),
-                'jet_thrust_charged': (1E-13, 1E-10),
-            },
+            "tau_limits": tau_limits_central,
             "experimental_systematics": [
                 {
                     "label": "Neutral hadron up",
@@ -542,6 +582,7 @@ if __name__ == "__main__":
 
         if args.doDijetCentral:
             dijet_region_central_dict = dijet_region_dict_template.copy()
+            dijet_region_central_dict['tau_limits'] = tau_limits_central
             dijet_region_central_dict['dirname'] = 'Dijet_QG_Unfold_central_tighter'
             dijet_region_central_dict['label'] = 'Dijet central'
             dijet_region_central_dict['name'] = 'Dijet_central'
@@ -549,6 +590,7 @@ if __name__ == "__main__":
 
         if args.doDijetForward:
             dijet_region_forward_dict = dijet_region_dict_template.copy()
+            dijet_region_forward_dict['tau_limits'] = tau_limits_forward
             dijet_region_forward_dict['dirname'] = 'Dijet_QG_Unfold_forward_tighter'
             dijet_region_forward_dict['label'] = 'Dijet forward'
             dijet_region_forward_dict['name'] = 'Dijet_forward'
@@ -556,6 +598,7 @@ if __name__ == "__main__":
 
         if args.doDijetCentralGroomed:
             dijet_region_central_groomed_dict = dijet_region_dict_template.copy()
+            dijet_region_central_groomed_dict['tau_limits'] = tau_limits_central_groomed
             dijet_region_central_groomed_dict['dirname'] = 'Dijet_QG_Unfold_central_tighter_groomed'
             dijet_region_central_groomed_dict['label'] = 'Dijet central'
             dijet_region_central_groomed_dict['name'] = 'Dijet_central_groomed'
@@ -563,6 +606,7 @@ if __name__ == "__main__":
 
         if args.doDijetForwardGroomed:
             dijet_region_forward_groomed_dict = dijet_region_dict_template.copy()
+            dijet_region_forward_groomed_dict['tau_limits'] = tau_limits_forward_groomed
             dijet_region_forward_groomed_dict['dirname'] = 'Dijet_QG_Unfold_forward_tighter_groomed'
             dijet_region_forward_groomed_dict['label'] = 'Dijet forward'
             dijet_region_forward_groomed_dict['name'] = 'Dijet_forward_groomed'
@@ -576,6 +620,32 @@ if __name__ == "__main__":
 
         input_singlemu_tfile = os.path.join(src_dir, qgc.SINGLE_MU_FILENAME)
 
+        tau_limits = {
+            'jet_puppiMultiplicity': (1E-5, 1E-2),
+            'jet_pTD': (1E-6, 1E-4),
+            'jet_LHA': (1E-5, 1E-3),
+            'jet_width': (1E-5, 1E-2),
+            'jet_thrust': (1E-6, 1E-2),
+            'jet_puppiMultiplicity_charged': (1E-6, 1E-2),
+            'jet_pTD_charged': (1E-6, 1E-2),
+            'jet_LHA_charged': (1E-5, 1E-2),
+            'jet_width_charged': (1E-6, 1E-3),
+            'jet_thrust_charged': (1E-8, 1E-5),
+        }
+
+        tau_limits_groomed = {
+            'jet_puppiMultiplicity': (1E-5, 1E-2),
+            'jet_pTD': (1E-7, 1E-3),
+            'jet_LHA': (1E-5, 1E-3),
+            'jet_width': (1E-5, 1E-2),
+            'jet_thrust': (1E-6, 1E-2),
+            'jet_puppiMultiplicity_charged': (1E-5, 1E-2),
+            'jet_pTD_charged': (1E-6, 1E-2),
+            'jet_LHA_charged': (1E-5, 1E-2),
+            'jet_width_charged': (1E-6, 1E-3),
+            'jet_thrust_charged': (1E-7, 1E-5),
+        }
+
         zpj_region_dict = {
             "name": "ZPlusJets",
             "dirname": "ZPlusJets_QG_Unfold",
@@ -585,18 +655,7 @@ if __name__ == "__main__":
             "mc_label": "MG+Pythia8",
             "alt_mc_tfile": input_mc_dy_mgherwig_tfile,
             "alt_mc_label": "MG+Herwig++",
-            "tau_limits": {
-                'jet_puppiMultiplicity': (1E-10, 1E-4),
-                'jet_pTD': (1E-10, 1E-4),
-                'jet_LHA': (1E-7, 1E-4),
-                'jet_width': (1E-10, 1E-4),
-                'jet_thrust': (1E-10, 1E-4),
-                'jet_puppiMultiplicity_charged': (1E-10, 1E-4),
-                'jet_pTD_charged': (1E-10, 1E-4),
-                'jet_LHA_charged': (1E-10, 1E-4),
-                'jet_width_charged': (1E-10, 1E-4),
-                'jet_thrust_charged': (1E-10, 1E-4),
-            },
+            "tau_limits": None,
             "backgrounds": [
                 {
                     "name": "t#bar{t}",
@@ -677,10 +736,12 @@ if __name__ == "__main__":
         }
 
         if args.doZPJ:
+            zpj_region_dict['tau_limits'] = tau_limits
             regions.append(zpj_region_dict)
 
         if args.doZPJGroomed:
             zpj_region_groomed_dict = zpj_region_dict.copy()
+            zpj_region_groomed_dict['tau_limits'] = tau_limits_groomed
             zpj_region_groomed_dict['dirname'] = 'ZPlusJets_QG_Unfold_groomed'
             zpj_region_groomed_dict['name'] = 'ZPlusJets_groomed'
             zpj_region_groomed_dict['label'] = 'Z+jets'
