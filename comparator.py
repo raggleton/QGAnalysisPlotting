@@ -407,7 +407,7 @@ class Plot(object):
         container.GetYaxis().SetLabelSize(container.GetYaxis().GetLabelSize()/factor)
         container.GetYaxis().SetTitleSize(container.GetYaxis().GetTitleSize()/factor)
         # magic numbers: 0.1 is the default margin, but scaling against that gives too much, so we knock it down by a bit
-        container.GetYaxis().SetTitleOffset(container.GetYaxis().GetTitleOffset()*factor*(0.85*self.left_margin/0.1))
+        container.GetYaxis().SetTitleOffset(container.GetYaxis().GetTitleOffset()*factor*(0.65*self.left_margin/0.1))
         # container.GetYaxis().SetTickLength(0.03/factor)
 
     def set_logx(self, state=True, do_more_labels=True):
@@ -737,7 +737,7 @@ class Plot(object):
             # If subplot y label is 2 lines, let's scale it down a bit
             if "splitline" in self.subplot_title:
                 self.subplot_container.GetYaxis().SetTitleSize(self.subplot_container.GetYaxis().GetTitleSize()*0.8)
-                self.subplot_container.GetYaxis().SetTitleOffset(self.subplot_container.GetYaxis().GetTitleOffset()*1.2)
+                self.subplot_container.GetYaxis().SetTitleOffset(self.subplot_container.GetYaxis().GetTitleOffset()*1.3)
 
             self.subplot_pad.Update()
             self.canvas.Update()
