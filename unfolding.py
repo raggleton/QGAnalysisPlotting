@@ -1412,6 +1412,7 @@ if __name__ == "__main__":
             # For each model variation, we unfold using the same settings as
             # the nominal one, just changing the input 1D hist
             if args.doModelSysts:
+                syst_entries = []
                 for ind, syst_dict in enumerate(region['model_systematics']):
                     syst_label = syst_dict['label']
                     syst_label_no_spaces = syst_dict['label'].replace(", ", "_").replace(" ", "_").replace("{", "").replace("}", "")
@@ -1572,9 +1573,135 @@ if __name__ == "__main__":
                     syst_title = "%s\n%s region, %s, %s input" % (jet_algo, region['label'], angle_str, syst_label)
                     syst_unfolder_plotter.draw_unfolded_1d(is_data=not args.MCinput, title=syst_title, **syst_plot_args)
 
+
                     # Save important stuff to TFile
                     # --------------------------------------------------------------
                     syst_unfolder.save_to_tfile(syst_tdir)
+
+                    # Do 1D plot of nominal vs syst unfolded
+                    # --------------------------------------------------------------
+                    entries = []
+                    # add nominal
+                    label = 'MC' if MC_INPUT else "data"
+                    entries.append(
+                        Contribution(unfolder.unfolded, label="Unfolded (#tau = %.3g)" % (unfolder.tau),
+                                     line_color=ROOT.kRed, line_width=1,
+                                     marker_color=ROOT.kRed, marker_size=0.6, marker_style=20,
+                                     subplot_line_color=ROOT.kRed, subplot_line_width=1,
+                                     subplot_marker_color=ROOT.kRed, subplot_marker_size=0, subplot_marker_style=20,
+                                     normalise_hist=False, subplot=unfolder.hist_truth),
+                    )
+
+                    entries.append(
+                        Contribution(unfolder.hist_truth, label="Generator",
+                                     line_color=ROOT.kBlue, line_width=1,
+                                     marker_color=ROOT.kBlue, marker_size=0,
+                                     normalise_hist=False),
+                    )
+                    # add systematic
+                    entries.append(
+                        Contribution(syst_unfolder.unfolded, label="Unfolded %s (#tau = %.3g)" % (syst_label, syst_unfolder.tau),
+                                     line_color=syst_dict['colour'], line_width=1,
+                                     marker_color=syst_dict['colour'], marker_size=0.6, marker_style=20+ind+1,
+                                     subplot_line_color=syst_dict['colour'], subplot_line_width=1,
+                                     subplot_marker_color=syst_dict['colour'], subplot_marker_size=0, subplot_marker_style=20,
+                                     normalise_hist=False, subplot=syst_unfolder.hist_truth),
+                    )
+                    syst_entries.append(entries[-1])
+
+                    entries.append(
+                        Contribution(syst_unfolder.hist_truth, label="Generator (%s)" % (syst_label),
+                                     line_color=syst_dict['colour']+2, line_width=1, line_style=1,
+                                     marker_color=syst_dict['colour']+2, marker_size=0,
+                                     normalise_hist=False),
+                    )
+                    syst_entries.append(entries[-1])
+
+                    title = "%s\n%s region, %s, %s input" % (jet_algo, region['label'], angle_str, syst_label)
+                    plot = Plot(entries,
+                                what='hist',
+                                title=title,
+                                xtitle="Generator bin number",
+                                ytitle="N",
+                                subplot_type='ratio',
+                                subplot_title='Unfolded / gen',
+                                subplot_limits=(0, 2),
+                                has_data=not MC_INPUT)
+                    plot.default_canvas_size = (800, 600)
+                    plot.plot("NOSTACK HISTE")
+                    plot.set_logy(do_more_labels=False)
+                    ymax = max([o.GetMaximum() for o in plot.contributions_objs])
+                    plot.container.SetMaximum(ymax * 200)
+                    ymin = max([o.GetMinimum(1E-10) for o in plot.contributions_objs])
+                    plot.container.SetMinimum(ymin*0.01)
+                    l, t = syst_unfolder_plotter.draw_pt_binning_lines(plot, which='gen', axis='x',
+                                                                       do_underflow=True,
+                                                                       do_labels_inside=True,
+                                                                       do_labels_outside=False,
+                                                                       labels_inside_align='lower'
+                                                                       )
+                    plot.legend.SetY1NDC(0.77)
+                    plot.legend.SetY2NDC(0.88)
+                    plot.legend.SetX1NDC(0.65)
+                    plot.legend.SetX2NDC(0.88)
+                    output_filename = "%s/unfolded_1d_modelSyst_%s.%s" % (syst_output_dir, syst_label_no_spaces, syst_unfolder_plotter.output_fmt)
+                    plot.save(output_filename)
+
+
+                # Do big 1D plot of nominal & all systs
+                # --------------------------------------------------------------
+                entries = []
+                # add nominal
+                label = 'MC' if MC_INPUT else "data"
+                entries.append(
+                    Contribution(unfolder.unfolded, label="Unfolded (#tau = %.3g)" % (unfolder.tau),
+                                 line_color=ROOT.kRed, line_width=1,
+                                 marker_color=ROOT.kRed, marker_size=0.6, marker_style=20,
+                                 subplot_line_color=ROOT.kRed, subplot_line_width=1,
+                                 subplot_marker_color=ROOT.kRed, subplot_marker_size=0, subplot_marker_style=20,
+                                 normalise_hist=False, subplot=unfolder.hist_truth),
+                )
+
+                entries.append(
+                    Contribution(unfolder.hist_truth, label="Generator",
+                                 line_color=ROOT.kBlue, line_width=1,
+                                 marker_color=ROOT.kBlue, marker_size=0,
+                                 normalise_hist=False),
+                )
+
+                entries.extend(syst_entries)
+
+                title = "%s\n%s region, %s" % (jet_algo, region['label'], angle_str)
+                plot = Plot(entries,
+                                what='hist',
+                                title=title,
+                                xtitle="Generator bin number",
+                                ytitle="N",
+                                subplot_type='ratio',
+                                subplot_title='Unfolded / gen',
+                                subplot_limits=(0, 2),
+                                has_data=not MC_INPUT)
+                plot.default_canvas_size = (800, 600)
+                plot.plot("NOSTACK HISTE")
+                plot.set_logy(do_more_labels=False)
+                ymax = max([o.GetMaximum() for o in plot.contributions_objs])
+                plot.container.SetMaximum(ymax * 200)
+                ymin = max([o.GetMinimum(1E-10) for o in plot.contributions_objs])
+                plot.container.SetMinimum(ymin*0.01)
+                l, t = syst_unfolder_plotter.draw_pt_binning_lines(plot, which='gen', axis='x',
+                                                                   do_underflow=True,
+                                                                   do_labels_inside=True,
+                                                                   do_labels_outside=False,
+                                                                   labels_inside_align='lower'
+                                                                   )
+                # # plot.container.SetMinimum(0.001)
+                plot.legend.SetY1NDC(0.67)
+                plot.legend.SetY2NDC(0.88)
+                plot.legend.SetX1NDC(0.65)
+                plot.legend.SetX2NDC(0.88)
+                output_filename = "%s/unfolded_1d_modelSyst_%s.%s" % (this_output_dir, append, syst_unfolder_plotter.output_fmt)
+                plot.save(output_filename)
+
 
             # ------------------------------------------------------------------
             # DO PDF VARIATIONS
