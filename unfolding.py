@@ -30,7 +30,9 @@ ROOT.gErrorIgnoreLevel = ROOT.kWarning
 import common_utils as cu
 import qg_common as qgc
 import qg_general_plots as qgp
-from unfolding_classes import TauScanner, LCurveScanner, MyUnfolder, MyUnfolderPlotter
+from my_unfolder import MyUnfolder
+from my_unfolder_plotter import MyUnfolderPlotter
+from unfolding_regularisation_classes import TauScanner, LCurveScanner
 
 
 ROOT.PyConfig.IgnoreCommandLineOptions = True
