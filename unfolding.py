@@ -381,7 +381,9 @@ if __name__ == "__main__":
         raise RuntimeError("You cannot do both model systs and run on data")
 
     if args.MCinput and args.subtractBackgrounds:
-        print("Cannot subtract backgrounds while using MC input, ignoring for now")
+        print("")
+        print("!!!! Cannot subtract backgrounds while using MC input, ignoring for now")
+        print("")
         args.subtractBackgrounds = False
 
     # if args.useAltResponse and args.doExperimentalSysts:
@@ -403,9 +405,9 @@ if __name__ == "__main__":
     if any([args.doDijetCentral, args.doDijetForward, args.doDijetCentralGroomed, args.doDijetForwardGroomed]):
         # FOR DIJET:
         input_mc_qcd_mgpythia_tfile = os.path.join(src_dir, qgc.QCD_FILENAME)
-        # input_mc_qcd_pythia_tfile = cu.open_root_file(os.path.join(src_dir, qgc.QCD_PYTHIA_ONLY_FILENAME))
+        input_mc_qcd_pythia_tfile = cu.open_root_file(os.path.join(src_dir, qgc.QCD_PYTHIA_ONLY_FILENAME))
         input_mc_qcd_herwig_tfile = os.path.join(src_dir, qgc.QCD_HERWIG_FILENAME)
-        # input_mc_qcd_herwig_tfile_reweight = os.path.join(src_dir, "uhh2.AnalysisModuleRunner.MC.MC_HERWIG_QCD_PtReweight.root")
+        input_mc_qcd_herwig_tfile_reweight = os.path.join(src_dir, "uhh2.AnalysisModuleRunner.MC.MC_HERWIG_QCD_PtReweight.root")
 
         input_jetht_tfile = os.path.join(src_dir, qgc.JETHT_ZB_FILENAME)
 
@@ -901,9 +903,9 @@ if __name__ == "__main__":
                 this_angle_name = this_angle_name[0].lower() + this_angle_name[1:]
             angle_str = "%s%s (%s)" % (angle_prepend, this_angle_name, angle.lambda_str)
 
-            print("*"*80)
+            print("*"*120)
             print("Region/var: %s" % (append))
-            print("*"*80)
+            print("*"*120)
 
             # put plots in subdir, to avoid overcrowding
             this_output_dir = "%s/%s/%s" % (output_dir, region['name'], angle.var)
@@ -1295,7 +1297,10 @@ if __name__ == "__main__":
             alt_hist_mc_gen = None  # mc truth of the generator used to make reponse matrix
             alt_unfolder = None
             if args.useAltResponse:
+                print("*" * 80)
                 print("*** Unfolding with alternate response matrix ***")
+                print("*" * 80)
+
                 if not isinstance(region['alt_mc_tfile'], ROOT.TFile):
                     region['alt_mc_tfile'] = cu.open_root_file(region['alt_mc_tfile'])
                 alt_hist_mc_gen = cu.get_from_tfile(region['alt_mc_tfile'], "%s/hist_%s_truth_all" % (region['dirname'], angle_shortname))
@@ -1406,9 +1411,12 @@ if __name__ == "__main__":
             if args.doModelSysts:
                 for ind, syst_dict in enumerate(region['model_systematics']):
                     syst_label = syst_dict['label']
-                    syst_label_no_spaces = syst_dict['label'].replace(", ", "_").replace(" ", "_")
+                    syst_label_no_spaces = syst_dict['label'].replace(", ", "_").replace(" ", "_").replace("{", "").replace("}", "")
 
+                    print("*" * 80)
                     print("*** Unfolding with alternate input:", syst_label, "(%d/%d) ***" % (ind+1, len(region['model_systematics'])))
+                    print("*" * 80)
+
                     is_herwig = "Herwig" in syst_label
 
                     mc_hname_append = "split" if MC_SPLIT else "all"
@@ -1596,7 +1604,9 @@ if __name__ == "__main__":
                     if pdf_label.startswith("_"):
                         continue
 
+                    print("*" * 80)
                     print("*** Unfolding with alternate input:", pdf_label, "(%d/%d) ***" % (ind+1, len(region['pdf_systematics'])))
+                    print("*" * 80)
 
                     hist_pdf_reco = pdf_dict['hist_reco']
                     hist_pdf_gen = pdf_dict['hist_gen']
