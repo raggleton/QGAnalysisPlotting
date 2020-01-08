@@ -1084,3 +1084,12 @@ def hist_divide_bin_width(h):
     return h_new
 
 
+def normalise_hist_divide_bin_width(h):
+    """Create copy of hist, but each bin's contents is divide by the bin width"""
+    h_new = h.Clone(h.GetName()+"DivideBinWidth")
+    normalise_hist(h_new)
+    h_new.Scale(1., 'width')
+    h_new.SetEntries(h.GetEntries())  # needed as the default is to replace with integral
+    return h_new
+
+
