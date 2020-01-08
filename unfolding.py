@@ -1336,8 +1336,20 @@ if __name__ == "__main__":
             title = "Error matrix (input), %s, %s region, %s" % (jet_algo, region['label'], angle_str)
             unfolder_plotter.draw_error_matrix_input(title=title, **plot_args)
 
-            title = "Error matrix (sys uncorr), %s, %s region, %s" % (jet_algo, region['label'], angle_str)
-            unfolder_plotter.draw_error_matrix_sys_uncorr(title=title, **plot_args)
+            title = "Error matrix (statistical input + backgrounds), %s, %s region, %s" % (jet_algo, region['label'], angle_str)
+            unfolder_plotter.draw_error_matrix_stat(title=title, **plot_args)
+
+            title = "Error matrix (stat. response matrix), %s, %s region, %s" % (jet_algo, region['label'], angle_str)
+            unfolder_plotter.draw_error_matrix_stat_response(title=title, **plot_args)
+
+            if args.doExperimentalSysts:
+                for syst_dict in region['experimental_systematics']:
+                    title = "Error matrix (%s systematic), %s, %s region, %s" % (syst_dict['label'], jet_algo, region['label'], angle_str)
+                    unfolder_plotter.draw_error_matrix_syst(syst_dict['label'], title=title, **plot_args)
+
+            if REGULARIZE != "None":
+                title = "Error matrix (tau), %s, %s region, %s" % (jet_algo, region['label'], angle_str)
+                unfolder_plotter.draw_error_matrix_tau(title=title, **plot_args)
 
             title = "Error matrix (total), %s, %s region, %s" % (jet_algo, region['label'], angle_str)
             unfolder_plotter.draw_error_matrix_total(title=title, **plot_args)
@@ -1463,6 +1475,12 @@ if __name__ == "__main__":
 
                 title = "Correlation matrix, %s, %s region, %s, %s response map" % (jet_algo, region['label'], angle_str, region['alt_mc_label'])
                 alt_unfolder_plotter.draw_correlation_matrix(title=title, draw_values=False, **alt_plot_args)
+
+                title = "Error matrix (statistical input + backgrounds), %s, %s region, %s, %s response map" % (jet_algo, region['label'], angle_str, region['alt_mc_label'])
+                alt_unfolder_plotter.draw_error_matrix_stat(title=title, **alt_plot_args)
+
+                title = "Error matrix (total), %s, %s region, %s, %s response map" % (jet_algo, region['label'], angle_str, region['alt_mc_label'])
+                alt_unfolder_plotter.draw_error_matrix_total(title=title, **alt_plot_args)
 
                 # Save important stuff to TFile
                 # --------------------------------------------------------------

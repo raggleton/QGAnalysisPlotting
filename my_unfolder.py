@@ -159,6 +159,7 @@ class MyUnfolder(object):
         self.syst_maps = {}  # gets filled with add_sys_error()
         self.syst_shifts = {}  # gets filled with get_sys_shift(), just shift in unfolded value from specific syst
         self.systs_shifted = {}  # gets filled with get_syst_shifted_hist(), holds total unfolded with syst shift
+        self.syst_ematrices = {}  # gets filled with get_ematrix_syst(), holds ematrix for each systeamtic
 
         # use "generator" for signal + underflow region, "generatordistribution" for only signal region
         self.output_distribution_name = "generator"
@@ -220,20 +221,25 @@ class MyUnfolder(object):
         for name, hist in self.backgrounds_gen_binning.items():
             self._check_save_to_tfile(tfile, hist, "background_gen_binning_%s" % name.replace(" ", "_"))
 
-        # save error matrices
-        self._check_save_to_tfile(tfile, self.ematrix_input, "ematrix_input")
-        self._check_save_to_tfile(tfile, self.ematrix_sys_uncorr, "ematrix_sys_uncorr")
-        self._check_save_to_tfile(tfile, self.ematrix_total, "ematrix_total")
-        self._check_save_to_tfile(tfile, self.ematrix_stat_sum, "ematrix_stat_sum")
-
         # save other matrices
         self._check_save_to_tfile(tfile, self.rhoij_total, "rhoij_total")
         # self._check_save_to_tfile(tfile, self.covariance_matrix, "covariance_matrix")
         self._check_save_to_tfile(tfile, self.probability_matrix, "probability_matrix")
 
+        # save error matrices
+        self._check_save_to_tfile(tfile, self.ematrix_input, "ematrix_input")
+        self._check_save_to_tfile(tfile, self.ematrix_stat_response, "ematrix_stat_response")
+        self._check_save_to_tfile(tfile, self.ematrix_stat, "ematrix_stat")
+        self._check_save_to_tfile(tfile, self.ematrix_tau, "ematrix_tau")
+        self._check_save_to_tfile(tfile, self.ematrix_total, "ematrix_total")
+
         # save systematic response matrices
         for name, syst_map in self.syst_maps.items():
             self._check_save_to_tfile(tfile, syst_map, "syst_map_%s" % name.replace(" ", "_"))
+
+        # save systematic error matrices
+        for name, syst_ematrix in self.syst_ematrices.items():
+            self._check_save_to_tfile(tfile, syst_ematrix, "syst_ematrix_%s" % name.replace(" ", "_"))
 
         # save systematic shifts
         for name, syst_shift in self.syst_shifts.items():
@@ -327,6 +333,7 @@ class MyUnfolder(object):
         self.tunfolder.AddSysError(map_syst, name, self.orientation, ROOT.TUnfoldDensity.kSysErrModeMatrix)
         self.syst_shifts[name] = None  # setup for get_delta_sys_shift
         self.systs_shifted[name] = None  # setup for get_syst_shifted_hist
+        self.syst_ematrices[name] = None  # setup for get_ematrix_syst
 
     def get_delta_sys_shift(self, syst_label):
         """Get shift in result due to a particular systeamtic
@@ -359,7 +366,7 @@ class MyUnfolder(object):
             self.systs_shifted[syst_label] = hist_shift
         return self.systs_shifted[syst_label]
 
-    def get_output(self, hist_name='unfolded', update_with_ematrix_total=False):
+    def get_output(self, hist_name='unfolded'):
         """Get 1D unfolded histogram covering all bins"""
         print("Ndf:", self.tunfolder.GetNdf())
         self.Ndf = self.tunfolder.GetNdf()
@@ -372,18 +379,15 @@ class MyUnfolder(object):
         print("chi2L:", self.tunfolder.GetChi2L())
         self.chi2L = self.tunfolder.GetChi2L()
 
-        # print("( " + str(self.tunfolder.GetChi2A()) + " + " + str(self.tunfolder.GetChi2L()) + ") / " + str(self.tunfolder.GetNdf()))
-
         self.unfolded = self.tunfolder.GetOutput(hist_name, "", self.output_distribution_name, "*[]", self.use_axis_binning)
-        # if update_with_ematrix_total:
-        #     self.update_unfolded_with_ematrix_total()
         return self.unfolded
 
     def _post_process(self):
         """Do some standard things & store various things that are done after unfolding"""
         self.get_ematrix_input()
-        self.get_ematrix_sys_uncorr()
+        self.get_ematrix_stat_response()
         self.get_ematrix_stat()
+        self.get_ematrix_tau()
         self.get_ematrix_total()
         self.get_rhoij_total()
         self.get_probability_matrix()
@@ -393,6 +397,7 @@ class MyUnfolder(object):
         self.get_folded_mc_truth()
         for syst_label in self.syst_shifts.keys():
             self.get_delta_sys_shift(syst_label)
+            self.get_ematrix_syst(syst_label)
 
     @staticmethod
     def make_hist_from_diagonal_errors(h2d, do_sqrt=True):
@@ -414,8 +419,7 @@ class MyUnfolder(object):
 
     def update_unfolded_with_ematrix_total(self):
         """Update unfolded hist with total errors from total error matrix"""
-        ematrix_total = self.get_ematrix_total()
-        error_total_1d = self.make_hist_from_diagonal_errors(ematrix_total, do_sqrt=True) # note that bin contents = 0, only bin errors are non-0
+        error_total_1d = self.make_hist_from_diagonal_errors(self.get_ematrix_total(), do_sqrt=True) # note that bin contents = 0, only bin errors are non-0
         self.update_hist_bin_error(h_orig=error_total_1d, h_to_be_updated=self.unfolded)
 
     def get_unfolded_with_ematrix_stat(self):
@@ -432,25 +436,62 @@ class MyUnfolder(object):
         return self.bias_vector
 
     def get_ematrix_input(self):
+        """Get error matrix due to statistics from thing being unfolded"""
         if getattr(self, "ematrix_input", None) is None:
             self.ematrix_input = self.tunfolder.GetEmatrixInput("ematrix_input_"+cu.get_unique_str(), "", "generator", "*[]", self.use_axis_binning)
         return self.ematrix_input
 
-    def get_ematrix_sys_uncorr(self):
-        if getattr(self, "ematrix_sys_uncorr", None) is None:
-            self.ematrix_sys_uncorr = self.tunfolder.GetEmatrixSysUncorr("ematrix_sys_uncorr_"+cu.get_unique_str(), "", "generator", "*[]", self.use_axis_binning)
-        return self.ematrix_sys_uncorr
+    def get_ematrix_stat_response(self):
+        """Statistical uncertainty error matrix from response matrix, should be considered a systematic uncert"""
+        if getattr(self, "ematrix_stat_response", None) is None:
+            self.ematrix_stat_response = self.tunfolder.GetEmatrixSysUncorr("ematrix_stat_response_"+cu.get_unique_str(), "", "generator", "*[]", self.use_axis_binning)
+        return self.ematrix_stat_response
 
     def get_ematrix_total(self):
+        """Total error matrix, from stat+systs"""
         if getattr(self, "ematrix_total", None) is None:
             self.ematrix_total = self.tunfolder.GetEmatrixTotal("ematrix_total_"+cu.get_unique_str(), "", "generator", "*[]", self.use_axis_binning)
         return self.ematrix_total
 
     def get_ematrix_stat(self):
+        """Get total statitical error matrix (from input being unfolded + background sources, including fakes)"""
         if getattr(self, 'ematrix_stat', None) is None:
-            self.ematrix_stat_sum = self.get_ematrix_input().Clone("ematrix_stat_sum")
-            self.ematrix_stat_sum.Add(self.get_ematrix_sys_uncorr()) # total 'stat' errors
-        return self.ematrix_stat_sum
+            # Have to manually create hist first, awkward
+            this_binning = self.generator_binning.FindNode('generator')
+            # I cannot figure out how to make the int** object for bin_map
+            # So we are trusting that the default args for title and axisSteering are correct
+            # Gnahhhhhhh
+            self.ematrix_stat = this_binning.CreateErrorMatrixHistogram("ematrix_stat_"+cu.get_unique_str(), self.use_axis_binning) #, bin_map, "", "*[]")
+            self.tunfolder.GetEmatrix(self.ematrix_stat)
+        return self.ematrix_stat
+
+    def get_ematrix_syst(self, syst_label):
+        """Get error matrix from a systematic source"""
+        if syst_label not in self.syst_shifts:
+            raise KeyError("No systematic %s, only have: %s" % (syst_label, ", ".join(self.syst_shifts.keys())))
+        if self.syst_ematrices[syst_label] is None:
+            # Have to manually create hist first, awkward
+            this_binning = self.generator_binning.FindNode('generator')
+            # I cannot figure out how to make the int** object for bin_map
+            # So we are trusting that the default args for title and axisSteering are correct
+            # Gnahhhhhhh
+            syst_label_no_spaces = syst_label.replace(" ", "_")
+            hist = this_binning.CreateErrorMatrixHistogram("ematrix_syst_%s_%s" % (syst_label_no_spaces, cu.get_unique_str()), self.use_axis_binning) #, bin_map, "", "*[]")
+            self.tunfolder.GetEmatrixSysSource(hist, syst_label)
+            self.syst_ematrices[syst_label] = hist
+        return self.syst_ematrices[syst_label]
+
+    def get_ematrix_tau(self):
+        """Get error matrix due to regularisation uncertainty"""
+        if getattr(self, 'ematrix_tau', None) is None:
+            # Have to manually create hist first, awkward
+            this_binning = self.generator_binning.FindNode('generator')
+            # I cannot figure out how to make the int** object for bin_map
+            # So we are trusting that the default args for title and axisSteering are correct
+            # Gnahhhhhhh
+            self.ematrix_tau = this_binning.CreateErrorMatrixHistogram("ematrix_tau_"+cu.get_unique_str(), self.use_axis_binning) #, bin_map, "", "*[]")
+            self.tunfolder.GetEmatrixSysTau(self.ematrix_tau)
+        return self.ematrix_tau
 
     def get_rhoij_total(self):
         if getattr(self, "rhoij_total", None) is None:

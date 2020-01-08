@@ -176,7 +176,7 @@ class MyUnfolderPlotter(object):
 
     # TODO: generalise to some "draw_2d_hist()"?
     def draw_error_matrix_input(self, output_dir='.', append="", title=""):
-        output_filename = "%s/err_map_sys_input_%s.%s" % (output_dir, append, self.output_fmt)
+        output_filename = "%s/err_map_stat_input_%s.%s" % (output_dir, append, self.output_fmt)
         self.draw_2d_hist(self.unfolder.get_ematrix_input(),
                           title=title,
                           output_filename=output_filename,
@@ -184,9 +184,37 @@ class MyUnfolderPlotter(object):
                           draw_bin_lines_y=True,
                           canvas_size=(800, 700))
 
-    def draw_error_matrix_sys_uncorr(self, output_dir='.', append="", title=""):
-        output_filename = "%s/err_map_sys_uncorr_%s.%s" % (output_dir, append, self.output_fmt)
-        self.draw_2d_hist(self.unfolder.get_ematrix_sys_uncorr(),
+    def draw_error_matrix_stat(self, output_dir='.', append="", title=""):
+        output_filename = "%s/err_map_stat_%s.%s" % (output_dir, append, self.output_fmt)
+        self.draw_2d_hist(self.unfolder.get_ematrix_stat(),
+                          title=title,
+                          output_filename=output_filename,
+                          draw_bin_lines_x=True,
+                          draw_bin_lines_y=True,
+                          canvas_size=(800, 700))
+
+    def draw_error_matrix_stat_response(self, output_dir='.', append="", title=""):
+        output_filename = "%s/err_map_stat_response_%s.%s" % (output_dir, append, self.output_fmt)
+        self.draw_2d_hist(self.unfolder.get_ematrix_stat_response(),
+                          title=title,
+                          output_filename=output_filename,
+                          draw_bin_lines_x=True,
+                          draw_bin_lines_y=True,
+                          canvas_size=(800, 700))
+
+    def draw_error_matrix_tau(self, output_dir='.', append="", title=""):
+        output_filename = "%s/err_map_tau_%s.%s" % (output_dir, append, self.output_fmt)
+        self.draw_2d_hist(self.unfolder.get_ematrix_tau(),
+                          title=title,
+                          output_filename=output_filename,
+                          draw_bin_lines_x=True,
+                          draw_bin_lines_y=True,
+                          canvas_size=(800, 700))
+
+    def draw_error_matrix_syst(self, syst_label, output_dir='.', append="", title=""):
+        syst_label_no_spaces = syst_label.replace(" ", "_")
+        output_filename = "%s/err_map_syst_%s_%s.%s" % (output_dir, syst_label_no_spaces, append, self.output_fmt)
+        self.draw_2d_hist(self.unfolder.get_ematrix_syst(syst_label),
                           title=title,
                           output_filename=output_filename,
                           draw_bin_lines_x=True,
