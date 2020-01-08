@@ -146,7 +146,10 @@ class MyUnfolderPlotter(object):
         self.draw_2d_hist(self.unfolder.response_map,
                           title=title,
                           output_filename=output_filename,
-                          xtitle='Generator bin', ytitle='Detector bin')
+                          xtitle='Generator bin', ytitle='Detector bin',
+                          draw_bin_lines_x=True,
+                          draw_bin_lines_y=True,
+                          canvas_size=(800, 700))
 
     def draw_covariance_matrix(self, output_dir='.', append="", title=""):
         output_filename = "%s/covariance_map_%s.%s" % (output_dir, append, self.output_fmt)
