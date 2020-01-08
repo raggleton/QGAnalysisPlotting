@@ -2220,6 +2220,50 @@ if __name__ == "__main__":
                     plot.plot("NOSTACK E1")
                     plot.save("%s/unfolded_%s_alt_response_bin_%d_divBinWidth.%s" % (this_output_dir, append, ibin_pt, OUTPUT_FMT))
 
+                    # Do another, but ratio to norminal MC
+                    entries = [
+                        Contribution(mc_gen_hist_bin_div_bin_width,
+                                     label="Generator (%s)" % (region['mc_label']),
+                                     line_color=gen_colour, line_width=lw,
+                                     marker_color=gen_colour, marker_size=0,
+                                     normalise_hist=False),
+                        Contribution(alt_mc_gen_hist_bin_div_bin_width,
+                                     label="Generator (%s)" % (region['alt_mc_label']),
+                                     line_color=alt_gen_colour, line_width=lw, line_style=2,
+                                     marker_color=alt_gen_colour, marker_size=0,
+                                     subplot=mc_gen_hist_bin_div_bin_width,
+                                     normalise_hist=False),
+                        Contribution(unfolded_hist_bin_stat_errors_div_bin_width,
+                                     label="Unfolded (#tau = %.3g) (stat err)\n(%s response matrix)" % (tau, region['mc_label']),
+                                     line_color=unfolded_stat_colour, line_width=lw, line_style=1,
+                                     marker_color=unfolded_stat_colour, marker_size=0,
+                                     normalise_hist=False),
+                        # Contribution(unfolded_hist_bin_total_errors_div_bin_width,
+                        #              label="Unfolded (#tau = %.3g) (total err)\n(%s response matrix)" % (tau, region['mc_label']),
+                        #              line_color=unfolded_total_colour, line_width=lw, line_style=1,
+                        #              marker_color=unfolded_total_colour, marker_size=0,
+                        #              normalise_hist=False),
+                        Contribution(alt_unfolded_hist_bin_total_errors_div_bin_width,
+                                     label="Unfolded (#tau = %.3g) (total err)\n(%s response matrix)" % (alt_unfolder.tau, region['alt_mc_label']),
+                                     line_color=alt_colour, line_width=lw, line_style=1,
+                                     marker_color=alt_colour, marker_size=0,
+                                     subplot=unfolded_hist_bin_stat_errors_div_bin_width,
+                                     normalise_hist=False),
+                    ]
+                    if not check_entries(entries, "%s %d" % (append, ibin_pt)):
+                        continue
+                    plot = Plot(entries,
+                                xtitle=particle_title,
+                                ytitle=normalised_differential_label,
+                                subplot_title='#splitline{%s /}{%s}' % (region['alt_mc_label'], region['mc_label']),
+                                **common_hist_args)
+                    plot.legend.SetX1(0.55)
+                    plot.legend.SetY1(0.72)
+                    plot.legend.SetX2(0.98)
+                    plot.legend.SetY2(0.88)
+                    plot.plot("NOSTACK E1")
+                    plot.save("%s/unfolded_%s_alt_response_ratio_alt_bin_%d_divBinWidth.%s" % (this_output_dir, append, ibin_pt, OUTPUT_FMT))
+
                 # Unfolded plots with variations in input model systematics plotted
                 # --------------------------------------------------------------
                 if args.doModelSysts:
