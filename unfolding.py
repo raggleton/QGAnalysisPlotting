@@ -239,16 +239,16 @@ def plot_uncertainty_shifts(total_hist, stat_hist, systs_shifted, systs, output_
         entries.append(c)
 
     # Create total and stat error hists
-    h_syst = stat_hist_div_bin_width.Clone()
+    h_stat = stat_hist_div_bin_width.Clone()
     h_total = total_hist_div_bin_width.Clone()
-    for i in range(1, h_syst.GetNbinsX()+1):
+    for i in range(1, h_stat.GetNbinsX()+1):
         if total_hist_div_bin_width.GetBinContent(i) > 0:
-            h_syst.SetBinContent(i, stat_hist_div_bin_width.GetBinError(i) / total_hist_div_bin_width.GetBinContent(i))
+            h_stat.SetBinContent(i, stat_hist_div_bin_width.GetBinError(i) / total_hist_div_bin_width.GetBinContent(i))
             h_total.SetBinContent(i, total_hist_div_bin_width.GetBinError(i) / total_hist_div_bin_width.GetBinContent(i))
         else:
-            h_syst.SetBinContent(i, 0)
+            h_stat.SetBinContent(i, 0)
             h_total.SetBinContent(i, 0)
-        h_syst.SetBinError(i, 0)
+        h_stat.SetBinError(i, 0)
         h_total.SetBinError(i, 0)
     c_stat = Contribution(h_syst,
                          label="Stat.",
@@ -2211,12 +2211,18 @@ if __name__ == "__main__":
                                      marker_color=alt_gen_colour, marker_size=0,
                                      subplot=mc_gen_hist_bin_div_bin_width,
                                      normalise_hist=False),
-                        Contribution(unfolded_hist_bin_total_errors_div_bin_width,
-                                     label="Unfolded (#tau = %.3g) (total err)\n(%s response matrix)" % (tau, region['mc_label']),
-                                     line_color=unfolded_total_colour, line_width=lw, line_style=1,
-                                     marker_color=unfolded_total_colour, marker_size=0,
+                        Contribution(unfolded_hist_bin_stat_errors_div_bin_width,
+                                     label="Unfolded (#tau = %.3g) (stat err)\n(%s response matrix)" % (tau, region['mc_label']),
+                                     line_color=unfolded_stat_colour, line_width=lw, line_style=1,
+                                     marker_color=unfolded_stat_colour, marker_size=0,
                                      subplot=mc_gen_hist_bin_div_bin_width,
                                      normalise_hist=False),
+                        # Contribution(unfolded_hist_bin_total_errors_div_bin_width,
+                        #              label="Unfolded (#tau = %.3g) (total err)\n(%s response matrix)" % (tau, region['mc_label']),
+                        #              line_color=unfolded_total_colour, line_width=lw, line_style=1,
+                        #              marker_color=unfolded_total_colour, marker_size=0,
+                        #              subplot=mc_gen_hist_bin_div_bin_width,
+                        #              normalise_hist=False),
                         Contribution(alt_unfolded_hist_bin_total_errors_div_bin_width,
                                      label="Unfolded (#tau = %.3g) (total err)\n(%s response matrix)" % (alt_unfolder.tau, region['alt_mc_label']),
                                      line_color=alt_colour, line_width=lw, line_style=1,
