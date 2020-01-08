@@ -1343,9 +1343,6 @@ if __name__ == "__main__":
                 title = "%s\n%s region, %s" % (jet_algo, region['label'], angle_str)
                 unfolder_plotter.draw_truth_folded(title=title, **plot_args)
 
-            # Save everything to TFile
-            unfolder.save_to_tfile(this_tdir)
-
             # ------------------------------------------------------------------
             # UNFOLDING WITH ALTERNATIVE RESPONSE MATRIX
             # ------------------------------------------------------------------
@@ -3008,5 +3005,9 @@ if __name__ == "__main__":
                                              var_label=var_label,
                                              xlim=xlim,
                                              region_title=region_label)
+
+
+            # Save everything to TFile
+            unfolder.save_to_tfile(this_tdir)
 
     print("Saved hists to", output_tfile.GetName())
