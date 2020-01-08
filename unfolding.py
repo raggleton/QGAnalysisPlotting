@@ -281,13 +281,14 @@ def plot_uncertainty_shifts(total_hist, stat_hist, systs_shifted, systs, output_
     plot.legend.SetX2(0.98)
     plot.legend.SetY2(0.88)
     plot.legend.SetNColumns(2)
-    plot.left_margin = 0.15
+    plot.left_margin = 0.18
     plot.y_padding_max_linear = 1.4
     plot.plot("NOSTACK HIST")
     plot.save(output_filename)
 
     plot.y_padding_max_log = 50
     plot.set_logy()
+    plot.get_modifier().SetMinimum(1E-4)
     log_filename, ext = os.path.splitext(output_filename)
     plot.save(log_filename+"_log"+ext)
 
