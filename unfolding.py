@@ -1097,16 +1097,26 @@ if __name__ == "__main__":
                         for xbin, ybin in product(range(1, rel_map.GetNbinsX()+1), range(1, rel_map.GetNbinsY()+1)):
                             rel_map.SetBinContent(xbin, ybin, syst_dict['factor'])
                             rel_map.SetBinError(xbin, ybin, 0)
-                        # unfolder.tunfolder.AddSysError(rel_map, syst_dict['label'], unfolder.orientation, ROOT.TUnfoldDensity.kSysErrModeRelative)
                         unfolder.add_sys_error(rel_map, syst_dict['label'], ROOT.TUnfoldDensity.kSysErrModeRelative)
+
+                    # elif 'herwig' in syst_dict['label'].lower():
+                    #     if not isinstance(syst_dict['tfile'], ROOT.TFile):
+                    #         syst_dict['tfile'] = cu.open_root_file(syst_dict['tfile'])
+                    #     map_syst = cu.get_from_tfile(syst_dict['tfile'], "%s/tu_%s_GenReco_all" % (region['dirname'], angle_shortname))
+                    #     map_syst.Scale(unfolder.response_map.Integral() / map_syst.Integral())
+                    #     # map_syst.Add(unfolder.response_map, -1)
+                    #     # map_syst.Divide(unfolder.response_map)
+                    #     print("    syst bin", chosen_rsp_bin, map_syst.GetBinContent(*chosen_rsp_bin))
+                    #     unfolder.add_sys_error(map_syst, syst_dict['label'], ROOT.TUnfoldDensity.kSysErrModeMatrix)
+
                     else:
                         if not isinstance(syst_dict['tfile'], ROOT.TFile):
                             syst_dict['tfile'] = cu.open_root_file(syst_dict['tfile'])
                         map_syst = cu.get_from_tfile(syst_dict['tfile'], "%s/tu_%s_GenReco_all" % (region['dirname'], angle_shortname))
                         print("    syst bin", chosen_rsp_bin, map_syst.GetBinContent(*chosen_rsp_bin))
-                        # unfolder.tunfolder.AddSysError(map_syst, syst_dict['label'], unfolder.orientation, ROOT.TUnfoldDensity.kSysErrModeMatrix)
                         unfolder.add_sys_error(map_syst, syst_dict['label'], ROOT.TUnfoldDensity.kSysErrModeMatrix)
 
+                    # Plot the reponse matrix for this systematic
                     syst_label_no_spaces = syst_dict['label'].replace(" ", "_")
                     output_filename = "%s/response_map_syst_%s_%s.%s" % (this_output_dir, syst_label_no_spaces, append, unfolder_plotter.output_fmt)
                     title = "%s\n%s region, %s, %s" % (jet_algo, region['label'], angle_str, syst_dict['label'])
@@ -1568,7 +1578,6 @@ if __name__ == "__main__":
                             map_syst = cu.get_from_tfile(exp_dict['tfile'], "%s/tu_%s_GenReco_all" % (region['dirname'], angle_shortname))
                             print("Adding systematic:", exp_dict['label'])
                             print("    syst bin", chosen_rsp_bin, map_syst.GetBinContent(*chosen_rsp_bin))
-                            # syst_unfolder.tunfolder.AddSysError(map_syst, exp_dict['label'], syst_unfolder.orientation, ROOT.TUnfoldDensity.kSysErrModeMatrix)
                             syst_unfolder.add_sys_error(map_syst, exp_dict['label'], ROOT.TUnfoldDensity.kSysErrModeMatrix)
 
 
@@ -1864,14 +1873,12 @@ if __name__ == "__main__":
                                 for xbin, ybin in product(range(1, rel_map.GetNbinsX()+1), range(1, rel_map.GetNbinsY()+1)):
                                     rel_map.SetBinContent(xbin, ybin, exp_dict['factor'])
                                     rel_map.SetBinError(xbin, ybin, 0)
-                                # pdf_unfolder.tunfolder.AddSysError(rel_map, exp_dict['label'], ROOT.TUnfold.kHistMapOutputHoriz, ROOT.TUnfoldDensity.kSysErrModeRelative)
                                 pdf_unfolder.add_sys_error(rel_map, exp_dict['label'], ROOT.TUnfoldDensity.kSysErrModeRelative)
                             else:
                                 if not isinstance(exp_dict['tfile'], ROOT.TFile):
                                     exp_dict['tfile'] = cu.open_root_file(exp_dict['tfile'])
                                 map_syst = cu.get_from_tfile(exp_dict['tfile'], "%s/tu_%s_GenReco_all" % (region['dirname'], angle_shortname))
                                 print("    syst bin", chosen_rsp_bin, map_syst.GetBinContent(*chosen_rsp_bin))
-                                # pdf_unfolder.tunfolder.AddSysError(map_syst, exp_dict['label'], pdf_unfolder.orientation, ROOT.TUnfoldDensity.kSysErrModeMatrix)
                                 pdf_unfolder.add_sys_error(map_syst, exp_dict['label'], ROOT.TUnfoldDensity.kSysErrModeMatrix)
 
                     # Do any regularization
