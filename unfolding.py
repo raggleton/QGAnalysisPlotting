@@ -1103,6 +1103,19 @@ if __name__ == "__main__":
                         # unfolder.tunfolder.AddSysError(map_syst, syst_dict['label'], unfolder.orientation, ROOT.TUnfoldDensity.kSysErrModeMatrix)
                         unfolder.add_sys_error(map_syst, syst_dict['label'], ROOT.TUnfoldDensity.kSysErrModeMatrix)
 
+                    syst_label_no_spaces = syst_dict['label'].replace(" ", "_")
+                    output_filename = "%s/response_map_syst_%s_%s.%s" % (this_output_dir, syst_label_no_spaces, append, unfolder_plotter.output_fmt)
+                    title = "%s\n%s region, %s, %s" % (jet_algo, region['label'], angle_str, syst_dict['label'])
+                    unfolder_plotter.draw_2d_hist(unfolder.syst_maps[syst_dict['label']],
+                                                  title=title,
+                                                  output_filename=output_filename,
+                                                  logz=True,
+                                                  draw_bin_lines_x=True,
+                                                  draw_bin_lines_y=True,
+                                                  canvas_size=(800, 700),
+                                                  xtitle='Generator bin',
+                                                  ytitle='Detector bin')
+
             # Subtract fakes (treat as background)
             # ------------------------------------------------------------------
             if SUBTRACT_FAKES:
