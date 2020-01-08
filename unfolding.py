@@ -299,9 +299,9 @@ if __name__ == "__main__":
                         help="Source directory with ROOT files")
 
     parser.add_argument("--angles",
-                        choices=list(qgc.VAR_UNFOLD_DICT.keys()),
+                        choices=list(qgc.VAR_UNFOLD_DICT.keys()) + ["all"],
                         nargs='+',
-                        help="Lambda angles to unfold")
+                        help="Lambda angles to unfold, or 'all' for all of them")
 
     parser.add_argument("--doSummaryPlot",
                         type=lambda x:bool(distutils.util.strtobool(x)),
@@ -862,7 +862,10 @@ if __name__ == "__main__":
     if "ak8puppi" in src_dir:
         jet_algo = "AK8 PF PUPPI"
 
-    angles = [a for a in qgc.COMMON_VARS if a.var in args.angles]
+    if args.angles[0] == "all":
+        angles = qgc.COMMON_VARS
+    else:
+        angles = [a for a in qgc.COMMON_VARS if a.var in args.angles]
     print(angles)
 
     print("Running TUnfold version", ROOT.TUnfold.GetTUnfoldVersion())
