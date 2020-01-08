@@ -183,16 +183,22 @@ def check_entries(entries, message=""):
     return True
 
 
-def plot_uncertainty_shifts(total_hist, stat_hist, syst_shifts, systs, output_filename, title, angle_str):
-    """
+def plot_uncertainty_shifts(total_hist, stat_hist, systs_shifted, systs, output_filename, title, angle_str):
+    """Plot fractional uncertainty shift for a given pt bin
+
+    Systs shifted should be the shifted distributions, not the shifts themselves.
+    They are normalised to unity, as are total_hist and stat_hist.
+    After this, the fractional diff is calculated, i.e. for *normalised*
+    cross sections.
+
     Parameters
     ----------
     total_hist : TH1
-        Distribution with total uncertainty
+        Distribution with total uncertainty.
     stat_hist : TH1
-        Distribution with stat-only uncertainties
-    syst_shifts : list[TH1]
-        Distributions with 1-sigma shift from systematics
+        Distribution with stat-only uncertainties.
+    systs_shifted : list[TH1]
+        Unfolded distributions with 1-sigma shift from systematics.
     systs : list[dict]
         Dicts describing each syst
     output_filename : str
@@ -209,10 +215,17 @@ def plot_uncertainty_shifts(total_hist, stat_hist, syst_shifts, systs, output_fi
     """
     entries = []
     hists = []
-    for h, syst_dict in zip(syst_shifts, systs):
+    total_hist_div_bin_width = qgp.normalise_hist_divide_bin_width(total_hist)
+    stat_hist_div_bin_width = qgp.normalise_hist_divide_bin_width(stat_hist)
+    for h, syst_dict in zip(systs_shifted, systs):
+        # for each syst, normalise and divide by bin width,
+        # then subtract total hist, and divide by it
         h_fraction = h.Clone()
-        h_fraction.Divide(total_hist)
+        h_fraction = qgp.normalise_hist_divide_bin_width(h_fraction)
+        h_fraction.Add(total_hist_div_bin_width, -1)
+        h_fraction.Divide(total_hist_div_bin_width)
         hists.append(h_fraction)
+        # set to abs values
         for i in range(1, h_fraction.GetNbinsX()+1):
             h_fraction.SetBinContent(i, abs(h_fraction.GetBinContent(i)))
         c = Contribution(h_fraction,
@@ -225,13 +238,13 @@ def plot_uncertainty_shifts(total_hist, stat_hist, syst_shifts, systs, output_fi
                          )
         entries.append(c)
 
-    # Add systematic
-    h_syst = stat_hist.Clone()
-    h_total = total_hist.Clone()
+    # Create total and stat error hists
+    h_syst = stat_hist_div_bin_width.Clone()
+    h_total = total_hist_div_bin_width.Clone()
     for i in range(1, h_syst.GetNbinsX()+1):
-        if total_hist.GetBinContent(i) > 0:
-            h_syst.SetBinContent(i, stat_hist.GetBinError(i) / total_hist.GetBinContent(i))
-            h_total.SetBinContent(i, total_hist.GetBinError(i) / total_hist.GetBinContent(i))
+        if total_hist_div_bin_width.GetBinContent(i) > 0:
+            h_syst.SetBinContent(i, stat_hist_div_bin_width.GetBinError(i) / total_hist_div_bin_width.GetBinContent(i))
+            h_total.SetBinContent(i, total_hist_div_bin_width.GetBinError(i) / total_hist_div_bin_width.GetBinContent(i))
         else:
             h_syst.SetBinContent(i, 0)
             h_total.SetBinContent(i, 0)
@@ -2443,17 +2456,70 @@ if __name__ == "__main__":
                 # --------------------------------------------------------------
                 # PLOT UNCERTAINTY SHIFTS
                 # --------------------------------------------------------------
-                systematic_shift_hists_bin = [unfolder.get_var_hist_pt_binned(h, ibin_pt, binning_scheme='generator')
-                                              for h in systematic_shift_hists]
+                systematic_shifted_hists_bin = [unfolder.get_var_hist_pt_binned(unfolder.get_syst_shifted_hist(sdict['label']), ibin_pt, binning_scheme='generator')
+                                                for sdict in region['experimental_systematics']]
                 unfolded_stat_error_bin = unfolder.get_var_hist_pt_binned(unfolder.unfolded_stat_err, ibin_pt, binning_scheme="generator")
                 unfolded_total_error_bin =  unfolder.get_var_hist_pt_binned(unfolder.unfolded, ibin_pt, binning_scheme="generator")
                 plot_uncertainty_shifts(total_hist=unfolded_total_error_bin,
                                         stat_hist=unfolded_stat_error_bin,
-                                        syst_shifts=systematic_shift_hists_bin,
+                                        systs_shifted=systematic_shifted_hists_bin,
                                         systs=region['experimental_systematics'],
                                         output_filename='%s/unfolded_systs_%s_bin_%d.%s' % (this_output_dir, append, ibin_pt, OUTPUT_FMT),
                                         title=title,
                                         angle_str=angle_str)
+
+                # Plot the 1D distribution for each uncert.
+                # have to remake these as plot_uncertainty_shifts deletes them?!
+                systematic_shifted_hists_bin_div_bin_width = [qgp.normalise_hist_divide_bin_width(
+                                                                  unfolder.get_var_hist_pt_binned(
+                                                                      unfolder.get_syst_shifted_hist(sdict['label']),
+                                                                      ibin_pt, binning_scheme='generator'
+                                                                  )
+                                                              )
+                                                              for sdict in region['experimental_systematics']]
+                unfolded_stat_error_bin = unfolder.get_var_hist_pt_binned(unfolder.unfolded_stat_err, ibin_pt, binning_scheme="generator")
+                unfolded_stat_error_bin_div_bin_width = qgp.normalise_hist_divide_bin_width(unfolded_stat_error_bin)
+                unfolded_total_error_bin =  unfolder.get_var_hist_pt_binned(unfolder.unfolded, ibin_pt, binning_scheme="generator")
+                unfolded_total_error_bin_div_bin_width = qgp.normalise_hist_divide_bin_width(unfolded_total_error_bin)
+
+                syst_entries = [
+                    Contribution(hist,
+                                 label=sdict['label'],
+                                 line_color=sdict['colour'], line_width=lw,
+                                 line_style=2 if 'down' in sdict['label'].lower() else 1,
+                                 marker_color=sdict['colour'], marker_size=0,
+                                 subplot=unfolded_stat_error_bin_div_bin_width)
+
+                    for hist, sdict in zip(systematic_shifted_hists_bin_div_bin_width, region['experimental_systematics'])
+                ]
+                syst_entries.extend([
+                    # Contribution(mc_gen_hist_bin_div_bin_width,
+                    #              label="Generator (MG+Pythia8)",
+                    #              line_color=gen_colour, line_width=lw,
+                    #              marker_color=gen_colour, marker_size=0,
+                    #              normalise_hist=False),
+                    Contribution(unfolded_stat_error_bin_div_bin_width,
+                                 label='Unfolded (#tau = %.3g) (stat. err)' % (tau),
+                                 line_color=unfolded_stat_colour, line_width=lw,
+                                 marker_color=unfolded_stat_colour, marker_size=0),
+                    # Contribution(unfolded_total_error_bin_div_bin_width,
+                    #              label='Unfolded (#tau = %.3g) (total err)' % (tau),
+                    #              line_color=unfolded_total_colour, line_width=lw,
+                    #              marker_color=unfolded_total_colour, marker_size=0),
+                ])
+                plot = Plot(syst_entries,
+                            xtitle=particle_title,
+                            ytitle=normalised_differential_label,
+                            subplot_title='Syst / nominal',
+                            **common_hist_args)
+                plot.legend.SetX1(0.55)
+                plot.legend.SetY1(0.7)
+                plot.legend.SetX2(0.98)
+                plot.legend.SetY2(0.9)
+                plot.legend.SetNColumns(2)
+                plot.subplot_limits = (0.9, 1.1)
+                plot.plot("NOSTACK E1")
+                plot.save("%s/unfolded_syst_variations_%s_bin_%d_divBinWidth.%s" % (this_output_dir, append, ibin_pt, OUTPUT_FMT))
 
                 # --------------------------------------------------------------
                 # PLOT RECO-LEVEL DISTRIBUTIONS (with gen binning)

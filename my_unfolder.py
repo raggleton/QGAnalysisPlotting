@@ -157,7 +157,8 @@ class MyUnfolder(object):
         self.unfolded_stat_err = None  # set in get_unfolded_with_ematrix_stat()
 
         self.syst_maps = {}  # gets filled with add_sys_error()
-        self.syst_shifts = {}  # gets filled with get_sys_shift()
+        self.syst_shifts = {}  # gets filled with get_sys_shift(), just shift in unfolded value from specific syst
+        self.systs_shifted = {}  # gets filled with get_syst_shifted_hist(), holds total unfolded with syst shift
 
         # use "generator" for signal + underflow region, "generatordistribution" for only signal region
         self.output_distribution_name = "generator"
@@ -237,6 +238,10 @@ class MyUnfolder(object):
         # save systematic shifts
         for name, syst_shift in self.syst_shifts.items():
             self._check_save_to_tfile(tfile, syst_shift, "syst_shift_%s" % name.replace(" ", "_"))
+
+        # save systematic shifted hists (yes this is a bit wasteful)
+        for name, syst_shift in self.systs_shifted.items():
+            self._check_save_to_tfile(tfile, syst_shift, "syst_shifted_unfolded_%s" % name.replace(" ", "_"))
 
         # Folded things
         self._check_save_to_tfile(tfile, self.folded_unfolded, "folded_unfolded")
@@ -321,6 +326,7 @@ class MyUnfolder(object):
         self.syst_maps[name] = map_syst
         self.tunfolder.AddSysError(map_syst, name, self.orientation, ROOT.TUnfoldDensity.kSysErrModeMatrix)
         self.syst_shifts[name] = None  # setup for get_delta_sys_shift
+        self.systs_shifted[name] = None  # setup for get_syst_shifted_hist
 
     def get_delta_sys_shift(self, syst_label):
         """Get shift in result due to a particular systeamtic
@@ -338,6 +344,20 @@ class MyUnfolder(object):
                                                     self.use_axis_binning)
             self.syst_shifts[syst_label] = hist  # cache shifts
         return self.syst_shifts[syst_label]
+
+    def get_syst_shifted_hist(self, syst_label, unfolded=None):
+        """Get unfolded hist, shifted by a given systematic source
+
+        Can specify unfolded hist, default is the one with all errors
+        """
+        if syst_label not in self.syst_shifts:
+            raise KeyError("No systematic %s, only have: %s" % (syst_label, ", ".join(self.syst_shifts.keys())))
+        if self.systs_shifted[syst_label] is None:
+            hist_shift = self.get_delta_sys_shift(syst_label).Clone('syst_shifted_unfolded_%s' % syst_label.replace(" ", "_"))
+            unfolded = unfolded or self.unfolded
+            hist_shift.Add(unfolded)  # TODO what about errors?
+            self.systs_shifted[syst_label] = hist_shift
+        return self.systs_shifted[syst_label]
 
     def get_output(self, hist_name='unfolded', update_with_ematrix_total=False):
         """Get 1D unfolded histogram covering all bins"""
