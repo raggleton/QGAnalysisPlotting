@@ -37,9 +37,10 @@ class MyUnfolderPlotter(object):
 
     """Class to do all sort of plots about a given MyUnfolder obj"""
 
-    def __init__(self, unfolder):
+    def __init__(self, unfolder, is_data=False):
         self.unfolder = unfolder
         self.output_fmt = 'pdf'
+        self.is_data = is_data
 
     @staticmethod
     def generate_2d_canvas(size=(800, 600)):
@@ -132,7 +133,8 @@ class MyUnfolderPlotter(object):
                     what='hist',
                     title=title,
                     xtitle="Generator bin",
-                    ytitle="Bias")
+                    ytitle="Bias",
+                    has_data=False)
         plot.default_canvas_size = (800, 600)
         plot.plot("NOSTACK HIST")
         plot.set_logy()
@@ -293,7 +295,8 @@ class MyUnfolderPlotter(object):
                         title=title,
                         xtitle='Detector bin number',
                         ytitle='Background fraction',
-                        ylim=(frac_min, frac_max))
+                        ylim=(frac_min, frac_max),
+                        has_data=False)
             plot.default_canvas_size = (800, 600)
             plot.plot('NOSTACK HIST')
             plot.set_logy()
@@ -314,7 +317,8 @@ class MyUnfolderPlotter(object):
                     title=title,
                     xtitle='Detector bin number',
                     ytitle='Cumulative background fraction',
-                    ylim=(frac_min, frac_max))
+                    ylim=(frac_min, frac_max),
+                    has_data=False)
         plot.default_canvas_size = (800, 600)
         plot.reverse_legend = True
         ROOT.gStyle.SetPalette(ROOT.kCMYK)
@@ -408,7 +412,8 @@ class MyUnfolderPlotter(object):
                     what='hist',
                     title=title,
                     xtitle="n_{R} bin",
-                    ytitle="L(x-f_{b}x_{0})"
+                    ytitle="L(x-f_{b}x_{0})",
+                    has_data=False
                     )
         plot.y_padding_min_linear = 0.8
         plot.left_margin = 0.15
@@ -621,13 +626,13 @@ class MyUnfolderPlotter(object):
 
         return lines, texts
 
-    def draw_unfolded_1d(self, do_gen=True, do_unfolded=True, is_data=True, output_dir='.', append='', title=''):
+    def draw_unfolded_1d(self, do_gen=True, do_unfolded=True, output_dir='.', append='', title=''):
         """Simple plot of unfolded & gen, by bin number (ie non physical axes)"""
         entries = []
 
         if do_unfolded and self.unfolder.unfolded:
             subplot = self.unfolder.hist_truth if (do_gen and self.unfolder.hist_truth) else None
-            label = 'data' if is_data else 'MC'
+            label = 'data' if self.is_data else 'MC'
             entries.append(
                 Contribution(self.unfolder.unfolded, label="Unfolded %s (#tau = %.3g)" % (label, self.unfolder.tau),
                              line_color=ROOT.kRed, line_width=1,
@@ -653,7 +658,7 @@ class MyUnfolderPlotter(object):
                     subplot_type='ratio',
                     subplot_title='#splitline{Unfolded %s /}{MC Gen}' % label,
                     subplot_limits=(0, 2),
-                    has_data=is_data)
+                    has_data=self.is_data)
         plot.default_canvas_size = (800, 600)
         # plot.text_left_offset = 0.05  # have to bodge this
         plot.plot("NOSTACK HISTE", "NOSTACK HISTE")
@@ -737,7 +742,7 @@ class MyUnfolderPlotter(object):
                     subplot_type='ratio' if ((do_reco_mc and do_reco_data) or (do_reco_mc_bg_sub and do_reco_data_bg_sub)) else None,
                     subplot_title='Data / MC',
                     subplot_limits=(0.8, 1.2),
-                    has_data=(do_reco_mc or do_reco_data_bg_sub))
+                    has_data=(do_reco_data or do_reco_data_bg_sub))
         plot.default_canvas_size = (800, 600)
         plot.plot("NOSTACK HISTE")
         plot.set_logy(do_more_labels=False)
@@ -894,7 +899,8 @@ class MyUnfolderPlotter(object):
                     ytitle="N",
                     subplot_type='ratio',
                     subplot_title='#splitline{Folded /}{Unfolding input}',
-                    subplot_limits=(0.8, 1.2))
+                    subplot_limits=(0.8, 1.2),
+                    has_data=self.is_data)
         plot.default_canvas_size = (800, 600)
         plot.plot("NOSTACK HIST")
         plot.main_pad.SetLogy(1)

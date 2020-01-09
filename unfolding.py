@@ -1069,7 +1069,7 @@ if __name__ == "__main__":
 
             unfolder.save_binning(txt_filename="%s/binning_scheme.txt" % (this_output_dir), print_xml=False)
 
-            unfolder_plotter = MyUnfolderPlotter(unfolder)
+            unfolder_plotter = MyUnfolderPlotter(unfolder, is_data=not MC_INPUT)
             plot_args = dict(output_dir=this_output_dir, append=append)
 
             # Set what is to be unfolded
@@ -1241,7 +1241,7 @@ if __name__ == "__main__":
             # Draw big 1D distributions
             # ------------------------------------------------------------------
             title = "%s\n%s region, %s" % (jet_algo, region['label'], angle_str)
-            unfolder_plotter.draw_unfolded_1d(is_data=not args.MCinput, output_dir=this_output_dir, append=append, title=title)
+            unfolder_plotter.draw_unfolded_1d(output_dir=this_output_dir, append=append, title=title)
 
             # reco using detector binning
             unfolder_plotter.draw_detector_1d(do_reco_mc=True,
@@ -1398,7 +1398,7 @@ if __name__ == "__main__":
                 alt_tdir = this_tdir.mkdir("alt_response_%s" % region['alt_mc_label'].replace(" ", "-"))
                 alt_tdir.cd()
 
-                alt_unfolder_plotter = MyUnfolderPlotter(alt_unfolder)
+                alt_unfolder_plotter = MyUnfolderPlotter(alt_unfolder, is_data=not MC_INPUT)
                 alt_output_dir = this_output_dir+"/altResponse"
                 alt_plot_args = dict(output_dir=alt_output_dir,
                                      append=append)
@@ -1471,7 +1471,7 @@ if __name__ == "__main__":
                 alt_unfolder._post_process()
 
                 alt_title = "%s\n%s region, %s, %s response map" % (jet_algo, region['label'], angle_str, region['alt_mc_label'])
-                alt_unfolder_plotter.draw_unfolded_1d(is_data=not args.MCinput, title=alt_title, **alt_plot_args)
+                alt_unfolder_plotter.draw_unfolded_1d(title=alt_title, **alt_plot_args)
 
                 title = "Correlation matrix, %s, %s region, %s, %s response map" % (jet_algo, region['label'], angle_str, region['alt_mc_label'])
                 alt_unfolder_plotter.draw_correlation_matrix(title=title, draw_values=False, **alt_plot_args)
@@ -1533,7 +1533,7 @@ if __name__ == "__main__":
                     syst_tdir.cd()
 
                     syst_output_dir = this_output_dir+"/modelSyst_"+syst_label_no_spaces
-                    syst_unfolder_plotter = MyUnfolderPlotter(syst_unfolder)
+                    syst_unfolder_plotter = MyUnfolderPlotter(syst_unfolder, is_data=False)
                     syst_plot_args = dict(output_dir=syst_output_dir,
                                           append=append)
 
@@ -1650,7 +1650,7 @@ if __name__ == "__main__":
                     region['model_systematics'][ind]['gen_1d'] = syst_unfolder.hist_truth
 
                     syst_title = "%s\n%s region, %s, %s input" % (jet_algo, region['label'], angle_str, syst_label)
-                    syst_unfolder_plotter.draw_unfolded_1d(is_data=not args.MCinput, title=syst_title, **syst_plot_args)
+                    syst_unfolder_plotter.draw_unfolded_1d(title=syst_title, **syst_plot_args)
 
 
                     # Save important stuff to TFile
@@ -1841,7 +1841,7 @@ if __name__ == "__main__":
                     pdf_tdir = this_tdir.mkdir(pdf_tdir_name)
                     pdf_tdir.cd()
 
-                    pdf_unfolder_plotter = MyUnfolderPlotter(pdf_unfolder)
+                    pdf_unfolder_plotter = MyUnfolderPlotter(pdf_unfolder, is_data=False)
                     pdf_output_dir = this_output_dir+"/pdfSyst/"+pdf_label_no_spaces,
                     pdf_plot_args = dict(output_dir=pdf_output_dir,
                                          append=append)
@@ -1942,7 +1942,7 @@ if __name__ == "__main__":
                     region['pdf_systematics'][ind]['gen_1d'] = pdf_unfolder.hist_truth
 
                     pdf_title = "%s\n%s region, %s, %s input" % (jet_algo, region['label'], angle_str, pdf_label)
-                    pdf_unfolder_plotter.draw_unfolded_1d(is_data=not args.MCinput, title=pdf_title, **pdf_plot_args)
+                    pdf_unfolder_plotter.draw_unfolded_1d(title=pdf_title, **pdf_plot_args)
 
                     # Save important stuff to TFile
                     # ----------------------------------------------------------
