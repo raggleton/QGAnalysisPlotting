@@ -121,6 +121,23 @@ def update_hist_bin_error(h_orig, h_to_be_updated):
         h_to_be_updated.SetBinError(i, h_orig.GetBinError(i))
 
 
+def rm_large_rel_error_bins(hist, relative_err_threshold=-1):
+    """Reset bins in 2D hist to 0 if error/contents exceeds a certain value"""
+    if relative_err_threshold < 0:
+        return hist
+    new_hist = hist.Clone()
+    for ix in range(hist.GetNbinsX()+1):
+        for iy in range(hist.GetNbinsY()+1):
+            val = hist.GetBinContent(ix, iy)
+            err = hist.GetBinError(ix, iy)
+            if val == 0:
+                continue
+            if (1.*err/val) > relative_err_threshold:
+                new_hist.SetBinContent(ix, iy, 0)
+                new_hist.SetBinError(ix, iy, 0)
+    return new_hist
+
+
 def draw_projection_comparison(h_orig, h_projection, title, xtitle, output_filename, print_bin_comparison=True):
     """Draw 2 hists, h_orig the original, and h_projection the projection of a 2D hist"""
 
@@ -1068,7 +1085,7 @@ if __name__ == "__main__":
             elif args.regularizeAxis == 'angle':
                 axis_steering = 'pt[N];%s[B]' % variable_name
 
-            unfolder = MyUnfolder(response_map=hist_mc_gen_reco_map,
+            unfolder = MyUnfolder(response_map=rm_large_rel_error_bins(hist_mc_gen_reco_map),
                                   variable_bin_edges_reco=angle_bin_edges_reco,
                                   variable_bin_edges_gen=angle_bin_edges_gen,
                                   variable_name=variable_name,
@@ -1120,17 +1137,15 @@ if __name__ == "__main__":
                     #         syst_dict['tfile'] = cu.open_root_file(syst_dict['tfile'])
                     #     map_syst = cu.get_from_tfile(syst_dict['tfile'], "%s/tu_%s_GenReco_all" % (region['dirname'], angle_shortname))
                     #     map_syst.Scale(unfolder.response_map.Integral() / map_syst.Integral())
-                    #     # map_syst.Add(unfolder.response_map, -1)
-                    #     # map_syst.Divide(unfolder.response_map)
                     #     print("    syst bin", chosen_rsp_bin, map_syst.GetBinContent(*chosen_rsp_bin))
-                    #     unfolder.add_sys_error(map_syst, syst_dict['label'], ROOT.TUnfoldDensity.kSysErrModeMatrix)
+                    #     unfolder.add_sys_error(rm_large_rel_error_bins(map_syst), syst_dict['label'], ROOT.TUnfoldDensity.kSysErrModeMatrix)
 
                     else:
                         if not isinstance(syst_dict['tfile'], ROOT.TFile):
                             syst_dict['tfile'] = cu.open_root_file(syst_dict['tfile'])
                         map_syst = cu.get_from_tfile(syst_dict['tfile'], "%s/tu_%s_GenReco_all" % (region['dirname'], angle_shortname))
                         print("    syst bin", chosen_rsp_bin, map_syst.GetBinContent(*chosen_rsp_bin))
-                        unfolder.add_sys_error(map_syst, syst_dict['label'], ROOT.TUnfoldDensity.kSysErrModeMatrix)
+                        unfolder.add_sys_error(rm_large_rel_error_bins(map_syst), syst_dict['label'], ROOT.TUnfoldDensity.kSysErrModeMatrix)
 
                     # Plot the reponse matrix for this systematic
                     syst_label_no_spaces = syst_dict['label'].replace(" ", "_")
@@ -1395,7 +1410,9 @@ if __name__ == "__main__":
                     region['alt_mc_tfile'] = cu.open_root_file(region['alt_mc_tfile'])
                 alt_hist_mc_gen = cu.get_from_tfile(region['alt_mc_tfile'], "%s/hist_%s_truth_all" % (region['dirname'], angle_shortname))
                 hist_mc_gen_reco_map_alt = cu.get_from_tfile(region['alt_mc_tfile'], "%s/tu_%s_GenReco_all" % (region['dirname'], angle_shortname))
-                alt_unfolder = MyUnfolder(response_map=hist_mc_gen_reco_map_alt,
+                hist_mc_gen_reco_map_alt.Scale(unfolder.response_map.Integral() / hist_mc_gen_reco_map_alt.Integral())  # just for display purposes, doesn't affect result
+
+                alt_unfolder = MyUnfolder(response_map=rm_large_rel_error_bins(hist_mc_gen_reco_map_alt),
                                           variable_bin_edges_reco=unfolder.variable_bin_edges_reco,
                                           variable_bin_edges_gen=unfolder.variable_bin_edges_gen,
                                           variable_name=unfolder.variable_name,
