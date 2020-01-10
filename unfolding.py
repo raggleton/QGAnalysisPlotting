@@ -1425,6 +1425,9 @@ if __name__ == "__main__":
                             % (region['label'], angle_str, region['alt_mc_label'], unfolder.sigma_max, unfolder.sigma_min, unfolder.condition_number))
                 alt_unfolder_plotter.draw_probability_matrix(title=title, **alt_plot_args)
 
+                title = "Response matrix, %s, %s region, %s, %s" % (jet_algo, region['label'], angle_str, region['alt_mc_label'])
+                alt_unfolder_plotter.draw_response_matrix(title=title, **alt_plot_args)
+
                 # Set what is to be unfolded - same as main unfolder
                 # --------------------------------------------------------------
                 alt_unfolder.set_input(input_hist=reco_1d,
@@ -1485,6 +1488,26 @@ if __name__ == "__main__":
                 print("Bin %d:" % chosen_bin, alt_unfolded_1d.GetBinContent(chosen_bin))
                 print("original uncert:", alt_unfolded_1d.GetBinError(chosen_bin))
                 alt_unfolder._post_process()
+
+                if SUBTRACT_FAKES:
+                    title = "%s\n%s region, %s, %s response map" % (jet_algo, region['label'], angle_str, region['alt_mc_label'])
+                    alt_unfolder_plotter.draw_detector_1d(do_reco_data_bg_sub=not MC_INPUT,
+                                                          do_reco_bg=SUBTRACT_FAKES,
+                                                          do_reco_mc_bg_sub=True,
+                                                          output_dir=alt_output_dir,
+                                                          append='bg_fakes_subtracted_%s' % append,
+                                                          title=title)
+
+                    # same but with generator-binning
+                    alt_unfolder_plotter.draw_generator_1d(do_reco_data=False,
+                                                           do_reco_data_bg_sub=not MC_INPUT,
+                                                           do_reco_bg=True,
+                                                           do_reco_mc=False,
+                                                           do_reco_mc_bg_sub=True,
+                                                           do_truth_mc=True,
+                                                           output_dir=alt_output_dir,
+                                                           append='bg_fakes_subtracted_%s' % append,
+                                                           title=title)
 
                 alt_title = "%s\n%s region, %s, %s response map" % (jet_algo, region['label'], angle_str, region['alt_mc_label'])
                 alt_unfolder_plotter.draw_unfolded_1d(title=alt_title, **alt_plot_args)
