@@ -2584,10 +2584,18 @@ if __name__ == "__main__":
                 # --------------------------------------------------------------
                 # PLOT UNCERTAINTY SHIFTS
                 # --------------------------------------------------------------
-                systematic_shifted_hists_bin = [unfolder.get_var_hist_pt_binned(unfolder.get_syst_shifted_hist(sdict['label']), ibin_pt, binning_scheme='generator')
-                                                for sdict in region['experimental_systematics']]
+                systematic_shifted_hists_bin = [unfolder.get_var_hist_pt_binned(unfolder.get_syst_shifted_hist(syst_name, unfolded=unfolder.unfolded_stat_err), ibin_pt, binning_scheme='generator')
+                                                for syst_name in unfolder.syst_shifts]
                 unfolded_stat_error_bin = unfolder.get_var_hist_pt_binned(unfolder.unfolded_stat_err, ibin_pt, binning_scheme="generator")
-                unfolded_total_error_bin =  unfolder.get_var_hist_pt_binned(unfolder.unfolded, ibin_pt, binning_scheme="generator")
+
+                unfolded_total_error_bin = unfolder.get_var_hist_pt_binned(unfolder.unfolded, ibin_pt, binning_scheme="generator")
+
+                # Create unfolded hist, but with errors from reponse matrix stats
+                error_stat_response = unfolder.make_hist_from_diagonal_errors(unfolder.get_ematrix_stat_response(), do_sqrt=True) # note that bin contents need to be correct, otherwise won't normalise correctly
+                unfolding_syst_err = unfolder.unfolded.Clone("unfolding_syst_err")
+                unfolder.update_hist_bin_error(h_orig=error_stat_response, h_to_be_updated=unfolding_syst_err)
+                syst_unfolded_error_bin = unfolder.get_var_hist_pt_binned(unfolding_syst_err, ibin_pt, binning_scheme="generator")
+
                 plot_uncertainty_shifts(total_hist=unfolded_total_error_bin,
                                         stat_hist=unfolded_stat_error_bin,
                                         syst_unfold_hist=syst_unfolded_error_bin,
@@ -2597,58 +2605,59 @@ if __name__ == "__main__":
                                         title=title,
                                         angle_str=angle_str)
 
-                # Plot the 1D distribution for each uncert.
-                # have to remake these as plot_uncertainty_shifts deletes them?!
-                systematic_shifted_hists_bin_div_bin_width = [qgp.normalise_hist_divide_bin_width(
-                                                                  unfolder.get_var_hist_pt_binned(
-                                                                      unfolder.get_syst_shifted_hist(sdict['label']),
-                                                                      ibin_pt, binning_scheme='generator'
+                if args.doExperimentalSysts:
+                    # Plot the 1D distribution for each uncert.
+                    # have to remake these as plot_uncertainty_shifts deletes them?!
+                    systematic_shifted_hists_bin_div_bin_width = [qgp.normalise_hist_divide_bin_width(
+                                                                      unfolder.get_var_hist_pt_binned(
+                                                                          unfolder.get_syst_shifted_hist(syst_name, unfolded=unfolder.unfolded_stat_err),
+                                                                          ibin_pt, binning_scheme='generator'
+                                                                      )
                                                                   )
-                                                              )
-                                                              for sdict in region['experimental_systematics']]
-                unfolded_stat_error_bin = unfolder.get_var_hist_pt_binned(unfolder.unfolded_stat_err, ibin_pt, binning_scheme="generator")
-                unfolded_stat_error_bin_div_bin_width = qgp.normalise_hist_divide_bin_width(unfolded_stat_error_bin)
-                unfolded_total_error_bin =  unfolder.get_var_hist_pt_binned(unfolder.unfolded, ibin_pt, binning_scheme="generator")
-                unfolded_total_error_bin_div_bin_width = qgp.normalise_hist_divide_bin_width(unfolded_total_error_bin)
+                                                                  for syst_name in unfolder.syst_shifts]
+                    unfolded_stat_error_bin = unfolder.get_var_hist_pt_binned(unfolder.unfolded_stat_err, ibin_pt, binning_scheme="generator")
+                    unfolded_stat_error_bin_div_bin_width = qgp.normalise_hist_divide_bin_width(unfolded_stat_error_bin)
+                    unfolded_total_error_bin =  unfolder.get_var_hist_pt_binned(unfolder.unfolded, ibin_pt, binning_scheme="generator")
+                    unfolded_total_error_bin_div_bin_width = qgp.normalise_hist_divide_bin_width(unfolded_total_error_bin)
 
-                syst_entries = [
-                    Contribution(hist,
-                                 label=sdict['label'],
-                                 line_color=sdict['colour'], line_width=lw,
-                                 line_style=2 if 'down' in sdict['label'].lower() else 1,
-                                 marker_color=sdict['colour'], marker_size=0,
-                                 subplot=unfolded_stat_error_bin_div_bin_width)
+                    syst_entries = [
+                        Contribution(hist,
+                                     label=sdict['label'],
+                                     line_color=sdict['colour'], line_width=lw,
+                                     line_style=2 if 'down' in sdict['label'].lower() else 1,
+                                     marker_color=sdict['colour'], marker_size=0,
+                                     subplot=unfolded_stat_error_bin_div_bin_width)
 
-                    for hist, sdict in zip(systematic_shifted_hists_bin_div_bin_width, region['experimental_systematics'])
-                ]
-                syst_entries.extend([
-                    # Contribution(mc_gen_hist_bin_div_bin_width,
-                    #              label="Generator (MG+Pythia8)",
-                    #              line_color=gen_colour, line_width=lw,
-                    #              marker_color=gen_colour, marker_size=0,
-                    #              normalise_hist=False),
-                    Contribution(unfolded_stat_error_bin_div_bin_width,
-                                 label='Unfolded (#tau = %.3g) (stat. err)' % (tau),
-                                 line_color=unfolded_stat_colour, line_width=lw,
-                                 marker_color=unfolded_stat_colour, marker_size=0),
-                    # Contribution(unfolded_total_error_bin_div_bin_width,
-                    #              label='Unfolded (#tau = %.3g) (total err)' % (tau),
-                    #              line_color=unfolded_total_colour, line_width=lw,
-                    #              marker_color=unfolded_total_colour, marker_size=0),
-                ])
-                plot = Plot(syst_entries,
-                            xtitle=particle_title,
-                            ytitle=normalised_differential_label,
-                            subplot_title='Syst / nominal',
-                            **common_hist_args)
-                plot.legend.SetX1(0.55)
-                plot.legend.SetY1(0.7)
-                plot.legend.SetX2(0.98)
-                plot.legend.SetY2(0.9)
-                plot.legend.SetNColumns(2)
-                plot.subplot_limits = (0.9, 1.1)
-                plot.plot("NOSTACK E1")
-                plot.save("%s/unfolded_syst_variations_%s_bin_%d_divBinWidth.%s" % (this_output_dir, append, ibin_pt, OUTPUT_FMT))
+                        for hist, sdict in zip(systematic_shifted_hists_bin_div_bin_width, region['experimental_systematics'])
+                    ]
+                    syst_entries.extend([
+                        # Contribution(mc_gen_hist_bin_div_bin_width,
+                        #              label="Generator (MG+Pythia8)",
+                        #              line_color=gen_colour, line_width=lw,
+                        #              marker_color=gen_colour, marker_size=0,
+                        #              normalise_hist=False),
+                        Contribution(unfolded_stat_error_bin_div_bin_width,
+                                     label='Unfolded (#tau = %.3g) (stat. err)' % (tau),
+                                     line_color=unfolded_stat_colour, line_width=lw,
+                                     marker_color=unfolded_stat_colour, marker_size=0),
+                        # Contribution(unfolded_total_error_bin_div_bin_width,
+                        #              label='Unfolded (#tau = %.3g) (total err)' % (tau),
+                        #              line_color=unfolded_total_colour, line_width=lw,
+                        #              marker_color=unfolded_total_colour, marker_size=0),
+                    ])
+                    plot = Plot(syst_entries,
+                                xtitle=particle_title,
+                                ytitle=normalised_differential_label,
+                                subplot_title='Syst / nominal',
+                                **common_hist_args)
+                    plot.legend.SetX1(0.55)
+                    plot.legend.SetY1(0.7)
+                    plot.legend.SetX2(0.98)
+                    plot.legend.SetY2(0.9)
+                    plot.legend.SetNColumns(2)
+                    # plot.subplot_limits = (0.9, 1.1)
+                    plot.plot("NOSTACK E1")
+                    plot.save("%s/unfolded_syst_variations_%s_bin_%d_divBinWidth.%s" % (this_output_dir, append, ibin_pt, OUTPUT_FMT))
 
                 # --------------------------------------------------------------
                 # PLOT RECO-LEVEL DISTRIBUTIONS (with gen binning)
