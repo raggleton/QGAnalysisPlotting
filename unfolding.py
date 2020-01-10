@@ -1103,7 +1103,7 @@ if __name__ == "__main__":
             # ------------------------------------------------------------------
             if args.doExperimentalSysts:
                 chosen_rsp_bin = (18, 18)
-                print("nominal response bin content for", chosen_rsp_bin, hist_mc_gen_reco_map.GetBinContent(*chosen_rsp_bin))
+                print("nominal response bin content for", chosen_rsp_bin, unfolder.response_map.GetBinContent(*chosen_rsp_bin))
 
                 for syst_ind, syst_dict in enumerate(region['experimental_systematics']):
                     print("Adding systematic:", syst_dict['label'])
@@ -1135,7 +1135,7 @@ if __name__ == "__main__":
                     # Plot the reponse matrix for this systematic
                     syst_label_no_spaces = syst_dict['label'].replace(" ", "_")
                     output_filename = "%s/response_map_syst_%s_%s.%s" % (this_output_dir, syst_label_no_spaces, append, unfolder_plotter.output_fmt)
-                    title = "%s\n%s region, %s, %s" % (jet_algo, region['label'], angle_str, syst_dict['label'])
+                    title = "%s, %s region, %s, %s" % (jet_algo, region['label'], angle_str, syst_dict['label'])
                     unfolder_plotter.draw_2d_hist(unfolder.syst_maps[syst_dict['label']],
                                                   title=title,
                                                   output_filename=output_filename,
@@ -1305,17 +1305,17 @@ if __name__ == "__main__":
             # Only makes sense if the same MC events go into matrix & 1D plot
             # ------------------------------------------------------------------
             if not MC_SPLIT:
-                proj_reco = hist_mc_gen_reco_map.ProjectionY("proj_reco_%s" % (append))
+                proj_reco = unfolder.response_map.ProjectionY("proj_reco_%s" % (append))
 
-                proj_gen = hist_mc_gen_reco_map.ProjectionX("proj_gen_%s" % (append))
+                proj_gen = unfolder.response_map.ProjectionX("proj_gen_%s" % (append))
                 draw_projection_comparison(unfolder.hist_truth, proj_gen,
                                            title="%s\n%s region" % (jet_algo, region['label']),
                                            xtitle="%s, Generator binning" % (angle_str),
                                            output_filename="%s/projection_gen_%s.%s" % (this_output_dir, append, OUTPUT_FMT))
 
                 print("projection reco #bins:", proj_reco.GetNbinsX())
-                print("response map # bins x:", hist_mc_gen_reco_map.GetNbinsX())
-                print("response map # bins y:", hist_mc_gen_reco_map.GetNbinsY())
+                print("response map # bins x:", unfolder.response_map.GetNbinsX())
+                print("response map # bins y:", unfolder.response_map.GetNbinsY())
                 if SUBTRACT_FAKES:
                     print("reco bg subtracted #bins:", hist_mc_reco_bg_subtracted.GetNbinsX())
                     print(proj_reco.GetNbinsX())
