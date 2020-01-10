@@ -2731,6 +2731,14 @@ if __name__ == "__main__":
                     plot.plot("NOSTACK E1")
                     plot.save("%s/detector_gen_binning_bg_subtracted_%s_bin_%d_divBinWidth.%s" % (this_output_dir, append, ibin_pt, OUTPUT_FMT))
 
+            if args.doExperimentalSysts:
+                # Do plot of mean/rms for each systematic shift as a function of pt
+                # ------------------------------------------------------------------
+                title = "%s\n%s region\n%s" % (jet_algo, region['label'], particle_title)
+                unfolder_plotter.draw_syst_mean_rms_vs_pt(syst_dicts=region['experimental_systematics'],
+                                                          output_dir=this_output_dir,
+                                                          append=append,
+                                                          title=title)
 
             # Draw individual pt bin plots - RECO binning
             # ------------------------------------------------------------------

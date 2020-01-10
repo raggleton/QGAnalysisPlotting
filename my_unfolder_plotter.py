@@ -978,3 +978,113 @@ class MyUnfolderPlotter(object):
                                           do_labels_outside=False)
         output_filename = "%s/folded_gen_%s.%s" % (output_dir, append, self.output_fmt)
         plot.save(output_filename)
+
+    def draw_syst_mean_rms_vs_pt(self, syst_dicts, output_dir=".", append="", title=""):
+        """Make plots of mean and RMS vs gen pt, for unfolded + shifted distributions from each systematic
+        syst_dicts : list of dicts. Each represents a systematic,
+        must have 'label', 'colour' keys
+        """
+        # First add the nominal unfolded hist
+        means, means_err = [], []
+        rms, rms_err = [], []
+        for ibin_pt in range(0, len(self.unfolder.pt_bin_edges_gen)-1):
+            hist = qgp.normalise_hist_divide_bin_width(
+                        self.unfolder.get_var_hist_pt_binned(self.unfolder.unfolded, ibin_pt, binning_scheme='generator')
+                    )
+            means.append(hist.GetMean())
+            means_err.append(hist.GetMeanError())
+            rms.append(hist.GetRMS())
+            rms_err.append(hist.GetRMSError())
+
+        def _values_to_hist(hist_name, values, errors):
+            hist = ROOT.TH1D(hist_name, "", self.unfolder.nbins_pt_gen, array('d', self.unfolder.pt_bin_edges_gen))
+            for ind, (v, e) in enumerate(zip(values, errors), 1):
+                hist.SetBinContent(ind, v)
+                hist.SetBinError(ind, e)
+            return hist
+
+        hist_mean_nominal = _values_to_hist("mean_nominal", means, means_err)
+        cont_args = dict(
+            label='Unfolded',
+            line_color=ROOT.kBlack, line_width=2, line_style=1,
+            marker_size=0
+        )
+        syst_means_contributions = [
+            Contribution(hist_mean_nominal, **cont_args)
+        ]
+
+        hist_rms_nominal = _values_to_hist("rms_nominal", rms, rms_err)
+        syst_rms_contributions = [
+            Contribution(hist_rms_nominal, **cont_args)
+        ]
+
+        # Now go through each systematic
+        # For each, go through each pt bin, and get the normalised shifted
+        # distribution. Then extract mean, RMS, etc and turn into hists
+        for sdict in syst_dicts:
+            syst_name = sdict['label']
+            syst_means, syst_means_err = [], []
+            syst_rms, syst_rms_err = [], []
+            for ibin_pt in range(0, len(self.unfolder.pt_bin_edges_gen)-1):
+                hist = qgp.normalise_hist_divide_bin_width(
+                        self.unfolder.get_var_hist_pt_binned(
+                            self.unfolder.get_syst_shifted_hist(syst_name, unfolded=self.unfolder.unfolded_stat_err),
+                                                           ibin_pt, binning_scheme='generator')
+                        )
+                syst_means.append(hist.GetMean())
+                syst_means_err.append(hist.GetMeanError())
+                syst_rms.append(hist.GetRMS())
+                syst_rms_err.append(hist.GetRMSError())
+
+            # print(syst_means)
+            # print(syst_rms)
+            hist_mean = _values_to_hist("%s_mean" % (syst_name), syst_means, syst_means_err)
+            mean_cont = Contribution(hist_mean,
+                                     label=sdict['label'],
+                                     line_color=sdict['colour'], line_width=2,
+                                     line_style=2 if 'down' in sdict['label'].lower() else 1,
+                                     marker_color=sdict['colour'], marker_size=0,
+                                     subplot=hist_mean_nominal)
+            syst_means_contributions.append(mean_cont)
+
+            hist_rms = _values_to_hist("%s_rms" % (syst_name), syst_rms, syst_rms_err)
+            rms_cont = Contribution(hist_rms,
+                                    label=sdict['label'],
+                                    line_color=sdict['colour'], line_width=2,
+                                    line_style=2 if 'down' in sdict['label'].lower() else 1,
+                                    marker_color=sdict['colour'], marker_size=0,
+                                    subplot=hist_rms_nominal)
+            syst_rms_contributions.append(rms_cont)
+
+        # Now plot mean, RMS
+        plot_means = Plot(syst_means_contributions,
+                          what='hist',
+                          xtitle="p_{T} [GeV]",
+                          ytitle="Mean #pm error",
+                          title= title,
+                          subplot_type='ratio',
+                          subplot_title='Syst / nominal',
+                          subplot_limits=(0.99, 1.01),
+                          has_data=self.is_data)
+        plot_means.y_padding_max_linear = 1.2
+        plot_means.legend.SetY2(.88)
+        plot_means.plot("HISTE NOSTACK")
+        plot_means.set_logx()
+        plot_means.container.GetYaxis().SetTitleOffset(plot_means.container.GetYaxis().GetTitleOffset()*1.1)
+        plot_means.save("%s/syst_means_vs_pt_%s.%s" % (output_dir, append, self.output_fmt))
+
+        plot_rms = Plot(syst_rms_contributions,
+                        what='hist',
+                        xtitle="p_{T} [GeV]",
+                        ytitle="RMS #pm error",
+                        title=title,
+                        subplot_type='ratio',
+                        subplot_title='Syst / nominal',
+                        subplot_limits=(0.99, 1.01),
+                        has_data=self.is_data)
+        plot_rms.y_padding_max_linear = 1.2
+        plot_means.legend.SetY2(.88)
+        plot_rms.plot("HISTE NOSTACK")
+        plot_rms.set_logx()
+        plot_rms.container.GetYaxis().SetTitleOffset(plot_rms.container.GetYaxis().GetTitleOffset()*1.1)
+        plot_rms.save("%s/syst_rms_vs_pt_%s.%s" % (output_dir, append, self.output_fmt))
