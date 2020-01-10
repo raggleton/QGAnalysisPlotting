@@ -183,7 +183,7 @@ def check_entries(entries, message=""):
     return True
 
 
-def plot_uncertainty_shifts(total_hist, stat_hist, systs_shifted, systs, output_filename, title, angle_str):
+def plot_uncertainty_shifts(total_hist, stat_hist, syst_unfold_hist, systs_shifted, systs, output_filename, title, angle_str):
     """Plot fractional uncertainty shift for a given pt bin
 
     Systs shifted should be the shifted distributions, not the shifts themselves.
@@ -197,6 +197,8 @@ def plot_uncertainty_shifts(total_hist, stat_hist, systs_shifted, systs, output_
         Distribution with total uncertainty.
     stat_hist : TH1
         Distribution with stat-only uncertainties.
+    syst_unfold_hist : TH1
+        Distribution with uncertainties = systematics from unfolding (not other systeamtics sources)
     systs_shifted : list[TH1]
         Unfolded distributions with 1-sigma shift from systematics.
     systs : list[dict]
@@ -217,6 +219,7 @@ def plot_uncertainty_shifts(total_hist, stat_hist, systs_shifted, systs, output_
     hists = []
     total_hist_div_bin_width = qgp.normalise_hist_divide_bin_width(total_hist)
     stat_hist_div_bin_width = qgp.normalise_hist_divide_bin_width(stat_hist)
+    syst_unfold_hist_div_bin_width = qgp.normalise_hist_divide_bin_width(syst_unfold_hist)
     for h, syst_dict in zip(systs_shifted, systs):
         # for each syst, normalise and divide by bin width,
         # then subtract total hist, and divide by it
@@ -240,18 +243,22 @@ def plot_uncertainty_shifts(total_hist, stat_hist, systs_shifted, systs, output_
 
     # Create total and stat error hists
     h_stat = stat_hist_div_bin_width.Clone()
+    h_syst = syst_unfold_hist_div_bin_width.Clone()
     h_total = total_hist_div_bin_width.Clone()
     for i in range(1, h_stat.GetNbinsX()+1):
         if total_hist_div_bin_width.GetBinContent(i) > 0:
             h_stat.SetBinContent(i, stat_hist_div_bin_width.GetBinError(i) / total_hist_div_bin_width.GetBinContent(i))
+            h_syst.SetBinContent(i, syst_unfold_hist_div_bin_width.GetBinError(i) / total_hist_div_bin_width.GetBinContent(i))
             h_total.SetBinContent(i, total_hist_div_bin_width.GetBinError(i) / total_hist_div_bin_width.GetBinContent(i))
         else:
             h_stat.SetBinContent(i, 0)
+            h_syst.SetBinContent(i, 0)
             h_total.SetBinContent(i, 0)
         h_stat.SetBinError(i, 0)
+        h_syst.SetBinError(i, 0)
         h_total.SetBinError(i, 0)
-    c_stat = Contribution(h_syst,
-                         label="Stat.",
+    c_stat = Contribution(h_stat,
+                         label="Input stats",
                          line_color=ROOT.kRed,
                          line_style=3,
                          line_width=3,
@@ -259,6 +266,15 @@ def plot_uncertainty_shifts(total_hist, stat_hist, systs_shifted, systs, output_
                          marker_color=ROOT.kRed,
                          )
     entries.append(c_stat)
+    c_syst = Contribution(h_syst,
+                         label="Response matrix stats",
+                         line_color=ROOT.kGray+2,
+                         line_style=3,
+                         line_width=3,
+                         marker_size=0,
+                         marker_color=ROOT.kGray+2,
+                         )
+    entries.append(c_syst)
     c_tot = Contribution(h_total,
                          label="Total",
                          line_color=ROOT.kBlack,
@@ -2551,6 +2567,7 @@ if __name__ == "__main__":
                 unfolded_total_error_bin =  unfolder.get_var_hist_pt_binned(unfolder.unfolded, ibin_pt, binning_scheme="generator")
                 plot_uncertainty_shifts(total_hist=unfolded_total_error_bin,
                                         stat_hist=unfolded_stat_error_bin,
+                                        syst_unfold_hist=syst_unfolded_error_bin,
                                         systs_shifted=systematic_shifted_hists_bin,
                                         systs=region['experimental_systematics'],
                                         output_filename='%s/unfolded_systs_%s_bin_%d.%s' % (this_output_dir, append, ibin_pt, OUTPUT_FMT),
