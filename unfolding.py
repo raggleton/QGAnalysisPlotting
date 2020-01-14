@@ -325,6 +325,34 @@ def plot_uncertainty_shifts(total_hist, stat_hist, syst_unfold_hist, systs_shift
     log_filename, ext = os.path.splitext(output_filename)
     plot.save(log_filename+"_log"+ext)
 
+# To be able to export to XML, since getting std::ostream from python is impossible?
+my_binning_xml_code = """
+class BinningXMLExporter {
+public:
+    BinningXMLExporter() {cout << " Creating BinningXMLExporter " << endl;}
+
+    static Int_t ExportXML(const TUnfoldBinning &binning,
+                           std::string dirname,
+                           std::string filename,
+                           Bool_t writeHeader,
+                           Bool_t writeFooter,
+                           Int_t indent=0) {
+
+        ofstream dtdFile(TString::Format("%s/tunfoldbinning.dtd", dirname.c_str()));
+        TUnfoldBinningXML::WriteDTD(dtdFile);
+        dtdFile.close();
+
+        ofstream xmlfile;
+        xmlfile.open(TString::Format("%s/%s", dirname.c_str(), filename.c_str()), ios::out);
+        Int_t result = TUnfoldBinningXML::ExportXML(binning, xmlfile, writeHeader, writeFooter, indent);
+        xmlfile.close();
+        return result;
+    }
+};
+"""
+ROOT.gInterpreter.ProcessLine(my_binning_xml_code)
+
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
@@ -1101,6 +1129,8 @@ if __name__ == "__main__":
                                   axisSteering=axis_steering)
 
             unfolder.save_binning(txt_filename="%s/binning_scheme.txt" % (this_output_dir), print_xml=False)
+            ROOT.BinningXMLExporter.ExportXML(unfolder.detector_binning, this_output_dir, "detector_binning.xml", True, True, 2)
+            ROOT.BinningXMLExporter.ExportXML(unfolder.generator_binning, this_output_dir, "generator_binning.xml", True, True, 2)
 
             unfolder_plotter = MyUnfolderPlotter(unfolder, is_data=not MC_INPUT)
             plot_args = dict(output_dir=this_output_dir, append=append)
