@@ -1428,14 +1428,15 @@ if __name__ == "__main__":
             # ------------------------------------------------------------------
             alt_hist_mc_gen = None  # mc truth of the generator used to make reponse matrix
             alt_unfolder = None
+            # Do this outside the if statement, since we might use it later in plotting e.g. for data
+            if not isinstance(region['alt_mc_tfile'], ROOT.TFile):
+                region['alt_mc_tfile'] = cu.open_root_file(region['alt_mc_tfile'])
+            alt_hist_mc_gen = cu.get_from_tfile(region['alt_mc_tfile'], "%s/hist_%s_truth_all" % (region['dirname'], angle_shortname))
             if args.useAltResponse:
                 print("*" * 80)
                 print("*** Unfolding with alternate response matrix ***")
                 print("*" * 80)
 
-                if not isinstance(region['alt_mc_tfile'], ROOT.TFile):
-                    region['alt_mc_tfile'] = cu.open_root_file(region['alt_mc_tfile'])
-                alt_hist_mc_gen = cu.get_from_tfile(region['alt_mc_tfile'], "%s/hist_%s_truth_all" % (region['dirname'], angle_shortname))
                 hist_mc_gen_reco_map_alt = cu.get_from_tfile(region['alt_mc_tfile'], "%s/tu_%s_GenReco_all" % (region['dirname'], angle_shortname))
                 hist_mc_gen_reco_map_alt.Scale(unfolder.response_map.Integral() / hist_mc_gen_reco_map_alt.Integral())  # just for display purposes, doesn't affect result
 
@@ -2150,6 +2151,20 @@ if __name__ == "__main__":
                                  line_color=gen_colour, line_width=lw,
                                  marker_color=gen_colour, marker_size=0,
                                  normalise_hist=True),
+                ]
+
+                if not MC_INPUT:
+                    alt_mc_gen_hist_bin = unfolder.get_var_hist_pt_binned(alt_hist_mc_gen, ibin_pt, binning_scheme="generator")
+                    alt_gen_colour = ROOT.kViolet+1
+                    entries.append(
+                        Contribution(alt_mc_gen_hist_bin,
+                                     label="Generator (%s)" % (region['alt_mc_label']),
+                                     line_color=alt_gen_colour, line_width=lw, line_style=2,
+                                     marker_color=alt_gen_colour, marker_size=0,
+                                     subplot=mc_gen_hist_bin,
+                                     normalise_hist=True),
+                    )
+                entries.extend([
                     Contribution(unfolded_hist_bin_total_errors,
                                  label="Unfolded (#tau = %.3g) (total err)" % (tau),
                                  line_color=unfolded_total_colour, line_width=lw, line_style=1,
@@ -2161,7 +2176,7 @@ if __name__ == "__main__":
                                  line_color=unfolded_stat_colour, line_width=lw, line_style=1,
                                  marker_color=unfolded_stat_colour, marker_style=20, marker_size=0.75,
                                  normalise_hist=True),
-                ]
+                ])
                 if not check_entries(entries, "%s %d" % (append, ibin_pt)):
                     continue
                 plot = Plot(entries,
@@ -2184,7 +2199,21 @@ if __name__ == "__main__":
                                  label="Generator (MG+Pythia8)",
                                  line_color=gen_colour, line_width=lw,
                                  marker_color=gen_colour, marker_size=0,
-                                 normalise_hist=False),
+                                 normalise_hist=False)
+                ]
+                if not MC_INPUT:
+                    alt_mc_gen_hist_bin = unfolder.get_var_hist_pt_binned(alt_hist_mc_gen, ibin_pt, binning_scheme="generator")  # doesnt matte rusing unfolder, same binning
+                    alt_mc_gen_hist_bin_div_bin_width = qgp.normalise_hist_divide_bin_width(alt_mc_gen_hist_bin)
+                    alt_gen_colour = ROOT.kViolet+1
+                    entries.append(
+                        Contribution(alt_mc_gen_hist_bin_div_bin_width,
+                                     label="Generator (%s)" % (region['alt_mc_label']),
+                                     line_color=alt_gen_colour, line_width=lw, line_style=2,
+                                     marker_color=alt_gen_colour, marker_size=0,
+                                     subplot=mc_gen_hist_bin_div_bin_width,
+                                     normalise_hist=False),
+                    )
+                entries.extend([
                     Contribution(unfolded_hist_bin_total_errors_div_bin_width,
                                  label="Unfolded (#tau = %.3g) (total err)" % (tau),
                                  line_color=unfolded_total_colour, line_width=lw, line_style=1,
@@ -2196,7 +2225,7 @@ if __name__ == "__main__":
                                  line_color=unfolded_stat_colour, line_width=lw, line_style=1,
                                  marker_color=unfolded_stat_colour, marker_style=20, marker_size=0.75,
                                  normalise_hist=False),
-                ]
+                ])
                 if not check_entries(entries, "%s %d" % (append, ibin_pt)):
                     continue
                 plot = Plot(entries,
