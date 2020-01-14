@@ -503,11 +503,6 @@ class MyUnfolder(object):
             self.probability_matrix = self.tunfolder.GetProbabilityMatrix("prob_matrix_"+cu.get_unique_str(), "", self.use_axis_binning)
         return self.probability_matrix
 
-    def get_covariance_matrix(self):
-        if getattr(self, "covariance_matrix", None) is None:
-            self.covariance_matrix = self.tunfolder.GetVxx()
-        return self.covariance_matrix
-
     def get_var_hist_pt_binned(self, hist1d, ibin_pt, binning_scheme='generator'):
         """Get hist of variable for given pt bin from massive 1D hist that TUnfold makes"""
         # FIXME: assume no underflow?!

@@ -153,16 +153,6 @@ class MyUnfolderPlotter(object):
                           draw_bin_lines_y=True,
                           canvas_size=(800, 700))
 
-    def draw_covariance_matrix(self, output_dir='.', append="", title=""):
-        output_filename = "%s/covariance_map_%s.%s" % (output_dir, append, self.output_fmt)
-        self.draw_2d_hist(self.unfolder.get_covariance_matrix(),
-                          title=title,
-                          output_filename=output_filename,
-                          draw_bin_lines_x=True,
-                          draw_bin_lines_y=True,
-                          canvas_size=(800, 700),
-                          xtitle='Generator bin', ytitle='Generator bin')
-
     def draw_probability_matrix(self, output_dir='.', append="", title=""):
         output_filename = "%s/probability_map_%s.%s" % (output_dir, append, self.output_fmt)
         self.draw_2d_hist(self.unfolder.get_probability_matrix(),

@@ -1353,9 +1353,6 @@ if __name__ == "__main__":
             title = "Response matrix, %s, %s region, %s" % (jet_algo, region['label'], angle_str)
             unfolder_plotter.draw_response_matrix(title=title, **plot_args)
 
-            # title = "Covariance matrix, %s region, %s" % (region['label'], angle_str)
-            # unfolder_plotter.draw_covariance_matrix(title=title, **plot_args)
-
             title = ("#splitline{Probability matrix, %s, %s region, %s}{Condition number: #sigma_{max} / #sigma_{min} = %.3g / %.3g = %g}"
                         % (jet_algo, region['label'], angle_str, unfolder.sigma_max, unfolder.sigma_min, unfolder.condition_number))
             unfolder_plotter.draw_probability_matrix(title=title, **plot_args)
