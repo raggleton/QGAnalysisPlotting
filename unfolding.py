@@ -714,7 +714,9 @@ if __name__ == "__main__":
         tau_limits = {
             'jet_puppiMultiplicity': (1E-5, 1E-2),
             'jet_pTD': (1E-6, 1E-4),
-            'jet_LHA': (1E-5, 1E-3),
+            # 'jet_LHA': (1E-5, 1E-3),
+            # 'jet_LHA': (1E-7, 1E-4),
+            'jet_LHA': (1E-8, 1E-4),
             'jet_width': (1E-5, 1E-2),
             'jet_thrust': (1E-6, 1E-2),
             'jet_puppiMultiplicity_charged': (1E-6, 1E-2),
@@ -899,6 +901,7 @@ if __name__ == "__main__":
             reg_axis_str = '_onlyRegPt'
         elif args.regularizeAxis == 'angle':
             reg_axis_str = '_onlyRegAngle'
+        reg_axis_str += "_scaleBinFactorsBinWidth"
 
     area_constraint = ROOT.TUnfold.kEConstraintArea
     area_constraint = ROOT.TUnfold.kEConstraintNone
@@ -1123,8 +1126,10 @@ if __name__ == "__main__":
                                   pt_bin_edges_underflow_gen=pt_bin_edges_underflow_gen,
                                   orientation=ROOT.TUnfold.kHistMapOutputHoriz,
                                   constraintMode=area_constraint,
-                                  regMode=ROOT.TUnfold.kRegModeCurvature,
-                                  densityFlags=ROOT.TUnfoldDensity.kDensityModeBinWidth, # important as we have varying bin sizes!
+                                  # regMode=ROOT.TUnfold.kRegModeCurvature,
+                                  # densityFlags=ROOT.TUnfoldDensity.kDensityModeBinWidth, # important as we have varying bin sizes!
+                                  regMode=ROOT.TUnfold.kRegModeNone,
+                                  densityFlags=ROOT.TUnfoldDensity.kDensityModeBinWidthAndUser, # important as we have varying bin sizes!
                                   distribution='generatordistribution',  # the one to use for actual final regularisation/unfolding
                                   axisSteering=axis_steering)
 
@@ -1233,6 +1238,123 @@ if __name__ == "__main__":
             # ---------------------
             unfolder.print_condition_number()
 
+            if REGULARIZE != "None":
+                # To setup the L matrix correctly, we have to rescale
+                # the default one by the inverse of the pT spectrum
+                # This means we first need a copy of the L matrix, so make a
+                # dummy unfolder, ensuring it's setup to make L
+                # We also need to do an unregularised unfolding first to get
+                # the correct pt factors, since data spectrum != MC
+                dummy_unfolder = MyUnfolder(response_map=unfolder.response_map,
+                                            variable_bin_edges_reco=unfolder.variable_bin_edges_reco,
+                                            variable_bin_edges_gen=unfolder.variable_bin_edges_gen,
+                                            variable_name=unfolder.variable_name,
+                                            pt_bin_edges_reco=unfolder.pt_bin_edges_reco,
+                                            pt_bin_edges_gen=unfolder.pt_bin_edges_gen,
+                                            pt_bin_edges_underflow_reco=unfolder.pt_bin_edges_underflow_reco,
+                                            pt_bin_edges_underflow_gen=unfolder.pt_bin_edges_underflow_gen,
+                                            orientation=unfolder.orientation,
+                                            constraintMode=unfolder.constraintMode,
+                                            regMode=ROOT.TUnfold.kRegModeCurvature,
+                                            densityFlags=ROOT.TUnfoldDensity.kDensityModeBinWidth, # important as we have varying bin sizes!
+                                            distribution=unfolder.distribution,
+                                            axisSteering=unfolder.axisSteering)
+                # Do the unregularised unfolding to get an idea of bin contents
+                # and uncertainties
+                # Set what is to be unfolded
+                # ------------------------------------------------------------------
+                dummy_unfolder.set_input(input_hist=reco_1d,
+                                   input_hist_gen_binning=reco_1d_gen_binning,
+                                   hist_truth=hist_mc_gen,
+                                   hist_mc_reco=hist_mc_reco,
+                                   hist_mc_reco_bg_subtracted=hist_mc_reco_bg_subtracted,
+                                   hist_mc_reco_gen_binning=hist_mc_reco_gen_binning,
+                                   hist_mc_reco_gen_binning_bg_subtracted=hist_mc_reco_gen_binning_bg_subtracted,
+                                   bias_factor=0)
+
+                # For now, ignore experimental systematics
+
+                # Subtract fakes (treat as background)
+                # ------------------------------------------------------------------
+                if SUBTRACT_FAKES:
+                    dummy_unfolder.subtract_background(hist_fakes_reco, "Signal fakes", scale=1., scale_err=0.0)
+                    dummy_unfolder.subtract_background_gen_binning(hist_fakes_reco_gen_binning, "Signal fakes", scale=1., scale_err=0.0)
+
+                # Subtract actual backgrounds if necessary
+                # ------------------------------------------------------------------
+                if "backgrounds" in region and args.subtractBackgrounds:
+                    for bg_ind, bg_dict in enumerate(region['backgrounds']):
+                        print("Subtracting", bg_dict['name'], 'background')
+                        if not isinstance(bg_dict['tfile'], ROOT.TFile):
+                            bg_dict['tfile'] = cu.open_root_file(bg_dict['tfile'])
+
+                        mc_hname_append = "split" if MC_SPLIT else "all"
+                        bg_hist = cu.get_from_tfile(bg_dict['tfile'], "%s/hist_%s_reco_%s" % (region['dirname'], angle_shortname, mc_hname_append))
+                        bg_hist_gen = cu.get_from_tfile(bg_dict['tfile'], "%s/hist_%s_truth_%s" % (region['dirname'], angle_shortname, mc_hname_append))
+                        bg_dict['hist'] = bg_hist
+                        bg_dict['hist_gen'] = bg_hist
+
+                        dummy_unfolder.subtract_background(hist=bg_hist,
+                                                     name=bg_dict['name'],
+                                                     scale=bg_dict.get('rate', 1.),
+                                                     scale_err=bg_dict.get('rate_unc', 0.))
+
+                dummy_unfolder.do_unfolding(0)
+                dummy_unfolded_1d = dummy_unfolder.get_output(hist_name="dummy_unfolded_1d")
+
+                orig_Lmatrix = dummy_unfolder.tunfolder.GetL("orig_Lmatrix_%s" % (append), "", dummy_unfolder.use_axis_binning)
+                xax = orig_Lmatrix.GetXaxis()
+                # Get bin factors from an unregularised unfolding first,
+                # to compensate for the fact that the shape differs between data & MC
+                bin_factors = dummy_unfolder.calculate_pt_bin_factors(which='unfolded') # calculate factors to get uniform pt spectrum
+                bin_widths = dummy_unfolder.get_gen_bin_widths() # mapping {global bin number : (lambda bin width, pt bin width)}
+
+                print(dummy_unfolder.variable_bin_edges_gen)
+
+                # loop over existing regularisation conditions, since we want to modify them
+                # in our main unfolder
+                for iy in range(1, orig_Lmatrix.GetNbinsY()+1):
+                    # Look for gen bin number where values start for this regularisation row
+                    left_bin, mid_bin, right_bin = 0, 0, 0
+                    left_bin_val, mid_bin_val, right_bin_val = 0, 0, 0
+                    for ix in range(1, orig_Lmatrix.GetNbinsX()+1):
+                        bin_content = orig_Lmatrix.GetBinContent(ix, iy)
+                        if bin_content != 0:
+                            if left_bin == 0:
+                                left_bin = ix
+                                left_bin_val = bin_content
+                                continue
+                            elif mid_bin == 0:
+                                mid_bin = ix
+                                mid_bin_val = bin_content
+                                continue
+                            else:
+                                right_bin = ix
+                                right_bin_val = bin_content
+                                break # got em all
+
+                    # Things to try:
+                    # - Ignore the original reg. condition: just use bin_factors
+                    # - Same, but with pt bin_width compensated
+                    # - Modify existing reg.condition with bin_factors
+                    # - Same, but compensate for pt bin width
+                    # - Weighting my median relative error? e.g. care more about
+                    # regions/bins with larger error bars
+
+                    # Rescale accord to pT, and according to pT bin width
+                    # since the original was divided by both pt bin width and lambda bin width
+                    # Doesn't matter left or right for bin widht - only care about pt bin width
+                    pt_factor = bin_factors[mid_bin] * bin_widths[left_bin][1]
+
+                    # - signs since RegularizeCurvature also adds in a - sign,
+                    # and we want to match the original sign (which is +ve)
+                    # scale_left = -pt_factor
+                    # scale_right = -pt_factor
+                    scale_left = -left_bin_val * pt_factor
+                    scale_right = -right_bin_val * pt_factor
+
+                    print("Adding regularisation rule: nR=%d, gen bins: [%d - %d], factors: [%f, %f, %f]" % (iy, left_bin, right_bin, -scale_left, 2*(scale_left+scale_right), -scale_right) )
+                    unfolder.tunfolder.RegularizeCurvature(left_bin, mid_bin, right_bin, scale_left, scale_right)
             tau = 0
             scan_mode = ROOT.TUnfoldDensity.kEScanTauRhoAvgSys
             scan_distribution = unfolder.distribution

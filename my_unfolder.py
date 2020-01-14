@@ -327,6 +327,81 @@ class MyUnfolder(object):
         self.tau = tau
         self.tunfolder.DoUnfold(tau)
 
+    def calculate_pt_bin_factors(self, which):
+        """Calculate bin factors to account for falling distributions when regularising
+
+        NB done according to singla region - excludes underflow!
+
+        which : str
+            Choose which histogram to use for integrals, 'gen' or 'unfolded'
+        """
+
+        # Tricky - need to get counts in spectrum, ideally with gen binning
+        # FIXME use input_hist instead with detector binning?
+        which = which.lower()
+        if which not in ['unfolded', 'gen']:
+            raise ArgumentError("calculate_pt_bin_factors: 'which' arg should be 'unfolded' or 'gen'")
+
+        hist = None
+        if which == 'gen':
+            if self.input_hist_gen_binning_bg_subtracted is None:
+                raise RuntimeError("Need input_hist_gen_binning_bg_subtracted to be able to do calculate_pt_bin_factors")
+            hist = self.input_hist_gen_binning_bg_subtracted
+
+        if which == 'unfolded':
+            if self.unfolded is None:
+                raise RuntimeError("Need unfolded to be able to do calculate_pt_bin_factors")
+            hist = self.unfolded
+
+        # Get integral of 1st pt bin in signal region
+        gen_node = self.generator_binning.FindNode('generatordistribution')
+        first_var = self.variable_bin_edges_gen[0]
+        last_var = self.variable_bin_edges_gen[-1]
+        pt_val = self.pt_bin_edges_gen[0]
+        start_bin = gen_node.GetGlobalBinNumber(first_var+0.00001, pt_val+0.001)
+        end_bin = gen_node.GetGlobalBinNumber(last_var-0.00001, pt_val+0.001)
+        first_bin_integral = hist.Integral(start_bin, end_bin)  # ROOTs integral is inclusive of last bin
+
+        bin_factors = {}
+        # Add 1s for the 1st pt bin
+        for var in self.variable_bin_edges_gen[:-1]:
+            this_bin = gen_node.GetGlobalBinNumber(var+0.00001, pt_val+0.001)
+            bin_factors[this_bin] = 1
+
+        # Iterate through pt bins, figure out integral, scale according to first bin
+        for pt_val in self.pt_bin_edges_gen[1:-1]:
+            start_bin = gen_node.GetGlobalBinNumber(first_var+0.00001, pt_val+0.001)
+            end_bin = gen_node.GetGlobalBinNumber(last_var-0.00001, pt_val+0.001)
+            integral = hist.Integral(start_bin, end_bin)
+            sf = first_bin_integral / integral
+
+            # Store bin factor for each lambda bin
+            for var in self.variable_bin_edges_gen[:-1]:
+                this_bin = gen_node.GetGlobalBinNumber(var+0.00001, pt_val+0.001)
+                bin_factors[this_bin] = sf
+
+        return bin_factors
+
+    def get_gen_bin_widths(self):
+        results = {}
+        # loop through the real axes, convert to global bin number, store width
+        # This is because TUnfoldBinning has no *public* method to go the other
+        # way...ToAxisBins() is *protected* FFS
+        for lambda_ind, lambda_var in enumerate(self.variable_bin_edges_gen[:-1]):
+            # underflow region
+            for pt_ind, pt_val in enumerate(self.pt_bin_edges_underflow_gen[:-1]):
+                global_bin = self.generator_distribution_underflow.GetGlobalBinNumber(lambda_var+0.00000001, pt_val+0.0000001)
+                lambda_width = self.variable_bin_edges_gen[lambda_ind+1] - self.variable_bin_edges_gen[lambda_ind]
+                pt_width = self.pt_bin_edges_underflow_gen[pt_ind+1] - self.pt_bin_edges_underflow_gen[pt_ind]
+                results[global_bin] = (lambda_width, pt_width)
+            # signal region
+            for pt_ind, pt_val in enumerate(self.pt_bin_edges_gen[:-1]):
+                global_bin = self.generator_distribution.GetGlobalBinNumber(lambda_var+0.00000001, pt_val+0.0000001)
+                lambda_width = self.variable_bin_edges_gen[lambda_ind+1] - self.variable_bin_edges_gen[lambda_ind]
+                pt_width = self.pt_bin_edges_gen[pt_ind+1] - self.pt_bin_edges_gen[pt_ind]
+                results[global_bin] = (lambda_width, pt_width)
+        return results
+
     def add_sys_error(self, map_syst, name, mode):
         """Add systematic error via response map, arguments as per AddSysError()"""
         self.syst_maps[name] = map_syst
