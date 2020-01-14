@@ -647,7 +647,7 @@ class MyUnfolderPlotter(object):
                     ytitle="N",
                     subplot_type='ratio',
                     subplot_title='#splitline{Unfolded %s /}{MC Gen}' % label,
-                    subplot_limits=(0, 2),
+                    subplot_limits=(0.75, 1.25),
                     has_data=self.is_data)
         plot.default_canvas_size = (800, 600)
         # plot.text_left_offset = 0.05  # have to bodge this
@@ -731,7 +731,7 @@ class MyUnfolderPlotter(object):
                     ytitle="N",
                     subplot_type='ratio' if ((do_reco_mc and do_reco_data) or (do_reco_mc_bg_sub and do_reco_data_bg_sub)) else None,
                     subplot_title='Data / MC',
-                    subplot_limits=(0.8, 1.2),
+                    subplot_limits=(0.75, 1.25),
                     has_data=(do_reco_data or do_reco_data_bg_sub))
         plot.default_canvas_size = (800, 600)
         plot.plot("NOSTACK HISTE")
@@ -829,7 +829,7 @@ class MyUnfolderPlotter(object):
                     ytitle="N",
                     subplot_type='ratio' if ((do_reco_mc and do_reco_data) or (do_reco_mc_bg_sub and do_reco_data_bg_sub)) else None,
                     subplot_title='#splitline{Data / MC}{(detector)}',
-                    subplot_limits=(0.8, 1.2),
+                    subplot_limits=(0.75, 1.25),
                     has_data=(do_reco_data or do_reco_data_bg_sub))
         plot.default_canvas_size = (800, 600)
         plot.plot("NOSTACK HISTE")
@@ -889,7 +889,7 @@ class MyUnfolderPlotter(object):
                     ytitle="N",
                     subplot_type='ratio',
                     subplot_title='#splitline{Folded /}{Unfolding input}',
-                    subplot_limits=(0.8, 1.2),
+                    subplot_limits=(0.75, 1.25),
                     has_data=self.is_data)
         plot.default_canvas_size = (800, 600)
         plot.plot("NOSTACK HIST")
@@ -949,7 +949,7 @@ class MyUnfolderPlotter(object):
                     ytitle="N",
                     subplot_type='ratio',
                     subplot_title='#splitline{Folded gen/}{Unfolding input}',
-                    subplot_limits=(0.8, 1.2))
+                    subplot_limits=(0.75, 1.25))
         plot.default_canvas_size = (800, 600)
         plot.plot("NOSTACK HIST")
         plot.main_pad.SetLogy(1)
