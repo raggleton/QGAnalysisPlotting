@@ -474,8 +474,7 @@ class Plot(object):
 
         # this is tricky... how to handle various cases like -ve, ignoring 0s
         if isinstance(self.contributions_objs[0], ROOT.TH1):
-            ymin = min([o.GetMinimum(0) for o in self.contributions_objs])
-        
+            ymin = min([o.GetMinimum() for o in self.contributions_objs])
             if ymin >= 0:
                 ymin = min([o.GetMinimum(1E-20) for o in self.contributions_objs])
         else:
@@ -486,7 +485,10 @@ class Plot(object):
             if ymin > 0:
                 modifier.SetMinimum(ymin * self.y_padding_min_log)
         else:
-            modifier.SetMinimum(ymin * self.y_padding_min_linear)
+            if ymin < 0:
+                modifier.SetMinimum(ymin / self.y_padding_min_linear)
+            else:
+                modifier.SetMinimum(ymin * self.y_padding_min_linear)
 
     def plot(self, draw_opts=None, subplot_draw_opts=None):
         """Make the plot.
