@@ -688,8 +688,8 @@ class MyUnfolder(object):
         ncol = hist_A.GetNbinsX()
         if oflow_x:
             ncol += 2
-        result = np.zeros(shape=(1, ncol), dtype=float)
-        errors = np.zeros(shape=(1, ncol), dtype=float)
+        result = np.zeros(shape=(1, ncol), dtype=np.float64)
+        errors = np.zeros(shape=(1, ncol), dtype=np.float64)
 
         # Get ROOT indices to loop over
         x_start = 0 if oflow_x else 1
@@ -729,7 +729,7 @@ class MyUnfolder(object):
 
         for x_ind, ix in enumerate(range(x_start, x_end+1)):
             h.SetBinContent(ix, nd_array[0][x_ind])
-            h.SetBinError(ix, math.sqrt(nd_array[0][x_ind]))
+            h.SetBinError(ix, math.sqrt(abs(nd_array[0][x_ind])))
             #FIXME how to do errors
         return h
 
@@ -746,8 +746,8 @@ class MyUnfolder(object):
         if oflow_y:
             nrow += 2
 
-        result = np.zeros(shape=(nrow, ncol), dtype=float)
-        errors = np.zeros(shape=(nrow, ncol), dtype=float)
+        result = np.zeros(shape=(nrow, ncol), dtype=np.float64)
+        errors = np.zeros(shape=(nrow, ncol), dtype=np.float64)
         # access via result[irow][icol]
 
         # Get ROOT indices to loop over
