@@ -102,11 +102,13 @@ def make_comparison_plot_ingredients(entries, rebin=1, normalise_hist=True, mean
     do_subplot = any(c.subplot for c in conts) or "subplot" in plot_kwargs
     if (len(conts) == 1 or not do_subplot) and "subplot_type" in plot_kwargs:
         plot_kwargs['subplot_type'] = None
+        print("Not doing subplot")
 
     # Plot expects subplot to be a Contribution
     # But we only make those here
     # So here we figure out which contribution matches the subplot, if it exists
     if "subplot" in plot_kwargs and plot_kwargs['subplot'] is not None:
+        # FIXME check type, could match obj or Contribution
         subplot_cont = [c for c in conts if c.obj == plot_kwargs['subplot']]
         if len(subplot_cont) > 0:
             plot_kwargs['subplot'] = subplot_cont[0]
@@ -121,7 +123,7 @@ def make_comparison_plot_ingredients(entries, rebin=1, normalise_hist=True, mean
     if do_legend:
         # ensure legend big enough, but not too big, depending on how long entries are
         max_leg_str = max([len(c.label) for c in conts])
-        if max_leg_str < 9:
+        if max_leg_str < 12:
             p.legend.SetX1(0.65)
         else:
             p.legend.SetX1(0.5)
