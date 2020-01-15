@@ -20,6 +20,7 @@ import common_utils as cu
 import qg_common as qgc
 import qg_general_plots as qgp
 
+
 # This doesn't seem to work...sigh
 np.set_printoptions(edgeitems=3,infstr='Infinity',
                     linewidth=75, nanstr='nan', precision=8,
@@ -32,10 +33,17 @@ ROOT.gStyle.SetOptStat(0)
 ROOT.gStyle.SetPaintTextFormat(".3f")
 ROOT.gStyle.SetHistTopMargin(0.)
 
+# Load my derived class
+with open("MyTUnfoldDensity.cpp") as f:
+    code = f.read()
+    ROOT.gInterpreter.ProcessLine(code)
 
-class MyUnfolder(object):
-    """Main class to handle unfolding input/outputs, all the associated objects"""
 
+class MyUnfolder(ROOT.MyTUnfoldDensity):
+    """Main class to handle unfolding input/outputs, all the associated objects
+
+    Derived from MyTUnfoldDensity to get access to protected methods/vars
+    """
 
     def __init__(self,
                  response_map,  # 2D GEN-RECO heatmap
@@ -109,16 +117,17 @@ class MyUnfolder(object):
         self.distribution = distribution
         self.axisSteering = axisSteering
 
-        self.tunfolder = ROOT.TUnfoldDensity(self.response_map,
-                                             self.orientation,
-                                             self.regMode,
-                                             self.constraintMode,
-                                             self.densityFlags,
-                                             self.generator_binning,
-                                             self.detector_binning,
-                                             # hmm these take preference over whatever is use for scantau?
-                                             self.distribution,
-                                             self.axisSteering)
+        ROOT.TUnfoldDensity.__init__(self, 
+                                     self.response_map,
+                                     self.orientation,
+                                     self.regMode,
+                                     self.constraintMode,
+                                     self.densityFlags,
+                                     self.generator_binning,
+                                     self.detector_binning,
+                                     # hmm these take preference over whatever is use for scantau?
+                                     self.distribution,
+                                     self.axisSteering)
 
         self.use_axis_binning = False  # for things like get_probability_matrix()...but doesn't seem to do anything?!
 
@@ -282,7 +291,7 @@ class MyUnfolder(object):
         self.hist_mc_reco_bg_subtracted = hist_mc_reco_bg_subtracted
         self.hist_mc_reco_gen_binning = hist_mc_reco_gen_binning
         self.hist_mc_reco_gen_binning_bg_subtracted = hist_mc_reco_gen_binning_bg_subtracted
-        self.tunfolder.SetInput(input_hist, bias_factor)
+        self.SetInput(input_hist, bias_factor)
 
     def subtract_background(self, hist, name, scale=1.0, scale_err=0.0):
         """Subtract background source from input hist"""
@@ -291,7 +300,7 @@ class MyUnfolder(object):
         self.backgrounds[name].Scale(scale)
         # Also save total input subtracted
         self.input_hist_bg_subtracted.Add(hist, -1*scale)
-        self.tunfolder.SubtractBackground(hist.Clone(), name, scale, scale_err)
+        self.SubtractBackground(hist.Clone(), name, scale, scale_err)
 
     def subtract_background_gen_binning(self, hist, name, scale=1.0, scale_err=0.0):
         """Subtract background source with gen binning from input hist
@@ -328,7 +337,7 @@ class MyUnfolder(object):
         """Carry out unfolding with given regularisastion parameter"""
         print(">>> Unfolding with tau =", tau)
         self.tau = tau
-        self.tunfolder.DoUnfold(tau)
+        self.DoUnfold(tau)
 
     def calculate_pt_bin_factors(self, which):
         """Calculate bin factors to account for falling distributions when regularising
@@ -408,7 +417,7 @@ class MyUnfolder(object):
     def add_sys_error(self, map_syst, name, mode):
         """Add systematic error via response map, arguments as per AddSysError()"""
         self.syst_maps[name] = map_syst
-        self.tunfolder.AddSysError(map_syst, name, self.orientation, ROOT.TUnfoldDensity.kSysErrModeMatrix)
+        self.AddSysError(map_syst, name, self.orientation, ROOT.TUnfoldDensity.kSysErrModeMatrix)
         self.syst_shifts[name] = None  # setup for get_delta_sys_shift
         self.systs_shifted[name] = None  # setup for get_syst_shifted_hist
         self.syst_ematrices[name] = None  # setup for get_ematrix_syst
@@ -421,7 +430,7 @@ class MyUnfolder(object):
         if syst_label not in self.syst_shifts:
             raise KeyError("No systematic %s, only have: %s" % (syst_label, ", ".join(self.syst_shifts.keys())))
         if self.syst_shifts[syst_label] is None:
-            hist = self.tunfolder.GetDeltaSysSource(syst_label,
+            hist = self.GetDeltaSysSource(syst_label,
                                                     "syst_shift_%s" % (syst_label.replace(" ", "_")),
                                                     "",
                                                     self.output_distribution_name, # must be the same as what's used in get_output
@@ -446,18 +455,18 @@ class MyUnfolder(object):
 
     def get_output(self, hist_name='unfolded'):
         """Get 1D unfolded histogram covering all bins"""
-        print("Ndf:", self.tunfolder.GetNdf())
-        self.Ndf = self.tunfolder.GetNdf()
-        print("Npar:", self.tunfolder.GetNpar())
-        self.Npar = self.tunfolder.GetNpar()
-        print("chi2sys:", self.tunfolder.GetChi2Sys())
-        self.chi2sys = self.tunfolder.GetChi2Sys()
-        print("chi2A:", self.tunfolder.GetChi2A())
-        self.chi2A = self.tunfolder.GetChi2A()
-        print("chi2L:", self.tunfolder.GetChi2L())
-        self.chi2L = self.tunfolder.GetChi2L()
+        print("Ndf:", self.GetNdf())
+        self.Ndf = self.GetNdf()
+        print("Npar:", self.GetNpar())
+        self.Npar = self.GetNpar()
+        print("chi2sys:", self.GetChi2Sys())
+        self.chi2sys = self.GetChi2Sys()
+        print("chi2A:", self.GetChi2A())
+        self.chi2A = self.GetChi2A()
+        print("chi2L:", self.GetChi2L())
+        self.chi2L = self.GetChi2L()
 
-        self.unfolded = self.tunfolder.GetOutput(hist_name, "", self.output_distribution_name, "*[]", self.use_axis_binning)
+        self.unfolded = self.GetOutput(hist_name, "", self.output_distribution_name, "*[]", self.use_axis_binning)
         return self.unfolded
 
     def _post_process(self):
@@ -525,25 +534,25 @@ class MyUnfolder(object):
 
     def get_bias_vector(self):
         if getattr(self, "bias_vector", None) is None:
-            self.bias_vector = self.tunfolder.GetBias("bias_"+cu.get_unique_str(), "", "generator", "*[]", self.use_axis_binning)
+            self.bias_vector = self.GetBias("bias_"+cu.get_unique_str(), "", "generator", "*[]", self.use_axis_binning)
         return self.bias_vector
 
     def get_ematrix_input(self):
         """Get error matrix due to statistics from thing being unfolded"""
         if getattr(self, "ematrix_input", None) is None:
-            self.ematrix_input = self.tunfolder.GetEmatrixInput("ematrix_input_"+cu.get_unique_str(), "", "generator", "*[]", self.use_axis_binning)
+            self.ematrix_input = self.GetEmatrixInput("ematrix_input_"+cu.get_unique_str(), "", "generator", "*[]", self.use_axis_binning)
         return self.ematrix_input
 
     def get_ematrix_stat_response(self):
         """Statistical uncertainty error matrix from response matrix, should be considered a systematic uncert"""
         if getattr(self, "ematrix_stat_response", None) is None:
-            self.ematrix_stat_response = self.tunfolder.GetEmatrixSysUncorr("ematrix_stat_response_"+cu.get_unique_str(), "", "generator", "*[]", self.use_axis_binning)
+            self.ematrix_stat_response = self.GetEmatrixSysUncorr("ematrix_stat_response_"+cu.get_unique_str(), "", "generator", "*[]", self.use_axis_binning)
         return self.ematrix_stat_response
 
     def get_ematrix_total(self):
         """Total error matrix, from stat+systs"""
         if getattr(self, "ematrix_total", None) is None:
-            self.ematrix_total = self.tunfolder.GetEmatrixTotal("ematrix_total_"+cu.get_unique_str(), "", "generator", "*[]", self.use_axis_binning)
+            self.ematrix_total = self.GetEmatrixTotal("ematrix_total_"+cu.get_unique_str(), "", "generator", "*[]", self.use_axis_binning)
         return self.ematrix_total
 
     def get_ematrix_stat(self):
@@ -555,7 +564,7 @@ class MyUnfolder(object):
             # So we are trusting that the default args for title and axisSteering are correct
             # Gnahhhhhhh
             self.ematrix_stat = this_binning.CreateErrorMatrixHistogram("ematrix_stat_"+cu.get_unique_str(), self.use_axis_binning) #, bin_map, "", "*[]")
-            self.tunfolder.GetEmatrix(self.ematrix_stat)
+            self.GetEmatrix(self.ematrix_stat)
         return self.ematrix_stat
 
     def get_ematrix_syst(self, syst_label):
@@ -570,7 +579,7 @@ class MyUnfolder(object):
             # Gnahhhhhhh
             syst_label_no_spaces = syst_label.replace(" ", "_")
             hist = this_binning.CreateErrorMatrixHistogram("ematrix_syst_%s_%s" % (syst_label_no_spaces, cu.get_unique_str()), self.use_axis_binning) #, bin_map, "", "*[]")
-            self.tunfolder.GetEmatrixSysSource(hist, syst_label)
+            self.GetEmatrixSysSource(hist, syst_label)
             self.syst_ematrices[syst_label] = hist
         return self.syst_ematrices[syst_label]
 
@@ -583,17 +592,17 @@ class MyUnfolder(object):
             # So we are trusting that the default args for title and axisSteering are correct
             # Gnahhhhhhh
             self.ematrix_tau = this_binning.CreateErrorMatrixHistogram("ematrix_tau_"+cu.get_unique_str(), self.use_axis_binning) #, bin_map, "", "*[]")
-            self.tunfolder.GetEmatrixSysTau(self.ematrix_tau)
+            self.GetEmatrixSysTau(self.ematrix_tau)
         return self.ematrix_tau
 
     def get_rhoij_total(self):
         if getattr(self, "rhoij_total", None) is None:
-            self.rhoij_total = self.tunfolder.GetRhoIJtotal("rhoij_total_"+cu.get_unique_str(), "", "generator", "*[]", self.use_axis_binning)
+            self.rhoij_total = self.GetRhoIJtotal("rhoij_total_"+cu.get_unique_str(), "", "generator", "*[]", self.use_axis_binning)
         return self.rhoij_total
 
     def get_probability_matrix(self):
         if getattr(self, "probability_matrix", None) is None:
-            self.probability_matrix = self.tunfolder.GetProbabilityMatrix("prob_matrix_"+cu.get_unique_str(), "", self.use_axis_binning)
+            self.probability_matrix = self.GetProbabilityMatrix("prob_matrix_"+cu.get_unique_str(), "", self.use_axis_binning)
         return self.probability_matrix
 
     def get_var_hist_pt_binned(self, hist1d, ibin_pt, binning_scheme='generator'):

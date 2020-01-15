@@ -339,7 +339,7 @@ class MyUnfolderPlotter(object):
 
     def draw_L_matrix(self, output_dir='.', append="", title=""):
         """Draw L matrix used for regularisation"""
-        Lmatrix = self.unfolder.tunfolder.GetL("hist_Lmatrix_%s" % (append), title)
+        Lmatrix = self.unfolder.GetL("hist_Lmatrix_%s" % (append), title)
         # Custom colour scheme - french flag colouring
         NRGBs = 5
         NCont = 256
@@ -383,7 +383,7 @@ class MyUnfolderPlotter(object):
             True,
             True,
             title)
-        self.unfolder.tunfolder.GetLsquared(Lmatrix)
+        self.unfolder.GetLsquared(Lmatrix)
         print("Lmatrix squared:", Lmatrix.GetNbinsX())
         print("Lmatrix squared:", Lmatrix.GetNbinsY())
         self.draw_2d_hist(Lmatrix, title=title, output_filename=output_filename,
@@ -396,7 +396,7 @@ class MyUnfolderPlotter(object):
         NB can only do after doing ScanTau or ScanLCurve, otherwise crashes
         """
         output_filename = "%s/Lx_minus_bias_%s.%s" % (output_dir, append, self.output_fmt)
-        hist_Lx_minus_bias = self.unfolder.tunfolder.GetLxMinusBias("hist_Lx_minus_bias_%s" % (append), title)
+        hist_Lx_minus_bias = self.unfolder.GetLxMinusBias("hist_Lx_minus_bias_%s" % (append), title)
         conts = [Contribution(hist_Lx_minus_bias)]
         plot = Plot(conts,
                     what='hist',

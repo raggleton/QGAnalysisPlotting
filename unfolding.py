@@ -1302,7 +1302,7 @@ if __name__ == "__main__":
                 dummy_unfolder.do_unfolding(0)
                 dummy_unfolded_1d = dummy_unfolder.get_output(hist_name="dummy_unfolded_1d")
 
-                orig_Lmatrix = dummy_unfolder.tunfolder.GetL("orig_Lmatrix_%s" % (append), "", dummy_unfolder.use_axis_binning)
+                orig_Lmatrix = dummy_unfolder.GetL("orig_Lmatrix_%s" % (append), "", dummy_unfolder.use_axis_binning)
                 xax = orig_Lmatrix.GetXaxis()
                 # Get bin factors from an unregularised unfolding first,
                 # to compensate for the fact that the shape differs between data & MC
@@ -1354,14 +1354,14 @@ if __name__ == "__main__":
                     scale_right = -right_bin_val * pt_factor
 
                     print("Adding regularisation rule: nR=%d, gen bins: [%d - %d], factors: [%f, %f, %f]" % (iy, left_bin, right_bin, -scale_left, 2*(scale_left+scale_right), -scale_right) )
-                    unfolder.tunfolder.RegularizeCurvature(left_bin, mid_bin, right_bin, scale_left, scale_right)
+                    unfolder.RegularizeCurvature(left_bin, mid_bin, right_bin, scale_left, scale_right)
             tau = 0
             scan_mode = ROOT.TUnfoldDensity.kEScanTauRhoAvgSys
             scan_distribution = unfolder.distribution
             if REGULARIZE == "L":
                 print("Regularizing with ScanLcurve, please be patient...")
                 l_scanner = LCurveScanner()
-                tau = l_scanner.scan_L(tunfolder=unfolder.tunfolder,
+                tau = l_scanner.scan_L(tunfolder=unfolder,
                                        n_scan=args.nScan,
                                        tau_min=region['tau_limits'][angle.var][0],
                                        tau_max=region['tau_limits'][angle.var][1])
@@ -1373,7 +1373,7 @@ if __name__ == "__main__":
             elif REGULARIZE == "tau":
                 print("Regularizing with ScanTau, please be patient...")
                 tau_scanner = TauScanner()
-                tau = tau_scanner.scan_tau(tunfolder=unfolder.tunfolder,
+                tau = tau_scanner.scan_tau(tunfolder=unfolder,
                                            n_scan=args.nScan,
                                            tau_min=region['tau_limits'][angle.var][0],
                                            tau_max=region['tau_limits'][angle.var][1],
@@ -1617,7 +1617,7 @@ if __name__ == "__main__":
                 if REGULARIZE == "L":
                     print("Regularizing alternative with ScanL, please be patient...")
                     alt_L_scanner = LCurveScanner()
-                    alt_tau = alt_l_scanner.scan_L(tunfolder=alt_unfolder.tunfolder,
+                    alt_tau = alt_l_scanner.scan_L(tunfolder=alt_unfolder,
                                                n_scan=args.nScan,
                                                tau_min=region['tau_limits'][angle.var][0],
                                                tau_max=region['tau_limits'][angle.var][1])
@@ -1629,7 +1629,7 @@ if __name__ == "__main__":
                 elif REGULARIZE == "tau":
                     print("Regularizing alternative with ScanTau, please be patient...")
                     alt_tau_scanner = TauScanner()
-                    alt_tau = alt_tau_scanner.scan_tau(tunfolder=alt_unfolder.tunfolder,
+                    alt_tau = alt_tau_scanner.scan_tau(tunfolder=alt_unfolder,
                                                        n_scan=args.nScan,
                                                        tau_min=region['tau_limits'][angle.var][0],
                                                        tau_max=region['tau_limits'][angle.var][1],
@@ -1747,7 +1747,7 @@ if __name__ == "__main__":
                         # SetEpsMatrix ensures rank properly calculated when inverting
                         # Needed if you get message "rank of matrix E 55 expect 170"
                         # And unfolded looks wacko
-                        syst_unfolder.tunfolder.SetEpsMatrix(1E-18)
+                        syst_unfolder.SetEpsMatrix(1E-18)
 
                     # because we only care about shape, not overall normalisation
                     # (which can artificially increase/decrease errors)
@@ -1811,7 +1811,7 @@ if __name__ == "__main__":
                     if REGULARIZE == "L":
                         print("Regularizing systematic model with ScanL, please be patient...")
                         syst_l_scanner = LCurveScanner()
-                        syst_tau = syst_l_scanner.scan_L(tunfolder=syst_unfolder.tunfolder,
+                        syst_tau = syst_l_scanner.scan_L(tunfolder=syst_unfolder,
                                                          n_scan=args.nScan,
                                                          tau_min=region['tau_limits'][angle.var][0],
                                                          tau_max=region['tau_limits'][angle.var][1])
@@ -1823,7 +1823,7 @@ if __name__ == "__main__":
                     elif REGULARIZE == "tau":
                         print("Regularizing systematic model with ScanTau, please be patient...")
                         syst_tau_scanner = TauScanner()
-                        syst_tau = syst_tau_scanner.scan_tau(tunfolder=syst_unfolder.tunfolder,
+                        syst_tau = syst_tau_scanner.scan_tau(tunfolder=syst_unfolder,
                                                              n_scan=args.nScan,
                                                              tau_min=region['tau_limits'][angle.var][0],
                                                              tau_max=region['tau_limits'][angle.var][1],
@@ -2111,7 +2111,7 @@ if __name__ == "__main__":
                     if REGULARIZE == "L":
                         print("Regularizing systematic model with ScanL, please be patient...")
                         syst_l_scanner = LCurveScanner()
-                        syst_tau = syst_l_scanner.scan_L(tunfolder=pdf_unfolder.tunfolder,
+                        syst_tau = syst_l_scanner.scan_L(tunfolder=pdf_unfolder,
                                                          n_scan=args.nScan,
                                                          tau_min=region['tau_limits'][angle.var][0],
                                                          tau_max=region['tau_limits'][angle.var][1])
@@ -2123,7 +2123,7 @@ if __name__ == "__main__":
                     elif REGULARIZE == "tau":
                         print("Regularizing systematic model with ScanTau, please be patient...")
                         syst_tau_scanner = TauScanner()
-                        syst_tau = syst_tau_scanner.scan_tau(tunfolder=pdf_unfolder.tunfolder,
+                        syst_tau = syst_tau_scanner.scan_tau(tunfolder=pdf_unfolder,
                                                              n_scan=args.nScan,
                                                              tau_min=region['tau_limits'][angle.var][0],
                                                              tau_max=region['tau_limits'][angle.var][1],
