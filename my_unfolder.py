@@ -54,7 +54,6 @@ class MyUnfolder(object):
                  axisSteering='*[b]'):
 
         self.response_map = response_map
-        self.response_map_matrix = self.th2_to_tmatrixd(response_map)
         self.variable_name = variable_name
         self.variable_name_safe = variable_name.replace(" ", "_")
 
@@ -121,7 +120,10 @@ class MyUnfolder(object):
                                              self.distribution,
                                              self.axisSteering)
 
-        self.use_axis_binning = False  # for things like get_probability_matrix()
+        self.use_axis_binning = False  # for things like get_probability_matrix()...but doesn't seem to do anything?!
+
+        # self.probability_ndarray = self.response_matrix_to_probability_array(self.response_map)
+        self.probability_ndarray, _ = self.th2_to_ndarray(self.get_probability_matrix(), oflow_x=False, oflow_y=False)
 
         # hists that will be assigned later
         # TODO: change to properties? although still need to cache somewhere
@@ -165,6 +167,7 @@ class MyUnfolder(object):
         self.output_distribution_name = "generator"
 
         self.folded_unfolded = None  # set in get_folded_unfolded()
+        self.folded_unfolded_tunfold = None  # set in get_folded_unfolded()
         self.folded_mc_truth = None  # set in get_folded_mc_truth()
 
     def save_binning(self, print_xml=True, txt_filename=None):
@@ -476,14 +479,29 @@ class MyUnfolder(object):
 
     @staticmethod
     def make_hist_from_diagonal_errors(h2d, do_sqrt=True):
-        nbins = h2d.GetNbinsX()
-        hnew = ROOT.TH1D("h_diag" + cu.get_unique_str(), "", nbins, 0, nbins)
-        for i in range(1, nbins+1):
-            err = h2d.GetBinContent(i, i)
-            if do_sqrt and err > 0:
-                err = math.sqrt(err)
-            hnew.SetBinError(i, err)
-        return hnew
+        """Make 1D hist, with errors set to diagonal elements from h2d
+
+        Can be TH2 or numpy.ndarray, cos we have to use both
+        Yes that is majorly wack
+        """
+        if isinstance(h2d, ROOT.TH2):
+            nbins = h2d.GetNbinsX()
+            hnew = ROOT.TH1D("h_diag" + cu.get_unique_str(), "", nbins, 0, nbins)
+            for i in range(1, nbins+1):
+                err = h2d.GetBinContent(i, i)
+                if do_sqrt and err > 0:
+                    err = math.sqrt(err)
+                hnew.SetBinError(i, err)
+            return hnew
+        elif isinstance(h2d, np.ndarray):
+            nbins = h2d.shape[0]
+            hnew = ROOT.TH1D("h_diag" + cu.get_unique_str(), "", nbins, 0, nbins)
+            for i in range(1, nbins+1):
+                err = h2d[i-1, i-1]
+                if do_sqrt and err > 0:
+                    err = math.sqrt(err)
+                hnew.SetBinError(i, err)
+            return hnew
 
     @staticmethod
     def update_hist_bin_error(h_orig, h_to_be_updated):
@@ -610,8 +628,42 @@ class MyUnfolder(object):
         # 2. Make response 2d hist into matrix
 
         # 3. Multiply the two, convert to TH1
+        if getattr(self, 'folded_unfolded_tunfold', None) is None:
+            self.folded_unfolded_tunfold = self.tunfolder.GetFoldedOutput("folded_unfolded_tunf")
+
+
         if getattr(self, 'folded_unfolded', None) is None:
-            self.folded_unfolded = self.tunfolder.GetFoldedOutput("folded_unfolded")
+            oflow = False
+            unfolded_vector, unfolded_errs = self.th1_to_ndarray(self.unfolded, oflow)
+            print(unfolded_vector.shape)
+            # Multiply
+            # Note that we need to transpose from row vec to column vec
+            folded_vec = self.probability_ndarray.dot(unfolded_vector.T)
+
+            # Convert vector to TH1
+            self.folded_unfolded = self.ndarray_to_th1(folded_vec.T, has_oflow_x=oflow)
+
+            # other_folded_unfolded = self.tunfolder.GetFoldedOutput("folded_unfolded_tunf")
+            # print("folded_unfolded")
+            # # print(self.folded_unfolded.GetNbinsX())
+            # # print(other_folded_unfolded.GetNbinsX())
+            # print('me:', self.folded_unfolded.GetBinContent(10))
+            # print('tunfold:', other_folded_unfolded.GetBinContent(10))
+
+            # other_folded_unfolded.Add(self.folded_unfolded, -1)
+            # c = ROOT.TCanvas("c", "", 800, 600)
+            # other_folded_unfolded.Draw("HISTE")
+
+            # c.SaveAs("folded_unfolded_diff.pdf")
+
+            # Error propagation: if y = Ax, with covariance matrices Vyy and Vxx, 
+            # respectively, then Vyy = (A*Vxx)*A^T
+            unfolded_covariance_matrix, _ = self.th2_to_ndarray((self.get_ematrix_total()), oflow_x=False, oflow_y=False)
+            result = self.probability_ndarray.dot(unfolded_covariance_matrix)
+            folded_covariance = result.dot(self.probability_ndarray.T)
+            folded_errors = self.make_hist_from_diagonal_errors(folded_covariance)
+            self.update_hist_bin_error(h_orig=folded_errors, h_to_be_updated=self.folded_unfolded)
+
         return self.folded_unfolded
 
     @staticmethod
@@ -782,6 +834,17 @@ class MyUnfolder(object):
         return result, errors
 
     @staticmethod
+    def ndarray_to_th2(data):
+        nbinsy, nbinsx = data.shape
+        binsx = array('d', list(range(1, nbinsx+2)))
+        binsy = array('d', list(range(1, nbinsy+2)))
+        h = ROOT.TH2D(cu.get_unique_str(), "", nbinsx, binsx, nbinsy, binsy)
+        for ix in range(nbinsx):
+            for iy in range(nbinsy):
+                h.SetBinContent(ix+1, iy+1, data[iy,ix])
+        return h
+
+    @staticmethod
     def normalise_ndarray(matrix, by):
         if by == 'col':
             matrix = matrix.T # makes life a bit easier
@@ -794,30 +857,53 @@ class MyUnfolder(object):
         else:
             return matrix
 
+    def response_matrix_to_probability_array(self, response_map):
+        """Convert response map to probability matrix
+        
+        Non-trivial, since to normalise one must also take into account underflow bins
+        """
+        prob_array, prob_err = self.th2_to_ndarray(response_map, oflow_x=False, oflow_y=False)
+        # need one with oflow bins to normalise properly
+        prob_array_oflow, prob_err = self.th2_to_ndarray(response_map, oflow_x=False, oflow_y=True)
+        axis = 0 if self.orientation == ROOT.TUnfold.kHistMapOutputHoriz else 1
+        sum_over_y = prob_array_oflow.sum(axis=axis)
+        sum_over_y[sum_over_y==0] = 9999999  # avoid division errors
+        result = prob_array / sum_over_y
+
+        # result_th2 = self.ndarray_to_th2(result)
+
+        # prob_hist = self.get_probability_matrix()
+        # # prob_hist.Add(result_th2, -1)
+        # for ix in range(1, prob_hist.GetNbinsX()+1):
+        #     for iy in range(1, prob_hist.GetNbinsY()+1):
+        #         if prob_hist.GetBinContent(ix, iy) != result_th2.GetBinContent(ix, iy):
+        #             print('PROB HSIT', ix, iy, prob_hist.GetBinContent(ix, iy), result_th2.GetBinContent(ix, iy))
+        # c = ROOT.TCanvas("c", "", 800, 600)
+        # prob_hist.Draw("COLZ")
+        # c.SaveAs("my_prob_th2.pdf")
+        # print('prob_hist: row 30', [prob_hist.GetBinContent(ix, 30) for ix in range(1, prob_hist.GetNbinsX())])
+        # print('mine: row 30', [result_th2.GetBinContent(ix, 30) for ix in range(1, result_th2.GetNbinsX())])
+        return result
+
     def get_folded_hist(self, hist_gen):
-        """Fold hist_gen using the stored respone matrix, ie do matrix * vector"""
-
-        # TODO: proper error propagation
-
-        oflow = True
-        # Convert map to matrix
-        response_matrix, response_matrix_err = self.th2_to_ndarray(self.response_map, oflow_x=oflow, oflow_y=oflow)
-
-        # Normalise response_matrix so that bins represent prob to go from
-        # given gen bin to a reco bin
-        # TODO: is this right?
-        norm_by = 'col' if self.orientation == ROOT.TUnfold.kHistMapOutputHoriz else 'row'
-        response_matrix_normed = self.normalise_ndarray(response_matrix, by=norm_by)
-
+        """Fold hist_gen using the stored response matrix, ie do matrix * vector"""
+        oflow = False
         # Convert hist to vector
         gen_vec, gen_vec_err = self.th1_to_ndarray(hist_gen, oflow_x=oflow)
 
         # Multiply
         # Note that we need to transpose from row vec to column vec
-        folded_vec = response_matrix_normed.dot(gen_vec.T)
+        folded_vec = self.probability_ndarray.dot(gen_vec.T)
 
         # Convert vector to TH1
         folded_hist = self.ndarray_to_th1(folded_vec.T, has_oflow_x=oflow)
+
+        # Error propagation: if y = Ax, with covariance matrices Vyy and Vxx, 
+        # respectively, then Vyy = (A*Vxx)*A^T
+        result = self.probability_ndarray.dot(self.construct_covariance_matrix(hist_gen))
+        folded_covariance = result.dot(self.probability_ndarray.T)
+        folded_errors = self.make_hist_from_diagonal_errors(folded_covariance)
+        self.update_hist_bin_error(h_orig=folded_errors, h_to_be_updated=folded_hist)
 
         return folded_hist
 
@@ -826,3 +912,14 @@ class MyUnfolder(object):
         if getattr(self, 'folded_mc_truth', None) is None:
             self.folded_mc_truth = self.get_folded_hist(self.hist_truth)
         return self.folded_mc_truth
+
+    def construct_covariance_matrix(self, hist):
+        """Make covariance hist from 1D hist. Diagonals are square of error"""
+        # Just to numpy array for now, can always use ndarray_to_th2()
+        nbins = hist.GetNbinsX()
+        cov_matrix_ndarray = np.ndarray(shape=(nbins, nbins))
+        for ind in range(1, nbins):
+            err = hist.GetBinError(ind)
+            err2 = pow(err, 2)
+            cov_matrix_ndarray[ind-1, ind-1] = err2
+        return cov_matrix_ndarray
