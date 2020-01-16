@@ -239,7 +239,7 @@ def do_plots(root_dir):
                 ####################
 
                 # JETHT/ZEROBIAS DATA
-                h2d_qcd_fwd_data = grab_obj(os.path.join(root_dir, qgc.JETHT_ZB_FILENAME), "%s/%s" % (dj_cen_dirname, v))  # use already merged jetht+zb
+                h2d_qcd_fwd_data = grab_obj(os.path.join(root_dir, qgc.JETHT_ZB_FILENAME), "%s/%s" % (dj_fwd_dirname, v))  # use already merged jetht+zb
                 # h2d_zb_data = grab_obj(os.path.join(root_dir, qgc.ZB_FILENAME), "%s/%s" % (dj_cen_dirname, v))
                 # h2d_zb_data.Scale(1235009.27580634)
                 # h2d_qcd_cen_data.Add(h2d_zb_data)
