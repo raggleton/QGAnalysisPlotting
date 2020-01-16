@@ -94,5 +94,36 @@ public:
     // TUnfoldBinning *generatorBinning, *detectorBinning;
     // TString variable_name;
 
+    // Here are methods that were protected in TUnfoldDensity, that are now public for us to use
+
+    /// vector of the unfolding result
     inline const TMatrixD *GetX(void) const { return TUnfoldDensity::GetX(); }
+    /// covariance matrix of the result
+    inline const TMatrixDSparse *GetVxx(void) const { return TUnfoldDensity::GetVxx(); }
+    /// inverse of covariance matrix of the result
+    inline const TMatrixDSparse *GetVxxInv(void) const { return TUnfoldDensity::GetVxxInv(); }
+    /// vector of folded-back result
+    inline const TMatrixDSparse *GetAx(void) const { return TUnfoldDensity::GetAx(); }
+    /// matrix of derivatives dx/dy
+    inline const TMatrixDSparse *GetDXDY(void) const { return TUnfoldDensity::GetDXDY(); }
+    /// matrix contributions of the derivative dx/dA
+    inline const TMatrixDSparse *GetDXDAM(int i) const { return TUnfoldDensity::GetDXDAM(i); }
+    /// vector contributions of the derivative dx/dA
+    inline const TMatrixDSparse *GetDXDAZ(int i) const { return TUnfoldDensity::GetDXDAZ(i); }
+    /// matrix E<sup>-1</sup>, using internal bin counting
+    inline const TMatrixDSparse *GetEinv(void) const { return TUnfoldDensity::GetEinv(); }
+    /// matrix E, using internal bin counting
+    inline const TMatrixDSparse *GetE(void) const { return TUnfoldDensity::GetE(); }
+    /// inverse of covariance matrix of the data y
+    inline const TMatrixDSparse *GetVyyInv(void) const { return TUnfoldDensity::GetVyyInv(); }
+    /// response matrix A
+    inline const TMatrixDSparse *GetA(void) const { return fA; }
+    /// mapping array to hist
+    inline const TArrayI & GetXToHist(void) const { return fXToHist; }
+    /// mapping hist to array
+    inline const TArrayI & GetHistToX(void) const { return fHistToX; }
+
+    Bool_t AddRegularisationCondition(Int_t i0, Double_t f0, Int_t i1=-1, Double_t f1=0., Int_t i2=-1, Double_t f2=0.) { return TUnfold::AddRegularisationCondition(i0,f0,i1,f1,i2,f2); } // add regularisation condition for a triplet of output bins
+    Bool_t AddRegularisationCondition(Int_t nEle, const Int_t *indices, const Double_t *rowData) { return TUnfold::AddRegularisationCondition(nEle, indices, rowData); } // add a regularisation condition
+
 };
