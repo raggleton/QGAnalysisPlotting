@@ -1245,6 +1245,7 @@ if __name__ == "__main__":
             # ---------------------
             unfolder.print_condition_number()
 
+            unreg_unfolded_1d = None
             if REGULARIZE != "None":
                 # To setup the L matrix correctly, we have to rescale
                 # the default one by the inverse of the pT spectrum
@@ -2380,6 +2381,43 @@ if __name__ == "__main__":
                              subplot=mc_gen_hist_bin,
                              normalise_hist=True)),  # unfolded data
                 ])
+
+                # Do unfolded plots with unregularised verion as well, if regularisation was used
+                # --------------------------------------------------------------
+                if REGULARIZE != "None":
+                    unreg_unfolded_hist_bin = unfolder.get_var_hist_pt_binned(unreg_unfolded_1d, ibin_pt, binning_scheme="generator")
+                    unreg_unfolded_hist_bin_div_bin_width = qgp.normalise_hist_divide_bin_width(unreg_unfolded_hist_bin)
+                    unfolded_unreg_colour = ROOT.kViolet+2
+                    entries = [
+                        Contribution(mc_gen_hist_bin_div_bin_width,
+                                     label="Generator (MG+Pythia8)",
+                                     line_color=gen_colour, line_width=lw,
+                                     marker_color=gen_colour, marker_size=0,
+                                     normalise_hist=False),
+                        Contribution(unfolded_hist_bin_total_errors_div_bin_width,
+                                     label="Unfolded (#tau = %.3g) (total err)" % (tau),
+                                     line_color=unfolded_total_colour, line_width=lw, line_style=1,
+                                     marker_color=unfolded_total_colour, #marker_style=20, marker_size=0.75,
+                                     subplot=mc_gen_hist_bin_div_bin_width,
+                                     normalise_hist=False),
+                        Contribution(unreg_unfolded_hist_bin_div_bin_width,
+                                     label="Unfolded (#tau = 0) (total err)",
+                                     line_color=unfolded_unreg_colour, line_width=lw, line_style=1,
+                                     marker_color=unfolded_unreg_colour, #marker_style=20, marker_size=0.75,
+                                     subplot=mc_gen_hist_bin_div_bin_width,
+                                     normalise_hist=False),
+                    ]
+                    if not check_entries(entries, "%s %d" % (append, ibin_pt)):
+                        continue
+                    plot = Plot(entries,
+                                xtitle=particle_title,
+                                ytitle=normalised_differential_label,
+                                subplot_title=subplot_title,
+                                **common_hist_args)
+                    _modify_plot(plot)
+                    plot.plot("NOSTACK E1")
+                    plot.save("%s/unfolded_%s_with_unreg_bin_%d_divBinWidth.%s" % (this_output_dir, append, ibin_pt, OUTPUT_FMT))
+
 
                 # Unfolded plots with alternate response matrix results as well
                 # --------------------------------------------------------------
