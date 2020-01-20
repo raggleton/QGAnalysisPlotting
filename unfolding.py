@@ -2171,10 +2171,10 @@ if __name__ == "__main__":
             # ------------------------------------------------------------------
             detector_title = "Detector-level " + angle_str
             particle_title = "Particle-level " + angle_str
-            normalised_differential_label = "#frac{1}{d#sigma/dp_{T}} #frac{d^{2}#sigma}{dp_{T} d%s}" % angle.lambda_str
+            pt_bin_normalised_differential_label = "#frac{1}{d#sigma/dp_{T}} #frac{d^{2}#sigma}{dp_{T} d%s}" % angle.lambda_str
             summary_1d_entries = []  # for final summary plot
 
-            # Draw individual pt bin plots - GEN binning
+            # Draw individual pt bin plots - GEN pT binning
             # ------------------------------------------------------------------
             for ibin_pt in range(0, len(unfolder.pt_bin_edges_gen)-1):
 
@@ -2312,7 +2312,7 @@ if __name__ == "__main__":
                     continue
                 plot = Plot(entries,
                             xtitle=particle_title,
-                            ytitle=normalised_differential_label,
+                            ytitle=pt_bin_normalised_differential_label,
                             subplot_title=subplot_title,
                             **common_hist_args)
                 _modify_plot(plot)
@@ -2361,7 +2361,7 @@ if __name__ == "__main__":
                     continue
                 plot = Plot(entries,
                             xtitle=particle_title,
-                            ytitle=normalised_differential_label,
+                            ytitle=pt_bin_normalised_differential_label,
                             subplot_title=subplot_title,
                             **common_hist_args)
                 _modify_plot(plot)
@@ -2411,7 +2411,7 @@ if __name__ == "__main__":
                         continue
                     plot = Plot(entries,
                                 xtitle=particle_title,
-                                ytitle=normalised_differential_label,
+                                ytitle=pt_bin_normalised_differential_label,
                                 subplot_title=subplot_title,
                                 **common_hist_args)
                     _modify_plot(plot)
@@ -2461,7 +2461,7 @@ if __name__ == "__main__":
                         continue
                     plot = Plot(entries,
                                 xtitle=particle_title,
-                                ytitle=normalised_differential_label,
+                                ytitle=pt_bin_normalised_differential_label,
                                 subplot_title='#splitline{Unfolded / Gen}{(%s)}' % (region['mc_label']),
                                 **common_hist_args)
                     plot.legend.SetX1(0.55)
@@ -2514,7 +2514,7 @@ if __name__ == "__main__":
                         continue
                     plot = Plot(entries,
                                 xtitle=particle_title,
-                                ytitle=normalised_differential_label,
+                                ytitle=pt_bin_normalised_differential_label,
                                 subplot_title='#splitline{Unfolded / Gen}{(%s)}' % (region['mc_label']),
                                 **common_hist_args)
                     plot.legend.SetX1(0.55)
@@ -2558,7 +2558,7 @@ if __name__ == "__main__":
                         continue
                     plot = Plot(entries,
                                 xtitle=particle_title,
-                                ytitle=normalised_differential_label,
+                                ytitle=pt_bin_normalised_differential_label,
                                 subplot_title='#splitline{%s /}{%s}' % (region['alt_mc_label'], region['mc_label']),
                                 **common_hist_args)
                     plot.legend.SetX1(0.55)
@@ -2644,7 +2644,7 @@ if __name__ == "__main__":
                             continue
                         plot = Plot(entries,
                                     xtitle=particle_title,
-                                    ytitle=normalised_differential_label,
+                                    ytitle=pt_bin_normalised_differential_label,
                                     subplot_title=subplot_title,
                                     **common_hist_args)
                         plot.legend.SetX1(0.55)
@@ -2682,7 +2682,7 @@ if __name__ == "__main__":
                             continue
                         plot = Plot(entries_div_bin_width,
                                     xtitle=particle_title,
-                                    ytitle=normalised_differential_label,
+                                    ytitle=pt_bin_normalised_differential_label,
                                     subplot_title=subplot_title,
                                     **common_hist_args)
                         plot.legend.SetX1(0.55)
@@ -2772,7 +2772,7 @@ if __name__ == "__main__":
                             continue
                         plot = Plot(entries,
                                     xtitle=particle_title,
-                                    ytitle=normalised_differential_label,
+                                    ytitle=pt_bin_normalised_differential_label,
                                     subplot_title=subplot_title,
                                     **common_hist_args)
                         plot.legend.SetX1(0.55)
@@ -2810,7 +2810,7 @@ if __name__ == "__main__":
                             continue
                         plot = Plot(entries_div_bin_width,
                                     xtitle=particle_title,
-                                    ytitle=normalised_differential_label,
+                                    ytitle=pt_bin_normalised_differential_label,
                                     subplot_title=subplot_title,
                                     **common_hist_args)
                         plot.legend.SetX1(0.55)
@@ -2888,7 +2888,7 @@ if __name__ == "__main__":
                     ])
                     plot = Plot(syst_entries,
                                 xtitle=particle_title,
-                                ytitle=normalised_differential_label,
+                                ytitle=pt_bin_normalised_differential_label,
                                 subplot_title='Syst / nominal',
                                 **common_hist_args)
                     plot.legend.SetX1(0.55)
@@ -2923,7 +2923,7 @@ if __name__ == "__main__":
                     continue
                 plot = Plot(entries,
                             xtitle=detector_title,
-                            ytitle=normalised_differential_label,
+                            ytitle=pt_bin_normalised_differential_label,
                             subplot_title='Data / MC',
                             **common_hist_args)
                 plot.legend.SetX1(0.6)
@@ -2953,7 +2953,7 @@ if __name__ == "__main__":
                     continue
                 plot = Plot(entries,
                             xtitle=detector_title,
-                            ytitle=normalised_differential_label,
+                            ytitle=pt_bin_normalised_differential_label,
                             subplot_title='Data / MC',
                             **common_hist_args)
                 plot.legend.SetX1(0.6)
@@ -2982,7 +2982,7 @@ if __name__ == "__main__":
                         continue
                     plot = Plot(entries,
                                 xtitle=detector_title,
-                                ytitle=normalised_differential_label,
+                                ytitle=pt_bin_normalised_differential_label,
                                 subplot_title='Data / MC',
                                 **common_hist_args)
                     plot.legend.SetX1(0.6)
@@ -3011,7 +3011,7 @@ if __name__ == "__main__":
                         continue
                     plot = Plot(entries,
                                 xtitle=detector_title,
-                                ytitle=normalised_differential_label,
+                                ytitle=pt_bin_normalised_differential_label,
                                 subplot_title='Data / MC',
                                 **common_hist_args)
                     plot.legend.SetX1(0.6)
@@ -3030,7 +3030,248 @@ if __name__ == "__main__":
                                                           append=append,
                                                           title=title)
 
-            # Draw individual pt bin plots - RECO binning
+            # Draw individual lambda bin plots - GEN binning
+            # ------------------------------------------------------------------
+            for ibin_lambda in range(0, len(unfolder.variable_bin_edges_gen)-1):
+                this_lambda_bin_tdir = this_tdir.mkdir("lambda_gen_bin_%d" % (ibin_lambda))
+                print("Individual lambda gen bin", ibin_lambda, "=", unfolder.variable_bin_edges_gen[ibin_lambda], unfolder.variable_bin_edges_gen[ibin_lambda+1])
+
+                # Produce 1D hists for this pt bin
+                # --------------------------------------------------------------
+                # Unfolded hists
+                mc_gen_hist_bin = unfolder.get_pt_hist_var_binned(unfolder.hist_truth, ibin_lambda, binning_scheme="generator")
+                this_lambda_bin_tdir.WriteTObject(mc_gen_hist_bin, "mc_gen_hist_bin")
+
+                unfolded_hist_bin_stat_errors = unfolder.get_pt_hist_var_binned(unfolder.unfolded_stat_err, ibin_lambda, binning_scheme="generator")
+                this_lambda_bin_tdir.WriteTObject(unfolded_hist_bin_stat_errors, "unfolded_hist_bin_stat_errors")
+
+                unfolded_hist_bin_total_errors = unfolder.get_pt_hist_var_binned(unfolder.unfolded, ibin_lambda, binning_scheme="generator")
+                this_lambda_bin_tdir.WriteTObject(unfolded_hist_bin_total_errors, "unfolded_hist_bin_total_errors") # same as unfolded_1d?
+
+                # Reco level but with gen binning
+                # For 'data'
+                reco_hist_bin_gen_binning = unfolder.get_pt_hist_var_binned(unfolder.input_hist_gen_binning, ibin_lambda, binning_scheme="generator")
+                this_lambda_bin_tdir.WriteTObject(reco_hist_bin_gen_binning, "reco_hist_bin_gen_binning")
+
+                if SUBTRACT_FAKES:
+                    reco_hist_bg_subtracted_bin_gen_binning = unfolder.get_pt_hist_var_binned(unfolder.input_hist_gen_binning_bg_subtracted, ibin_lambda, binning_scheme="generator")
+                    this_lambda_bin_tdir.WriteTObject(reco_hist_bg_subtracted_bin_gen_binning, "reco_hist_bg_subtracted_bin_gen_binning")
+
+                # For MC
+                mc_reco_hist_bin_gen_binning = unfolder.get_pt_hist_var_binned(unfolder.hist_mc_reco_gen_binning, ibin_lambda, binning_scheme="generator")
+                this_lambda_bin_tdir.WriteTObject(mc_reco_hist_bin_gen_binning, "mc_reco_hist_bin_gen_binning")
+
+                if SUBTRACT_FAKES:
+                    mc_reco_hist_bg_subtracted_bin_gen_binning = unfolder.get_pt_hist_var_binned(unfolder.hist_mc_reco_gen_binning_bg_subtracted, ibin_lambda, binning_scheme="generator")
+                    this_lambda_bin_tdir.WriteTObject(mc_reco_hist_bg_subtracted_bin_gen_binning, "mc_reco_hist_bg_subtracted_bin_gen_binning")
+
+
+                # Make lots of plots
+                # ------------------------------------------------------------
+                lw = 2
+                # common hist settings
+                title = "%s\n%s region\n%g < %s < %g" % (jet_algo, region['label'], unfolder.variable_bin_edges_gen[ibin_lambda], angle.lambda_str, unfolder.variable_bin_edges_gen[ibin_lambda+1])
+                if "ptavebinning" in src_dir.lower():
+                    title = "%s\n%s region\n%g < #LT p_{T}^{jet} #GT < %g GeV" % (jet_algo, region['label'], unfolder.variable_bin_edges_gen[ibin_lambda], unfolder.variable_bin_edges_gen[ibin_lambda+1])
+
+                lambda_bin_normalised_differential_label = "#frac{1}{d#sigma/d%s} #frac{d^{2}#sigma}{dp_{T} d%s}" % (angle.lambda_str, angle.lambda_str)
+
+                common_hist_args = dict(
+                    what="hist",
+                    title=title,
+                    xtitle='p_{T}^{jet} [GeV]' if "ptavebinning" not in src_dir.lower() else '#LT p_{T}^{jet} #GT [GeV]',
+                    subplot_type='ratio',
+                    # subplot_limits=(0.5, 1.5),
+                    subplot_limits=(0.75, 1.25),
+                    has_data=not MC_INPUT,
+                )
+                subplot_title = "Unfolded / Gen"
+
+                # PLOT UNFOLDED DATA
+                # --------------------------------------------------------------
+                gen_colour = ROOT.kRed
+                unfolded_basic_colour = ROOT.kAzure+7
+                unfolded_stat_colour = ROOT.kAzure+7
+                unfolded_total_colour = ROOT.kBlack
+
+                def _modify_plot(this_plot):
+                    this_plot.legend.SetX1(0.6)
+                    this_plot.legend.SetY1(0.68)
+                    this_plot.legend.SetX2(0.98)
+                    this_plot.legend.SetY2(0.9)
+                    this_plot.left_margin = 0.16
+                    this_plot.y_padding_max_log = 500
+
+                # unnormalised version
+                entries = [
+                    Contribution(mc_gen_hist_bin,
+                                 label="Generator",
+                                 line_color=gen_colour, line_width=lw,
+                                 marker_color=gen_colour, marker_size=0,
+                                 normalise_hist=False),
+                    Contribution(unfolded_hist_bin_total_errors,
+                                 label="Unfolded (#tau = %.3g) (total err)" % (tau),
+                                 line_color=unfolded_total_colour, line_width=lw, line_style=1,
+                                 marker_color=unfolded_total_colour,# marker_style=20, marker_size=0.75,
+                                 subplot=mc_gen_hist_bin,
+                                 normalise_hist=False),
+                    Contribution(unfolded_hist_bin_stat_errors,
+                                 label="Unfolded (#tau = %.3g) (stat err)" % (tau),
+                                 line_color=unfolded_stat_colour, line_width=lw, line_style=1,
+                                 marker_color=unfolded_stat_colour, marker_style=20, marker_size=0.75,
+                                 subplot=mc_gen_hist_bin,
+                                 normalise_hist=False),
+                ]
+                if not check_entries(entries, "%s %d" % (append, ibin_lambda)):
+                    continue
+                plot = Plot(entries,
+                            ytitle="N",
+                            subplot_title='Unfolded / gen',
+                            **common_hist_args)
+                _modify_plot(plot)
+                plot.plot("NOSTACK E1")
+                plot.set_logx()
+                plot.set_logy(do_more_labels=False)
+                plot.save("%s/unfolded_unnormalised_%s_lambda_bin_%d.%s" % (this_output_dir, append, ibin_lambda, OUTPUT_FMT))
+
+                # now normalise each plot to unity
+                # Note that this modifies e.g. mc_gen_hist_bin, so from this point
+                # onwards it will be normalised to unity
+                entries = [
+                    Contribution(mc_gen_hist_bin,
+                                 label="Generator (MG+Pythia8)",
+                                 line_color=gen_colour, line_width=lw,
+                                 marker_color=gen_colour, marker_size=0,
+                                 normalise_hist=True),
+                ]
+
+                if not MC_INPUT:
+                    alt_mc_gen_hist_bin = unfolder.get_pt_hist_var_binned(alt_hist_mc_gen, ibin_lambda, binning_scheme="generator")
+                    alt_gen_colour = ROOT.kViolet+1
+                    entries.append(
+                        Contribution(alt_mc_gen_hist_bin,
+                                     label="Generator (%s)" % (region['alt_mc_label']),
+                                     line_color=alt_gen_colour, line_width=lw, line_style=2,
+                                     marker_color=alt_gen_colour, marker_size=0,
+                                     subplot=mc_gen_hist_bin,
+                                     normalise_hist=True),
+                    )
+                entries.extend([
+                    Contribution(unfolded_hist_bin_total_errors,
+                                 label="Unfolded (#tau = %.3g) (total err)" % (tau),
+                                 line_color=unfolded_total_colour, line_width=lw, line_style=1,
+                                 marker_color=unfolded_total_colour, #marker_style=20, marker_size=0.75,
+                                 subplot=mc_gen_hist_bin,
+                                 normalise_hist=True),
+                    Contribution(unfolded_hist_bin_stat_errors,
+                                 label="Unfolded (#tau = %.3g) (stat err)" % (tau),
+                                 line_color=unfolded_stat_colour, line_width=lw, line_style=1,
+                                 marker_color=unfolded_stat_colour, marker_style=20, marker_size=0.75,
+                                 normalise_hist=True),
+                ])
+                if not check_entries(entries, "%s %d" % (append, ibin_lambda)):
+                    continue
+                plot = Plot(entries,
+                            ytitle=lambda_bin_normalised_differential_label,
+                            subplot_title=subplot_title,
+                            **common_hist_args)
+                _modify_plot(plot)
+                plot.plot("NOSTACK E1")
+                plot.set_logx()
+                plot.set_logy(do_more_labels=False)
+                # plot.save("%s/unfolded_%s_lambda_bin_%d.%s" % (this_output_dir, append, ibin_lambda, OUTPUT_FMT))
+
+                # Do a version where divided by bin width
+                # Note that these hists are already normalised to 1!
+                # Do not use normalise_hist!
+                mc_gen_hist_bin_div_bin_width = qgp.hist_divide_bin_width(mc_gen_hist_bin)
+                unfolded_hist_bin_stat_errors_div_bin_width = qgp.hist_divide_bin_width(unfolded_hist_bin_stat_errors)
+                unfolded_hist_bin_total_errors_div_bin_width = qgp.hist_divide_bin_width(unfolded_hist_bin_total_errors)
+                entries = [
+                    Contribution(mc_gen_hist_bin_div_bin_width,
+                                 label="Generator (MG+Pythia8)",
+                                 line_color=gen_colour, line_width=lw,
+                                 marker_color=gen_colour, marker_size=0,
+                                 normalise_hist=False)
+                ]
+                if not MC_INPUT:
+                    alt_mc_gen_hist_bin = unfolder.get_pt_hist_var_binned(alt_hist_mc_gen, ibin_lambda, binning_scheme="generator")  # doesnt matte rusing unfolder, same binning
+                    alt_mc_gen_hist_bin_div_bin_width = qgp.normalise_hist_divide_bin_width(alt_mc_gen_hist_bin)
+                    alt_gen_colour = ROOT.kViolet+1
+                    entries.append(
+                        Contribution(alt_mc_gen_hist_bin_div_bin_width,
+                                     label="Generator (%s)" % (region['alt_mc_label']),
+                                     line_color=alt_gen_colour, line_width=lw, line_style=2,
+                                     marker_color=alt_gen_colour, marker_size=0,
+                                     subplot=mc_gen_hist_bin_div_bin_width,
+                                     normalise_hist=False),
+                    )
+                entries.extend([
+                    Contribution(unfolded_hist_bin_total_errors_div_bin_width,
+                                 label="Unfolded (#tau = %.3g) (total err)" % (tau),
+                                 line_color=unfolded_total_colour, line_width=lw, line_style=1,
+                                 marker_color=unfolded_total_colour, #marker_style=20, marker_size=0.75,
+                                 subplot=mc_gen_hist_bin_div_bin_width,
+                                 normalise_hist=False),
+                    Contribution(unfolded_hist_bin_stat_errors_div_bin_width,
+                                 label="Unfolded (#tau = %.3g) (stat err)" % (tau),
+                                 line_color=unfolded_stat_colour, line_width=lw, line_style=1,
+                                 marker_color=unfolded_stat_colour, marker_style=20, marker_size=0.75,
+                                 normalise_hist=False),
+                ])
+                if not check_entries(entries, "%s %d" % (append, ibin_lambda)):
+                    continue
+                plot = Plot(entries,
+                            ytitle=lambda_bin_normalised_differential_label,
+                            subplot_title=subplot_title,
+                            **common_hist_args)
+                _modify_plot(plot)
+                plot.plot("NOSTACK E1")
+                plot.set_logx()
+                plot.set_logy(do_more_labels=False)
+                plot.save("%s/unfolded_%s_lambda_bin_%d_divBinWidth.%s" % (this_output_dir, append, ibin_lambda, OUTPUT_FMT))
+
+
+                # Do unfolded plots with unregularised verion as well, if regularisation was used
+                # --------------------------------------------------------------
+                if REGULARIZE != "None":
+                    unreg_unfolded_hist_bin = unfolder.get_pt_hist_var_binned(unreg_unfolded_1d, ibin_lambda, binning_scheme="generator")
+                    unreg_unfolded_hist_bin_div_bin_width = qgp.normalise_hist_divide_bin_width(unreg_unfolded_hist_bin)
+                    unfolded_unreg_colour = ROOT.kViolet+2
+                    entries = [
+                        Contribution(mc_gen_hist_bin_div_bin_width,
+                                     label="Generator (MG+Pythia8)",
+                                     line_color=gen_colour, line_width=lw,
+                                     marker_color=gen_colour, marker_size=0,
+                                     normalise_hist=False),
+                        Contribution(unfolded_hist_bin_total_errors_div_bin_width,
+                                     label="Unfolded (#tau = %.3g) (total err)" % (tau),
+                                     line_color=unfolded_total_colour, line_width=lw, line_style=1,
+                                     marker_color=unfolded_total_colour, #marker_style=20, marker_size=0.75,
+                                     subplot=mc_gen_hist_bin_div_bin_width,
+                                     normalise_hist=False),
+                        Contribution(unreg_unfolded_hist_bin_div_bin_width,
+                                     label="Unfolded (#tau = 0) (total err)",
+                                     line_color=unfolded_unreg_colour, line_width=lw, line_style=1,
+                                     marker_color=unfolded_unreg_colour, #marker_style=20, marker_size=0.75,
+                                     subplot=mc_gen_hist_bin_div_bin_width,
+                                     normalise_hist=False),
+                    ]
+                    if not check_entries(entries, "%s %d" % (append, ibin_lambda)):
+                        continue
+                    plot = Plot(entries,
+                                ytitle=lambda_bin_normalised_differential_label,
+                                subplot_title=subplot_title,
+                                **common_hist_args)
+                    _modify_plot(plot)
+                    plot.plot("NOSTACK E1")
+                    plot.set_logx()
+                    plot.set_logy(do_more_labels=False)
+                    plot.save("%s/unfolded_%s_with_unreg_lambda_bin_%d_divBinWidth.%s" % (this_output_dir, append, ibin_lambda, OUTPUT_FMT))
+
+
+
+            # Draw individual pt bin plots - RECO pT binning
             # ------------------------------------------------------------------
             for ibin_pt in range(0, len(unfolder.pt_bin_edges_reco)-1):
                 this_pt_bin_tdir = this_tdir.mkdir("reco_bin_%d" % (ibin_pt))
@@ -3088,7 +3329,7 @@ if __name__ == "__main__":
                     continue
                 plot = Plot(entries,
                             xtitle=detector_title,
-                            ytitle=normalised_differential_label,
+                            ytitle=pt_bin_normalised_differential_label,
                             subplot_title='Data / MC',
                             **common_hist_args)
                 plot.legend.SetX1(0.6)
@@ -3118,7 +3359,7 @@ if __name__ == "__main__":
                     continue
                 plot = Plot(entries,
                             xtitle=detector_title,
-                            ytitle=normalised_differential_label,
+                            ytitle=pt_bin_normalised_differential_label,
                             subplot_title='Data / MC',
                             **common_hist_args)
                 plot.legend.SetX1(0.6)
@@ -3147,7 +3388,7 @@ if __name__ == "__main__":
                         continue
                     plot = Plot(entries,
                                 xtitle=detector_title,
-                                ytitle=normalised_differential_label,
+                                ytitle=pt_bin_normalised_differential_label,
                                 subplot_title='Data / MC',
                                 **common_hist_args)
                     plot.legend.SetX1(0.6)
@@ -3177,7 +3418,7 @@ if __name__ == "__main__":
                         continue
                     plot = Plot(entries,
                                 xtitle=detector_title,
-                                ytitle=normalised_differential_label,
+                                ytitle=pt_bin_normalised_differential_label,
                                 subplot_title='Data / MC',
                                 **common_hist_args)
                     plot.legend.SetX1(0.6)
@@ -3217,7 +3458,7 @@ if __name__ == "__main__":
                     continue
                 plot = Plot(entries,
                             xtitle=detector_title,
-                            ytitle=normalised_differential_label,
+                            ytitle=pt_bin_normalised_differential_label,
                             subplot_title='Folded unfolded / reco',
                             **common_hist_args)
                 plot.legend.SetX1(0.6)
@@ -3256,7 +3497,7 @@ if __name__ == "__main__":
                     continue
                 plot = Plot(entries,
                             xtitle=detector_title,
-                            ytitle=normalised_differential_label,
+                            ytitle=pt_bin_normalised_differential_label,
                             subplot_title='Data / MC',
                             **common_hist_args)
                 plot.legend.SetX1(0.56)
@@ -3284,7 +3525,7 @@ if __name__ == "__main__":
                     continue
                 plot = Plot(entries,
                             xtitle=detector_title,
-                            ytitle=normalised_differential_label,
+                            ytitle=pt_bin_normalised_differential_label,
                             subplot_title='#splitline{Folded unfolded}{/ reco}',
                             **common_hist_args)
                 plot.legend.SetX1(0.56)
@@ -3320,7 +3561,7 @@ if __name__ == "__main__":
                         continue
                     plot = Plot(entries,
                                 xtitle=detector_title,
-                                ytitle=normalised_differential_label,
+                                ytitle=pt_bin_normalised_differential_label,
                                 subplot_title='#splitline{Folded gen}{/ reco}',
                                 **common_hist_args)
                     plot.legend.SetX1(0.6)
@@ -3351,7 +3592,7 @@ if __name__ == "__main__":
                         continue
                     plot = Plot(entries,
                                 xtitle=detector_title,
-                                ytitle=normalised_differential_label,
+                                ytitle=pt_bin_normalised_differential_label,
                                 subplot_title='#splitline{Folded gen}{/ reco}',
                                 **common_hist_args)
                     plot.legend.SetX1(0.56)

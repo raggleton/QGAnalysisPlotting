@@ -672,8 +672,22 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             folded_covariance = result.dot(self.probability_ndarray.T)
             folded_errors = self.make_hist_from_diagonal_errors(folded_covariance)
             self.update_hist_bin_error(h_orig=folded_errors, h_to_be_updated=self.folded_unfolded)
+    def get_pt_hist_var_binned(self, hist1d, ibin_var, binning_scheme='generator'):
+        """Get hist of pt for given variable bin from massive 1D hist that TUnfold makes"""
+        # FIXME: assume no underflow?!
+        binning = self.generator_binning.FindNode("generatordistribution") if binning_scheme == "generator" else self.detector_binning.FindNode("detectordistribution")
+        var_bins = np.array(binning.GetDistributionBinning(0))
+        pt_bins = np.array(binning.GetDistributionBinning(1))
 
         return self.folded_unfolded
+        # need the -1 on ibin_var, as it references an array index, whereas ROOT bins start at 1
+        h = ROOT.TH1D("h_%d_%s" % (ibin_var, cu.get_unique_str()), "", len(pt_bins)-1, pt_bins)
+        for pt_ind, pt_value in enumerate(pt_bins[:-1], 1):
+            this_val = pt_value * 1.001  # ensure its inside
+            bin_num = binning.GetGlobalBinNumber(var_bins[ibin_var]*1.001, this_val)
+            h.SetBinContent(pt_ind, hist1d.GetBinContent(bin_num))
+            h.SetBinError(pt_ind, hist1d.GetBinError(bin_num))
+        return h
 
     @staticmethod
     def th2_to_tmatrixd(hist, include_uflow=False, include_oflow=False):
