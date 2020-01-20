@@ -1033,13 +1033,16 @@ if __name__ == "__main__":
             angle_bin_edges_gen = LAMBDA_VAR_DICTS[angle.var]['gen']
             angle_shortname = angle.var.replace("jet_", "")
 
-            if not isinstance(region['data_tfile'], ROOT.TFile):
-                region['data_tfile'] = cu.open_root_file(region['data_tfile'])
-            hist_data_reco = cu.get_from_tfile(region['data_tfile'], "%s/hist_%s_reco_all" % (region['dirname'], angle_shortname))
             mc_hname_append = "split" if MC_SPLIT else "all"
             hist_mc_reco = cu.get_from_tfile(region['mc_tfile'], "%s/hist_%s_reco_%s" % (region['dirname'], angle_shortname, mc_hname_append))
             hist_mc_gen = cu.get_from_tfile(region['mc_tfile'], "%s/hist_%s_truth_%s" % (region['dirname'], angle_shortname, mc_hname_append))
             hist_mc_gen_reco_map = cu.get_from_tfile(region['mc_tfile'], "%s/tu_%s_GenReco_%s" % (region['dirname'], angle_shortname, mc_hname_append))
+
+            hist_data_reco = None
+            if not MC_INPUT:
+                if not isinstance(region['data_tfile'], ROOT.TFile):
+                    region['data_tfile'] = cu.open_root_file(region['data_tfile'])
+                hist_data_reco = cu.get_from_tfile(region['data_tfile'], "%s/hist_%s_reco_all" % (region['dirname'], angle_shortname))
 
             # Need to scale if using H++ as input
             # hist_mc_gen_reco_map.Scale(1E8)
@@ -1072,14 +1075,17 @@ if __name__ == "__main__":
                 print("1D reco input with background subtraction:", reco_1d_bg_subtracted.GetBinContent(chosen_bin))
                 print("1D reco input fakes:", hist_fakes_reco.GetBinContent(chosen_bin))
 
-                hist_data_reco_bg_subtracted = hist_data_reco.Clone(hist_data_reco.GetName() + "_bgrSubtracted")
-                hist_data_reco_bg_subtracted.Add(hist_fakes_reco, -1)
+                if not MC_INPUT:
+                    hist_data_reco_bg_subtracted = hist_data_reco.Clone(hist_data_reco.GetName() + "_bgrSubtracted")
+                    hist_data_reco_bg_subtracted.Add(hist_fakes_reco, -1)
 
                 hist_mc_reco_bg_subtracted = hist_mc_reco.Clone(hist_mc_reco.GetName() + "_bgrSubtracted")
                 hist_mc_reco_bg_subtracted.Add(hist_mc_fakes_reco, -1)  # should this be hist_fakes_reco? depends on what we want to see...
 
             mc_hname_append = "_split" if MC_SPLIT else ""  # FIXME consistency in unfold hist module!
-            hist_data_reco_gen_binning = cu.get_from_tfile(region['data_tfile'], "%s/hist_%s_reco_gen_binning" % (region['dirname'], angle_shortname))
+            hist_data_reco_gen_binning = None
+            if not MC_INPUT:
+                hist_data_reco_gen_binning = cu.get_from_tfile(region['data_tfile'], "%s/hist_%s_reco_gen_binning" % (region['dirname'], angle_shortname))
             hist_mc_reco_gen_binning = cu.get_from_tfile(region['mc_tfile'], "%s/hist_%s_reco_gen_binning%s" % (region['dirname'], angle_shortname, mc_hname_append))
 
             # hist_data_reco_gen_binning.Scale(1e8)
@@ -1101,8 +1107,9 @@ if __name__ == "__main__":
                 reco_1d_gen_binning_bg_subtracted = reco_1d_gen_binning.Clone()
                 reco_1d_gen_binning_bg_subtracted.Add(hist_fakes_reco_gen_binning, -1)
 
-                hist_data_reco_gen_binning_bg_subtracted = hist_data_reco_gen_binning.Clone(hist_data_reco_gen_binning.GetName() + "_bgrSubtracted")
-                hist_data_reco_gen_binning_bg_subtracted.Add(hist_fakes_reco_gen_binning, -1)
+                if not MC_INPUT:
+                    hist_data_reco_gen_binning_bg_subtracted = hist_data_reco_gen_binning.Clone(hist_data_reco_gen_binning.GetName() + "_bgrSubtracted")
+                    hist_data_reco_gen_binning_bg_subtracted.Add(hist_fakes_reco_gen_binning, -1)
 
                 hist_mc_reco_gen_binning_bg_subtracted = hist_mc_reco_gen_binning.Clone(hist_mc_reco_gen_binning.GetName() + "_bgrSubtracted")
                 hist_mc_reco_gen_binning_bg_subtracted.Add(hist_mc_fakes_reco_gen_binning, -1)  # should this be hist_fakes_reco_gen_binning? depends on what we want to see...
@@ -1551,9 +1558,10 @@ if __name__ == "__main__":
             alt_hist_mc_gen = None  # mc truth of the generator used to make reponse matrix
             alt_unfolder = None
             # Do this outside the if statement, since we might use it later in plotting e.g. for data
-            if not isinstance(region['alt_mc_tfile'], ROOT.TFile):
-                region['alt_mc_tfile'] = cu.open_root_file(region['alt_mc_tfile'])
-            alt_hist_mc_gen = cu.get_from_tfile(region['alt_mc_tfile'], "%s/hist_%s_truth_all" % (region['dirname'], angle_shortname))
+            if not MC_INPUT:
+                if not isinstance(region['alt_mc_tfile'], ROOT.TFile):
+                    region['alt_mc_tfile'] = cu.open_root_file(region['alt_mc_tfile'])
+                alt_hist_mc_gen = cu.get_from_tfile(region['alt_mc_tfile'], "%s/hist_%s_truth_all" % (region['dirname'], angle_shortname))
             if args.useAltResponse:
                 print("*" * 80)
                 print("*** Unfolding with alternate response matrix ***")
