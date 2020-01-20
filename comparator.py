@@ -432,6 +432,10 @@ class Plot(object):
     def set_logy(self, state=True, do_more_labels=True):
         # Call AFTER plot()
         try:
+            y_low = self.container.GetHistogram().GetMinimum()
+            if y_low < 0:
+                print("Cannot set_logy as minimum is %g" % y_low)
+                return
             self.main_pad.SetLogy(int(state))
         except AttributeError as e:
             print("")
