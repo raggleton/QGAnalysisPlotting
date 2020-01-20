@@ -13,7 +13,7 @@ import os
 os.nice(10)
 
 # My stuff
-from comparator import Contribution, Plot, grab_obj
+from comparator import Contribution, Plot
 import qg_common as qgc
 import qg_general_plots as qgp
 import common_utils as cu
@@ -60,6 +60,16 @@ def do_plots(root_dir):
         dj_cen_dirname = "Dijet_QG_central_tighter%s" % (gr_append)
         dj_fwd_dirname = "Dijet_QG_forward_tighter%s" % (gr_append)
 
+        tfiles = {
+            "data_run_B": cu.open_root_file(os.path.join(root_dir, "uhh2.AnalysisModuleRunner.DATA.Data_JetHT_RunB.root")),
+            "data_run_C": cu.open_root_file(os.path.join(root_dir, "uhh2.AnalysisModuleRunner.DATA.Data_JetHT_RunC.root")),
+            "data_run_D": cu.open_root_file(os.path.join(root_dir, "uhh2.AnalysisModuleRunner.DATA.Data_JetHT_RunD.root")),
+            "data_run_E": cu.open_root_file(os.path.join(root_dir, "uhh2.AnalysisModuleRunner.DATA.Data_JetHT_RunE.root")),
+            "data_run_F": cu.open_root_file(os.path.join(root_dir, "uhh2.AnalysisModuleRunner.DATA.Data_JetHT_RunF.root")),
+            "data_run_G": cu.open_root_file(os.path.join(root_dir, "uhh2.AnalysisModuleRunner.DATA.Data_JetHT_RunG.root")),
+            "data_run_H": cu.open_root_file(os.path.join(root_dir, "uhh2.AnalysisModuleRunner.DATA.Data_JetHT_RunH.root")),
+        }
+
         for ang in var_list[:]:
             print("...Doing", ang.name)
             v = "%s%s_vs_pt" % (var_prepend, ang.var)
@@ -93,8 +103,8 @@ def do_plots(root_dir):
                 ]
 
                 # create reference hists, for Run G+H
-                h2d_qcd_cen_data_g = grab_obj(os.path.join(root_dir, "uhh2.AnalysisModuleRunner.DATA.Data_JetHT_RunG.root"), "%s/%s" % (dj_cen_dirname, v))
-                h2d_qcd_cen_data_h = grab_obj(os.path.join(root_dir, "uhh2.AnalysisModuleRunner.DATA.Data_JetHT_RunH.root"), "%s/%s" % (dj_cen_dirname, v))
+                h2d_qcd_cen_data_g = cu.get_from_tfile(tfiles['data_run_G'], "%s/%s" % (dj_cen_dirname, v))
+                h2d_qcd_cen_data_h = cu.get_from_tfile(tfiles['data_run_H'], "%s/%s" % (dj_cen_dirname, v))
                 colour = colours[0]
                 qcd_cen_kwargs_data = dict(line_color=colour, line_width=data_line_width, fill_color=colour,
                                            marker_color=colour, marker_style=cu.Marker.get(qgc.QCD_MARKER), marker_size=0,
@@ -108,8 +118,8 @@ def do_plots(root_dir):
                     dijet_cen_2d_entries.append((h2d_qcd_cen_data_g, qcd_cen_kwargs_data))
                     dijet_cen_2d_entries.append((h2d_qcd_cen_data_h, qcd_cen_kwargs_data))
 
-                h2d_qcd_fwd_data_g = grab_obj(os.path.join(root_dir, "uhh2.AnalysisModuleRunner.DATA.Data_JetHT_RunG.root"), "%s/%s" % (dj_fwd_dirname, v))
-                h2d_qcd_fwd_data_h = grab_obj(os.path.join(root_dir, "uhh2.AnalysisModuleRunner.DATA.Data_JetHT_RunH.root"), "%s/%s" % (dj_fwd_dirname, v))
+                h2d_qcd_fwd_data_g = cu.get_from_tfile(tfiles['data_run_G'], "%s/%s" % (dj_fwd_dirname, v))
+                h2d_qcd_fwd_data_h = cu.get_from_tfile(tfiles['data_run_H'], "%s/%s" % (dj_fwd_dirname, v))
                 qcd_fwd_kwargs_data = dict(line_color=colour, line_width=data_line_width, fill_color=colour,
                                            marker_color=colour, marker_style=cu.Marker.get(qgc.QCD_MARKER), marker_size=0,
                                            label="Run G+H")
@@ -129,7 +139,7 @@ def do_plots(root_dir):
                     # DIJET CENTRAL REGION
                     ####################
                     # JETHT DATA
-                    h2d_qcd_cen_data = grab_obj(os.path.join(root_dir, "uhh2.AnalysisModuleRunner.DATA.Data_JetHT_Run%s.root" % run), "%s/%s" % (dj_cen_dirname, v))
+                    h2d_qcd_cen_data = cu.get_from_tfile(tfiles['data_run_%s' % run], "%s/%s" % (dj_cen_dirname, v))
                     qcd_cen_kwargs_data = dict(line_color=colour, line_width=data_line_width, fill_color=colour,
                                                marker_color=colour, marker_style=mark, marker_size=msize,
                                                label="Run %s" % run,
@@ -144,7 +154,7 @@ def do_plots(root_dir):
                     # DIJET FORWARD REGION
                     ####################
                     # JETHT DATA
-                    h2d_qcd_fwd_data = grab_obj(os.path.join(root_dir, "uhh2.AnalysisModuleRunner.DATA.Data_JetHT_Run%s.root" % run), "%s/%s" % (dj_fwd_dirname, v))  # use already merged jetht+zb
+                    h2d_qcd_fwd_data = cu.get_from_tfile(tfiles['data_run_%s' % run], "%s/%s" % (dj_fwd_dirname, v))  # use already merged jetht+zb
                     qcd_fwd_kwargs_data = dict(line_color=colour, line_width=data_line_width, fill_color=colour,
                                                marker_color=colour, marker_style=mark, marker_size=msize,
                                                label="Run %s" % run,
@@ -160,7 +170,7 @@ def do_plots(root_dir):
                     ####################
 
                     # SINGLE MU DATA
-                    # h2d_dyj_data = grab_obj(os.path.join(root_dir, "uhh2.AnalysisModuleRunner.DATA.Data_SingleMu_Run%s.root" % run), "%s/%s" % (zpj_dirname, v))
+                    # h2d_dyj_data = cu.get_from_tfile(os.path.join(root_dir, "uhh2.AnalysisModuleRunner.DATA.Data_SingleMu_Run%s.root" % run), "%s/%s" % (zpj_dirname, v))
                     # dy_kwargs_data = dict(line_color=qgc.colour, line_width=data_line_width, fill_color=qgc.colour,
                     #                       marker_color=qgc.colour, marker_style=cu.Marker.get(qgc.DY_MARKER), marker_size=msize,
                     #                       label="SingleMu Run %s" % run)
