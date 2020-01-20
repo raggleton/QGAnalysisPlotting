@@ -491,12 +491,18 @@ class MyUnfolderPlotter(object):
             else:
                 axis_low, axis_high = plot.GetXaxis().GetXmin(), plot.GetXaxis().GetXmax()
 
+        # check if overall pt overflow needed
+        if this_binning.FindNode(dist_name).HasOverflow(1):  # axis=1 is pt
+            all_pt_bins.append(np.inf)
+
+        
         lines = []  # otherwise python kills them
         texts = []
         first_var = variable_bins[0]
         last_var = variable_bins[-1]
         if isinstance(plot, Plot):
             plot.main_pad.cd()
+        
         # add line + text for each pt bin
         for pt_val, pt_val_upper in zip(all_pt_bins[:-1], all_pt_bins[1:]):
             # convert value to bin number
@@ -519,10 +525,13 @@ class MyUnfolderPlotter(object):
                 pt_bin_higher = binning.GetGlobalBinNumber(last_var-0.00001, pt_val+0.01) - 0.5
                 pt_bin_interval = pt_bin_higher - pt_bin
                 text_x = pt_bin + 0.3*(pt_bin_interval)
+                # figure out y location from axes
                 axis_range = axis_high - axis_low
-                log_axis_range = math.log10(axis_high) - math.log10(axis_low)
                 # assumes logarithmic?
                 if ROOT.gPad.GetLogy():
+                    if axis_low <= 0: 
+                        raise ValueError("axis_low is %f so can't take log" %axis_low)
+                    log_axis_range = math.log10(axis_high) - math.log10(axis_low)
                     y_start = math.pow(10, 0.03*log_axis_range + math.log10(axis_low))
                     y_end = 10*axis_low
                 else:
@@ -540,9 +549,11 @@ class MyUnfolderPlotter(object):
                 text = ROOT.TPaveText(text_x, y_start, text_x + .5*pt_bin_interval, y_start)
                 text.SetBorderSize(0)
                 text.SetFillStyle(0)
-                contents = '%d < p_{T} < %d GeV' % (pt_val, pt_val_upper)
+                contents = '%g < p_{T} < %g GeV' % (pt_val, pt_val_upper)
                 if pt_val_upper in underflow_pt_bins:
                     contents += " (underflow)"
+                if pt_val_upper == np.inf:
+                    contents += ' (overflow)'
                 # You have to style the thing that is returned by AddText, not the TPaveText obj itself
                 # WTAF
                 t = text.AddText(contents)  # t is a TText
@@ -565,7 +576,7 @@ class MyUnfolderPlotter(object):
                 text = ROOT.TPaveText(text_x, 0.5*axis_low, text_x + .35*pt_bin_interval, 0.55*axis_low)  # urgh at some point it jsut ignores this and puts it against the axis
                 text.SetBorderSize(0)
                 text.SetFillStyle(0)
-                contents = '[%d, %d] GeV   ' % (pt_val, pt_val_upper)  # spaces for alignment, since the text gets stuck against the axis
+                contents = '[%g, %g] GeV   ' % (pt_val, pt_val_upper)  # spaces for alignment, since the text gets stuck against the axis
                 if pt_val_upper in underflow_pt_bins:
                     contents = "#splitline{%s}{(underflow)   }" % (contents)
                 # You have to style the thing that is returned by AddText, not the TPaveText obj itself
@@ -585,10 +596,13 @@ class MyUnfolderPlotter(object):
                 text = ROOT.TPaveText(0.5*axis_low, text_y, 0.5*axis_low, text_y + .35*pt_bin_interval)  # urgh at some point it jsut ignores this and puts it against the axis
                 text.SetBorderSize(0)
                 text.SetFillStyle(0)
-                contents = '[%d, %d] GeV   ' % (pt_val, pt_val_upper)  # spaces for alignment, since the text gets stuck against the axis
+                contents = '[%g, %g] GeV   ' % (pt_val, pt_val_upper)  # spaces for alignment, since the text gets stuck against the axis
                 if pt_val_upper in underflow_pt_bins:
                     contents = contents.strip()
                     contents += " (underflow)   "
+                if pt_val_upper == np.inf:
+                    contents = contents.strip()
+                    contents += ' (overflow)    '
                 # You have to style the thing that is returned by AddText, not the TPaveText obj itself
                 # WTAF
                 t = text.AddText(contents)  # t is a TText
@@ -601,18 +615,18 @@ class MyUnfolderPlotter(object):
 
         # lines on subplot if available
         if isinstance(plot, Plot) and plot.subplot_pad and axis == 'x':
-                plot.subplot_pad.cd()
-                y_low, y_high = plot.subplot_container.GetHistogram().GetMinimum(), plot.subplot_container.GetHistogram().GetMaximum()  # BINGO
-                for pt_val in chain(self.unfolder.pt_bin_edges_underflow_gen[1:-1], self.unfolder.pt_bin_edges_gen[:-1]):
-                    # convert value to bin number
-                    # what a load of rubbish, why cant I just ask generator_binning for it?!
-                    binning = this_binning.FindNode("%s_underflow" % dist_name) if pt_val < signal_pt_bins[0] else this_binning.FindNode(dist_name)
-                    pt_bin = binning.GetGlobalBinNumber(first_var+0.000001, pt_val+0.01) - 0.5 # -0.5 for offset, since the bins are centered on the bin number (e.g. bin 81 goes from 80.5 to 81.5)
-                    line = ROOT.TLine(pt_bin, y_low, pt_bin, y_high)
-                    line.SetLineStyle(2)
-                    line.SetLineColor(14)
-                    line.Draw()
-                    lines.append(line)
+            plot.subplot_pad.cd()
+            y_low, y_high = plot.subplot_container.GetHistogram().GetMinimum(), plot.subplot_container.GetHistogram().GetMaximum()  # BINGO
+            for pt_val in all_pt_bins[1:-1]:
+                # convert value to bin number
+                # what a load of rubbish, why cant I just ask generator_binning for it?!
+                binning = this_binning.FindNode("%s_underflow" % dist_name) if pt_val < signal_pt_bins[0] else this_binning.FindNode(dist_name)
+                pt_bin = binning.GetGlobalBinNumber(first_var+0.000001, pt_val+0.01) - 0.5 # -0.5 for offset, since the bins are centered on the bin number (e.g. bin 81 goes from 80.5 to 81.5)
+                line = ROOT.TLine(pt_bin, y_low, pt_bin, y_high)
+                line.SetLineStyle(2)
+                line.SetLineColor(14)
+                line.Draw()
+                lines.append(line)
 
         return lines, texts
 

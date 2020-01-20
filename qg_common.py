@@ -92,6 +92,25 @@ PT_BINS_ZPJ = [
 PT_BINS_INC_UFLOW = [(30, 38), (38, 50)]
 PT_BINS_INC_UFLOW += PT_BINS
 
+
+def construct_fine_binning(coarse_bin_edges):
+    fine_bin_edges = []
+    for x, y in zip(coarse_bin_edges[:-1], coarse_bin_edges[1:]):
+        fine_bin_edges.append(x)
+        fine_bin_edges.append(0.5*(x+y))
+    fine_bin_edges.append(coarse_bin_edges[-1])
+    return np.array(fine_bin_edges, dtype='d')
+
+
+def construct_all_fine_binnings(var_dict):
+    # Construct fine binning from splitting coarser bins
+    # Coarser bins dervied from determine_lambda_binning.py
+    for angle_name, angle_dict in var_dict.items():
+        if angle_dict['reco'] is None:
+            angle_dict['reco'] = construct_fine_binning(angle_dict['gen'])
+        var_dict[angle_name] = angle_dict
+
+
 Angle = namedtuple("Angle", ['var', 'kappa', 'beta', 'name', "lambda_str", "colour"])
 COMMON_VARS_WITH_FLAV = [
     # Angle("jet_multiplicity", 0, 0, "Multiplicity", "#lambda_{0}^{0}", 2),
@@ -125,10 +144,20 @@ ANGLE_REBIN_DICT = {
 
 PT_UNFOLD_DICT = {
     "signal_gen": np.array([50, 65, 88, 120, 150, 186, 254, 326, 408, 481, 614, 800, 1000, 1500, 2000, 6500], dtype='d'),
-    "underflow_gen": np.array([30, 38, 50], dtype='d'),
-    "signal_zpj_gen": np.array([50, 65, 88, 120, 150, 186, 254, 326, 408, 481, 614, 800, 6500], dtype='d'),
-    "underflow_zpj_gen": np.array([30, 38, 50], dtype='d'),
+    "underflow_gen": np.array([15, 30, 38, 50], dtype='d'),
+    "signal_zpj_gen": np.array([50, 65, 88, 120, 150, 186, 254, 326, 408, 481, 614, 800, 2000], dtype='d'),
+    "underflow_zpj_gen": np.array([15, 30, 38, 50], dtype='d'),
 }
+
+
+for pt_name in list(PT_UNFOLD_DICT.keys()):
+    new_name = pt_name.replace("_gen", "_reco")
+    PT_UNFOLD_DICT[new_name] = construct_fine_binning(PT_UNFOLD_DICT[pt_name])
+
+# remove the first two bins, 15, 22.5
+PT_UNFOLD_DICT['underflow_reco'] = PT_UNFOLD_DICT['underflow_reco'][2:]
+PT_UNFOLD_DICT['underflow_zpj_reco'] = PT_UNFOLD_DICT['underflow_zpj_reco'][2:]
+
 
 VAR_UNFOLD_DICT = {
     'jet_multiplicity': {
@@ -382,35 +411,12 @@ VAR_UNFOLD_DICT_TARGET0p5 = {
     },
 }
 
-VAR_UNFOLD_DICT = VAR_UNFOLD_DICT_TARGET0p5
-# VAR_UNFOLD_DICT = VAR_UNFOLD_DICT_TARGET0p6
-
-def construct_fine_binning(coarse_bin_edges):
-    fine_bin_edges = []
-    for x, y in zip(coarse_bin_edges[:-1], coarse_bin_edges[1:]):
-        fine_bin_edges.append(x)
-        fine_bin_edges.append(0.5*(x+y))
-    fine_bin_edges.append(coarse_bin_edges[-1])
-    return np.array(fine_bin_edges, dtype='d')
-
-
-def construct_all_fine_binnings(var_dict):
-    # Construct fine binning from splitting coarser bins
-    # Coarser bins dervied from determine_lambda_binning.py
-    for angle_name, angle_dict in var_dict.items():
-        if angle_dict['reco'] is None:
-            angle_dict['reco'] = construct_fine_binning(angle_dict['gen'])
-        var_dict[angle_name] = angle_dict
-
 
 construct_all_fine_binnings(VAR_UNFOLD_DICT_TARGET0p5)
 construct_all_fine_binnings(VAR_UNFOLD_DICT_TARGET0p6)
 
-
-for pt_name in list(PT_UNFOLD_DICT.keys()):
-    new_name = pt_name.replace("_gen", "_reco")
-    PT_UNFOLD_DICT[new_name] = construct_fine_binning(PT_UNFOLD_DICT[pt_name])
-
+VAR_UNFOLD_DICT = VAR_UNFOLD_DICT_TARGET0p5
+# VAR_UNFOLD_DICT = VAR_UNFOLD_DICT_TARGET0p6
 
 # Common labels for legends etc
 ZpJ_LABEL = "Z+jets region"
