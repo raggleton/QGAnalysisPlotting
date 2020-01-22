@@ -510,9 +510,11 @@ if __name__ == "__main__":
     source_plot_dir_names = None
     region_labels = None
     if "qcd" in args.input.lower():
-        source_plot_dir_names = [("Dijet_QG_central_tighter", "Dijet_QG_forward_tighter"), ("Dijet_QG_central_tighter_groomed", "Dijet_QG_forward_tighter_groomed")]
+        source_plot_dir_names = [("Dijet_QG_tighter",), ("Dijet_QG_central_tighter", "Dijet_QG_forward_tighter"), ("Dijet_QG_central_tighter_groomed", "Dijet_QG_forward_tighter_groomed")][0:1]
         # region_labels = [qgc.QCD_Dijet_CEN_LABEL, qgc.QCD_Dijet_FWD_LABEL, qgc.QCD_Dijet_CEN_GROOMED_LABEL, qgc.QCD_Dijet_FWD_GROOMED_LABEL]
-        region_labels = [qgc.Dijet_LABEL, qgc.Dijet_GROOMED_LABEL]
+        region_labels = [qgc.Dijet_LABEL, qgc.Dijet_LABEL, qgc.Dijet_GROOMED_LABEL][0:1]
+        source_plot_dir_names = [("Dijet_QG_tighter",), ("Dijet_QG_central_tighter", "Dijet_QG_forward_tighter"), ("Dijet_QG_central_tighter_groomed", "Dijet_QG_forward_tighter_groomed")][1:]
+        region_labels = [qgc.Dijet_LABEL, qgc.Dijet_LABEL, qgc.Dijet_GROOMED_LABEL][1:]
     elif "dyjetstoll" in args.input.lower():
         source_plot_dir_names = [("ZPlusJets_QG"), ("ZPlusJets_QG_groomed")]
         region_labels = [qgc.DY_ZpJ_LABEL]
