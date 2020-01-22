@@ -495,14 +495,14 @@ class MyUnfolderPlotter(object):
         if this_binning.FindNode(dist_name).HasOverflow(1):  # axis=1 is pt
             all_pt_bins.append(np.inf)
 
-        
+
         lines = []  # otherwise python kills them
         texts = []
         first_var = variable_bins[0]
         last_var = variable_bins[-1]
         if isinstance(plot, Plot):
             plot.main_pad.cd()
-        
+
         # add line + text for each pt bin
         for pt_val, pt_val_upper in zip(all_pt_bins[:-1], all_pt_bins[1:]):
             # convert value to bin number
@@ -529,8 +529,10 @@ class MyUnfolderPlotter(object):
                 axis_range = axis_high - axis_low
                 # assumes logarithmic?
                 if ROOT.gPad.GetLogy():
-                    if axis_low <= 0: 
-                        raise ValueError("axis_low is %f so can't take log" %axis_low)
+                    if axis_low <= 0:
+                        print("axis_low is %f so can't take log" %axis_low)
+                        return None, None
+                        # raise ValueError("axis_low is %f so can't take log" %axis_low)
                     log_axis_range = math.log10(axis_high) - math.log10(axis_low)
                     y_start = math.pow(10, 0.03*log_axis_range + math.log10(axis_low))
                     y_end = 10*axis_low
@@ -884,7 +886,7 @@ class MyUnfolderPlotter(object):
                              line_color=reco_data_colour, line_width=1,
                              marker_color=reco_data_colour, marker_size=0.6, marker_style=20,
                              normalise_hist=False)
-                )
+            )
 
         hist_folded = self.unfolder.get_folded_unfolded()
         if hist_folded:
@@ -894,7 +896,15 @@ class MyUnfolderPlotter(object):
                              marker_color=reco_folded_colour, marker_size=0,
                              normalise_hist=False,
                              subplot=hist_reco)
-                )
+            )
+            # if you want to cross-check TUnfold:
+            # entries.append(
+            #     Contribution(self.unfolder.folded_unfolded_tunfold, label="Folded unfolded result from TUnfold (#tau = %.3g)" % (self.unfolder.tau),
+            #                  line_color=reco_mc_colour, line_width=1, line_style=2,
+            #                  marker_color=reco_mc_colour, marker_size=0,
+            #                  normalise_hist=False,
+            #                  subplot=hist_reco)
+            #     )
 
         plot = Plot(entries,
                     what='hist',
@@ -906,11 +916,13 @@ class MyUnfolderPlotter(object):
                     subplot_limits=(0.75, 1.25),
                     has_data=self.is_data)
         plot.default_canvas_size = (800, 600)
+        print("Doing folded unfolded")
         plot.plot("NOSTACK HIST")
         plot.main_pad.SetLogy(1)
+        # plot.set_logy(do_more_labels=False, override_check=True)
         ymax = max([o.GetMaximum() for o in plot.contributions_objs])
         plot.container.SetMaximum(ymax * 200)
-        # plot.container.SetMinimum(1E-8)
+        plot.container.SetMinimum(1E-1)
         plot.legend.SetY1NDC(0.77)
         plot.legend.SetX1NDC(0.6)
         plot.legend.SetX2NDC(0.88)
@@ -963,7 +975,8 @@ class MyUnfolderPlotter(object):
                     ytitle="N",
                     subplot_type='ratio',
                     subplot_title='#splitline{Folded gen/}{Unfolding input}',
-                    subplot_limits=(0.75, 1.25))
+                    subplot_limits=(0.75, 1.25),
+                    has_data=self.is_data)
         plot.default_canvas_size = (800, 600)
         plot.plot("NOSTACK HIST")
         plot.main_pad.SetLogy(1)
