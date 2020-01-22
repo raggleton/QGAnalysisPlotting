@@ -200,6 +200,42 @@ def check_entries(entries, message=""):
     return True
 
 
+def calc_auto_xlim(entries):
+    """Figure out x axis range that includes all non-0 bins from all Contributions"""
+    if len(entries) == 0:
+        return None
+    if not isinstance(entries[0], Contribution):
+        raise TypeError("calc_auto_xlim: `entries` should be a list of Contributions")
+
+    x_min = 9999999999
+    x_max = -9999999999
+    for ent in entries:
+        obj = ent.obj
+        if not isinstance(obj, ROOT.TH1):
+            raise TypeError("Cannot handle obj in calc_auto_xlim")
+        xax = obj.GetXaxis()
+        nbins = obj.GetNbinsX()
+        found_min = False
+        for i in range(1, nbins+1):
+            val = obj.GetBinContent(i)
+            if not found_min:
+                # find the first non-empty bin
+                if val != 0:
+                    x_min = min(xax.GetBinLowEdge(i), x_min)
+                    found_min = True
+            else:
+                # find the first empty bin
+                if val == 0:
+                    x_max = max(xax.GetBinLowEdge(i+1), x_max)
+                    break
+    print(x_min, x_max)
+    if x_max > x_min:
+        return (x_min, x_max)
+    else:
+        # default x max
+        return (x_min, xax.GetBinLowEdge(nbins+1))
+
+
 def plot_uncertainty_shifts(total_hist, stat_hist, syst_unfold_hist, systs_shifted, systs, output_filename, title, angle_str):
     """Plot fractional uncertainty shift for a given pt bin
 
@@ -307,6 +343,7 @@ def plot_uncertainty_shifts(total_hist, stat_hist, syst_unfold_hist, systs_shift
     plot = Plot(entries,
                 what="hist",
                 title=title,
+                xlim=calc_auto_xlim(entries),
                 xtitle="Particle-level "+angle_str,
                 ytitle="| Fractional shift |")
     plot.legend.SetX1(0.55)
@@ -2290,6 +2327,7 @@ if __name__ == "__main__":
                 plot = Plot(entries,
                             xtitle=particle_title,
                             ytitle="N",
+                            xlim=calc_auto_xlim(entries),
                             subplot_title='Unfolded / Gen',
                             **common_hist_args)
                 _modify_plot(plot)
@@ -2336,6 +2374,7 @@ if __name__ == "__main__":
                 plot = Plot(entries,
                             xtitle=particle_title,
                             ytitle=pt_bin_normalised_differential_label,
+                            xlim=calc_auto_xlim(entries),
                             subplot_title=subplot_title,
                             **common_hist_args)
                 _modify_plot(plot)
@@ -2386,6 +2425,7 @@ if __name__ == "__main__":
                             xtitle=particle_title,
                             ytitle=pt_bin_normalised_differential_label,
                             subplot_title=subplot_title,
+                            xlim=calc_auto_xlim(entries),
                             **common_hist_args)
                 _modify_plot(plot)
                 plot.plot("NOSTACK E1")
@@ -2435,6 +2475,7 @@ if __name__ == "__main__":
                     plot = Plot(entries,
                                 xtitle=particle_title,
                                 ytitle=pt_bin_normalised_differential_label,
+                                xlim=calc_auto_xlim(entries),
                                 subplot_title=subplot_title,
                                 **common_hist_args)
                     _modify_plot(plot)
@@ -2485,6 +2526,7 @@ if __name__ == "__main__":
                     plot = Plot(entries,
                                 xtitle=particle_title,
                                 ytitle=pt_bin_normalised_differential_label,
+                                xlim=calc_auto_xlim(entries),
                                 subplot_title='#splitline{Unfolded / Gen}{(%s)}' % (region['mc_label']),
                                 **common_hist_args)
                     plot.legend.SetX1(0.55)
@@ -2538,6 +2580,7 @@ if __name__ == "__main__":
                     plot = Plot(entries,
                                 xtitle=particle_title,
                                 ytitle=pt_bin_normalised_differential_label,
+                                xlim=calc_auto_xlim(entries),
                                 subplot_title='#splitline{Unfolded / Gen}{(%s)}' % (region['mc_label']),
                                 **common_hist_args)
                     plot.legend.SetX1(0.55)
@@ -2582,6 +2625,7 @@ if __name__ == "__main__":
                     plot = Plot(entries,
                                 xtitle=particle_title,
                                 ytitle=pt_bin_normalised_differential_label,
+                                xlim=calc_auto_xlim(entries),
                                 subplot_title='#splitline{%s /}{%s}' % (region['alt_mc_label'], region['mc_label']),
                                 **common_hist_args)
                     plot.legend.SetX1(0.55)
@@ -2668,6 +2712,7 @@ if __name__ == "__main__":
                         plot = Plot(entries,
                                     xtitle=particle_title,
                                     ytitle=pt_bin_normalised_differential_label,
+                                    xlim=calc_auto_xlim(entries),
                                     subplot_title=subplot_title,
                                     **common_hist_args)
                         plot.legend.SetX1(0.55)
@@ -2706,6 +2751,7 @@ if __name__ == "__main__":
                         plot = Plot(entries_div_bin_width,
                                     xtitle=particle_title,
                                     ytitle=pt_bin_normalised_differential_label,
+                                    xlim=calc_auto_xlim(entries),
                                     subplot_title=subplot_title,
                                     **common_hist_args)
                         plot.legend.SetX1(0.55)
@@ -2912,6 +2958,7 @@ if __name__ == "__main__":
                     plot = Plot(syst_entries,
                                 xtitle=particle_title,
                                 ytitle=pt_bin_normalised_differential_label,
+                                xlim=calc_auto_xlim(entries),
                                 subplot_title='Syst / nominal',
                                 **common_hist_args)
                     plot.legend.SetX1(0.55)
@@ -2947,6 +2994,7 @@ if __name__ == "__main__":
                 plot = Plot(entries,
                             xtitle=detector_title,
                             ytitle=pt_bin_normalised_differential_label,
+                            xlim=calc_auto_xlim(entries),
                             subplot_title='Data / MC',
                             **common_hist_args)
                 plot.legend.SetX1(0.6)
@@ -2977,6 +3025,7 @@ if __name__ == "__main__":
                 plot = Plot(entries,
                             xtitle=detector_title,
                             ytitle=pt_bin_normalised_differential_label,
+                            xlim=calc_auto_xlim(entries),
                             subplot_title='Data / MC',
                             **common_hist_args)
                 plot.legend.SetX1(0.6)
@@ -3006,6 +3055,7 @@ if __name__ == "__main__":
                     plot = Plot(entries,
                                 xtitle=detector_title,
                                 ytitle=pt_bin_normalised_differential_label,
+                                xlim=calc_auto_xlim(entries),
                                 subplot_title='Data / MC',
                                 **common_hist_args)
                     plot.legend.SetX1(0.6)
@@ -3035,6 +3085,7 @@ if __name__ == "__main__":
                     plot = Plot(entries,
                                 xtitle=detector_title,
                                 ytitle=pt_bin_normalised_differential_label,
+                                xlim=calc_auto_xlim(entries),
                                 subplot_title='Data / MC',
                                 **common_hist_args)
                     plot.legend.SetX1(0.6)
@@ -3150,6 +3201,7 @@ if __name__ == "__main__":
                     continue
                 plot = Plot(entries,
                             ytitle=lambda_bin_differential_label,
+                            xlim=calc_auto_xlim(entries),
                             subplot_title='Unfolded / Gen',
                             **common_hist_args)
                 _modify_plot(plot)
@@ -3199,6 +3251,7 @@ if __name__ == "__main__":
                     continue
                 plot = Plot(entries,
                             ytitle=lambda_bin_differential_label,
+                            xlim=calc_auto_xlim(entries),
                             subplot_title=subplot_title,
                             **common_hist_args)
                 _modify_plot(plot)
@@ -3237,6 +3290,7 @@ if __name__ == "__main__":
                         continue
                     plot = Plot(entries,
                                 ytitle=lambda_bin_normalised_differential_label,
+                                xlim=calc_auto_xlim(entries),
                                 subplot_title=subplot_title,
                                 **common_hist_args)
                     _modify_plot(plot)
@@ -3306,6 +3360,7 @@ if __name__ == "__main__":
                 plot = Plot(entries,
                             xtitle=detector_title,
                             ytitle=pt_bin_normalised_differential_label,
+                            xlim=calc_auto_xlim(entries),
                             subplot_title='Data / MC',
                             **common_hist_args)
                 plot.legend.SetX1(0.6)
@@ -3336,6 +3391,7 @@ if __name__ == "__main__":
                 plot = Plot(entries,
                             xtitle=detector_title,
                             ytitle=pt_bin_normalised_differential_label,
+                            xlim=calc_auto_xlim(entries),
                             subplot_title='Data / MC',
                             **common_hist_args)
                 plot.legend.SetX1(0.6)
@@ -3365,6 +3421,7 @@ if __name__ == "__main__":
                     plot = Plot(entries,
                                 xtitle=detector_title,
                                 ytitle=pt_bin_normalised_differential_label,
+                                xlim=calc_auto_xlim(entries),
                                 subplot_title='Data / MC',
                                 **common_hist_args)
                     plot.legend.SetX1(0.6)
@@ -3395,6 +3452,7 @@ if __name__ == "__main__":
                     plot = Plot(entries,
                                 xtitle=detector_title,
                                 ytitle=pt_bin_normalised_differential_label,
+                                xlim=calc_auto_xlim(entries),
                                 subplot_title='Data / MC',
                                 **common_hist_args)
                     plot.legend.SetX1(0.6)
@@ -3435,6 +3493,7 @@ if __name__ == "__main__":
                 plot = Plot(entries,
                             xtitle=detector_title,
                             ytitle=pt_bin_normalised_differential_label,
+                            xlim=calc_auto_xlim(entries),
                             subplot_title='Folded unfolded / reco',
                             **common_hist_args)
                 plot.legend.SetX1(0.6)
@@ -3474,6 +3533,7 @@ if __name__ == "__main__":
                 plot = Plot(entries,
                             xtitle=detector_title,
                             ytitle=pt_bin_normalised_differential_label,
+                            xlim=calc_auto_xlim(entries),
                             subplot_title='Data / MC',
                             **common_hist_args)
                 plot.legend.SetX1(0.56)
@@ -3502,6 +3562,7 @@ if __name__ == "__main__":
                 plot = Plot(entries,
                             xtitle=detector_title,
                             ytitle=pt_bin_normalised_differential_label,
+                            xlim=calc_auto_xlim(entries),
                             subplot_title='#splitline{Folded unfolded}{/ reco}',
                             **common_hist_args)
                 plot.legend.SetX1(0.56)
@@ -3538,6 +3599,7 @@ if __name__ == "__main__":
                     plot = Plot(entries,
                                 xtitle=detector_title,
                                 ytitle=pt_bin_normalised_differential_label,
+                                xlim=calc_auto_xlim(entries),
                                 subplot_title='#splitline{Folded gen}{/ reco}',
                                 **common_hist_args)
                     plot.legend.SetX1(0.6)
@@ -3569,6 +3631,7 @@ if __name__ == "__main__":
                     plot = Plot(entries,
                                 xtitle=detector_title,
                                 ytitle=pt_bin_normalised_differential_label,
+                                xlim=calc_auto_xlim(entries),
                                 subplot_title='#splitline{Folded gen}{/ reco}',
                                 **common_hist_args)
                     plot.legend.SetX1(0.56)
