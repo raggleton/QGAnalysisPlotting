@@ -1260,13 +1260,14 @@ if __name__ == "__main__":
 
             unreg_unfolded_1d = None
             if REGULARIZE != "None":
+                print("Doing preliminary unregularised unfolding...")
                 # To setup the L matrix correctly, we have to rescale
                 # the default one by the inverse of the pT spectrum
                 # This means we first need a copy of the L matrix, so make a
                 # dummy unfolder, ensuring it's setup to make L
                 # We also need to do an unregularised unfolding first to get
                 # the correct pt factors, since data spectrum != MC
-                dummy_unfolder = MyUnfolder(response_map=unfolder.response_map,
+                unreg_unfolder = MyUnfolder(response_map=unfolder.response_map,
                                             variable_bin_edges_reco=unfolder.variable_bin_edges_reco,
                                             variable_bin_edges_gen=unfolder.variable_bin_edges_gen,
                                             variable_name=unfolder.variable_name,
@@ -1291,7 +1292,7 @@ if __name__ == "__main__":
                 # and uncertainties
                 # Set what is to be unfolded
                 # ------------------------------------------------------------------
-                dummy_unfolder.set_input(input_hist=reco_1d,
+                unreg_unfolder.set_input(input_hist=reco_1d,
                                    input_hist_gen_binning=reco_1d_gen_binning,
                                    hist_truth=hist_mc_gen,
                                    hist_mc_reco=hist_mc_reco,
@@ -1305,8 +1306,8 @@ if __name__ == "__main__":
                 # Subtract fakes (treat as background)
                 # ------------------------------------------------------------------
                 if SUBTRACT_FAKES:
-                    dummy_unfolder.subtract_background(hist_fakes_reco, "Signal fakes", scale=1., scale_err=0.0)
-                    dummy_unfolder.subtract_background_gen_binning(hist_fakes_reco_gen_binning, "Signal fakes", scale=1., scale_err=0.0)
+                    unreg_unfolder.subtract_background(hist_fakes_reco, "Signal fakes", scale=1., scale_err=0.0)
+                    unreg_unfolder.subtract_background_gen_binning(hist_fakes_reco_gen_binning, "Signal fakes", scale=1., scale_err=0.0)
 
                 # Subtract actual backgrounds if necessary
                 # ------------------------------------------------------------------
@@ -1322,15 +1323,17 @@ if __name__ == "__main__":
                         bg_dict['hist'] = bg_hist
                         bg_dict['hist_gen'] = bg_hist
 
-                        dummy_unfolder.subtract_background(hist=bg_hist,
+                        unreg_unfolder.subtract_background(hist=bg_hist,
                                                      name=bg_dict['name'],
                                                      scale=bg_dict.get('rate', 1.),
                                                      scale_err=bg_dict.get('rate_unc', 0.))
 
-                dummy_unfolder.do_unfolding(0)
-                dummy_unfolded_1d = dummy_unfolder.get_output(hist_name="dummy_unfolded_1d")
+                unreg_unfolder.do_unfolding(0)
+                unreg_unfolder.get_output(hist_name="unreg_unfolded_1d")
+                unreg_unfolder._post_process()
+                unreg_unfolded_1d = unreg_unfolder.unfolded
 
-                orig_Lmatrix = dummy_unfolder.GetL("orig_Lmatrix_%s" % (append), "", dummy_unfolder.use_axis_binning)
+                orig_Lmatrix = unreg_unfolder.GetL("orig_Lmatrix_%s" % (append), "", unreg_unfolder.use_axis_binning)
                 xax = orig_Lmatrix.GetXaxis()
                 # Get bin factors from an unregularised unfolding first,
                 # to compensate for the fact that the shape differs between data & MC
