@@ -73,6 +73,29 @@ def check_dir_exists_create(filepath):
 #
 # ROOT specific fns, like opening files safely
 #
+
+
+class TFileCacher(object):
+    """Simple class to cache TFile & objects already "gotten" from TFile
+
+    Can either do mytfile.get(x) or just mytfile[x]
+
+    TODO: Should this just inherit from TFile instead?
+    """
+    def __init__(self, filename):
+        self.tfile = open_root_file(filename)
+        self.objects = {}
+
+    def get(self, obj_name):
+        return self[obj_name]
+
+    def __getitem__(self, obj_name):
+        # really hoping all these have unique names
+        if obj_name not in self.objects:
+            self.objects[obj_name] = get_from_tfile(self.tfile, obj_name)
+        return self.objects[obj_name]
+
+
 def open_root_file(filename, mode="READ"):
     """Safe way to open ROOT file. Could be improved."""
     clean_filename = cleanup_filepath(filename)
