@@ -629,49 +629,6 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             # print("Bin:", bin_num, this_val, pt_bins[ibin_pt], "=", hist1d.GetBinContent(bin_num), "+-", hist1d.GetBinError(bin_num))
         return h
 
-    def get_folded_unfolded(self):
-        # don't use getfoldedoutput, because it doesn't have the updated errors from the total error matrix
-        # so we'll have to do it ourselves
-        # 1. Make unfolded hist into TVector/TMatrix
-
-        # 2. Make response 2d hist into matrix
-
-        # 3. Multiply the two, convert to TH1
-        if getattr(self, 'folded_unfolded_tunfold', None) is None:
-            self.folded_unfolded_tunfold = self.tunfolder.GetFoldedOutput("folded_unfolded_tunf")
-
-
-        if getattr(self, 'folded_unfolded', None) is None:
-            oflow = False
-            unfolded_vector, unfolded_errs = self.th1_to_ndarray(self.unfolded, oflow)
-            print(unfolded_vector.shape)
-            # Multiply
-            # Note that we need to transpose from row vec to column vec
-            folded_vec = self.probability_ndarray.dot(unfolded_vector.T)
-
-            # Convert vector to TH1
-            self.folded_unfolded = self.ndarray_to_th1(folded_vec.T, has_oflow_x=oflow)
-
-            # other_folded_unfolded = self.tunfolder.GetFoldedOutput("folded_unfolded_tunf")
-            # print("folded_unfolded")
-            # # print(self.folded_unfolded.GetNbinsX())
-            # # print(other_folded_unfolded.GetNbinsX())
-            # print('me:', self.folded_unfolded.GetBinContent(10))
-            # print('tunfold:', other_folded_unfolded.GetBinContent(10))
-
-            # other_folded_unfolded.Add(self.folded_unfolded, -1)
-            # c = ROOT.TCanvas("c", "", 800, 600)
-            # other_folded_unfolded.Draw("HISTE")
-
-            # c.SaveAs("folded_unfolded_diff.pdf")
-
-            # Error propagation: if y = Ax, with covariance matrices Vyy and Vxx, 
-            # respectively, then Vyy = (A*Vxx)*A^T
-            unfolded_covariance_matrix, _ = self.th2_to_ndarray((self.get_ematrix_total()), oflow_x=False, oflow_y=False)
-            result = self.probability_ndarray.dot(unfolded_covariance_matrix)
-            folded_covariance = result.dot(self.probability_ndarray.T)
-            folded_errors = self.make_hist_from_diagonal_errors(folded_covariance)
-            self.update_hist_bin_error(h_orig=folded_errors, h_to_be_updated=self.folded_unfolded)
     def get_pt_hist_var_binned(self, hist1d, ibin_var, binning_scheme='generator'):
         """Get hist of pt for given variable bin from massive 1D hist that TUnfold makes"""
         # FIXME: assume no underflow?!
@@ -679,7 +636,6 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         var_bins = np.array(binning.GetDistributionBinning(0))
         pt_bins = np.array(binning.GetDistributionBinning(1))
 
-        return self.folded_unfolded
         # need the -1 on ibin_var, as it references an array index, whereas ROOT bins start at 1
         h = ROOT.TH1D("h_%d_%s" % (ibin_var, cu.get_unique_str()), "", len(pt_bins)-1, pt_bins)
         for pt_ind, pt_value in enumerate(pt_bins[:-1], 1):
@@ -908,12 +864,98 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         # print('mine: row 30', [result_th2.GetBinContent(ix, 30) for ix in range(1, result_th2.GetNbinsX())])
         return result
 
+    def get_folded_unfolded(self):
+        # don't use getfoldedoutput, because it doesn't have the updated errors from the total error matrix
+        # so we'll have to do it ourselves
+        # 1. Make unfolded hist into TVector/TMatrix
+
+        # 2. Make response 2d hist into matrix
+
+        # 3. Multiply the two, convert to TH1
+        
+        # gEt the TUnfold one for reference, although its errors will be wrong
+        if getattr(self, 'folded_unfolded_tunfold', None) is None:
+            self.folded_unfolded_tunfold = self.GetFoldedOutput("folded_unfolded_tunf")
+        
+        # xtohist = self.GetXToHist() #TArrayI
+        # print("fXToHist:", [xtohist[i] for i in range(xtohist.GetSize())])
+        # histtox = self.GetHistToX() #TArrayI
+        # print("fHistToX:", [histtox[i] for i in range(histtox.GetSize())])
+
+        if getattr(self, 'folded_unfolded', None) is None:
+            # self.folded_unfolded = self.folded_unfolded_tunfold
+            oflow = False
+
+            unfolded_vector, _ = self.th1_to_ndarray(self.unfolded, oflow)
+        #     print(unfolded_vector.shape)
+        #     print("self.unfolded:", [self.unfolded.GetBinContent(i) for i in range(self.unfolded.GetNbinsX()+2)])
+        #     # print(unfolded_vector)
+            
+        #     unfolded_matrix = self.GetX()  # TMatrixT<double>, in column format (i.e. 1 col)
+        #     print("GetX:", type(unfolded_matrix), unfolded_matrix.GetNrows(), unfolded_matrix.GetNcols()) # 170, 1
+        #     print("GetX:", [unfolded_matrix[i][0] for i in range(unfolded_matrix.GetNrows())])
+        #     values = [unfolded_matrix[i][0] for i in range(unfolded_matrix.GetNrows())]
+        #     unfolded_vector = np.asarray(values, dtype='float64').reshape(1, unfolded_matrix.GetNrows())
+        #     print(unfolded_vector.shape)
+            
+        #     # print(self.probability_ndarray.shape)
+        #     # print(self.probability_ndarray)
+        #     # print("self.probability_ndarray[1]:", list(self.probability_ndarray[1]))
+            
+        #     tunf_A = self.GetA()
+        #     # print("A:", tunf_A.GetNrows(), tunf_A.GetNcols())
+        #     tunf_A_ndarray = [[tunf_A[irow][icol] for icol in range(tunf_A.GetNcols())] for irow in range(tunf_A.GetNrows())]
+        #     tunf_A_ndarray = np.asarray(tunf_A_ndarray, dtype='float64')
+        #     # print(tunf_A_ndarray.shape)
+
+        #     print('probability_ndarray (GetProbabilityMatrix):', [x for x in self.probability_ndarray[3]])
+        #     print('tunf_A_ndarray A:', [x for x in tunf_A_ndarray[3]])
+        #     self.probability_ndarray = tunf_A_ndarray
+
+        #     # Multiply
+        #     # Note that we need to transpose from row vec to column vec
+            folded_vec = self.probability_ndarray.dot(unfolded_vector.T)
+
+        #     tunf_folded_vec = tunf_A_ndarray.dot(unfolded_vector.T)
+        #     print('tunf_folded_vec:', tunf_folded_vec.T)
+
+        #     # Convert vector to TH1
+            self.folded_unfolded = self.ndarray_to_th1(folded_vec.T, has_oflow_x=oflow)
+        #     self.folded_unfolded = self.ndarray_to_th1(tunf_folded_vec.T, has_oflow_x=oflow)
+
+        #     Ax = self.GetAx()  # TMatrixDSparse
+        #     print('Ax:', [Ax[irow][0] for irow in range(Ax.GetNrows())])
+            
+        #     print("GetFoldedOutput:", [self.folded_unfolded_tunfold.GetBinContent(i) for i in range(1, self.folded_unfolded_tunfold.GetNbinsX()+1)])
+        #     # other_folded_unfolded = self.GetFoldedOutput("folded_unfolded_tunf")
+        #     # print("folded_unfolded")
+        #     # # print(self.folded_unfolded.GetNbinsX())
+        #     # # print(other_folded_unfolded.GetNbinsX())
+        #     # print('me:', self.folded_unfolded.GetBinContent(10))
+        #     # print('tunfold:', other_folded_unfolded.GetBinContent(10))
+
+        #     # other_folded_unfolded.Add(self.folded_unfolded, -1)
+        #     # c = ROOT.TCanvas("c", "", 800, 600)
+        #     # other_folded_unfolded.Draw("HISTE")
+
+        #     # c.SaveAs("folded_unfolded_diff.pdf")
+
+            # Error propagation: if y = Ax, with covariance matrices Vyy and Vxx, 
+            # respectively, then Vyy = (A*Vxx)*A^T
+            unfolded_covariance_matrix, _ = self.th2_to_ndarray((self.get_ematrix_total()), oflow_x=oflow, oflow_y=oflow)
+            result = self.probability_ndarray.dot(unfolded_covariance_matrix)
+            folded_covariance = result.dot(self.probability_ndarray.T)
+            folded_errors = self.make_hist_from_diagonal_errors(folded_covariance)
+            self.update_hist_bin_error(h_orig=folded_errors, h_to_be_updated=self.folded_unfolded)
+
+        return self.folded_unfolded
+
     def get_folded_hist(self, hist_gen):
         """Fold hist_gen using the stored response matrix, ie do matrix * vector"""
         oflow = False
         # Convert hist to vector
         gen_vec, gen_vec_err = self.th1_to_ndarray(hist_gen, oflow_x=oflow)
-
+        # return None
         # Multiply
         # Note that we need to transpose from row vec to column vec
         folded_vec = self.probability_ndarray.dot(gen_vec.T)
