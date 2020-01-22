@@ -1416,11 +1416,11 @@ if __name__ == "__main__":
                 tau_scanner.save_to_tfile(this_tdir)
 
             if REGULARIZE != "None":
-                title = "L matrix, %s, %s region, %s" % (jet_algo, region['label'], angle_str)
+                title = "L matrix\n%s\n%s region\n%s" % (jet_algo, region['label'], angle_str)
                 unfolder_plotter.draw_L_matrix(title=title, **plot_args)
                 title = "L^{T}L matrix, %s, %s region, %s" % (jet_algo, region['label'], angle_str)
                 unfolder_plotter.draw_L_matrix_squared(title=title, **plot_args)
-                title = "L * (x - bias vector), %s, %s region, %s" % (jet_algo, region['label'], angle_str)
+                title = "L * (x - bias vector)\n%s\n%s region\n%s" % (jet_algo, region['label'], angle_str)
                 unfolder_plotter.draw_Lx_minus_bias(title=title, **plot_args)
 
             # Do unfolding!
@@ -1941,7 +1941,7 @@ if __name__ == "__main__":
                                 xtitle="Generator bin number",
                                 ytitle="N",
                                 subplot_type='ratio',
-                                subplot_title='Unfolded / gen',
+                                subplot_title='Unfolded / Gen',
                                 subplot_limits=(0, 2),
                                 has_data=not MC_INPUT)
                     plot.default_canvas_size = (800, 600)
@@ -1995,7 +1995,7 @@ if __name__ == "__main__":
                                 xtitle="Generator bin number",
                                 ytitle="N",
                                 subplot_type='ratio',
-                                subplot_title='Unfolded / gen',
+                                subplot_title='Unfolded / Gen',
                                 subplot_limits=(0, 2),
                                 has_data=not MC_INPUT)
                 plot.default_canvas_size = (800, 600)
@@ -2268,7 +2268,7 @@ if __name__ == "__main__":
                 # unnormalised version
                 entries = [
                     Contribution(mc_gen_hist_bin,
-                                 label="Generator",
+                                 label="Generator (%s)" % (region['mc_label']),
                                  line_color=gen_colour, line_width=lw,
                                  marker_color=gen_colour, marker_size=0,
                                  normalise_hist=False),
@@ -2290,7 +2290,7 @@ if __name__ == "__main__":
                 plot = Plot(entries,
                             xtitle=particle_title,
                             ytitle="N",
-                            subplot_title='Unfolded / gen',
+                            subplot_title='Unfolded / Gen',
                             **common_hist_args)
                 _modify_plot(plot)
                 plot.plot("NOSTACK E1")
@@ -2301,7 +2301,7 @@ if __name__ == "__main__":
                 # onwards it will be normalised to unity
                 entries = [
                     Contribution(mc_gen_hist_bin,
-                                 label="Generator (MG+Pythia8)",
+                                 label="Generator (%s)" % (region['mc_label']),
                                  line_color=gen_colour, line_width=lw,
                                  marker_color=gen_colour, marker_size=0,
                                  normalise_hist=True),
@@ -2350,7 +2350,7 @@ if __name__ == "__main__":
                 unfolded_hist_bin_total_errors_div_bin_width = qgp.hist_divide_bin_width(unfolded_hist_bin_total_errors)
                 entries = [
                     Contribution(mc_gen_hist_bin_div_bin_width,
-                                 label="Generator (MG+Pythia8)",
+                                 label="Generator (%s)" % (region['mc_label']),
                                  line_color=gen_colour, line_width=lw,
                                  marker_color=gen_colour, marker_size=0,
                                  normalise_hist=False)
@@ -2413,7 +2413,7 @@ if __name__ == "__main__":
                     unfolded_unreg_colour = ROOT.kViolet+2
                     entries = [
                         Contribution(mc_gen_hist_bin_div_bin_width,
-                                     label="Generator (MG+Pythia8)",
+                                     label="Generator (%s)" % (region['mc_label']),
                                      line_color=gen_colour, line_width=lw,
                                      marker_color=gen_colour, marker_size=0,
                                      normalise_hist=False),
@@ -3098,6 +3098,7 @@ if __name__ == "__main__":
                     title = "%s\n%s region\n%g < #LT p_{T}^{jet} #GT < %g GeV" % (jet_algo, region['label'], unfolder.variable_bin_edges_gen[ibin_lambda], unfolder.variable_bin_edges_gen[ibin_lambda+1])
 
                 lambda_bin_normalised_differential_label = "#frac{1}{d#sigma/d%s} #frac{d^{2}#sigma}{dp_{T} d%s}" % (angle.lambda_str, angle.lambda_str)
+                lambda_bin_differential_label = "#frac{d^{2}N}{dp_{T} d%s}" % (angle.lambda_str)
 
                 common_hist_args = dict(
                     what="hist",
@@ -3128,7 +3129,7 @@ if __name__ == "__main__":
                 # unnormalised version
                 entries = [
                     Contribution(mc_gen_hist_bin,
-                                 label="Generator",
+                                 label="Generator (%s)" % (region['mc_label']),
                                  line_color=gen_colour, line_width=lw,
                                  marker_color=gen_colour, marker_size=0,
                                  normalise_hist=False),
@@ -3148,8 +3149,8 @@ if __name__ == "__main__":
                 if not check_entries(entries, "%s %d" % (append, ibin_lambda)):
                     continue
                 plot = Plot(entries,
-                            ytitle="N",
-                            subplot_title='Unfolded / gen',
+                            ytitle=lambda_bin_differential_label,
+                            subplot_title='Unfolded / Gen',
                             **common_hist_args)
                 _modify_plot(plot)
                 plot.plot("NOSTACK E1")
@@ -3157,68 +3158,19 @@ if __name__ == "__main__":
                 plot.set_logy(do_more_labels=False)
                 plot.save("%s/unfolded_unnormalised_%s_lambda_bin_%d.%s" % (this_output_dir, append, ibin_lambda, OUTPUT_FMT))
 
-                # now normalise each plot to unity
-                # Note that this modifies e.g. mc_gen_hist_bin, so from this point
-                # onwards it will be normalised to unity
-                entries = [
-                    Contribution(mc_gen_hist_bin,
-                                 label="Generator (MG+Pythia8)",
-                                 line_color=gen_colour, line_width=lw,
-                                 marker_color=gen_colour, marker_size=0,
-                                 normalise_hist=True),
-                ]
-
-                if not MC_INPUT:
-                    alt_mc_gen_hist_bin = unfolder.get_pt_hist_var_binned(alt_hist_mc_gen, ibin_lambda, binning_scheme="generator")
-                    alt_gen_colour = ROOT.kViolet+1
-                    entries.append(
-                        Contribution(alt_mc_gen_hist_bin,
-                                     label="Generator (%s)" % (region['alt_mc_label']),
-                                     line_color=alt_gen_colour, line_width=lw, line_style=2,
-                                     marker_color=alt_gen_colour, marker_size=0,
-                                     subplot=mc_gen_hist_bin,
-                                     normalise_hist=True),
-                    )
-                entries.extend([
-                    Contribution(unfolded_hist_bin_total_errors,
-                                 label="Unfolded (#tau = %.3g) (total err)" % (tau),
-                                 line_color=unfolded_total_colour, line_width=lw, line_style=1,
-                                 marker_color=unfolded_total_colour, #marker_style=20, marker_size=0.75,
-                                 subplot=mc_gen_hist_bin,
-                                 normalise_hist=True),
-                    Contribution(unfolded_hist_bin_stat_errors,
-                                 label="Unfolded (#tau = %.3g) (stat err)" % (tau),
-                                 line_color=unfolded_stat_colour, line_width=lw, line_style=1,
-                                 marker_color=unfolded_stat_colour, marker_style=20, marker_size=0.75,
-                                 normalise_hist=True),
-                ])
-                if not check_entries(entries, "%s %d" % (append, ibin_lambda)):
-                    continue
-                plot = Plot(entries,
-                            ytitle=lambda_bin_normalised_differential_label,
-                            subplot_title=subplot_title,
-                            **common_hist_args)
-                _modify_plot(plot)
-                plot.plot("NOSTACK E1")
-                plot.set_logx()
-                plot.set_logy(do_more_labels=False)
-                # plot.save("%s/unfolded_%s_lambda_bin_%d.%s" % (this_output_dir, append, ibin_lambda, OUTPUT_FMT))
-
-                # Do a version where divided by bin width
-                # Note that these hists are already normalised to 1!
-                # Do not use normalise_hist!
+                # Do an unormalised version where divided by bin width
                 mc_gen_hist_bin_div_bin_width = qgp.hist_divide_bin_width(mc_gen_hist_bin)
                 unfolded_hist_bin_stat_errors_div_bin_width = qgp.hist_divide_bin_width(unfolded_hist_bin_stat_errors)
                 unfolded_hist_bin_total_errors_div_bin_width = qgp.hist_divide_bin_width(unfolded_hist_bin_total_errors)
                 entries = [
                     Contribution(mc_gen_hist_bin_div_bin_width,
-                                 label="Generator (MG+Pythia8)",
+                                 label="Generator (%s)" % (region['mc_label']),
                                  line_color=gen_colour, line_width=lw,
                                  marker_color=gen_colour, marker_size=0,
                                  normalise_hist=False)
                 ]
                 if not MC_INPUT:
-                    alt_mc_gen_hist_bin = unfolder.get_pt_hist_var_binned(alt_hist_mc_gen, ibin_lambda, binning_scheme="generator")  # doesnt matte rusing unfolder, same binning
+                    alt_mc_gen_hist_bin = unfolder.get_pt_hist_var_binned(alt_hist_mc_gen, ibin_lambda, binning_scheme="generator")  # doesnt matter using unfolder, same binning
                     alt_mc_gen_hist_bin_div_bin_width = qgp.normalise_hist_divide_bin_width(alt_mc_gen_hist_bin)
                     alt_gen_colour = ROOT.kViolet+1
                     entries.append(
@@ -3240,19 +3192,20 @@ if __name__ == "__main__":
                                  label="Unfolded (#tau = %.3g) (stat err)" % (tau),
                                  line_color=unfolded_stat_colour, line_width=lw, line_style=1,
                                  marker_color=unfolded_stat_colour, marker_style=20, marker_size=0.75,
+                                 subplot=mc_gen_hist_bin_div_bin_width,
                                  normalise_hist=False),
                 ])
                 if not check_entries(entries, "%s %d" % (append, ibin_lambda)):
                     continue
                 plot = Plot(entries,
-                            ytitle=lambda_bin_normalised_differential_label,
+                            ytitle=lambda_bin_differential_label,
                             subplot_title=subplot_title,
                             **common_hist_args)
                 _modify_plot(plot)
                 plot.plot("NOSTACK E1")
                 plot.set_logx()
                 plot.set_logy(do_more_labels=False)
-                plot.save("%s/unfolded_%s_lambda_bin_%d_divBinWidth.%s" % (this_output_dir, append, ibin_lambda, OUTPUT_FMT))
+                plot.save("%s/unfolded_unnormalised_%s_lambda_bin_%d_divBinWidth.%s" % (this_output_dir, append, ibin_lambda, OUTPUT_FMT))
 
 
                 # Do unfolded plots with unregularised verion as well, if regularisation was used
@@ -3263,7 +3216,7 @@ if __name__ == "__main__":
                     unfolded_unreg_colour = ROOT.kViolet+2
                     entries = [
                         Contribution(mc_gen_hist_bin_div_bin_width,
-                                     label="Generator (MG+Pythia8)",
+                                     label="Generator (%s)" % (region['mc_label']),
                                      line_color=gen_colour, line_width=lw,
                                      marker_color=gen_colour, marker_size=0,
                                      normalise_hist=False),
