@@ -21,7 +21,7 @@ import matplotlib.ticker as plticker
 import matplotlib.patches as patches
 
 
-mpl.rcParams['font.size'] = 18
+mpl.rcParams['font.size'] = 16
 mpl.rcParams["font.family"] = "arial"
 
 
@@ -766,7 +766,17 @@ def extract_sample_name(label):
     return new_label
 
 
-def do_mean_rms_summary_plot(entries, bins, output_filename, var_label="", xlim=None, ylim_mean=None, ylim_rms=None, region_title=""):
+def do_mean_rms_summary_plot(entries,
+                             bins,
+                             output_filename,
+                             var_label="",
+                             xlim=None,
+                             ylim_mean=None,
+                             ylim_rms=None,
+                             region_title="",
+                             has_data=True,
+                             numerator_label="MC",
+                             denominator_label="Data"):
     """Create summary plot from 1D hists using matplotlib
 
     Parameters
@@ -788,6 +798,12 @@ def do_mean_rms_summary_plot(entries, bins, output_filename, var_label="", xlim=
         Limit range on y axis for rms
     region_title : str, optional
         Name of region to put in title
+    has_data : bool, optional
+        True if data is in plot, False puts "Simulation" in top-left text
+    denominator_label : str, optional
+        Label for ratio titles for denominator
+    numerator_label : str, optional
+        Label for ratio titles for numerator
     """
     # Get the statistics from our 1D hists
     # only do the bins we need, otherwise axis limits go awry
@@ -903,7 +919,7 @@ def do_mean_rms_summary_plot(entries, bins, output_filename, var_label="", xlim=
 
     # Add legend
     axes[mean_plot_ind].legend(handles=plot_obj,
-                               loc=(1.02, 0.05),
+                               loc=(1.01, 0.05),
                                fancybox=False,
                                edgecolor='white')
 
@@ -949,15 +965,18 @@ def do_mean_rms_summary_plot(entries, bins, output_filename, var_label="", xlim=
     text_height = 1.1
     axes[mean_plot_ind].text(0, text_height, "CMS", fontweight='bold', horizontalalignment='left', transform=axes[mean_plot_ind].transAxes)
     # have to do bold bit separately
-    axes[mean_plot_ind].text(0, text_height, "         Preliminary", horizontalalignment='left', transform=axes[mean_plot_ind].transAxes)
+    if has_data:
+        axes[mean_plot_ind].text(0, text_height, "         Preliminary", horizontalalignment='left', transform=axes[mean_plot_ind].transAxes)
+    else:
+        axes[mean_plot_ind].text(0, text_height, "         Preliminary Simulation", horizontalalignment='left', transform=axes[mean_plot_ind].transAxes)
     # Add lumi text
     axes[mean_plot_ind].text(1, text_height, "35.9 $\\mathrm{fb}^{\\mathrm{-1}}$ (13 TeV)", horizontalalignment='right', transform=axes[mean_plot_ind].transAxes)
 
     # Set axis titles
     axes[mean_plot_ind].set_ylabel('Mean $\\pm$ error')
-    axes[mean_ratio_plot_ind].set_ylabel("Ratio of means\n(MC / Data)")
+    axes[mean_ratio_plot_ind].set_ylabel("Ratio of means\n(%s / %s)" % (numerator_label, denominator_label))
     axes[rms_plot_ind].set_ylabel('RMS $\\pm$ error')
-    axes[rms_ratio_plot_ind].set_ylabel("Ratio of RMS\n(MC / Data)")
+    axes[rms_ratio_plot_ind].set_ylabel("Ratio of RMS\n(%s / %s)" % (numerator_label, denominator_label))
     axes[-1].set_xlabel('$p_{\mathrm{T}}^{\mathrm{jet}}$ [GeV]')
 
     # Draw bin delineators
@@ -970,6 +989,8 @@ def do_mean_rms_summary_plot(entries, bins, output_filename, var_label="", xlim=
         this_ylim = ax.get_ylim()
         for ind, this_bin in enumerate(bins):
             ax.axvline(this_bin[0], color='lightgray', linestyle='dashed')
+
+    plt.tight_layout()
 
     # Save to file
     odir = os.path.dirname(os.path.abspath(output_filename))
