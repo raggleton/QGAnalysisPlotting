@@ -483,7 +483,7 @@ if __name__ == "__main__":
     if any([args.doDijetCentral, args.doDijetForward, args.doDijetCentralGroomed, args.doDijetForwardGroomed]):
         # FOR DIJET:
         input_mc_qcd_mgpythia_tfile = os.path.join(src_dir, qgc.QCD_FILENAME)
-        input_mc_qcd_pythia_tfile = cu.open_root_file(os.path.join(src_dir, qgc.QCD_PYTHIA_ONLY_FILENAME))
+        input_mc_qcd_pythia_tfile = os.path.join(src_dir, qgc.QCD_PYTHIA_ONLY_FILENAME)
         input_mc_qcd_herwig_tfile = os.path.join(src_dir, qgc.QCD_HERWIG_FILENAME)
         input_mc_qcd_herwig_tfile_reweight = os.path.join(src_dir, "uhh2.AnalysisModuleRunner.MC.MC_HERWIG_QCD_PtReweight.root")
 
@@ -551,8 +551,12 @@ if __name__ == "__main__":
             "mc_label": "MG+Pythia8",
             # "mc_tfile": input_mc_qcd_herwig_tfile,
             # "mc_label": "Herwig++",
+            # "mc_tfile": input_mc_qcd_pythia_tfile,
+            # "mc_label": "Pythia8",
             "alt_mc_tfile": input_mc_qcd_herwig_tfile,
             "alt_mc_label": "Herwig++",
+            # "alt_mc_tfile": input_mc_qcd_pythia_tfile,
+            # "alt_mc_label": "Pythia8",
             # "alt_mc_tfile": input_mc_qcd_herwig_tfile_reweight,
             # "alt_mc_label": "Herwig++ (p_{T} reweight)",
             "tau_limits": tau_limits_central,
@@ -1140,12 +1144,21 @@ if __name__ == "__main__":
                                   distribution='generatordistribution',  # the one to use for actual final regularisation/unfolding
                                   axisSteering=axis_steering)
 
+            # Save binning to file
             unfolder.save_binning(txt_filename="%s/binning_scheme.txt" % (this_output_dir), print_xml=False)
             ROOT.BinningXMLExporter.ExportXML(unfolder.detector_binning, this_output_dir, "detector_binning.xml", True, True, 2)
             ROOT.BinningXMLExporter.ExportXML(unfolder.generator_binning, this_output_dir, "generator_binning.xml", True, True, 2)
 
             unfolder_plotter = MyUnfolderPlotter(unfolder, is_data=not MC_INPUT)
             plot_args = dict(output_dir=this_output_dir, append=append)
+
+            is_herwig = "Herwig" in region['mc_label']
+            is_pythia8 = region['mc_label'] == "Pythia8"  # not MG+Pythia9
+            if is_herwig or is_pythia8:
+                # SetEpsMatrix ensures rank properly calculated when inverting
+                # Needed if you get message "rank of matrix E 55 expect 170"
+                # And unfolded looks wacko
+                unfolder.SetEpsMatrix(1E-18)
 
             # Set what is to be unfolded
             # ------------------------------------------------------------------
@@ -1267,6 +1280,13 @@ if __name__ == "__main__":
                                             densityFlags=ROOT.TUnfoldDensity.kDensityModeBinWidth, # important as we have varying bin sizes!
                                             distribution=unfolder.distribution,
                                             axisSteering=unfolder.axisSteering)
+
+                if is_herwig or is_pythia8:
+                    # SetEpsMatrix ensures rank properly calculated when inverting
+                    # Needed if you get message "rank of matrix E 55 expect 170"
+                    # And unfolded looks wacko
+                    unreg_unfolder.SetEpsMatrix(1E-18)
+
                 # Do the unregularised unfolding to get an idea of bin contents
                 # and uncertainties
                 # Set what is to be unfolded
