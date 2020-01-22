@@ -429,13 +429,16 @@ class Plot(object):
                 if ax:
                     ax.SetMoreLogLabels()
 
-    def set_logy(self, state=True, do_more_labels=True):
+    def set_logy(self, state=True, do_more_labels=True, override_check=False):
         # Call AFTER plot()
         try:
             y_low = self.container.GetHistogram().GetMinimum()
-            if y_low < 0:
-                print("Cannot set_logy as minimum is %g" % y_low)
-                return
+            if y_low < 0: 
+                if override_check:
+                    print("Warning in set_logy: minimum < 0, is %g" % y_low)
+                else:
+                    print("Cannot set_logy as minimum is %g" % y_low)
+                    return
             self.main_pad.SetLogy(int(state))
         except AttributeError as e:
             print("")

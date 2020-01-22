@@ -667,7 +667,7 @@ class MyUnfolderPlotter(object):
         # plot.text_left_offset = 0.05  # have to bodge this
         plot.plot("NOSTACK HISTE", "NOSTACK HISTE")
         # plot.main_pad.SetLogy(1)
-        plot.set_logy(do_more_labels=False)
+        plot.set_logy(do_more_labels=False, override_check=True)
         ymax = max([o.GetMaximum() for o in plot.contributions_objs])
         plot.container.SetMaximum(ymax * 500)
         ymin = min(c.obj.GetMinimum(1E-8) for c in entries)
