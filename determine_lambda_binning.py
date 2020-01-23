@@ -498,6 +498,9 @@ if __name__ == "__main__":
     #                     choices=acceptable_metrics)
     args = parser.parse_args()
 
+    if not os.path.isfile(args.input):
+        raise IOError("Cannot find input file %s" % args.input)
+
     input_dir, input_basename = os.path.split(args.input)
     default_plot_dir = os.path.join(input_dir, "rebinning_"+os.path.splitext(input_basename)[0])
     plot_dir = args.outputDir if args.outputDir else default_plot_dir

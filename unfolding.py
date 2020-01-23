@@ -3661,6 +3661,7 @@ if __name__ == "__main__":
 
 
             # Save everything to TFile
+            print("DONE...saving unfolder to ROOT file")
             unfolder.save_to_tfile(this_tdir)
 
     print("Saved hists to", output_tfile.GetName())

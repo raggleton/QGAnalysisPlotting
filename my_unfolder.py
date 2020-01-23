@@ -44,6 +44,34 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
 
     Derived from MyTUnfoldDensity to get access to protected methods/vars
     """
+    # for saving/loading
+    _simple_attr = [
+        # input & truth histograms
+        "input_hist",
+        "input_hist_bg_subtracted",
+        "input_hist_gen_binning",
+        "input_hist_gen_binning_bg_subtracted",
+        "hist_truth",
+        "hist_mc_reco",
+        "hist_mc_reco_bg_subtracted",
+        "hist_mc_reco_gen_binning",
+        "hist_mc_reco_gen_binning_bg_subtracted",
+        # save other matrices
+        "rhoij_total",
+        "probability_matrix",
+        # save error matrices
+        "ematrix_input",
+        "ematrix_stat_response",
+        "ematrix_stat",
+        "ematrix_tau",
+        "ematrix_total",
+        # save folded things
+        "folded_unfolded",
+        "folded_mc_truth",
+        # unfolded
+        "unfolded",
+        "unfolded_stat_err",
+    ]
 
     def __init__(self,
                  response_map,  # 2D GEN-RECO heatmap
@@ -203,47 +231,61 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
 
     @staticmethod
     def _check_save_to_tfile(tfile, obj, name=None):
-        if obj:
-            if name is None:
-                name = obj.GetName()
-            tfile.WriteTObject(obj, name)
+        if obj is not None:  # be careful of int = 0!
+            # for "simple" types, need to do some trickery
+            if isinstance(obj, type(np.array([1.]))):
+                if len(obj.shape) > 1:
+                    raise RuntimeError("cannot save numpy unless 1D")
+                n = ROOT.TVectorD(len(obj))
+                for ind, val in enumerate(obj):
+                    n[ind] = val
+                print(n)
+                tfile.WriteTObject(n, name)
+            elif isinstance(obj, (bool, int, float)):
+                n = ROOT.TVectorD(1)  # the only class that works for these types
+                n[0] = obj
+                tfile.WriteTObject(n, name)
+            elif isinstance(obj, str):
+                n = ROOT.TNamed(name, obj)
+                tfile.WriteTObject(n, name)
+            else:
+                if name is None:
+                    name = obj.GetName()
+                tfile.WriteTObject(obj, name)
         else:
             print("Not saving", name, "as does not exist")
 
     def save_to_tfile(self, tfile):
         """Save important stuff to TFile/TDirectory"""
-        self._check_save_to_tfile(tfile, self.detector_binning)
-        self._check_save_to_tfile(tfile, self.generator_binning)
+        self._check_save_to_tfile(tfile, self.detector_binning, "detector_binning")
+        self._check_save_to_tfile(tfile, self.generator_binning, "generator_binning")
         self._check_save_to_tfile(tfile, self.response_map, "response_map")
+        self._check_save_to_tfile(tfile, self.orientation, "orientation")
+        self._check_save_to_tfile(tfile, self.constraintMode, "constraintMode")
+        self._check_save_to_tfile(tfile, self.regMode, "regMode")
+        self._check_save_to_tfile(tfile, self.densityFlags, "densityFlags")
+        self._check_save_to_tfile(tfile, self.distribution, "distribution")
+        self._check_save_to_tfile(tfile, self.axisSteering, "axisSteering")
 
-        # all 1D input gen/reco etc hists
-        self._check_save_to_tfile(tfile, self.input_hist, "input_hist")
-        self._check_save_to_tfile(tfile, self.input_hist_bg_subtracted, "input_hist_bg_subtracted")
-        self._check_save_to_tfile(tfile, self.input_hist_gen_binning, "input_hist_gen_binning")
-        self._check_save_to_tfile(tfile, self.input_hist_gen_binning_bg_subtracted, "input_hist_gen_binning_bg_subtracted")
-        self._check_save_to_tfile(tfile, self.hist_truth, "hist_truth")
-        self._check_save_to_tfile(tfile, self.hist_mc_reco, "hist_mc_reco")
-        self._check_save_to_tfile(tfile, self.hist_mc_reco_bg_subtracted, "hist_mc_reco_bg_subtracted")
-        self._check_save_to_tfile(tfile, self.hist_mc_reco_gen_binning, "hist_mc_reco_gen_binning")
-        self._check_save_to_tfile(tfile, self.hist_mc_reco_gen_binning_bg_subtracted, "hist_mc_reco_gen_binning_bg_subtracted")
+        self._check_save_to_tfile(tfile, self.variable_bin_edges_reco, "variable_bin_edges_reco")
+        self._check_save_to_tfile(tfile, self.variable_bin_edges_gen, "variable_bin_edges_gen")
+        self._check_save_to_tfile(tfile, self.variable_name, "variable_name")
+
+        self._check_save_to_tfile(tfile, self.pt_bin_edges_reco, "pt_bin_edges_reco")
+        self._check_save_to_tfile(tfile, self.pt_bin_edges_gen, "pt_bin_edges_gen")
+
+        self._check_save_to_tfile(tfile, self.pt_bin_edges_underflow_reco, "pt_bin_edges_underflow_reco")
+        self._check_save_to_tfile(tfile, self.pt_bin_edges_underflow_gen, "pt_bin_edges_underflow_gen")
+
+        # handle most of the simple hists
+        for name in MyUnfolder._simple_attr:
+            self._check_save_to_tfile(tfile, getattr(self, name), name)
 
         # save all backgrounds (incl fakes)
         for name, hist in self.backgrounds.items():
             self._check_save_to_tfile(tfile, hist, "background_reco_binning_%s" % name.replace(" ", "_"))
         for name, hist in self.backgrounds_gen_binning.items():
             self._check_save_to_tfile(tfile, hist, "background_gen_binning_%s" % name.replace(" ", "_"))
-
-        # save other matrices
-        self._check_save_to_tfile(tfile, self.rhoij_total, "rhoij_total")
-        # self._check_save_to_tfile(tfile, self.covariance_matrix, "covariance_matrix")
-        self._check_save_to_tfile(tfile, self.probability_matrix, "probability_matrix")
-
-        # save error matrices
-        self._check_save_to_tfile(tfile, self.ematrix_input, "ematrix_input")
-        self._check_save_to_tfile(tfile, self.ematrix_stat_response, "ematrix_stat_response")
-        self._check_save_to_tfile(tfile, self.ematrix_stat, "ematrix_stat")
-        self._check_save_to_tfile(tfile, self.ematrix_tau, "ematrix_tau")
-        self._check_save_to_tfile(tfile, self.ematrix_total, "ematrix_total")
 
         # save systematic response matrices
         for name, syst_map in self.syst_maps.items():
@@ -260,14 +302,6 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         # save systematic shifted hists (yes this is a bit wasteful)
         for name, syst_shift in self.systs_shifted.items():
             self._check_save_to_tfile(tfile, syst_shift, "syst_shifted_unfolded_%s" % name.replace(" ", "_"))
-
-        # Folded things
-        self._check_save_to_tfile(tfile, self.folded_unfolded, "folded_unfolded")
-        self._check_save_to_tfile(tfile, self.folded_mc_truth, "folded_mc_truth")
-
-        # Save unfolded
-        self._check_save_to_tfile(tfile, self.unfolded, "unfolded")
-        self._check_save_to_tfile(tfile, self.unfolded_stat_err, "unfolded_stat_err")
 
     def set_input(self,
                   input_hist,
@@ -925,3 +959,56 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             err2 = pow(err, 2)
             cov_matrix_ndarray[ind-1, ind-1] = err2
         return cov_matrix_ndarray
+
+
+def unfolder_from_tdir(tdir):
+    """Recover MyUnfolder from tdirectory
+
+    Massive pain, but can't figure out how to serialize via pickle or ROOT
+    """
+    unfolder = MyUnfolder(response_map=cu.get_from_tfile(tdir, "response_map"),
+                          variable_bin_edges_reco=np.array(cu.get_from_tfile(tdir, "variable_bin_edges_reco")),
+                          variable_bin_edges_gen=np.array(cu.get_from_tfile(tdir, "variable_bin_edges_gen")),
+                          variable_name=str(cu.get_from_tfile(tdir, "variable_name").GetTitle()),
+                          pt_bin_edges_reco=np.array(cu.get_from_tfile(tdir, "pt_bin_edges_reco")),
+                          pt_bin_edges_gen=np.array(cu.get_from_tfile(tdir, "pt_bin_edges_gen")),
+                          pt_bin_edges_underflow_reco=np.array(cu.get_from_tfile(tdir, "pt_bin_edges_underflow_reco")),
+                          pt_bin_edges_underflow_gen=np.array(cu.get_from_tfile(tdir, "pt_bin_edges_underflow_gen")),
+                          orientation=int(cu.get_from_tfile(tdir, "orientation")[0]),
+                          constraintMode=int(cu.get_from_tfile(tdir, "constraintMode")[0]),
+                          regMode=int(cu.get_from_tfile(tdir, "regMode")[0]),
+                          densityFlags=int(cu.get_from_tfile(tdir, "densityFlags")[0]),
+                          distribution=str(cu.get_from_tfile(tdir, "distribution").GetTitle()),
+                          axisSteering=str(cu.get_from_tfile(tdir, "axisSteering").GetTitle()))
+
+    obj_names = cu.get_list_of_element_names(tdir)
+    for name in obj_names:
+        obj = tdir.Get(name)
+        if name.startswith("background_reco_binning_"):
+            bg_name = name.replace("background_reco_binning_", "").replace("_", " ")
+            unfolder.backgrounds[bg_name] = obj
+
+        elif name.startswith("background_gen_binning_"):
+            bg_name = name.replace("background_gen_binning_", "").replace("_", " ")
+            unfolder.backgrounds_gen_binning[bg_name] = obj
+
+        elif name.startswith("syst_map_"):
+            syst_name = name.replace("syst_map_", "").replace("_", " ")
+            unfolder.syst_maps[syst_name] = obj
+
+        elif name.startswith("syst_ematrix_"):
+            syst_name = name.replace("syst_ematrix_", "").replace("_", " ")
+            unfolder.syst_ematrices[syst_name] = obj
+
+        elif name.startswith("syst_shift_"):
+            syst_name = name.replace("syst_shift_", "").replace("_", " ")
+            unfolder.syst_shifts[syst_name] = obj
+
+        elif name.startswith("syst_shifted_unfolded_"):
+            syst_name = name.replace("syst_shifted_unfolded_", "").replace("_", " ")
+            unfolder.systs_shifted[syst_name] = obj
+
+    for attr_name in MyUnfolder._simple_attr:
+        setattr(unfolder, attr_name, obj)
+
+    return unfolder
