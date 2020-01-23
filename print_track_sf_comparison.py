@@ -43,9 +43,9 @@ OUTPUT_FMT = "pdf"
 if __name__ == "__main__":
 
     NO_SF_DIR = "workdir_ak4puppi_data_trigBinningBetter2_jetAsymCut_pt1RecoConstituents_V11JEC_JER_tUnfoldBetter_target0p5_wta_groomed_fwdcenDijet_Zreweight_noZjet2Cut_newBinningFixed"
-    NOMINAL_SF_DIR = "workdir_ak4puppi_data_trigBinningBetter2_jetAsymCut_pt1RecoConstituents_V11JEC_JER_tUnfoldBetter_target0p5_wta_groomed_fwdcenDijet_Zreweight_noZjet2Cut_newBinningFixed_trkSF"
-    SF_UP_DIR = "workdir_ak4puppi_data_trigBinningBetter2_jetAsymCut_pt1RecoConstituents_V11JEC_JER_tUnfoldBetter_target0p5_wta_groomed_fwdcenDijet_Zreweight_noZjet2Cut_newBinningFixed_trkSF/systematics_files/track_directionUp"
-    SF_DOWN_DIR = "workdir_ak4puppi_data_trigBinningBetter2_jetAsymCut_pt1RecoConstituents_V11JEC_JER_tUnfoldBetter_target0p5_wta_groomed_fwdcenDijet_Zreweight_noZjet2Cut_newBinningFixed_trkSF/systematics_files/track_directionDown"
+    NOMINAL_SF_DIR = "workdir_ak4puppi_data_trigBinningBetter2_jetAsymCut_pt1RecoConstituents_V11JEC_JER_tUnfoldBetter_target0p5_wta_groomed_fwdcenDijet_Zreweight_noZjet2Cut_newBinningFixed_trkSFMyFormula"
+    SF_UP_DIR = "workdir_ak4puppi_data_trigBinningBetter2_jetAsymCut_pt1RecoConstituents_V11JEC_JER_tUnfoldBetter_target0p5_wta_groomed_fwdcenDijet_Zreweight_noZjet2Cut_newBinningFixed_trkSFMyFormula/systematics_files/track_directionUp"
+    SF_DOWN_DIR = "workdir_ak4puppi_data_trigBinningBetter2_jetAsymCut_pt1RecoConstituents_V11JEC_JER_tUnfoldBetter_target0p5_wta_groomed_fwdcenDijet_Zreweight_noZjet2Cut_newBinningFixed_trkSFMyFormula/systematics_files/track_directionDown"
 
     QCD_NO_SF_TFILE = cu.TFileCacher(os.path.join(NO_SF_DIR, qgc.QCD_FILENAME))
     QCD_NOMINAL_SF_TFILE = cu.TFileCacher(os.path.join(NOMINAL_SF_DIR, qgc.QCD_FILENAME))
@@ -54,8 +54,8 @@ if __name__ == "__main__":
 
     DY_NO_SF_TFILE = cu.TFileCacher(os.path.join(NO_SF_DIR, qgc.DY_FILENAME))
     DY_NOMINAL_SF_TFILE = cu.TFileCacher(os.path.join(NOMINAL_SF_DIR, qgc.DY_FILENAME))
-    # DY_SF_UP_TFILE = cu.TFileCacher(os.path.join(SF_UP_DIR, qgc.DY_FILENAME))
-    # DY_SF_DOWN_TFILE = cu.TFileCacher(os.path.join(SF_DOWN_DIR, qgc.DY_FILENAME))
+    DY_SF_UP_TFILE = cu.TFileCacher(os.path.join(SF_UP_DIR, qgc.DY_FILENAME))
+    DY_SF_DOWN_TFILE = cu.TFileCacher(os.path.join(SF_DOWN_DIR, qgc.DY_FILENAME))
 
     # QG variable plots
     pt_bins = qgc.PT_BINS[:]
@@ -121,21 +121,30 @@ if __name__ == "__main__":
                                             label="Nominal TRK SF")
                 zpj_nominal_vs_syst_sf_entries.append((zpj_nominal_sf_hist.Clone(), dy_kwargs_nominal_sf2))  # clone since we don't want to rebin twice
 
-                # # TK SF UP
-                # col_up = qgc.DY_COLOURS[2]
-                # dy_kwargs_sf_up = dict(line_color=col_up, line_width=lw, fill_color=col_up,
-                #                      marker_color=col_up, marker_style=cu.Marker.get(qgc.DY_MARKER), marker_size=0,
-                #                      label="H++",
-                #                      subplot=zpj_nominal_sf_hist)
-                # zpj_nominal_vs_syst_sf_entries.append((qgp.get_projection_plot(DY_SF_UP_TFILE[fwd_obj_name], start_val, end_val), dy_kwargs_sf_up))
+                # TK SF UP
+                dy_col_up = qgc.DY_COLOURS[2]
+                dy_kwargs_sf_up = dict(line_color=dy_col_up, line_width=lw, fill_color=dy_col_up,
+                                       marker_color=dy_col_up, marker_style=cu.Marker.get(qgc.DY_MARKER), marker_size=0,
+                                       label="TRK SF Up",
+                                       subplot=zpj_nominal_sf_hist)
+                zpj_sf_up_hist = qgp.get_projection_plot(DY_SF_UP_TFILE[zpj_obj_name], start_val, end_val)
+                zpj_nominal_vs_syst_sf_entries.append((zpj_sf_up_hist, dy_kwargs_sf_up))
 
-                # # TK SF DOWN
-                # col_down = qgc.DY_COLOURS[3]
-                # dy_kwargs_sf_down = dict(line_color=col_down, line_width=lw, fill_color=col_down,
-                #                      marker_color=col_down, marker_style=cu.Marker.get(qgc.DY_MARKER), marker_size=0,
-                #                      label="MG+H++",
-                #                      subplot=zpj_nominal_sf_hist)
-                # zpj_nominal_vs_syst_sf_entries.append((qgp.get_projection_plot(DY_SF_DOWN_TFILE[fwd_obj_name], start_val, end_val), dy_kwargs_sf_down))
+                # TK SF DOWN
+                dy_col_down = qgc.DY_COLOURS[3]
+                dy_kwargs_sf_down = dict(line_color=dy_col_down, line_width=lw, fill_color=dy_col_down,
+                                         marker_color=dy_col_down, marker_style=cu.Marker.get(qgc.DY_MARKER), marker_size=0,
+                                         label="TRK SF Down",
+                                         subplot=zpj_nominal_sf_hist)
+                zpj_sf_down_hist = qgp.get_projection_plot(DY_SF_DOWN_TFILE[zpj_obj_name], start_val, end_val)
+                zpj_nominal_vs_syst_sf_entries.append((zpj_sf_down_hist, dy_kwargs_sf_down))
+
+                zpj_1d_entries.append([
+                    (zpj_no_sf_hist, dy_kwargs_no_sf),
+                    (zpj_nominal_sf_hist, dy_kwargs_nominal_sf),
+                    (zpj_sf_up_hist, dy_kwargs_sf_up),
+                    (zpj_sf_down_hist, dy_kwargs_sf_down),
+                ])
 
                 ####################
                 # DIJET CENTRAL REGION
@@ -350,17 +359,17 @@ if __name__ == "__main__":
                                        subplot_limits=subplot_limits)
 
                 # zpj only
-                # qgp.do_comparison_plot(zpj_no_vs_nominal_sf_entries,
-                #                        "%s/ptBinned/%s_pt%dto%d_zpj.%s" % (plot_dir, v, start_val, end_val, OUTPUT_FMT),
-                #                        rebin=rebin,
-                #                        title="%d < p_{T}^{jet} < %d GeV\n%s\n%s" % (start_val, end_val, jet_str, qgc.ZpJ_LABEL),
-                #                        xtitle=xlabel,
-                #                        xlim=xlim,
-                #                        ylim=ylim,
-                #                        has_data=False,
-                #                        subplot_type='ratio',
-                #                        subplot_title=subplot_title,
-                #                        subplot_limits=subplot_limits)
+                qgp.do_comparison_plot(zpj_nominal_vs_syst_sf_entries,
+                                       "%s/ptBinned/%s_pt%dto%d_zpj.%s" % (plot_dir, v, start_val, end_val, OUTPUT_FMT),
+                                       rebin=rebin,
+                                       title="%d < p_{T}^{jet} < %d GeV\n%s\n%s" % (start_val, end_val, jet_str, qgc.ZpJ_LABEL),
+                                       xtitle=xlabel,
+                                       xlim=xlim,
+                                       ylim=ylim,
+                                       has_data=False,
+                                       subplot_type='ratio',
+                                       subplot_title=subplot_title,
+                                       subplot_limits=subplot_limits)
 
 
             # Do overall summary plots across all pt bins
@@ -386,8 +395,8 @@ if __name__ == "__main__":
             if gr_append != "":
                 var_label = "Groomed " + marker + ang.name + marker + " ($%s$)" % ang.lambda_str
 
-            qgp.do_mean_rms_summary_plot(dijet_cen_1d_entries[:],
-                                         pt_bins[:],
+            qgp.do_mean_rms_summary_plot(dijet_cen_1d_entries,
+                                         pt_bins,
                                          "%s/ptBinned/%s_box_dijet_cen_mpl.%s" % (plot_dir, v, OUTPUT_FMT),
                                          var_label=var_label,
                                          xlim=(50, 2000),
@@ -398,8 +407,8 @@ if __name__ == "__main__":
                                          numerator_label="Var.",
                                          denominator_label="No SF")
 
-            qgp.do_mean_rms_summary_plot(dijet_fwd_1d_entries[:],
-                                         pt_bins[:],
+            qgp.do_mean_rms_summary_plot(dijet_fwd_1d_entries,
+                                         pt_bins,
                                          "%s/ptBinned/%s_box_dijet_fwd_mpl.%s" % (plot_dir, v, OUTPUT_FMT),
                                          var_label=var_label,
                                          xlim=(50, 2000),
@@ -411,16 +420,16 @@ if __name__ == "__main__":
                                          denominator_label="No SF")
 
             # # zpj_1d_entries[i][j] is the jth sample in the ith pt bin
-            # qgp.do_mean_rms_summary_plot(zpj_1d_entries[:],
-            #                              pt_bins[:],
-            #                              "%s/ptBinned/%s_box_zpj_mpl.%s" % (plot_dir, v, OUTPUT_FMT),
-            #                              var_label=var_label,
-            #                              xlim=(50, 614),
-            #                              ylim_mean=ylim_mean,
-            #                              ylim_rms=ylim_rms,
-            #                              region_title="%s jets in Z+jets" % (jet_str),
-            #                              has_data=False,
-            #                              numerator_label="Variation",
-            #                              denominator_label="No TRK SF")
+            qgp.do_mean_rms_summary_plot(zpj_1d_entries,
+                                         pt_bins,
+                                         "%s/ptBinned/%s_box_zpj_mpl.%s" % (plot_dir, v, OUTPUT_FMT),
+                                         var_label=var_label,
+                                         xlim=(50, 614),
+                                         ylim_mean=ylim_mean,
+                                         ylim_rms=ylim_rms,
+                                         region_title="%s jets in Z+jets" % (jet_str),
+                                         has_data=False,
+                                         numerator_label="Var.",
+                                         denominator_label="No SF")
 
 
