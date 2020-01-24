@@ -246,7 +246,6 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
                 n = ROOT.TVectorD(len(obj))
                 for ind, val in enumerate(obj):
                     n[ind] = val
-                print(n)
                 tfile.WriteTObject(n, name)
             elif isinstance(obj, (bool, int, float)):
                 n = ROOT.TVectorD(1)  # the only class that works for these types

@@ -701,6 +701,9 @@ if __name__ == "__main__":
     if args.outputDir:
         output_dir = args.outputDir
     cu.check_dir_exists_create(output_dir)
+    print("")
+    print("Outputting to", output_dir)
+    print("")
 
     jet_algo = "AK4 PF PUPPI"
     if "ak8puppi" in src_dir:
@@ -710,7 +713,7 @@ if __name__ == "__main__":
         angles = qgc.COMMON_VARS
     else:
         angles = [a for a in qgc.COMMON_VARS if a.var in args.angles]
-    print(angles)
+    # print(angles)
 
     print("Running TUnfold version", ROOT.TUnfold.GetTUnfoldVersion())
 
