@@ -1352,6 +1352,7 @@ if __name__ == "__main__":
                 title = "%s\n%s region, %s" % (jet_algo, region['label'], angle_str)
                 unfolder_plotter.draw_truth_folded(title=title, **plot_args)
 
+
             # ------------------------------------------------------------------
             # UNFOLDING WITH ALTERNATIVE RESPONSE MATRIX
             # ------------------------------------------------------------------
@@ -2962,7 +2963,7 @@ if __name__ == "__main__":
                 ]
                 if not MC_INPUT:
                     alt_mc_gen_hist_bin = unfolder.get_pt_hist_var_binned(alt_hist_mc_gen, ibin_lambda, binning_scheme="generator")  # doesnt matter using unfolder, same binning
-                    alt_mc_gen_hist_bin_div_bin_width = qgp.normalise_hist_divide_bin_width(alt_mc_gen_hist_bin)
+                    alt_mc_gen_hist_bin_div_bin_width = qgp.hist_divide_bin_width(alt_mc_gen_hist_bin)
                     alt_gen_colour = ROOT.kViolet+1
                     entries.append(
                         Contribution(alt_mc_gen_hist_bin_div_bin_width,
@@ -3004,7 +3005,7 @@ if __name__ == "__main__":
                 # --------------------------------------------------------------
                 if REGULARIZE != "None":
                     unreg_unfolded_hist_bin = unfolder.get_pt_hist_var_binned(unreg_unfolded_1d, ibin_lambda, binning_scheme="generator")
-                    unreg_unfolded_hist_bin_div_bin_width = qgp.normalise_hist_divide_bin_width(unreg_unfolded_hist_bin)
+                    unreg_unfolded_hist_bin_div_bin_width = qgp.hist_divide_bin_width(unreg_unfolded_hist_bin)
                     unfolded_unreg_colour = ROOT.kViolet+2
                     entries = [
                         Contribution(mc_gen_hist_bin_div_bin_width,
