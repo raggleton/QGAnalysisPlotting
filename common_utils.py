@@ -89,6 +89,10 @@ class TFileCacher(object):
     def get(self, obj_name):
         return self[obj_name]
 
+    def Get(self, obj_name):
+        # uppercase as well, like in TFile
+        return self[obj_name]
+
     def __getitem__(self, obj_name):
         # really hoping all these have unique names
         if obj_name not in self.objects:
@@ -146,6 +150,12 @@ def grab_obj_from_file(file_name, obj_name):
         return new_obj
     else:
         return obj
+
+
+def check_root_obj(obj):
+    """Check ROOT object is fine"""
+    if obj.IsZombie() or obj is None:
+        raise IOError("object is unavailable")
 
 
 def check_exp(n):
