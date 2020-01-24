@@ -47,6 +47,7 @@ def get_dijet_config(source_dir, central=True, groomed=False):
         # "alt_mc_tfile": input_mc_qcd_herwig_tfile_reweight,
         # "alt_mc_label": "Herwig++ (p_{T} reweight)",
         "tau_limits": None,  # user should set this
+        "unreg_unfolder": None,  # set later if regularisation used
         "experimental_systematics": [
             # {
             #     "label": "Charged hadron up",
@@ -140,46 +141,55 @@ def get_dijet_config(source_dir, central=True, groomed=False):
             #     "label": "muR up, muF nominal",
             #     "tfile": os.path.join(source_dir_systs, 'ScaleVariationMuRUp_ScaleVariationMuFNominal', qgc.QCD_FILENAME),
             #     "colour": ROOT.kAzure,
+            #     "unfolder": None,
             # },
             # {
             #     "label": "muR down, muF nominal",
             #     "tfile": os.path.join(source_dir_systs, 'ScaleVariationMuRDown_ScaleVariationMuFNominal', qgc.QCD_FILENAME),
             #     "colour": ROOT.kAzure+1,
+            #     "unfolder": None,
             # },
             # {
             #     "label": "muR nominal, muF up",
             #     "tfile": os.path.join(source_dir_systs, 'ScaleVariationMuRNominal_ScaleVariationMuFUp', qgc.QCD_FILENAME),
             #     "colour": ROOT.kAzure+2,
+            #     "unfolder": None,
             # },
             # {
             #     "label": "muR nominal, muF down",
             #     "tfile": os.path.join(source_dir_systs, 'ScaleVariationMuRNominal_ScaleVariationMuFDown', qgc.QCD_FILENAME),
             #     "colour": ROOT.kAzure+3,
+            #     "unfolder": None,
             # },
             # {
             #     "label": "muR down, muF down",
             #     "tfile": os.path.join(source_dir_systs, 'ScaleVariationMuRDown_ScaleVariationMuFDown', qgc.QCD_FILENAME),
             #     "colour": ROOT.kAzure+4,
+            #     "unfolder": None,
             # },
             # {
             #     "label": "muR up, muF up",
             #     "tfile": os.path.join(source_dir_systs, 'ScaleVariationMuRUp_ScaleVariationMuFUp', qgc.QCD_FILENAME),
             #     "colour": ROOT.kAzure+5,
+            #     "unfolder": None,
             # },
             {
                 "label": "Herwig++",
                 "tfile": input_mc_qcd_herwig_tfile,
                 "colour": ROOT.kOrange-3,
+                "unfolder": None,
             },
             # {
             #     "label": "Herwig++ (p_{T} reweight)",
             #     "tfile": input_mc_qcd_herwig_tfile_reweight,
             #     "colour": ROOT.kOrange+4,
+            #     "unfolder": None,
             # },
             # {
             #     "label": "Pythia8",
             #     "tfile": input_mc_qcd_pythia_tfile,
             #     "colour": ROOT.kGreen-3,
+            #     "unfolder": None,
             # },
         ],
         "pdf_systematics": [
@@ -187,6 +197,7 @@ def get_dijet_config(source_dir, central=True, groomed=False):
                 "label": "PDF",  # this is a tempalte entry, used for future
                 "tfile": os.path.join(source_dir_systs, 'PDFvariationsTrue', qgc.QCD_FILENAME),
                 "colour": ROOT.kCyan+2,
+                "unfolder": None,
                 "variations": range(100),  # list of all the variation #s to be used
             },
         ]
@@ -369,41 +380,49 @@ def get_zpj_config(source_dir, groomed=False):
                 "label": "muR up, muF nominal",
                 "tfile": os.path.join(source_dir_systs, 'ScaleVariationMuRUp_ScaleVariationMuFNominal', qgc.DY_FILENAME),
                 "colour": ROOT.kAzure,
+                "unfolder": None,
             },
             {
                 "label": "muR down, muF nominal",
                 "tfile": os.path.join(source_dir_systs, 'ScaleVariationMuRDown_ScaleVariationMuFNominal', qgc.DY_FILENAME),
                 "colour": ROOT.kAzure+1,
+                "unfolder": None,
             },
             {
                 "label": "muR nominal, muF up",
                 "tfile": os.path.join(source_dir_systs, 'ScaleVariationMuRNominal_ScaleVariationMuFUp', qgc.DY_FILENAME),
                 "colour": ROOT.kAzure+2,
+                "unfolder": None,
             },
             {
                 "label": "muR nominal, muF down",
                 "tfile": os.path.join(source_dir_systs, 'ScaleVariationMuRNominal_ScaleVariationMuFDown', qgc.DY_FILENAME),
                 "colour": ROOT.kAzure+3,
+                "unfolder": None,
             },
             {
                 "label": "muR down, muF down",
                 "tfile": os.path.join(source_dir_systs, 'ScaleVariationMuRDown_ScaleVariationMuFDown', qgc.DY_FILENAME),
                 "colour": ROOT.kAzure+4,
+                "unfolder": None,
             },
             {
                 "label": "muR up, muF up",
                 "tfile": os.path.join(source_dir_systs, 'ScaleVariationMuRUp_ScaleVariationMuFUp', qgc.DY_FILENAME),
                 "colour": ROOT.kAzure+5,
+                "unfolder": None,
             },
             # {
             #     "label": "MG+Herwig++",
             #     "tfile": input_mc_dy_mgherwig_tfile,
             #     "colour": ROOT.kOrange-3,
+            #     "unfolder": None,
             # },
             # {
             #     "label": "Herwig++",
             #     "tfile": input_mc_dy_herwig_tfile,
             #     "colour": ROOT.kBlue-3,
+            #     "unfolder": None,
             # },
         ],
         "pdf_systematics": [
@@ -411,6 +430,7 @@ def get_zpj_config(source_dir, groomed=False):
                 "label": "PDF",
                 "tfile": os.path.join(source_dir_systs, 'PDFvariationsTrue', qgc.DY_FILENAME),
                 "colour": ROOT.kCyan+2,
+                "unfolder": None,
                 "variations": range(100),
             },
         ]

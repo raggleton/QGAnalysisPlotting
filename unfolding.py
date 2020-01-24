@@ -1109,6 +1109,8 @@ if __name__ == "__main__":
                 unreg_unfolder._post_process()
                 unreg_unfolded_1d = unreg_unfolder.unfolded
 
+                region['unreg_unfolder'] = unreg_unfolder
+
                 orig_Lmatrix = unreg_unfolder.GetL("orig_Lmatrix_%s" % (append), "", unreg_unfolder.use_axis_binning)
                 xax = orig_Lmatrix.GetXaxis()
                 # Get bin factors from an unregularised unfolding first,
@@ -1357,9 +1359,8 @@ if __name__ == "__main__":
             # UNFOLDING WITH ALTERNATIVE RESPONSE MATRIX
             # ------------------------------------------------------------------
             alt_hist_mc_gen = None  # mc truth of the generator used to make reponse matrix
-            alt_unfolder = None
             # Do this outside the if statement, since we might use it later in plotting e.g. for data
-            if not MC_INPUT:
+            if not MC_INPUT or args.useAltResponse:
                 if not isinstance(region['alt_mc_tfile'], ROOT.TFile):
                     region['alt_mc_tfile'] = cu.open_root_file(region['alt_mc_tfile'])
                 alt_hist_mc_gen = cu.get_from_tfile(region['alt_mc_tfile'], "%s/hist_%s_truth_all" % (region['dirname'], angle_shortname))
@@ -1496,6 +1497,8 @@ if __name__ == "__main__":
 
                 title = "Error matrix (total), %s, %s region, %s, %s response map" % (jet_algo, region['label'], angle_str, region['alt_mc_label'])
                 alt_unfolder_plotter.draw_error_matrix_total(title=title, **alt_plot_args)
+
+                region['alt_unfolder'] = alt_unfolder
 
                 # Save important stuff to TFile
                 # --------------------------------------------------------------
@@ -1661,12 +1664,10 @@ if __name__ == "__main__":
                     print("original uncert:", syst_unfolded_1d.GetBinError(chosen_bin))
                     syst_unfolder._post_process()
 
-                    region['model_systematics'][ind]['unfolded_1d'] = syst_unfolder.unfolded
-                    region['model_systematics'][ind]['gen_1d'] = syst_unfolder.hist_truth
-
                     syst_title = "%s\n%s region, %s, %s input" % (jet_algo, region['label'], angle_str, syst_label)
                     syst_unfolder_plotter.draw_unfolded_1d(title=syst_title, **syst_plot_args)
 
+                    region['model_systematics'][ind]['unfolder'] = syst_unfolder
 
                     # Save important stuff to TFile
                     # --------------------------------------------------------------
@@ -1953,11 +1954,10 @@ if __name__ == "__main__":
                     print("original uncert:", pdf_unfolded_1d.GetBinError(chosen_bin))
                     pdf_unfolder._post_process()
 
-                    region['pdf_systematics'][ind]['unfolded_1d'] = pdf_unfolder.unfolded
-                    region['pdf_systematics'][ind]['gen_1d'] = pdf_unfolder.hist_truth
-
                     pdf_title = "%s\n%s region, %s, %s input" % (jet_algo, region['label'], angle_str, pdf_label)
                     pdf_unfolder_plotter.draw_unfolded_1d(title=pdf_title, **pdf_plot_args)
+
+                    region['pdf_systematics'][ind]['unfodler'] = pdf_unfolder
 
                     # Save important stuff to TFile
                     # ----------------------------------------------------------
@@ -2228,6 +2228,7 @@ if __name__ == "__main__":
                 # And alternate MC gen level to compare
                 # (i.e. is the difference between unfolded results < diff at gen level?)
                 if args.useAltResponse:
+                    alt_unfolder = region['alt_unfolder']
                     alt_mc_gen_hist_bin = alt_unfolder.get_var_hist_pt_binned(alt_hist_mc_gen, ibin_pt, binning_scheme="generator")
                     alt_unfolded_hist_bin_total_errors = alt_unfolder.get_var_hist_pt_binned(alt_unfolder.unfolded, ibin_pt, binning_scheme="generator")
                     this_pt_bin_tdir.WriteTObject(alt_unfolded_hist_bin_total_errors, "alt_unfolded_hist_bin_total_errors")
@@ -2380,20 +2381,20 @@ if __name__ == "__main__":
                 if args.doModelSysts:
                     syst_entries = []
                     syst_entries_div_bin_width = []
+
                     for syst_dict in region['model_systematics']:
+                        syst_unfolder = syst_dict.get('unfolder', None)
+                        if not syst_unfolder:
+                            continue
+
                         syst_label = syst_dict['label']
                         syst_label_no_spaces = syst_dict['label'].replace(" ", "_")
-                        syst_tau = syst_dict['tau']
-                        syst_unfolded_1d = syst_dict.get('unfolded_1d', None)
-                        if not syst_unfolded_1d:
-                            continue
-                        syst_unfolded_hist_bin_total_errors = unfolder.get_var_hist_pt_binned(syst_unfolded_1d, ibin_pt, binning_scheme="generator")
+                        syst_tau = syst_unfolder.tau
+
+                        syst_unfolded_hist_bin_total_errors = syst_unfolder.get_var_hist_pt_binned(syst_unfolder.unfolded, ibin_pt, binning_scheme="generator")
                         this_pt_bin_tdir.WriteTObject(syst_unfolded_hist_bin_total_errors, "syst_%s_unfolded_hist_bin_total_errors" % (syst_label_no_spaces))
 
-                        syst_gen_1d = syst_dict.get('gen_1d', None)
-                        if not syst_gen_1d:
-                            continue
-                        syst_gen_1d_bin = unfolder.get_var_hist_pt_binned(syst_gen_1d, ibin_pt, binning_scheme="generator")
+                        syst_gen_1d_bin = syst_unfolder.get_var_hist_pt_binned(syst_unfolder.hist_truth, ibin_pt, binning_scheme="generator")
                         this_pt_bin_tdir.WriteTObject(syst_gen_1d_bin, "syst_%s_gen_hist_bin" % (syst_label_no_spaces))
 
                         syst_entries.extend([
@@ -2512,18 +2513,19 @@ if __name__ == "__main__":
                         syst_label = syst_dict['label']
                         if syst_label.startswith("_"):
                             continue
+
                         syst_label_no_spaces = syst_dict['label'].replace(" ", "_")
-                        syst_tau = syst_dict['tau']
-                        syst_unfolded_1d = syst_dict.get('unfolded_1d', None)
-                        if not syst_unfolded_1d:
+
+                        syst_unfolder = syst_dict['unfolder']
+                        if not syst_unfolder:
                             continue
-                        syst_unfolded_hist_bin_total_errors = unfolder.get_var_hist_pt_binned(syst_unfolded_1d, ibin_pt, binning_scheme="generator")
+
+                        syst_tau = syst_unfolder.tau
+
+                        syst_unfolded_hist_bin_total_errors = syst_unfolder.get_var_hist_pt_binned(syst_unfolder.unfolded, ibin_pt, binning_scheme="generator")
                         this_pt_bin_tdir.WriteTObject(syst_unfolded_hist_bin_total_errors, "syst_%s_unfolded_hist_bin_total_errors" % (syst_label_no_spaces))
 
-                        syst_gen_1d = syst_dict.get('gen_1d', None)
-                        if not syst_gen_1d:
-                            continue
-                        syst_gen_1d_bin = unfolder.get_var_hist_pt_binned(syst_gen_1d, ibin_pt, binning_scheme="generator")
+                        syst_gen_1d_bin = syst_unfolder.get_var_hist_pt_binned(syst_unfolder.hist_truth, ibin_pt, binning_scheme="generator")
                         this_pt_bin_tdir.WriteTObject(syst_gen_1d_bin, "syst_%s_gen_hist_bin" % (syst_label_no_spaces))
 
                         syst_entries.extend([
