@@ -1015,6 +1015,7 @@ def unfolder_from_tdir(tdir):
             unfolder.systs_shifted[syst_name] = obj
 
     for attr_name in MyUnfolder._simple_attr:
+        obj = tdir.Get(attr_name)
         setattr(unfolder, attr_name, obj)
 
     return unfolder
