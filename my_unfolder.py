@@ -90,6 +90,13 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
                  axisSteering='*[b]'):
 
         self.response_map = response_map
+        # check no uflow
+        if orientation == ROOT.TUnfold.kHistMapOutputHoriz:
+            if response_map.GetBinContent(0, 0) != 0 or response_map.GetBinContent(0, 1) != 0:
+                raise RuntimeError("Your response_map has entries in 0th gen bin - this means you've got unintended underflow!")
+        elif orientation == ROOT.TUnfold.kHistMapOutputVert:
+            if response_map.GetBinContent(0, 1) != 0 or response_map.GetBinContent(1, 0) != 0:
+                raise RuntimeError("Your response_map has entries in 0th gen bin - this means you've got unintended underflow!")
         self.variable_name = variable_name
         self.variable_name_safe = variable_name.replace(" ", "_")
 
@@ -112,7 +119,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         # you will have untold pain and suffering!
         # TODO read in from XML
         var_uf, var_of = False, True
-        pt_uf, pt_of = False, True  # handle pt uder/over flow ourselves
+        pt_uf, pt_of = False, True  # handle pt under/over flow ourselves
         self.detector_binning = ROOT.TUnfoldBinning("detector")
 
         self.detector_distribution_underflow = self.detector_binning.AddBinning("detectordistribution_underflow")
@@ -145,7 +152,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         self.distribution = distribution
         self.axisSteering = axisSteering
 
-        ROOT.TUnfoldDensity.__init__(self, 
+        ROOT.TUnfoldDensity.__init__(self,
                                      self.response_map,
                                      self.orientation,
                                      self.regMode,
@@ -376,7 +383,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
     def calculate_pt_bin_factors(self, which):
         """Calculate bin factors to account for falling distributions when regularising
 
-        NB done according to singla region - excludes underflow!
+        NB done according to signal region - excludes underflow!
 
         which : str
             Choose which histogram to use for integrals, 'gen' or 'unfolded'
