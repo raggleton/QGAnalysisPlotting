@@ -36,42 +36,6 @@ ROOT.gStyle.SetPaintTextFormat(".3f")
 ROOT.gStyle.SetHistTopMargin(0.)
 
 
-class BinIterator(object):
-
-    def __init__(self, bins):
-        print("Inside __init__()")
-        self.bins = bins
-
-    def __call__(self, func):
-        print("Inside __call__()")
-        def wrapped_func(*args, **kwargs):
-            print("Inside wrapped_func()")
-            print("Decorator arguments:", self.bins)
-            args = args or []
-            kwargs = kwargs or {}
-            for i in range(len(self.bins)-1):
-                print(args, kwargs)
-                bin_dict = {
-                    'bin_edge_low': self.bins[i],
-                    'bin_edge_high': self.bins[i+1],
-                }
-                this_args = [x.format(**bin_dict) for x in args]
-                this_kwargs = {k:v.format(**bin_dict) for k, v in kwargs.items()}
-                print(this_args, this_kwargs)
-                func(bin_ind=i, *this_args, **this_kwargs)
-            print("After func(*args)")
-        return wrapped_func
-
-
-
-def _modify_plot(this_plot):
-    this_plot.legend.SetX1(0.6)
-    this_plot.legend.SetY1(0.68)
-    this_plot.legend.SetX2(0.98)
-    this_plot.legend.SetY2(0.9)
-    this_plot.left_margin = 0.16
-
-
 def setup_regions(args):
     regions = []
     if args.doDijetCentral:
@@ -798,6 +762,3 @@ if __name__ == "__main__":
             # Iterate through lambda bins - reco binning
             for ibin_pt in range(0, len(unfolder.variable_bin_edges_reco)-1):
                 pass
-
-            # my_new_func = BinIterator(unfolder.pt_bin_edges_gen)(print_test)
-            # my_new_func(name="thing_{bin_edge_low:g}_to_{bin_edge_high:g}")
