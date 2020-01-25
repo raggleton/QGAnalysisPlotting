@@ -229,6 +229,22 @@ class Setup(object):
         self.output_fmt = 'pdf'
         self.append = "%s_%s" % (region['name'], angle.var)  # common str to put on filenames, etc. don't need angle_prepend as 'groomed' in region name
 
+PLOT_COLOURS = dict(
+    gen_colour=ROOT.kRed,
+    unfolded_basic_colour=ROOT.kAzure+7,
+    unfolded_stat_colour=ROOT.kAzure+7,
+    unfolded_total_colour=ROOT.kBlack,
+    unfolded_unreg_colour=ROOT.kViolet+2,
+    alt_gen_colour=ROOT.kViolet+1,
+    alt_unfolded_colour=ROOT.kBlue-4,
+    # reco_mc_colour=ROOT.kGreen+2,
+    # reco_mc_colour=ROOT.kAzure-7,
+    reco_data_colour=ROOT.kRed,
+    reco_mc_colour=ROOT.kRed+3,
+    reco_unfolding_input_colour=ROOT.kRed,
+    reco_folded_unfolded_colour=ROOT.kAzure+1,
+    reco_folded_mc_truth_colour=ROOT.kGreen+2,
+)
 
 # FIXME: generalise thise and LambdaBinnedPlotter into one generic BinnedPlotter?
 # Although each has different set of plots, so not easy/possible
@@ -240,18 +256,7 @@ class GenPtBinnedPlotter(object):
         self.hist_bin_chopper = hist_bin_chopper
 
         self.line_width = 2
-        self.plot_colours = dict(
-            gen_colour=ROOT.kRed,
-            unfolded_basic_colour=ROOT.kAzure+7,
-            unfolded_stat_colour=ROOT.kAzure+7,
-            unfolded_total_colour=ROOT.kBlack,
-            unfolded_unreg_colour=ROOT.kViolet+2,
-            alt_gen_colour=ROOT.kViolet+1,
-            alt_unfolded_colour=ROOT.kBlue-4,
-            # reco_mc_colour=ROOT.kGreen+2,
-            reco_mc_colour=ROOT.kAzure-7,
-            reco_data_colour=ROOT.kRed
-        )
+        self.plot_colours = PLOT_COLOURS
         self.pt_bin_plot_args = dict(
             what="hist",
             xtitle=self.setup.particle_title,
@@ -491,7 +496,7 @@ class GenPtBinnedPlotter(object):
             self._modify_plot(plot)
             plot.plot("NOSTACK E1")
             plot.save("%s/unfolded_%s_alt_response_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
-    
+
     def plot_unfolded_with_alt_response_truth_normalised(self, unfolder, alt_unfolder, alt_truth):
         for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
             # TODO: should this be inside or outside this func?
@@ -705,15 +710,7 @@ class GenLambdaBinnedPlotter(object):
         self.hist_bin_chopper = hist_bin_chopper
 
         self.line_width = 2
-        self.plot_colours = dict(
-            gen_colour=ROOT.kRed,
-            unfolded_basic_colour=ROOT.kAzure+7,
-            unfolded_stat_colour=ROOT.kAzure+7,
-            unfolded_total_colour=ROOT.kBlack,
-            unfolded_unreg_colour=ROOT.kViolet+2,
-            alt_gen_colour=ROOT.kViolet+1,
-            alt_unfolded_colour=ROOT.kBlue+1,
-        )
+        self.plot_colours = PLOT_COLOURS
         self.lambda_bin_plot_args = dict(
             what="hist",
             xtitle="%s [GeV]" % self.setup.pt_str,
@@ -846,21 +843,7 @@ class RecoPtBinnedPlotter(object):
         self.hist_bin_chopper = hist_bin_chopper
 
         self.line_width = 2
-        self.plot_colours = dict(
-            gen_colour=ROOT.kRed,
-            unfolded_basic_colour=ROOT.kAzure+7,
-            unfolded_stat_colour=ROOT.kAzure+7,
-            unfolded_total_colour=ROOT.kBlack,
-            unfolded_unreg_colour=ROOT.kViolet+2,
-            alt_gen_colour=ROOT.kViolet+1,
-            alt_unfolded_colour=ROOT.kBlue+1,
-            # reco_mc_colour=ROOT.kGreen+2,
-            reco_mc_colour=ROOT.kRed+3,
-            reco_data_colour=ROOT.kRed,
-            reco_unfolding_input_colour=ROOT.kRed,
-            reco_folded_unfolded_colour=ROOT.kAzure+1,
-            reco_folded_mc_truth_colour=ROOT.kGreen+2,
-        )
+        self.plot_colours = PLOT_COLOURS
         self.pt_bin_plot_args = dict(
             what="hist",
             xtitle=self.setup.detector_title,
