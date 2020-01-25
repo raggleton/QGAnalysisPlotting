@@ -1991,7 +1991,8 @@ if __name__ == "__main__":
             for ibin_pt in range(0, len(unfolder.pt_bin_edges_gen)-1):
 
                 this_pt_bin_tdir = this_tdir.mkdir("gen_bin_%d" % (ibin_pt))
-                print("Individual gen bin", ibin_pt, "=", unfolder.pt_bin_edges_gen[ibin_pt], unfolder.pt_bin_edges_gen[ibin_pt+1])
+                bin_edge_low, bin_edge_high = unfolder.pt_bin_edges_gen[ibin_pt], unfolder.pt_bin_edges_gen[ibin_pt+1]
+                print("Individual gen bin", ibin_pt, "=", bin_edge_low, bin_edge_high)
 
                 # Produce 1D hists for this pt bin
                 # --------------------------------------------------------------
@@ -2027,9 +2028,9 @@ if __name__ == "__main__":
                 # ------------------------------------------------------------
                 lw = 2
                 # common hist settings
-                title = "%s\n%s region\n%g < p_{T}^{jet} < %g GeV" % (jet_algo, region['label'], unfolder.pt_bin_edges_gen[ibin_pt], unfolder.pt_bin_edges_gen[ibin_pt+1])
+                title = "%s\n%s region\n%g < p_{T}^{jet} < %g GeV" % (jet_algo, region['label'], bin_edge_low, bin_edge_high)
                 if "ptavebinning" in src_dir.lower():
-                    title = "%s\n%s region\n%g < #LT p_{T}^{jet} #GT < %g GeV" % (jet_algo, region['label'], unfolder.pt_bin_edges_gen[ibin_pt], unfolder.pt_bin_edges_gen[ibin_pt+1])
+                    title = "%s\n%s region\n%g < #LT p_{T}^{jet} #GT < %g GeV" % (jet_algo, region['label'], bin_edge_low, bin_edge_high)
                 common_hist_args = dict(
                     what="hist",
                     title=title,
