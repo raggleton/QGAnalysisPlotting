@@ -1510,6 +1510,7 @@ if __name__ == "__main__":
                 alt_unfolder_plotter.draw_error_matrix_total(title=title, **alt_plot_args)
 
                 region['alt_unfolder'] = alt_unfolder
+                alt_tdir.WriteTObject(alt_hist_mc_gen, "alt_hist_mc_gen")
 
                 # Save important stuff to TFile
                 # --------------------------------------------------------------
