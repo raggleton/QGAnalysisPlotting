@@ -1394,6 +1394,14 @@ if __name__ == "__main__":
                 alt_tdir = this_tdir.mkdir("alt_response_%s" % region['alt_mc_label'].replace(" ", "-"))
                 alt_tdir.cd()
 
+                is_herwig = "Herwig" in region['alt_mc_label']
+                is_pythia8 = region['alt_mc_label'] == "Pythia8"  # not MG+Pythia9
+                if is_herwig or is_pythia8:
+                    # SetEpsMatrix ensures rank properly calculated when inverting
+                    # Needed if you get message "rank of matrix E 55 expect 170"
+                    # And unfolded looks wacko
+                    alt_unfolder.SetEpsMatrix(1E-18) 
+
                 alt_unfolder_plotter = MyUnfolderPlotter(alt_unfolder, is_data=not MC_INPUT)
                 alt_output_dir = this_output_dir+"/altResponse"
                 alt_plot_args = dict(output_dir=alt_output_dir,
