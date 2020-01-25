@@ -151,52 +151,52 @@ class HistBinChopper(object):
         # TODO: allow overwrite?
         self.objects[name] = obj
 
-    def get_pt_bin(self, name, ind):
+    def get_pt_bin(self, name, ind, binning_scheme='generator'):
         if name not in self.objects:
             raise KeyError("No %s in objects" % name)
         this_name = name+"_pt_bin_%d" % (ind)
         if this_name not in self._cache:
-            self._cache[this_name] = self.unfolder.get_var_hist_pt_binned(self.objects[name], ind, binning_scheme="generator")
+            self._cache[this_name] = self.unfolder.get_var_hist_pt_binned(self.objects[name], ind, binning_scheme)
         return self._cache[this_name]
 
-    def get_pt_bin_div_bin_width(self, name, ind):
+    def get_pt_bin_div_bin_width(self, name, ind, binning_scheme='generator'):
         if name not in self.objects:
             raise KeyError("No %s in objects" % name)
         this_name = name+"_pt_bin_%d_divBinWidth" % (ind)
         if this_name not in self._cache:
-            self._cache[this_name] = qgp.hist_divide_bin_width(self.get_pt_bin(name, ind))
+            self._cache[this_name] = qgp.hist_divide_bin_width(self.get_pt_bin(name, ind, binning_scheme))
         return self._cache[this_name]
 
-    def get_pt_bin_normed_div_bin_width(self, name, ind):
+    def get_pt_bin_normed_div_bin_width(self, name, ind, binning_scheme='generator'):
         if name not in self.objects:
             raise KeyError("No %s in objects" % name)
         this_name = name+"_pt_bin_%d_norm_divBinWidth" % (ind)
         if this_name not in self._cache:
-            self._cache[this_name] = qgp.normalise_hist_divide_bin_width(self.get_pt_bin(name, ind))
+            self._cache[this_name] = qgp.normalise_hist_divide_bin_width(self.get_pt_bin(name, ind, binning_scheme))
         return self._cache[this_name]
 
-    def get_lambda_bin(self, name, ind):
+    def get_lambda_bin(self, name, ind, binning_scheme='generator'):
         if name not in self.objects:
             raise KeyError("No %s in objects" % name)
         this_name = name+"_lambda_bin_%d" % (ind)
         if this_name not in self._cache:
-            self._cache[this_name] = self.unfolder.get_pt_hist_var_binned(self.objects[name], ind, binning_scheme="generator")
+            self._cache[this_name] = self.unfolder.get_pt_hist_var_binned(self.objects[name], ind, binning_scheme=binning_scheme)
         return self._cache[this_name]
 
-    def get_lambda_bin_div_bin_width(self, name, ind):
+    def get_lambda_bin_div_bin_width(self, name, ind, binning_scheme='generator'):
         if name not in self.objects:
             raise KeyError("No %s in objects" % name)
         this_name = name+"_lambda_bin_%d_divBinWidth" % (ind)
         if this_name not in self._cache:
-            self._cache[this_name] = qgp.hist_divide_bin_width(self.get_lambda_bin(name, ind))
+            self._cache[this_name] = qgp.hist_divide_bin_width(self.get_lambda_bin(name, ind, binning_scheme))
         return self._cache[this_name]
 
-    def get_lambda_bin_normed_div_bin_width(self, name, ind):
+    def get_lambda_bin_normed_div_bin_width(self, name, ind, binning_scheme='generator'):
         if name not in self.objects:
             raise KeyError("No %s in objects" % name)
         this_name = name+"_lambda_bin_%d_norm_divBinWidth" % (ind)
         if this_name not in self._cache:
-            self._cache[this_name] = qgp.normalise_hist_divide_bin_width(self.get_lambda_bin(name, ind))
+            self._cache[this_name] = qgp.normalise_hist_divide_bin_width(self.get_lambda_bin(name, ind, binning_scheme))
         return self._cache[this_name]
 
 
@@ -247,7 +247,10 @@ class GenPtBinnedPlotter(object):
             unfolded_total_colour=ROOT.kBlack,
             unfolded_unreg_colour=ROOT.kViolet+2,
             alt_gen_colour=ROOT.kViolet+1,
-            alt_unfolded_colour=ROOT.kBlue+1,
+            alt_unfolded_colour=ROOT.kBlue-4,
+            # reco_mc_colour=ROOT.kGreen+2,
+            reco_mc_colour=ROOT.kAzure-7,
+            reco_data_colour=ROOT.kRed
         )
         self.pt_bin_plot_args = dict(
             what="hist",
@@ -409,10 +412,11 @@ class GenPtBinnedPlotter(object):
 
     def plot_unfolded_with_unreg_normalised(self, unfolder, unreg_unfolder):
         for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
-            self.hist_bin_chopper.add_obj("unreg_unfolded", unreg_unfolder.unfolded)
             mc_gen_hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('hist_truth', ibin)
-            unreg_unfolded_hist_bin_total_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unreg_unfolded', ibin)
             unfolded_hist_bin_total_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded', ibin)
+
+            self.hist_bin_chopper.add_obj("unreg_unfolded", unreg_unfolder.unfolded)
+            unreg_unfolded_hist_bin_total_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unreg_unfolded', ibin)
 
             entries = [
                 Contribution(mc_gen_hist_bin,
@@ -486,7 +490,52 @@ class GenPtBinnedPlotter(object):
                         **self.pt_bin_plot_args)
             self._modify_plot(plot)
             plot.plot("NOSTACK E1")
-            plot.save("%s/unfolded_%s_with_alt_response_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
+            plot.save("%s/unfolded_%s_alt_response_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
+    
+    def plot_unfolded_with_alt_response_truth_normalised(self, unfolder, alt_unfolder, alt_truth):
+        for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
+            # TODO: should this be inside or outside this func?
+            self.hist_bin_chopper.add_obj("alt_unfolded", alt_unfolder.unfolded)
+            self.hist_bin_chopper.add_obj("alt_truth", alt_truth)
+
+            mc_gen_hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('hist_truth', ibin)
+            unfolded_hist_bin_total_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded', ibin)
+            alt_unfolded_hist_bin_total_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('alt_unfolded', ibin)
+            alt_mc_gen_hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('alt_truth', ibin)
+
+            entries = [
+                Contribution(mc_gen_hist_bin,
+                             label="Generator (%s)" % (self.region['mc_label']),
+                             line_color=self.plot_colours['gen_colour'], line_width=self.line_width,
+                             marker_color=self.plot_colours['gen_colour'], marker_size=0,
+                             normalise_hist=False),
+                Contribution(alt_mc_gen_hist_bin,
+                             label="Generator (%s)" % (self.region['alt_mc_label']),
+                             line_color=self.plot_colours['alt_gen_colour'], line_width=self.line_width, line_style=2,
+                             marker_color=self.plot_colours['alt_gen_colour'], marker_size=0,
+                             normalise_hist=False),
+                Contribution(unfolded_hist_bin_total_errors,
+                             label="Unfolded (#tau = %.3g) (total err)\n(%s response matrix)" % (unfolder.tau, self.region['mc_label']),
+                             line_color=self.plot_colours['unfolded_total_colour'], line_width=self.line_width, line_style=1,
+                             marker_color=self.plot_colours['unfolded_total_colour'], #marker_style=20, marker_size=0.75,
+                             subplot=mc_gen_hist_bin,
+                             normalise_hist=False),
+                Contribution(alt_unfolded_hist_bin_total_errors,
+                             label="Unfolded (#tau = %.3g) (total err)\n(%s response matrix)" % (alt_unfolder.tau, self.region['alt_mc_label']),
+                             line_color=self.plot_colours['alt_unfolded_colour'], line_width=self.line_width, line_style=1,
+                             marker_color=self.plot_colours['alt_unfolded_colour'], #marker_style=20, marker_size=0.75,
+                             subplot=mc_gen_hist_bin,
+                             normalise_hist=False),
+            ]
+            if not self.check_entries(entries, "plot_unfolded_with_unreg_normalised_pt_bin %d" % (ibin)):
+                return
+            plot = Plot(entries,
+                        ytitle=self.setup.pt_bin_normalised_differential_label,
+                        title=self.get_pt_bin_title(bin_edge_low, bin_edge_high),
+                        **self.pt_bin_plot_args)
+            self._modify_plot(plot)
+            plot.plot("NOSTACK E1")
+            plot.save("%s/unfolded_%s_alt_response_truth_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
 
     def plot_unfolded_with_model_systs_normalised(self, unfolder, model_systs):
         for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
@@ -609,6 +658,41 @@ class GenPtBinnedPlotter(object):
         plot.plot("NOSTACK E1")
         plot.save("%s/unfolded_%s_pdf_model_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
 
+    def plot_detector_normalised(self, unfolder):
+        for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
+            self.hist_bin_chopper.add_obj("input_hist_gen_binning_bg_subtracted", unfolder.input_hist_gen_binning_bg_subtracted)
+            input_hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('input_hist_gen_binning_bg_subtracted', ibin)
+            self.hist_bin_chopper.add_obj("hist_mc_reco_gen_binning_bg_subtracted", unfolder.hist_mc_reco_gen_binning_bg_subtracted)
+            mc_hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('hist_mc_reco_gen_binning_bg_subtracted', ibin)
+
+            entries = [
+                Contribution(mc_hist_bin,
+                             label="MC (bg-subtracted)",
+                             line_color=self.plot_colours['reco_mc_colour'], line_width=self.line_width,
+                             marker_color=self.plot_colours['reco_mc_colour'], marker_size=0,
+                             normalise_hist=False),
+                Contribution(input_hist_bin,
+                             label="Data (bg-subtracted)",
+                             line_color=self.plot_colours['reco_data_colour'], line_width=self.line_width,
+                             marker_color=self.plot_colours['reco_data_colour'], marker_style=20, marker_size=0.75,
+                             subplot=mc_hist_bin,
+                             normalise_hist=False),
+            ]
+            if not self.check_entries(entries, "plot_detector_normalised %d" % (ibin)):
+                continue
+            plot = Plot(entries,
+                        xtitle=self.setup.detector_title,
+                        ytitle=self.setup.pt_bin_normalised_differential_label,
+                        what="hist",
+                        title=self.get_pt_bin_title(bin_edge_low, bin_edge_high),
+                        has_data=self.setup.has_data,
+                        subplot_type='ratio',
+                        subplot_title='Data / MC',
+                        subplot_limits=(0.75, 1.25),)
+            self._modify_plot(plot)
+            plot.plot("NOSTACK E1")
+            plot.save("%s/detector_gen_binning_bg_subtracted_%s_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
+
 
 # ================================================================================
 
@@ -662,7 +746,7 @@ class GenLambdaBinnedPlotter(object):
     def get_lambda_bin_title(self, bin_edge_low, bin_edge_high):
         title = (("{jet_algo}\n"
                   "{region_label} region\n"
-                  "{bin_edge_low:g} < {angle_str} < {bin_edge_high:g} GeV")
+                  "{bin_edge_low:g} < {angle_str} < {bin_edge_high:g}")
                  .format(
                     jet_algo=self.setup.jet_algo,
                     region_label=self.region['label'],
@@ -709,7 +793,263 @@ class GenLambdaBinnedPlotter(object):
             plot.plot("NOSTACK E1")
             plot.set_logx(do_more_labels=False)
             plot.set_logy(do_more_labels=False)
-            plot.save("%s/unfolded_unnormalised_%s_lamba_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
+            plot.save("%s/unfolded_unnormalised_%s_lambda_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
+
+    def plot_unfolded_with_unreg_unnormalised(self, unfolder, unreg_unfolder):
+        for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
+            mc_gen_hist_bin = self.hist_bin_chopper.get_lambda_bin_div_bin_width('hist_truth', ibin)
+            unfolded_hist_bin_stat_errors = self.hist_bin_chopper.get_lambda_bin_div_bin_width('unfolded_stat_err', ibin)
+            unfolded_hist_bin_total_errors = self.hist_bin_chopper.get_lambda_bin_div_bin_width('unfolded', ibin)
+
+            self.hist_bin_chopper.add_obj("unreg_unfolded", unreg_unfolder.unfolded)
+            unreg_unfolded_hist_bin_total_errors = self.hist_bin_chopper.get_lambda_bin_div_bin_width('unreg_unfolded', ibin)
+
+            # unnormalised version
+            entries = [
+                Contribution(mc_gen_hist_bin,
+                             label="Generator (%s)" % (self.region['mc_label']),
+                             line_color=self.plot_colours['gen_colour'], line_width=self.line_width,
+                             marker_color=self.plot_colours['gen_colour'], marker_size=0,
+                             normalise_hist=False),
+                Contribution(unfolded_hist_bin_total_errors,
+                             label="Unfolded (#tau = %.3g) (total err)" % (unfolder.tau),
+                             line_color=self.plot_colours['unfolded_total_colour'], line_width=self.line_width, line_style=1,
+                             marker_color=self.plot_colours['unfolded_total_colour'],# marker_style=20, marker_size=0.75,
+                             subplot=mc_gen_hist_bin,
+                             normalise_hist=False),
+                Contribution(unreg_unfolded_hist_bin_total_errors,
+                             label="Unfolded (#tau = 0) (total err)",
+                             line_color=self.plot_colours['unfolded_unreg_colour'], line_width=self.line_width, line_style=1,
+                             marker_color=self.plot_colours['unfolded_unreg_colour'], #marker_style=20, marker_size=0.75,
+                             subplot=mc_gen_hist_bin,
+                             normalise_hist=False),
+            ]
+            if not self.check_entries(entries, "plot_unfolded_with_unreg_unnormalised %d" % (ibin)):
+                return
+            plot = Plot(entries,
+                        ytitle="N",
+                        title=self.get_lambda_bin_title(bin_edge_low, bin_edge_high),
+                        **self.lambda_bin_plot_args)
+            self._modify_plot(plot)
+            plot.y_padding_max_log = 5000  # space for title
+            plot.plot("NOSTACK E1")
+            plot.set_logx(do_more_labels=False)
+            plot.set_logy(do_more_labels=False)
+            plot.save("%s/unfolded_unnormalised_%s_with_unreg_lambda_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
+
+
+class RecoPtBinnedPlotter(object):
+    def __init__(self, setup, bins, hist_bin_chopper):
+        self.setup = setup
+        self.region = setup.region
+        self.bins = bins
+        self.hist_bin_chopper = hist_bin_chopper
+
+        self.line_width = 2
+        self.plot_colours = dict(
+            gen_colour=ROOT.kRed,
+            unfolded_basic_colour=ROOT.kAzure+7,
+            unfolded_stat_colour=ROOT.kAzure+7,
+            unfolded_total_colour=ROOT.kBlack,
+            unfolded_unreg_colour=ROOT.kViolet+2,
+            alt_gen_colour=ROOT.kViolet+1,
+            alt_unfolded_colour=ROOT.kBlue+1,
+            # reco_mc_colour=ROOT.kGreen+2,
+            reco_mc_colour=ROOT.kRed+3,
+            reco_data_colour=ROOT.kRed,
+            reco_unfolding_input_colour=ROOT.kRed,
+            reco_folded_unfolded_colour=ROOT.kAzure+1,
+            reco_folded_mc_truth_colour=ROOT.kGreen+2,
+        )
+        self.pt_bin_plot_args = dict(
+            what="hist",
+            xtitle=self.setup.detector_title,
+            has_data=self.setup.has_data,
+            subplot_type='ratio',
+            subplot_title="Unfolded / Gen",
+            subplot_limits=(0.75, 1.25),
+        )
+
+    @staticmethod
+    def _modify_plot(this_plot):
+        this_plot.legend.SetX1(0.6)
+        this_plot.legend.SetY1(0.68)
+        this_plot.legend.SetX2(0.98)
+        this_plot.legend.SetY2(0.9)
+        this_plot.left_margin = 0.16
+
+    @staticmethod
+    def check_entries(entries, message=""):
+        """Check that at least 1 Contribution has something in it"""
+        has_entries = [c.obj.GetEntries() > 0 for c in entries]
+        if not any(has_entries):
+            if message:
+                print("Skipping 0 entries (%s)" % (message))
+            else:
+                print("Skipping 0 entries")
+            return False
+        return True
+
+    def get_pt_bin_title(self, bin_edge_low, bin_edge_high):
+        title = (("{jet_algo}\n"
+                  "{region_label} region\n"
+                  "{bin_edge_low:g} < {pt_str} < {bin_edge_high:g} GeV")
+                 .format(
+                    jet_algo=self.setup.jet_algo,
+                    region_label=self.region['label'],
+                    pt_str=self.setup.pt_str,
+                    bin_edge_low=bin_edge_low,
+                    bin_edge_high=bin_edge_high
+                ))
+        return title
+
+    def plot_detector_normalised(self, unfolder):
+        for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
+            self.hist_bin_chopper.add_obj("input_hist_bg_subtracted", unfolder.input_hist_bg_subtracted)
+            input_hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('input_hist_bg_subtracted', ibin, 'detector')
+            self.hist_bin_chopper.add_obj("hist_mc_reco_bg_subtracted", unfolder.hist_mc_reco_bg_subtracted)
+            mc_hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('hist_mc_reco_bg_subtracted', ibin, 'detector')
+
+            entries = [
+                Contribution(mc_hist_bin,
+                             label="MC (bg-subtracted)",
+                             line_color=self.plot_colours['reco_mc_colour'], line_width=self.line_width,
+                             marker_color=self.plot_colours['reco_mc_colour'], marker_size=0,
+                             normalise_hist=False),
+                Contribution(input_hist_bin,
+                             label="Data (bg-subtracted)",
+                             line_color=self.plot_colours['reco_data_colour'], line_width=self.line_width,
+                             marker_color=self.plot_colours['reco_data_colour'], marker_style=20, marker_size=0.75,
+                             subplot=mc_hist_bin,
+                             normalise_hist=False),
+            ]
+            if not self.check_entries(entries, "plot_detector_normalised %d" % (ibin)):
+                continue
+            plot = Plot(entries,
+                        xtitle=self.setup.detector_title,
+                        ytitle=self.setup.pt_bin_normalised_differential_label,
+                        what="hist",
+                        title=self.get_pt_bin_title(bin_edge_low, bin_edge_high),
+                        has_data=self.setup.has_data,
+                        subplot_type='ratio',
+                        subplot_title='Data / MC',
+                        subplot_limits=(0.75, 1.25),)
+            self._modify_plot(plot)
+            plot.plot("NOSTACK E1")
+            plot.save("%s/detector_reco_binning_bg_subtracted_%s_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
+
+    def plot_folded_unfolded_normalised(self, unfolder):
+        for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
+            self.hist_bin_chopper.add_obj("input_hist_bg_subtracted", unfolder.input_hist_bg_subtracted)
+            input_hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('input_hist_bg_subtracted', ibin, 'detector')
+            self.hist_bin_chopper.add_obj("folded_unfolded", unfolder.folded_unfolded)
+            folded_unfolded_hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('folded_unfolded', ibin, 'detector')
+
+            entries = [
+                Contribution(input_hist_bin,
+                             label="Unfolding input (bg-subtracted)",
+                             line_color=self.plot_colours['reco_unfolding_input_colour'], line_width=self.line_width,
+                             marker_color=self.plot_colours['reco_unfolding_input_colour'], marker_style=20, marker_size=0,
+                             normalise_hist=False),
+                Contribution(folded_unfolded_hist_bin,
+                             label="Folded unfolded",
+                             line_color=self.plot_colours['reco_folded_unfolded_colour'], line_width=self.line_width,
+                             marker_color=self.plot_colours['reco_folded_unfolded_colour'], marker_style=20, marker_size=0.75,
+                             subplot=input_hist_bin,
+                             normalise_hist=False),
+            ]
+            if not self.check_entries(entries, "plot_folded_unfolded_normalised %d" % (ibin)):
+                continue
+            plot = Plot(entries,
+                        xtitle=self.setup.detector_title,
+                        ytitle=self.setup.pt_bin_normalised_differential_label,
+                        what="hist",
+                        title=self.get_pt_bin_title(bin_edge_low, bin_edge_high),
+                        has_data=self.setup.has_data,
+                        subplot_type='ratio',
+                        subplot_title='Folded / input',
+                        subplot_limits=(0.75, 1.25),)
+            self._modify_plot(plot)
+            plot.plot("NOSTACK E1")
+            plot.save("%s/detector_folded_unfolded_only_data_%s_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
+
+    def plot_folded_unfolded_with_mc_normalised(self, unfolder):
+        for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
+            self.hist_bin_chopper.add_obj("hist_mc_reco_bg_subtracted", unfolder.hist_mc_reco_bg_subtracted)
+            mc_reco_hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('hist_mc_reco_bg_subtracted', ibin, 'detector')
+            self.hist_bin_chopper.add_obj("input_hist_bg_subtracted", unfolder.input_hist_bg_subtracted)
+            input_hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('input_hist_bg_subtracted', ibin, 'detector')
+            self.hist_bin_chopper.add_obj("folded_unfolded", unfolder.folded_unfolded)
+            folded_unfolded_hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('folded_unfolded', ibin, 'detector')
+
+            entries = [
+                Contribution(mc_reco_hist_bin,
+                             label="MC (reco, bg-subtracted)",
+                             line_color=self.plot_colours['reco_mc_colour'], line_width=self.line_width,
+                             marker_color=self.plot_colours['reco_mc_colour'], marker_style=20, marker_size=0,
+                             normalise_hist=False),
+                Contribution(input_hist_bin,
+                             label="Unfolding input (bg-subtracted)",
+                             line_color=self.plot_colours['reco_unfolding_input_colour'], line_width=self.line_width,
+                             marker_color=self.plot_colours['reco_unfolding_input_colour'], marker_style=20, marker_size=0,
+                             subplot=mc_reco_hist_bin,
+                             normalise_hist=False),
+                Contribution(folded_unfolded_hist_bin,
+                             label="Folded unfolded",
+                             line_color=self.plot_colours['reco_folded_unfolded_colour'], line_width=self.line_width,
+                             marker_color=self.plot_colours['reco_folded_unfolded_colour'],marker_style=20, marker_size=0.75,
+                             subplot=mc_reco_hist_bin,
+                             normalise_hist=False),
+            ]
+            if not self.check_entries(entries, "plot_folded_unfolded_normalised %d" % (ibin)):
+                continue
+            plot = Plot(entries,
+                        xtitle=self.setup.detector_title,
+                        ytitle=self.setup.pt_bin_normalised_differential_label,
+                        what="hist",
+                        title=self.get_pt_bin_title(bin_edge_low, bin_edge_high),
+                        has_data=self.setup.has_data,
+                        subplot_type='ratio',
+                        subplot_title='* / MC',
+                        subplot_limits=(0.75, 1.25),)
+            self._modify_plot(plot)
+            plot.plot("NOSTACK E1")
+            plot.save("%s/detector_folded_unfolded_%s_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
+
+    def plot_folded_gen_normalised(self, unfolder):
+        for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
+            self.hist_bin_chopper.add_obj("hist_mc_reco_bg_subtracted", unfolder.hist_mc_reco_bg_subtracted)
+            mc_reco_hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('hist_mc_reco_bg_subtracted', ibin, 'detector')
+            self.hist_bin_chopper.add_obj("folded_mc_truth", unfolder.folded_mc_truth)
+            folded_mc_truth_hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('folded_mc_truth', ibin, 'detector')
+
+            entries = [
+                Contribution(mc_reco_hist_bin,
+                             label="MC (reco, bg-subtracted)",
+                             line_color=self.plot_colours['reco_mc_colour'], line_width=self.line_width,
+                             marker_color=self.plot_colours['reco_mc_colour'], marker_style=20, marker_size=0,
+                             normalise_hist=False),
+                Contribution(folded_mc_truth_hist_bin,
+                             label="Folded gen",
+                             line_color=self.plot_colours['reco_folded_mc_truth_colour'], line_width=self.line_width,
+                             marker_color=self.plot_colours['reco_folded_mc_truth_colour'], marker_style=20, marker_size=0.75,
+                             subplot=mc_reco_hist_bin,
+                             normalise_hist=False),
+            ]
+            if not self.check_entries(entries, "plot_folded_gen_normalised %d" % (ibin)):
+                continue
+            plot = Plot(entries,
+                        xtitle=self.setup.detector_title,
+                        ytitle=self.setup.pt_bin_normalised_differential_label,
+                        what="hist",
+                        title=self.get_pt_bin_title(bin_edge_low, bin_edge_high),
+                        has_data=self.setup.has_data,
+                        subplot_type='ratio',
+                        subplot_title='Folded / MC reco',
+                        subplot_limits=(0.75, 1.25),)
+            self._modify_plot(plot)
+            plot.plot("NOSTACK E1")
+            plot.save("%s/detector_folded_gen_%s_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
 
 
 if __name__ == "__main__":
@@ -820,7 +1160,7 @@ if __name__ == "__main__":
             # Iterate through pt bins - gen binning
             gen_pt_binned_plotter = GenPtBinnedPlotter(setup=setup,
                                                        bins=unfolder.pt_bin_edges_gen,
-                                                        hist_bin_chopper=hbc)
+                                                       hist_bin_chopper=hbc)
             gen_pt_binned_plotter.plot_unfolded_unnormalised(unfolder)
             gen_pt_binned_plotter.plot_unfolded_normalised(unfolder)
             if alt_hist_truth:
@@ -834,10 +1174,17 @@ if __name__ == "__main__":
             if alt_unfolder:
                 gen_pt_binned_plotter.plot_unfolded_with_alt_response_normalised(unfolder=unfolder,
                                                                                  alt_unfolder=alt_unfolder)
+                gen_pt_binned_plotter.plot_unfolded_with_alt_response_truth_normalised(unfolder=unfolder,
+                                                                                       alt_unfolder=alt_unfolder,
+                                                                                       alt_truth=alt_hist_truth)
+
             if len(region['model_systematics']) > 0:
                 print(region['model_systematics'])
                 gen_pt_binned_plotter.plot_unfolded_with_model_systs_normalised(unfolder=unfolder,
                                                                                 model_systs=region['model_systematics'])
+
+            # if has_data:
+            gen_pt_binned_plotter.plot_detector_normalised(unfolder)
 
             # Iterate through lambda bins - gen binning
             lambda_pt_binned_plotter = GenLambdaBinnedPlotter(setup=setup,
@@ -845,10 +1192,17 @@ if __name__ == "__main__":
                                                               hist_bin_chopper=hbc)
             lambda_pt_binned_plotter.plot_unfolded_unnormalised(unfolder)
 
+            if unfolder.tau > 0 and unreg_unfolder:
+                lambda_pt_binned_plotter.plot_unfolded_with_unreg_unnormalised(unfolder, unreg_unfolder)
+
             # Iterate through pt bins - reco binning
-            for ibin in range(0, len(unfolder.pt_bin_edges_reco)-1):
-                pass
+            reco_pt_binned_plotter = RecoPtBinnedPlotter(setup=setup,
+                                                         bins=unfolder.pt_bin_edges_reco,
+                                                         hist_bin_chopper=hbc)
+            reco_pt_binned_plotter.plot_detector_normalised(unfolder)
+            reco_pt_binned_plotter.plot_folded_unfolded_normalised(unfolder)
+            reco_pt_binned_plotter.plot_folded_unfolded_with_mc_normalised(unfolder)
+            reco_pt_binned_plotter.plot_folded_gen_normalised(unfolder)
 
             # Iterate through lambda bins - reco binning
-            for ibin in range(0, len(unfolder.variable_bin_edges_reco)-1):
-                pass
+            #
