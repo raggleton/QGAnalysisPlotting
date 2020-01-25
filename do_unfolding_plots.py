@@ -12,12 +12,6 @@ import os
 os.nice(10)
 import sys
 import argparse
-from array import array
-import numpy as np
-import math
-import distutils
-from distutils import util
-from itertools import product
 
 import ROOT
 from MyStyle import My_Style
@@ -281,14 +275,27 @@ def check_entries(entries, message=""):
         return False
     return True
 
-
-COMMON_PT_BIN_PLOT_ARGS = dict(
+#Should all this stuff be put in a class?
+PT_BIN_PLOT_ARGS = dict(
     what="hist",
     subplot_type='ratio',
     subplot_title="Unfolded / Gen",
     subplot_limits=(0.75, 1.25),
 )
 
+
+PLOT_COLOURS = dict(
+    gen_colour=ROOT.kRed,
+    unfolded_basic_colour=ROOT.kAzure+7,
+    unfolded_stat_colour=ROOT.kAzure+7,
+    unfolded_total_colour=ROOT.kBlack,
+    unfolded_unreg_colour=ROOT.kViolet+2,
+    alt_gen_colour=ROOT.kViolet+1,
+    alt_unfolded_colour=ROOT.kBlue+1,
+)
+
+
+LW = 2
 
 def get_pt_bin_title(setup, region, bin_edge_low, bin_edge_high):
     title = (("{jet_algo}\n"
@@ -309,28 +316,23 @@ def plot_unfolded_unnormalised_pt_bin(ibin_pt, unfolder, hist_bin_chopper, setup
     unfolded_hist_bin_stat_errors = hist_bin_chopper.get_pt_bin_div_bin_width('unfolded_stat_err', ibin_pt)
     unfolded_hist_bin_total_errors = hist_bin_chopper.get_pt_bin_div_bin_width('unfolded', ibin_pt)
 
-    gen_colour = ROOT.kRed
-    unfolded_basic_colour = ROOT.kAzure+7
-    unfolded_stat_colour = ROOT.kAzure+7
-    unfolded_total_colour = ROOT.kBlack
-    lw = 2
     # unnormalised version
     entries = [
         Contribution(mc_gen_hist_bin,
                      label="Generator (%s)" % (region['mc_label']),
-                     line_color=gen_colour, line_width=lw,
-                     marker_color=gen_colour, marker_size=0,
+                     line_color=PLOT_COLOURS['gen_colour'], line_width=LW,
+                     marker_color=PLOT_COLOURS['gen_colour'], marker_size=0,
                      normalise_hist=False),
         Contribution(unfolded_hist_bin_total_errors,
                      label="Unfolded (#tau = %.3g) (total err)" % (unfolder.tau),
-                     line_color=unfolded_total_colour, line_width=lw, line_style=1,
-                     marker_color=unfolded_total_colour,# marker_style=20, marker_size=0.75,
+                     line_color=PLOT_COLOURS['unfolded_total_colour'], line_width=LW, line_style=1,
+                     marker_color=PLOT_COLOURS['unfolded_total_colour'],# marker_style=20, marker_size=0.75,
                      subplot=mc_gen_hist_bin,
                      normalise_hist=False),
         Contribution(unfolded_hist_bin_stat_errors,
                      label="Unfolded (#tau = %.3g) (stat err)" % (unfolder.tau),
-                     line_color=unfolded_stat_colour, line_width=lw, line_style=1,
-                     marker_color=unfolded_stat_colour, marker_style=20, marker_size=0.75,
+                     line_color=PLOT_COLOURS['unfolded_stat_colour'], line_width=LW, line_style=1,
+                     marker_color=PLOT_COLOURS['unfolded_stat_colour'], marker_style=20, marker_size=0.75,
                      subplot=mc_gen_hist_bin,
                      normalise_hist=False),
     ]
@@ -341,7 +343,7 @@ def plot_unfolded_unnormalised_pt_bin(ibin_pt, unfolder, hist_bin_chopper, setup
                 ytitle="N",
                 title=get_pt_bin_title(setup, region, unfolder.pt_bin_edges_gen[ibin_pt], unfolder.pt_bin_edges_gen[ibin_pt+1]),
                 has_data=setup.has_data,
-                **COMMON_PT_BIN_PLOT_ARGS)
+                **PT_BIN_PLOT_ARGS)
     _modify_plot(plot)
     plot.plot("NOSTACK E1")
     plot.save("%s/unfolded_unnormalised_%s_bin_%d_divBinWidth.%s" % (setup.output_dir, setup.append, ibin_pt, setup.output_fmt))
@@ -352,27 +354,22 @@ def plot_unfolded_normalised_pt_bin(ibin_pt, unfolder, hist_bin_chopper, setup):
     unfolded_hist_bin_stat_errors = hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded_stat_err', ibin_pt)
     unfolded_hist_bin_total_errors = hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded', ibin_pt)
 
-    gen_colour = ROOT.kRed
-    unfolded_basic_colour = ROOT.kAzure+7
-    unfolded_stat_colour = ROOT.kAzure+7
-    unfolded_total_colour = ROOT.kBlack
-    lw = 2
     entries = [
         Contribution(mc_gen_hist_bin,
                      label="Generator (%s)" % (region['mc_label']),
-                     line_color=gen_colour, line_width=lw,
-                     marker_color=gen_colour, marker_size=0,
+                     line_color=PLOT_COLOURS['gen_colour'], line_width=LW,
+                     marker_color=PLOT_COLOURS['gen_colour'], marker_size=0,
                      normalise_hist=False),
         Contribution(unfolded_hist_bin_total_errors,
                      label="Unfolded (#tau = %.3g) (total err)" % (unfolder.tau),
-                     line_color=unfolded_total_colour, line_width=lw, line_style=1,
-                     marker_color=unfolded_total_colour,# marker_style=20, marker_size=0.75,
+                     line_color=PLOT_COLOURS['unfolded_total_colour'], line_width=LW, line_style=1,
+                     marker_color=PLOT_COLOURS['unfolded_total_colour'],# marker_style=20, marker_size=0.75,
                      subplot=mc_gen_hist_bin,
                      normalise_hist=False),
         Contribution(unfolded_hist_bin_stat_errors,
                      label="Unfolded (#tau = %.3g) (stat err)" % (unfolder.tau),
-                     line_color=unfolded_stat_colour, line_width=lw, line_style=1,
-                     marker_color=unfolded_stat_colour, marker_style=20, marker_size=0.75,
+                     line_color=PLOT_COLOURS['unfolded_stat_colour'], line_width=LW, line_style=1,
+                     marker_color=PLOT_COLOURS['unfolded_stat_colour'], marker_style=20, marker_size=0.75,
                      subplot=mc_gen_hist_bin,
                      normalise_hist=False),
     ]
@@ -384,7 +381,7 @@ def plot_unfolded_normalised_pt_bin(ibin_pt, unfolder, hist_bin_chopper, setup):
                 ytitle=setup.pt_bin_normalised_differential_label,
                 title=get_pt_bin_title(setup, region, unfolder.pt_bin_edges_gen[ibin_pt], unfolder.pt_bin_edges_gen[ibin_pt+1]),
                 has_data=setup.has_data,
-                **COMMON_PT_BIN_PLOT_ARGS)
+                **PT_BIN_PLOT_ARGS)
     _modify_plot(plot)
     plot.plot("NOSTACK E1")
     plot.save("%s/unfolded_%s_bin_%d_divBinWidth.%s" % (setup.output_dir, setup.append, ibin_pt, setup.output_fmt))
@@ -398,34 +395,28 @@ def plot_unfolded_with_alt_truth_normalised_pt_bin(ibin_pt, unfolder, alt_truth,
     hist_bin_chopper.add_obj('alt_hist_truth', alt_truth)
     alt_mc_gen_hist_bin = hist_bin_chopper.get_pt_bin_normed_div_bin_width('alt_hist_truth', ibin_pt)
 
-    gen_colour = ROOT.kRed
-    unfolded_basic_colour = ROOT.kAzure+7
-    unfolded_stat_colour = ROOT.kAzure+7
-    unfolded_total_colour = ROOT.kBlack
-    alt_gen_colour = ROOT.kViolet+1
-    lw = 2
     entries = [
         Contribution(mc_gen_hist_bin,
                      label="Generator (%s)" % (region['mc_label']),
-                     line_color=gen_colour, line_width=lw,
-                     marker_color=gen_colour, marker_size=0,
+                     line_color=PLOT_COLOURS['gen_colour'], line_width=LW,
+                     marker_color=PLOT_COLOURS['gen_colour'], marker_size=0,
                      normalise_hist=False),
         Contribution(alt_mc_gen_hist_bin,
                      label="Generator (%s)" % (region['alt_mc_label']),
-                     line_color=alt_gen_colour, line_width=lw, line_style=2,
-                     marker_color=alt_gen_colour, marker_size=0,
+                     line_color=PLOT_COLOURS['alt_gen_colour'], line_width=LW, line_style=2,
+                     marker_color=PLOT_COLOURS['alt_gen_colour'], marker_size=0,
                      subplot=mc_gen_hist_bin,
                      normalise_hist=False),
         Contribution(unfolded_hist_bin_total_errors,
                      label="Unfolded (#tau = %.3g) (total err)" % (unfolder.tau),
-                     line_color=unfolded_total_colour, line_width=lw, line_style=1,
-                     marker_color=unfolded_total_colour, #marker_style=20, marker_size=0.75,
+                     line_color=PLOT_COLOURS['unfolded_total_colour'], line_width=LW, line_style=1,
+                     marker_color=PLOT_COLOURS['unfolded_total_colour'], #marker_style=20, marker_size=0.75,
                      subplot=mc_gen_hist_bin,
                      normalise_hist=False),
         Contribution(unfolded_hist_bin_stat_errors,
                      label="Unfolded (#tau = %.3g) (stat err)" % (unfolder.tau),
-                     line_color=unfolded_stat_colour, line_width=lw, line_style=1,
-                     marker_color=unfolded_stat_colour, marker_style=20, marker_size=0.75,
+                     line_color=PLOT_COLOURS['unfolded_stat_colour'], line_width=LW, line_style=1,
+                     marker_color=PLOT_COLOURS['unfolded_stat_colour'], marker_style=20, marker_size=0.75,
                      subplot=mc_gen_hist_bin,
                      normalise_hist=False),
     ]
@@ -436,7 +427,7 @@ def plot_unfolded_with_alt_truth_normalised_pt_bin(ibin_pt, unfolder, alt_truth,
                 ytitle=setup.pt_bin_normalised_differential_label,
                 title=get_pt_bin_title(setup, region, unfolder.pt_bin_edges_gen[ibin_pt], unfolder.pt_bin_edges_gen[ibin_pt+1]),
                 has_data=setup.has_data,
-                **COMMON_PT_BIN_PLOT_ARGS)
+                **PT_BIN_PLOT_ARGS)
     _modify_plot(plot)
     plot.plot("NOSTACK E1")
     plot.save("%s/unfolded_%s_alt_truth_bin_%d_divBinWidth.%s" % (setup.output_dir, setup.append, ibin_pt, setup.output_fmt))
@@ -448,28 +439,22 @@ def plot_unfolded_with_unreg_normalised_pt_bin(ibin_pt, unfolder, unreg_unfolder
     unreg_unfolded_hist_bin_total_errors = hist_bin_chopper.get_pt_bin_normed_div_bin_width('unreg_unfolded', ibin_pt)
     unfolded_hist_bin_total_errors = hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded', ibin_pt)
 
-    gen_colour = ROOT.kRed
-    unfolded_basic_colour = ROOT.kAzure+7
-    unfolded_stat_colour = ROOT.kAzure+7
-    unfolded_total_colour = ROOT.kBlack
-    lw = 2
-    unfolded_unreg_colour = ROOT.kViolet+2
     entries = [
         Contribution(mc_gen_hist_bin,
                      label="Generator (%s)" % (region['mc_label']),
-                     line_color=gen_colour, line_width=lw,
-                     marker_color=gen_colour, marker_size=0,
+                     line_color=PLOT_COLOURS['gen_colour'], line_width=LW,
+                     marker_color=PLOT_COLOURS['gen_colour'], marker_size=0,
                      normalise_hist=False),
         Contribution(unfolded_hist_bin_total_errors,
                      label="Unfolded (#tau = %.3g) (total err)" % (unfolder.tau),
-                     line_color=unfolded_total_colour, line_width=lw, line_style=1,
-                     marker_color=unfolded_total_colour, #marker_style=20, marker_size=0.75,
+                     line_color=PLOT_COLOURS['unfolded_total_colour'], line_width=LW, line_style=1,
+                     marker_color=PLOT_COLOURS['unfolded_total_colour'], #marker_style=20, marker_size=0.75,
                      subplot=mc_gen_hist_bin,
                      normalise_hist=False),
         Contribution(unreg_unfolded_hist_bin_total_errors,
                      label="Unfolded (#tau = 0) (total err)",
-                     line_color=unfolded_unreg_colour, line_width=lw, line_style=1,
-                     marker_color=unfolded_unreg_colour, #marker_style=20, marker_size=0.75,
+                     line_color=PLOT_COLOURS['unfolded_unreg_colour'], line_width=LW, line_style=1,
+                     marker_color=PLOT_COLOURS['unfolded_unreg_colour'], #marker_style=20, marker_size=0.75,
                      subplot=mc_gen_hist_bin,
                      normalise_hist=False),
     ]
@@ -480,7 +465,7 @@ def plot_unfolded_with_unreg_normalised_pt_bin(ibin_pt, unfolder, unreg_unfolder
                 ytitle=setup.pt_bin_normalised_differential_label,
                 title=get_pt_bin_title(setup, region, unfolder.pt_bin_edges_gen[ibin_pt], unfolder.pt_bin_edges_gen[ibin_pt+1]),
                 has_data=setup.has_data,
-                **COMMON_PT_BIN_PLOT_ARGS)
+                **PT_BIN_PLOT_ARGS)
     _modify_plot(plot)
     plot.plot("NOSTACK E1")
     plot.save("%s/unfolded_%s_with_unreg_bin_%d_divBinWidth.%s" % (setup.output_dir, setup.append, ibin_pt, setup.output_fmt))
@@ -495,34 +480,27 @@ def plot_unfolded_with_alt_response_normalised_pt_bin(ibin_pt, unfolder, alt_unf
     alt_unfolded_hist_bin_total_errors = hist_bin_chopper.get_pt_bin_normed_div_bin_width('alt_unfolded', ibin_pt)
     alt_mc_gen_hist_gin = hist_bin_chopper.get_pt_bin_normed_div_bin_width('alt_hist_truth', ibin_pt)
 
-    gen_colour = ROOT.kRed
-    unfolded_basic_colour = ROOT.kAzure+7
-    unfolded_stat_colour = ROOT.kAzure+7
-    unfolded_total_colour = ROOT.kBlack
-    lw = 2
-    alt_gen_colour = ROOT.kViolet+1
-    alt_colour = ROOT.kBlue+1
     entries = [
         Contribution(mc_gen_hist_bin,
                      label="Generator (%s)" % (region['mc_label']),
-                     line_color=gen_colour, line_width=lw,
-                     marker_color=gen_colour, marker_size=0,
+                     line_color=PLOT_COLOURS['gen_colour'], line_width=LW,
+                     marker_color=PLOT_COLOURS['gen_colour'], marker_size=0,
                      normalise_hist=False),
         # Contribution(alt_mc_gen_hist_bin,
         #              label="Generator (%s)" % (region['alt_mc_label']),
-        #              line_color=alt_gen_colour, line_width=lw, line_style=2,
+        #              line_color=alt_gen_colour, line_width=LW, line_style=2,
         #              marker_color=alt_gen_colour, marker_size=0,
         #              normalise_hist=False),
         Contribution(unfolded_hist_bin_total_errors,
                      label="Unfolded (#tau = %.3g) (total err)\n(%s response matrix)" % (unfolder.tau, region['mc_label']),
-                     line_color=unfolded_total_colour, line_width=lw, line_style=1,
-                     marker_color=unfolded_total_colour, #marker_style=20, marker_size=0.75,
+                     line_color=PLOT_COLOURS['unfolded_total_colour'], line_width=LW, line_style=1,
+                     marker_color=PLOT_COLOURS['unfolded_total_colour'], #marker_style=20, marker_size=0.75,
                      subplot=mc_gen_hist_bin,
                      normalise_hist=False),
         Contribution(alt_unfolded_hist_bin_total_errors,
                      label="Unfolded (#tau = %.3g) (total err)\n(%s response matrix)" % (alt_unfolder.tau, region['alt_mc_label']),
-                     line_color=alt_colour, line_width=lw, line_style=1,
-                     marker_color=alt_colour, #marker_style=20, marker_size=0.75,
+                     line_color=PLOT_COLOURS['alt_unfolded_colour'], line_width=LW, line_style=1,
+                     marker_color=PLOT_COLOURS['alt_unfolded_colour'], #marker_style=20, marker_size=0.75,
                      subplot=mc_gen_hist_bin,
                      normalise_hist=False),
     ]
@@ -533,7 +511,7 @@ def plot_unfolded_with_alt_response_normalised_pt_bin(ibin_pt, unfolder, alt_unf
                 ytitle=setup.pt_bin_normalised_differential_label,
                 title=get_pt_bin_title(setup, region, unfolder.pt_bin_edges_gen[ibin_pt], unfolder.pt_bin_edges_gen[ibin_pt+1]),
                 has_data=setup.has_data,
-                **COMMON_PT_BIN_PLOT_ARGS)
+                **PT_BIN_PLOT_ARGS)
     _modify_plot(plot)
     plot.plot("NOSTACK E1")
     plot.save("%s/unfolded_%s_with_alt_response_bin_%d_divBinWidth.%s" % (setup.output_dir, setup.append, ibin_pt, setup.output_fmt))
@@ -555,22 +533,17 @@ def plot_unfolded_with_model_systs_normalised_pt_bin(ibin_pt, unfolder, model_sy
         syst_entries.extend([
             Contribution(syst_unfolded_hist_bin,
                          label="Unfolded (#tau = %.3g) (total err) (%s)" % (syst_unfolder.tau, syst_label),
-                         line_color=syst_dict['colour'], line_width=lw, line_style=1,
+                         line_color=syst_dict['colour'], line_width=LW, line_style=1,
                          marker_color=syst_dict['colour'], marker_size=0,
                          subplot=syst_gen_hist_bin,
                          normalise_hist=True),
             Contribution(syst_gen_hist_bin,
                          label="Generator (%s)" % (syst_label),
-                         line_color=syst_dict['colour'], line_width=lw, line_style=2,
+                         line_color=syst_dict['colour'], line_width=LW, line_style=2,
                          marker_color=syst_dict['colour'], marker_size=0,
                          normalise_hist=True),
         ])
 
-    gen_colour = ROOT.kRed
-    unfolded_basic_colour = ROOT.kAzure+7
-    unfolded_stat_colour = ROOT.kAzure+7
-    unfolded_total_colour = ROOT.kBlack
-    lw = 2
     # add nominal ones last
     mc_gen_hist_bin = hist_bin_chopper.get_pt_bin_normed_div_bin_width('hist_truth', ibin_pt)
     unfolded_hist_bin_total_errors = hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded', ibin_pt)
@@ -578,13 +551,13 @@ def plot_unfolded_with_model_systs_normalised_pt_bin(ibin_pt, unfolder, model_sy
     syst_entries.extend([
         Contribution(mc_gen_hist_bin,
                      label="Generator (%s)" % (region['mc_label']),
-                     line_color=gen_colour, line_width=lw,
-                     marker_color=gen_colour, marker_size=0,
+                     line_color=PLOT_COLOURS['gen_colour'], line_width=LW,
+                     marker_color=PLOT_COLOURS['gen_colour'], marker_size=0,
                      normalise_hist=False),
         Contribution(unfolded_hist_bin_total_errors,
                      label="Unfolded (#tau = %.3g) (total err)" % (unfolder.tau),
-                     line_color=unfolded_total_colour, line_width=lw, line_style=1,
-                     marker_color=unfolded_total_colour, #marker_style=20, marker_size=0.75,
+                     line_color=PLOT_COLOURS['unfolded_total_colour'], line_width=LW, line_style=1,
+                     marker_color=PLOT_COLOURS['unfolded_total_colour'], #marker_style=20, marker_size=0.75,
                      subplot=mc_gen_hist_bin,
                      normalise_hist=False),
     ])
@@ -595,7 +568,7 @@ def plot_unfolded_with_model_systs_normalised_pt_bin(ibin_pt, unfolder, model_sy
                 ytitle=setup.pt_bin_normalised_differential_label,
                 title=get_pt_bin_title(setup, region, unfolder.pt_bin_edges_gen[ibin_pt], unfolder.pt_bin_edges_gen[ibin_pt+1]),
                 has_data=setup.has_data,
-                **COMMON_PT_BIN_PLOT_ARGS)
+                **PT_BIN_PLOT_ARGS)
     plot.legend.SetX1(0.55)
     plot.legend.SetY1(0.72)
     plot.legend.SetX2(0.98)
@@ -622,22 +595,17 @@ def plot_unfolded_with_pdf_systs_normalised_pt_bin(ibin_pt, unfolder, pdf_systs,
         pdf_entries.extend([
             Contribution(pdf_unfolded_hist_bin,
                          label="Unfolded (#tau = %.3g) (total err) (%s)" % (pdf_unfolder.tau, pdf_label),
-                         line_color=pdf_dict['colour'], line_width=lw, line_style=1,
+                         line_color=pdf_dict['colour'], line_width=LW, line_style=1,
                          marker_color=pdf_dict['colour'], marker_size=0,
                          subplot=pdf_gen_hist_bin,
                          normalise_hist=True),
             Contribution(pdf_gen_hist_bin,
                          label="Generator (%s)" % (pdf_label),
-                         line_color=pdf_dict['colour'], line_width=lw, line_style=2,
+                         line_color=pdf_dict['colour'], line_width=LW, line_style=2,
                          marker_color=pdf_dict['colour'], marker_size=0,
                          normalise_hist=True),
         ])
 
-    gen_colour = ROOT.kRed
-    unfolded_basic_colour = ROOT.kAzure+7
-    unfolded_stat_colour = ROOT.kAzure+7
-    unfolded_total_colour = ROOT.kBlack
-    lw = 2
     # add nominal ones last
     mc_gen_hist_bin = hist_bin_chopper.get_pt_bin_normed_div_bin_width('hist_truth', ibin_pt)
     unfolded_hist_bin_total_errors = hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded', ibin_pt)
@@ -645,13 +613,13 @@ def plot_unfolded_with_pdf_systs_normalised_pt_bin(ibin_pt, unfolder, pdf_systs,
     pdf_entries.extend([
         Contribution(mc_gen_hist_bin,
                      label="Generator (%s)" % (region['mc_label']),
-                     line_color=gen_colour, line_width=lw,
-                     marker_color=gen_colour, marker_size=0,
+                     line_color=PLOT_COLOURS['gen_colour'], line_width=LW,
+                     marker_color=PLOT_COLOURS['gen_colour'], marker_size=0,
                      normalise_hist=False),
         Contribution(unfolded_hist_bin_total_errors,
                      label="Unfolded (#tau = %.3g) (total err)" % (unfolder.tau),
-                     line_color=unfolded_total_colour, line_width=lw, line_style=1,
-                     marker_color=unfolded_total_colour, #marker_style=20, marker_size=0.75,
+                     line_color=PLOT_COLOURS['unfolded_total_colour'], line_width=LW, line_style=1,
+                     marker_color=PLOT_COLOURS['unfolded_total_colour'], #marker_style=20, marker_size=0.75,
                      subplot=mc_gen_hist_bin,
                      normalise_hist=False),
     ])
@@ -662,7 +630,7 @@ def plot_unfolded_with_pdf_systs_normalised_pt_bin(ibin_pt, unfolder, pdf_systs,
                 ytitle=setup.pt_bin_normalised_differential_label,
                 title=get_pt_bin_title(setup, region, unfolder.pt_bin_edges_gen[ibin_pt], unfolder.pt_bin_edges_gen[ibin_pt+1]),
                 has_data=setup.has_data,
-                **COMMON_PT_BIN_PLOT_ARGS)
+                **PT_BIN_PLOT_ARGS)
     plot.legend.SetX1(0.55)
     plot.legend.SetY1(0.72)
     plot.legend.SetX2(0.98)
