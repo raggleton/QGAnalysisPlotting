@@ -770,7 +770,7 @@ class GenPtBinnedPlotter(object):
             log_filename, ext = os.path.splitext(output_filename)
             plot.save(log_filename+"_log"+ext)
 
-    def plot_uncertainty_unfolded_normalised(self, unfolder):
+    def plot_unfolded_with_exp_systs_normalised(self, unfolder):
         """Plot shifted unfolded normalised distributions for each syst"""
         for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
             # Get total for this bin
@@ -798,7 +798,7 @@ class GenPtBinnedPlotter(object):
                              marker_color=self.plot_colours['unfolded_stat_colour'], marker_style=20, marker_size=0.75,
                              normalise_hist=False),
             )
-            if not self.check_entries(entries, "plot_uncertainty_unfolded_normalised %d" % ibin):
+            if not self.check_entries(entries, "plot_unfolded_with_exp_systs_normalised %d" % ibin):
                 return
             plot = Plot(entries,
                         xtitle=self.setup.particle_title,
@@ -1097,7 +1097,7 @@ class GenLambdaBinnedPlotter(object):
             log_filename, ext = os.path.splitext(output_filename)
             plot.save(log_filename+"_log"+ext)
 
-    def plot_uncertainty_unfolded_unnormalised(self, unfolder):
+    def plot_unfolded_with_exp_systs_unnormalised(self, unfolder):
         """Plot shifted unfolded normalised distributions for each syst"""
         for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
             # Get total for this bin
@@ -1125,7 +1125,7 @@ class GenLambdaBinnedPlotter(object):
                              marker_color=self.plot_colours['unfolded_stat_colour'], marker_style=20, marker_size=0.75,
                              normalise_hist=False),
             )
-            if not self.check_entries(entries, "plot_uncertainty_unfolded_unnormalised %d" % ibin):
+            if not self.check_entries(entries, "plot_unfolded_with_exp_systs_unnormalised %d" % ibin):
                 return
             plot = Plot(entries,
                         xtitle=self.setup.pt_str,
@@ -1522,7 +1522,7 @@ if __name__ == "__main__":
 
             if has_exp_systs:
                 gen_pt_binned_plotter.plot_uncertainty_shifts_normalised(unfolder=unfolder)
-                gen_pt_binned_plotter.plot_uncertainty_unfolded_normalised(unfolder=unfolder)
+                gen_pt_binned_plotter.plot_unfolded_with_exp_systs_normalised(unfolder=unfolder)
 
             if has_model_systs:
                 gen_pt_binned_plotter.plot_unfolded_with_model_systs_normalised(unfolder=unfolder)
@@ -1545,7 +1545,10 @@ if __name__ == "__main__":
 
             if has_exp_systs:
                 lambda_pt_binned_plotter.plot_uncertainty_shifts_unnormalised(unfolder=unfolder)
-                lambda_pt_binned_plotter.plot_uncertainty_unfolded_unnormalised(unfolder=unfolder)
+                lambda_pt_binned_plotter.plot_unfolded_with_exp_systs_unnormalised(unfolder=unfolder)
+
+            if has_model_systs:
+                gen_pt_binned_plotter.plot_unfolded_with_model_systs_unnormalised(unfolder=unfolder)
 
             # if has_data:
             lambda_pt_binned_plotter.plot_detector_unnormalised(unfolder=unfolder)
