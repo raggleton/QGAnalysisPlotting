@@ -97,7 +97,7 @@ def unpack_unfolding_root_file(input_tfile, region, angle):
         raise RuntimeError(">1 alt_response?! %s" % (alt_tdir))
 
     # Get model systs
-    print(list_of_obj)
+    # print(list_of_obj)
     model_tdirs = [x for x in list_of_obj if x.startswith("modelSyst_")]
     if len(model_tdirs) > 0:
         for model_tdir_name in model_tdirs:
@@ -883,6 +883,7 @@ class GenLambdaBinnedPlotter(object):
         this_plot.legend.SetX2(0.98)
         this_plot.legend.SetY2(0.9)
         this_plot.left_margin = 0.16
+        this_plot.y_padding_max_log = 5000 # space for title
 
     @staticmethod
     def check_entries(entries, message=""):
@@ -942,7 +943,6 @@ class GenLambdaBinnedPlotter(object):
                         title=self.get_lambda_bin_title(bin_edge_low, bin_edge_high),
                         **self.lambda_bin_plot_args)
             self._modify_plot(plot)
-            plot.y_padding_max_log = 5000  # space for title
             plot.plot("NOSTACK E1")
             plot.set_logx(do_more_labels=False)
             plot.set_logy(do_more_labels=False)
@@ -984,12 +984,72 @@ class GenLambdaBinnedPlotter(object):
                         title=self.get_lambda_bin_title(bin_edge_low, bin_edge_high),
                         **self.lambda_bin_plot_args)
             self._modify_plot(plot)
-            plot.y_padding_max_log = 5000  # space for title
             plot.plot("NOSTACK E1")
             plot.set_logx(do_more_labels=False)
             plot.set_logy(do_more_labels=False)
             plot.save("%s/unfolded_unnormalised_%s_with_unreg_lambda_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
 
+    def plot_unfolded_with_model_systs_unnormalised(self, unfolder):
+        for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
+            syst_entries = []
+            for syst_dict in self.region['model_systematics']:
+                syst_unfolder = syst_dict['unfolder']
+                syst_label = syst_dict['label']
+                syst_label_no_spaces = syst_dict['label'].replace(" ", "_")
+
+                self.hist_bin_chopper.add_obj('model_syst_%s_unfolded' % (syst_label_no_spaces), syst_unfolder.unfolded)
+                self.hist_bin_chopper.add_obj('model_syst_%s_hist_truth' % (syst_label_no_spaces), syst_unfolder.hist_truth)
+
+                syst_unfolded_hist_bin = self.hist_bin_chopper.get_lambda_bin_div_bin_width('model_syst_%s_unfolded' % (syst_label_no_spaces), ibin, binning_scheme='generator')
+                syst_gen_hist_bin = self.hist_bin_chopper.get_lambda_bin_div_bin_width('model_syst_%s_hist_truth' % (syst_label_no_spaces), ibin, binning_scheme='generator')
+
+                syst_entries.extend([
+                    Contribution(syst_unfolded_hist_bin,
+                                 label="Unfolded (#tau = %.3g) (total err) (%s)" % (syst_unfolder.tau, syst_label),
+                                 line_color=syst_dict['colour'], line_width=self.line_width, line_style=1,
+                                 marker_color=syst_dict['colour'], marker_size=0,
+                                 subplot=syst_gen_hist_bin,
+                                 normalise_hist=True),
+                    Contribution(syst_gen_hist_bin,
+                                 label="Generator (%s)" % (syst_label),
+                                 line_color=syst_dict['colour'], line_width=self.line_width, line_style=2,
+                                 marker_color=syst_dict['colour'], marker_size=0,
+                                 normalise_hist=True),
+                ])
+
+            # add nominal ones last
+            mc_gen_hist_bin = self.hist_bin_chopper.get_lambda_bin_div_bin_width('hist_truth', ibin, binning_scheme='generator')
+            unfolded_hist_bin_total_errors = self.hist_bin_chopper.get_lambda_bin_div_bin_width('unfolded', ibin, binning_scheme='generator')
+
+            syst_entries.extend([
+                Contribution(mc_gen_hist_bin,
+                             label="Generator (%s)" % (self.region['mc_label']),
+                             line_color=self.plot_colours['gen_colour'], line_width=self.line_width,
+                             marker_color=self.plot_colours['gen_colour'], marker_size=0,
+                             normalise_hist=False),
+                Contribution(unfolded_hist_bin_total_errors,
+                             label="Unfolded (#tau = %.3g) (total err)" % (unfolder.tau),
+                             line_color=self.plot_colours['unfolded_total_colour'], line_width=self.line_width, line_style=1,
+                             marker_color=self.plot_colours['unfolded_total_colour'], #marker_style=20, marker_size=0.75,
+                             subplot=mc_gen_hist_bin,
+                             normalise_hist=False),
+            ])
+            if not self.check_entries(syst_entries, "plot_unfolded_with_model_systs_unnormalised_pt_bin %d" % (ibin)):
+                return
+            plot = Plot(syst_entries,
+                        ytitle=self.setup.pt_bin_normalised_differential_label,
+                        title=self.get_lambda_bin_title(bin_edge_low, bin_edge_high),
+                        **self.lambda_bin_plot_args)
+            plot.legend.SetX1(0.55)
+            plot.legend.SetY1(0.72)
+            plot.legend.SetX2(0.98)
+            plot.legend.SetY2(0.88)
+            if len(syst_entries) > 5:
+                plot.legend.SetNColumns(2)
+            plot.plot("NOSTACK E1")
+            plot.set_logx(do_more_labels=False)
+            plot.set_logy(do_more_labels=False)
+            plot.save("%s/unfolded_unnormalised_%s_syst_model_lambda_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
 
     def plot_uncertainty_shifts_unnormalised(self, unfolder):
         """Do plots of fractional uncertainty shifts on *unnormalised* unfolded distribution"""
@@ -1141,7 +1201,6 @@ class GenLambdaBinnedPlotter(object):
             plot.legend.SetY1(0.7)
             plot.legend.SetX2(0.98)
             plot.legend.SetY2(0.9)
-            plot.y_padding_max_log = 5000  # space for title
             if len(entries) > 5: plot.legend.SetNColumns(2)
             # plot.subplot_limits = (0.9, 1.1)
             plot.plot("NOSTACK E1")
@@ -1181,7 +1240,6 @@ class GenLambdaBinnedPlotter(object):
                         subplot_title='Data / MC',
                         subplot_limits=(0.75, 1.25),)
             self._modify_plot(plot)
-            plot.y_padding_max_log = 5000  # space for title
             plot.plot("NOSTACK E1")
             plot.set_logx(do_more_labels=False)
             plot.set_logy(do_more_labels=False)
@@ -1475,6 +1533,9 @@ if __name__ == "__main__":
             has_model_systs = len(region['model_systematics']) > 0
             has_pdf_systs = len(region['pdf_systematics']) > 0
 
+            if has_exp_systs: print("   has experimental systs")
+            if has_model_systs: print("   has model systs")
+            if has_pdf_systs: print("   has pdf systs")
             # we have
             # - unfolder
             # - unreg_unfolder
