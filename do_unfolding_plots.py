@@ -953,6 +953,49 @@ class GenLambdaBinnedPlotter(object):
             plot.set_logy(do_more_labels=False)
             plot.save("%s/unfolded_unnormalised_%s_with_unreg_lambda_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
 
+    def plot_unfolded_with_alt_response_unnormalised(self, unfolder, alt_unfolder):
+        for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
+            # TODO: should this be inside or outside this func?
+            self.hist_bin_chopper.add_obj("alt_unfolded", alt_unfolder.unfolded)
+            self.hist_bin_chopper.add_obj("alt_hist_truth", alt_unfolder.hist_truth)
+
+            mc_gen_hist_bin = self.hist_bin_chopper.get_lambda_bin_div_bin_width('hist_truth', ibin, binning_scheme='generator')
+            unfolded_hist_bin_total_errors = self.hist_bin_chopper.get_lambda_bin_div_bin_width('unfolded', ibin, binning_scheme='generator')
+            alt_unfolded_hist_bin_total_errors = self.hist_bin_chopper.get_lambda_bin_div_bin_width('alt_unfolded', ibin, binning_scheme='generator')
+            alt_mc_gen_hist_gin = self.hist_bin_chopper.get_lambda_bin_div_bin_width('alt_hist_truth', ibin, binning_scheme='generator')
+
+            entries = [
+                Contribution(mc_gen_hist_bin,
+                             label="Generator (%s)" % (self.region['mc_label']),
+                             line_color=self.plot_colours['gen_colour'], line_width=self.line_width,
+                             marker_color=self.plot_colours['gen_colour'], marker_size=0),
+                # Contribution(alt_mc_gen_hist_bin,
+                #              label="Generator (%s)" % (self.region['alt_mc_label']),
+                #              line_color=alt_gen_colour, line_width=self.line_width, line_style=2,
+                #              marker_color=alt_gen_colour, marker_size=0),
+                Contribution(unfolded_hist_bin_total_errors,
+                             label="Unfolded (#tau = %.3g) (total err)\n(%s response matrix)" % (unfolder.tau, self.region['mc_label']),
+                             line_color=self.plot_colours['unfolded_total_colour'], line_width=self.line_width, line_style=1,
+                             marker_color=self.plot_colours['unfolded_total_colour'], #marker_style=20, marker_size=0.75,
+                             subplot=mc_gen_hist_bin),
+                Contribution(alt_unfolded_hist_bin_total_errors,
+                             label="Unfolded (#tau = %.3g) (total err)\n(%s response matrix)" % (alt_unfolder.tau, self.region['alt_mc_label']),
+                             line_color=self.plot_colours['alt_unfolded_colour'], line_width=self.line_width, line_style=1,
+                             marker_color=self.plot_colours['alt_unfolded_colour'], #marker_style=20, marker_size=0.75,
+                             subplot=mc_gen_hist_bin),
+            ]
+            if not self.check_entries(entries, "plot_unfolded_with_unreg_normalised_pt_bin %d" % (ibin)):
+                return
+            plot = Plot(entries,
+                        ytitle=self.setup.lambda_bin_unnormalised_differential_label,
+                        title=self.get_lambda_bin_title(bin_edge_low, bin_edge_high),
+                        **self.lambda_bin_plot_args)
+            self._modify_plot(plot)
+            plot.plot("NOSTACK E1")
+            plot.set_logx(do_more_labels=False)
+            plot.set_logy(do_more_labels=False)
+            plot.save("%s/unfolded_unnormalised_%s_alt_response_lambda_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
+
     def plot_unfolded_with_model_systs_unnormalised(self, unfolder):
         for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
             syst_entries = []
@@ -1552,6 +1595,10 @@ if __name__ == "__main__":
 
             if unfolder.tau > 0 and unreg_unfolder:
                 lambda_pt_binned_plotter.plot_unfolded_with_unreg_unnormalised(unfolder, unreg_unfolder)
+
+            if alt_unfolder:
+                lambda_pt_binned_plotter.plot_unfolded_with_alt_response_unnormalised(unfolder=unfolder,
+                                                                                      alt_unfolder=alt_unfolder)
 
             if has_exp_systs:
                 lambda_pt_binned_plotter.plot_uncertainty_shifts_unnormalised(unfolder=unfolder)
