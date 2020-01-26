@@ -134,6 +134,7 @@ def unpack_unfolding_root_file(input_tfile, region, angle):
 
     return dict(
         unfolder=unfolder,
+        unreg_unfolder=unreg_unfolder,
         alt_unfolder=alt_unfolder,
         alt_hist_truth=alt_hist_truth
     )
@@ -1438,6 +1439,94 @@ class RecoPtBinnedPlotter(object):
             plot.save("%s/detector_folded_gen_%s_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
 
 
+def do_all_plots_per_region_angle(setup, unfolder, unreg_unfolder, alt_unfolder, alt_hist_truth):
+    # Note that experimental systs are only different response matrices, and are stored in the main unfolder
+    has_exp_systs = len(setup.region['experimental_systematics']) > 0
+    has_model_systs = len(setup.region['model_systematics']) > 0
+    has_pdf_systs = len(setup.region['pdf_systematics']) > 0
+
+    if has_exp_systs: print("   has experimental systs")
+    if has_model_systs: print("   has model systs")
+    if has_pdf_systs: print("   has pdf systs")
+
+    # Big 1D plots to compare things
+    hbc = HistBinChopper(unfolder)
+    hbc.add_obj("unfolded", unfolder.unfolded)
+    hbc.add_obj("unfolded_stat_err", unfolder.unfolded_stat_err)
+    hbc.add_obj("hist_truth", unfolder.hist_truth)
+
+    # Iterate through pt bins - gen binning
+    # ------------------------------------------------------------------
+    gen_pt_binned_plotter = GenPtBinnedPlotter(setup=setup,
+                                               bins=unfolder.pt_bin_edges_gen,
+                                               hist_bin_chopper=hbc)
+    gen_pt_binned_plotter.plot_unfolded_unnormalised(unfolder)
+    gen_pt_binned_plotter.plot_unfolded_normalised(unfolder)
+    if alt_hist_truth:
+        gen_pt_binned_plotter.plot_unfolded_with_alt_truth_normalised(unfolder=unfolder,
+                                                                      alt_truth=alt_hist_truth)
+
+    if unfolder.tau > 0 and unreg_unfolder:
+        gen_pt_binned_plotter.plot_unfolded_with_unreg_normalised(unfolder=unfolder,
+                                                                  unreg_unfolder=unreg_unfolder)
+
+    if alt_unfolder:
+        gen_pt_binned_plotter.plot_unfolded_with_alt_response_normalised(unfolder=unfolder,
+                                                                         alt_unfolder=alt_unfolder)
+        gen_pt_binned_plotter.plot_unfolded_with_alt_response_truth_normalised(unfolder=unfolder,
+                                                                               alt_unfolder=alt_unfolder,
+                                                                               alt_truth=alt_hist_truth)
+
+    if has_exp_systs:
+        gen_pt_binned_plotter.plot_uncertainty_shifts_normalised(unfolder=unfolder)
+        gen_pt_binned_plotter.plot_unfolded_with_exp_systs_normalised(unfolder=unfolder)
+
+    if has_model_systs:
+        gen_pt_binned_plotter.plot_unfolded_with_model_systs_normalised(unfolder=unfolder)
+
+    if has_pdf_systs:
+        gen_pt_binned_plotter.plot_unfolded_with_pdf_systs_normalised(unfolder=unfolder)
+
+    # if has_data:
+    gen_pt_binned_plotter.plot_detector_normalised(unfolder)
+
+    # Iterate through lambda bins - gen binning
+    # ------------------------------------------------------------------
+    lambda_pt_binned_plotter = GenLambdaBinnedPlotter(setup=setup,
+                                                      bins=unfolder.variable_bin_edges_gen,
+                                                      hist_bin_chopper=hbc)
+    lambda_pt_binned_plotter.plot_unfolded_unnormalised(unfolder)
+
+    if unfolder.tau > 0 and unreg_unfolder:
+        lambda_pt_binned_plotter.plot_unfolded_with_unreg_unnormalised(unfolder, unreg_unfolder)
+
+    if alt_unfolder:
+        lambda_pt_binned_plotter.plot_unfolded_with_alt_response_unnormalised(unfolder=unfolder,
+                                                                              alt_unfolder=alt_unfolder)
+
+    if has_exp_systs:
+        lambda_pt_binned_plotter.plot_uncertainty_shifts_unnormalised(unfolder=unfolder)
+        lambda_pt_binned_plotter.plot_unfolded_with_exp_systs_unnormalised(unfolder=unfolder)
+
+    if has_model_systs:
+        lambda_pt_binned_plotter.plot_unfolded_with_model_systs_unnormalised(unfolder=unfolder)
+
+    # if has_data:
+    lambda_pt_binned_plotter.plot_detector_unnormalised(unfolder=unfolder)
+
+    # Iterate through pt bins - reco binning
+    # ------------------------------------------------------------------
+    reco_pt_binned_plotter = RecoPtBinnedPlotter(setup=setup,
+                                                 bins=unfolder.pt_bin_edges_reco,
+                                                 hist_bin_chopper=hbc)
+    reco_pt_binned_plotter.plot_detector_normalised(unfolder)
+    reco_pt_binned_plotter.plot_folded_unfolded_normalised(unfolder)
+    reco_pt_binned_plotter.plot_folded_unfolded_with_mc_normalised(unfolder)
+    reco_pt_binned_plotter.plot_folded_gen_normalised(unfolder)
+
+    return hbc
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("source",
@@ -1517,17 +1606,9 @@ if __name__ == "__main__":
             input_tfile = cu.TFileCacher(root_filename)  # keep this here otherwise crashes
             unpack_dict = unpack_unfolding_root_file(input_tfile, region, angle)
             unfolder = unpack_dict['unfolder']
+            unreg_unfolder = unpack_dict['unreg_unfolder']
             alt_unfolder = unpack_dict['alt_unfolder']
             alt_hist_truth = unpack_dict['alt_hist_truth']
-
-            # Note that experimental systs are only different response matrices, and are stored in the main unfolder
-            has_exp_systs = len(region['experimental_systematics']) > 0
-            has_model_systs = len(region['model_systematics']) > 0
-            has_pdf_systs = len(region['pdf_systematics']) > 0
-
-            if has_exp_systs: print("   has experimental systs")
-            if has_model_systs: print("   has model systs")
-            if has_pdf_systs: print("   has pdf systs")
             # we have
             # - unfolder
             # - unreg_unfolder
@@ -1538,87 +1619,10 @@ if __name__ == "__main__":
 
             # MAKE ALL THE PLOTS
             # ------------------------------------------------------------------
-
-            # Big 1D plots to compare things
-            hbc = HistBinChopper(unfolder)
-            hbc.add_obj("unfolded", unfolder.unfolded)
-            hbc.add_obj("unfolded_stat_err", unfolder.unfolded_stat_err)
-            hbc.add_obj("hist_truth", unfolder.hist_truth)
-
             setup = Setup(jet_algo=jet_algo,
                           region=region,
                           angle=angle,
                           output_dir=angle_output_dir,
                           has_data=has_data)
 
-            # Iterate through pt bins - gen binning
-            # ------------------------------------------------------------------
-            gen_pt_binned_plotter = GenPtBinnedPlotter(setup=setup,
-                                                       bins=unfolder.pt_bin_edges_gen,
-                                                       hist_bin_chopper=hbc)
-            gen_pt_binned_plotter.plot_unfolded_unnormalised(unfolder)
-            gen_pt_binned_plotter.plot_unfolded_normalised(unfolder)
-            if alt_hist_truth:
-                gen_pt_binned_plotter.plot_unfolded_with_alt_truth_normalised(unfolder=unfolder,
-                                                                              alt_truth=alt_hist_truth)
-
-            if unfolder.tau > 0 and unreg_unfolder:
-                gen_pt_binned_plotter.plot_unfolded_with_unreg_normalised(unfolder=unfolder,
-                                                                          unreg_unfolder=unreg_unfolder)
-
-            if alt_unfolder:
-                gen_pt_binned_plotter.plot_unfolded_with_alt_response_normalised(unfolder=unfolder,
-                                                                                 alt_unfolder=alt_unfolder)
-                gen_pt_binned_plotter.plot_unfolded_with_alt_response_truth_normalised(unfolder=unfolder,
-                                                                                       alt_unfolder=alt_unfolder,
-                                                                                       alt_truth=alt_hist_truth)
-
-            if has_exp_systs:
-                gen_pt_binned_plotter.plot_uncertainty_shifts_normalised(unfolder=unfolder)
-                gen_pt_binned_plotter.plot_unfolded_with_exp_systs_normalised(unfolder=unfolder)
-
-            if has_model_systs:
-                gen_pt_binned_plotter.plot_unfolded_with_model_systs_normalised(unfolder=unfolder)
-
-            if has_pdf_systs:
-                gen_pt_binned_plotter.plot_unfolded_with_pdf_systs_normalised(unfolder=unfolder)
-
-            # if has_data:
-            gen_pt_binned_plotter.plot_detector_normalised(unfolder)
-
-            # Iterate through lambda bins - gen binning
-            # ------------------------------------------------------------------
-            lambda_pt_binned_plotter = GenLambdaBinnedPlotter(setup=setup,
-                                                              bins=unfolder.variable_bin_edges_gen,
-                                                              hist_bin_chopper=hbc)
-            lambda_pt_binned_plotter.plot_unfolded_unnormalised(unfolder)
-
-            if unfolder.tau > 0 and unreg_unfolder:
-                lambda_pt_binned_plotter.plot_unfolded_with_unreg_unnormalised(unfolder, unreg_unfolder)
-
-            if alt_unfolder:
-                lambda_pt_binned_plotter.plot_unfolded_with_alt_response_unnormalised(unfolder=unfolder,
-                                                                                      alt_unfolder=alt_unfolder)
-
-            if has_exp_systs:
-                lambda_pt_binned_plotter.plot_uncertainty_shifts_unnormalised(unfolder=unfolder)
-                lambda_pt_binned_plotter.plot_unfolded_with_exp_systs_unnormalised(unfolder=unfolder)
-
-            if has_model_systs:
-                lambda_pt_binned_plotter.plot_unfolded_with_model_systs_unnormalised(unfolder=unfolder)
-
-            # if has_data:
-            lambda_pt_binned_plotter.plot_detector_unnormalised(unfolder=unfolder)
-
-            # Iterate through pt bins - reco binning
-            # ------------------------------------------------------------------
-            reco_pt_binned_plotter = RecoPtBinnedPlotter(setup=setup,
-                                                         bins=unfolder.pt_bin_edges_reco,
-                                                         hist_bin_chopper=hbc)
-            reco_pt_binned_plotter.plot_detector_normalised(unfolder)
-            reco_pt_binned_plotter.plot_folded_unfolded_normalised(unfolder)
-            reco_pt_binned_plotter.plot_folded_unfolded_with_mc_normalised(unfolder)
-            reco_pt_binned_plotter.plot_folded_gen_normalised(unfolder)
-
-            # Iterate through lambda bins - reco binning
-            # ------------------------------------------------------------------
+            do_all_plots_per_region_angle(setup, unfolder, unreg_unfolder, alt_unfolder, alt_hist_truth)

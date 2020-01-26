@@ -523,8 +523,10 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         self.get_folded_unfolded()
         self.get_folded_mc_truth()
         for syst_label in self.syst_shifts.keys():
+            # setup all the internal maps
             self.get_delta_sys_shift(syst_label)
             self.get_ematrix_syst(syst_label)
+            self.get_syst_shifted_hist(syst_label)
 
     @staticmethod
     def make_hist_from_diagonal_errors(h2d, do_sqrt=True):
