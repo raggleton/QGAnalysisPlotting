@@ -154,7 +154,7 @@ class HistBinChopper(object):
     def get_pt_bin(self, name, ind, binning_scheme='generator'):
         if name not in self.objects:
             raise KeyError("No %s in objects" % name)
-        this_name = name+"_pt_bin_%d" % (ind)
+        this_name = name+"_pt_bin_%d_%s" % (ind, binning_scheme)
         if this_name not in self._cache:
             self._cache[this_name] = self.unfolder.get_var_hist_pt_binned(self.objects[name], ind, binning_scheme)
         return self._cache[this_name]
@@ -162,7 +162,7 @@ class HistBinChopper(object):
     def get_pt_bin_div_bin_width(self, name, ind, binning_scheme='generator'):
         if name not in self.objects:
             raise KeyError("No %s in objects" % name)
-        this_name = name+"_pt_bin_%d_divBinWidth" % (ind)
+        this_name = name+"_pt_bin_%d_%s_divBinWidth" % (ind, binning_scheme)
         if this_name not in self._cache:
             self._cache[this_name] = qgp.hist_divide_bin_width(self.get_pt_bin(name, ind, binning_scheme))
         return self._cache[this_name]
@@ -170,7 +170,7 @@ class HistBinChopper(object):
     def get_pt_bin_normed_div_bin_width(self, name, ind, binning_scheme='generator'):
         if name not in self.objects:
             raise KeyError("No %s in objects" % name)
-        this_name = name+"_pt_bin_%d_norm_divBinWidth" % (ind)
+        this_name = name+"_pt_bin_%d_%s_norm_divBinWidth" % (ind, binning_scheme)
         if this_name not in self._cache:
             self._cache[this_name] = qgp.normalise_hist_divide_bin_width(self.get_pt_bin(name, ind, binning_scheme))
         return self._cache[this_name]
@@ -178,7 +178,7 @@ class HistBinChopper(object):
     def get_lambda_bin(self, name, ind, binning_scheme='generator'):
         if name not in self.objects:
             raise KeyError("No %s in objects" % name)
-        this_name = name+"_lambda_bin_%d" % (ind)
+        this_name = name+"_lambda_bin_%d_%s" % (ind, binning_scheme)
         if this_name not in self._cache:
             self._cache[this_name] = self.unfolder.get_pt_hist_var_binned(self.objects[name], ind, binning_scheme=binning_scheme)
         return self._cache[this_name]
@@ -186,7 +186,7 @@ class HistBinChopper(object):
     def get_lambda_bin_div_bin_width(self, name, ind, binning_scheme='generator'):
         if name not in self.objects:
             raise KeyError("No %s in objects" % name)
-        this_name = name+"_lambda_bin_%d_divBinWidth" % (ind)
+        this_name = name+"_lambda_bin_%d_%s_divBinWidth" % (ind, binning_scheme)
         if this_name not in self._cache:
             self._cache[this_name] = qgp.hist_divide_bin_width(self.get_lambda_bin(name, ind, binning_scheme))
         return self._cache[this_name]
@@ -194,7 +194,7 @@ class HistBinChopper(object):
     def get_lambda_bin_normed_div_bin_width(self, name, ind, binning_scheme='generator'):
         if name not in self.objects:
             raise KeyError("No %s in objects" % name)
-        this_name = name+"_lambda_bin_%d_norm_divBinWidth" % (ind)
+        this_name = name+"_lambda_bin_%d_%s_norm_divBinWidth" % (ind, binning_scheme)
         if this_name not in self._cache:
             self._cache[this_name] = qgp.normalise_hist_divide_bin_width(self.get_lambda_bin(name, ind, binning_scheme))
         return self._cache[this_name]
