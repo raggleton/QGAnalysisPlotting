@@ -542,10 +542,10 @@ class GenPtBinnedPlotter(object):
             plot.plot("NOSTACK E1")
             plot.save("%s/unfolded_%s_alt_response_truth_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
 
-    def plot_unfolded_with_model_systs_normalised(self, unfolder, model_systs):
+    def plot_unfolded_with_model_systs_normalised(self, unfolder):
         for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
             syst_entries = []
-            for syst_dict in model_systs:
+            for syst_dict in self.region['model_systematics']:
                 syst_unfolder = syst_dict['unfolder']
                 syst_label = syst_dict['label']
                 syst_label_no_spaces = syst_dict['label'].replace(" ", "_")
@@ -602,9 +602,9 @@ class GenPtBinnedPlotter(object):
             plot.plot("NOSTACK E1")
             plot.save("%s/unfolded_%s_syst_model_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
 
-    def plot_unfolded_with_pdf_systs_normalised(self, unfolder, pdf_systs):
+    def plot_unfolded_with_pdf_systs_normalised(self, unfolder):
         pdf_entries = []
-        for pdf_dict in pdf_systs:
+        for pdf_dict in self.region['pdf_systematics']:
             pdf_unfolder = pdf_dict['unfolder']
             pdf_label = pdf_dict['label']
             pdf_label_no_spaces = pdf_dict['label'].replace(" ", "_")
@@ -1163,8 +1163,7 @@ if __name__ == "__main__":
 
             if len(region['model_systematics']) > 0:
                 print(region['model_systematics'])
-                gen_pt_binned_plotter.plot_unfolded_with_model_systs_normalised(unfolder=unfolder,
-                                                                                model_systs=region['model_systematics'])
+                gen_pt_binned_plotter.plot_unfolded_with_model_systs_normalised(unfolder=unfolder)
 
             # if has_data:
             gen_pt_binned_plotter.plot_detector_normalised(unfolder)
