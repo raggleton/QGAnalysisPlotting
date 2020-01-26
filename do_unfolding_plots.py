@@ -991,6 +991,203 @@ class GenLambdaBinnedPlotter(object):
             plot.save("%s/unfolded_unnormalised_%s_with_unreg_lambda_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
 
 
+    def plot_uncertainty_shifts_unnormalised(self, unfolder):
+        """Do plots of fractional uncertainty shifts on *unnormalised* unfolded distribution"""
+        # Create unfolded hist, but with errors from response matrix stats
+        error_stat_response = unfolder.make_hist_from_diagonal_errors(unfolder.get_ematrix_stat_response(), do_sqrt=True) # note that bin contents need to be correct, otherwise won't normalise correctly
+        unfolded_syst_err = unfolder.unfolded.Clone("unfolded_syst_err")
+        unfolder.update_hist_bin_error(h_orig=error_stat_response, h_to_be_updated=unfolded_syst_err)
+
+        for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
+            entries = []
+            # Get total for this bin
+            unfolded_hist_bin_total_errors = self.hist_bin_chopper.get_lambda_bin_div_bin_width('unfolded', ibin, binning_scheme='generator')
+            # Get stat err from input for this bin
+            unfolded_hist_bin_stat_errors = self.hist_bin_chopper.get_lambda_bin_div_bin_width('unfolded_stat_err', ibin, binning_scheme='generator')
+            # Get stat err from response matrix for this bin
+            self.hist_bin_chopper.add_obj("unfolded_syst_err", unfolded_syst_err)
+            unfolded_hist_bin_rsp_errors = self.hist_bin_chopper.get_lambda_bin_div_bin_width('unfolded_syst_err', ibin, binning_scheme='generator')
+
+            for syst_dict in self.region['experimental_systematics']:
+                # For each systematic, get the normalised shifted distribution for this bin
+                # Then calculate the shift wrt nominal result, and hence fraction,
+                # then save and plot that
+                syst_label_no_spaces = syst_dict['label'].replace(" ", "_")
+                self.hist_bin_chopper.add_obj('syst_shifted_%s_unfolded' % syst_label_no_spaces, unfolder.systs_shifted[syst_dict['label']])
+                syst_unfolded_hist_bin = self.hist_bin_chopper.get_lambda_bin_div_bin_width('syst_shifted_%s_unfolded' % (syst_label_no_spaces), ibin, binning_scheme='generator')
+                syst_unfolded_fraction = syst_unfolded_hist_bin.Clone()
+                syst_unfolded_fraction.Add(unfolded_hist_bin_total_errors, -1)
+                syst_unfolded_fraction.Divide(unfolded_hist_bin_total_errors)
+                # Set to abs values so can plot log
+                for i in range(1, syst_unfolded_fraction.GetNbinsX()+1):
+                    syst_unfolded_fraction.SetBinContent(i, abs(syst_unfolded_fraction.GetBinContent(i)))
+                c = Contribution(syst_unfolded_fraction,
+                                 label=syst_dict['label'],
+                                 line_color=syst_dict['colour'],
+                                 line_style=syst_dict.get('linestyle', 1),
+                                 line_width=self.line_width,
+                                 marker_size=0,
+                                 marker_color=syst_dict['colour'])
+                entries.append(c)
+
+            # Now create total & stat error hists
+            h_stat = unfolded_hist_bin_stat_errors.Clone()
+            h_syst = unfolded_hist_bin_rsp_errors.Clone()
+            h_total = unfolded_hist_bin_total_errors.Clone()
+            for i in range(1, h_stat.GetNbinsX()+1):
+                if unfolded_hist_bin_total_errors.GetBinContent(i) > 0:
+                    h_stat.SetBinContent(i, unfolded_hist_bin_stat_errors.GetBinError(i) / unfolded_hist_bin_total_errors.GetBinContent(i))
+                    h_syst.SetBinContent(i, unfolded_hist_bin_rsp_errors.GetBinError(i) / unfolded_hist_bin_total_errors.GetBinContent(i))
+                    h_total.SetBinContent(i, unfolded_hist_bin_total_errors.GetBinError(i) / unfolded_hist_bin_total_errors.GetBinContent(i))
+                else:
+                    h_stat.SetBinContent(i, 0)
+                    h_syst.SetBinContent(i, 0)
+                    h_total.SetBinContent(i, 0)
+                h_stat.SetBinError(i, 0)
+                h_syst.SetBinError(i, 0)
+                h_total.SetBinError(i, 0)
+            c_stat = Contribution(h_stat,
+                                 label="Input stats",
+                                 line_color=ROOT.kRed,
+                                 line_style=3,
+                                 line_width=3,
+                                 marker_size=0,
+                                 marker_color=ROOT.kRed,
+                                 )
+            c_syst = Contribution(h_syst,
+                                 label="Response matrix stats",
+                                 line_color=ROOT.kGray+2,
+                                 line_style=3,
+                                 line_width=3,
+                                 marker_size=0,
+                                 marker_color=ROOT.kGray+2,
+                                 )
+            c_tot = Contribution(h_total,
+                                 label="Total",
+                                 line_color=ROOT.kBlack,
+                                 line_style=1,
+                                 line_width=3,
+                                 marker_size=0,
+                                 marker_color=ROOT.kBlack,
+                                 )
+            entries.extend([c_stat, c_syst, c_tot])
+            if not self.check_entries(entries, "plot_uncertainty_shifts_unnormalised %d" % (ibin)):
+                return
+            plot = Plot(entries,
+                        what="hist",
+                        title=self.get_lambda_bin_title(bin_edge_low, bin_edge_high),
+                        xtitle=self.setup.pt_str,
+                        ytitle="| Fractional shift on unnormalised distribution |",
+                        has_data=self.setup.has_data)
+            plot.legend.SetX1(0.55)
+            plot.legend.SetY1(0.68)
+            plot.legend.SetX2(0.98)
+            plot.legend.SetY2(0.88)
+            plot.legend.SetNColumns(2)
+            plot.left_margin = 0.16
+            plot.y_padding_max_linear = 1.4
+            plot.plot("NOSTACK HIST")
+            plot.set_logx(do_more_labels=False)
+            output_filename = "%s/unfolded_unnormalised_systs_%s_lambda_bin_%d.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt)
+            plot.save(output_filename)
+
+            plot.y_padding_max_log = 50
+            plot.set_logy(do_more_labels=False)
+            plot.get_modifier().SetMinimum(1E-4)
+            log_filename, ext = os.path.splitext(output_filename)
+            plot.save(log_filename+"_log"+ext)
+
+    def plot_uncertainty_unfolded_unnormalised(self, unfolder):
+        """Plot shifted unfolded normalised distributions for each syst"""
+        for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
+            # Get total for this bin
+            unfolded_hist_bin_total_errors = self.hist_bin_chopper.get_lambda_bin_div_bin_width('unfolded', ibin, binning_scheme='generator')
+            # Get stat err from input for this bin
+            unfolded_hist_bin_stat_errors = self.hist_bin_chopper.get_lambda_bin_div_bin_width('unfolded_stat_err', ibin, binning_scheme='generator')
+
+            entries = []
+            for syst_dict in self.region['experimental_systematics']:
+                syst_label_no_spaces = syst_dict['label'].replace(" ", "_")
+                self.hist_bin_chopper.add_obj('syst_shifted_%s_unfolded' % syst_label_no_spaces, unfolder.systs_shifted[syst_dict['label']])
+                syst_unfolded_hist_bin = self.hist_bin_chopper.get_lambda_bin_div_bin_width('syst_shifted_%s_unfolded' % (syst_label_no_spaces), ibin, binning_scheme='generator')
+                c = Contribution(syst_unfolded_hist_bin,
+                                 label=syst_dict['label'],
+                                 line_color=syst_dict['colour'], line_width=self.line_width,
+                                 line_style=2 if 'down' in syst_dict['label'].lower() else 1,
+                                 marker_color=syst_dict['colour'], marker_size=0,
+                                 subplot=unfolded_hist_bin_total_errors)
+                entries.append(c)
+
+            entries.append(
+                Contribution(unfolded_hist_bin_stat_errors,
+                             label="Unfolded (#tau = %.3g) (stat err)" % (unfolder.tau),
+                             line_color=self.plot_colours['unfolded_stat_colour'], line_width=self.line_width, line_style=1,
+                             marker_color=self.plot_colours['unfolded_stat_colour'], marker_style=20, marker_size=0.75,
+                             normalise_hist=False),
+            )
+            if not self.check_entries(entries, "plot_uncertainty_unfolded_unnormalised %d" % ibin):
+                return
+            plot = Plot(entries,
+                        xtitle=self.setup.pt_str,
+                        ytitle=self.setup.pt_bin_unnormalised_differential_label,
+                        what="hist",
+                        title=self.get_lambda_bin_title(bin_edge_low, bin_edge_high),
+                        has_data=self.setup.has_data,
+                        subplot_type='ratio',
+                        subplot_title='Syst / nominal',
+                        subplot_limits=(0.75, 1.25))
+            self._modify_plot(plot)
+            plot.legend.SetX1(0.55)
+            plot.legend.SetY1(0.7)
+            plot.legend.SetX2(0.98)
+            plot.legend.SetY2(0.9)
+            plot.y_padding_max_log = 5000  # space for title
+            if len(entries) > 5: plot.legend.SetNColumns(2)
+            # plot.subplot_limits = (0.9, 1.1)
+            plot.plot("NOSTACK E1")
+            plot.set_logx(do_more_labels=False)
+            plot.set_logy(do_more_labels=False)
+            plot.save("%s/unfolded_unnormalised_syst_variations_%s_lambda_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
+
+    def plot_detector_unnormalised(self, unfolder):
+        for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
+            self.hist_bin_chopper.add_obj("input_hist_gen_binning_bg_subtracted", unfolder.input_hist_gen_binning_bg_subtracted)
+            input_hist_bin = self.hist_bin_chopper.get_lambda_bin_div_bin_width('input_hist_gen_binning_bg_subtracted', ibin, binning_scheme='generator')
+            self.hist_bin_chopper.add_obj("hist_mc_reco_gen_binning_bg_subtracted", unfolder.hist_mc_reco_gen_binning_bg_subtracted)
+            mc_hist_bin = self.hist_bin_chopper.get_lambda_bin_div_bin_width('hist_mc_reco_gen_binning_bg_subtracted', ibin, binning_scheme='generator')
+
+            entries = [
+                Contribution(mc_hist_bin,
+                             label="MC (bg-subtracted)",
+                             line_color=self.plot_colours['reco_mc_colour'], line_width=self.line_width,
+                             marker_color=self.plot_colours['reco_mc_colour'], marker_size=0,
+                             normalise_hist=False),
+                Contribution(input_hist_bin,
+                             label="Data (bg-subtracted)",
+                             line_color=self.plot_colours['reco_data_colour'], line_width=self.line_width,
+                             marker_color=self.plot_colours['reco_data_colour'], marker_style=20, marker_size=0.75,
+                             subplot=mc_hist_bin,
+                             normalise_hist=False),
+            ]
+            if not self.check_entries(entries, "plot_detector_unnormalised %d" % (ibin)):
+                continue
+            plot = Plot(entries,
+                        xtitle=self.setup.pt_str,
+                        ytitle=self.setup.pt_bin_unnormalised_differential_label,
+                        what="hist",
+                        title=self.get_lambda_bin_title(bin_edge_low, bin_edge_high),
+                        has_data=self.setup.has_data,
+                        subplot_type='ratio',
+                        subplot_title='Data / MC',
+                        subplot_limits=(0.75, 1.25),)
+            self._modify_plot(plot)
+            plot.y_padding_max_log = 5000  # space for title
+            plot.plot("NOSTACK E1")
+            plot.set_logx(do_more_labels=False)
+            plot.set_logy(do_more_labels=False)
+            plot.save("%s/detector_unnormalised_gen_binning_bg_subtracted_%s_lambda_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
+
+
 class RecoPtBinnedPlotter(object):
     def __init__(self, setup, bins, hist_bin_chopper):
         self.setup = setup
@@ -1274,12 +1471,17 @@ if __name__ == "__main__":
             alt_hist_truth = unpack_dict['alt_hist_truth']
 
             # Note that experimental systs are only different response matrices, and are stored in the main unfolder
+            has_exp_systs = len(region['experimental_systematics']) > 0
+            has_model_systs = len(region['model_systematics']) > 0
+            has_pdf_systs = len(region['pdf_systematics']) > 0
+
             # we have
             # - unfolder
             # - unreg_unfolder
             # - alt_unfolder
-            # - model_systematics[name] unfolder
-            # - pdf[ind] unfolder
+            # - experimental_systematics[] in unfolder
+            # - model_systematics[] in unfolder
+            # - pdf[] in unfolder
 
             # MAKE ALL THE PLOTS
             # ------------------------------------------------------------------
@@ -1318,13 +1520,15 @@ if __name__ == "__main__":
                                                                                        alt_unfolder=alt_unfolder,
                                                                                        alt_truth=alt_hist_truth)
 
-            if len(region['experimental_systematics']) > 0:
+            if has_exp_systs:
                 gen_pt_binned_plotter.plot_uncertainty_shifts_normalised(unfolder=unfolder)
                 gen_pt_binned_plotter.plot_uncertainty_unfolded_normalised(unfolder=unfolder)
 
-            if len(region['model_systematics']) > 0:
-                print(region['model_systematics'])
+            if has_model_systs:
                 gen_pt_binned_plotter.plot_unfolded_with_model_systs_normalised(unfolder=unfolder)
+
+            if has_pdf_systs:
+                gen_pt_binned_plotter.plot_unfolded_with_pdf_systs_normalised(unfolder=unfolder)
 
             # if has_data:
             gen_pt_binned_plotter.plot_detector_normalised(unfolder)
@@ -1338,6 +1542,13 @@ if __name__ == "__main__":
 
             if unfolder.tau > 0 and unreg_unfolder:
                 lambda_pt_binned_plotter.plot_unfolded_with_unreg_unnormalised(unfolder, unreg_unfolder)
+
+            if has_exp_systs:
+                lambda_pt_binned_plotter.plot_uncertainty_shifts_unnormalised(unfolder=unfolder)
+                lambda_pt_binned_plotter.plot_uncertainty_unfolded_unnormalised(unfolder=unfolder)
+
+            # if has_data:
+            lambda_pt_binned_plotter.plot_detector_unnormalised(unfolder=unfolder)
 
             # Iterate through pt bins - reco binning
             # ------------------------------------------------------------------
