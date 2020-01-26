@@ -314,20 +314,17 @@ class GenPtBinnedPlotter(object):
                 Contribution(mc_gen_hist_bin,
                              label="Generator (%s)" % (self.region['mc_label']),
                              line_color=self.plot_colours['gen_colour'], line_width=self.line_width,
-                             marker_color=self.plot_colours['gen_colour'], marker_size=0,
-                             normalise_hist=False),
+                             marker_color=self.plot_colours['gen_colour'], marker_size=0),
                 Contribution(unfolded_hist_bin_total_errors,
                              label="Unfolded (#tau = %.3g) (total err)" % (unfolder.tau),
                              line_color=self.plot_colours['unfolded_total_colour'], line_width=self.line_width, line_style=1,
                              marker_color=self.plot_colours['unfolded_total_colour'],# marker_style=20, marker_size=0.75,
-                             subplot=mc_gen_hist_bin,
-                             normalise_hist=False),
+                             subplot=mc_gen_hist_bin),
                 Contribution(unfolded_hist_bin_stat_errors,
                              label="Unfolded (#tau = %.3g) (stat err)" % (unfolder.tau),
                              line_color=self.plot_colours['unfolded_stat_colour'], line_width=self.line_width, line_style=1,
                              marker_color=self.plot_colours['unfolded_stat_colour'], marker_style=20, marker_size=0.75,
-                             subplot=mc_gen_hist_bin,
-                             normalise_hist=False),
+                             subplot=mc_gen_hist_bin),
             ]
             if not self.check_entries(entries, "plot_unfolded_unnormalised %d" % (ibin)):
                 return
@@ -349,20 +346,17 @@ class GenPtBinnedPlotter(object):
                 Contribution(mc_gen_hist_bin,
                              label="Generator (%s)" % (self.region['mc_label']),
                              line_color=self.plot_colours['gen_colour'], line_width=self.line_width,
-                             marker_color=self.plot_colours['gen_colour'], marker_size=0,
-                             normalise_hist=False),
+                             marker_color=self.plot_colours['gen_colour'], marker_size=0),
                 Contribution(unfolded_hist_bin_total_errors,
                              label="Unfolded (#tau = %.3g) (total err)" % (unfolder.tau),
                              line_color=self.plot_colours['unfolded_total_colour'], line_width=self.line_width, line_style=1,
                              marker_color=self.plot_colours['unfolded_total_colour'],# marker_style=20, marker_size=0.75,
-                             subplot=mc_gen_hist_bin,
-                             normalise_hist=False),
+                             subplot=mc_gen_hist_bin),
                 Contribution(unfolded_hist_bin_stat_errors,
                              label="Unfolded (#tau = %.3g) (stat err)" % (unfolder.tau),
                              line_color=self.plot_colours['unfolded_stat_colour'], line_width=self.line_width, line_style=1,
                              marker_color=self.plot_colours['unfolded_stat_colour'], marker_style=20, marker_size=0.75,
-                             subplot=mc_gen_hist_bin,
-                             normalise_hist=False),
+                             subplot=mc_gen_hist_bin),
             ]
             if not self.check_entries(entries, "plot_unfolded_normalised_pt_bin %d" % (ibin)):
                 return
@@ -388,26 +382,22 @@ class GenPtBinnedPlotter(object):
                 Contribution(mc_gen_hist_bin,
                              label="Generator (%s)" % (self.region['mc_label']),
                              line_color=self.plot_colours['gen_colour'], line_width=self.line_width,
-                             marker_color=self.plot_colours['gen_colour'], marker_size=0,
-                             normalise_hist=False),
+                             marker_color=self.plot_colours['gen_colour'], marker_size=0),
                 Contribution(alt_mc_gen_hist_bin,
                              label="Generator (%s)" % (self.region['alt_mc_label']),
                              line_color=self.plot_colours['alt_gen_colour'], line_width=self.line_width, line_style=2,
                              marker_color=self.plot_colours['alt_gen_colour'], marker_size=0,
-                             subplot=mc_gen_hist_bin,
-                             normalise_hist=False),
+                             subplot=mc_gen_hist_bin),
                 Contribution(unfolded_hist_bin_total_errors,
                              label="Unfolded (#tau = %.3g) (total err)" % (unfolder.tau),
                              line_color=self.plot_colours['unfolded_total_colour'], line_width=self.line_width, line_style=1,
                              marker_color=self.plot_colours['unfolded_total_colour'], #marker_style=20, marker_size=0.75,
-                             subplot=mc_gen_hist_bin,
-                             normalise_hist=False),
+                             subplot=mc_gen_hist_bin),
                 Contribution(unfolded_hist_bin_stat_errors,
                              label="Unfolded (#tau = %.3g) (stat err)" % (unfolder.tau),
                              line_color=self.plot_colours['unfolded_stat_colour'], line_width=self.line_width, line_style=1,
                              marker_color=self.plot_colours['unfolded_stat_colour'], marker_style=20, marker_size=0.75,
-                             subplot=mc_gen_hist_bin,
-                             normalise_hist=False),
+                             subplot=mc_gen_hist_bin),
             ]
             if not self.check_entries(entries, "plot_unfolded_with_alt_truth_normalised_pt_bin %d" % (ibin)):
                 return
@@ -431,20 +421,17 @@ class GenPtBinnedPlotter(object):
                 Contribution(mc_gen_hist_bin,
                              label="Generator (%s)" % (self.region['mc_label']),
                              line_color=self.plot_colours['gen_colour'], line_width=self.line_width,
-                             marker_color=self.plot_colours['gen_colour'], marker_size=0,
-                             normalise_hist=False),
+                             marker_color=self.plot_colours['gen_colour'], marker_size=0),
                 Contribution(unfolded_hist_bin_total_errors,
                              label="Unfolded (#tau = %.3g) (total err)" % (unfolder.tau),
                              line_color=self.plot_colours['unfolded_total_colour'], line_width=self.line_width, line_style=1,
                              marker_color=self.plot_colours['unfolded_total_colour'], #marker_style=20, marker_size=0.75,
-                             subplot=mc_gen_hist_bin,
-                             normalise_hist=False),
+                             subplot=mc_gen_hist_bin),
                 Contribution(unreg_unfolded_hist_bin_total_errors,
                              label="Unfolded (#tau = 0) (total err)",
                              line_color=self.plot_colours['unfolded_unreg_colour'], line_width=self.line_width, line_style=1,
                              marker_color=self.plot_colours['unfolded_unreg_colour'], #marker_style=20, marker_size=0.75,
-                             subplot=mc_gen_hist_bin,
-                             normalise_hist=False),
+                             subplot=mc_gen_hist_bin),
             ]
             if not self.check_entries(entries, "plot_unfolded_with_unreg_normalised_pt_bin %d" % (ibin)):
                 return
@@ -471,25 +458,21 @@ class GenPtBinnedPlotter(object):
                 Contribution(mc_gen_hist_bin,
                              label="Generator (%s)" % (self.region['mc_label']),
                              line_color=self.plot_colours['gen_colour'], line_width=self.line_width,
-                             marker_color=self.plot_colours['gen_colour'], marker_size=0,
-                             normalise_hist=False),
+                             marker_color=self.plot_colours['gen_colour'], marker_size=0),
                 # Contribution(alt_mc_gen_hist_bin,
                 #              label="Generator (%s)" % (self.region['alt_mc_label']),
                 #              line_color=alt_gen_colour, line_width=self.line_width, line_style=2,
-                #              marker_color=alt_gen_colour, marker_size=0,
-                #              normalise_hist=False),
+                #              marker_color=alt_gen_colour, marker_size=0),
                 Contribution(unfolded_hist_bin_total_errors,
                              label="Unfolded (#tau = %.3g) (total err)\n(%s response matrix)" % (unfolder.tau, self.region['mc_label']),
                              line_color=self.plot_colours['unfolded_total_colour'], line_width=self.line_width, line_style=1,
                              marker_color=self.plot_colours['unfolded_total_colour'], #marker_style=20, marker_size=0.75,
-                             subplot=mc_gen_hist_bin,
-                             normalise_hist=False),
+                             subplot=mc_gen_hist_bin),
                 Contribution(alt_unfolded_hist_bin_total_errors,
                              label="Unfolded (#tau = %.3g) (total err)\n(%s response matrix)" % (alt_unfolder.tau, self.region['alt_mc_label']),
                              line_color=self.plot_colours['alt_unfolded_colour'], line_width=self.line_width, line_style=1,
                              marker_color=self.plot_colours['alt_unfolded_colour'], #marker_style=20, marker_size=0.75,
-                             subplot=mc_gen_hist_bin,
-                             normalise_hist=False),
+                             subplot=mc_gen_hist_bin),
             ]
             if not self.check_entries(entries, "plot_unfolded_with_unreg_normalised_pt_bin %d" % (ibin)):
                 return
@@ -516,25 +499,21 @@ class GenPtBinnedPlotter(object):
                 Contribution(mc_gen_hist_bin,
                              label="Generator (%s)" % (self.region['mc_label']),
                              line_color=self.plot_colours['gen_colour'], line_width=self.line_width,
-                             marker_color=self.plot_colours['gen_colour'], marker_size=0,
-                             normalise_hist=False),
+                             marker_color=self.plot_colours['gen_colour'], marker_size=0),
                 Contribution(alt_mc_gen_hist_bin,
                              label="Generator (%s)" % (self.region['alt_mc_label']),
                              line_color=self.plot_colours['alt_gen_colour'], line_width=self.line_width, line_style=2,
-                             marker_color=self.plot_colours['alt_gen_colour'], marker_size=0,
-                             normalise_hist=False),
+                             marker_color=self.plot_colours['alt_gen_colour'], marker_size=0),
                 Contribution(unfolded_hist_bin_total_errors,
                              label="Unfolded (#tau = %.3g) (total err)\n(%s response matrix)" % (unfolder.tau, self.region['mc_label']),
                              line_color=self.plot_colours['unfolded_total_colour'], line_width=self.line_width, line_style=1,
                              marker_color=self.plot_colours['unfolded_total_colour'], #marker_style=20, marker_size=0.75,
-                             subplot=mc_gen_hist_bin,
-                             normalise_hist=False),
+                             subplot=mc_gen_hist_bin),
                 Contribution(alt_unfolded_hist_bin_total_errors,
                              label="Unfolded (#tau = %.3g) (total err)\n(%s response matrix)" % (alt_unfolder.tau, self.region['alt_mc_label']),
                              line_color=self.plot_colours['alt_unfolded_colour'], line_width=self.line_width, line_style=1,
                              marker_color=self.plot_colours['alt_unfolded_colour'], #marker_style=20, marker_size=0.75,
-                             subplot=mc_gen_hist_bin,
-                             normalise_hist=False),
+                             subplot=mc_gen_hist_bin),
             ]
             if not self.check_entries(entries, "plot_unfolded_with_unreg_normalised_pt_bin %d" % (ibin)):
                 return
@@ -565,13 +544,11 @@ class GenPtBinnedPlotter(object):
                                  label="Unfolded (#tau = %.3g) (total err) (%s)" % (syst_unfolder.tau, syst_label),
                                  line_color=syst_dict['colour'], line_width=self.line_width, line_style=1,
                                  marker_color=syst_dict['colour'], marker_size=0,
-                                 subplot=syst_gen_hist_bin,
-                                 normalise_hist=True),
+                                 subplot=syst_gen_hist_bin),
                     Contribution(syst_gen_hist_bin,
                                  label="Generator (%s)" % (syst_label),
                                  line_color=syst_dict['colour'], line_width=self.line_width, line_style=2,
-                                 marker_color=syst_dict['colour'], marker_size=0,
-                                 normalise_hist=True),
+                                 marker_color=syst_dict['colour'], marker_size=0),
                 ])
 
             # add nominal ones last
@@ -582,14 +559,12 @@ class GenPtBinnedPlotter(object):
                 Contribution(mc_gen_hist_bin,
                              label="Generator (%s)" % (self.region['mc_label']),
                              line_color=self.plot_colours['gen_colour'], line_width=self.line_width,
-                             marker_color=self.plot_colours['gen_colour'], marker_size=0,
-                             normalise_hist=False),
+                             marker_color=self.plot_colours['gen_colour'], marker_size=0),
                 Contribution(unfolded_hist_bin_total_errors,
                              label="Unfolded (#tau = %.3g) (total err)" % (unfolder.tau),
                              line_color=self.plot_colours['unfolded_total_colour'], line_width=self.line_width, line_style=1,
                              marker_color=self.plot_colours['unfolded_total_colour'], #marker_style=20, marker_size=0.75,
-                             subplot=mc_gen_hist_bin,
-                             normalise_hist=False),
+                             subplot=mc_gen_hist_bin),
             ])
             if not self.check_entries(syst_entries, "plot_unfolded_with_model_systs_normalised_pt_bin %d" % (ibin)):
                 return
@@ -597,6 +572,7 @@ class GenPtBinnedPlotter(object):
                         ytitle=self.setup.pt_bin_normalised_differential_label,
                         title=self.get_pt_bin_title(bin_edge_low, bin_edge_high),
                         **self.pt_bin_plot_args)
+            self._modify_plot(plot)
             plot.legend.SetX1(0.55)
             plot.legend.SetY1(0.72)
             plot.legend.SetX2(0.98)
@@ -624,13 +600,11 @@ class GenPtBinnedPlotter(object):
                              label="Unfolded (#tau = %.3g) (total err) (%s)" % (pdf_unfolder.tau, pdf_label),
                              line_color=pdf_dict['colour'], line_width=self.line_width, line_style=1,
                              marker_color=pdf_dict['colour'], marker_size=0,
-                             subplot=pdf_gen_hist_bin,
-                             normalise_hist=True),
+                             subplot=pdf_gen_hist_bin),
                 Contribution(pdf_gen_hist_bin,
                              label="Generator (%s)" % (pdf_label),
                              line_color=pdf_dict['colour'], line_width=self.line_width, line_style=2,
-                             marker_color=pdf_dict['colour'], marker_size=0,
-                             normalise_hist=True),
+                             marker_color=pdf_dict['colour'], marker_size=0),
             ])
 
         # add nominal ones last
@@ -641,14 +615,12 @@ class GenPtBinnedPlotter(object):
             Contribution(mc_gen_hist_bin,
                          label="Generator (%s)" % (self.region['mc_label']),
                          line_color=self.plot_colours['gen_colour'], line_width=self.line_width,
-                         marker_color=self.plot_colours['gen_colour'], marker_size=0,
-                         normalise_hist=False),
+                         marker_color=self.plot_colours['gen_colour'], marker_size=0),
             Contribution(unfolded_hist_bin_total_errors,
                          label="Unfolded (#tau = %.3g) (total err)" % (unfolder.tau),
                          line_color=self.plot_colours['unfolded_total_colour'], line_width=self.line_width, line_style=1,
                          marker_color=self.plot_colours['unfolded_total_colour'], #marker_style=20, marker_size=0.75,
-                         subplot=mc_gen_hist_bin,
-                         normalise_hist=False),
+                         subplot=mc_gen_hist_bin),
         ])
         if not self.check_entries(pdf_entries, "plot_unfolded_with_model_systs_normalised_pt_bin %d" % (ibin)):
             return
@@ -656,6 +628,7 @@ class GenPtBinnedPlotter(object):
                    ytitle=self.setup.pt_bin_normalised_differential_label,
                     title=self.get_pt_bin_title(bin_edge_low, bin_edge_high),
                     **self.pt_bin_plot_args)
+        self._modify_plot(plot)
         plot.legend.SetX1(0.55)
         plot.legend.SetY1(0.72)
         plot.legend.SetX2(0.98)
@@ -795,8 +768,7 @@ class GenPtBinnedPlotter(object):
                 Contribution(unfolded_hist_bin_stat_errors,
                              label="Unfolded (#tau = %.3g) (stat err)" % (unfolder.tau),
                              line_color=self.plot_colours['unfolded_stat_colour'], line_width=self.line_width, line_style=1,
-                             marker_color=self.plot_colours['unfolded_stat_colour'], marker_style=20, marker_size=0.75,
-                             normalise_hist=False),
+                             marker_color=self.plot_colours['unfolded_stat_colour'], marker_style=20, marker_size=0.75),
             )
             if not self.check_entries(entries, "plot_unfolded_with_exp_systs_normalised %d" % ibin):
                 return
@@ -830,14 +802,12 @@ class GenPtBinnedPlotter(object):
                 Contribution(mc_hist_bin,
                              label="MC (bg-subtracted)",
                              line_color=self.plot_colours['reco_mc_colour'], line_width=self.line_width,
-                             marker_color=self.plot_colours['reco_mc_colour'], marker_size=0,
-                             normalise_hist=False),
+                             marker_color=self.plot_colours['reco_mc_colour'], marker_size=0),
                 Contribution(input_hist_bin,
                              label="Data (bg-subtracted)",
                              line_color=self.plot_colours['reco_data_colour'], line_width=self.line_width,
                              marker_color=self.plot_colours['reco_data_colour'], marker_style=20, marker_size=0.75,
-                             subplot=mc_hist_bin,
-                             normalise_hist=False),
+                             subplot=mc_hist_bin),
             ]
             if not self.check_entries(entries, "plot_detector_normalised %d" % (ibin)):
                 continue
@@ -921,20 +891,17 @@ class GenLambdaBinnedPlotter(object):
                 Contribution(mc_gen_hist_bin,
                              label="Generator (%s)" % (self.region['mc_label']),
                              line_color=self.plot_colours['gen_colour'], line_width=self.line_width,
-                             marker_color=self.plot_colours['gen_colour'], marker_size=0,
-                             normalise_hist=False),
+                             marker_color=self.plot_colours['gen_colour'], marker_size=0),
                 Contribution(unfolded_hist_bin_total_errors,
                              label="Unfolded (#tau = %.3g) (total err)" % (unfolder.tau),
                              line_color=self.plot_colours['unfolded_total_colour'], line_width=self.line_width, line_style=1,
                              marker_color=self.plot_colours['unfolded_total_colour'],# marker_style=20, marker_size=0.75,
-                             subplot=mc_gen_hist_bin,
-                             normalise_hist=False),
+                             subplot=mc_gen_hist_bin),
                 Contribution(unfolded_hist_bin_stat_errors,
                              label="Unfolded (#tau = %.3g) (stat err)" % (unfolder.tau),
                              line_color=self.plot_colours['unfolded_stat_colour'], line_width=self.line_width, line_style=1,
                              marker_color=self.plot_colours['unfolded_stat_colour'], marker_style=20, marker_size=0.75,
-                             subplot=mc_gen_hist_bin,
-                             normalise_hist=False),
+                             subplot=mc_gen_hist_bin),
             ]
             if not self.check_entries(entries, "plot_unfolded_unnormalised %d" % (ibin)):
                 return
@@ -962,20 +929,17 @@ class GenLambdaBinnedPlotter(object):
                 Contribution(mc_gen_hist_bin,
                              label="Generator (%s)" % (self.region['mc_label']),
                              line_color=self.plot_colours['gen_colour'], line_width=self.line_width,
-                             marker_color=self.plot_colours['gen_colour'], marker_size=0,
-                             normalise_hist=False),
+                             marker_color=self.plot_colours['gen_colour'], marker_size=0),
                 Contribution(unfolded_hist_bin_total_errors,
                              label="Unfolded (#tau = %.3g) (total err)" % (unfolder.tau),
                              line_color=self.plot_colours['unfolded_total_colour'], line_width=self.line_width, line_style=1,
                              marker_color=self.plot_colours['unfolded_total_colour'],# marker_style=20, marker_size=0.75,
-                             subplot=mc_gen_hist_bin,
-                             normalise_hist=False),
+                             subplot=mc_gen_hist_bin),
                 Contribution(unreg_unfolded_hist_bin_total_errors,
                              label="Unfolded (#tau = 0) (total err)",
                              line_color=self.plot_colours['unfolded_unreg_colour'], line_width=self.line_width, line_style=1,
                              marker_color=self.plot_colours['unfolded_unreg_colour'], #marker_style=20, marker_size=0.75,
-                             subplot=mc_gen_hist_bin,
-                             normalise_hist=False),
+                             subplot=mc_gen_hist_bin),
             ]
             if not self.check_entries(entries, "plot_unfolded_with_unreg_unnormalised %d" % (ibin)):
                 return
@@ -1008,13 +972,11 @@ class GenLambdaBinnedPlotter(object):
                                  label="Unfolded (#tau = %.3g) (total err) (%s)" % (syst_unfolder.tau, syst_label),
                                  line_color=syst_dict['colour'], line_width=self.line_width, line_style=1,
                                  marker_color=syst_dict['colour'], marker_size=0,
-                                 subplot=syst_gen_hist_bin,
-                                 normalise_hist=True),
+                                 subplot=syst_gen_hist_bin),
                     Contribution(syst_gen_hist_bin,
                                  label="Generator (%s)" % (syst_label),
                                  line_color=syst_dict['colour'], line_width=self.line_width, line_style=2,
-                                 marker_color=syst_dict['colour'], marker_size=0,
-                                 normalise_hist=True),
+                                 marker_color=syst_dict['colour'], marker_size=0),
                 ])
 
             # add nominal ones last
@@ -1025,14 +987,12 @@ class GenLambdaBinnedPlotter(object):
                 Contribution(mc_gen_hist_bin,
                              label="Generator (%s)" % (self.region['mc_label']),
                              line_color=self.plot_colours['gen_colour'], line_width=self.line_width,
-                             marker_color=self.plot_colours['gen_colour'], marker_size=0,
-                             normalise_hist=False),
+                             marker_color=self.plot_colours['gen_colour'], marker_size=0),
                 Contribution(unfolded_hist_bin_total_errors,
                              label="Unfolded (#tau = %.3g) (total err)" % (unfolder.tau),
                              line_color=self.plot_colours['unfolded_total_colour'], line_width=self.line_width, line_style=1,
                              marker_color=self.plot_colours['unfolded_total_colour'], #marker_style=20, marker_size=0.75,
-                             subplot=mc_gen_hist_bin,
-                             normalise_hist=False),
+                             subplot=mc_gen_hist_bin),
             ])
             if not self.check_entries(syst_entries, "plot_unfolded_with_model_systs_unnormalised_pt_bin %d" % (ibin)):
                 return
@@ -1040,6 +1000,7 @@ class GenLambdaBinnedPlotter(object):
                         ytitle=self.setup.pt_bin_normalised_differential_label,
                         title=self.get_lambda_bin_title(bin_edge_low, bin_edge_high),
                         **self.lambda_bin_plot_args)
+            self._modify_plot(plot)
             plot.legend.SetX1(0.55)
             plot.legend.SetY1(0.72)
             plot.legend.SetX2(0.98)
@@ -1182,8 +1143,7 @@ class GenLambdaBinnedPlotter(object):
                 Contribution(unfolded_hist_bin_stat_errors,
                              label="Unfolded (#tau = %.3g) (stat err)" % (unfolder.tau),
                              line_color=self.plot_colours['unfolded_stat_colour'], line_width=self.line_width, line_style=1,
-                             marker_color=self.plot_colours['unfolded_stat_colour'], marker_style=20, marker_size=0.75,
-                             normalise_hist=False),
+                             marker_color=self.plot_colours['unfolded_stat_colour'], marker_style=20, marker_size=0.75),
             )
             if not self.check_entries(entries, "plot_unfolded_with_exp_systs_unnormalised %d" % ibin):
                 return
@@ -1219,14 +1179,12 @@ class GenLambdaBinnedPlotter(object):
                 Contribution(mc_hist_bin,
                              label="MC (bg-subtracted)",
                              line_color=self.plot_colours['reco_mc_colour'], line_width=self.line_width,
-                             marker_color=self.plot_colours['reco_mc_colour'], marker_size=0,
-                             normalise_hist=False),
+                             marker_color=self.plot_colours['reco_mc_colour'], marker_size=0),
                 Contribution(input_hist_bin,
                              label="Data (bg-subtracted)",
                              line_color=self.plot_colours['reco_data_colour'], line_width=self.line_width,
                              marker_color=self.plot_colours['reco_data_colour'], marker_style=20, marker_size=0.75,
-                             subplot=mc_hist_bin,
-                             normalise_hist=False),
+                             subplot=mc_hist_bin),
             ]
             if not self.check_entries(entries, "plot_detector_unnormalised %d" % (ibin)):
                 continue
@@ -1308,14 +1266,12 @@ class RecoPtBinnedPlotter(object):
                 Contribution(mc_hist_bin,
                              label="MC (bg-subtracted)",
                              line_color=self.plot_colours['reco_mc_colour'], line_width=self.line_width,
-                             marker_color=self.plot_colours['reco_mc_colour'], marker_size=0,
-                             normalise_hist=False),
+                             marker_color=self.plot_colours['reco_mc_colour'], marker_size=0),
                 Contribution(input_hist_bin,
                              label="Data (bg-subtracted)",
                              line_color=self.plot_colours['reco_data_colour'], line_width=self.line_width,
                              marker_color=self.plot_colours['reco_data_colour'], marker_style=20, marker_size=0.75,
-                             subplot=mc_hist_bin,
-                             normalise_hist=False),
+                             subplot=mc_hist_bin),
             ]
             if not self.check_entries(entries, "plot_detector_normalised %d" % (ibin)):
                 continue
@@ -1343,14 +1299,12 @@ class RecoPtBinnedPlotter(object):
                 Contribution(input_hist_bin,
                              label="Unfolding input (bg-subtracted)",
                              line_color=self.plot_colours['reco_unfolding_input_colour'], line_width=self.line_width,
-                             marker_color=self.plot_colours['reco_unfolding_input_colour'], marker_style=20, marker_size=0,
-                             normalise_hist=False),
+                             marker_color=self.plot_colours['reco_unfolding_input_colour'], marker_style=20, marker_size=0),
                 Contribution(folded_unfolded_hist_bin,
                              label="Folded unfolded",
                              line_color=self.plot_colours['reco_folded_unfolded_colour'], line_width=self.line_width,
                              marker_color=self.plot_colours['reco_folded_unfolded_colour'], marker_style=20, marker_size=0.75,
-                             subplot=input_hist_bin,
-                             normalise_hist=False),
+                             subplot=input_hist_bin),
             ]
             if not self.check_entries(entries, "plot_folded_unfolded_normalised %d" % (ibin)):
                 continue
@@ -1380,20 +1334,17 @@ class RecoPtBinnedPlotter(object):
                 Contribution(mc_reco_hist_bin,
                              label="MC (reco, bg-subtracted)",
                              line_color=self.plot_colours['reco_mc_colour'], line_width=self.line_width,
-                             marker_color=self.plot_colours['reco_mc_colour'], marker_style=20, marker_size=0,
-                             normalise_hist=False),
+                             marker_color=self.plot_colours['reco_mc_colour'], marker_style=20, marker_size=0),
                 Contribution(input_hist_bin,
                              label="Unfolding input (bg-subtracted)",
                              line_color=self.plot_colours['reco_unfolding_input_colour'], line_width=self.line_width,
                              marker_color=self.plot_colours['reco_unfolding_input_colour'], marker_style=20, marker_size=0,
-                             subplot=mc_reco_hist_bin,
-                             normalise_hist=False),
+                             subplot=mc_reco_hist_bin),
                 Contribution(folded_unfolded_hist_bin,
                              label="Folded unfolded",
                              line_color=self.plot_colours['reco_folded_unfolded_colour'], line_width=self.line_width,
                              marker_color=self.plot_colours['reco_folded_unfolded_colour'],marker_style=20, marker_size=0.75,
-                             subplot=mc_reco_hist_bin,
-                             normalise_hist=False),
+                             subplot=mc_reco_hist_bin),
             ]
             if not self.check_entries(entries, "plot_folded_unfolded_normalised %d" % (ibin)):
                 continue
@@ -1421,14 +1372,12 @@ class RecoPtBinnedPlotter(object):
                 Contribution(mc_reco_hist_bin,
                              label="MC (reco, bg-subtracted)",
                              line_color=self.plot_colours['reco_mc_colour'], line_width=self.line_width,
-                             marker_color=self.plot_colours['reco_mc_colour'], marker_style=20, marker_size=0,
-                             normalise_hist=False),
+                             marker_color=self.plot_colours['reco_mc_colour'], marker_style=20, marker_size=0),
                 Contribution(folded_mc_truth_hist_bin,
                              label="Folded gen",
                              line_color=self.plot_colours['reco_folded_mc_truth_colour'], line_width=self.line_width,
                              marker_color=self.plot_colours['reco_folded_mc_truth_colour'], marker_style=20, marker_size=0.75,
-                             subplot=mc_reco_hist_bin,
-                             normalise_hist=False),
+                             subplot=mc_reco_hist_bin),
             ]
             if not self.check_entries(entries, "plot_folded_gen_normalised %d" % (ibin)):
                 continue
@@ -1609,7 +1558,7 @@ if __name__ == "__main__":
                 lambda_pt_binned_plotter.plot_unfolded_with_exp_systs_unnormalised(unfolder=unfolder)
 
             if has_model_systs:
-                gen_pt_binned_plotter.plot_unfolded_with_model_systs_unnormalised(unfolder=unfolder)
+                lambda_pt_binned_plotter.plot_unfolded_with_model_systs_unnormalised(unfolder=unfolder)
 
             # if has_data:
             lambda_pt_binned_plotter.plot_detector_unnormalised(unfolder=unfolder)
