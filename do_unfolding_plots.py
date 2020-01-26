@@ -152,11 +152,15 @@ class HistBinChopper(object):
         self.objects[name] = obj
 
     def get_bin_plot(self, name, ind, axis, do_norm=False, do_div_bin_width=False, binning_scheme='generator'):
+        """Get plot for given bin of specified axis"""
         if name not in self.objects:
             raise KeyError("No %s in HistBinChopper.objects" % name)
         key = self._generate_key(name, ind, axis, do_norm, do_div_bin_width, binning_scheme)
         if key not in self._cache:
-            self._cache[key] = self.unfolder.get_var_hist_pt_binned(self.objects[name], ind, binning_scheme)
+            if axis == 'lambda':
+                self._cache[key] = self.unfolder.get_pt_hist_var_binned(self.objects[name], ind, binning_scheme)
+            else:
+                self._cache[key] = self.unfolder.get_var_hist_pt_binned(self.objects[name], ind, binning_scheme)
             if do_div_bin_width and do_norm:
                 self._cache[key] = qgp.normalise_hist_divide_bin_width(self._cache[key])
             elif do_div_bin_width and not do_norm:
