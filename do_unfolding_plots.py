@@ -206,7 +206,8 @@ class Setup(object):
     def __init__(self, jet_algo, region, angle, output_dir='.', has_data=False, is_ave_pt_binning=False):
         self.jet_algo = jet_algo
         self.region = region
-        self.pt_str = "#LT p_{T}^{jet} #GT" if is_ave_pt_binning else "p_{T}^{jet}"
+        self.pt_var_str = "#LT p_{T}^{jet} #GT" if is_ave_pt_binning else "p_{T}^{jet}"
+        self.pt_str = self.pt_var_str + " [GeV]"
         self.has_data = has_data
         self.angle = angle
         angle_prepend = "groomed " if "groomed" in region['name'] else ""
@@ -224,10 +225,13 @@ class Setup(object):
         self.particle_title = "Particle-level " + self.angle_str
         self.detector_title = "Detector-level " + self.angle_str
         self.pt_bin_normalised_differential_label = "#frac{1}{d#sigma/dp_{T}} #frac{d^{2}#sigma}{dp_{T} d%s}" % (angle.lambda_str)
+        self.pt_bin_unnormalised_differential_label = "#frac{1}{dN/dp_{T}} #frac{d^{2}N}{dp_{T} d%s}" % (angle.lambda_str)  # FIXME
         self.lambda_bin_normalised_differential_label = "#frac{1}{d#sigma/d%s}} #frac{d^{2}#sigma}{dp_{T} d%s}" % (angle.lambda_str, angle.lambda_str)
+        self.lambda_bin_unnormalised_differential_label = "#frac{1}{dN/d%s}} #frac{d^{2}N}{dp_{T} d%s}" % (angle.lambda_str, angle.lambda_str)  # FIXME
         self.output_dir = output_dir
         self.output_fmt = 'pdf'
         self.append = "%s_%s" % (region['name'], angle.var)  # common str to put on filenames, etc. don't need angle_prepend as 'groomed' in region name
+
 
 PLOT_COLOURS = dict(
     gen_colour=ROOT.kRed,
@@ -246,7 +250,7 @@ PLOT_COLOURS = dict(
     reco_folded_mc_truth_colour=ROOT.kGreen+2,
 )
 
-# FIXME: generalise thise and LambdaBinnedPlotter into one generic BinnedPlotter?
+# FIXME: generalise this and LambdaBinnedPlotter into one generic BinnedPlotter?
 # Although each has different set of plots, so not easy/possible
 class GenPtBinnedPlotter(object):
     def __init__(self, setup, bins, hist_bin_chopper):
@@ -293,7 +297,7 @@ class GenPtBinnedPlotter(object):
                  .format(
                     jet_algo=self.setup.jet_algo,
                     region_label=self.region['label'],
-                    pt_str=self.setup.pt_str,
+                    pt_str=self.setup.pt_var_str,
                     bin_edge_low=bin_edge_low,
                     bin_edge_high=bin_edge_high
                 ))
@@ -865,7 +869,7 @@ class GenLambdaBinnedPlotter(object):
         self.plot_colours = PLOT_COLOURS
         self.lambda_bin_plot_args = dict(
             what="hist",
-            xtitle="%s [GeV]" % self.setup.pt_str,
+            xtitle=self.setup.pt_str,
             has_data=self.setup.has_data,
             subplot_type='ratio',
             subplot_title="Unfolded / Gen",
