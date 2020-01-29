@@ -91,10 +91,29 @@ public:
        std::cout << "Setup (My)TUnfoldDensity" << std::endl;
     }
 
-    // TUnfoldBinning *generatorBinning, *detectorBinning;
-    // TString variable_name;
-
     // Here are methods that were protected in TUnfoldDensity, that are now public for us to use
+ 
+    // multiply sparse and non-sparse matrix
+    TMatrixDSparse *MultiplyMSparseM(const TMatrixDSparse *a,const TMatrixD *b) const { return TUnfold::MultiplyMSparseM(a, b); } 
+    // multiply sparse and sparse matrix
+    TMatrixDSparse *MultiplyMSparseMSparse(const TMatrixDSparse *a,const TMatrixDSparse *b) const { return TUnfold::MultiplyMSparseMSparse(a, b); } 
+    // multiply transposed sparse and sparse matrix
+    TMatrixDSparse *MultiplyMSparseTranspMSparse(const TMatrixDSparse *a,const TMatrixDSparse *b) const { return TUnfold::MultiplyMSparseTranspMSparse(a, b); } 
+    // calculate M_ij = sum_k [m1_ik*m2_jk*v[k] ]. the pointer v may be zero (means no scaling).
+    TMatrixDSparse *MultiplyMSparseMSparseTranspVector (const TMatrixDSparse *m1,const TMatrixDSparse *m2, const TMatrixTBase<Double_t> *v) const { return TUnfold::MultiplyMSparseMSparseTranspVector(m1, m2, v); } 
+    // invert symmetric (semi-)positive sparse matrix
+    TMatrixDSparse *InvertMSparseSymmPos(const TMatrixDSparse *A, bool doPseudoInverse) const { 
+        if (doPseudoInverse) { 
+            Int_t rank = 1; 
+            return TUnfold::InvertMSparseSymmPos(A, &rank); 
+        } else { 
+            return TUnfold::InvertMSparseSymmPos(A, nullptr); 
+        } 
+    }
+    // replacement for dest += f*src
+    void AddMSparse(TMatrixDSparse *dest,Double_t f,const TMatrixDSparse *src) const { return TUnfold::AddMSparse(dest, f, src); } 
+    // create a TMatrixDSparse from an array
+    TMatrixDSparse *CreateSparseMatrix(Int_t nrow,Int_t ncol,Int_t nele,Int_t *row,Int_t *col,Double_t *data) const { return TUnfold::CreateSparseMatrix(nrow, ncol, nele, row, col, data); } 
 
     /// vector of the unfolding result
     inline const TMatrixD *GetX(void) const { return TUnfoldDensity::GetX(); }
@@ -114,6 +133,10 @@ public:
     inline const TMatrixDSparse *GetEinv(void) const { return TUnfoldDensity::GetEinv(); }
     /// matrix E, using internal bin counting
     inline const TMatrixDSparse *GetE(void) const { return TUnfoldDensity::GetE(); }
+    /// vector of the input data y
+    inline const TMatrixD *GetY(void) const { return fY; }
+    /// covariance matrix of the data y
+    inline const TMatrixDSparse *GetVyy(void) const { return fVyy; }
     /// inverse of covariance matrix of the data y
     inline const TMatrixDSparse *GetVyyInv(void) const { return TUnfoldDensity::GetVyyInv(); }
     /// response matrix A
@@ -122,6 +145,16 @@ public:
     inline const TArrayI & GetXToHist(void) const { return fXToHist; }
     /// mapping hist to array
     inline const TArrayI & GetHistToX(void) const { return fHistToX; }
+    
+   // return an error matrix as histogram
+    void ErrorMatrixToHist(TH2 *ematrix, const TMatrixDSparse *emat) const { TUnfold::ErrorMatrixToHist(ematrix, emat, nullptr, true); }
+
+
+    /// determine total error matrix on the vector Ax
+    TMatrixDSparse *GetSummedErrorMatrixYY(void) { return TUnfoldSys::GetSummedErrorMatrixYY(); }
+    
+    /// determine total error matrix on the vector x
+    TMatrixDSparse *GetSummedErrorMatrixXX(void) { return TUnfoldSys::GetSummedErrorMatrixXX(); }
 
     Bool_t AddRegularisationCondition(Int_t i0, Double_t f0, Int_t i1=-1, Double_t f1=0., Int_t i2=-1, Double_t f2=0.) { return TUnfold::AddRegularisationCondition(i0,f0,i1,f1,i2,f2); } // add regularisation condition for a triplet of output bins
     Bool_t AddRegularisationCondition(Int_t nEle, const Int_t *indices, const Double_t *rowData) { return TUnfold::AddRegularisationCondition(nEle, indices, rowData); } // add a regularisation condition

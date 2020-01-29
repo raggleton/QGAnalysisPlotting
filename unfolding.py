@@ -1358,6 +1358,15 @@ if __name__ == "__main__":
             title = "Error matrix (total), %s, %s region, %s" % (jet_algo, region['label'], angle_str)
             unfolder_plotter.draw_error_matrix_total(title=title, **plot_args)
 
+            # inv = unfolder.get_ematrix_total_inv()
+            # print(unfolder.tmatrixdsparse_to_ndarray(inv))
+            # vyy = unfolder.GetVyy()
+            # print(unfolder.tmatrixdsparse_to_ndarray(vyy))
+            smeared_chi2, smeared_ndf, smeared_p = unfolder.calculate_smeared_chi2()
+            print('smeared chi2:', smeared_chi2, smeared_ndf, smeared_p)
+            unfolded_chi2, unfolded_ndf, unfolded_p = unfolder.calculate_unfolded_chi2()
+            print('unfolded chi2:', unfolded_chi2, unfolded_ndf, unfolded_p)
+
             # Do forward-folding to check unfolding
             # ------------------------------------------------------------------
             # Do it on the unfolded result

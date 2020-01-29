@@ -10,6 +10,8 @@ import numpy as np
 import math
 import os
 from itertools import chain
+import scipy
+from scipy import stats
 
 import ROOT
 from MyStyle import My_Style
@@ -637,6 +639,10 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             self.GetEmatrixSysTau(self.ematrix_tau)
         return self.ematrix_tau
 
+    def get_ematrix_total_inv(self):
+        """Total error matrix inverted, from stat+systs"""
+        return self.InvertMSparseSymmPos(self.GetSummedErrorMatrixXX(), False)  # TMatrixDSparse
+
     def get_rhoij_total(self):
         if getattr(self, "rhoij_total", None) is None:
             self.rhoij_total = self.GetRhoIJtotal("rhoij_total_"+cu.get_unique_str(), "", "generator", "*[]", self.use_axis_binning)
@@ -686,6 +692,21 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             h.SetBinContent(pt_ind, hist1d.GetBinContent(bin_num))
             h.SetBinError(pt_ind, hist1d.GetBinError(bin_num))
         return h
+
+    # @staticmethod
+    def tmatrixdsparse_to_ndarray(self, matrix):
+        ndarr = np.zeros(shape=(matrix.GetNrows(), matrix.GetNcols()))
+       
+        rows_A = matrix.GetRowIndexArray()
+        cols_A = matrix.GetColIndexArray()
+        data_A = matrix.GetMatrixArray()
+        for iy in range(matrix.GetNrows()):
+            for indexA in range(rows_A[iy], rows_A[iy+1]):
+                ix = cols_A[indexA]
+                # print([x for x in self.GetXToHist()])
+                # TODO: care about orientation?
+                ndarr[iy, ix] = data_A[indexA]
+        return ndarr
 
     @staticmethod
     def th2_to_tmatrixd(hist, include_uflow=False, include_oflow=False):
@@ -967,6 +988,62 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             err2 = pow(err, 2)
             cov_matrix_ndarray[ind-1, ind-1] = err2
         return cov_matrix_ndarray
+
+    def calculate_smeared_chi2(self, ignore_underflow_bins=True):
+        # TODO: should this all be divided by bin width?
+        folded_vec, _ = self.th1_to_ndarray(self.get_folded_mc_truth(), False)
+        reco_bg_subtracted_vec, _ = self.th1_to_ndarray(self.hist_mc_reco_bg_subtracted, False)
+        delta = reco_bg_subtracted_vec - folded_vec
+        # print(delta.shape)
+        # print(delta)
+        if ignore_underflow_bins:
+            # print('start bin', self.detector_distribution.GetStartBin())
+            first_signal_bin = self.detector_distribution.GetStartBin()
+            # print('hist_mc_reco_bg_subtracted', self.hist_mc_reco_bg_subtracted.GetBinContent(first_signal_bin))
+            # print('reco_bg_subtracted_vec', reco_bg_subtracted_vec[0, first_signal_bin-1])
+            # print('delta', delta[0, first_signal_bin-1])
+            delta[0][:first_signal_bin-1] = 0. # subtract 1 as numpy indices start at 0, hists start at 1
+            # print(delta[0, 0:first_signal_bin-1])
+            # print(delta[0, first_signal_bin-1:first_signal_bin+5])
+            # print(reco_bg_subtracted_vec[0,first_signal_bin-5: first_signal_bin+5])
+        vyy_inv = self.tmatrixdsparse_to_ndarray(self.GetVyyInv())
+        print('vyy_inv', vyy_inv)
+        inter = vyy_inv.dot(delta.T)
+        # print(inter.shape)
+        chi2 = delta.dot(inter)[0][0]
+        ndof = len(delta[0][first_signal_bin-1:])
+        p = 1-scipy.stats.chi2.cdf(chi2, int(ndof))
+        return chi2, ndof, p
+
+    def calculate_unfolded_chi2(self, ignore_underflow_bins=True):
+        """(unfolded - truth)^T V_unfolded^{-1} (unfolded - truth)"""
+        oflow = False
+        unfolded_vec, _ = self.th1_to_ndarray(self.unfolded, oflow)
+        gen_vec, _ = self.th1_to_ndarray(self.hist_truth, oflow_x=oflow)
+        delta = unfolded_vec - gen_vec
+        if ignore_underflow_bins:
+            first_signal_bin = self.generator_distribution.GetStartBin()
+            print('first_signal_bin', first_signal_bin)
+            print(self.generator_distribution.GetEndBin())
+            print('truth', self.hist_truth.GetBinContent(first_signal_bin))
+            print('truth', gen_vec[0][first_signal_bin-1:])
+            delta[0][:first_signal_bin-1] = 0
+
+        # Have to manually create hist first, awkward
+        this_binning = self.generator_binning.FindNode('generator')
+        # I cannot figure out how to make the int** object for bin_map
+        # So we are trusting that the default args for title and axisSteering are correct
+        # Gnahhhhhhh
+        ematrix_inv = this_binning.CreateErrorMatrixHistogram("ematrix_vxxinv_"+cu.get_unique_str(), self.use_axis_binning) #, bin_map, "", "*[]")
+        self.ErrorMatrixToHist(ematrix_inv, self.GetVxxInv())
+        # cov = self.tmatrixdsparse_to_ndarray(self.GetVxxInv())
+        cov, _ = self.th2_to_ndarray(ematrix_inv)
+        inter = cov.dot(delta.T)
+        chi2 = delta.dot(inter)[0][0]
+        ndof = len(delta[0][first_signal_bin-1:])
+        p = 1-scipy.stats.chi2.cdf(chi2, int(ndof))
+        return chi2, ndof, p
+
 
 
 def unfolder_from_tdir(tdir):
