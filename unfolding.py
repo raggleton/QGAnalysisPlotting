@@ -1333,6 +1333,9 @@ if __name__ == "__main__":
                         % (jet_algo, region['label'], angle_str, unfolder.sigma_max, unfolder.sigma_min, unfolder.condition_number))
             unfolder_plotter.draw_probability_matrix(title=title, **plot_args)
 
+            title = "%s, %s region, %s"% (jet_algo, region['label'], angle_str)
+            unfolder_plotter.draw_failed_reco(title=title, **plot_args)
+
             title = "Correlation matrix, %s, %s region, %s" % (jet_algo, region['label'], angle_str)
             unfolder_plotter.draw_correlation_matrix(title=title, draw_values=True, **plot_args)
             unfolder_plotter.draw_correlation_matrix(title=title, draw_values=False, **plot_args)

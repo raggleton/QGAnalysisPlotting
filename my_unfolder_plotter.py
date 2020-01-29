@@ -996,6 +996,73 @@ class MyUnfolderPlotter(object):
         output_filename = "%s/folded_gen_%s.%s" % (output_dir, append, self.output_fmt)
         plot.save(output_filename)
 
+    def draw_failed_reco(self, output_dir='.', append="", title=""):
+        origin = self.unfolder.response_map
+        # origin = self.unfolder.get_probability_matrix()
+        nbins = origin.GetNbinsX()
+        ax = origin.GetXaxis()
+        first_bin = ax.GetBinLowEdge(1)
+        last_bin = ax.GetBinLowEdge(ax.GetNbins()+1)
+        h_failed = ROOT.TH1D("h_failed_"+cu.get_unique_str(), "", nbins, first_bin, last_bin)
+        for i in range(1, nbins+1):
+            h_failed.SetBinContent(i, origin.GetBinContent(i, 0))
+            h_failed.SetBinError(i, origin.GetBinError(i, 0))
+
+
+        h_all = self.unfolder.response_map.ProjectionX()
+        entries = [Contribution(h_failed, label="passGen && !passReco",
+                                line_color=ROOT.kBlue, line_width=1,
+                                marker_color=ROOT.kBlue, marker_size=0,
+                                normalise_hist=False,
+                                subplot=h_all),
+                    Contribution(h_all, label="passGen",
+                                 line_color=ROOT.kRed, line_width=1,
+                                 marker_color=ROOT.kRed, marker_size=0,
+                                 normalise_hist=False)]
+        plot = Plot(entries,
+                    what='hist',
+                    title=title,
+                    xtitle='Generator binning',
+                    ytitle='N',
+                    has_data=False,
+                    subplot_title='Failed / All',
+                    subplot_limits=(0, 1))
+        plot.default_canvas_size = (800, 600)
+        plot.plot("NOSTACK HISTE")
+        plot.set_logy(do_more_labels=False)
+        l, t = self.draw_pt_binning_lines(plot, which='gen', axis='x',
+                                          do_underflow=True,
+                                          do_labels_inside=True,
+                                          do_labels_outside=False)
+        output_filename = '%s/failed_reco_%s.%s' % (output_dir, append, self.output_fmt)
+        plot.save(output_filename)
+
+        # Also do fractional plot
+        h_failed_frac = h_failed.Clone()
+        h_failed_frac.Divide(h_all)
+        entries = [Contribution(h_failed_frac, label='failed fraction',
+                                line_color=ROOT.kBlue, line_width=1,
+                                marker_color=ROOT.kBlue, marker_size=0,
+                                normalise_hist=False)]
+        plot = Plot(entries,
+                    what='hist',
+                    title=title,
+                    xtitle='Generator binning',
+                    ytitle='Fraction fail reco',
+                    has_data=False,
+                    ylim=(0.1, 2),
+                    subplot_title='Failed / All',
+                    subplot_limits=(0, 1))
+        plot.default_canvas_size = (800, 600)
+        plot.plot("NOSTACK HISTE")
+        # plot.set_logy(do_more_labels=False)
+        l, t = self.draw_pt_binning_lines(plot, which='gen', axis='x',
+                                          do_underflow=True,
+                                          do_labels_inside=True,
+                                          do_labels_outside=False)
+        output_filename = '%s/failed_reco_frac_%s.%s' % (output_dir, append, self.output_fmt)
+        plot.save(output_filename)
+
     def draw_syst_mean_rms_vs_pt(self, syst_dicts, output_dir=".", append="", title=""):
         """Make plots of mean and RMS vs gen pt, for unfolded + shifted distributions from each systematic
         syst_dicts : list of dicts. Each represents a systematic,
