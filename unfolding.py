@@ -1642,16 +1642,16 @@ if __name__ == "__main__":
 
                     # Add systematic errors as different response matrices
                     # ----------------------------------------------------
-                    if args.doExperimentalSysts:
-                        chosen_rsp_bin = (18, 18)
-                        print("nominal response bin content for", chosen_rsp_bin, syst_unfolder.response_map.GetBinContent(*chosen_rsp_bin))
-                        for exp_dict in region['experimental_systematics']:
-                            if not isinstance(exp_dict['tfile'], ROOT.TFile):
-                                exp_dict['tfile'] = cu.open_root_file(exp_dict['tfile'])
-                            map_syst = cu.get_from_tfile(exp_dict['tfile'], "%s/tu_%s_GenReco_all" % (region['dirname'], angle_shortname))
-                            print("Adding systematic:", exp_dict['label'])
-                            print("    syst bin", chosen_rsp_bin, map_syst.GetBinContent(*chosen_rsp_bin))
-                            syst_unfolder.add_sys_error(map_syst, exp_dict['label'], ROOT.TUnfoldDensity.kSysErrModeMatrix)
+                    # if args.doExperimentalSysts:
+                    #     chosen_rsp_bin = (18, 18)
+                    #     print("nominal response bin content for", chosen_rsp_bin, syst_unfolder.response_map.GetBinContent(*chosen_rsp_bin))
+                    #     for exp_dict in region['experimental_systematics']:
+                    #         if not isinstance(exp_dict['tfile'], ROOT.TFile):
+                    #             exp_dict['tfile'] = cu.open_root_file(exp_dict['tfile'])
+                    #         map_syst = cu.get_from_tfile(exp_dict['tfile'], "%s/tu_%s_GenReco_all" % (region['dirname'], angle_shortname))
+                    #         print("Adding systematic:", exp_dict['label'])
+                    #         print("    syst bin", chosen_rsp_bin, map_syst.GetBinContent(*chosen_rsp_bin))
+                    #         syst_unfolder.add_sys_error(rm_large_rel_error_bins(map_syst), exp_dict['label'], ROOT.TUnfoldDensity.kSysErrModeMatrix)
 
 
                     # Do any regularization
