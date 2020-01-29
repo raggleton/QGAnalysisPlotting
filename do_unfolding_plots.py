@@ -162,12 +162,14 @@ class HistBinChopper(object):
                 self._cache[key] = self.unfolder.get_pt_hist_var_binned(self.objects[name], ind, binning_scheme)
             else:
                 self._cache[key] = self.unfolder.get_var_hist_pt_binned(self.objects[name], ind, binning_scheme)
+
             if do_div_bin_width and do_norm:
                 self._cache[key] = qgp.normalise_hist_divide_bin_width(self._cache[key])
             elif do_div_bin_width and not do_norm:
                 self._cache[key] = qgp.hist_divide_bin_width(self._cache[key])
             elif not do_div_bin_width and do_norm:
-                self._cache[key] = qgp.normalise_hist(self._cache[key])
+                qgp.normalise_hist(self._cache[key])
+
         return self._cache[key]
 
     @staticmethod
