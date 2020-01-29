@@ -1997,6 +1997,10 @@ if __name__ == "__main__":
                     # ----------------------------------------------------------
                     pdf_unfolder.save_to_tfile(pdf_tdir)
 
+            # Save everything to TFile
+            print("DONE...saving unfolder to ROOT file")
+            unfolder.save_to_tfile(this_tdir)
+
             # ------------------------------------------------------------------
             # PLOT LOTS OF THINGS
             # ------------------------------------------------------------------
@@ -2025,10 +2029,5 @@ if __name__ == "__main__":
             #                                  var_label=var_label,
             #                                  xlim=xlim,
             #                                  region_title=region_label)
-
-
-            # Save everything to TFile
-            print("DONE...saving unfolder to ROOT file")
-            unfolder.save_to_tfile(this_tdir)
 
     print("Saved hists to", output_tfile.GetName())
