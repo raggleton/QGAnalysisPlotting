@@ -194,6 +194,9 @@ def renorm(arr2d, axis):
     # create version where each axis summed to 1
     # use where and out args to ensure nans are made into 0s
     summed = arr2d.sum(axis=axis, keepdims=True)
+    # If you get "TypeError: No loop matching the specified signature and casting was found for ufunc true_divide"
+    # then you should create your arr2d with 'type=float'.
+    # I don't understand why: https://github.com/numpy/numpy/issues/10565
     return np.divide(arr2d, summed, where=summed!=0, out=np.zeros_like(arr2d))
 
 
@@ -219,21 +222,23 @@ def calc_variable_binning_purity_stability(h2d, purity_goal=0.4, stability_goal=
     arr2d, _ = cu.th2_to_arr(h2d)
     reco_bin_edges = cu.get_bin_edges(h2d, 'Y')
     gen_bin_edges = cu.get_bin_edges(h2d, 'X')
-
-    new_bin_edges = np.array(reco_bin_edges).reshape(1, len(reco_bin_edges))
+    # print(reco_bin_edges)
+    new_bin_edges = np.array(reco_bin_edges[:])
 
     # assumes both axes have same dimension!
     bin_ind = 0
     counter = 0  # safety measure
     while bin_ind < len(arr2d)-1 and counter < 10000:
         counter += 1
-        arr2d_renormx = renorm(arr2d, axis=0)
-        arr2d_renormy = renorm(arr2d, axis=1)
-        purity = arr2d_renormy[bin_ind][bin_ind]
-        stability = arr2d_renormx[bin_ind][bin_ind]
+        arr2d_renormx = renorm(arr2d, axis=0)  # renormed per x (gen) bin
+        arr2d_renormy = renorm(arr2d, axis=1)  # renormed per y (reco) bin
+        purity = arr2d_renormy[bin_ind][bin_ind]  # fraction in a reco bin that are actually from that gen bin
+        stability = arr2d_renormx[bin_ind][bin_ind] # fraction in a gen bin that make it to that reco bin
+
         if purity > purity_goal and stability > stability_goal:
             # print("found bin")
-            print("bin_ind:", bin_ind, "purity: %.3f" % purity, "stability: %.3f" % stability)
+            # print(new_bin_edges)
+            print("bin_ind:", bin_ind, " = ", new_bin_edges[bin_ind], "-", new_bin_edges[bin_ind+1], "purity: %.3f" % purity, "stability: %.3f" % stability)
             bin_ind += 1
             continue
         else:
@@ -244,12 +249,15 @@ def calc_variable_binning_purity_stability(h2d, purity_goal=0.4, stability_goal=
             new_bin_edges = np.delete(new_bin_edges, bin_ind+1)  # keep track of new binning
             continue
 
+    # handle last bin: if it fails target, just merge last 2 bins together
+    if purity < purity_goal or stability < stability_goal:
+        print("Purity &/ stability not meeting target in last bin - merging ")
+        new_bin_edges = np.delete(new_bin_edges, -2)
     # keep [1] to be same as next [0], otherwise you lose a bin later when
     # making the rebinned TH2
     these_bins = [list(x) for x in zip(new_bin_edges[:-1], new_bin_edges[1:])]
     # manual hack for last bin
     these_bins[-1][1] = reco_bin_edges[-1]
-    print(these_bins)
     return these_bins
 
 
@@ -584,6 +592,7 @@ if __name__ == "__main__":
                 # ---------------------
                 # goal = 0.5
                 goal = args.target
+                print("Calculating binning for", var_dict['name'])
                 new_binning = calc_variable_binning_purity_stability(h2d_orig, purity_goal=goal, stability_goal=goal)
                 rebin_results_dict[var_dict['name']] = new_binning
 
