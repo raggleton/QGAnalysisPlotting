@@ -194,9 +194,11 @@ def th2_to_arr(h, do_errors=False):
     err_arr = np.zeros((h.GetNbinsX(), h.GetNbinsY()), dtype=float)
     for x_ind in range(1, h.GetNbinsX() + 1):
         for y_ind in range(1, h.GetNbinsY() + 1):
-            arr[x_ind-1][y_ind-1] = h.GetBinContent(x_ind, y_ind)
+            # arr[x_ind-1][y_ind-1] = h.GetBinContent(x_ind, y_ind)
+            arr[y_ind-1][x_ind-1] = h.GetBinContent(x_ind, y_ind)
             if do_errors:
-                err_arr[x_ind-1][y_ind-1] = h.GetBinError(x_ind, y_ind)
+                # err_arr[x_ind-1][y_ind-1] = h.GetBinError(x_ind, y_ind)
+                err_arr[y_ind-1][x_ind-1] = h.GetBinError(x_ind, y_ind)
     return arr, err_arr
 
 
@@ -211,14 +213,16 @@ def make_normalised_TH2(hist, norm_axis, recolour=True, do_errors=False):
     # can then do transpose if necessary
     arr, err_arr = th2_to_arr(hist, do_errors)
 
-    if norm_axis == 'Y':
+    if norm_axis == 'X':
         arr = arr.T
         err_arr = err_arr.T
+
+     # all operations here are done per row (i.e. per y bin)
     if recolour:
         # can set so the maximum in each bin is the same,
         # scale other bins accordingly
         # this retain the colour scheme for each set of bins
-        maxes = arr.max(axis=1)
+        maxes = arr.max(axis=1)  # maximum per row
         maxesT = maxes[:, None]
         arr = np.divide(arr, maxesT, where=maxesT!=0, out=np.zeros_like(arr))
         err_arr = np.divide(err_arr, maxesT, where=maxesT!=0, out=np.zeros_like(arr))
@@ -239,7 +243,7 @@ def make_normalised_TH2(hist, norm_axis, recolour=True, do_errors=False):
             #     arr[ind] = xbin / factor
             #     err_arr[ind] /= factor
 
-    if norm_axis == 'Y':
+    if norm_axis == 'X':
         arr = arr.T
         err_arr = err_arr.T
 
@@ -253,11 +257,11 @@ def make_normalised_TH2(hist, norm_axis, recolour=True, do_errors=False):
     else:
         raise RuntimeError("Unknown 2D hist type")
     hnew.SetName(new_histname)
-    for x_ind, x_arr in enumerate(arr, 1):
-        for y_ind, val in enumerate(x_arr, 1):
+    for y_ind, y_arr in enumerate(arr, 1):
+        for x_ind, val in enumerate(y_arr, 1):
             hnew.SetBinContent(x_ind, y_ind, val)
             if do_errors:
-                hnew.SetBinError(x_ind, y_ind, err_arr[x_ind-1][y_ind-1])
+                hnew.SetBinError(x_ind, y_ind, err_arr[y_ind-1][x_ind-1])
 #     hnew.SetAxisRange(0.5, 1., 'Z')
     return hnew
 
