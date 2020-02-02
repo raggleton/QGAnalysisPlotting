@@ -169,7 +169,8 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         self.use_axis_binning = False  # for things like get_probability_matrix()...but doesn't seem to do anything?!
 
         # self.probability_ndarray = self.response_matrix_to_probability_array(self.response_map)
-        self.probability_ndarray, _ = self.th2_to_ndarray(self.get_probability_matrix(), oflow_x=False, oflow_y=False)
+        # self.probability_ndarray, _ = self.th2_to_ndarray(self.get_probability_matrix(), oflow_x=False, oflow_y=False)
+        # self.probability_ndarray, _ = None, None
 
         # hists that will be assigned later
         # TODO: change to properties? although still need to cache somewhere
@@ -653,6 +654,14 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             self.probability_matrix = self.GetProbabilityMatrix("prob_matrix_"+cu.get_unique_str(), "", self.use_axis_binning)
         return self.probability_matrix
 
+    @property
+    def probability_ndarray(self):
+        cached_attr_name = '_probability_ndarray'
+        if not hasattr(self, cached_attr_name):
+            arr, _ = self.th2_to_ndarray(self.get_probability_matrix())
+            setattr(self, cached_attr_name, arr)
+        return getattr(self, cached_attr_name)
+
     def get_var_hist_pt_binned(self, hist1d, ibin_pt, binning_scheme='generator'):
         """Get hist of variable for given pt bin from massive 1D hist that TUnfold makes"""
         # FIXME: assume no underflow?!
@@ -696,7 +705,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
     # @staticmethod
     def tmatrixdsparse_to_ndarray(self, matrix):
         ndarr = np.zeros(shape=(matrix.GetNrows(), matrix.GetNcols()))
-       
+
         rows_A = matrix.GetRowIndexArray()
         cols_A = matrix.GetColIndexArray()
         data_A = matrix.GetMatrixArray()
