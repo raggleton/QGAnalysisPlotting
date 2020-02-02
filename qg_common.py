@@ -114,14 +114,14 @@ def construct_all_fine_binnings(var_dict):
 Angle = namedtuple("Angle", ['var', 'kappa', 'beta', 'name', "lambda_str", "colour"])
 COMMON_VARS_WITH_FLAV = [
     # Angle("jet_multiplicity", 0, 0, "Multiplicity", "#lambda_{0}^{0}", 2),
-    Angle("jet_puppiMultiplicity", 0, 0, "PUPPI Multiplicity", "#lambda_{0}^{0} (PUPPI)", 2),
+    Angle("jet_puppiMultiplicity", 0, 0, "PUPPI Multiplicity", "#lambda_{0}^{0}", 2),
     Angle('jet_pTD', 2, 0, "(p_{T}^{D})^{2}", "#lambda_{0}^{2}", 418),
     Angle('jet_LHA', 1, 0.5, "LHA", "#lambda_{0.5}^{1}", 600),
     Angle('jet_width', 1, 1, "Width", "#lambda_{1}^{1}", 861),
     Angle('jet_thrust', 1, 2, "Thrust", "#lambda_{2}^{1}", 617),
     # charged-only constit
     # Angle("jet_multiplicity_charged", 0, 0, "Multiplicity (charged)", "#lambda_{0}^{0}", 2),
-    Angle("jet_puppiMultiplicity_charged", 0, 0, "PUPPI Multiplicity (charged)", "#lambda_{0}^{0} (PUPPI)", 2),
+    Angle("jet_puppiMultiplicity_charged", 0, 0, "PUPPI Multiplicity (charged)", "#lambda_{0}^{0}", 2),
     Angle('jet_pTD_charged', 2, 0, "(p_{T}^{D})^{2} (charged)", "#lambda_{0}^{2}", 418),
     Angle('jet_LHA_charged', 1, 0.5, "LHA (charged)", "#lambda_{0.5}^{1}", 600),
     Angle('jet_width_charged', 1, 1, "Width (charged)", "#lambda_{1}^{1}", 861),
