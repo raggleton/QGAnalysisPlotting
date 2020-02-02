@@ -248,6 +248,11 @@ class Plot(object):
             raise RuntimeError("`what` argument must be one of %s" % options)
         self.plot_what = what
         self.title = title or ""
+        self.title_start_y = 0.87
+        self.title_diff_y = 0.04
+        self.title_left_offset = 0.03
+        self.title_font_size = 0.03
+        self.cms_text_font_size = 0.035
         self.xtitle = xtitle
         self.ytitle = ytitle
         self.xlim = xlim
@@ -411,7 +416,7 @@ class Plot(object):
         container.GetYaxis().SetLabelSize(container.GetYaxis().GetLabelSize()/factor)
         container.GetYaxis().SetTitleSize(container.GetYaxis().GetTitleSize()/factor)
         # magic numbers: 0.1 is the default margin, but scaling against that gives too much, so we knock it down by a bit
-        container.GetYaxis().SetTitleOffset(container.GetYaxis().GetTitleOffset()*factor*(0.65*self.left_margin/0.1))
+        container.GetYaxis().SetTitleOffset(container.GetYaxis().GetTitleOffset()*factor*(0.7*self.left_margin/0.1))
         # container.GetYaxis().SetTickLength(0.03/factor)
 
     def set_logx(self, state=True, do_more_labels=True):
@@ -647,7 +652,7 @@ class Plot(object):
         cms_latex = ROOT.TLatex()
         cms_latex.SetTextAlign(ROOT.kHAlignLeft + ROOT.kVAlignBottom)
         cms_latex.SetTextFont(42)
-        cms_latex.SetTextSize(0.035)
+        cms_latex.SetTextSize(self.cms_text_font_size)
         latex_height = 0.91
         # left_offset = (self.left_margin - 0.08)  # to account for left margin, magic numbers ahoy
 
@@ -671,11 +676,9 @@ class Plot(object):
         text_latex = ROOT.TLatex()
         text_latex.SetTextAlign(ROOT.kHAlignLeft + ROOT.kVAlignTop)
         text_latex.SetTextFont(42)
-        text_latex.SetTextSize(0.03)
-        start_y = 0.87
-        diff_y = 0.04
+        text_latex.SetTextSize(self.title_font_size)
         for ind, line in enumerate(self.title.split('\n')):
-            text_latex.DrawLatex(self.left_margin + 0.03 + self.text_left_offset, start_y - (ind*diff_y), line)
+            text_latex.DrawLatex(self.left_margin + self.title_left_offset + self.text_left_offset, self.title_start_y - (ind*self.title_diff_y), line)
 
         # Do subplot
         if self.subplot_type:
