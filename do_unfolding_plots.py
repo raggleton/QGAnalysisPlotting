@@ -64,7 +64,7 @@ def setup_regions(args):
     return regions
 
 
-def unpack_unfolding_root_file(input_tfile, region, angle):
+def unpack_unfolding_root_file(input_tfile, region, angle, do_alt_response=True, do_model_systs=True, do_pdf_systs=True):
     input_tdir_name = "%s/%s" % (region['name'], angle.var)
     input_tdir = input_tfile.Get(input_tdir_name)
     cu.check_root_obj(input_tdir)
@@ -81,53 +81,55 @@ def unpack_unfolding_root_file(input_tfile, region, angle):
         print("Loaded comparison unregularised unfolder")
 
     # Get alternate response object, if it exists
-    alt_tdir = [x for x in list_of_obj if x.startswith("alt_response_")]
     alt_unfolder = None
-    alt_unfolder_name = None
     alt_hist_truth = None
-    if len(alt_tdir)  == 1:
-        alt_unfolder = unfolder_from_tdir(input_tfile.Get(os.path.join(input_tdir_name, alt_tdir[0])))
-        region['alt_unfolder'] = alt_unfolder
-        alt_unfolder_name = alt_tdir[0].replace("alt_response_", "").replace("_", " ")
-        if region['alt_mc_label'] != alt_unfolder_name:
-            raise RuntimeError("Bad unpacking of alt response unfolder: expected %s, got %s" % (region['alt_mc_label'], alt_unfolder_name))
-        print("Loaded alt unfolder")
-        alt_hist_truth = input_tfile.Get(os.path.join(input_tdir_name, alt_tdir[0], "alt_hist_mc_gen"))
-    if len(alt_tdir) > 1:
-        raise RuntimeError(">1 alt_response?! %s" % (alt_tdir))
+    if do_alt_response:
+        alt_tdir = [x for x in list_of_obj if x.startswith("alt_response_")]
+        if len(alt_tdir)  == 1:
+            alt_unfolder = unfolder_from_tdir(input_tfile.Get(os.path.join(input_tdir_name, alt_tdir[0])))
+            region['alt_unfolder'] = alt_unfolder
+            alt_unfolder_name = alt_tdir[0].replace("alt_response_", "").replace("_", " ")
+            if region['alt_mc_label'] != alt_unfolder_name:
+                raise RuntimeError("Bad unpacking of alt response unfolder: expected %s, got %s" % (region['alt_mc_label'], alt_unfolder_name))
+            print("Loaded alt unfolder")
+            alt_hist_truth = input_tfile.Get(os.path.join(input_tdir_name, alt_tdir[0], "alt_hist_mc_gen"))
+        if len(alt_tdir) > 1:
+            raise RuntimeError(">1 alt_response?! %s" % (alt_tdir))
 
     # Get model systs
     # print(list_of_obj)
-    model_tdirs = [x for x in list_of_obj if x.startswith("modelSyst_")]
-    if len(model_tdirs) > 0:
-        for model_tdir_name in model_tdirs:
-            syst_name = model_tdir_name.replace("modelSyst_", "").replace("_", " ")
-            this_one = [x for x in region['model_systematics'] if x['label'] == syst_name]
-            if len(this_one) == 0:
-                print("No entry for model systematic", syst_name, "- skipping")
-                continue
-            # TODO: check it agrees with region dict?
-            this_one[0]['unfolder'] = unfolder_from_tdir(input_tfile.Get(os.path.join(input_tdir_name, model_tdir_name)))
-            print("Loaded", len(model_tdirs), "model systematic unfolders")
+    if do_model_systs:
+        model_tdirs = [x for x in list_of_obj if x.startswith("modelSyst_")]
+        if len(model_tdirs) > 0:
+            for model_tdir_name in model_tdirs:
+                syst_name = model_tdir_name.replace("modelSyst_", "").replace("_", " ")
+                this_one = [x for x in region['model_systematics'] if x['label'] == syst_name]
+                if len(this_one) == 0:
+                    print("No entry for model systematic", syst_name, "- skipping")
+                    continue
+                # TODO: check it agrees with region dict?
+                this_one[0]['unfolder'] = unfolder_from_tdir(input_tfile.Get(os.path.join(input_tdir_name, model_tdir_name)))
+                print("Loaded", len(model_tdirs), "model systematic unfolders")
     # remove entries without an unfolder
     region['model_systematics'] = [k for k in region['model_systematics']
-                                 if k.get('unfolder', None) is not None]
+                                   if k.get('unfolder', None) is not None]
 
     # Get PDF systs
     # For some reason, this is done as a list instead of dict
-    pdf_tdirs = [x for x in list_of_obj if x.startswith("pdfSyst_")]
-    if len(pdf_tdirs) > 0:
-        # Remove original, construct all other
-        region['pdf_systematics'] = []
+    if do_pdf_systs:
+        pdf_tdirs = [x for x in list_of_obj if x.startswith("pdfSyst_")]
+        if len(pdf_tdirs) > 0:
+            # Remove original, construct all other
+            region['pdf_systematics'] = []
 
-        for pdf_tdir_name in pdf_tdirs:
-            pdf_name = pdf_tdir_name.replace("pdfSyst_", "")
-            region['pdf_systematics'].append({
-                'label': pdf_name,
-                'unfolder': unfolder_from_tdir(input_tfile.Get(os.path.join(input_tdir_name, pdf_tdir_name))),
-                'colour': ROOT.kCyan+2,
-            })
-        print("Loaded", len(pdf_tdirs), "PDF systematic unfolders")
+            for pdf_tdir_name in pdf_tdirs:
+                pdf_name = pdf_tdir_name.replace("pdfSyst_", "")
+                region['pdf_systematics'].append({
+                    'label': pdf_name,
+                    'unfolder': unfolder_from_tdir(input_tfile.Get(os.path.join(input_tdir_name, pdf_tdir_name))),
+                    'colour': ROOT.kCyan+2,
+                })
+            print("Loaded", len(pdf_tdirs), "PDF systematic unfolders")
     # remove entries without an unfolder
     region['pdf_systematics'] = [k for k in region['pdf_systematics']
                                  if k.get('unfolder', None) is not None]
