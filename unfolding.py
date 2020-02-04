@@ -503,6 +503,12 @@ if __name__ == "__main__":
         print("")
         args.subtractBackgrounds = False
 
+    if args.doPDFSysts and not args.MCinput:
+        raise RuntimeError("Cannot do PDF systs and run over data")
+
+    if args.doModelSysts and not args.MCinput:
+        raise RuntimeError("Cannot do model systs and run over data")
+
     # if args.useAltResponse and args.doExperimentalSysts:
     #     args.doExperimentalSysts = False
     #     print("You cannot use both --useAltResponse and --doExperimentalSysts: disabling doExperimentalSysts")
@@ -524,7 +530,8 @@ if __name__ == "__main__":
         tau_limits_central = {
             'jet_puppiMultiplicity': (1E-9, 1E-6),
             'jet_pTD': (1E-12, 1E-8),
-            'jet_LHA': (1E-11, 1E-8) if args.regularizeAxis == 'angle' else (1E-13, 1E-10),
+            # 'jet_LHA': (1E-11, 1E-7) if args.regularizeAxis == 'angle' else (1E-13, 1E-10),
+            'jet_LHA': (1E-13, 1E-9) if args.regularizeAxis == 'angle' else (1E-2, 1E2),
             'jet_width': (1E-12, 1E-8),
             'jet_thrust': (1E-12, 1E-8),
             'jet_puppiMultiplicity_charged': (1E-12, 1E-8),
@@ -875,9 +882,6 @@ if __name__ == "__main__":
                 hist_data_reco_gen_binning = cu.get_from_tfile(region['data_tfile'], "%s/hist_%s_reco_gen_binning" % (region['dirname'], angle_shortname))
             hist_mc_reco_gen_binning = cu.get_from_tfile(region['mc_tfile'], "%s/hist_%s_reco_gen_binning%s" % (region['dirname'], angle_shortname, mc_hname_append))
 
-            # hist_data_reco_gen_binning.Scale(1e8)
-            # hist_mc_reco_gen_binning.Scale(1e8)
-
             # Actual distribution to be unfolded, but with gen binning
             reco_1d_gen_binning = hist_mc_reco_gen_binning.Clone() if MC_INPUT else hist_data_reco_gen_binning
 
@@ -923,7 +927,7 @@ if __name__ == "__main__":
                                   # regMode=ROOT.TUnfold.kRegModeCurvature,
                                   # densityFlags=ROOT.TUnfoldDensity.kDensityModeBinWidth, # important as we have varying bin sizes!
                                   regMode=ROOT.TUnfold.kRegModeNone,
-                                  densityFlags=ROOT.TUnfoldDensity.kDensityModeBinWidthAndUser, # important as we have varying bin sizes!
+                                  densityFlags=ROOT.TUnfoldDensity.kDensityModeBinWidthAndUser, # doesn't actually matter as RegModNone
                                   distribution='generatordistribution',  # the one to use for actual final regularisation/unfolding
                                   axisSteering=axis_steering)
 
@@ -942,6 +946,7 @@ if __name__ == "__main__":
                 # Needed if you get message "rank of matrix E 55 expect 170"
                 # And unfolded looks wacko
                 unfolder.SetEpsMatrix(1E-18)
+            # unfolder.SetEpsMatrix(1E-10)
 
             # Set what is to be unfolded
             # ------------------------------------------------------------------
@@ -1077,13 +1082,13 @@ if __name__ == "__main__":
                 # Set what is to be unfolded
                 # ------------------------------------------------------------------
                 unreg_unfolder.set_input(input_hist=reco_1d,
-                                   input_hist_gen_binning=reco_1d_gen_binning,
-                                   hist_truth=hist_mc_gen,
-                                   hist_mc_reco=hist_mc_reco,
-                                   hist_mc_reco_bg_subtracted=hist_mc_reco_bg_subtracted,
-                                   hist_mc_reco_gen_binning=hist_mc_reco_gen_binning,
-                                   hist_mc_reco_gen_binning_bg_subtracted=hist_mc_reco_gen_binning_bg_subtracted,
-                                   bias_factor=0)
+                                         input_hist_gen_binning=reco_1d_gen_binning,
+                                         hist_truth=hist_mc_gen,
+                                         hist_mc_reco=hist_mc_reco,
+                                         hist_mc_reco_bg_subtracted=hist_mc_reco_bg_subtracted,
+                                         hist_mc_reco_gen_binning=hist_mc_reco_gen_binning,
+                                         hist_mc_reco_gen_binning_bg_subtracted=hist_mc_reco_gen_binning_bg_subtracted,
+                                         bias_factor=0)
 
                 # For now, ignore experimental systematics
 
@@ -1842,7 +1847,7 @@ if __name__ == "__main__":
                 region['pdf_systematics']  = []
                 for pdf_ind in original_pdf_dict['variations']:
                     mc_hname_append = "split" if MC_SPLIT else "all"
-                    mc_hname_append = "all"
+                    mc_hname_append = "all"  # want all stats since we are already independent of the response matrix
                     region['pdf_systematics'].append(
                         {
                             "label": "PDF_%d" % (pdf_ind),
@@ -1850,7 +1855,12 @@ if __name__ == "__main__":
                             "hist_gen": cu.get_from_tfile(tfile, "%s/hist_%s_gen_%s_PDF_%d" % (region['dirname'], angle_shortname, mc_hname_append, pdf_ind)),
                             "colour": ROOT.kCyan+2,
                         })
-
+                    
+                    if mc_hname_append == 'all' and MC_SPLIT:
+                        # Since the nominal MC only has 20% of the stats, 
+                        # need to scale this as well otherwise it will look weird
+                        region['pdf_systematics'][-1]['hist_reco'].Scale(0.2)
+                        region['pdf_systematics'][-1]['hist_gen'].Scale(0.2)
 
                 # Now run over all variations like for model systs
                 for ind, pdf_dict in enumerate(region['pdf_systematics']):
@@ -1888,7 +1898,7 @@ if __name__ == "__main__":
                     pdf_tdir.cd()
 
                     pdf_unfolder_plotter = MyUnfolderPlotter(pdf_unfolder, is_data=False)
-                    pdf_output_dir = this_output_dir+"/pdfSyst/"+pdf_label_no_spaces,
+                    pdf_output_dir = this_output_dir+"/pdfSyst/"+pdf_label_no_spaces
                     pdf_plot_args = dict(output_dir=pdf_output_dir,
                                          append=append)
 
@@ -1987,7 +1997,7 @@ if __name__ == "__main__":
                     pdf_title = "%s\n%s region, %s, %s input" % (jet_algo, region['label'], angle_str, pdf_label)
                     pdf_unfolder_plotter.draw_unfolded_1d(title=pdf_title, **pdf_plot_args)
 
-                    region['pdf_systematics'][ind]['unfodler'] = pdf_unfolder
+                    region['pdf_systematics'][ind]['unfolder'] = pdf_unfolder
 
                     # Save important stuff to TFile
                     # ----------------------------------------------------------
