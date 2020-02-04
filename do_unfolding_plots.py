@@ -69,7 +69,7 @@ def unpack_unfolding_root_file(input_tfile, region, angle, do_alt_response=True,
     input_tdir = input_tfile.Get(input_tdir_name)
     cu.check_root_obj(input_tdir)
     unfolder = unfolder_from_tdir(input_tdir)
-    print("Loaded main unfolder")
+    print("...Loaded main unfolder")
 
     list_of_obj = cu.get_list_of_element_names(input_tdir)
 
@@ -78,7 +78,8 @@ def unpack_unfolding_root_file(input_tfile, region, angle, do_alt_response=True,
     unreg_unfolder = None
     if len(unreg_tdir) == 1:
         unreg_unfolder = unfolder_from_tdir(input_tfile.Get(os.path.join(input_tdir_name, unreg_tdir[0])))
-        print("Loaded comparison unregularised unfolder")
+        print("...Loaded comparison unregularised unfolder")
+
     # Update if experimental systs
     region['experimental_systematics'] = [k for k in region['experimental_systematics']
                                           if k['label'] in unfolder.systs_shifted]
@@ -94,7 +95,7 @@ def unpack_unfolding_root_file(input_tfile, region, angle, do_alt_response=True,
             alt_unfolder_name = alt_tdir[0].replace("alt_response_", "").replace("_", " ")
             if region['alt_mc_label'] != alt_unfolder_name:
                 raise RuntimeError("Bad unpacking of alt response unfolder: expected %s, got %s" % (region['alt_mc_label'], alt_unfolder_name))
-            print("Loaded alt unfolder")
+            print("...Loaded alt unfolder")
             alt_hist_truth = input_tfile.Get(os.path.join(input_tdir_name, alt_tdir[0], "alt_hist_mc_gen"))
         if len(alt_tdir) > 1:
             raise RuntimeError(">1 alt_response?! %s" % (alt_tdir))
@@ -112,7 +113,7 @@ def unpack_unfolding_root_file(input_tfile, region, angle, do_alt_response=True,
                     continue
                 # TODO: check it agrees with region dict?
                 this_one[0]['unfolder'] = unfolder_from_tdir(input_tfile.Get(os.path.join(input_tdir_name, model_tdir_name)))
-                print("Loaded", len(model_tdirs), "model systematic unfolders")
+                print("...Loaded", len(model_tdirs), "model systematic unfolders")
     # remove entries without an unfolder
     region['model_systematics'] = [k for k in region['model_systematics']
                                    if k.get('unfolder', None) is not None]
@@ -132,7 +133,7 @@ def unpack_unfolding_root_file(input_tfile, region, angle, do_alt_response=True,
                     'unfolder': unfolder_from_tdir(input_tfile.Get(os.path.join(input_tdir_name, pdf_tdir_name))),
                     'colour': ROOT.kCyan+2,
                 })
-            print("Loaded", len(pdf_tdirs), "PDF systematic unfolders")
+            print("...Loaded", len(pdf_tdirs), "PDF systematic unfolders")
     # remove entries without an unfolder
     region['pdf_systematics'] = [k for k in region['pdf_systematics']
                                  if k.get('unfolder', None) is not None]
@@ -591,60 +592,61 @@ class GenPtBinnedPlotter(object):
             plot.save("%s/unfolded_%s_syst_model_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
 
     def plot_unfolded_with_pdf_systs_normalised(self, unfolder):
-        pdf_entries = []
-        for pdf_dict in self.region['pdf_systematics']:
-            pdf_unfolder = pdf_dict['unfolder']
-            pdf_label = pdf_dict['label']
-            pdf_label_no_spaces = pdf_dict['label'].replace(" ", "_")
+        for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
+            pdf_entries = []
+            for pdf_dict in self.region['pdf_systematics']:
+                pdf_unfolder = pdf_dict['unfolder']
+                pdf_label = pdf_dict['label']
+                pdf_label_no_spaces = pdf_dict['label'].replace(" ", "_")
 
-            self.hist_bin_chopper.add_obj('pdf_syst_%s_unfolded' % (pdf_label_no_spaces), pdf_unfolder.unfolded)
-            self.hist_bin_chopper.add_obj('pdf_syst_%s_hist_truth' % (pdf_label_no_spaces), pdf_unfolder.hist_truth)
+                self.hist_bin_chopper.add_obj('pdf_syst_%s_unfolded' % (pdf_label_no_spaces), pdf_unfolder.unfolded)
+                self.hist_bin_chopper.add_obj('pdf_syst_%s_hist_truth' % (pdf_label_no_spaces), pdf_unfolder.hist_truth)
 
-            pdf_unfolded_hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('pdf_syst_%s_unfolded' % (pdf_label_no_spaces), ibin, binning_scheme='generator')
-            pdf_gen_hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('pdf_syst_%s_hist_truth' % (pdf_label_no_spaces), ibin, binning_scheme='generator')
+                pdf_unfolded_hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('pdf_syst_%s_unfolded' % (pdf_label_no_spaces), ibin, binning_scheme='generator')
+                pdf_gen_hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('pdf_syst_%s_hist_truth' % (pdf_label_no_spaces), ibin, binning_scheme='generator')
+
+                pdf_entries.extend([
+                    Contribution(pdf_unfolded_hist_bin,
+                                 label="Unfolded (#tau = %.3g) (total err) (%s)" % (pdf_unfolder.tau, pdf_label),
+                                 line_color=pdf_dict['colour'], line_width=self.line_width, line_style=1,
+                                 marker_color=pdf_dict['colour'], marker_size=0,
+                                 subplot=pdf_gen_hist_bin),
+                    Contribution(pdf_gen_hist_bin,
+                                 label="Generator (%s)" % (pdf_label),
+                                 line_color=pdf_dict['colour'], line_width=self.line_width, line_style=2,
+                                 marker_color=pdf_dict['colour'], marker_size=0),
+                ])
+
+            # add nominal ones last
+            mc_gen_hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('hist_truth', ibin, binning_scheme='generator')
+            unfolded_hist_bin_total_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded', ibin, binning_scheme='generator')
 
             pdf_entries.extend([
-                Contribution(pdf_unfolded_hist_bin,
-                             label="Unfolded (#tau = %.3g) (total err) (%s)" % (pdf_unfolder.tau, pdf_label),
-                             line_color=pdf_dict['colour'], line_width=self.line_width, line_style=1,
-                             marker_color=pdf_dict['colour'], marker_size=0,
-                             subplot=pdf_gen_hist_bin),
-                Contribution(pdf_gen_hist_bin,
-                             label="Generator (%s)" % (pdf_label),
-                             line_color=pdf_dict['colour'], line_width=self.line_width, line_style=2,
-                             marker_color=pdf_dict['colour'], marker_size=0),
+                Contribution(mc_gen_hist_bin,
+                             label="Generator (%s)" % (self.region['mc_label']),
+                             line_color=self.plot_colours['gen_colour'], line_width=self.line_width,
+                             marker_color=self.plot_colours['gen_colour'], marker_size=0),
+                Contribution(unfolded_hist_bin_total_errors,
+                             label="Unfolded (#tau = %.3g) (total err)" % (unfolder.tau),
+                             line_color=self.plot_colours['unfolded_total_colour'], line_width=self.line_width, line_style=1,
+                             marker_color=self.plot_colours['unfolded_total_colour'], #marker_style=20, marker_size=0.75,
+                             subplot=mc_gen_hist_bin),
             ])
-
-        # add nominal ones last
-        mc_gen_hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('hist_truth', ibin, binning_scheme='generator')
-        unfolded_hist_bin_total_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded', ibin, binning_scheme='generator')
-
-        pdf_entries.extend([
-            Contribution(mc_gen_hist_bin,
-                         label="Generator (%s)" % (self.region['mc_label']),
-                         line_color=self.plot_colours['gen_colour'], line_width=self.line_width,
-                         marker_color=self.plot_colours['gen_colour'], marker_size=0),
-            Contribution(unfolded_hist_bin_total_errors,
-                         label="Unfolded (#tau = %.3g) (total err)" % (unfolder.tau),
-                         line_color=self.plot_colours['unfolded_total_colour'], line_width=self.line_width, line_style=1,
-                         marker_color=self.plot_colours['unfolded_total_colour'], #marker_style=20, marker_size=0.75,
-                         subplot=mc_gen_hist_bin),
-        ])
-        if not self.check_entries(pdf_entries, "plot_unfolded_with_model_systs_normalised_pt_bin %d" % (ibin)):
-            return
-        plot = Plot(pdf_entries,
-                   ytitle=self.setup.pt_bin_normalised_differential_label,
-                    title=self.get_pt_bin_title(bin_edge_low, bin_edge_high),
-                    **self.pt_bin_plot_args)
-        self._modify_plot(plot)
-        plot.legend.SetX1(0.55)
-        plot.legend.SetY1(0.72)
-        plot.legend.SetX2(0.98)
-        plot.legend.SetY2(0.88)
-        if len(pdf_entries) > 5:
-            plot.legend.SetNColumns(2)
-        plot.plot("NOSTACK E1")
-        plot.save("%s/unfolded_%s_pdf_model_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
+            if not self.check_entries(pdf_entries, "plot_unfolded_with_model_systs_normalised_pt_bin %d" % (ibin)):
+                return
+            plot = Plot(pdf_entries,
+                       ytitle=self.setup.pt_bin_normalised_differential_label,
+                        title=self.get_pt_bin_title(bin_edge_low, bin_edge_high),
+                        **self.pt_bin_plot_args)
+            self._modify_plot(plot)
+            plot.legend.SetX1(0.55)
+            plot.legend.SetY1(0.72)
+            plot.legend.SetX2(0.98)
+            plot.legend.SetY2(0.88)
+            if len(pdf_entries) > 5:
+                plot.legend.SetNColumns(2)
+            plot.plot("NOSTACK E1")
+            plot.save("%s/unfolded_%s_pdf_model_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
 
     def plot_uncertainty_shifts_normalised(self, unfolder):
         """Do plots of fractional uncertainty shifts on *normalised* unfolded distribution"""
@@ -992,7 +994,7 @@ class GenLambdaBinnedPlotter(object):
                              marker_color=self.plot_colours['alt_unfolded_colour'], #marker_style=20, marker_size=0.75,
                              subplot=mc_gen_hist_bin),
             ]
-            if not self.check_entries(entries, "plot_unfolded_with_unreg_normalised_pt_bin %d" % (ibin)):
+            if not self.check_entries(entries, "plot_unfolded_with_alt_response_unnormalised %d" % (ibin)):
                 return
             plot = Plot(entries,
                         ytitle=self.setup.lambda_bin_unnormalised_differential_label,
@@ -1045,7 +1047,7 @@ class GenLambdaBinnedPlotter(object):
                              marker_color=self.plot_colours['unfolded_total_colour'], #marker_style=20, marker_size=0.75,
                              subplot=mc_gen_hist_bin),
             ])
-            if not self.check_entries(syst_entries, "plot_unfolded_with_model_systs_unnormalised_pt_bin %d" % (ibin)):
+            if not self.check_entries(syst_entries, "plot_unfolded_with_model_systs_unnormalised %d" % (ibin)):
                 return
             plot = Plot(syst_entries,
                         ytitle=self.setup.pt_bin_normalised_differential_label,
@@ -1062,6 +1064,66 @@ class GenLambdaBinnedPlotter(object):
             plot.set_logx(do_more_labels=False)
             plot.set_logy(do_more_labels=False)
             plot.save("%s/unfolded_unnormalised_%s_syst_model_lambda_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
+
+    def plot_unfolded_with_pdf_systs_unnormalised(self, unfolder):
+        for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
+            pdf_entries = []
+            for pdf_dict in self.region['pdf_systematics']:
+                pdf_unfolder = pdf_dict['unfolder']
+                pdf_label = pdf_dict['label']
+                pdf_label_no_spaces = pdf_dict['label'].replace(" ", "_")
+
+                self.hist_bin_chopper.add_obj('pdf_syst_%s_unfolded' % (pdf_label_no_spaces), pdf_unfolder.unfolded)
+                self.hist_bin_chopper.add_obj('pdf_syst_%s_hist_truth' % (pdf_label_no_spaces), pdf_unfolder.hist_truth)
+
+                pdf_unfolded_hist_bin = self.hist_bin_chopper.get_lambda_bin_div_bin_width('pdf_syst_%s_unfolded' % (pdf_label_no_spaces), ibin, binning_scheme='generator')
+                pdf_gen_hist_bin = self.hist_bin_chopper.get_lambda_bin_div_bin_width('pdf_syst_%s_hist_truth' % (pdf_label_no_spaces), ibin, binning_scheme='generator')
+
+                pdf_entries.extend([
+                    Contribution(pdf_unfolded_hist_bin,
+                                 label="Unfolded (#tau = %.3g) (total err) (%s)" % (pdf_unfolder.tau, pdf_label),
+                                 line_color=pdf_dict['colour'], line_width=self.line_width, line_style=1,
+                                 marker_color=pdf_dict['colour'], marker_size=0,
+                                 subplot=pdf_gen_hist_bin),
+                    Contribution(pdf_gen_hist_bin,
+                                 label="Generator (%s)" % (pdf_label),
+                                 line_color=pdf_dict['colour'], line_width=self.line_width, line_style=2,
+                                 marker_color=pdf_dict['colour'], marker_size=0),
+                ])
+
+            # add nominal ones last
+            mc_gen_hist_bin = self.hist_bin_chopper.get_lambda_bin_div_bin_width('hist_truth', ibin, binning_scheme='generator')
+            unfolded_hist_bin_total_errors = self.hist_bin_chopper.get_lambda_bin_div_bin_width('unfolded', ibin, binning_scheme='generator')
+
+            pdf_entries.extend([
+                Contribution(mc_gen_hist_bin,
+                             label="Generator (%s)" % (self.region['mc_label']),
+                             line_color=self.plot_colours['gen_colour'], line_width=self.line_width,
+                             marker_color=self.plot_colours['gen_colour'], marker_size=0),
+                Contribution(unfolded_hist_bin_total_errors,
+                             label="Unfolded (#tau = %.3g) (total err)" % (unfolder.tau),
+                             line_color=self.plot_colours['unfolded_total_colour'], line_width=self.line_width, line_style=1,
+                             marker_color=self.plot_colours['unfolded_total_colour'], #marker_style=20, marker_size=0.75,
+                             subplot=mc_gen_hist_bin),
+            ])
+            if not self.check_entries(pdf_entries, "plot_unfolded_with_pdf_systs_unnormalised %d" % (ibin)):
+                return
+            plot = Plot(pdf_entries,
+                        ytitle="N",
+                        title=self.get_lambda_bin_title(bin_edge_low, bin_edge_high),
+                        **self.lambda_bin_plot_args)
+            self._modify_plot(plot)
+            plot.legend.SetX1(0.55)
+            plot.legend.SetY1(0.72)
+            plot.legend.SetX2(0.98)
+            plot.legend.SetY2(0.88)
+            if len(pdf_entries) > 5:
+                plot.legend.SetNColumns(2)
+            plot.plot("NOSTACK E1")
+            plot.set_logx(do_more_labels=False)
+            plot.set_logy(do_more_labels=False)
+            plot.save("%s/unfolded_unnormalised_%s_pdf_model_lambda_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
+
 
     def plot_uncertainty_shifts_unnormalised(self, unfolder):
         """Do plots of fractional uncertainty shifts on *unnormalised* unfolded distribution"""
@@ -1452,9 +1514,9 @@ def do_all_plots_per_region_angle(setup, unfolder, unreg_unfolder, alt_unfolder,
     has_model_systs = len(setup.region['model_systematics']) > 0
     has_pdf_systs = len(setup.region['pdf_systematics']) > 0
 
-    if has_exp_systs: print("   has experimental systs")
-    if has_model_systs: print("   has model systs")
-    if has_pdf_systs: print("   has pdf systs")
+    if has_exp_systs: print("We have experimental systs")
+    if has_model_systs: print("We have model systs")
+    if has_pdf_systs: print("We have pdf systs")
 
     # Big 1D plots to compare things
     hbc = HistBinChopper(unfolder)
@@ -1517,6 +1579,9 @@ def do_all_plots_per_region_angle(setup, unfolder, unreg_unfolder, alt_unfolder,
 
     if has_model_systs:
         lambda_pt_binned_plotter.plot_unfolded_with_model_systs_unnormalised(unfolder=unfolder)
+
+    if has_pdf_systs:
+        lambda_pt_binned_plotter.plot_unfolded_with_pdf_systs_unnormalised(unfolder=unfolder)
 
     # if has_data:
     lambda_pt_binned_plotter.plot_detector_unnormalised(unfolder=unfolder)
