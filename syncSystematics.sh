@@ -39,12 +39,13 @@ done
 
 # Just list these ones explicitly, cba to write a loop
 SYSTS=(
-    "ScaleVariationMuRNominal_ScaleVariationMuFUp"
-    "ScaleVariationMuRNominal_ScaleVariationMuFDown"
-    "ScaleVariationMuRUp_ScaleVariationMuFNominal"
-    "ScaleVariationMuRDown_ScaleVariationMuFNominal"
+    "ScaleVariationMuRNom_ScaleVariationMuFUp"
+    "ScaleVariationMuRNom_ScaleVariationMuFDown"
+    "ScaleVariationMuRUp_ScaleVariationMuFNom"
+    "ScaleVariationMuRDown_ScaleVariationMuFNom"
     "ScaleVariationMuRUp_ScaleVariationMuFUp"
     "ScaleVariationMuRDown_ScaleVariationMuFDown"
+    "PDFvariationsTrue"
 )
 
 for syst in ${SYSTS[@]}; do
