@@ -19,6 +19,7 @@ import math
 import distutils
 from distutils import util
 from itertools import product
+from copy import copy
 
 import ROOT
 from MyStyle import My_Style
@@ -727,12 +728,12 @@ if __name__ == "__main__":
 
     # Do unfolding per signal region
     # --------------------------------------------------------------------------
-    for region in regions[:]:
+    for orig_region in regions[:]:
 
         # Setup pt bins
         # -------------
         # need different ones for Z+Jets region
-        is_zpj = "ZPlusJets" in region['name']
+        is_zpj = "ZPlusJets" in orig_region['name']
 
         zpj_append = "_zpj" if is_zpj else ""
 
@@ -742,56 +743,48 @@ if __name__ == "__main__":
         pt_bin_edges_underflow_gen = qgc.PT_UNFOLD_DICT['underflow%s_gen' % (zpj_append)]
         pt_bin_edges_underflow_reco = qgc.PT_UNFOLD_DICT['underflow%s_reco' % (zpj_append)]
 
-        # new_tdir = region['name']
-        # output_tfile.mkdir(new_tdir)
-        # region_tdir = output_tfile.Get(new_tdir)
-        # region_tdir.cd()
-
         # Modify systematics as necessary
         # ----------------------------------------------------------------------
 
         # Remove the lumi one if we have no backgrounds, or the user has not said to remove backgrounds
         if args.doExperimentalSysts:
-            region['experimental_systematics'] = [syst_dict for syst_dict in region['experimental_systematics']
+            orig_region['experimental_systematics'] = [syst_dict for syst_dict in orig_region['experimental_systematics']
                                                   if not ('lumi' in syst_dict['label'].lower()
-                                                           and (len(region.get('backgrounds', [])) == 0
+                                                           and (len(orig_region.get('backgrounds', [])) == 0
                                                                 or not args.subtractBackgrounds))]
 
         else:
-            region['experimental_systematics'] = []
+            orig_region['experimental_systematics'] = []
 
         if not args.doModelSysts:
-            region['model_systematics'] = []
+            orig_region['model_systematics'] = []
 
         if not args.doPDFSysts:
-            region['pdf_systematics'] = []
+            orig_region['pdf_systematics'] = []
 
         # Do 1D unfolding of pt
-        # ----------------------------------------------------------------------
-        append = "%s_pt" % (region['name'])  # common str to put on filenames, etc
-        # print("*"*80)
-        # print("Region/var: %s" % (append))
-        # print("*"*80)
-
-        # hist_data_reco = cu.get_from_tfile(region['data_tfile'], "%s/hist_pt_reco_all" % (region['dirname']))
-        mc_hname_append = "split" if MC_SPLIT else "all"
-        if isinstance(region['mc_tfile'], str):
-            region['mc_tfile'] = cu.open_root_file(region['mc_tfile'])
-        # hist_mc_reco = cu.get_from_tfile(region['mc_tfile'], "%s/hist_pt_reco_%s" % (region['dirname'], mc_hname_append))
-        # hist_mc_gen = cu.get_from_tfile(region['mc_tfile'], "%s/hist_pt_truth_%s" % (region['dirname'], mc_hname_append))
-        hist_mc_gen_pt = cu.get_from_tfile(region['mc_tfile'], "%s/hist_pt_truth_%s" % (region['dirname'], mc_hname_append))
-        # hist_mc_gen_reco_map = cu.get_from_tfile(region['mc_tfile'], "%s/tu_pt_GenReco_%s" % (region['dirname'], mc_hname_append))
         # TODO!
+        # ----------------------------------------------------------------------
+        # hist_data_reco = cu.get_from_tfile(orig_region['data_tfile'], "%s/hist_pt_reco_all" % (orig_region['dirname']))
+        mc_hname_append = "split" if MC_SPLIT else "all"
+        if isinstance(orig_region['mc_tfile'], str):
+            orig_region['mc_tfile'] = cu.open_root_file(orig_region['mc_tfile'])
+        # hist_mc_reco = cu.get_from_tfile(orig_region['mc_tfile'], "%s/hist_pt_reco_%s" % (orig_region['dirname'], mc_hname_append))
+        # hist_mc_gen = cu.get_from_tfile(orig_region['mc_tfile'], "%s/hist_pt_truth_%s" % (orig_region['dirname'], mc_hname_append))
+        hist_mc_gen_pt = cu.get_from_tfile(orig_region['mc_tfile'], "%s/hist_pt_truth_%s" % (orig_region['dirname'], mc_hname_append))
+        # hist_mc_gen_reco_map = cu.get_from_tfile(orig_region['mc_tfile'], "%s/tu_pt_GenReco_%s" % (orig_region['dirname'], mc_hname_append))
 
         # Remake gen hist with physical bins & save to file
-        all_pt_bins_gen = np.concatenate((pt_bin_edges_underflow_gen[:-1], pt_bin_edges_gen))
-        hist_mc_gen_pt_physical = ROOT.TH1F("mc_gen_pt", ";p_{T}^{jet} [GeV];N", len(all_pt_bins_gen)-1, array('d', all_pt_bins_gen))
-        update_hist_bin_content(h_orig=hist_mc_gen_pt, h_to_be_updated=hist_mc_gen_pt_physical)
-        update_hist_bin_error(h_orig=hist_mc_gen_pt, h_to_be_updated=hist_mc_gen_pt_physical)
+        # all_pt_bins_gen = np.concatenate((pt_bin_edges_underflow_gen[:-1], pt_bin_edges_gen))
+        # hist_mc_gen_pt_physical = ROOT.TH1F("mc_gen_pt", ";p_{T}^{jet} [GeV];N", len(all_pt_bins_gen)-1, array('d', all_pt_bins_gen))
+        # update_hist_bin_content(h_orig=hist_mc_gen_pt, h_to_be_updated=hist_mc_gen_pt_physical)
+        # update_hist_bin_error(h_orig=hist_mc_gen_pt, h_to_be_updated=hist_mc_gen_pt_physical)
 
         # Do unfolding for each angle
         # ----------------------------------------------------------------------
         for angle in angles:
+            region = copy(orig_region)  # make copy since we might modify it later, e.g. PDF, and want same start for each angle
+
             angle_prepend = "groomed " if "groomed" in region['name'] else ""
             append = "%s_%s" % (region['name'], angle.var)  # common str to put on filenames, etc. don't need angle_prepend as 'groomed' in region name
             this_angle_name = angle.name
