@@ -496,6 +496,7 @@ QCD_PYTHIA_ONLY_FILENAME = "uhh2.AnalysisModuleRunner.MC.MC_PYTHIA-QCD.root"
 ZPJ_ALL_FILENAME = "uhh2.AnalysisModuleRunner.MC.MC_MGPYTHIA_DYJetsToLL_M-50_HT-All.root"
 
 QCD_HERWIG_FILENAME = "uhh2.AnalysisModuleRunner.MC.MC_HERWIG_QCD.root"
+QCD_HERWIG_PTREWEIGHT_FILENAME = "uhh2.AnalysisModuleRunner.MC.MC_HERWIG_QCD_PtReweight.root"
 DY_HERWIG_FILENAME = "uhh2.AnalysisModuleRunner.MC.MC_HERWIG_DYJetsToLL.root"
 DY_MG_HERWIG_FILENAME = "uhh2.AnalysisModuleRunner.MC.MC_MG_HERWIG_DYJetsToLL.root"
 DY_AMCATNLO_FILENAME = "uhh2.AnalysisModuleRunner.MC.MC_AMCATNLO_DYJetsToLL.root"

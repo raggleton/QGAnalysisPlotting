@@ -25,7 +25,7 @@ def get_dijet_config(source_dir, central=True, groomed=False):
     input_mc_qcd_mgpythia_tfile = os.path.join(source_dir, qgc.QCD_FILENAME)
     input_mc_qcd_pythia_tfile = os.path.join(source_dir, qgc.QCD_PYTHIA_ONLY_FILENAME)
     input_mc_qcd_herwig_tfile = os.path.join(source_dir, qgc.QCD_HERWIG_FILENAME)
-    input_mc_qcd_herwig_tfile_reweight = os.path.join(source_dir, "uhh2.AnalysisModuleRunner.MC.MC_HERWIG_QCD_PtReweight.root")
+    input_mc_qcd_herwig_tfile_reweight = os.path.join(source_dir, qgc.QCD_HERWIG_PTREWEIGHT_FILENAME)
 
     input_jetht_tfile = os.path.join(source_dir, qgc.JETHT_ZB_FILENAME)
 
@@ -126,14 +126,16 @@ def get_dijet_config(source_dir, central=True, groomed=False):
                 "colour": ROOT.kMagenta+3,
                 "linestyle": 2,
             },
-            # {
-            #     "label": "Herwig++",
-            #     "tfile": input_mc_qcd_herwig_tfile,
-            #     # "label": "Herwig++ (p_{T} reweight)",
-            #     # "tfile": input_mc_qcd_herwig_tfile_reweight,
-            #     "colour":ROOT.kOrange-3,
-            #     # "mode": ROOT.TUnfoldSys.kSysErrModeShift,  # default is ROOT.TUnfoldSys.kSysErrModeMatrix
-            # },
+            {
+                "label": "Herwig++",
+                "tfile": input_mc_qcd_herwig_tfile,
+                "colour": ROOT.kOrange-3,
+            },
+            {
+                "label": "Herwig++ (p_{T} reweight)",
+                "tfile": input_mc_qcd_herwig_tfile_reweight,
+                "colour": ROOT.kOrange+4,
+            },
 
         ],
         "model_systematics": [
@@ -179,12 +181,12 @@ def get_dijet_config(source_dir, central=True, groomed=False):
                 "colour": ROOT.kOrange-3,
                 "unfolder": None,
             },
-            # {
-            #     "label": "Herwig++ (p_{T} reweight)",
-            #     "tfile": input_mc_qcd_herwig_tfile_reweight,
-            #     "colour": ROOT.kOrange+4,
-            #     "unfolder": None,
-            # },
+            {
+                "label": "Herwig++ (p_{T} reweight)",
+                "tfile": input_mc_qcd_herwig_tfile_reweight,
+                "colour": ROOT.kOrange+4,
+                "unfolder": None,
+            },
             # {
             #     "label": "Pythia8",
             #     "tfile": input_mc_qcd_pythia_tfile,
