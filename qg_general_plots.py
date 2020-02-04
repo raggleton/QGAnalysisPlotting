@@ -225,6 +225,7 @@ def do_2D_plot(obj, output_filename, draw_opt="COLZ", renorm_axis=None, title=No
     canvas = ROOT.TCanvas(ROOT.TUUID().AsString(), "", 800, 800)
     canvas.SetTicks(1, 1)
     canvas.SetLeftMargin(0.13)
+    canvas.SetRightMargin(0.16)
     canvas.SetBottomMargin(0.11)
     if logz:
         canvas.SetLogz(1)
