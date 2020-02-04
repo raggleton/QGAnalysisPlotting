@@ -956,35 +956,32 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             folded_covariance = result.dot(self.probability_ndarray.T)
             folded_errors = self.make_hist_from_diagonal_errors(folded_covariance)
             self.update_hist_bin_error(h_orig=folded_errors, h_to_be_updated=self.folded_unfolded)
+            print('folded_unfolded 105:', self.folded_unfolded.GetBinContent(105), '+-', self.folded_unfolded.GetBinError(105))
 
         return self.folded_unfolded
-
-    def get_folded_hist(self, hist_gen):
-        """Fold hist_gen using the stored response matrix, ie do matrix * vector"""
-        oflow = False
-        # Convert hist to vector
-        gen_vec, gen_vec_err = self.th1_to_ndarray(hist_gen, oflow_x=oflow)
-
-        # Multiply
-        # Note that we need to transpose from row vec to column vec
-        folded_vec = self.probability_ndarray.dot(gen_vec.T)
-
-        # Convert vector to TH1
-        folded_hist = self.ndarray_to_th1(folded_vec.T, has_oflow_x=oflow)
-
-        # Error propagation: if y = Ax, with covariance matrices Vyy and Vxx,
-        # respectively, then Vyy = (A*Vxx)*A^T
-        result = self.probability_ndarray.dot(self.construct_covariance_matrix(hist_gen))
-        folded_covariance = result.dot(self.probability_ndarray.T)
-        folded_errors = self.make_hist_from_diagonal_errors(folded_covariance)
-        self.update_hist_bin_error(h_orig=folded_errors, h_to_be_updated=folded_hist)
-
-        return folded_hist
 
     def get_folded_mc_truth(self):
         """Get response_matrix * MC truth"""
         if getattr(self, 'folded_mc_truth', None) is None:
-            self.folded_mc_truth = self.get_folded_hist(self.hist_truth)
+            oflow = False
+            # Convert hist to vector
+            gen_vec, gen_vec_err = self.th1_to_ndarray(self.hist_truth, oflow_x=oflow)
+
+            # Multiply
+            # Note that we need to transpose from row vec to column vec
+            folded_vec = self.probability_ndarray.dot(gen_vec.T)
+
+            # Convert vector to TH1
+            self.folded_mc_truth = self.ndarray_to_th1(folded_vec.T, has_oflow_x=oflow)
+
+            # Error propagation: if y = Ax, with covariance matrices Vyy and Vxx,
+            # respectively, then Vyy = (A*Vxx)*A^T
+            result = self.probability_ndarray.dot(self.construct_covariance_matrix(self.hist_truth))
+            folded_covariance = result.dot(self.probability_ndarray.T)
+            folded_errors = self.make_hist_from_diagonal_errors(folded_covariance)
+            self.update_hist_bin_error(h_orig=folded_errors, h_to_be_updated=self.folded_mc_truth)
+            print('folded_mc_truth 105:', self.folded_mc_truth.GetBinContent(105), '+-', self.folded_mc_truth.GetBinError(105))
+
         return self.folded_mc_truth
 
     def construct_covariance_matrix(self, hist):
