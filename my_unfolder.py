@@ -991,7 +991,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         """Make covariance hist from 1D hist. Diagonals are square of error"""
         # Just to numpy array for now, can always use ndarray_to_th2()
         nbins = hist.GetNbinsX()
-        cov_matrix_ndarray = np.ndarray(shape=(nbins, nbins))
+        cov_matrix_ndarray = np.zeros(shape=(nbins, nbins))  # important, otherwise can end up with wacko values
         for ind in range(1, nbins):
             err = hist.GetBinError(ind)
             err2 = pow(err, 2)
