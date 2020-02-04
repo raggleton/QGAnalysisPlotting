@@ -79,6 +79,9 @@ def unpack_unfolding_root_file(input_tfile, region, angle, do_alt_response=True,
     if len(unreg_tdir) == 1:
         unreg_unfolder = unfolder_from_tdir(input_tfile.Get(os.path.join(input_tdir_name, unreg_tdir[0])))
         print("Loaded comparison unregularised unfolder")
+    # Update if experimental systs
+    region['experimental_systematics'] = [k for k in region['experimental_systematics']
+                                          if k['label'] in unfolder.systs_shifted]
 
     # Get alternate response object, if it exists
     alt_unfolder = None
