@@ -218,7 +218,7 @@ class Setup(object):
         angle_prepend = "groomed " if "groomed" in region['name'] else ""
         this_angle_name = angle.name
         if (angle_prepend != ""
-            and this_angle_name != 'LHA'
+            and 'LHA' not in this_angle_name
             and "_{T}" not in this_angle_name
             and "PUPPI" not in this_angle_name):
             # lower case if Groomed..., but be careful of e.g. pTD, LHA
@@ -1297,7 +1297,7 @@ class RecoPtBinnedPlotter(object):
                  .format(
                     jet_algo=self.setup.jet_algo,
                     region_label=self.region['label'],
-                    pt_str=self.setup.pt_str,
+                    pt_str=self.setup.pt_var_str,
                     bin_edge_low=bin_edge_low,
                     bin_edge_high=bin_edge_high
                 ))
@@ -1534,7 +1534,7 @@ def do_all_plots_per_region_angle(setup, unfolder, unreg_unfolder, alt_unfolder,
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("source",
-                        help="Source directory (should be the one made by unfolding.py")
+                        help="Source directory (should be the one made by unfolding.py)")
     parser.add_argument("--angles",
                         choices=list(qgc.VAR_UNFOLD_DICT.keys()) + ["all"],
                         nargs='+',
