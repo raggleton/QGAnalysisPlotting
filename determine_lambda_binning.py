@@ -352,11 +352,13 @@ def make_plots(h2d, var_dict, plot_dir, append="",
     pad = ROOT.gPad
     pad.SetBottomMargin(0.12)
     pad.SetLeftMargin(0.13)
-    pad.SetRightMargin(0.12)
+    pad.SetRightMargin(0.16)
     xtitle_offset = 1.4
     ytitle_offset = xtitle_offset * 1.1
+    ztitle_offset = xtitle_offset * 0.9
     h2d.SetTitleOffset(xtitle_offset, 'X')
     h2d.SetTitleOffset(ytitle_offset, 'Y')
+    h2d.SetTitleOffset(ztitle_offset, 'Z')
     h2d.SetMinimum(1E-3)
     if var_dict.get('log', False):
         h2d.GetXaxis().SetLimits(1, 150)
@@ -364,6 +366,12 @@ def make_plots(h2d, var_dict, plot_dir, append="",
     title = "%s;%s (GEN);%s (RECO)" % (var_dict.get('title', '').replace("\n", ", "), var_dict['var_label'], var_dict['var_label'])
     h2d.SetTitle(title)
     h2d.Draw("COLZ")
+    old_font_size = ROOT.gStyle.GetTitleFontSize()
+    if "#splitline" in var_dict.get('title', ''):
+        # need to shrink it down a bit
+        pad.SetTopMargin(0.16)
+        ROOT.gStyle.SetTitleFontSize(0.035)
+        h2d.Draw("COLZ")
     output_filename = os.path.join(plot_dir, var_dict['name']+"_%s.%s" % (append, OUTPUT_FMT))
     output_dir = os.path.dirname(output_filename)
     if not os.path.isdir(output_dir):
@@ -380,6 +388,7 @@ def make_plots(h2d, var_dict, plot_dir, append="",
     marker_size = 0.8
     h2d_renorm_y.SetMarkerSize(marker_size)
     h2d_renorm_y.SetMaximum(1)
+    h2d_renorm_y.SetZTitle("P(GEN bin | RECO bin)")
     draw_opt = "COLZ"
     if plot_migrations:
         draw_opt += " TEXT45"
@@ -405,6 +414,7 @@ def make_plots(h2d, var_dict, plot_dir, append="",
     h2d_renorm_x.SetMarkerSize(marker_size)
     h2d_renorm_x.SetMaximum(1)
     h2d_renorm_x.SetMinimum(1E-3)
+    h2d_renorm_x.SetZTitle("P(RECO bin | GEN bin)")
     h2d_renorm_x.Draw(draw_opt)
 
     h2d_renorm_x.SetTitleOffset(xtitle_offset, 'X')
@@ -418,6 +428,8 @@ def make_plots(h2d, var_dict, plot_dir, append="",
     h2d_renorm_x.SetMaximum(1)
     h2d_renorm_x.SetMinimum(1E-3)
     canv.SaveAs(os.path.join(plot_dir, "%s_%s_renormX_logZ.%s" % (var_dict['name'], append, OUTPUT_FMT)))
+
+    ROOT.gStyle.SetTitleFontSize(old_font_size)
 
     # Plot migrations as 1D hists
     if plot_migrations:
@@ -532,6 +544,10 @@ if __name__ == "__main__":
     else:
         raise RuntimeError("No idea which region we're using")
 
+    jet_str = "AK4 PUPPI"
+    if "ak8puppi" in args.input:
+        jet_str = "AK8 PUPPI"
+
     rebin_results_dict = OrderedDict()
 
     pt_regions = [
@@ -554,7 +570,7 @@ if __name__ == "__main__":
     ]
 
     do_rel_response = False  # Use relative response instead - only makes sense with quantiles/gaussian fit?
-    
+
     input_tfile = cu.open_root_file(args.input)
 
     for angle in qgc.COMMON_VARS[:]:
@@ -571,7 +587,7 @@ if __name__ == "__main__":
                 var_dict = {
                     "name": "%s/%s%s" % (total_plot_dir_name, angle.var, pt_region_dict['append']),
                     "var_label": "%s%s (%s)" % (var_prepend, angle.name, angle.lambda_str),
-                    "title": "%s\n%s" % (region_label, pt_region_dict['title']),
+                    "title": "%s jets: %s\n%s" % (jet_str, region_label, pt_region_dict['title']),
                 }
 
                 h_append = "_rel_response" if do_rel_response else "_response"
@@ -736,7 +752,7 @@ if __name__ == "__main__":
                     var_dict = {
                         "name": hname,
                         "var_label": "%s%s (%s)" % (var_prepend, angle.name, angle.lambda_str),
-                        "title": h2d.GetTitle() + "\n(rebinned for %s)" % this_pt_dict['title'],
+                        "title": "#splitline{%s}{(rebinned for %s)}" % (h2d.GetTitle(), this_pt_dict['title']),
                     }
                     make_plots(h2d_rebin, var_dict, plot_dir=plot_dir,
                                append="rebinned_for%s" % (reference_pt_region),
@@ -772,7 +788,7 @@ if __name__ == "__main__":
                         var_dict = {
                             "name": hname,
                             "var_label": "Groomed %s (%s)" % (angle.name, angle.lambda_str),
-                            "title": h2d.GetTitle() + "\n(rebinned for %s, ungroomed)" % this_pt_dict['title'],
+                            "title": "#splitline{%s}{(rebinned for %s, ungroomed)}" % (h2d.GetTitle(), this_pt_dict['title']),
                         }
                         make_plots(h2d_rebin, var_dict, plot_dir=plot_dir,
                                    append="rebinned_for%s_ungroomed" % (reference_pt_region),
