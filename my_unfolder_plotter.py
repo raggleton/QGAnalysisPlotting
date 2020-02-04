@@ -632,7 +632,9 @@ class MyUnfolderPlotter(object):
 
         return lines, texts
 
-    def draw_unfolded_1d(self, do_gen=True, do_unfolded=True, output_dir='.', append='', title=''):
+    def draw_unfolded_1d(self, do_gen=True, do_unfolded=True,
+                         other_contributions=None,
+                         output_dir='.', append='', title=''):
         """Simple plot of unfolded & gen, by bin number (ie non physical axes)"""
         entries = []
 
@@ -655,6 +657,9 @@ class MyUnfolderPlotter(object):
                              marker_color=ROOT.kBlue, marker_size=0,
                              normalise_hist=False),
             )
+
+        if other_contributions:
+            entries.extend(other_contributions)
 
         plot = Plot(entries,
                     what='hist',
@@ -689,6 +694,7 @@ class MyUnfolderPlotter(object):
                         do_reco_bg=False,
                         do_reco_mc=False,
                         do_reco_mc_bg_sub=False,
+                        other_contributions=None,
                         output_dir='.', append="", title=""):
         """Plot detector-binned quantities for data & MC, by bin number (ie non physical axes)"""
         entries = []
@@ -740,6 +746,9 @@ class MyUnfolderPlotter(object):
                              normalise_hist=False),
             )
 
+        if other_contributions:
+            entries.extend(other_contributions)
+
         plot = Plot(entries,
                     what='hist',
                     title=title,
@@ -778,6 +787,7 @@ class MyUnfolderPlotter(object):
                           do_reco_mc=False,
                           do_reco_mc_bg_sub=False,
                           do_truth_mc=False,
+                          other_contributions=None,
                           output_dir='.', append="", title=""):
         """Plot generator-binned quantities for data & MC, by bin number (ie non physical axes)"""
         entries = []
@@ -837,6 +847,9 @@ class MyUnfolderPlotter(object):
                              marker_color=ROOT.kAzure+4, marker_size=0,
                              normalise_hist=False),
             )
+
+        if other_contributions:
+            entries.extend(other_contributions)
 
         plot = Plot(entries,
                     what='hist',

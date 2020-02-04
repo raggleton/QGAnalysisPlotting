@@ -1629,11 +1629,18 @@ if __name__ == "__main__":
                     if SUBTRACT_FAKES:
                         syst_unfolder.subtract_background(hist_fakes_syst, "fakes")
 
+                    # also show nominal bg-subtracted input for comparison
+                    ocs = [
+                        Contribution(unfolder.input_hist_bg_subtracted, 
+                                     label='Nominal unfolding input (bg-subtracted)',
+                                     line_color=ROOT.kRed, line_width=1)
+                    ]
                     syst_unfolder_plotter.draw_detector_1d(do_reco_data=False,
                                                            do_reco_data_bg_sub=False,
                                                            do_reco_bg=True,
                                                            do_reco_mc=False,
                                                            do_reco_mc_bg_sub=True,
+                                                           other_contributions=ocs,
                                                            output_dir=syst_plot_args['output_dir'],
                                                            append='bg_fakes_subtracted_%s' % append,
                                                            title="%s region, %s, %s" % (region['label'], angle_str, syst_label))
@@ -1925,11 +1932,18 @@ if __name__ == "__main__":
                     if SUBTRACT_FAKES:
                         pdf_unfolder.subtract_background(hist_fakes_pdf, "fakes")
 
+                    # also show nominal bg-subtracted input for comparison
+                    ocs = [
+                        Contribution(unfolder.input_hist_bg_subtracted, 
+                                     label='Nominal unfolding input (bg-subtracted)',
+                                     line_color=ROOT.kRed, line_width=1)
+                    ]
                     pdf_unfolder_plotter.draw_detector_1d(do_reco_data=False,
                                                           do_reco_data_bg_sub=False,
                                                           do_reco_bg=True,
                                                           do_reco_mc=False,
                                                           do_reco_mc_bg_sub=True,
+                                                          other_contributions=ocs,
                                                           output_dir=pdf_plot_args['output_dir'],
                                                           append='bg_fakes_subtracted_%s' % append,
                                                           title="%s region, %s, %s" % (region['label'], angle_str, pdf_label))
