@@ -608,12 +608,12 @@ class GenPtBinnedPlotter(object):
                 pdf_entries.extend([
                     Contribution(pdf_unfolded_hist_bin,
                                  label="Unfolded (#tau = %.3g) (total err) (%s)" % (pdf_unfolder.tau, pdf_label),
-                                 line_color=pdf_dict['colour'], line_width=self.line_width, line_style=1,
+                                 line_color=pdf_dict['colour'], line_width=1, line_style=1,
                                  marker_color=pdf_dict['colour'], marker_size=0,
                                  subplot=pdf_gen_hist_bin),
                     Contribution(pdf_gen_hist_bin,
                                  label="Generator (%s)" % (pdf_label),
-                                 line_color=pdf_dict['colour'], line_width=self.line_width, line_style=2,
+                                 line_color=pdf_dict['colour'], line_width=1, line_style=2,
                                  marker_color=pdf_dict['colour'], marker_size=0),
                 ])
 
@@ -645,8 +645,12 @@ class GenPtBinnedPlotter(object):
             plot.legend.SetY2(0.88)
             if len(pdf_entries) > 5:
                 plot.legend.SetNColumns(2)
-            plot.plot("NOSTACK E1")
+            if len(pdf_entries) > 15:
+                plot.legend.SetNColumns(3)
+            ROOT.gStyle.SetPalette(55)
+            plot.plot("NOSTACK E1 PLC PMC")
             plot.save("%s/unfolded_%s_pdf_model_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
+            ROOT.gStyle.SetPalette(ROOT.kViridis)
 
     def plot_uncertainty_shifts_normalised(self, unfolder):
         """Do plots of fractional uncertainty shifts on *normalised* unfolded distribution"""
@@ -1082,12 +1086,12 @@ class GenLambdaBinnedPlotter(object):
                 pdf_entries.extend([
                     Contribution(pdf_unfolded_hist_bin,
                                  label="Unfolded (#tau = %.3g) (total err) (%s)" % (pdf_unfolder.tau, pdf_label),
-                                 line_color=pdf_dict['colour'], line_width=self.line_width, line_style=1,
+                                 line_color=pdf_dict['colour'], line_width=1, line_style=1,
                                  marker_color=pdf_dict['colour'], marker_size=0,
                                  subplot=pdf_gen_hist_bin),
                     Contribution(pdf_gen_hist_bin,
                                  label="Generator (%s)" % (pdf_label),
-                                 line_color=pdf_dict['colour'], line_width=self.line_width, line_style=2,
+                                 line_color=pdf_dict['colour'], line_width=1, line_style=2,
                                  marker_color=pdf_dict['colour'], marker_size=0),
                 ])
 
@@ -1119,10 +1123,12 @@ class GenLambdaBinnedPlotter(object):
             plot.legend.SetY2(0.88)
             if len(pdf_entries) > 5:
                 plot.legend.SetNColumns(2)
-            plot.plot("NOSTACK E1")
+            ROOT.gStyle.SetPalette(55)
+            plot.plot("NOSTACK E1 PLC PMC")
             plot.set_logx(do_more_labels=False)
             plot.set_logy(do_more_labels=False)
             plot.save("%s/unfolded_unnormalised_%s_pdf_model_lambda_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
+            ROOT.gStyle.SetPalette(ROOT.kViridis)
 
 
     def plot_uncertainty_shifts_unnormalised(self, unfolder):
