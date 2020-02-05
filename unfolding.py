@@ -1713,7 +1713,7 @@ if __name__ == "__main__":
 
                     # also show nominal bg-subtracted input for comparison
                     ocs = [
-                        Contribution(unfolder.input_hist_bg_subtracted, 
+                        Contribution(unfolder.input_hist_bg_subtracted,
                                      label='Nominal unfolding input (bg-subtracted)',
                                      line_color=ROOT.kRed, line_width=1)
                     ]
@@ -1871,7 +1871,7 @@ if __name__ == "__main__":
                                 has_data=not MC_INPUT)
                     plot.default_canvas_size = (800, 600)
                     plot.plot("NOSTACK HISTE")
-                    plot.set_logy(do_more_labels=False)
+                    plot.set_logy(do_more_labels=False, override_check=True)
                     ymax = max([o.GetMaximum() for o in plot.contributions_objs])
                     plot.container.SetMaximum(ymax * 200)
                     ymin = max([o.GetMinimum(1E-10) for o in plot.contributions_objs])
@@ -1925,7 +1925,7 @@ if __name__ == "__main__":
                                 has_data=not MC_INPUT)
                 plot.default_canvas_size = (800, 600)
                 plot.plot("NOSTACK HISTE")
-                plot.set_logy(do_more_labels=False)
+                plot.set_logy(do_more_labels=False, override_check=True)
                 ymax = max([o.GetMaximum() for o in plot.contributions_objs])
                 plot.container.SetMaximum(ymax * 200)
                 ymin = max([o.GetMinimum(1E-10) for o in plot.contributions_objs])
@@ -1967,9 +1967,9 @@ if __name__ == "__main__":
                             "hist_gen": cu.get_from_tfile(tfile, "%s/hist_%s_gen_%s_PDF_%d" % (region['dirname'], angle_shortname, mc_hname_append, pdf_ind)),
                             "colour": ROOT.kCyan+2,
                         })
-                    
+
                     if mc_hname_append == 'all' and MC_SPLIT:
-                        # Since the nominal MC only has 20% of the stats, 
+                        # Since the nominal MC only has 20% of the stats,
                         # need to scale this as well otherwise it will look weird
                         region['pdf_systematics'][-1]['hist_reco'].Scale(0.2)
                         region['pdf_systematics'][-1]['hist_gen'].Scale(0.2)
@@ -2039,7 +2039,7 @@ if __name__ == "__main__":
 
                     # also show nominal bg-subtracted input for comparison
                     ocs = [
-                        Contribution(unfolder.input_hist_bg_subtracted, 
+                        Contribution(unfolder.input_hist_bg_subtracted,
                                      label='Nominal unfolding input (bg-subtracted)',
                                      line_color=ROOT.kRed, line_width=1)
                     ]
@@ -2076,7 +2076,6 @@ if __name__ == "__main__":
 
                     # Do any regularization
                     # --------------------------------------------------------------
-                    syst_tau = 0
                     # Setup L matrix
                     if REGULARIZE != "None":
                         gen_node = unfolder.generator_binning.FindNode('generatordistribution')
@@ -2099,37 +2098,39 @@ if __name__ == "__main__":
 
                                 pdf_unfolder.AddRegularisationCondition(bin_ind_pt_down, value_pt_down, bin_ind_cen, value_pt_cen, bin_ind_pt_up, value_pt_up)
 
+
+                    pdf_tau = 0
                     if REGULARIZE == "L":
-                        print("Regularizing systematic model with ScanL, please be patient...")
-                        syst_l_scanner = LCurveScanner()
-                        syst_tau = syst_l_scanner.scan_L(tunfolder=pdf_unfolder,
-                                                         n_scan=args.nScan,
-                                                         tau_min=region['tau_limits'][angle.var][0],
-                                                         tau_max=region['tau_limits'][angle.var][1])
-                        print("Found tau:", syst_tau)
-                        syst_l_scanner.plot_scan_L_curve(output_filename="%s/scanL_syst_%s_%s.%s" % (pdf_output_dir, pdf_label_no_spaces, unfolder.variable_name, OUTPUT_FMT))
-                        syst_l_scanner.plot_scan_L_curvature(output_filename="%s/scanLcurvature_syst_%s_%s.%s" % (pdf_output_dir, pdf_label_no_spaces, unfolder.variable_name, OUTPUT_FMT))
-                        syst_l_scanner.save_to_tfile(pdf_tdir)
+                        print("Regularizing PDF systematic with ScanL, please be patient...")
+                        pdf_l_scanner = LCurveScanner()
+                        pdf_tau = pdf_l_scanner.scan_L(tunfolder=pdf_unfolder,
+                                                       n_scan=args.nScan,
+                                                       tau_min=region['tau_limits'][angle.var][0],
+                                                       tau_max=region['tau_limits'][angle.var][1])
+                        print("Found tau:", pdf_tau)
+                        pdf_l_scanner.plot_scan_L_curve(output_filename="%s/scanL_syst_%s_%s.%s" % (pdf_output_dir, pdf_label_no_spaces, unfolder.variable_name, OUTPUT_FMT))
+                        pdf_l_scanner.plot_scan_L_curvature(output_filename="%s/scanLcurvature_syst_%s_%s.%s" % (pdf_output_dir, pdf_label_no_spaces, unfolder.variable_name, OUTPUT_FMT))
+                        pdf_l_scanner.save_to_tfile(pdf_tdir)
 
                     elif REGULARIZE == "tau":
-                        print("Regularizing systematic model with ScanTau, please be patient...")
-                        syst_tau_scanner = TauScanner()
-                        syst_tau = syst_tau_scanner.scan_tau(tunfolder=pdf_unfolder,
+                        print("Regularizing PDF systematic with ScanTau, please be patient...")
+                        pdf_tau_scanner = TauScanner()
+                        pdf_tau = pdf_tau_scanner.scan_tau(tunfolder=pdf_unfolder,
                                                              n_scan=args.nScan,
                                                              tau_min=region['tau_limits'][angle.var][0],
                                                              tau_max=region['tau_limits'][angle.var][1],
                                                              scan_mode=scan_mode,
                                                              distribution=scan_distribution,
                                                              axis_steering=pdf_unfolder.axisSteering)
-                        print("Found tau for syst matrix:", syst_tau)
-                        syst_tau_scanner.plot_scan_tau(output_filename="%s/scantau_syst_%s_%s.%s" % (pdf_output_dir, pdf_label_no_spaces, pdf_unfolder.variable_name, OUTPUT_FMT))
-                        syst_tau_scanner.save_to_tfile(pdf_tdir)
+                        print("Found tau for syst matrix:", pdf_tau)
+                        pdf_tau_scanner.plot_scan_tau(output_filename="%s/scantau_syst_%s_%s.%s" % (pdf_output_dir, pdf_label_no_spaces, pdf_unfolder.variable_name, OUTPUT_FMT))
+                        pdf_tau_scanner.save_to_tfile(pdf_tdir)
 
-                    region['pdf_systematics'][ind]['tau'] = syst_tau
+                    region['pdf_systematics'][ind]['tau'] = pdf_tau
 
                     # Do unfolding!
                     # --------------------------------------------------------------
-                    pdf_unfolder.do_unfolding(syst_tau)
+                    pdf_unfolder.do_unfolding(pdf_tau)
                     pdf_unfolded_1d = pdf_unfolder.get_output(hist_name="syst_%s_unfolded_1d" % (pdf_label_no_spaces))
                     print("Bin %d:" % (chosen_bin), pdf_unfolded_1d.GetBinContent(chosen_bin))
                     print("original uncert:", pdf_unfolded_1d.GetBinError(chosen_bin))
