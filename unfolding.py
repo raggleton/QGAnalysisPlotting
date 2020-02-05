@@ -413,6 +413,9 @@ if __name__ == "__main__":
                         help='Output directory')
 
     region_group = parser.add_argument_group('Region selection')
+    region_group.add_argument("--doAllRegions",
+                              action='store_true',
+                              help='Do unfolding for all regions (dijet, Z+J, groomed, ungroomed)')
     region_group.add_argument("--doDijetCentral",
                               action='store_true',
                               help='Do unfolding for dijet (central) jets')
@@ -500,6 +503,10 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     print(args)
+
+    if args.doAllRegions:
+        for x in ['doDijetCentral', 'doDijetForward', 'doDijetCentralGroomed', 'doDijetForwardGroomed', 'doZPJ', 'doZPJGroomed']:
+            setattr(args, x, True)
 
     if not any([args.doDijetCentral, args.doDijetForward, args.doDijetCentralGroomed, args.doDijetForwardGroomed, args.doZPJ, args.doZPJGroomed]):
         raise RuntimeError("You need to specify at least one signal region e.g. --doDijetCentral")

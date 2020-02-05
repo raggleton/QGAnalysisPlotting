@@ -1627,6 +1627,9 @@ if __name__ == "__main__":
                         help='Output directory (default is the source dir')
 
     region_group = parser.add_argument_group('Region selection')
+    region_group.add_argument("--doAllRegions",
+                              action='store_true',
+                              help='Do unfolding for all regions (dijet, Z+J, groomed, ungroomed)')
     region_group.add_argument("--doDijetCentral",
                               action='store_true',
                               help='Do unfolding for dijet (central) jets')
@@ -1648,7 +1651,11 @@ if __name__ == "__main__":
 
 
     args = parser.parse_args()
-
+    
+    if args.doAllRegions:
+        for x in ['doDijetCentral', 'doDijetForward', 'doDijetCentralGroomed', 'doDijetForwardGroomed', 'doZPJ', 'doZPJGroomed']:
+            setattr(args, x, True)
+    
     regions = setup_regions(args)
 
     if args.angles[0] == "all":
