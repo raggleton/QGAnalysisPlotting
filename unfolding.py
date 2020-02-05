@@ -673,10 +673,14 @@ if __name__ == "__main__":
         append += "_experimentalSyst"
 
     if args.doModelSysts:
-        append += "_modelSystScale"
+        append += "_modelSystHerwig"
+        if not args.doExperimentalSysts:
+            append += "NoExperimentalSyst"
 
     if args.doPDFSysts:
         append += "_pdfSyst"
+        if not args.doExperimentalSysts:
+            append += "NoExperimentalSyst"
 
     if args.useAltResponse:
         append += "_altResponse"
@@ -2055,24 +2059,24 @@ if __name__ == "__main__":
 
                     # Add systematic errors as different response matrices
                     # ----------------------------------------------------
-                    if args.doExperimentalSysts:
-                        chosen_rsp_bin = (18, 18)
-                        print("nominal response bin content for", chosen_rsp_bin, pdf_unfolder.response_map.GetBinContent(*chosen_rsp_bin))
-                        for exp_dict in region['experimental_systematics']:
-                            print("Adding systematic:", exp_dict['label'])
-                            if 'factor' in exp_dict:
-                                # special case for e.g. lumi - we construct a reponse hist, and add it using relative mode
-                                rel_map = pdf_unfolder.response_map.Clone(exp_dict['label']+"MapPDF")
-                                for xbin, ybin in product(range(1, rel_map.GetNbinsX()+1), range(1, rel_map.GetNbinsY()+1)):
-                                    rel_map.SetBinContent(xbin, ybin, exp_dict['factor'])
-                                    rel_map.SetBinError(xbin, ybin, 0)
-                                pdf_unfolder.add_sys_error(rel_map, exp_dict['label'], ROOT.TUnfoldDensity.kSysErrModeRelative)
-                            else:
-                                if not isinstance(exp_dict['tfile'], ROOT.TFile):
-                                    exp_dict['tfile'] = cu.open_root_file(exp_dict['tfile'])
-                                map_syst = cu.get_from_tfile(exp_dict['tfile'], "%s/tu_%s_GenReco_all" % (region['dirname'], angle_shortname))
-                                print("    syst bin", chosen_rsp_bin, map_syst.GetBinContent(*chosen_rsp_bin))
-                                pdf_unfolder.add_sys_error(map_syst, exp_dict['label'], ROOT.TUnfoldDensity.kSysErrModeMatrix)
+                    # if args.doExperimentalSysts:
+                    #     chosen_rsp_bin = (18, 18)
+                    #     print("nominal response bin content for", chosen_rsp_bin, pdf_unfolder.response_map.GetBinContent(*chosen_rsp_bin))
+                    #     for exp_dict in region['experimental_systematics']:
+                    #         print("Adding systematic:", exp_dict['label'])
+                    #         if 'factor' in exp_dict:
+                    #             # special case for e.g. lumi - we construct a reponse hist, and add it using relative mode
+                    #             rel_map = pdf_unfolder.response_map.Clone(exp_dict['label']+"MapPDF")
+                    #             for xbin, ybin in product(range(1, rel_map.GetNbinsX()+1), range(1, rel_map.GetNbinsY()+1)):
+                    #                 rel_map.SetBinContent(xbin, ybin, exp_dict['factor'])
+                    #                 rel_map.SetBinError(xbin, ybin, 0)
+                    #             pdf_unfolder.add_sys_error(rel_map, exp_dict['label'], ROOT.TUnfoldDensity.kSysErrModeRelative)
+                    #         else:
+                    #             if not isinstance(exp_dict['tfile'], ROOT.TFile):
+                    #                 exp_dict['tfile'] = cu.open_root_file(exp_dict['tfile'])
+                    #             map_syst = cu.get_from_tfile(exp_dict['tfile'], "%s/tu_%s_GenReco_all" % (region['dirname'], angle_shortname))
+                    #             print("    syst bin", chosen_rsp_bin, map_syst.GetBinContent(*chosen_rsp_bin))
+                    #             pdf_unfolder.add_sys_error(map_syst, exp_dict['label'], ROOT.TUnfoldDensity.kSysErrModeMatrix)
 
                     # Do any regularization
                     # --------------------------------------------------------------
