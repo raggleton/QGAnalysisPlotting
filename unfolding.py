@@ -473,10 +473,20 @@ if __name__ == "__main__":
                             default=False,
                             help='Do experimental systematics (i.e. those that modify response matrix)')
 
+    syst_group.add_argument("--doExperimentalSystsOnlyHerwig",
+                            type=lambda x:bool(distutils.util.strtobool(x)),
+                            default=False,
+                            help='Do Herwig experimental systematics (i.e. those that modify response matrix)')
+
     syst_group.add_argument("--doModelSysts",
                             type=lambda x:bool(distutils.util.strtobool(x)),
                             default=False,
                             help='Do model systematics (i.e. those that modify input to be unfolded)')
+
+    syst_group.add_argument("--doModelSystsOnlyHerwig",
+                            type=lambda x:bool(distutils.util.strtobool(x)),
+                            default=False,
+                            help='Do only Herwig model systematics (i.e. those that modify input to be unfolded)')
 
     syst_group.add_argument("--doPDFSysts",
                             type=lambda x:bool(distutils.util.strtobool(x)),
@@ -506,7 +516,7 @@ if __name__ == "__main__":
     if args.doPDFSysts and not args.MCinput:
         raise RuntimeError("Cannot do PDF systs and run over data")
 
-    if args.doModelSysts and not args.MCinput:
+    if (args.doModelSysts or args.doModelSystsOnlyHerwig) and not args.MCinput:
         raise RuntimeError("Cannot do model systs and run over data")
 
     # if args.useAltResponse and args.doExperimentalSysts:
@@ -672,8 +682,18 @@ if __name__ == "__main__":
     if args.doExperimentalSysts:
         append += "_experimentalSyst"
 
+    if args.doExperimentalSystsOnlyHerwig:
+        args.doExperimentalSysts = True
+        append += "_experimentalSystOnlyHerwig"
+
     if args.doModelSysts:
-        append += "_modelSystHerwig"
+        append += "_modelSyst"
+        if not args.doExperimentalSysts:
+            append += "NoExperimentalSyst"
+
+    if args.doModelSystsOnlyHerwig:
+        args.doModelSysts = True
+        append += "_modelSystOnlyHerwig"
         if not args.doExperimentalSysts:
             append += "NoExperimentalSyst"
 
@@ -712,7 +732,7 @@ if __name__ == "__main__":
         append=append,
         sub_append=sub_append,
     )
-    output_dir = os.path.join(src_dir, "unfolding_{regularize_str}{mc_append}{sub_append}_densityModeBinWidth_constraint{area}{append}_signalRegionOnly_noHerwigPtReweight".format(**str_parts))
+    output_dir = os.path.join(src_dir, "unfolding_{regularize_str}{mc_append}{sub_append}_densityModeBinWidth_constraint{area}{append}_signalRegionOnly".format(**str_parts))
 
     if args.outputDir:
         output_dir = args.outputDir
@@ -760,18 +780,27 @@ if __name__ == "__main__":
         # Modify systematics as necessary
         # ----------------------------------------------------------------------
 
-        # Remove the lumi one if we have no backgrounds, or the user has not said to remove backgrounds
         if args.doExperimentalSysts:
+            # Remove the lumi one if we have no backgrounds, or the user has not said to remove backgrounds
             orig_region['experimental_systematics'] = [syst_dict for syst_dict in orig_region['experimental_systematics']
                                                   if not ('lumi' in syst_dict['label'].lower()
                                                            and (len(orig_region.get('backgrounds', [])) == 0
                                                                 or not args.subtractBackgrounds))]
+            if args.doExperimentalSystsOnlyHerwig:
+                # only herwig related systs
+                orig_region['experimental_systematics'] = [s for s in orig_region['experimental_systematics']
+                                                           if 'herwig' in s['label'].lower()]
 
         else:
             orig_region['experimental_systematics'] = []
 
         if not args.doModelSysts:
             orig_region['model_systematics'] = []
+
+        elif args.doModelSystsOnlyHerwig:
+            # only herwig related systs
+            orig_region['model_systematics'] = [s for s in orig_region['model_systematics']
+                                                if 'herwig' in s['label'].lower()]
 
         if not args.doPDFSysts:
             orig_region['pdf_systematics'] = []
