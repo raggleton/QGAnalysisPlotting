@@ -717,7 +717,8 @@ if __name__ == "__main__":
         elif args.regularizeAxis == 'angle':
             reg_axis_str = '_onlyRegAngle'
         # reg_axis_str += "_onlyBinFactors"
-        reg_axis_str += "_invTruth"
+        # reg_axis_str += "_invTruth"
+        reg_axis_str += "_invTruthUseUnfolded"
 
     area_constraint = ROOT.TUnfold.kEConstraintArea
     area_constraint = ROOT.TUnfold.kEConstraintNone
@@ -1084,6 +1085,7 @@ if __name__ == "__main__":
 
             unreg_unfolder = None
             unreg_unfolded_1d = None
+            L_matrix_entries = []
             if REGULARIZE != "None":
                 print("Doing preliminary unregularised unfolding...")
                 # To setup the L matrix correctly, we have to rescale
@@ -1187,7 +1189,7 @@ if __name__ == "__main__":
 
                         # bin_ind_var_down = gen_node.GetGlobalBinNumber(unfolder.variable_bin_edges_gen[ilambda], pt_cen)
                         # bin_ind_var_up = gen_node.GetGlobalBinNumber(unfolder.variable_bin_edges_gen[ilambda+2], pt_cen)
-                        print("Adding L matrix entry")
+                        # print("Adding L matrix entry")
                         # print(lambda_cen, (unfolder.pt_bin_edges_gen[ipt], unfolder.pt_bin_edges_gen[ipt+1], unfolder.pt_bin_edges_gen[ipt+2]))
                         # print(lambda_cen, (unfolder.pt_bin_edges_gen[ipt], unfolder.pt_bin_edges_gen[ipt+1], unfolder.pt_bin_edges_gen[ipt+2]))
                         # pt_bin_width_down = pt_bin_edges_gen[ipt+1] - pt_bin_edges_gen[ipt]
@@ -1195,17 +1197,20 @@ if __name__ == "__main__":
                         # factor = (pt_bin_width_down + pt_bin_width_up)
                         # value_pt_down = bin_factors[bin_ind_pt_down]
                         # value_pt_up = bin_factors[bin_ind_pt_up]
-                        val_down = unfolder.hist_truth.GetBinContent(bin_ind_pt_down)
+                        ref_hist = unreg_unfolder.unfolded
+                        val_down = ref_hist.GetBinContent(bin_ind_pt_down)
                         value_pt_down = 1./val_down if val_down != 0 else 0
-                        val_up = unfolder.hist_truth.GetBinContent(bin_ind_pt_down)
+                        val_up = ref_hist.GetBinContent(bin_ind_pt_down)
                         value_pt_up = 1./val_up if val_up != 0 else 0
                         # value_pt_up = unreg_unfolder.hist_truth.GetBinContent()
 
                         # value_pt_down = bin_factors[bin_ind_pt_down]
                         # value_pt_up = bin_factors[bin_ind_pt_up]
                         value_pt_cen = - (value_pt_down + value_pt_up)
-                        print(bin_ind_pt_down, value_pt_down, bin_ind_cen, value_pt_cen, bin_ind_pt_up, value_pt_up)
-                        unfolder.AddRegularisationCondition(bin_ind_pt_down, value_pt_down, bin_ind_cen, value_pt_cen, bin_ind_pt_up, value_pt_up)
+                        # print(bin_ind_pt_down, value_pt_down, bin_ind_cen, value_pt_cen, bin_ind_pt_up, value_pt_up)
+                        L_args = [bin_ind_pt_down, value_pt_down, bin_ind_cen, value_pt_cen, bin_ind_pt_up, value_pt_up]
+                        L_matrix_entries.append(L_args)
+                        unfolder.AddRegularisationCondition(*L_args)
 
                         # value_pt_down = unfolded_max/ref_hist.GetBinContent(bin_ind_pt_down)
                         # value_pt_up = unfolded_max/ref_hist.GetBinContent(bin_ind_pt_up)
@@ -1299,11 +1304,11 @@ if __name__ == "__main__":
                 tau_scanner.save_to_tfile(this_tdir)
 
             if REGULARIZE != "None":
-                title = "L matrix\n%s\n%s region\n%s" % (jet_algo, region['label'], angle_str)
+                title = "L matrix %s %s region %s" % (jet_algo, region['label'], angle_str)
                 unfolder_plotter.draw_L_matrix(title=title, **plot_args)
                 title = "L^{T}L matrix, %s, %s region, %s" % (jet_algo, region['label'], angle_str)
                 unfolder_plotter.draw_L_matrix_squared(title=title, **plot_args)
-                title = "L * (x - bias vector)\n%s\n%s region\n%s" % (jet_algo, region['label'], angle_str)
+                title = "L * (x - bias vector) %s %s region %s" % (jet_algo, region['label'], angle_str)
                 unfolder_plotter.draw_Lx_minus_bias(title=title, **plot_args)
 
             # Do unfolding!
@@ -1778,25 +1783,27 @@ if __name__ == "__main__":
                     # --------------------------------------------------------------
                     # Setup L matrix
                     if REGULARIZE != "None":
-                        gen_node = unfolder.generator_binning.FindNode('generatordistribution')
-                        for ilambda in range(len(unfolder.variable_bin_edges_gen[:-1])):
-                            for ipt in range(len(unfolder.pt_bin_edges_gen[:-3])):
-                                pt_cen = unfolder.pt_bin_edges_gen[ipt+1] + 0.000001  # add a tiny bit to make sure we're in the bin properly (I can never remember if included or not)
-                                # lambda_cen = unfolder.variable_bin_edges_gen[ilambda+1] + 0.000001  # add a tiny bit to make sure we're in the bin properly (I can never remember if included or not)
-                                lambda_cen = unfolder.variable_bin_edges_gen[ilambda] + 0.000001  # add a tiny bit to make sure we're in the bin properly (I can never remember if included or not)
+                        # gen_node = unfolder.generator_binning.FindNode('generatordistribution')
+                        # for ilambda in range(len(unfolder.variable_bin_edges_gen[:-1])):
+                        #     for ipt in range(len(unfolder.pt_bin_edges_gen[:-3])):
+                        #         pt_cen = unfolder.pt_bin_edges_gen[ipt+1] + 0.000001  # add a tiny bit to make sure we're in the bin properly (I can never remember if included or not)
+                        #         # lambda_cen = unfolder.variable_bin_edges_gen[ilambda+1] + 0.000001  # add a tiny bit to make sure we're in the bin properly (I can never remember if included or not)
+                        #         lambda_cen = unfolder.variable_bin_edges_gen[ilambda] + 0.000001  # add a tiny bit to make sure we're in the bin properly (I can never remember if included or not)
 
-                                bin_ind_pt_down = gen_node.GetGlobalBinNumber(lambda_cen, unfolder.pt_bin_edges_gen[ipt] + 0.000001)
-                                bin_ind_pt_up = gen_node.GetGlobalBinNumber(lambda_cen, unfolder.pt_bin_edges_gen[ipt+2] + 0.000001)
-                                bin_ind_cen = gen_node.GetGlobalBinNumber(lambda_cen, pt_cen)
+                        #         bin_ind_pt_down = gen_node.GetGlobalBinNumber(lambda_cen, unfolder.pt_bin_edges_gen[ipt] + 0.000001)
+                        #         bin_ind_pt_up = gen_node.GetGlobalBinNumber(lambda_cen, unfolder.pt_bin_edges_gen[ipt+2] + 0.000001)
+                        #         bin_ind_cen = gen_node.GetGlobalBinNumber(lambda_cen, pt_cen)
 
-                                val_down = unfolder.hist_truth.GetBinContent(bin_ind_pt_down)
-                                value_pt_down = 1./val_down if val_down != 0 else 0
+                        #         val_down = unfolder.hist_truth.GetBinContent(bin_ind_pt_down)
+                        #         value_pt_down = 1./val_down if val_down != 0 else 0
 
-                                val_up = unfolder.hist_truth.GetBinContent(bin_ind_pt_down)
-                                value_pt_up = 1./val_up if val_up != 0 else 0
-                                value_pt_cen = - (value_pt_down + value_pt_up)
+                        #         val_up = unfolder.hist_truth.GetBinContent(bin_ind_pt_down)
+                        #         value_pt_up = 1./val_up if val_up != 0 else 0
+                        #         value_pt_cen = - (value_pt_down + value_pt_up)
 
-                                syst_unfolder.AddRegularisationCondition(bin_ind_pt_down, value_pt_down, bin_ind_cen, value_pt_cen, bin_ind_pt_up, value_pt_up)
+                                # syst_unfolder.AddRegularisationCondition(bin_ind_pt_down, value_pt_down, bin_ind_cen, value_pt_cen, bin_ind_pt_up, value_pt_up)
+                        for L_args in L_matrix_entries:
+                            syst_unfolder.AddRegularisationCondition(*L_args)
 
                     # Scan for best regularisation strength
                     syst_tau = 0
@@ -2111,25 +2118,28 @@ if __name__ == "__main__":
                     # --------------------------------------------------------------
                     # Setup L matrix
                     if REGULARIZE != "None":
-                        gen_node = unfolder.generator_binning.FindNode('generatordistribution')
-                        for ilambda in range(len(unfolder.variable_bin_edges_gen[:-1])):
-                            for ipt in range(len(unfolder.pt_bin_edges_gen[:-3])):
-                                pt_cen = unfolder.pt_bin_edges_gen[ipt+1] + 0.000001  # add a tiny bit to make sure we're in the bin properly (I can never remember if included or not)
-                                # lambda_cen = unfolder.variable_bin_edges_gen[ilambda+1] + 0.000001  # add a tiny bit to make sure we're in the bin properly (I can never remember if included or not)
-                                lambda_cen = unfolder.variable_bin_edges_gen[ilambda] + 0.000001  # add a tiny bit to make sure we're in the bin properly (I can never remember if included or not)
+                        # gen_node = unfolder.generator_binning.FindNode('generatordistribution')
+                        # for ilambda in range(len(unfolder.variable_bin_edges_gen[:-1])):
+                        #     for ipt in range(len(unfolder.pt_bin_edges_gen[:-3])):
+                        #         pt_cen = unfolder.pt_bin_edges_gen[ipt+1] + 0.000001  # add a tiny bit to make sure we're in the bin properly (I can never remember if included or not)
+                        #         # lambda_cen = unfolder.variable_bin_edges_gen[ilambda+1] + 0.000001  # add a tiny bit to make sure we're in the bin properly (I can never remember if included or not)
+                        #         lambda_cen = unfolder.variable_bin_edges_gen[ilambda] + 0.000001  # add a tiny bit to make sure we're in the bin properly (I can never remember if included or not)
 
-                                bin_ind_pt_down = gen_node.GetGlobalBinNumber(lambda_cen, unfolder.pt_bin_edges_gen[ipt] + 0.000001)
-                                bin_ind_pt_up = gen_node.GetGlobalBinNumber(lambda_cen, unfolder.pt_bin_edges_gen[ipt+2] + 0.000001)
-                                bin_ind_cen = gen_node.GetGlobalBinNumber(lambda_cen, pt_cen)
+                        #         bin_ind_pt_down = gen_node.GetGlobalBinNumber(lambda_cen, unfolder.pt_bin_edges_gen[ipt] + 0.000001)
+                        #         bin_ind_pt_up = gen_node.GetGlobalBinNumber(lambda_cen, unfolder.pt_bin_edges_gen[ipt+2] + 0.000001)
+                        #         bin_ind_cen = gen_node.GetGlobalBinNumber(lambda_cen, pt_cen)
 
-                                val_down = unfolder.hist_truth.GetBinContent(bin_ind_pt_down)
-                                value_pt_down = 1./val_down if val_down != 0 else 0
+                        #         val_down = unfolder.hist_truth.GetBinContent(bin_ind_pt_down)
+                        #         value_pt_down = 1./val_down if val_down != 0 else 0
 
-                                val_up = unfolder.hist_truth.GetBinContent(bin_ind_pt_down)
-                                value_pt_up = 1./val_up if val_up != 0 else 0
-                                value_pt_cen = - (value_pt_down + value_pt_up)
+                        #         val_up = unfolder.hist_truth.GetBinContent(bin_ind_pt_down)
+                        #         value_pt_up = 1./val_up if val_up != 0 else 0
+                        #         value_pt_cen = - (value_pt_down + value_pt_up)
 
-                                pdf_unfolder.AddRegularisationCondition(bin_ind_pt_down, value_pt_down, bin_ind_cen, value_pt_cen, bin_ind_pt_up, value_pt_up)
+                        #         pdf_unfolder.AddRegularisationCondition(bin_ind_pt_down, value_pt_down, bin_ind_cen, value_pt_cen, bin_ind_pt_up, value_pt_up)
+                        
+                        for L_args in L_matrix_entries:
+                            syst_unfolder.AddRegularisationCondition(*L_args)
 
 
                     pdf_tau = 0
