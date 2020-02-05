@@ -549,15 +549,15 @@ class GenPtBinnedPlotter(object):
                 syst_gen_hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('model_syst_%s_hist_truth' % (syst_label_no_spaces), ibin, binning_scheme='generator')
 
                 syst_entries.extend([
+                    Contribution(syst_gen_hist_bin,
+                                 label="Generator (%s)" % (syst_label),
+                                 line_color=syst_dict['colour'], line_width=self.line_width, line_style=2,
+                                 marker_color=syst_dict['colour'], marker_size=0),
                     Contribution(syst_unfolded_hist_bin,
                                  label="Unfolded (#tau = %.3g) (total err) (%s)" % (syst_unfolder.tau, syst_label),
                                  line_color=syst_dict['colour'], line_width=self.line_width, line_style=1,
                                  marker_color=syst_dict['colour'], marker_size=0,
                                  subplot=syst_gen_hist_bin),
-                    Contribution(syst_gen_hist_bin,
-                                 label="Generator (%s)" % (syst_label),
-                                 line_color=syst_dict['colour'], line_width=self.line_width, line_style=2,
-                                 marker_color=syst_dict['colour'], marker_size=0),
                 ])
 
             # add nominal ones last
@@ -584,9 +584,13 @@ class GenPtBinnedPlotter(object):
             self._modify_plot(plot)
             plot.legend.SetX1(0.55)
             plot.legend.SetY1(0.72)
-            plot.legend.SetX2(0.98)
+            plot.legend.SetX2(0.97)
             plot.legend.SetY2(0.88)
-            if len(syst_entries) > 5:
+            if len(syst_entries) > 4:
+                # plot.legend.SetX1(0.53)
+                plot.legend.SetY1(0.65)
+                plot.y_padding_max_linear = 1.8
+            if len(syst_entries) > 6:
                 plot.legend.SetNColumns(2)
             plot.plot("NOSTACK E1")
             plot.save("%s/unfolded_%s_syst_model_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
@@ -1025,15 +1029,15 @@ class GenLambdaBinnedPlotter(object):
                 syst_gen_hist_bin = self.hist_bin_chopper.get_lambda_bin_div_bin_width('model_syst_%s_hist_truth' % (syst_label_no_spaces), ibin, binning_scheme='generator')
 
                 syst_entries.extend([
+                    Contribution(syst_gen_hist_bin,
+                                 label="Generator (%s)" % (syst_label),
+                                 line_color=syst_dict['colour'], line_width=self.line_width, line_style=2,
+                                 marker_color=syst_dict['colour'], marker_size=0),
                     Contribution(syst_unfolded_hist_bin,
                                  label="Unfolded (#tau = %.3g) (total err) (%s)" % (syst_unfolder.tau, syst_label),
                                  line_color=syst_dict['colour'], line_width=self.line_width, line_style=1,
                                  marker_color=syst_dict['colour'], marker_size=0,
                                  subplot=syst_gen_hist_bin),
-                    Contribution(syst_gen_hist_bin,
-                                 label="Generator (%s)" % (syst_label),
-                                 line_color=syst_dict['colour'], line_width=self.line_width, line_style=2,
-                                 marker_color=syst_dict['colour'], marker_size=0),
                 ])
 
             # add nominal ones last
@@ -1060,9 +1064,13 @@ class GenLambdaBinnedPlotter(object):
             self._modify_plot(plot)
             plot.legend.SetX1(0.55)
             plot.legend.SetY1(0.72)
-            plot.legend.SetX2(0.98)
+            plot.legend.SetX2(0.97)
             plot.legend.SetY2(0.88)
-            if len(syst_entries) > 5:
+            if len(syst_entries) > 4:
+                # plot.legend.SetX1(0.53)
+                plot.legend.SetY1(0.65)
+                plot.y_padding_max_linear = 1.8
+            if len(syst_entries) > 6:
                 plot.legend.SetNColumns(2)
             plot.plot("NOSTACK E1")
             plot.set_logx(do_more_labels=False)
