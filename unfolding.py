@@ -528,56 +528,56 @@ if __name__ == "__main__":
     if any([args.doDijetCentral, args.doDijetForward, args.doDijetCentralGroomed, args.doDijetForwardGroomed]):
         # actually these are all pretty similar...
         tau_limits_central = {
-            'jet_puppiMultiplicity': (1E-9, 1E-6),
-            'jet_pTD': (1E-12, 1E-8),
+            'jet_puppiMultiplicity': (1E-9, 1E-6) if args.regularizeAxis == 'angle' else (1E-2, 1E2),
+            'jet_pTD': (1E-12, 1E-8) if args.regularizeAxis == 'angle' else (1E-2, 1E2),
             # 'jet_LHA': (1E-11, 1E-7) if args.regularizeAxis == 'angle' else (1E-13, 1E-10),
             'jet_LHA': (1E-13, 1E-9) if args.regularizeAxis == 'angle' else (1E-2, 1E2),
-            'jet_width': (1E-12, 1E-8),
-            'jet_thrust': (1E-12, 1E-8),
-            'jet_puppiMultiplicity_charged': (1E-12, 1E-8),
-            'jet_pTD_charged': (1E-12, 1E-8),
-            'jet_LHA_charged': (1E-10, 1E-8),
-            'jet_width_charged': (1E-13, 1E-8),
-            'jet_thrust_charged': (1E-12, 1E-9),
+            'jet_width': (1E-12, 1E-8) if args.regularizeAxis == 'angle' else (1E-2, 1E2),
+            'jet_thrust': (1E-12, 1E-8) if args.regularizeAxis == 'angle' else (1E-2, 1E2),
+            'jet_puppiMultiplicity_charged': (1E-12, 1E-8) if args.regularizeAxis == 'angle' else (1E-2, 1E2),
+            'jet_pTD_charged': (1E-12, 1E-8) if args.regularizeAxis == 'angle' else (1E-2, 1E2),
+            'jet_LHA_charged': (1E-10, 1E-8) if args.regularizeAxis == 'angle' else (1E-2, 1E2),
+            'jet_width_charged': (1E-13, 1E-8) if args.regularizeAxis == 'angle' else (1E-2, 1E2),
+            'jet_thrust_charged': (1E-12, 1E-9) if args.regularizeAxis == 'angle' else (1E-2, 1E2),
         }
 
         tau_limits_central_groomed = {
-            'jet_puppiMultiplicity': (1E-9, 1E-6),
-            'jet_pTD': (1E-12, 1E-8),
+            'jet_puppiMultiplicity': (1E-9, 1E-6) if args.regularizeAxis == "angle" else (1E-2, 1E2),
+            'jet_pTD': (1E-12, 1E-8) if args.regularizeAxis == "angle" else (1E-2, 1E2),
             'jet_LHA': (1E-11, 1E-8) if args.regularizeAxis == 'angle' else (1E-13, 1E-10),
-            'jet_width': (1E-12, 1E-8),
-            'jet_thrust': (1E-12, 1E-8),
-            'jet_puppiMultiplicity_charged': (1E-12, 1E-8),
-            'jet_pTD_charged': (1E-12, 1E-8),
-            'jet_LHA_charged': (1E-10, 1E-8),
-            'jet_width_charged': (1E-13, 1E-8),
-            'jet_thrust_charged': (1E-12, 1E-9),
+            'jet_width': (1E-12, 1E-8) if args.regularizeAxis == "angle" else (1E-2, 1E2),
+            'jet_thrust': (1E-12, 1E-8) if args.regularizeAxis == "angle" else (1E-2, 1E2),
+            'jet_puppiMultiplicity_charged': (1E-12, 1E-8) if args.regularizeAxis == "angle" else (1E-2, 1E2),
+            'jet_pTD_charged': (1E-12, 1E-8) if args.regularizeAxis == "angle" else (1E-2, 1E2),
+            'jet_LHA_charged': (1E-10, 1E-8) if args.regularizeAxis == "angle" else (1E-2, 1E2),
+            'jet_width_charged': (1E-13, 1E-8) if args.regularizeAxis == "angle" else (1E-2, 1E2),
+            'jet_thrust_charged': (1E-12, 1E-9) if args.regularizeAxis == "angle" else (1E-2, 1E2),
         }
 
         tau_limits_forward = {
-            'jet_puppiMultiplicity': (1E-9, 1E-6),
-            'jet_pTD': (1E-12, 1E-8),
+            'jet_puppiMultiplicity': (1E-9, 1E-6) if args.regularizeAxis == 'angle' else (1E-2, 1E2),
+            'jet_pTD': (1E-12, 1E-8) if args.regularizeAxis == 'angle' else (1E-2, 1E2),
             'jet_LHA': (1E-11, 1E-8) if args.regularizeAxis == 'angle' else (1E-13, 1E-10),
-            'jet_width': (1E-12, 1E-8),
-            'jet_thrust': (1E-12, 1E-8),
-            'jet_puppiMultiplicity_charged': (1E-12, 1E-8),
-            'jet_pTD_charged': (1E-12, 1E-8),
-            'jet_LHA_charged': (1E-10, 1E-8),
-            'jet_width_charged': (1E-13, 1E-8),
-            'jet_thrust_charged': (1E-12, 1E-9),
+            'jet_width': (1E-12, 1E-8) if args.regularizeAxis == 'angle' else (1E-2, 1E2),
+            'jet_thrust': (1E-12, 1E-8) if args.regularizeAxis == 'angle' else (1E-2, 1E2),
+            'jet_puppiMultiplicity_charged': (1E-12, 1E-8) if args.regularizeAxis == 'angle' else (1E-2, 1E2),
+            'jet_pTD_charged': (1E-12, 1E-8) if args.regularizeAxis == 'angle' else (1E-2, 1E2),
+            'jet_LHA_charged': (1E-10, 1E-8) if args.regularizeAxis == 'angle' else (1E-2, 1E2),
+            'jet_width_charged': (1E-13, 1E-8) if args.regularizeAxis == 'angle' else (1E-2, 1E2),
+            'jet_thrust_charged': (1E-12, 1E-9) if args.regularizeAxis == 'angle' else (1E-2, 1E2),
         }
 
         tau_limits_forward_groomed = {
-            'jet_puppiMultiplicity': (1E-9, 1E-6),
-            'jet_pTD': (1E-12, 1E-8),
+            'jet_puppiMultiplicity': (1E-9, 1E-6) if args.regularizeAxis == 'angle' else (1E-2, 1E2),
+            'jet_pTD': (1E-12, 1E-8) if args.regularizeAxis == 'angle' else (1E-2, 1E2),
             'jet_LHA': (1E-11, 1E-8) if args.regularizeAxis == 'angle' else (1E-13, 1E-10),
-            'jet_width': (1E-12, 1E-8),
-            'jet_thrust': (1E-12, 1E-8),
-            'jet_puppiMultiplicity_charged': (1E-12, 1E-8),
-            'jet_pTD_charged': (1E-12, 1E-8),
-            'jet_LHA_charged': (1E-10, 1E-8),
-            'jet_width_charged': (1E-13, 1E-8),
-            'jet_thrust_charged': (1E-12, 1E-9),
+            'jet_width': (1E-12, 1E-8) if args.regularizeAxis == 'angle' else (1E-2, 1E2),
+            'jet_thrust': (1E-12, 1E-8) if args.regularizeAxis == 'angle' else (1E-2, 1E2),
+            'jet_puppiMultiplicity_charged': (1E-12, 1E-8) if args.regularizeAxis == 'angle' else (1E-2, 1E2),
+            'jet_pTD_charged': (1E-12, 1E-8) if args.regularizeAxis == 'angle' else (1E-2, 1E2),
+            'jet_LHA_charged': (1E-10, 1E-8) if args.regularizeAxis == 'angle' else (1E-2, 1E2),
+            'jet_width_charged': (1E-13, 1E-8) if args.regularizeAxis == 'angle' else (1E-2, 1E2),
+            'jet_thrust_charged': (1E-12, 1E-9) if args.regularizeAxis == 'angle' else (1E-2, 1E2),
         }
 
         if args.doDijetCentral:
@@ -603,31 +603,33 @@ if __name__ == "__main__":
     if any([args.doZPJ, args.doZPJGroomed]):
         # FOR Z+JETS:
         tau_limits = {
-            'jet_puppiMultiplicity': (1E-5, 1E-2),
-            'jet_pTD': (1E-6, 1E-4),
-            # 'jet_LHA': (1E-5, 1E-3),
-            # 'jet_LHA': (1E-7, 1E-4),
-            'jet_LHA': (1E-8, 1E-4),
-            'jet_width': (1E-5, 1E-2),
-            'jet_thrust': (1E-6, 1E-2),
-            'jet_puppiMultiplicity_charged': (1E-6, 1E-2),
-            'jet_pTD_charged': (1E-6, 1E-2),
-            'jet_LHA_charged': (1E-5, 1E-2),
-            'jet_width_charged': (1E-6, 1E-3),
-            'jet_thrust_charged': (1E-8, 1E-5),
+            'jet_puppiMultiplicity': (1E-5, 1E-2) if args.regularizeAxis == 'angle' else (1E-2, 1E2),
+            'jet_pTD': (1E-6, 1E-4) if args.regularizeAxis == 'angle' else (1E-2, 1E2),
+            # 'jet_LHA': (1E-5, 1E-3) if args.regularizeAxis == 'angle' else (1E-2, 1E2),
+            # 'jet_LHA': (1E-7, 1E-4) if args.regularizeAxis == 'angle' else (1E-2, 1E2),
+            # 'jet_LHA': (1E-8, 1E-4) if args.regularizeAxis == 'angle' else (1E-2, 1E2),
+            # 'jet_LHA': (1E-6, 1E-3) if args.regularizeAxis == 'angle' else (1E-2, 1E2),
+            'jet_LHA': (1E-2, 1E2) if args.regularizeAxis == 'angle' else (1E-2, 1E2),
+            'jet_width': (1E-5, 1E-2) if args.regularizeAxis == 'angle' else (1E-2, 1E2),
+            'jet_thrust': (1E-6, 1E-2) if args.regularizeAxis == 'angle' else (1E-2, 1E2),
+            'jet_puppiMultiplicity_charged': (1E-6, 1E-2) if args.regularizeAxis == 'angle' else (1E-2, 1E2),
+            'jet_pTD_charged': (1E-6, 1E-2) if args.regularizeAxis == 'angle' else (1E-2, 1E2),
+            'jet_LHA_charged': (1E-5, 1E-2) if args.regularizeAxis == 'angle' else (1E-2, 1E2),
+            'jet_width_charged': (1E-6, 1E-3) if args.regularizeAxis == 'angle' else (1E-2, 1E2),
+            'jet_thrust_charged': (1E-8, 1E-5) if args.regularizeAxis == 'angle' else (1E-2, 1E2),
         }
 
         tau_limits_groomed = {
-            'jet_puppiMultiplicity': (1E-5, 1E-2),
-            'jet_pTD': (1E-7, 1E-3),
-            'jet_LHA': (1E-5, 1E-3),
-            'jet_width': (1E-5, 1E-2),
-            'jet_thrust': (1E-6, 1E-2),
-            'jet_puppiMultiplicity_charged': (1E-5, 1E-2),
-            'jet_pTD_charged': (1E-6, 1E-2),
-            'jet_LHA_charged': (1E-5, 1E-2),
-            'jet_width_charged': (1E-6, 1E-3),
-            'jet_thrust_charged': (1E-7, 1E-5),
+            'jet_puppiMultiplicity': (1E-5, 1E-2) if args.regularizeAxis == 'angle' else (1E-2, 1E2),
+            'jet_pTD': (1E-7, 1E-3) if args.regularizeAxis == 'angle' else (1E-2, 1E2),
+            'jet_LHA': (1E-5, 1E-3) if args.regularizeAxis == 'angle' else (1E-2, 1E2),
+            'jet_width': (1E-5, 1E-2) if args.regularizeAxis == 'angle' else (1E-2, 1E2),
+            'jet_thrust': (1E-6, 1E-2) if args.regularizeAxis == 'angle' else (1E-2, 1E2),
+            'jet_puppiMultiplicity_charged': (1E-5, 1E-2) if args.regularizeAxis == 'angle' else (1E-2, 1E2),
+            'jet_pTD_charged': (1E-6, 1E-2) if args.regularizeAxis == 'angle' else (1E-2, 1E2),
+            'jet_LHA_charged': (1E-5, 1E-2) if args.regularizeAxis == 'angle' else (1E-2, 1E2),
+            'jet_width_charged': (1E-6, 1E-3) if args.regularizeAxis == 'angle' else (1E-2, 1E2),
+            'jet_thrust_charged': (1E-7, 1E-5) if args.regularizeAxis == 'angle' else (1E-2, 1E2),
         }
 
         if args.doZPJ:
@@ -690,7 +692,8 @@ if __name__ == "__main__":
             reg_axis_str = '_onlyRegPt'
         elif args.regularizeAxis == 'angle':
             reg_axis_str = '_onlyRegAngle'
-        reg_axis_str += "_scaleBinFactorsBinWidth"
+        # reg_axis_str += "_onlyBinFactors"
+        reg_axis_str += "_invTruth"
 
     area_constraint = ROOT.TUnfold.kEConstraintArea
     area_constraint = ROOT.TUnfold.kEConstraintNone
@@ -1128,32 +1131,81 @@ if __name__ == "__main__":
                 xax = orig_Lmatrix.GetXaxis()
                 # Get bin factors from an unregularised unfolding first,
                 # to compensate for the fact that the shape differs between data & MC
-                bin_factors = dummy_unfolder.calculate_pt_bin_factors(which='unfolded') # calculate factors to get uniform pt spectrum
-                bin_widths = dummy_unfolder.get_gen_bin_widths() # mapping {global bin number : (lambda bin width, pt bin width)}
+                bin_factors = unreg_unfolder.calculate_pt_bin_factors(which='gen') # calculate factors to get uniform pt spectrum
+                # bin_factors = unreg_unfolder.calculate_pt_bin_factors(which='unfolded') # calculate factors to get uniform pt spectrum
+                bin_widths = unreg_unfolder.get_gen_bin_widths() # mapping {global bin number : (lambda bin width, pt bin width)}
 
-                print(dummy_unfolder.variable_bin_edges_gen)
+                print(unreg_unfolder.variable_bin_edges_gen)
+
+                ref_hist = unreg_unfolder.hist_truth
+                unfolded_max = ref_hist.GetMaximum()
+
+                gen_node = unfolder.generator_binning.FindNode('generatordistribution')
+                for ilambda in range(len(unfolder.variable_bin_edges_gen[:-1])):
+                    for ipt in range(len(unfolder.pt_bin_edges_gen[:-3])):
+                        pt_cen = unfolder.pt_bin_edges_gen[ipt+1] + 0.000001  # add a tiny bit to make sure we're in the bin properly (I can never remember if included or not)
+                        # lambda_cen = unfolder.variable_bin_edges_gen[ilambda+1] + 0.000001  # add a tiny bit to make sure we're in the bin properly (I can never remember if included or not)
+                        lambda_cen = unfolder.variable_bin_edges_gen[ilambda] + 0.000001  # add a tiny bit to make sure we're in the bin properly (I can never remember if included or not)
+
+                        bin_ind_pt_down = gen_node.GetGlobalBinNumber(lambda_cen, unfolder.pt_bin_edges_gen[ipt] + 0.000001)
+                        bin_ind_pt_up = gen_node.GetGlobalBinNumber(lambda_cen, unfolder.pt_bin_edges_gen[ipt+2] + 0.000001)
+
+                        bin_ind_cen = gen_node.GetGlobalBinNumber(lambda_cen, pt_cen)
+
+                        # bin_ind_var_down = gen_node.GetGlobalBinNumber(unfolder.variable_bin_edges_gen[ilambda], pt_cen)
+                        # bin_ind_var_up = gen_node.GetGlobalBinNumber(unfolder.variable_bin_edges_gen[ilambda+2], pt_cen)
+                        print("Adding L matrix entry")
+                        # print(lambda_cen, (unfolder.pt_bin_edges_gen[ipt], unfolder.pt_bin_edges_gen[ipt+1], unfolder.pt_bin_edges_gen[ipt+2]))
+                        # print(lambda_cen, (unfolder.pt_bin_edges_gen[ipt], unfolder.pt_bin_edges_gen[ipt+1], unfolder.pt_bin_edges_gen[ipt+2]))
+                        # pt_bin_width_down = pt_bin_edges_gen[ipt+1] - pt_bin_edges_gen[ipt]
+                        # pt_bin_width_up = pt_bin_edges_gen[ipt+2] - pt_bin_edges_gen[ipt+1]
+                        # factor = (pt_bin_width_down + pt_bin_width_up)
+                        # value_pt_down = bin_factors[bin_ind_pt_down]
+                        # value_pt_up = bin_factors[bin_ind_pt_up]
+                        val_down = unfolder.hist_truth.GetBinContent(bin_ind_pt_down)
+                        value_pt_down = 1./val_down if val_down != 0 else 0
+                        val_up = unfolder.hist_truth.GetBinContent(bin_ind_pt_down)
+                        value_pt_up = 1./val_up if val_up != 0 else 0
+                        # value_pt_up = unreg_unfolder.hist_truth.GetBinContent()
+
+                        # value_pt_down = bin_factors[bin_ind_pt_down]
+                        # value_pt_up = bin_factors[bin_ind_pt_up]
+                        value_pt_cen = - (value_pt_down + value_pt_up)
+                        print(bin_ind_pt_down, value_pt_down, bin_ind_cen, value_pt_cen, bin_ind_pt_up, value_pt_up)
+                        unfolder.AddRegularisationCondition(bin_ind_pt_down, value_pt_down, bin_ind_cen, value_pt_cen, bin_ind_pt_up, value_pt_up)
+
+                        # value_pt_down = unfolded_max/ref_hist.GetBinContent(bin_ind_pt_down)
+                        # value_pt_up = unfolded_max/ref_hist.GetBinContent(bin_ind_pt_up)
+                        # value_var_down = unfolded_max/ref_hist.GetBinContent(bin_ind_var_down)
+                        # value_var_up = unfolded_max/ref_hist.GetBinContent(bin_ind_var_up)
+                        # value_cen = - (value_pt_down + value_pt_up + value_var_down + value_var_up)
+                        # print(bin_ind_pt_down, value_pt_down, bin_ind_cen, value_cen, bin_ind_pt_up, value_pt_up)
+                        # indices = [bin_ind_pt_down, bin_ind_var_down, bin_ind_cen, bin_ind_pt_up, bin_ind_var_up]
+                        # row_data = [value_pt_down, value_var_down, value_cen, value_pt_up, value_var_up]
+                        # unfolder.AddRegularisationCondition(5, array('i', indices), array('d', row_data))
+                        # print(indices, row_data)
 
                 # loop over existing regularisation conditions, since we want to modify them
                 # in our main unfolder
-                for iy in range(1, orig_Lmatrix.GetNbinsY()+1):
-                    # Look for gen bin number where values start for this regularisation row
-                    left_bin, mid_bin, right_bin = 0, 0, 0
-                    left_bin_val, mid_bin_val, right_bin_val = 0, 0, 0
-                    for ix in range(1, orig_Lmatrix.GetNbinsX()+1):
-                        bin_content = orig_Lmatrix.GetBinContent(ix, iy)
-                        if bin_content != 0:
-                            if left_bin == 0:
-                                left_bin = ix
-                                left_bin_val = bin_content
-                                continue
-                            elif mid_bin == 0:
-                                mid_bin = ix
-                                mid_bin_val = bin_content
-                                continue
-                            else:
-                                right_bin = ix
-                                right_bin_val = bin_content
-                                break # got em all
+                # for iy in range(1, orig_Lmatrix.GetNbinsY()+1):
+                #     # Look for gen bin number where values start for this regularisation row
+                #     left_bin, mid_bin, right_bin = 0, 0, 0
+                #     left_bin_val, mid_bin_val, right_bin_val = 0, 0, 0
+                #     for ix in range(1, orig_Lmatrix.GetNbinsX()+1):
+                #         bin_content = orig_Lmatrix.GetBinContent(ix, iy)
+                #         if bin_content != 0:
+                #             if left_bin == 0:
+                #                 left_bin = ix
+                #                 left_bin_val = bin_content
+                #                 continue
+                #             elif mid_bin == 0:
+                #                 mid_bin = ix
+                #                 mid_bin_val = bin_content
+                #                 continue
+                #             else:
+                #                 right_bin = ix
+                #                 right_bin_val = bin_content
+                #                 break # got em all
 
                     # Things to try:
                     # - Ignore the original reg. condition: just use bin_factors
@@ -1166,27 +1218,34 @@ if __name__ == "__main__":
                     # Rescale accord to pT, and according to pT bin width
                     # since the original was divided by both pt bin width and lambda bin width
                     # Doesn't matter left or right for bin widht - only care about pt bin width
-                    pt_factor = bin_factors[mid_bin] * bin_widths[left_bin][1]
+                    # pt_factor = bin_factors[mid_bin] * bin_widths[left_bin][1]
+                    # pt_factor = bin_factors[mid_bin]
 
                     # - signs since RegularizeCurvature also adds in a - sign,
                     # and we want to match the original sign (which is +ve)
                     # scale_left = -pt_factor
                     # scale_right = -pt_factor
-                    scale_left = -left_bin_val * pt_factor
-                    scale_right = -right_bin_val * pt_factor
+                    # scale_left = -left_bin_val * pt_factor
+                    # scale_right = -right_bin_val * pt_factor
 
-                    print("Adding regularisation rule: nR=%d, gen bins: [%d - %d], factors: [%f, %f, %f]" % (iy, left_bin, right_bin, -scale_left, 2*(scale_left+scale_right), -scale_right) )
-                    unfolder.RegularizeCurvature(left_bin, mid_bin, right_bin, scale_left, scale_right)
+                    # print("Adding regularisation rule: nR=%d, gen bins: [%d - %d], factors: [%f, %f, %f]" % (iy, left_bin, right_bin, -scale_left, 2*(scale_left+scale_right), -scale_right) )
+                    # unfolder.RegularizeCurvature(left_bin, mid_bin, right_bin, scale_left, scale_right)
+
+            # exit()
+            tau = 3.322366546731066e-10
             tau = 0
             scan_mode = ROOT.TUnfoldDensity.kEScanTauRhoAvgSys
+            scan_mode = ROOT.TUnfoldDensity.kEScanTauRhoAvg
             scan_distribution = unfolder.distribution
             if REGULARIZE == "L":
                 print("Regularizing with ScanLcurve, please be patient...")
                 l_scanner = LCurveScanner()
                 tau = l_scanner.scan_L(tunfolder=unfolder,
                                        n_scan=args.nScan,
-                                       tau_min=region['tau_limits'][angle.var][0],
+                                       tau_min=region['tau_limits'][angle.var][0]/10,
                                        tau_max=region['tau_limits'][angle.var][1])
+                                       # tau_min=tau/10,
+                                       # tau_max=tau*10)
                 print("Found tau:", tau)
                 l_scanner.plot_scan_L_curve(output_filename="%s/scanL_%s.%s" % (this_output_dir, append, OUTPUT_FMT))
                 l_scanner.plot_scan_L_curvature(output_filename="%s/scanLcurvature_%s.%s" % (this_output_dir, append, OUTPUT_FMT))
@@ -1457,6 +1516,29 @@ if __name__ == "__main__":
 
                 # Do any regularization
                 # --------------------------------------------------------------
+                # Setup L matrix
+                if REGULARIZE != "None":
+                    gen_node = unfolder.generator_binning.FindNode('generatordistribution')
+                    for ilambda in range(len(unfolder.variable_bin_edges_gen[:-1])):
+                        for ipt in range(len(unfolder.pt_bin_edges_gen[:-3])):
+                            pt_cen = unfolder.pt_bin_edges_gen[ipt+1] + 0.000001  # add a tiny bit to make sure we're in the bin properly (I can never remember if included or not)
+                            # lambda_cen = unfolder.variable_bin_edges_gen[ilambda+1] + 0.000001  # add a tiny bit to make sure we're in the bin properly (I can never remember if included or not)
+                            lambda_cen = unfolder.variable_bin_edges_gen[ilambda] + 0.000001  # add a tiny bit to make sure we're in the bin properly (I can never remember if included or not)
+
+                            bin_ind_pt_down = gen_node.GetGlobalBinNumber(lambda_cen, unfolder.pt_bin_edges_gen[ipt] + 0.000001)
+                            bin_ind_pt_up = gen_node.GetGlobalBinNumber(lambda_cen, unfolder.pt_bin_edges_gen[ipt+2] + 0.000001)
+                            bin_ind_cen = gen_node.GetGlobalBinNumber(lambda_cen, pt_cen)
+
+                            val_down = unfolder.hist_truth.GetBinContent(bin_ind_pt_down)
+                            value_pt_down = 1./val_down if val_down != 0 else 0
+
+                            val_up = unfolder.hist_truth.GetBinContent(bin_ind_pt_down)
+                            value_pt_up = 1./val_up if val_up != 0 else 0
+                            value_pt_cen = - (value_pt_down + value_pt_up)
+
+                            alt_unfolder.AddRegularisationCondition(bin_ind_pt_down, value_pt_down, bin_ind_cen, value_pt_cen, bin_ind_pt_up, value_pt_up)
+
+                # Scan for best regularisation strength
                 alt_tau = 0
                 if REGULARIZE == "L":
                     print("Regularizing alternative with ScanL, please be patient...")
@@ -1661,6 +1743,29 @@ if __name__ == "__main__":
 
                     # Do any regularization
                     # --------------------------------------------------------------
+                    # Setup L matrix
+                    if REGULARIZE != "None":
+                        gen_node = unfolder.generator_binning.FindNode('generatordistribution')
+                        for ilambda in range(len(unfolder.variable_bin_edges_gen[:-1])):
+                            for ipt in range(len(unfolder.pt_bin_edges_gen[:-3])):
+                                pt_cen = unfolder.pt_bin_edges_gen[ipt+1] + 0.000001  # add a tiny bit to make sure we're in the bin properly (I can never remember if included or not)
+                                # lambda_cen = unfolder.variable_bin_edges_gen[ilambda+1] + 0.000001  # add a tiny bit to make sure we're in the bin properly (I can never remember if included or not)
+                                lambda_cen = unfolder.variable_bin_edges_gen[ilambda] + 0.000001  # add a tiny bit to make sure we're in the bin properly (I can never remember if included or not)
+
+                                bin_ind_pt_down = gen_node.GetGlobalBinNumber(lambda_cen, unfolder.pt_bin_edges_gen[ipt] + 0.000001)
+                                bin_ind_pt_up = gen_node.GetGlobalBinNumber(lambda_cen, unfolder.pt_bin_edges_gen[ipt+2] + 0.000001)
+                                bin_ind_cen = gen_node.GetGlobalBinNumber(lambda_cen, pt_cen)
+
+                                val_down = unfolder.hist_truth.GetBinContent(bin_ind_pt_down)
+                                value_pt_down = 1./val_down if val_down != 0 else 0
+
+                                val_up = unfolder.hist_truth.GetBinContent(bin_ind_pt_down)
+                                value_pt_up = 1./val_up if val_up != 0 else 0
+                                value_pt_cen = - (value_pt_down + value_pt_up)
+
+                                syst_unfolder.AddRegularisationCondition(bin_ind_pt_down, value_pt_down, bin_ind_cen, value_pt_cen, bin_ind_pt_up, value_pt_up)
+
+                    # Scan for best regularisation strength
                     syst_tau = 0
                     if REGULARIZE == "L":
                         print("Regularizing systematic model with ScanL, please be patient...")
@@ -1972,6 +2077,28 @@ if __name__ == "__main__":
                     # Do any regularization
                     # --------------------------------------------------------------
                     syst_tau = 0
+                    # Setup L matrix
+                    if REGULARIZE != "None":
+                        gen_node = unfolder.generator_binning.FindNode('generatordistribution')
+                        for ilambda in range(len(unfolder.variable_bin_edges_gen[:-1])):
+                            for ipt in range(len(unfolder.pt_bin_edges_gen[:-3])):
+                                pt_cen = unfolder.pt_bin_edges_gen[ipt+1] + 0.000001  # add a tiny bit to make sure we're in the bin properly (I can never remember if included or not)
+                                # lambda_cen = unfolder.variable_bin_edges_gen[ilambda+1] + 0.000001  # add a tiny bit to make sure we're in the bin properly (I can never remember if included or not)
+                                lambda_cen = unfolder.variable_bin_edges_gen[ilambda] + 0.000001  # add a tiny bit to make sure we're in the bin properly (I can never remember if included or not)
+
+                                bin_ind_pt_down = gen_node.GetGlobalBinNumber(lambda_cen, unfolder.pt_bin_edges_gen[ipt] + 0.000001)
+                                bin_ind_pt_up = gen_node.GetGlobalBinNumber(lambda_cen, unfolder.pt_bin_edges_gen[ipt+2] + 0.000001)
+                                bin_ind_cen = gen_node.GetGlobalBinNumber(lambda_cen, pt_cen)
+
+                                val_down = unfolder.hist_truth.GetBinContent(bin_ind_pt_down)
+                                value_pt_down = 1./val_down if val_down != 0 else 0
+
+                                val_up = unfolder.hist_truth.GetBinContent(bin_ind_pt_down)
+                                value_pt_up = 1./val_up if val_up != 0 else 0
+                                value_pt_cen = - (value_pt_down + value_pt_up)
+
+                                pdf_unfolder.AddRegularisationCondition(bin_ind_pt_down, value_pt_down, bin_ind_cen, value_pt_cen, bin_ind_pt_up, value_pt_up)
+
                     if REGULARIZE == "L":
                         print("Regularizing systematic model with ScanL, please be patient...")
                         syst_l_scanner = LCurveScanner()
