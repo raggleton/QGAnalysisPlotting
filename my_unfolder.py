@@ -100,7 +100,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             if response_map.GetBinContent(0, 1) != 0 or response_map.GetBinContent(1, 0) != 0:
                 raise RuntimeError("Your response_map has entries in 0th gen bin - this means you've got unintended underflow!")
         self.variable_name = variable_name
-        self.variable_name_safe = variable_name.replace(" ", "_")
+        self.variable_name_safe = cu.no_space_str(variable_name)
 
         self.variable_bin_edges_reco = variable_bin_edges_reco
         self.nbins_variable_reco = len(variable_bin_edges_reco)-1 if variable_bin_edges_reco is not None else 0
@@ -292,25 +292,25 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
 
         # save all backgrounds (incl fakes)
         for name, hist in self.backgrounds.items():
-            self._check_save_to_tfile(tfile, hist, "background_reco_binning_%s" % name.replace(" ", "_"))
+            self._check_save_to_tfile(tfile, hist, "background_reco_binning_%s" % cu.no_space_str(name))
         for name, hist in self.backgrounds_gen_binning.items():
-            self._check_save_to_tfile(tfile, hist, "background_gen_binning_%s" % name.replace(" ", "_"))
+            self._check_save_to_tfile(tfile, hist, "background_gen_binning_%s" % cu.no_space_str(name))
 
         # save systematic response matrices
         for name, syst_map in self.syst_maps.items():
-            self._check_save_to_tfile(tfile, syst_map, "syst_map_%s" % name.replace(" ", "_"))
+            self._check_save_to_tfile(tfile, syst_map, "syst_map_%s" % cu.no_space_str(name))
 
         # save systematic error matrices
         for name, syst_ematrix in self.syst_ematrices.items():
-            self._check_save_to_tfile(tfile, syst_ematrix, "syst_ematrix_%s" % name.replace(" ", "_"))
+            self._check_save_to_tfile(tfile, syst_ematrix, "syst_ematrix_%s" % cu.no_space_str(name))
 
         # save systematic shifts
         for name, syst_shift in self.syst_shifts.items():
-            self._check_save_to_tfile(tfile, syst_shift, "syst_shift_%s" % name.replace(" ", "_"))
+            self._check_save_to_tfile(tfile, syst_shift, "syst_shift_%s" % cu.no_space_str(name))
 
         # save systematic shifted hists (yes this is a bit wasteful)
         for name, syst_shift in self.systs_shifted.items():
-            self._check_save_to_tfile(tfile, syst_shift, "syst_shifted_unfolded_%s" % name.replace(" ", "_"))
+            self._check_save_to_tfile(tfile, syst_shift, "syst_shifted_unfolded_%s" % cu.no_space_str(name))
 
     def set_input(self,
                   input_hist,
@@ -474,7 +474,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             raise KeyError("No systematic %s, only have: %s" % (syst_label, ", ".join(self.syst_shifts.keys())))
         if self.syst_shifts[syst_label] is None:
             hist = self.GetDeltaSysSource(syst_label,
-                                                    "syst_shift_%s" % (syst_label.replace(" ", "_")),
+                                                    "syst_shift_%s" % (cu.no_space_str(syst_label)),
                                                     "",
                                                     self.output_distribution_name, # must be the same as what's used in get_output
                                                     self.axisSteering,
@@ -490,7 +490,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         if syst_label not in self.syst_shifts:
             raise KeyError("No systematic %s, only have: %s" % (syst_label, ", ".join(self.syst_shifts.keys())))
         if self.systs_shifted[syst_label] is None:
-            hist_shift = self.get_delta_sys_shift(syst_label).Clone('syst_shifted_unfolded_%s' % syst_label.replace(" ", "_"))
+            hist_shift = self.get_delta_sys_shift(syst_label).Clone('syst_shifted_unfolded_%s' % cu.no_space_str(syst_label))
             unfolded = unfolded or self.unfolded
             hist_shift.Add(unfolded)  # TODO what about errors?
             self.systs_shifted[syst_label] = hist_shift
@@ -622,7 +622,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             # I cannot figure out how to make the int** object for bin_map
             # So we are trusting that the default args for title and axisSteering are correct
             # Gnahhhhhhh
-            syst_label_no_spaces = syst_label.replace(" ", "_")
+            syst_label_no_spaces = cu.no_space_str(syst_label)
             hist = this_binning.CreateErrorMatrixHistogram("ematrix_syst_%s_%s" % (syst_label_no_spaces, cu.get_unique_str()), self.use_axis_binning) #, bin_map, "", "*[]")
             self.GetEmatrixSysSource(hist, syst_label)
             self.syst_ematrices[syst_label] = hist
@@ -1076,27 +1076,27 @@ def unfolder_from_tdir(tdir):
     for name in obj_names:
         obj = tdir.Get(name)
         if name.startswith("background_reco_binning_"):
-            bg_name = name.replace("background_reco_binning_", "").replace("_", " ")
+            bg_name = cu.str_restore_space(name.replace("background_reco_binning_", ""))
             unfolder.backgrounds[bg_name] = obj
 
         elif name.startswith("background_gen_binning_"):
-            bg_name = name.replace("background_gen_binning_", "").replace("_", " ")
+            bg_name = cu.str_restore_space(name.replace("background_gen_binning_", ""))
             unfolder.backgrounds_gen_binning[bg_name] = obj
 
         elif name.startswith("syst_map_"):
-            syst_name = name.replace("syst_map_", "").replace("_", " ")
+            syst_name = cu.str_restore_space(name.replace("syst_map_", ""))
             unfolder.syst_maps[syst_name] = obj
 
         elif name.startswith("syst_ematrix_"):
-            syst_name = name.replace("syst_ematrix_", "").replace("_", " ")
+            syst_name = cu.str_restore_space(name.replace("syst_ematrix_", ""))
             unfolder.syst_ematrices[syst_name] = obj
 
         elif name.startswith("syst_shift_"):
-            syst_name = name.replace("syst_shift_", "").replace("_", " ")
+            syst_name = cu.str_restore_space(name.replace("syst_shift_", ""))
             unfolder.syst_shifts[syst_name] = obj
 
         elif name.startswith("syst_shifted_unfolded_"):
-            syst_name = name.replace("syst_shifted_unfolded_", "").replace("_", " ")
+            syst_name = cu.str_restore_space(name.replace("syst_shifted_unfolded_", ""))
             unfolder.systs_shifted[syst_name] = obj
 
     for attr_name in MyUnfolder._simple_attr:

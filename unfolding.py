@@ -1027,7 +1027,7 @@ if __name__ == "__main__":
                         unfolder.add_sys_error(rm_large_rel_error_bins(map_syst), syst_dict['label'], ROOT.TUnfoldDensity.kSysErrModeMatrix)
 
                     # Plot the reponse matrix for this systematic
-                    syst_label_no_spaces = syst_dict['label'].replace(" ", "_")
+                    syst_label_no_spaces = cu.no_space_str(syst_dict['label'])
                     output_filename = "%s/response_map_syst_%s_%s.%s" % (this_output_dir, syst_label_no_spaces, append, unfolder_plotter.output_fmt)
                     title = "%s, %s region, %s, %s" % (jet_algo, region['label'], angle_str, syst_dict['label'])
                     unfolder_plotter.draw_2d_hist(unfolder.syst_maps[syst_dict['label']],
@@ -1506,7 +1506,7 @@ if __name__ == "__main__":
                                           axisSteering=unfolder.axisSteering)
 
                 this_tdir.cd()
-                alt_tdir = this_tdir.mkdir("alt_response_%s" % region['alt_mc_label'].replace(" ", "-"))
+                alt_tdir = this_tdir.mkdir("alt_response_%s" % cu.no_space_str(region['alt_mc_label']))
                 alt_tdir.cd()
 
                 is_herwig = "Herwig" in region['alt_mc_label']
@@ -1663,7 +1663,7 @@ if __name__ == "__main__":
                 syst_entries = []
                 for ind, syst_dict in enumerate(region['model_systematics']):
                     syst_label = syst_dict['label']
-                    syst_label_no_spaces = syst_dict['label'].replace(", ", "_").replace(" ", "_").replace("{", "").replace("}", "")
+                    syst_label_no_spaces = cu.no_space_str(syst_dict['label'])
 
                     print("*" * 80)
                     print("*** Unfolding with alternate input:", syst_label, "(%d/%d) ***" % (ind+1, len(region['model_systematics'])))
@@ -2010,7 +2010,7 @@ if __name__ == "__main__":
                 # Now run over all variations like for model systs
                 for ind, pdf_dict in enumerate(region['pdf_systematics']):
                     pdf_label = pdf_dict['label']
-                    pdf_label_no_spaces = pdf_label.replace(" ", "_")
+                    pdf_label_no_spaces = cu.no_space_str(pdf_label)
 
                     if pdf_label.startswith("_"):
                         continue

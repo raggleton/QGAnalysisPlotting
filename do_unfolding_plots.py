@@ -92,8 +92,8 @@ def unpack_unfolding_root_file(input_tfile, region, angle, do_alt_response=True,
         if len(alt_tdir)  == 1:
             alt_unfolder = unfolder_from_tdir(input_tfile.Get(os.path.join(input_tdir_name, alt_tdir[0])))
             region['alt_unfolder'] = alt_unfolder
-            alt_unfolder_name = alt_tdir[0].replace("alt_response_", "").replace("_", " ")
-            if region['alt_mc_label'] != alt_unfolder_name:
+            alt_unfolder_name = alt_tdir[0].replace("alt_response_", "")
+            if cu.no_space_str(region['alt_mc_label']) != alt_unfolder_name:
                 raise RuntimeError("Bad unpacking of alt response unfolder: expected %s, got %s" % (region['alt_mc_label'], alt_unfolder_name))
             print("...Loaded alt unfolder")
             alt_hist_truth = input_tfile.Get(os.path.join(input_tdir_name, alt_tdir[0], "alt_hist_mc_gen"))
@@ -106,8 +106,8 @@ def unpack_unfolding_root_file(input_tfile, region, angle, do_alt_response=True,
         model_tdirs = [x for x in list_of_obj if x.startswith("modelSyst_")]
         if len(model_tdirs) > 0:
             for model_tdir_name in model_tdirs:
-                syst_name = model_tdir_name.replace("modelSyst_", "").replace("_", " ")
-                this_one = [x for x in region['model_systematics'] if x['label'] == syst_name]
+                syst_name = model_tdir_name.replace("modelSyst_", "")
+                this_one = [x for x in region['model_systematics'] if cu.no_space_str(x['label']) == syst_name]
                 if len(this_one) == 0:
                     print("No entry for model systematic", syst_name, "- skipping")
                     continue
@@ -540,7 +540,7 @@ class GenPtBinnedPlotter(object):
             for syst_dict in self.region['model_systematics']:
                 syst_unfolder = syst_dict['unfolder']
                 syst_label = syst_dict['label']
-                syst_label_no_spaces = syst_dict['label'].replace(" ", "_")
+                syst_label_no_spaces = cu.no_space_str(syst_dict['label'])
 
                 self.hist_bin_chopper.add_obj('model_syst_%s_unfolded' % (syst_label_no_spaces), syst_unfolder.unfolded)
                 self.hist_bin_chopper.add_obj('model_syst_%s_hist_truth' % (syst_label_no_spaces), syst_unfolder.hist_truth)
@@ -597,7 +597,7 @@ class GenPtBinnedPlotter(object):
             for pdf_dict in self.region['pdf_systematics']:
                 pdf_unfolder = pdf_dict['unfolder']
                 pdf_label = pdf_dict['label']
-                pdf_label_no_spaces = pdf_dict['label'].replace(" ", "_")
+                pdf_label_no_spaces = cu.no_space_str(pdf_dict['label'])
 
                 self.hist_bin_chopper.add_obj('pdf_syst_%s_unfolded' % (pdf_label_no_spaces), pdf_unfolder.unfolded)
                 self.hist_bin_chopper.add_obj('pdf_syst_%s_hist_truth' % (pdf_label_no_spaces), pdf_unfolder.hist_truth)
@@ -673,7 +673,7 @@ class GenPtBinnedPlotter(object):
                 # For each systematic, get the normalised shifted distribution for this bin
                 # Then calculate the shift wrt nominal result, and hence fraction,
                 # then save and plot that
-                syst_label_no_spaces = syst_dict['label'].replace(" ", "_")
+                syst_label_no_spaces = cu.no_space_str(syst_dict['label'])
                 self.hist_bin_chopper.add_obj('syst_shifted_%s_unfolded' % syst_label_no_spaces, unfolder.systs_shifted[syst_dict['label']])
                 syst_unfolded_hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('syst_shifted_%s_unfolded' % (syst_label_no_spaces), ibin, binning_scheme='generator')
                 syst_unfolded_fraction = syst_unfolded_hist_bin.Clone()
@@ -767,7 +767,7 @@ class GenPtBinnedPlotter(object):
 
             entries = []
             for syst_dict in self.region['experimental_systematics']:
-                syst_label_no_spaces = syst_dict['label'].replace(" ", "_")
+                syst_label_no_spaces = cu.no_space_str(syst_dict['label'])
                 self.hist_bin_chopper.add_obj('syst_shifted_%s_unfolded' % syst_label_no_spaces, unfolder.systs_shifted[syst_dict['label']])
                 syst_unfolded_hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('syst_shifted_%s_unfolded' % (syst_label_no_spaces), ibin, binning_scheme='generator')
                 c = Contribution(syst_unfolded_hist_bin,
@@ -1016,7 +1016,7 @@ class GenLambdaBinnedPlotter(object):
             for syst_dict in self.region['model_systematics']:
                 syst_unfolder = syst_dict['unfolder']
                 syst_label = syst_dict['label']
-                syst_label_no_spaces = syst_dict['label'].replace(" ", "_")
+                syst_label_no_spaces = cu.no_space_str(syst_dict['label'])
 
                 self.hist_bin_chopper.add_obj('model_syst_%s_unfolded' % (syst_label_no_spaces), syst_unfolder.unfolded)
                 self.hist_bin_chopper.add_obj('model_syst_%s_hist_truth' % (syst_label_no_spaces), syst_unfolder.hist_truth)
@@ -1075,7 +1075,7 @@ class GenLambdaBinnedPlotter(object):
             for pdf_dict in self.region['pdf_systematics']:
                 pdf_unfolder = pdf_dict['unfolder']
                 pdf_label = pdf_dict['label']
-                pdf_label_no_spaces = pdf_dict['label'].replace(" ", "_")
+                pdf_label_no_spaces = cu.no_space_str(pdf_dict['label'])
 
                 self.hist_bin_chopper.add_obj('pdf_syst_%s_unfolded' % (pdf_label_no_spaces), pdf_unfolder.unfolded)
                 self.hist_bin_chopper.add_obj('pdf_syst_%s_hist_truth' % (pdf_label_no_spaces), pdf_unfolder.hist_truth)
@@ -1152,7 +1152,7 @@ class GenLambdaBinnedPlotter(object):
                 # For each systematic, get the normalised shifted distribution for this bin
                 # Then calculate the shift wrt nominal result, and hence fraction,
                 # then save and plot that
-                syst_label_no_spaces = syst_dict['label'].replace(" ", "_")
+                syst_label_no_spaces = cu.no_space_str(syst_dict['label'])
                 self.hist_bin_chopper.add_obj('syst_shifted_%s_unfolded' % syst_label_no_spaces, unfolder.systs_shifted[syst_dict['label']])
                 syst_unfolded_hist_bin = self.hist_bin_chopper.get_lambda_bin_div_bin_width('syst_shifted_%s_unfolded' % (syst_label_no_spaces), ibin, binning_scheme='generator')
                 syst_unfolded_fraction = syst_unfolded_hist_bin.Clone()
@@ -1247,7 +1247,7 @@ class GenLambdaBinnedPlotter(object):
 
             entries = []
             for syst_dict in self.region['experimental_systematics']:
-                syst_label_no_spaces = syst_dict['label'].replace(" ", "_")
+                syst_label_no_spaces = cu.no_space_str(syst_dict['label'])
                 self.hist_bin_chopper.add_obj('syst_shifted_%s_unfolded' % syst_label_no_spaces, unfolder.systs_shifted[syst_dict['label']])
                 syst_unfolded_hist_bin = self.hist_bin_chopper.get_lambda_bin_div_bin_width('syst_shifted_%s_unfolded' % (syst_label_no_spaces), ibin, binning_scheme='generator')
                 c = Contribution(syst_unfolded_hist_bin,

@@ -404,6 +404,13 @@ class Marker(object):
                     yield self.get(k, self.fill_state)
 
 
+SPACE_REPLACEMENT_CHAR = "-"
 
 
+def no_space_str(s):
+    return s.replace(" ", SPACE_REPLACEMENT_CHAR)
+
+
+def str_restore_space(s):
+    return s.replace(SPACE_REPLACEMENT_CHAR, " ")
 

@@ -45,7 +45,7 @@ def get_dijet_config(source_dir, central=True, groomed=False):
         # "alt_mc_tfile": input_mc_qcd_pythia_tfile,
         # "alt_mc_label": "Pythia8",
         # "alt_mc_tfile": input_mc_qcd_herwig_tfile_reweight,
-        # "alt_mc_label": "Herwig++ (p_{T} reweight)",
+        # "alt_mc_label": "Herwig++ (reweighted)",
         "tau_limits": None,  # user should set this
         "unreg_unfolder": None,  # set later if regularisation used
         "experimental_systematics": [
@@ -132,7 +132,7 @@ def get_dijet_config(source_dir, central=True, groomed=False):
                 "colour": ROOT.kOrange-3,
             },
             {
-                "label": "Herwig++ (p_{T} reweight)",
+                "label": "Herwig++ (reweighted)",
                 "tfile": input_mc_qcd_herwig_tfile_reweight,
                 "colour": ROOT.kOrange+4,
             },
@@ -182,7 +182,7 @@ def get_dijet_config(source_dir, central=True, groomed=False):
                 "unfolder": None,
             },
             {
-                "label": "Herwig++ (p_{T} reweight)",
+                "label": "Herwig++ (reweighted)",  # don't put in p_{T} as braces cause havoc
                 "tfile": input_mc_qcd_herwig_tfile_reweight,
                 "colour": ROOT.kOrange+4,
                 "unfolder": None,
