@@ -756,6 +756,8 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         sigma_max = sig[0]
         sigma_min = max(0, sig[sig.GetNrows()-1])
         print("sigma_max:", sigma_max, "sigma_min:", sigma_min)
+        if sigma_min == 0:
+            print("sigma_min > 0:", min([x for x in sig if x>0]))
         return sigma_max, sigma_min
 
     def print_condition_number(self):
