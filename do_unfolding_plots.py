@@ -289,7 +289,7 @@ class GenPtBinnedPlotter(object):
 
     @staticmethod
     def check_entries(entries, message=""):
-        """Check that at least 1 Contribution has something in it"""
+        """Check that at least 1 Contribution has something in it, that is non-zero"""
         has_entries = [c.obj.GetEntries() > 0 for c in entries]
         if not any(has_entries):
             if message:
@@ -297,6 +297,16 @@ class GenPtBinnedPlotter(object):
             else:
                 print("Skipping 0 entries")
             return False
+        
+        max_bin = max([c.obj.GetMaximum() for c in entries])
+        min_bin = min([c.obj.GetMinimum() for c in entries])
+        if max_bin == min_bin:
+            if message:
+                print("Skipping min=max hists (%s)" % (message))
+            else:
+                print("Skipping min=max hists")
+            return False
+
         return True
 
     def get_pt_bin_title(self, bin_edge_low, bin_edge_high):
@@ -883,6 +893,16 @@ class GenLambdaBinnedPlotter(object):
             else:
                 print("Skipping 0 entries")
             return False
+
+        max_bin = max([c.obj.GetMaximum() for c in entries])
+        min_bin = min([c.obj.GetMinimum() for c in entries])
+        if max_bin == min_bin:
+            if message:
+                print("Skipping min=max hists (%s)" % (message))
+            else:
+                print("Skipping min=max hists")
+            return False
+
         return True
 
     def get_lambda_bin_title(self, bin_edge_low, bin_edge_high):
@@ -1367,6 +1387,12 @@ class RecoPtBinnedPlotter(object):
             else:
                 print("Skipping 0 entries")
             return False
+        
+        max_bin = max([c.obj.GetMaximum() for c in entries])
+        min_bin = min([c.obj.GetMinimum() for c in entries])
+        if max_bin == min_bin:
+            return False
+
         return True
 
     def get_pt_bin_title(self, bin_edge_low, bin_edge_high):
