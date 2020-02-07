@@ -291,7 +291,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
 
         # handle most of the simple hists
         for name in MyUnfolder._simple_attr:
-            self._check_save_to_tfile(tfile, getattr(self, name), name)
+            self._check_save_to_tfile(tfile, getattr(self, name, None), name)
 
         # save all backgrounds (incl fakes)
         for name, hist in self.backgrounds.items():
