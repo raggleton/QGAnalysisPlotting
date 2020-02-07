@@ -282,7 +282,7 @@ class GenPtBinnedPlotter(object):
             has_data=self.setup.has_data,
             subplot_type='ratio',
             subplot_title="Unfolded / Gen",
-            subplot_limits=(0.75, 1.25),
+            subplot_limits=(0, 2) if self.setup.has_data else (0.75, 1.25),
         )
 
     @staticmethod
@@ -877,7 +877,7 @@ class GenLambdaBinnedPlotter(object):
             has_data=self.setup.has_data,
             subplot_type='ratio',
             subplot_title="Unfolded / Gen",
-            subplot_limits=(0.75, 1.25),
+            subplot_limits=(0, 2) if self.setup.has_data else (0.75, 1.25),
         )
 
     @staticmethod
@@ -1372,7 +1372,7 @@ class RecoPtBinnedPlotter(object):
             has_data=self.setup.has_data,
             subplot_type='ratio',
             subplot_title="Unfolded / Gen",
-            subplot_limits=(0.75, 1.25),
+            subplot_limits=(0, 2) if self.setup.has_data else (0.75, 1.25),
         )
 
     @staticmethod
