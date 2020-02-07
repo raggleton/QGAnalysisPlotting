@@ -507,6 +507,7 @@ if __name__ == "__main__":
                             help='Use alternate response matrix to unfold')
 
     args = parser.parse_args()
+    print("")
     print(args)
 
     if args.doAllRegions:
@@ -1012,7 +1013,7 @@ if __name__ == "__main__":
             # Add systematic errors as different response matrices
             # ------------------------------------------------------------------
             if args.doExperimentalSysts:
-                chosen_rsp_bin = (18, 18)
+                chosen_rsp_bin = (35, 35)
                 print("nominal response bin content for", chosen_rsp_bin, unfolder.response_map.GetBinContent(*chosen_rsp_bin))
 
                 for syst_ind, syst_dict in enumerate(region['experimental_systematics']):
@@ -1498,183 +1499,199 @@ if __name__ == "__main__":
             # UNFOLDING WITH ALTERNATIVE RESPONSE MATRIX
             # ------------------------------------------------------------------
             alt_unfolder = None
-            alt_hist_mc_gen = None  # mc truth of the generator used to make reponse matrix
+            alt_hist_mc_gen = None  # mc truth of the alternate generator used to make reponse matrix
+            alt_hist_mc_reco = None  # reco of the alternate generator used to make reponse matrix
             # Do this outside the if statement, since we might use it later in plotting e.g. for data
             if not MC_INPUT or args.useAltResponse:
                 if not isinstance(region['alt_mc_tfile'], ROOT.TFile):
                     region['alt_mc_tfile'] = cu.open_root_file(region['alt_mc_tfile'])
                 alt_hist_mc_gen = cu.get_from_tfile(region['alt_mc_tfile'], "%s/hist_%s_truth_all" % (region['dirname'], angle_shortname))
-            if args.useAltResponse:
-                print("*" * 80)
-                print("*** Unfolding with alternate response matrix ***")
-                print("*" * 80)
-
-                hist_mc_gen_reco_map_alt = cu.get_from_tfile(region['alt_mc_tfile'], "%s/tu_%s_GenReco_all" % (region['dirname'], angle_shortname))
-                hist_mc_gen_reco_map_alt.Scale(unfolder.response_map.Integral() / hist_mc_gen_reco_map_alt.Integral())  # just for display purposes, doesn't affect result
-
-                alt_unfolder = MyUnfolder(response_map=rm_large_rel_error_bins(hist_mc_gen_reco_map_alt),
-                                          variable_bin_edges_reco=unfolder.variable_bin_edges_reco,
-                                          variable_bin_edges_gen=unfolder.variable_bin_edges_gen,
-                                          variable_name=unfolder.variable_name,
-                                          pt_bin_edges_reco=unfolder.pt_bin_edges_reco,
-                                          pt_bin_edges_gen=unfolder.pt_bin_edges_gen,
-                                          pt_bin_edges_underflow_reco=unfolder.pt_bin_edges_underflow_reco,
-                                          pt_bin_edges_underflow_gen=unfolder.pt_bin_edges_underflow_gen,
-                                          orientation=unfolder.orientation,
-                                          constraintMode=unfolder.constraintMode,
-                                          regMode=unfolder.regMode,
-                                          densityFlags=unfolder.densityFlags,
-                                          distribution=unfolder.distribution,
-                                          axisSteering=unfolder.axisSteering)
-
+                alt_hist_mc_reco = cu.get_from_tfile(region['alt_mc_tfile'], "%s/hist_%s_reco_all" % (region['dirname'], angle_shortname))
+                # fakes-subtracted version
+                alt_hist_fakes = hist_fakes_reco_fraction.Clone("hist_fakes_alt")
+                alt_hist_fakes.Multiply(alt_hist_mc_reco)
+                alt_hist_mc_reco_bg_subtracted = alt_hist_mc_reco.Clone()
+                alt_hist_mc_reco_bg_subtracted.Add(alt_hist_fakes, -1)
+                
                 this_tdir.cd()
                 alt_tdir = this_tdir.mkdir("alt_response_%s" % cu.no_space_str(region['alt_mc_label']))
                 alt_tdir.cd()
 
-                is_herwig = "Herwig" in region['alt_mc_label']
-                is_pythia8 = region['alt_mc_label'] == "Pythia8"  # not MG+Pythia9
-                if is_herwig or is_pythia8:
-                    # SetEpsMatrix ensures rank properly calculated when inverting
-                    # Needed if you get message "rank of matrix E 55 expect 170"
-                    # And unfolded looks wacko
-                    alt_unfolder.SetEpsMatrix(1E-18)
+                if args.useAltResponse:
+                    print("*" * 80)
+                    print("*** Unfolding with alternate response matrix ***")
+                    print("*" * 80)
 
-                alt_unfolder_plotter = MyUnfolderPlotter(alt_unfolder, is_data=not MC_INPUT)
-                alt_output_dir = this_output_dir+"/altResponse"
-                alt_plot_args = dict(output_dir=alt_output_dir,
-                                     append=append)
+                    hist_mc_gen_reco_map_alt = cu.get_from_tfile(region['alt_mc_tfile'], "%s/tu_%s_GenReco_all" % (region['dirname'], angle_shortname))
+                    hist_mc_gen_reco_map_alt.Scale(unfolder.response_map.Integral() / hist_mc_gen_reco_map_alt.Integral())  # just for display purposes, doesn't affect result
 
-                # Only plot response matrix
-                # --------------------------------------------------------------
-                title = ("#splitline{Probability matrix, %s region, %s, %s}{Condition number: #sigma_{max} / #sigma_{min} = %.3g / %.3g = %g}"
-                            % (region['label'], angle_str, region['alt_mc_label'], unfolder.sigma_max, unfolder.sigma_min, unfolder.condition_number))
-                alt_unfolder_plotter.draw_probability_matrix(title=title, **alt_plot_args)
+                    alt_unfolder = MyUnfolder(response_map=rm_large_rel_error_bins(hist_mc_gen_reco_map_alt),
+                                              variable_bin_edges_reco=unfolder.variable_bin_edges_reco,
+                                              variable_bin_edges_gen=unfolder.variable_bin_edges_gen,
+                                              variable_name=unfolder.variable_name,
+                                              pt_bin_edges_reco=unfolder.pt_bin_edges_reco,
+                                              pt_bin_edges_gen=unfolder.pt_bin_edges_gen,
+                                              pt_bin_edges_underflow_reco=unfolder.pt_bin_edges_underflow_reco,
+                                              pt_bin_edges_underflow_gen=unfolder.pt_bin_edges_underflow_gen,
+                                              orientation=unfolder.orientation,
+                                              constraintMode=unfolder.constraintMode,
+                                              regMode=unfolder.regMode,
+                                              densityFlags=unfolder.densityFlags,
+                                              distribution=unfolder.distribution,
+                                              axisSteering=unfolder.axisSteering)
 
-                title = "Response matrix, %s, %s region, %s, %s" % (jet_algo, region['label'], angle_str, region['alt_mc_label'])
-                alt_unfolder_plotter.draw_response_matrix(title=title, **alt_plot_args)
+                    # this_tdir.cd()
+                    # alt_tdir = this_tdir.mkdir("alt_response_%s" % cu.no_space_str(region['alt_mc_label']))
+                    # alt_tdir.cd()
 
-                # Set what is to be unfolded - same as main unfolder
-                # --------------------------------------------------------------
-                alt_unfolder.set_input(input_hist=reco_1d,
-                                       input_hist_gen_binning=reco_1d_gen_binning,
-                                       hist_truth=unfolder.hist_truth.Clone(),
-                                       hist_mc_reco=unfolder.hist_mc_reco.Clone(),
-                                       hist_mc_reco_bg_subtracted=unfolder.hist_mc_reco_bg_subtracted.Clone(),
-                                       hist_mc_reco_gen_binning=unfolder.hist_mc_reco_gen_binning.Clone(),
-                                       hist_mc_reco_gen_binning_bg_subtracted=unfolder.hist_mc_reco_gen_binning_bg_subtracted.Clone(),
-                                       bias_factor=args.biasFactor)
+                    is_herwig = "Herwig" in region['alt_mc_label']
+                    is_pythia8 = region['alt_mc_label'] == "Pythia8"  # not MG+Pythia9
+                    if is_herwig or is_pythia8:
+                        # SetEpsMatrix ensures rank properly calculated when inverting
+                        # Needed if you get message "rank of matrix E 55 expect 170"
+                        # And unfolded looks wacko
+                        alt_unfolder.SetEpsMatrix(1E-18)
 
-                # Subtract fakes (treat as background)
-                # --------------------------------------------------------------
-                if SUBTRACT_FAKES:
-                    alt_unfolder.subtract_background(hist_fakes_reco, "fakes")
+                    alt_unfolder_plotter = MyUnfolderPlotter(alt_unfolder, is_data=not MC_INPUT)
+                    alt_output_dir = this_output_dir+"/altResponse"
+                    alt_plot_args = dict(output_dir=alt_output_dir,
+                                         append=append)
 
-                # Do any regularization
-                # --------------------------------------------------------------
-                # Setup L matrix
-                if REGULARIZE != "None":
-                    gen_node = unfolder.generator_binning.FindNode('generatordistribution')
-                    for ilambda in range(len(unfolder.variable_bin_edges_gen[:-1])):
-                        for ipt in range(len(unfolder.pt_bin_edges_gen[:-3])):
-                            pt_cen = unfolder.pt_bin_edges_gen[ipt+1] + 0.000001  # add a tiny bit to make sure we're in the bin properly (I can never remember if included or not)
-                            # lambda_cen = unfolder.variable_bin_edges_gen[ilambda+1] + 0.000001  # add a tiny bit to make sure we're in the bin properly (I can never remember if included or not)
-                            lambda_cen = unfolder.variable_bin_edges_gen[ilambda] + 0.000001  # add a tiny bit to make sure we're in the bin properly (I can never remember if included or not)
+                    # Only plot response matrix
+                    # --------------------------------------------------------------
+                    title = ("#splitline{Probability matrix, %s region, %s, %s}{Condition number: #sigma_{max} / #sigma_{min} = %.3g / %.3g = %g}"
+                                % (region['label'], angle_str, region['alt_mc_label'], unfolder.sigma_max, unfolder.sigma_min, unfolder.condition_number))
+                    alt_unfolder_plotter.draw_probability_matrix(title=title, **alt_plot_args)
 
-                            bin_ind_pt_down = gen_node.GetGlobalBinNumber(lambda_cen, unfolder.pt_bin_edges_gen[ipt] + 0.000001)
-                            bin_ind_pt_up = gen_node.GetGlobalBinNumber(lambda_cen, unfolder.pt_bin_edges_gen[ipt+2] + 0.000001)
-                            bin_ind_cen = gen_node.GetGlobalBinNumber(lambda_cen, pt_cen)
+                    title = "Response matrix, %s, %s region, %s, %s" % (jet_algo, region['label'], angle_str, region['alt_mc_label'])
+                    alt_unfolder_plotter.draw_response_matrix(title=title, **alt_plot_args)
 
-                            val_down = unfolder.hist_truth.GetBinContent(bin_ind_pt_down)
-                            value_pt_down = 1./val_down if val_down != 0 else 0
+                    # Set what is to be unfolded - same as main unfolder
+                    # --------------------------------------------------------------
+                    alt_unfolder.set_input(input_hist=reco_1d,
+                                           input_hist_gen_binning=reco_1d_gen_binning,
+                                           hist_truth=unfolder.hist_truth.Clone(),
+                                           hist_mc_reco=unfolder.hist_mc_reco.Clone(),
+                                           hist_mc_reco_bg_subtracted=unfolder.hist_mc_reco_bg_subtracted.Clone(),
+                                           hist_mc_reco_gen_binning=unfolder.hist_mc_reco_gen_binning.Clone(),
+                                           hist_mc_reco_gen_binning_bg_subtracted=unfolder.hist_mc_reco_gen_binning_bg_subtracted.Clone(),
+                                           bias_factor=args.biasFactor)
 
-                            val_up = unfolder.hist_truth.GetBinContent(bin_ind_pt_down)
-                            value_pt_up = 1./val_up if val_up != 0 else 0
-                            value_pt_cen = - (value_pt_down + value_pt_up)
+                    # Subtract fakes (treat as background)
+                    # --------------------------------------------------------------
+                    if SUBTRACT_FAKES:
+                        alt_unfolder.subtract_background(hist_fakes_reco, "fakes")
 
-                            alt_unfolder.AddRegularisationCondition(bin_ind_pt_down, value_pt_down, bin_ind_cen, value_pt_cen, bin_ind_pt_up, value_pt_up)
+                    # Do any regularization
+                    # --------------------------------------------------------------
+                    # Setup L matrix
+                    if REGULARIZE != "None":
+                        gen_node = unfolder.generator_binning.FindNode('generatordistribution')
+                        for ilambda in range(len(unfolder.variable_bin_edges_gen[:-1])):
+                            for ipt in range(len(unfolder.pt_bin_edges_gen[:-3])):
+                                pt_cen = unfolder.pt_bin_edges_gen[ipt+1] + 0.000001  # add a tiny bit to make sure we're in the bin properly (I can never remember if included or not)
+                                # lambda_cen = unfolder.variable_bin_edges_gen[ilambda+1] + 0.000001  # add a tiny bit to make sure we're in the bin properly (I can never remember if included or not)
+                                lambda_cen = unfolder.variable_bin_edges_gen[ilambda] + 0.000001  # add a tiny bit to make sure we're in the bin properly (I can never remember if included or not)
 
-                # Scan for best regularisation strength
-                alt_tau = 0
-                if REGULARIZE == "L":
-                    print("Regularizing alternative with ScanL, please be patient...")
-                    alt_L_scanner = LCurveScanner()
-                    alt_tau = alt_l_scanner.scan_L(tunfolder=alt_unfolder,
-                                               n_scan=args.nScan,
-                                               tau_min=region['tau_limits'][angle.var][0],
-                                               tau_max=region['tau_limits'][angle.var][1])
-                    print("Found tau:", alt_tau)
-                    alt_l_scanner.plot_scan_L_curve(output_filename="%s/scanL_alt_%s.%s" % (alt_output_dir, unfolder.variable_name, OUTPUT_FMT))
-                    alt_l_scanner.plot_scan_L_curvature(output_filename="%s/scanLcurvature_alt_%s.%s" % (alt_output_dir, unfolder.variable_name, OUTPUT_FMT))
-                    alt_l_scanner.save_to_tfile(alt_tdir)
+                                bin_ind_pt_down = gen_node.GetGlobalBinNumber(lambda_cen, unfolder.pt_bin_edges_gen[ipt] + 0.000001)
+                                bin_ind_pt_up = gen_node.GetGlobalBinNumber(lambda_cen, unfolder.pt_bin_edges_gen[ipt+2] + 0.000001)
+                                bin_ind_cen = gen_node.GetGlobalBinNumber(lambda_cen, pt_cen)
 
-                elif REGULARIZE == "tau":
-                    print("Regularizing alternative with ScanTau, please be patient...")
-                    alt_tau_scanner = TauScanner()
-                    alt_tau = alt_tau_scanner.scan_tau(tunfolder=alt_unfolder,
-                                                       n_scan=args.nScan,
-                                                       tau_min=region['tau_limits'][angle.var][0],
-                                                       tau_max=region['tau_limits'][angle.var][1],
-                                                       scan_mode=scan_mode,
-                                                       distribution=scan_distribution,
-                                                       axis_steering=alt_unfolder.axisSteering)
-                    print("Found tau for alt matrix:", alt_tau)
-                    alt_tau_scanner.plot_scan_tau(output_filename="%s/scantau_alt_%s.%s" % (alt_output_dir, alt_unfolder.variable_name, OUTPUT_FMT))
-                    alt_tau_scanner.save_to_tfile(alt_tdir)
+                                val_down = unfolder.hist_truth.GetBinContent(bin_ind_pt_down)
+                                value_pt_down = 1./val_down if val_down != 0 else 0
 
-                if REGULARIZE != "None":
-                    title = "L matrix, %s region, %s, alt. response (%s)" % (region['label'], angle_str, region['alt_mc_label'])
-                    alt_unfolder_plotter.draw_L_matrix(title=title, **alt_plot_args)
-                    title = "L^{T}L matrix, %s region, %s, alt. response (%s)" % (region['label'], angle_str, region['alt_mc_label'])
-                    alt_unfolder_plotter.draw_L_matrix_squared(title=title, **alt_plot_args)
-                    title = "L * (x - bias vector), %s region, %s,  alt. response (%s)" % (region['label'], angle_str, region['alt_mc_label'])
-                    alt_unfolder_plotter.draw_Lx_minus_bias(title=title, **alt_plot_args)
+                                val_up = unfolder.hist_truth.GetBinContent(bin_ind_pt_down)
+                                value_pt_up = 1./val_up if val_up != 0 else 0
+                                value_pt_cen = - (value_pt_down + value_pt_up)
 
-                # Do unfolding!
-                # --------------------------------------------------------------
-                alt_unfolder.do_unfolding(alt_tau)
-                alt_unfolded_1d = alt_unfolder.get_output(hist_name="alt_unfolded_1d")
-                print("Bin %d:" % chosen_bin, alt_unfolded_1d.GetBinContent(chosen_bin))
-                print("original uncert:", alt_unfolded_1d.GetBinError(chosen_bin))
-                alt_unfolder._post_process()
+                                alt_unfolder.AddRegularisationCondition(bin_ind_pt_down, value_pt_down, bin_ind_cen, value_pt_cen, bin_ind_pt_up, value_pt_up)
 
-                if SUBTRACT_FAKES:
-                    title = "%s\n%s region, %s, %s response map" % (jet_algo, region['label'], angle_str, region['alt_mc_label'])
-                    alt_unfolder_plotter.draw_detector_1d(do_reco_data_bg_sub=not MC_INPUT,
-                                                          do_reco_bg=SUBTRACT_FAKES,
-                                                          do_reco_mc_bg_sub=True,
-                                                          output_dir=alt_output_dir,
-                                                          append='bg_fakes_subtracted_%s' % append,
-                                                          title=title)
+                    # Scan for best regularisation strength
+                    alt_tau = 0
+                    if REGULARIZE == "L":
+                        print("Regularizing alternative with ScanL, please be patient...")
+                        alt_L_scanner = LCurveScanner()
+                        alt_tau = alt_l_scanner.scan_L(tunfolder=alt_unfolder,
+                                                   n_scan=args.nScan,
+                                                   tau_min=region['tau_limits'][angle.var][0],
+                                                   tau_max=region['tau_limits'][angle.var][1])
+                        print("Found tau:", alt_tau)
+                        alt_l_scanner.plot_scan_L_curve(output_filename="%s/scanL_alt_%s.%s" % (alt_output_dir, unfolder.variable_name, OUTPUT_FMT))
+                        alt_l_scanner.plot_scan_L_curvature(output_filename="%s/scanLcurvature_alt_%s.%s" % (alt_output_dir, unfolder.variable_name, OUTPUT_FMT))
+                        alt_l_scanner.save_to_tfile(alt_tdir)
 
-                    # same but with generator-binning
-                    alt_unfolder_plotter.draw_generator_1d(do_reco_data=False,
-                                                           do_reco_data_bg_sub=not MC_INPUT,
-                                                           do_reco_bg=True,
-                                                           do_reco_mc=False,
-                                                           do_reco_mc_bg_sub=True,
-                                                           do_truth_mc=True,
-                                                           output_dir=alt_output_dir,
-                                                           append='bg_fakes_subtracted_%s' % append,
-                                                           title=title)
+                    elif REGULARIZE == "tau":
+                        print("Regularizing alternative with ScanTau, please be patient...")
+                        alt_tau_scanner = TauScanner()
+                        alt_tau = alt_tau_scanner.scan_tau(tunfolder=alt_unfolder,
+                                                           n_scan=args.nScan,
+                                                           tau_min=region['tau_limits'][angle.var][0],
+                                                           tau_max=region['tau_limits'][angle.var][1],
+                                                           scan_mode=scan_mode,
+                                                           distribution=scan_distribution,
+                                                           axis_steering=alt_unfolder.axisSteering)
+                        print("Found tau for alt matrix:", alt_tau)
+                        alt_tau_scanner.plot_scan_tau(output_filename="%s/scantau_alt_%s.%s" % (alt_output_dir, alt_unfolder.variable_name, OUTPUT_FMT))
+                        alt_tau_scanner.save_to_tfile(alt_tdir)
 
-                alt_title = "%s\n%s region, %s, %s response map" % (jet_algo, region['label'], angle_str, region['alt_mc_label'])
-                alt_unfolder_plotter.draw_unfolded_1d(title=alt_title, **alt_plot_args)
+                    if REGULARIZE != "None":
+                        title = "L matrix, %s region, %s, alt. response (%s)" % (region['label'], angle_str, region['alt_mc_label'])
+                        alt_unfolder_plotter.draw_L_matrix(title=title, **alt_plot_args)
+                        title = "L^{T}L matrix, %s region, %s, alt. response (%s)" % (region['label'], angle_str, region['alt_mc_label'])
+                        alt_unfolder_plotter.draw_L_matrix_squared(title=title, **alt_plot_args)
+                        title = "L * (x - bias vector), %s region, %s,  alt. response (%s)" % (region['label'], angle_str, region['alt_mc_label'])
+                        alt_unfolder_plotter.draw_Lx_minus_bias(title=title, **alt_plot_args)
 
-                title = "Correlation matrix, %s, %s region, %s, %s response map" % (jet_algo, region['label'], angle_str, region['alt_mc_label'])
-                alt_unfolder_plotter.draw_correlation_matrix(title=title, draw_values=False, **alt_plot_args)
+                    # Do unfolding!
+                    # --------------------------------------------------------------
+                    alt_unfolder.do_unfolding(alt_tau)
+                    alt_unfolded_1d = alt_unfolder.get_output(hist_name="alt_unfolded_1d")
+                    print("Bin %d:" % chosen_bin, alt_unfolded_1d.GetBinContent(chosen_bin))
+                    print("original uncert:", alt_unfolded_1d.GetBinError(chosen_bin))
+                    alt_unfolder._post_process()
 
-                title = "Error matrix (statistical input + backgrounds), %s, %s region, %s, %s response map" % (jet_algo, region['label'], angle_str, region['alt_mc_label'])
-                alt_unfolder_plotter.draw_error_matrix_stat(title=title, **alt_plot_args)
+                    if SUBTRACT_FAKES:
+                        title = "%s\n%s region, %s, %s response map" % (jet_algo, region['label'], angle_str, region['alt_mc_label'])
+                        alt_unfolder_plotter.draw_detector_1d(do_reco_data_bg_sub=not MC_INPUT,
+                                                              do_reco_bg=SUBTRACT_FAKES,
+                                                              do_reco_mc_bg_sub=True,
+                                                              output_dir=alt_output_dir,
+                                                              append='bg_fakes_subtracted_%s' % append,
+                                                              title=title)
 
-                title = "Error matrix (total), %s, %s region, %s, %s response map" % (jet_algo, region['label'], angle_str, region['alt_mc_label'])
-                alt_unfolder_plotter.draw_error_matrix_total(title=title, **alt_plot_args)
+                        # same but with generator-binning
+                        alt_unfolder_plotter.draw_generator_1d(do_reco_data=False,
+                                                               do_reco_data_bg_sub=not MC_INPUT,
+                                                               do_reco_bg=True,
+                                                               do_reco_mc=False,
+                                                               do_reco_mc_bg_sub=True,
+                                                               do_truth_mc=True,
+                                                               output_dir=alt_output_dir,
+                                                               append='bg_fakes_subtracted_%s' % append,
+                                                               title=title)
 
-                region['alt_unfolder'] = alt_unfolder
+                    alt_title = "%s\n%s region, %s, %s response map" % (jet_algo, region['label'], angle_str, region['alt_mc_label'])
+                    alt_unfolder_plotter.draw_unfolded_1d(title=alt_title, **alt_plot_args)
+
+                    title = "Correlation matrix, %s, %s region, %s, %s response map" % (jet_algo, region['label'], angle_str, region['alt_mc_label'])
+                    alt_unfolder_plotter.draw_correlation_matrix(title=title, draw_values=False, **alt_plot_args)
+
+                    title = "Error matrix (statistical input + backgrounds), %s, %s region, %s, %s response map" % (jet_algo, region['label'], angle_str, region['alt_mc_label'])
+                    alt_unfolder_plotter.draw_error_matrix_stat(title=title, **alt_plot_args)
+
+                    title = "Error matrix (total), %s, %s region, %s, %s response map" % (jet_algo, region['label'], angle_str, region['alt_mc_label'])
+                    alt_unfolder_plotter.draw_error_matrix_total(title=title, **alt_plot_args)
+
+                    region['alt_unfolder'] = alt_unfolder
+
+                    # Save important stuff to TFile
+                    # --------------------------------------------------------------
+                    alt_unfolder.save_to_tfile(alt_tdir)
+                
+                # Bit gnarly - have to save this stuff manually
                 alt_tdir.WriteTObject(alt_hist_mc_gen, "alt_hist_mc_gen")
-
-                # Save important stuff to TFile
-                # --------------------------------------------------------------
-                alt_unfolder.save_to_tfile(alt_tdir)
+                alt_tdir.WriteTObject(alt_hist_mc_reco, "alt_hist_mc_reco")
+                alt_tdir.WriteTObject(alt_hist_mc_reco_bg_subtracted, "alt_hist_mc_reco_bg_subtracted")
 
             # ------------------------------------------------------------------
             # MODEL INPUT VARIATIONS

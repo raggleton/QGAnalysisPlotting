@@ -87,6 +87,8 @@ def unpack_unfolding_root_file(input_tfile, region, angle, do_alt_response=True,
     # Get alternate response object, if it exists
     alt_unfolder = None
     alt_hist_truth = None
+    alt_hist_reco = None
+    alt_hist_reco_bg_subtracted = None
     if do_alt_response:
         alt_tdir = [x for x in list_of_obj if x.startswith("alt_response_")]
         if len(alt_tdir)  == 1:
@@ -97,6 +99,8 @@ def unpack_unfolding_root_file(input_tfile, region, angle, do_alt_response=True,
                 raise RuntimeError("Bad unpacking of alt response unfolder: expected %s, got %s" % (region['alt_mc_label'], alt_unfolder_name))
             print("...Loaded alt unfolder")
             alt_hist_truth = input_tfile.Get(os.path.join(input_tdir_name, alt_tdir[0], "alt_hist_mc_gen"))
+            alt_hist_reco = input_tfile.Get(os.path.join(input_tdir_name, alt_tdir[0], "alt_hist_mc_reco"))
+            alt_hist_reco_bg_subtracted = input_tfile.Get(os.path.join(input_tdir_name, alt_tdir[0], "alt_hist_mc_reco_bg_subtracted"))
         if len(alt_tdir) > 1:
             raise RuntimeError(">1 alt_response?! %s" % (alt_tdir))
 
@@ -142,7 +146,9 @@ def unpack_unfolding_root_file(input_tfile, region, angle, do_alt_response=True,
         unfolder=unfolder,
         unreg_unfolder=unreg_unfolder,
         alt_unfolder=alt_unfolder,
-        alt_hist_truth=alt_hist_truth
+        alt_hist_truth=alt_hist_truth,
+        alt_hist_reco=alt_hist_reco,
+        alt_hist_reco_bg_subtracted=alt_hist_reco_bg_subtracted
     )
 
 
