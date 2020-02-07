@@ -600,6 +600,14 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             self.ematrix_total = self.GetEmatrixTotal("ematrix_total_"+cu.get_unique_str(), "", "generator", "*[]", self.use_axis_binning)
         return self.ematrix_total
 
+    @property
+    def ematrix_total_ndarray(self):
+        cached_attr_name = '_ematrix_total_ndarray'
+        if not hasattr(self, cached_attr_name):
+            arr, _ = self.th2_to_ndarray(self.get_ematrix_total())
+            setattr(self, cached_attr_name, arr)
+        return getattr(self, cached_attr_name)
+
     def get_ematrix_stat(self):
         """Get total statitical error matrix (from input being unfolded + background sources, including fakes)"""
         if getattr(self, 'ematrix_stat', None) is None:
