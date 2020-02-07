@@ -312,6 +312,10 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         for name, syst_shift in self.systs_shifted.items():
             self._check_save_to_tfile(tfile, syst_shift, "syst_shifted_unfolded_%s" % cu.no_space_str(name))
 
+        # Write the TUnfoldDensity object
+        tfile.cd()
+        super(ROOT.MyTUnfoldDensity, self).Write()
+
     def set_input(self,
                   input_hist,
                   input_hist_gen_binning=None,
