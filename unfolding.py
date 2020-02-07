@@ -231,12 +231,12 @@ def calc_auto_xlim(entries):
                 if val == 0:
                     x_max = max(xax.GetBinLowEdge(i+1), x_max)
                     break
-    print(x_min, x_max)
     if x_max > x_min:
         return (x_min, x_max)
     else:
         # default x max
-        return (x_min, xax.GetBinLowEdge(nbins+1))
+        return None
+        # return (x_min, xax.GetBinLowEdge(nbins+1))
 
 
 def plot_uncertainty_shifts(total_hist, stat_hist, syst_unfold_hist, systs_shifted, systs, output_filename, title, angle_str):
