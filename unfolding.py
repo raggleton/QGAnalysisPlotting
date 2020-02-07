@@ -672,7 +672,7 @@ if __name__ == "__main__":
 
     # Run with MC input instead of data
     MC_INPUT = args.MCinput
-    mc_append = "_MC" if MC_INPUT else ""
+    mc_append = "_MC" if MC_INPUT else "_DATA"
 
     # If True, use part of MC for response matrix, and separate part for unfolding
     # as independent test
