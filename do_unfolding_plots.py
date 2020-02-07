@@ -303,7 +303,7 @@ class GenPtBinnedPlotter(object):
             else:
                 print("Skipping 0 entries")
             return False
-        
+
         max_bin = max([c.obj.GetMaximum() for c in entries])
         min_bin = min([c.obj.GetMinimum() for c in entries])
         if max_bin == min_bin:
@@ -471,13 +471,14 @@ class GenPtBinnedPlotter(object):
     def plot_unfolded_with_alt_response_normalised(self, unfolder, alt_unfolder):
         for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
             # TODO: should this be inside or outside this func?
-            self.hist_bin_chopper.add_obj("alt_unfolded", alt_unfolder.unfolded)
+            self.hist_bin_chopper.add_obj("alt_unfolded_stat_err", alt_unfolder.unfolded_stat_err)
             self.hist_bin_chopper.add_obj("alt_hist_truth", alt_unfolder.hist_truth)
 
             mc_gen_hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('hist_truth', ibin, binning_scheme='generator')
             unfolded_hist_bin_total_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded', ibin, binning_scheme='generator')
-            alt_unfolded_hist_bin_total_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('alt_unfolded', ibin, binning_scheme='generator')
-            alt_mc_gen_hist_gin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('alt_hist_truth', ibin, binning_scheme='generator')
+            unfolded_hist_bin_stat_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded_stat_err', ibin, binning_scheme='generator')
+            alt_unfolded_hist_bin_total_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('alt_unfolded_stat_err', ibin, binning_scheme='generator')
+            # alt_mc_gen_hist_gin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('alt_hist_truth', ibin, binning_scheme='generator')
 
             entries = [
                 Contribution(mc_gen_hist_bin,
@@ -493,8 +494,13 @@ class GenPtBinnedPlotter(object):
                              line_color=self.plot_colours['unfolded_total_colour'], line_width=self.line_width, line_style=1,
                              marker_color=self.plot_colours['unfolded_total_colour'], #marker_style=20, marker_size=0.75,
                              subplot=mc_gen_hist_bin),
+                Contribution(unfolded_hist_bin_stat_errors,
+                             label="Unfolded (#tau = %.3g) (stat err)\n(%s response matrix)" % (unfolder.tau, self.region['mc_label']),
+                             line_color=self.plot_colours['unfolded_stat_colour'], line_width=self.line_width, line_style=1,
+                             marker_color=self.plot_colours['unfolded_stat_colour'], marker_style=20, marker_size=0.75,
+                             subplot=mc_gen_hist_bin),
                 Contribution(alt_unfolded_hist_bin_total_errors,
-                             label="Unfolded (#tau = %.3g) (total err)\n(%s response matrix)" % (alt_unfolder.tau, self.region['alt_mc_label']),
+                             label="Unfolded (#tau = %.3g) (stat err)\n(%s response matrix)" % (alt_unfolder.tau, self.region['alt_mc_label']),
                              line_color=self.plot_colours['alt_unfolded_colour'], line_width=self.line_width, line_style=1,
                              marker_color=self.plot_colours['alt_unfolded_colour'], #marker_style=20, marker_size=0.75,
                              subplot=mc_gen_hist_bin),
@@ -512,12 +518,13 @@ class GenPtBinnedPlotter(object):
     def plot_unfolded_with_alt_response_truth_normalised(self, unfolder, alt_unfolder, alt_truth):
         for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
             # TODO: should this be inside or outside this func?
-            self.hist_bin_chopper.add_obj("alt_unfolded", alt_unfolder.unfolded)
+            self.hist_bin_chopper.add_obj("alt_unfolded_stat_err", alt_unfolder.unfolded_stat_err)
             self.hist_bin_chopper.add_obj("alt_truth", alt_truth)
 
             mc_gen_hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('hist_truth', ibin, binning_scheme='generator')
             unfolded_hist_bin_total_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded', ibin, binning_scheme='generator')
-            alt_unfolded_hist_bin_total_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('alt_unfolded', ibin, binning_scheme='generator')
+            unfolded_hist_bin_stat_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded_stat_err', ibin, binning_scheme='generator')
+            alt_unfolded_hist_bin_total_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('alt_unfolded_stat_err', ibin, binning_scheme='generator')
             alt_mc_gen_hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('alt_truth', ibin, binning_scheme='generator')
 
             entries = [
@@ -528,24 +535,32 @@ class GenPtBinnedPlotter(object):
                 Contribution(alt_mc_gen_hist_bin,
                              label="Generator (%s)" % (self.region['alt_mc_label']),
                              line_color=self.plot_colours['alt_gen_colour'], line_width=self.line_width, line_style=2,
-                             marker_color=self.plot_colours['alt_gen_colour'], marker_size=0),
+                             marker_color=self.plot_colours['alt_gen_colour'], marker_size=0,
+                             subplot=mc_gen_hist_bin),
                 Contribution(unfolded_hist_bin_total_errors,
                              label="Unfolded (#tau = %.3g) (total err)\n(%s response matrix)" % (unfolder.tau, self.region['mc_label']),
                              line_color=self.plot_colours['unfolded_total_colour'], line_width=self.line_width, line_style=1,
                              marker_color=self.plot_colours['unfolded_total_colour'], #marker_style=20, marker_size=0.75,
                              subplot=mc_gen_hist_bin),
+                Contribution(unfolded_hist_bin_stat_errors,
+                             label="Unfolded (#tau = %.3g) (stat err)\n(%s response matrix)" % (unfolder.tau, self.region['mc_label']),
+                             line_color=self.plot_colours['unfolded_stat_colour'], line_width=self.line_width, line_style=1,
+                             marker_color=self.plot_colours['unfolded_stat_colour'], marker_style=20, marker_size=0.75,
+                             subplot=mc_gen_hist_bin),
                 Contribution(alt_unfolded_hist_bin_total_errors,
-                             label="Unfolded (#tau = %.3g) (total err)\n(%s response matrix)" % (alt_unfolder.tau, self.region['alt_mc_label']),
+                             label="Unfolded (#tau = %.3g) (stat err)\n(%s response matrix)" % (alt_unfolder.tau, self.region['alt_mc_label']),
                              line_color=self.plot_colours['alt_unfolded_colour'], line_width=self.line_width, line_style=1,
                              marker_color=self.plot_colours['alt_unfolded_colour'], #marker_style=20, marker_size=0.75,
                              subplot=mc_gen_hist_bin),
             ]
             if not self.check_entries(entries, "plot_unfolded_with_unreg_normalised_pt_bin %d" % (ibin)):
                 return
+            this_plot_args = {k:v for k,v in self.pt_bin_plot_args.items()}
+            this_plot_args['subplot_title'] = '#splitline{* / Gen}{(%s)}' % (self.region['mc_label'])
             plot = Plot(entries,
                         ytitle=self.setup.pt_bin_normalised_differential_label,
                         title=self.get_pt_bin_title(bin_edge_low, bin_edge_high),
-                        **self.pt_bin_plot_args)
+                        **this_plot_args)
             self._modify_plot(plot)
             plot.plot("NOSTACK E1")
             plot.save("%s/unfolded_%s_alt_response_truth_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
@@ -1000,12 +1015,13 @@ class GenLambdaBinnedPlotter(object):
     def plot_unfolded_with_alt_response_unnormalised(self, unfolder, alt_unfolder):
         for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
             # TODO: should this be inside or outside this func?
-            self.hist_bin_chopper.add_obj("alt_unfolded", alt_unfolder.unfolded)
+            self.hist_bin_chopper.add_obj("alt_unfolded_stat_err", alt_unfolder.unfolded_stat_err)
             self.hist_bin_chopper.add_obj("alt_hist_truth", alt_unfolder.hist_truth)
 
             mc_gen_hist_bin = self.hist_bin_chopper.get_lambda_bin_div_bin_width('hist_truth', ibin, binning_scheme='generator')
             unfolded_hist_bin_total_errors = self.hist_bin_chopper.get_lambda_bin_div_bin_width('unfolded', ibin, binning_scheme='generator')
-            alt_unfolded_hist_bin_total_errors = self.hist_bin_chopper.get_lambda_bin_div_bin_width('alt_unfolded', ibin, binning_scheme='generator')
+            unfolded_hist_bin_stat_errors = self.hist_bin_chopper.get_lambda_bin_div_bin_width('unfolded_stat_err', ibin, binning_scheme='generator')
+            alt_unfolded_hist_bin_total_errors = self.hist_bin_chopper.get_lambda_bin_div_bin_width('alt_unfolded_stat_err', ibin, binning_scheme='generator')
             alt_mc_gen_hist_gin = self.hist_bin_chopper.get_lambda_bin_div_bin_width('alt_hist_truth', ibin, binning_scheme='generator')
 
             entries = [
@@ -1022,8 +1038,13 @@ class GenLambdaBinnedPlotter(object):
                              line_color=self.plot_colours['unfolded_total_colour'], line_width=self.line_width, line_style=1,
                              marker_color=self.plot_colours['unfolded_total_colour'], #marker_style=20, marker_size=0.75,
                              subplot=mc_gen_hist_bin),
+                Contribution(unfolded_hist_bin_stat_errors,
+                             label="Unfolded (#tau = %.3g) (stat err)\n(%s response matrix)" % (unfolder.tau, self.region['mc_label']),
+                             line_color=self.plot_colours['unfolded_stat_colour'], line_width=self.line_width, line_style=1,
+                             marker_color=self.plot_colours['unfolded_stat_colour'], marker_style=20, marker_size=0.75,
+                             subplot=mc_gen_hist_bin),
                 Contribution(alt_unfolded_hist_bin_total_errors,
-                             label="Unfolded (#tau = %.3g) (total err)\n(%s response matrix)" % (alt_unfolder.tau, self.region['alt_mc_label']),
+                             label="Unfolded (#tau = %.3g) (stat err)\n(%s response matrix)" % (alt_unfolder.tau, self.region['alt_mc_label']),
                              line_color=self.plot_colours['alt_unfolded_colour'], line_width=self.line_width, line_style=1,
                              marker_color=self.plot_colours['alt_unfolded_colour'], #marker_style=20, marker_size=0.75,
                              subplot=mc_gen_hist_bin),
@@ -1393,7 +1414,7 @@ class RecoPtBinnedPlotter(object):
             else:
                 print("Skipping 0 entries")
             return False
-        
+
         max_bin = max([c.obj.GetMaximum() for c in entries])
         min_bin = min([c.obj.GetMinimum() for c in entries])
         if max_bin == min_bin:
@@ -1683,11 +1704,11 @@ if __name__ == "__main__":
 
 
     args = parser.parse_args()
-    
+
     if args.doAllRegions:
         for x in ['doDijetCentral', 'doDijetForward', 'doDijetCentralGroomed', 'doDijetForwardGroomed', 'doZPJ', 'doZPJGroomed']:
             setattr(args, x, True)
-    
+
     regions = setup_regions(args)
 
     if args.angles[0] == "all":
@@ -1700,9 +1721,6 @@ if __name__ == "__main__":
         jet_algo = "AK8 PF PUPPI"
 
     has_data = not ('_MC_all' in args.source or '_MC_split' in args.source)
-
-    # Store all things for final summary plots
-    all_binned_hists = []
 
     # Iterate through regions & variables
     for region in regions:
@@ -1750,4 +1768,4 @@ if __name__ == "__main__":
                           output_dir=angle_output_dir,
                           has_data=has_data)
 
-            do_all_plots_per_region_angle(setup, unfolder, unreg_unfolder, alt_unfolder, alt_hist_truth)
+            hist_bin_chopper = do_all_plots_per_region_angle(setup, unfolder, unreg_unfolder, alt_unfolder, alt_hist_truth)
