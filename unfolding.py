@@ -867,7 +867,7 @@ if __name__ == "__main__":
             output_tfile.mkdir(new_tdir)
             this_tdir = output_tfile.Get(new_tdir)
             this_tdir.cd()
-            this_tdir.WriteTObject(hist_mc_gen_pt_physical, "mc_gen_pt")
+            # this_tdir.WriteTObject(hist_mc_gen_pt_physical, "mc_gen_pt")
 
 
             # Setup MyUnfolder object to do unfolding etc
