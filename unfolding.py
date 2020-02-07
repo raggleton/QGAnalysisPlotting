@@ -729,8 +729,9 @@ if __name__ == "__main__":
         elif args.regularizeAxis == 'angle':
             reg_axis_str = '_onlyRegAngle'
         # reg_axis_str += "_onlyBinFactors"
-        # reg_axis_str += "_invTruth"
-        reg_axis_str += "_invTruthUseUnfolded"
+        # reg_axis_str += "_invTruthMoreBins"
+        reg_axis_str += "_invTruth"
+        # reg_axis_str += "_invTruthUseUnfolded"
 
     area_constraint = ROOT.TUnfold.kEConstraintArea
     area_constraint = ROOT.TUnfold.kEConstraintNone
