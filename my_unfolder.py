@@ -73,6 +73,9 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         # unfolded
         "unfolded",
         "unfolded_stat_err",
+        # inverse cov for chi2 tests
+        "vyy_inv_tmatrix",
+        "vxx_inv_th2",
     ]
 
     def __init__(self,
@@ -674,6 +677,26 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             setattr(self, cached_attr_name, arr)
         return getattr(self, cached_attr_name)
 
+    def get_vyy_inv_ndarray(self):
+        if getattr(self, 'vyy_inv_ndarray', None) is None:
+            if getattr(self, 'vyy_inv_tmatrix', None) is None:
+                self.vyy_inv_tmatrix = self.GetVyyInv()
+            self.vyy_inv_ndarray = self.tmatrixdsparse_to_ndarray(self.vyy_inv_tmatrix)
+        return self.vyy_inv_ndarray
+
+    def get_vxx_inv_ndarray(self):
+        if getattr(self, 'vxx_inv_ndarray', None) is None:
+            if getattr(self, 'vxx_inv_th2', None) is None:
+                # Have to manually create hist first, awkward
+                this_binning = self.generator_binning.FindNode('generator')
+                # I cannot figure out how to make the int** object for bin_map
+                # So we are trusting that the default args for title and axisSteering are correct
+                # Gnahhhhhhh
+                self.vxx_inv_th2 = this_binning.CreateErrorMatrixHistogram("ematrix_vxxinv_"+cu.get_unique_str(), self.use_axis_binning) #, bin_map, "", "*[]")
+                self.ErrorMatrixToHist(self.vxx_inv_th2, self.GetVxxInv())
+            self.vxx_inv_ndarray, _ = self.th2_to_ndarray(self.vxx_inv_th2)
+        return self.vxx_inv_ndarray
+
     def get_var_hist_pt_binned(self, hist1d, ibin_pt, binning_scheme='generator'):
         """Get hist of variable for given pt bin from massive 1D hist that TUnfold makes"""
         # FIXME: assume no underflow?!
@@ -1026,10 +1049,11 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             # print(delta[0, 0:first_signal_bin-1])
             # print(delta[0, first_signal_bin-1:first_signal_bin+5])
             # print(reco_bg_subtracted_vec[0,first_signal_bin-5: first_signal_bin+5])
-        vyy_inv = self.tmatrixdsparse_to_ndarray(self.GetVyyInv())
-        print('vyy_inv', vyy_inv)
+        # vyy = self.tmatrixdsparse_to_ndarray(self.GetVyy())
+        # my_vyy = self.construct_covariance_matrix(self.)
+
+        vyy_inv = self.get_vyy_inv_ndarray()
         inter = vyy_inv.dot(delta.T)
-        # print(inter.shape)
         chi2 = delta.dot(inter)[0][0]
         ndof = len(delta[0][first_signal_bin-1:])
         p = 1-scipy.stats.chi2.cdf(chi2, int(ndof))
@@ -1043,21 +1067,13 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         delta = unfolded_vec - gen_vec
         if ignore_underflow_bins:
             first_signal_bin = self.generator_distribution.GetStartBin()
-            print('first_signal_bin', first_signal_bin)
-            print(self.generator_distribution.GetEndBin())
-            print('truth', self.hist_truth.GetBinContent(first_signal_bin))
-            print('truth', gen_vec[0][first_signal_bin-1:])
+            # print('first_signal_bin', first_signal_bin)
+            # print(self.generator_distribution.GetEndBin())
+            # print('truth', self.hist_truth.GetBinContent(first_signal_bin))
+            # print('truth', gen_vec[0][first_signal_bin-1:])
             delta[0][:first_signal_bin-1] = 0
 
-        # Have to manually create hist first, awkward
-        this_binning = self.generator_binning.FindNode('generator')
-        # I cannot figure out how to make the int** object for bin_map
-        # So we are trusting that the default args for title and axisSteering are correct
-        # Gnahhhhhhh
-        ematrix_inv = this_binning.CreateErrorMatrixHistogram("ematrix_vxxinv_"+cu.get_unique_str(), self.use_axis_binning) #, bin_map, "", "*[]")
-        self.ErrorMatrixToHist(ematrix_inv, self.GetVxxInv())
-        # cov = self.tmatrixdsparse_to_ndarray(self.GetVxxInv())
-        cov, _ = self.th2_to_ndarray(ematrix_inv)
+        cov = self.get_vxx_inv_ndarray()
         inter = cov.dot(delta.T)
         chi2 = delta.dot(inter)[0][0]
         ndof = len(delta[0][first_signal_bin-1:])
