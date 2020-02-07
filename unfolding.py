@@ -408,6 +408,11 @@ if __name__ == "__main__":
                         default=False,
                         help='Do summary plot')
 
+    parser.add_argument("--noBinnedPlots",
+                        type=lambda x:bool(distutils.util.strtobool(x)),
+                        default=False,
+                        help="Don't do binned plots")
+
     parser.add_argument("--outputDir",
                         default='',
                         help='Output directory')
@@ -2144,7 +2149,7 @@ if __name__ == "__main__":
                         #         value_pt_cen = - (value_pt_down + value_pt_up)
 
                         #         pdf_unfolder.AddRegularisationCondition(bin_ind_pt_down, value_pt_down, bin_ind_cen, value_pt_cen, bin_ind_pt_up, value_pt_up)
-                        
+
                         for L_args in L_matrix_entries:
                             syst_unfolder.AddRegularisationCondition(*L_args)
 
@@ -2202,13 +2207,14 @@ if __name__ == "__main__":
             # ------------------------------------------------------------------
             # PLOT LOTS OF THINGS
             # ------------------------------------------------------------------
-            setup = Setup(jet_algo=jet_algo,
-                          region=region,
-                          angle=angle,
-                          output_dir=this_output_dir,
-                          has_data=not MC_INPUT)
+            if not args.noBinnedPlots:
+                setup = Setup(jet_algo=jet_algo,
+                              region=region,
+                              angle=angle,
+                              output_dir=this_output_dir,
+                              has_data=not MC_INPUT)
 
-            do_all_plots_per_region_angle(setup, unfolder, unreg_unfolder, alt_unfolder, alt_hist_mc_gen)
+                do_all_plots_per_region_angle(setup, unfolder, unreg_unfolder, alt_unfolder, alt_hist_mc_gen)
 
             # DO SUMMARY PLOT
             # ------------------------------------------------------------------
