@@ -166,7 +166,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
                                      self.distribution,
                                      self.axisSteering)
 
-        self.use_axis_binning = False  # for things like get_probability_matrix()...but doesn't seem to do anything?!
+        self.use_axis_binning = True  # for things like get_probability_matrix()...but doesn't seem to do anything?!
 
         # self.probability_ndarray = self.response_matrix_to_probability_array(self.response_map)
         # self.probability_ndarray, _ = self.th2_to_ndarray(self.get_probability_matrix(), oflow_x=False, oflow_y=False)
