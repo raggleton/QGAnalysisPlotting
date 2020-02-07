@@ -143,8 +143,8 @@ ANGLE_REBIN_DICT = {
 }
 
 PT_UNFOLD_DICT = {
-    # "signal_gen": np.array([50, 65, 88, 120, 150, 186, 254, 326, 408, 481, 614, 800, 1000, 6500], dtype='d'),
-    "signal_gen": np.array([50, 65, 88, 120, 150, 186, 254, 326, 408, 481, 614, 800, 1000, 2000], dtype='d'),
+    "signal_gen": np.array([50, 65, 88, 120, 150, 186, 254, 326, 408, 481, 614, 800, 1000, 6500], dtype='d'),
+    # "signal_gen": np.array([50, 65, 88, 120, 150, 186, 254, 326, 408, 481, 614, 800, 1000, 2000], dtype='d'),
     "underflow_gen": np.array([15, 30, 38, 50], dtype='d'),
     "signal_zpj_gen": np.array([50, 65, 88, 120, 150, 186, 254, 326, 408, 481, 614, 800, 2000], dtype='d'),
     "underflow_zpj_gen": np.array([15, 30, 38, 50], dtype='d'),
