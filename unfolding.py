@@ -1201,6 +1201,7 @@ if __name__ == "__main__":
 
                         # bin_ind_var_down = gen_node.GetGlobalBinNumber(unfolder.variable_bin_edges_gen[ilambda], pt_cen)
                         # bin_ind_var_up = gen_node.GetGlobalBinNumber(unfolder.variable_bin_edges_gen[ilambda+2], pt_cen)
+
                         # print("Adding L matrix entry")
                         # print(lambda_cen, (unfolder.pt_bin_edges_gen[ipt], unfolder.pt_bin_edges_gen[ipt+1], unfolder.pt_bin_edges_gen[ipt+2]))
                         # print(lambda_cen, (unfolder.pt_bin_edges_gen[ipt], unfolder.pt_bin_edges_gen[ipt+1], unfolder.pt_bin_edges_gen[ipt+2]))
@@ -1209,12 +1210,15 @@ if __name__ == "__main__":
                         # factor = (pt_bin_width_down + pt_bin_width_up)
                         # value_pt_down = bin_factors[bin_ind_pt_down]
                         # value_pt_up = bin_factors[bin_ind_pt_up]
-                        ref_hist = unreg_unfolder.unfolded
+                        # ref_hist = unreg_unfolder.unfolded
+
+                        ref_hist = unreg_unfolder.hist_truth
+
                         val_down = ref_hist.GetBinContent(bin_ind_pt_down)
                         value_pt_down = 1./val_down if val_down != 0 else 0
-                        val_up = ref_hist.GetBinContent(bin_ind_pt_down)
+
+                        val_up = ref_hist.GetBinContent(bin_ind_pt_up)
                         value_pt_up = 1./val_up if val_up != 0 else 0
-                        # value_pt_up = unreg_unfolder.hist_truth.GetBinContent()
 
                         # value_pt_down = bin_factors[bin_ind_pt_down]
                         # value_pt_up = bin_factors[bin_ind_pt_up]
