@@ -49,72 +49,72 @@ def get_dijet_config(source_dir, central=True, groomed=False):
         "tau_limits": None,  # user should set this
         "unreg_unfolder": None,  # set later if regularisation used
         "experimental_systematics": [
-            # {
-            #     "label": "Charged hadron up",
-            #     "tfile": os.path.join(source_dir_systs, 'chargedHadronShiftUp', qgc.QCD_FILENAME),
-            #     "colour": ROOT.kAzure+1,
-            # },
-            # {
-            #     "label": "Charged hadron down",
-            #     "tfile": os.path.join(source_dir_systs, 'chargedHadronShiftDown', qgc.QCD_FILENAME),
-            #     "colour": ROOT.kAzure+1,
-            #     "linestyle": 2,
-            # },
-            # {
-            #     "label": "Neutral hadron up",
-            #     "tfile": os.path.join(source_dir_systs, 'neutralHadronShiftUp', qgc.QCD_FILENAME),
-            #     "colour": ROOT.kOrange-4,
-            # },
-            # {
-            #     "label": "Neutral hadron down",
-            #     "tfile": os.path.join(source_dir_systs, 'neutralHadronShiftDown', qgc.QCD_FILENAME),
-            #     "colour": ROOT.kOrange-4,
-            #     "linestyle": 2,
-            # },
-            # {
-            #     "label": "Photon up",
-            #     "tfile": os.path.join(source_dir_systs, 'photonShiftUp', qgc.QCD_FILENAME),
-            #     "colour": ROOT.kMagenta-3,
-            # },
-            # {
-            #     "label": "Photon down",
-            #     "tfile": os.path.join(source_dir_systs, 'photonShiftDown', qgc.QCD_FILENAME),
-            #     "colour": ROOT.kMagenta-3,
-            #     "linestyle": 2,
-            # },
-            # {
-            #     "label": "JEC up",
-            #     "tfile": os.path.join(source_dir_systs, 'jecsmear_directionUp', qgc.QCD_FILENAME),
-            #     "colour": ROOT.kGreen+2,
-            # },
-            # {
-            #     "label": "JEC down",
-            #     "tfile": os.path.join(source_dir_systs, 'jecsmear_directionDown', qgc.QCD_FILENAME),
-            #     "colour": ROOT.kGreen+2,
-            #     "linestyle": 2,
-            # },
-            # {
-            #     "label": "JER up",
-            #     "tfile": os.path.join(source_dir_systs, 'jersmear_directionUp', qgc.QCD_FILENAME),
-            #     "colour": ROOT.kOrange+3,
-            # },
-            # {
-            #     "label": "JER down",
-            #     "tfile": os.path.join(source_dir_systs, 'jersmear_directionDown', qgc.QCD_FILENAME),
-            #     "colour": ROOT.kOrange+3,
-            #     "linestyle": 2,
-            # },
-            # {
-            #     "label": "Pileup up",
-            #     "tfile": os.path.join(source_dir_systs, 'pileup_directionUp', qgc.QCD_FILENAME),
-            #     "colour": ROOT.kBlue-4,
-            # },
-            # {
-            #     "label": "Pileup down",
-            #     "tfile": os.path.join(source_dir_systs, 'pileup_directionDown', qgc.QCD_FILENAME),
-            #     "colour": ROOT.kBlue-4,
-            #     "linestyle": 2,
-            # },
+            {
+                "label": "Charged hadron up",
+                "tfile": os.path.join(source_dir_systs, 'chargedHadronShiftUp', qgc.QCD_FILENAME),
+                "colour": ROOT.kAzure+1,
+            },
+            {
+                "label": "Charged hadron down",
+                "tfile": os.path.join(source_dir_systs, 'chargedHadronShiftDown', qgc.QCD_FILENAME),
+                "colour": ROOT.kAzure+1,
+                "linestyle": 2,
+            },
+            {
+                "label": "Neutral hadron up",
+                "tfile": os.path.join(source_dir_systs, 'neutralHadronShiftUp', qgc.QCD_FILENAME),
+                "colour": ROOT.kOrange-4,
+            },
+            {
+                "label": "Neutral hadron down",
+                "tfile": os.path.join(source_dir_systs, 'neutralHadronShiftDown', qgc.QCD_FILENAME),
+                "colour": ROOT.kOrange-4,
+                "linestyle": 2,
+            },
+            {
+                "label": "Photon up",
+                "tfile": os.path.join(source_dir_systs, 'photonShiftUp', qgc.QCD_FILENAME),
+                "colour": ROOT.kMagenta-3,
+            },
+            {
+                "label": "Photon down",
+                "tfile": os.path.join(source_dir_systs, 'photonShiftDown', qgc.QCD_FILENAME),
+                "colour": ROOT.kMagenta-3,
+                "linestyle": 2,
+            },
+            {
+                "label": "JEC up",
+                "tfile": os.path.join(source_dir_systs, 'jecsmear_directionUp', qgc.QCD_FILENAME),
+                "colour": ROOT.kGreen+2,
+            },
+            {
+                "label": "JEC down",
+                "tfile": os.path.join(source_dir_systs, 'jecsmear_directionDown', qgc.QCD_FILENAME),
+                "colour": ROOT.kGreen+2,
+                "linestyle": 2,
+            },
+            {
+                "label": "JER up",
+                "tfile": os.path.join(source_dir_systs, 'jersmear_directionUp', qgc.QCD_FILENAME),
+                "colour": ROOT.kOrange+3,
+            },
+            {
+                "label": "JER down",
+                "tfile": os.path.join(source_dir_systs, 'jersmear_directionDown', qgc.QCD_FILENAME),
+                "colour": ROOT.kOrange+3,
+                "linestyle": 2,
+            },
+            {
+                "label": "Pileup up",
+                "tfile": os.path.join(source_dir_systs, 'pileup_directionUp', qgc.QCD_FILENAME),
+                "colour": ROOT.kBlue-4,
+            },
+            {
+                "label": "Pileup down",
+                "tfile": os.path.join(source_dir_systs, 'pileup_directionDown', qgc.QCD_FILENAME),
+                "colour": ROOT.kBlue-4,
+                "linestyle": 2,
+            },
             {
                 "label": "Tracking up",
                 "tfile": os.path.join(source_dir_systs, 'track_directionUp', qgc.QCD_FILENAME),
@@ -131,50 +131,50 @@ def get_dijet_config(source_dir, central=True, groomed=False):
                 "tfile": input_mc_qcd_herwig_tfile,
                 "colour": ROOT.kOrange-3,
             },
-            {
-                "label": "Herwig++ (reweighted)",
-                "tfile": input_mc_qcd_herwig_tfile_reweight,
-                "colour": ROOT.kOrange+4,
-            },
+            # {
+            #     "label": "Herwig++ (reweighted)",
+            #     "tfile": input_mc_qcd_herwig_tfile_reweight,
+            #     "colour": ROOT.kOrange+4,
+            # },
 
         ],
         "model_systematics": [
-            # {
-            #     "label": "muR up, muF nominal",
-            #     "tfile": os.path.join(source_dir_systs, 'ScaleVariationMuRUp_ScaleVariationMuFNominal', qgc.QCD_FILENAME),
-            #     "colour": ROOT.kAzure,
-            #     "unfolder": None,
-            # },
-            # {
-            #     "label": "muR down, muF nominal",
-            #     "tfile": os.path.join(source_dir_systs, 'ScaleVariationMuRDown_ScaleVariationMuFNominal', qgc.QCD_FILENAME),
-            #     "colour": ROOT.kAzure+1,
-            #     "unfolder": None,
-            # },
-            # {
-            #     "label": "muR nominal, muF up",
-            #     "tfile": os.path.join(source_dir_systs, 'ScaleVariationMuRNominal_ScaleVariationMuFUp', qgc.QCD_FILENAME),
-            #     "colour": ROOT.kAzure+2,
-            #     "unfolder": None,
-            # },
-            # {
-            #     "label": "muR nominal, muF down",
-            #     "tfile": os.path.join(source_dir_systs, 'ScaleVariationMuRNominal_ScaleVariationMuFDown', qgc.QCD_FILENAME),
-            #     "colour": ROOT.kAzure+3,
-            #     "unfolder": None,
-            # },
-            # {
-            #     "label": "muR down, muF down",
-            #     "tfile": os.path.join(source_dir_systs, 'ScaleVariationMuRDown_ScaleVariationMuFDown', qgc.QCD_FILENAME),
-            #     "colour": ROOT.kAzure+4,
-            #     "unfolder": None,
-            # },
-            # {
-            #     "label": "muR up, muF up",
-            #     "tfile": os.path.join(source_dir_systs, 'ScaleVariationMuRUp_ScaleVariationMuFUp', qgc.QCD_FILENAME),
-            #     "colour": ROOT.kAzure+5,
-            #     "unfolder": None,
-            # },
+            {
+                "label": "muR up, muF nominal",
+                "tfile": os.path.join(source_dir_systs, 'ScaleVariationMuRUp_ScaleVariationMuFNom', qgc.QCD_FILENAME),
+                "colour": ROOT.kAzure,
+                "unfolder": None,
+            },
+            {
+                "label": "muR down, muF nominal",
+                "tfile": os.path.join(source_dir_systs, 'ScaleVariationMuRDown_ScaleVariationMuFNom', qgc.QCD_FILENAME),
+                "colour": ROOT.kAzure+1,
+                "unfolder": None,
+            },
+            {
+                "label": "muR nominal, muF up",
+                "tfile": os.path.join(source_dir_systs, 'ScaleVariationMuRNom_ScaleVariationMuFUp', qgc.QCD_FILENAME),
+                "colour": ROOT.kAzure+2,
+                "unfolder": None,
+            },
+            {
+                "label": "muR nominal, muF down",
+                "tfile": os.path.join(source_dir_systs, 'ScaleVariationMuRNom_ScaleVariationMuFDown', qgc.QCD_FILENAME),
+                "colour": ROOT.kAzure+3,
+                "unfolder": None,
+            },
+            {
+                "label": "muR down, muF down",
+                "tfile": os.path.join(source_dir_systs, 'ScaleVariationMuRDown_ScaleVariationMuFDown', qgc.QCD_FILENAME),
+                "colour": ROOT.kAzure+4,
+                "unfolder": None,
+            },
+            {
+                "label": "muR up, muF up",
+                "tfile": os.path.join(source_dir_systs, 'ScaleVariationMuRUp_ScaleVariationMuFUp', qgc.QCD_FILENAME),
+                "colour": ROOT.kAzure+5,
+                "unfolder": None,
+            },
             {
                 "label": "Herwig++",
                 "tfile": input_mc_qcd_herwig_tfile,
@@ -250,8 +250,10 @@ def get_zpj_config(source_dir, groomed=False):
         "data_tfile": input_singlemu_tfile,
         "mc_tfile": input_mc_dy_mgpythia_tfile,
         "mc_label": "MG+Pythia8",
-        "alt_mc_tfile": input_mc_dy_mgherwig_tfile,
-        "alt_mc_label": "MG+Herwig++",
+        "alt_mc_tfile": input_mc_dy_herwig_tfile,
+        "alt_mc_label": "Herwig++",
+        # "alt_mc_tfile": input_mc_dy_mgherwig_tfile,
+        # "alt_mc_label": "MG+Herwig++",
         "tau_limits": None,
         "backgrounds": [
             {
@@ -289,72 +291,72 @@ def get_zpj_config(source_dir, groomed=False):
             #     "colour": ROOT.kCyan,
             #     'linestyle': 2,
             # },
-            # {
-            #     "label": "Charged hadron up",
-            #     "tfile": os.path.join(source_dir_systs, 'chargedHadronShiftUp', qgc.DY_FILENAME),
-            #     "colour": ROOT.kAzure+1,
-            # },
-            # {
-            #     "label": "Charged hadron down",
-            #     "tfile": os.path.join(source_dir_systs, 'chargedHadronShiftDown', qgc.DY_FILENAME),
-            #     "colour": ROOT.kAzure+1,
-            #     "linestyle": 2,
-            # },
-            # {
-            #     "label": "Neutral hadron up",
-            #     "tfile": os.path.join(source_dir_systs, 'neutralHadronShiftUp', qgc.DY_FILENAME),
-            #     "colour": ROOT.kOrange-3,
-            # },
-            # {
-            #     "label": "Neutral hadron down",
-            #     "tfile": os.path.join(source_dir_systs, 'neutralHadronShiftDown', qgc.DY_FILENAME),
-            #     "colour": ROOT.kOrange-3,
-            #     "linestyle": 2,
-            # },
-            # {
-            #     "label": "Photon up",
-            #     "tfile": os.path.join(source_dir_systs, 'photonShiftUp', qgc.DY_FILENAME),
-            #     "colour": ROOT.kMagenta-3,
-            # },
-            # {
-            #     "label": "Photon down",
-            #     "tfile": os.path.join(source_dir_systs, 'photonShiftDown', qgc.DY_FILENAME),
-            #     "colour": ROOT.kMagenta-3,
-            #     "linestyle": 2,
-            # },
-            # {
-            #     "label": "JEC up",
-            #     "tfile": os.path.join(source_dir_systs, 'jecsmear_directionUp', qgc.DY_FILENAME),
-            #     "colour": ROOT.kGreen+2,
-            # },
-            # {
-            #     "label": "JEC down",
-            #     "tfile": os.path.join(source_dir_systs, 'jecsmear_directionDown', qgc.DY_FILENAME),
-            #     "colour": ROOT.kGreen+2,
-            #     "linestyle": 2,
-            # },
-            # {
-            #     "label": "JER up",
-            #     "tfile": os.path.join(source_dir_systs, 'jersmear_directionUp', qgc.DY_FILENAME),
-            #     "colour": ROOT.kOrange+3,
-            # },
-            # {
-            #     "label": "JER down",
-            #     "tfile": os.path.join(source_dir_systs, 'jersmear_directionDown', qgc.DY_FILENAME),
-            #     "colour": ROOT.kOrange+3,
-            #     "linestyle": 2,
-            # },
-            # {
-            #     "label": "Pileup up",
-            #     "tfile": os.path.join(source_dir_systs, 'pileup_directionUp', qgc.DY_FILENAME),
-            #     "colour": ROOT.kBlue-4,
-            # },
-            # {
-            #     "label": "Pileup down",
-            #     "tfile": os.path.join(source_dir_systs, 'pileup_directionDown', qgc.DY_FILENAME),
-            #     "colour": ROOT.kBlue-4,
-            #     "linestyle": 2,
-            # },
+            {
+                "label": "Charged hadron up",
+                "tfile": os.path.join(source_dir_systs, 'chargedHadronShiftUp', qgc.DY_FILENAME),
+                "colour": ROOT.kAzure+1,
+            },
+            {
+                "label": "Charged hadron down",
+                "tfile": os.path.join(source_dir_systs, 'chargedHadronShiftDown', qgc.DY_FILENAME),
+                "colour": ROOT.kAzure+1,
+                "linestyle": 2,
+            },
+            {
+                "label": "Neutral hadron up",
+                "tfile": os.path.join(source_dir_systs, 'neutralHadronShiftUp', qgc.DY_FILENAME),
+                "colour": ROOT.kOrange-3,
+            },
+            {
+                "label": "Neutral hadron down",
+                "tfile": os.path.join(source_dir_systs, 'neutralHadronShiftDown', qgc.DY_FILENAME),
+                "colour": ROOT.kOrange-3,
+                "linestyle": 2,
+            },
+            {
+                "label": "Photon up",
+                "tfile": os.path.join(source_dir_systs, 'photonShiftUp', qgc.DY_FILENAME),
+                "colour": ROOT.kMagenta-3,
+            },
+            {
+                "label": "Photon down",
+                "tfile": os.path.join(source_dir_systs, 'photonShiftDown', qgc.DY_FILENAME),
+                "colour": ROOT.kMagenta-3,
+                "linestyle": 2,
+            },
+            {
+                "label": "JEC up",
+                "tfile": os.path.join(source_dir_systs, 'jecsmear_directionUp', qgc.DY_FILENAME),
+                "colour": ROOT.kGreen+2,
+            },
+            {
+                "label": "JEC down",
+                "tfile": os.path.join(source_dir_systs, 'jecsmear_directionDown', qgc.DY_FILENAME),
+                "colour": ROOT.kGreen+2,
+                "linestyle": 2,
+            },
+            {
+                "label": "JER up",
+                "tfile": os.path.join(source_dir_systs, 'jersmear_directionUp', qgc.DY_FILENAME),
+                "colour": ROOT.kOrange+3,
+            },
+            {
+                "label": "JER down",
+                "tfile": os.path.join(source_dir_systs, 'jersmear_directionDown', qgc.DY_FILENAME),
+                "colour": ROOT.kOrange+3,
+                "linestyle": 2,
+            },
+            {
+                "label": "Pileup up",
+                "tfile": os.path.join(source_dir_systs, 'pileup_directionUp', qgc.DY_FILENAME),
+                "colour": ROOT.kBlue-4,
+            },
+            {
+                "label": "Pileup down",
+                "tfile": os.path.join(source_dir_systs, 'pileup_directionDown', qgc.DY_FILENAME),
+                "colour": ROOT.kBlue-4,
+                "linestyle": 2,
+            },
             {
                 "label": "Tracking up",
                 "tfile": os.path.join(source_dir_systs, 'track_directionUp', qgc.DY_FILENAME),
@@ -371,11 +373,12 @@ def get_zpj_config(source_dir, groomed=False):
             #     "tfile": input_mc_dy_mgherwig_tfile,
             #     "colour": ROOT.kOrange-3,
             # },
-            # {
-            #     "label": "Herwig++",
-            #     "tfile": input_mc_dy_herwig_tfile,
-            #     "colour": ROOT.kBlue-3,
-            # },
+            {
+                "label": "Herwig++",
+                "tfile": input_mc_dy_herwig_tfile,
+                # "colour": ROOT.kBlue-3,
+                "colour": 797,
+            },
         ],
         "model_systematics": [
             {
@@ -414,18 +417,18 @@ def get_zpj_config(source_dir, groomed=False):
                 "colour": ROOT.kAzure+5,
                 "unfolder": None,
             },
-            # {
-            #     "label": "MG+Herwig++",
-            #     "tfile": input_mc_dy_mgherwig_tfile,
-            #     "colour": ROOT.kOrange-3,
-            #     "unfolder": None,
-            # },
-            # {
-            #     "label": "Herwig++",
-            #     "tfile": input_mc_dy_herwig_tfile,
-            #     "colour": ROOT.kBlue-3,
-            #     "unfolder": None,
-            # },
+            {
+                "label": "MG+Herwig++",
+                "tfile": input_mc_dy_mgherwig_tfile,
+                "colour": ROOT.kOrange-3,
+                "unfolder": None,
+            },
+            {
+                "label": "Herwig++",
+                "tfile": input_mc_dy_herwig_tfile,
+                "colour": ROOT.kBlue-3,
+                "unfolder": None,
+            },
         ],
         "pdf_systematics": [
             {
