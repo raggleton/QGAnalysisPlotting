@@ -652,9 +652,9 @@ class GenPtBinnedPlotter(object):
                         title=self.get_pt_bin_title(bin_edge_low, bin_edge_high),
                         **self.pt_bin_plot_args)
             self._modify_plot(plot)
-            plot.legend.SetX1(0.55)
-            plot.legend.SetY1(0.72)
-            plot.legend.SetX2(0.97)
+            plot.legend.SetX1(0.53)
+            plot.legend.SetY1(0.7)
+            plot.legend.SetX2(0.96)
             plot.legend.SetY2(0.88)
             if len(syst_entries) > 4:
                 # plot.legend.SetX1(0.53)
@@ -713,9 +713,9 @@ class GenPtBinnedPlotter(object):
                         title=self.get_pt_bin_title(bin_edge_low, bin_edge_high),
                         **self.pt_bin_plot_args)
             self._modify_plot(plot)
-            plot.legend.SetX1(0.55)
-            plot.legend.SetY1(0.72)
-            plot.legend.SetX2(0.98)
+            plot.legend.SetX1(0.53)
+            plot.legend.SetY1(0.7)
+            plot.legend.SetX2(0.96)
             plot.legend.SetY2(0.88)
             if len(pdf_entries) > 5:
                 plot.legend.SetNColumns(2)
@@ -798,7 +798,7 @@ class GenPtBinnedPlotter(object):
                                  marker_color=ROOT.kGray+2,
                                  )
             c_tot = Contribution(h_total,
-                                 label="Total",
+                                 label="Total uncertainty",
                                  line_color=ROOT.kBlack,
                                  line_style=1,
                                  line_width=3,
@@ -814,9 +814,9 @@ class GenPtBinnedPlotter(object):
                         xtitle=self.setup.particle_title,
                         ytitle="| Fractional shift on normalised distribution |",
                         has_data=self.setup.has_data)
-            plot.legend.SetX1(0.55)
-            plot.legend.SetY1(0.68)
-            plot.legend.SetX2(0.98)
+            plot.legend.SetX1(0.53)
+            plot.legend.SetY1(0.7)
+            plot.legend.SetX2(0.96)
             plot.legend.SetY2(0.88)
             plot.legend.SetNColumns(2)
             plot.left_margin = 0.16
@@ -870,10 +870,10 @@ class GenPtBinnedPlotter(object):
                         subplot_title='Syst / nominal',
                         subplot_limits=(0.75, 1.25))
             self._modify_plot(plot)
-            plot.legend.SetX1(0.55)
+            plot.legend.SetX1(0.53)
             plot.legend.SetY1(0.7)
-            plot.legend.SetX2(0.98)
-            plot.legend.SetY2(0.9)
+            plot.legend.SetX2(0.96)
+            plot.legend.SetY2(0.88)
             if len(entries) > 5: plot.legend.SetNColumns(2)
             # plot.subplot_limits = (0.9, 1.1)
             plot.plot("NOSTACK E1")
