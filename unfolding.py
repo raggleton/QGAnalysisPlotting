@@ -409,7 +409,7 @@ if __name__ == "__main__":
                         help='Do summary plot')
 
     parser.add_argument("--noBinnedPlots",
-                        type=lambda x:bool(distutils.util.strtobool(x)),
+                        action='store_true',
                         default=False,
                         help="Don't do binned plots")
 

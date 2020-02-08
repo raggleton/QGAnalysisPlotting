@@ -481,11 +481,11 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             raise KeyError("No systematic %s, only have: %s" % (syst_label, ", ".join(self.syst_shifts.keys())))
         if self.syst_shifts[syst_label] is None:
             hist = self.GetDeltaSysSource(syst_label,
-                                                    "syst_shift_%s" % (cu.no_space_str(syst_label)),
-                                                    "",
-                                                    self.output_distribution_name, # must be the same as what's used in get_output
-                                                    self.axisSteering,
-                                                    self.use_axis_binning)
+                                          "syst_shift_%s" % (cu.no_space_str(syst_label)),
+                                          "",
+                                          self.output_distribution_name, # must be the same as what's used in get_output
+                                          self.axisSteering,
+                                          self.use_axis_binning)
             self.syst_shifts[syst_label] = hist  # cache shifts
         return self.syst_shifts[syst_label]
 
