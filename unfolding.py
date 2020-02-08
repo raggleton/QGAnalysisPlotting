@@ -1508,23 +1508,24 @@ if __name__ == "__main__":
             alt_hist_mc_reco_bg_subtracted_gen_binning = None
 
             # Do this outside the if statement, since we might use it later in plotting e.g. for data
-            if not isinstance(region['alt_mc_tfile'], ROOT.TFile):
+            if not isinstance(region['alt_mc_tfile'], ROOT.TFile) and os.path.isfile(region['alt_mc_tfile']):
                 region['alt_mc_tfile'] = cu.open_root_file(region['alt_mc_tfile'])
-            alt_hist_mc_gen = cu.get_from_tfile(region['alt_mc_tfile'], "%s/hist_%s_truth_all" % (region['dirname'], angle_shortname))
-            alt_hist_mc_reco = cu.get_from_tfile(region['alt_mc_tfile'], "%s/hist_%s_reco_all" % (region['dirname'], angle_shortname))
 
-            # fakes-subtracted version
-            alt_hist_fakes = hist_fakes_reco_fraction.Clone("hist_fakes_alt")
-            alt_hist_fakes.Multiply(alt_hist_mc_reco)
-            alt_hist_mc_reco_bg_subtracted = alt_hist_mc_reco.Clone()
-            alt_hist_mc_reco_bg_subtracted.Add(alt_hist_fakes, -1)
+                alt_hist_mc_gen = cu.get_from_tfile(region['alt_mc_tfile'], "%s/hist_%s_truth_all" % (region['dirname'], angle_shortname))
+                alt_hist_mc_reco = cu.get_from_tfile(region['alt_mc_tfile'], "%s/hist_%s_reco_all" % (region['dirname'], angle_shortname))
 
-            # gen-binned versions of detector-level plots
-            alt_hist_mc_reco_gen_binning = cu.get_from_tfile(region['alt_mc_tfile'], "%s/hist_%s_reco_gen_binning" % (region['dirname'], angle_shortname))
-            alt_hist_fakes_gen_binning = hist_fakes_reco_fraction_gen_binning.Clone("hist_fakes_alt_gen_binning")
-            alt_hist_fakes_gen_binning.Multiply(alt_hist_mc_reco_gen_binning)
-            alt_hist_mc_reco_bg_subtracted_gen_binning = alt_hist_mc_reco_gen_binning.Clone()
-            alt_hist_mc_reco_bg_subtracted_gen_binning.Add(alt_hist_fakes_gen_binning, -1)
+                # fakes-subtracted version
+                alt_hist_fakes = hist_fakes_reco_fraction.Clone("hist_fakes_alt")
+                alt_hist_fakes.Multiply(alt_hist_mc_reco)
+                alt_hist_mc_reco_bg_subtracted = alt_hist_mc_reco.Clone()
+                alt_hist_mc_reco_bg_subtracted.Add(alt_hist_fakes, -1)
+
+                # gen-binned versions of detector-level plots
+                alt_hist_mc_reco_gen_binning = cu.get_from_tfile(region['alt_mc_tfile'], "%s/hist_%s_reco_gen_binning" % (region['dirname'], angle_shortname))
+                alt_hist_fakes_gen_binning = hist_fakes_reco_fraction_gen_binning.Clone("hist_fakes_alt_gen_binning")
+                alt_hist_fakes_gen_binning.Multiply(alt_hist_mc_reco_gen_binning)
+                alt_hist_mc_reco_bg_subtracted_gen_binning = alt_hist_mc_reco_gen_binning.Clone()
+                alt_hist_mc_reco_bg_subtracted_gen_binning.Add(alt_hist_fakes_gen_binning, -1)
 
             this_tdir.cd()
             alt_tdir = this_tdir.mkdir("alt_response_%s" % cu.no_space_str(region['alt_mc_label']))
