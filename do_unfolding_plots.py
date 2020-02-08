@@ -889,7 +889,7 @@ class GenPtBinnedPlotter(object):
                 if h.GetBinContent(ibin) > 0:
                     h_new.SetBinContent(ibin, 1+(direction*(h.GetBinError(ibin) / h.GetBinContent(ibin))))
                 else:
-                    h_new.SetBinContent(ibin, 0)
+                    h_new.SetBinContent(ibin, 99999 if direction > 0 else -99999)
                 h_new.SetBinError(ibin, 0)
             return h_new
 
