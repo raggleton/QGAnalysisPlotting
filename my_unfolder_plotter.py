@@ -1063,7 +1063,7 @@ class MyUnfolderPlotter(object):
                     xtitle='Generator binning',
                     ytitle='Fraction fail reco',
                     has_data=False,
-                    ylim=(0.1, 2),
+                    ylim=(0., 1.4),
                     subplot_title='Failed / All',
                     subplot_limits=(0, 1))
         plot.default_canvas_size = (800, 600)
