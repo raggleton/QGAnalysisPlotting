@@ -1575,7 +1575,7 @@ class RecoPtBinnedPlotter(object):
             plot.save("%s/detector_folded_gen_%s_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
 
 
-def do_all_plots_per_region_angle(setup, unfolder, unreg_unfolder, alt_unfolder, alt_hist_truth):
+def do_all_plots_per_region_angle(setup, unpack_dict):
     # Note that experimental systs are only different response matrices, and are stored in the main unfolder
     has_exp_systs = len(setup.region['experimental_systematics']) > 0
     has_model_systs = len(setup.region['model_systematics']) > 0
@@ -1584,6 +1584,13 @@ def do_all_plots_per_region_angle(setup, unfolder, unreg_unfolder, alt_unfolder,
     if has_exp_systs: print("We have experimental systs")
     if has_model_systs: print("We have model systs")
     if has_pdf_systs: print("We have pdf systs")
+
+    unfolder = unpack_dict['unfolder']
+    unreg_unfolder = unpack_dict['unreg_unfolder']
+    alt_unfolder = unpack_dict['alt_unfolder']
+    alt_hist_truth = unpack_dict['alt_hist_truth']
+    alt_hist_reco = unpack_dict['alt_hist_reco']
+    alt_hist_reco_bg_subtracted = unpack_dict['alt_hist_reco_bg_subtracted']
 
     # Big 1D plots to compare things
     hbc = HistBinChopper(unfolder)
@@ -1748,10 +1755,6 @@ if __name__ == "__main__":
 
             input_tfile = cu.TFileCacher(root_filename)  # keep this here otherwise crashes
             unpack_dict = unpack_unfolding_root_file(input_tfile, region, angle)
-            unfolder = unpack_dict['unfolder']
-            unreg_unfolder = unpack_dict['unreg_unfolder']
-            alt_unfolder = unpack_dict['alt_unfolder']
-            alt_hist_truth = unpack_dict['alt_hist_truth']
             # we have
             # - unfolder
             # - unreg_unfolder
@@ -1768,4 +1771,4 @@ if __name__ == "__main__":
                           output_dir=angle_output_dir,
                           has_data=has_data)
 
-            hist_bin_chopper = do_all_plots_per_region_angle(setup, unfolder, unreg_unfolder, alt_unfolder, alt_hist_truth)
+            hist_bin_chopper = do_all_plots_per_region_angle(setup, unpack_dict)
