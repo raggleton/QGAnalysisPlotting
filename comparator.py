@@ -391,10 +391,17 @@ class Plot(object):
         if self.reverse_legend:
             iterable = self.contributions[::-1]
         for contrib in iterable:
-            if self.do_legend:
+            if self.do_legend and contrib.label != "" and contrib.label is not None:
+                opt = "LP"
+                if self.plot_what == "hist":
+                    if contrib.marker_size != 0:
+                        opt += "P"
+                    if contrib.line_width != 0:
+                        opt += "L"
+                    if contrib.fill_style != 0:
+                        opt += "F"
                 # Split text by newline \n
                 # Add an entry for each line
-                opt = "LP" if self.plot_what == "hist" else "LP"
                 for i, substr in enumerate(contrib.label.split("\n")):
                     if i == 0:
                         self.legend.AddEntry(contrib.obj, substr, opt)
@@ -438,7 +445,7 @@ class Plot(object):
         # Call AFTER plot()
         try:
             y_low = self.container.GetHistogram().GetMinimum()
-            if y_low < 0: 
+            if y_low < 0:
                 if override_check:
                     print("Warning in set_logy: minimum < 0, is %g" % y_low)
                 else:
@@ -492,7 +499,7 @@ class Plot(object):
         else:
             # TGraph doesn't have the argument
             ymin = min([o.GetMinimum() for o in self.contributions_objs])
-        
+
         if self.main_pad.GetLogy():
             if ymin > 0:
                 modifier.SetMinimum(ymin * self.y_padding_min_log)
