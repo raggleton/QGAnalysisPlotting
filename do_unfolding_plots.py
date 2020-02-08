@@ -842,7 +842,7 @@ class GenPtBinnedPlotter(object):
             plot.plot("NOSTACK E1")
             plot.save("%s/unfolded_syst_variations_%s_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
 
-    def plot_detector_normalised(self, unfolder):
+    def plot_detector_normalised(self, unfolder, alt_detector=None):
         for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
             self.hist_bin_chopper.add_obj("input_hist_gen_binning_bg_subtracted", unfolder.input_hist_gen_binning_bg_subtracted)
             input_hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('input_hist_gen_binning_bg_subtracted', ibin, binning_scheme='generator')
@@ -851,15 +851,27 @@ class GenPtBinnedPlotter(object):
 
             entries = [
                 Contribution(mc_hist_bin,
-                             label="MC (bg-subtracted)",
+                             label="MC (bg-subtracted) [%s]" % (self.setup.region['mc_label']) if alt_detector else "MC (bg-subtracted)",
                              line_color=self.plot_colours['reco_mc_colour'], line_width=self.line_width,
-                             marker_color=self.plot_colours['reco_mc_colour'], marker_size=0),
+                             marker_color=self.plot_colours['reco_mc_colour'], marker_size=0,
+                             subplot=input_hist_bin if alt_detector else None),
+            ]
+            if alt_detector:
+                self.hist_bin_chopper.add_obj("alt_hist_mc_reco_gen_binning_bg_subtracted", alt_detector)
+                alt_mc_hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('alt_hist_mc_reco_gen_binning_bg_subtracted', ibin, binning_scheme='generator')
+                entries.append(Contribution(alt_mc_hist_bin,
+                                            label="MC (bg-subtracted) [%s]" % self.setup.region['alt_mc_label'],
+                                            line_color=self.plot_colours['alt_reco_colour'], line_width=self.line_width,
+                                            marker_color=self.plot_colours['alt_reco_colour'], marker_size=0,
+                                            subplot=input_hist_bin))
+
+            entries.append(
                 Contribution(input_hist_bin,
                              label="Data (bg-subtracted)",
                              line_color=self.plot_colours['reco_data_colour'], line_width=self.line_width,
                              marker_color=self.plot_colours['reco_data_colour'], marker_style=20, marker_size=0.75,
-                             subplot=mc_hist_bin),
-            ]
+                             subplot=None if alt_detector else mc_hist_bin)
+            )
             if not self.check_entries(entries, "plot_detector_normalised %d" % (ibin)):
                 continue
             plot = Plot(entries,
@@ -869,8 +881,9 @@ class GenPtBinnedPlotter(object):
                         title=self.get_pt_bin_title(bin_edge_low, bin_edge_high),
                         has_data=self.setup.has_data,
                         subplot_type='ratio',
-                        subplot_title='Data / MC',
-                        subplot_limits=(0.75, 1.25),)
+                        subplot_title='MC / Data' if alt_detector else 'Data / MC',
+                        subplot_limits=(0.75, 1.25) if alt_detector else (0.75, 1.25)
+                        )
             self._modify_plot(plot)
             plot.plot("NOSTACK E1")
             plot.save("%s/detector_gen_binning_bg_subtracted_%s_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
@@ -1344,7 +1357,7 @@ class GenLambdaBinnedPlotter(object):
             plot.set_logy(do_more_labels=False)
             plot.save("%s/unfolded_unnormalised_syst_variations_%s_lambda_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
 
-    def plot_detector_unnormalised(self, unfolder):
+    def plot_detector_unnormalised(self, unfolder, alt_detector=None):
         for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
             self.hist_bin_chopper.add_obj("input_hist_gen_binning_bg_subtracted", unfolder.input_hist_gen_binning_bg_subtracted)
             input_hist_bin = self.hist_bin_chopper.get_lambda_bin_div_bin_width('input_hist_gen_binning_bg_subtracted', ibin, binning_scheme='generator')
@@ -1353,15 +1366,25 @@ class GenLambdaBinnedPlotter(object):
 
             entries = [
                 Contribution(mc_hist_bin,
-                             label="MC (bg-subtracted)",
+                             label="MC (bg-subtracted) [%s]" % (self.setup.region['mc_label']) if alt_detector else "MC (bg-subtracted)",
                              line_color=self.plot_colours['reco_mc_colour'], line_width=self.line_width,
-                             marker_color=self.plot_colours['reco_mc_colour'], marker_size=0),
-                Contribution(input_hist_bin,
+                             marker_color=self.plot_colours['reco_mc_colour'], marker_size=0,
+                             subplot=input_hist_bin if alt_detector else None),
+            ]
+            if alt_detector:
+                self.hist_bin_chopper.add_obj("alt_hist_mc_reco_gen_binning_bg_subtracted", alt_detector)
+                alt_mc_hist_bin = self.hist_bin_chopper.get_lambda_bin_div_bin_width('alt_hist_mc_reco_gen_binning_bg_subtracted', ibin, binning_scheme='generator')
+                entries.append(Contribution(alt_mc_hist_bin,
+                                            label="MC (bg-subtracted) [%s]" % self.setup.region['alt_mc_label'],
+                                            line_color=self.plot_colours['alt_reco_colour'], line_width=self.line_width,
+                                            marker_color=self.plot_colours['alt_reco_colour'], marker_size=0,
+                                            subplot=input_hist_bin))
+            entries.append(Contribution(input_hist_bin,
                              label="Data (bg-subtracted)",
                              line_color=self.plot_colours['reco_data_colour'], line_width=self.line_width,
                              marker_color=self.plot_colours['reco_data_colour'], marker_style=20, marker_size=0.75,
-                             subplot=mc_hist_bin),
-            ]
+                             subplot=None if alt_detector else mc_hist_bin)
+            )
             if not self.check_entries(entries, "plot_detector_unnormalised %d" % (ibin)):
                 continue
             plot = Plot(entries,
@@ -1371,8 +1394,9 @@ class GenLambdaBinnedPlotter(object):
                         title=self.get_lambda_bin_title(bin_edge_low, bin_edge_high),
                         has_data=self.setup.has_data,
                         subplot_type='ratio',
-                        subplot_title='Data / MC',
-                        subplot_limits=(0.75, 1.25),)
+                        subplot_title='MC / Data' if alt_detector else 'Data / MC',
+                        subplot_limits=(0.75, 1.25) if alt_detector else (0.75, 1.25)
+                       )
             self._modify_plot(plot)
             plot.plot("NOSTACK E1")
             plot.set_logx(do_more_labels=False)
@@ -1437,7 +1461,7 @@ class RecoPtBinnedPlotter(object):
                 ))
         return title
 
-    def plot_detector_normalised(self, unfolder):
+    def plot_detector_normalised(self, unfolder, alt_detector=None):
         for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
             self.hist_bin_chopper.add_obj("input_hist_bg_subtracted", unfolder.input_hist_bg_subtracted)
             input_hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('input_hist_bg_subtracted', ibin, binning_scheme='detector')
@@ -1446,15 +1470,27 @@ class RecoPtBinnedPlotter(object):
 
             entries = [
                 Contribution(mc_hist_bin,
-                             label="MC (bg-subtracted)",
+                             label="MC (bg-subtracted) [%s]" % (self.setup.region['mc_label']) if alt_detector else "MC (bg-subtracted)",
                              line_color=self.plot_colours['reco_mc_colour'], line_width=self.line_width,
-                             marker_color=self.plot_colours['reco_mc_colour'], marker_size=0),
+                             marker_color=self.plot_colours['reco_mc_colour'], marker_size=0,
+                             subplot=input_hist_bin if alt_detector else None)
+            ]
+            if alt_detector:
+                self.hist_bin_chopper.add_obj("alt_hist_mc_reco_bg_subtracted", alt_detector)
+                alt_mc_hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('alt_hist_mc_reco_bg_subtracted', ibin, binning_scheme='detector')
+                entries.append(Contribution(alt_mc_hist_bin,
+                                            label="MC (bg-subtracted) [%s]" % self.setup.region['alt_mc_label'],
+                                            line_color=self.plot_colours['alt_reco_colour'], line_width=self.line_width,
+                                            marker_color=self.plot_colours['alt_reco_colour'], marker_size=0,
+                                            subplot=input_hist_bin if alt_detector else None)
+                )
+            entries.append(
                 Contribution(input_hist_bin,
                              label="Data (bg-subtracted)",
                              line_color=self.plot_colours['reco_data_colour'], line_width=self.line_width,
                              marker_color=self.plot_colours['reco_data_colour'], marker_style=20, marker_size=0.75,
-                             subplot=mc_hist_bin),
-            ]
+                             subplot=mc_hist_bin if not alt_detector else None)
+            )
             if not self.check_entries(entries, "plot_detector_normalised %d" % (ibin)):
                 continue
             plot = Plot(entries,
@@ -1464,7 +1500,7 @@ class RecoPtBinnedPlotter(object):
                         title=self.get_pt_bin_title(bin_edge_low, bin_edge_high),
                         has_data=self.setup.has_data,
                         subplot_type='ratio',
-                        subplot_title='Data / MC',
+                        subplot_title='MC / Data' if alt_detector else 'Data / MC',
                         subplot_limits=(0.75, 1.25),)
             self._modify_plot(plot)
             plot.plot("NOSTACK E1")
@@ -1633,7 +1669,7 @@ def do_all_plots_per_region_angle(setup, unpack_dict):
         gen_pt_binned_plotter.plot_unfolded_with_pdf_systs_normalised(unfolder=unfolder)
 
     # if has_data:
-    gen_pt_binned_plotter.plot_detector_normalised(unfolder)
+    gen_pt_binned_plotter.plot_detector_normalised(unfolder=unfolder, alt_detector=None)
 
     # Iterate through lambda bins - gen binning
     # ------------------------------------------------------------------
@@ -1660,14 +1696,14 @@ def do_all_plots_per_region_angle(setup, unpack_dict):
         lambda_pt_binned_plotter.plot_unfolded_with_pdf_systs_unnormalised(unfolder=unfolder)
 
     # if has_data:
-    lambda_pt_binned_plotter.plot_detector_unnormalised(unfolder=unfolder)
+    lambda_pt_binned_plotter.plot_detector_unnormalised(unfolder=unfolder, alt_detector=None)
 
     # Iterate through pt bins - reco binning
     # ------------------------------------------------------------------
     reco_pt_binned_plotter = RecoPtBinnedPlotter(setup=setup,
                                                  bins=unfolder.pt_bin_edges_reco,
                                                  hist_bin_chopper=hbc)
-    reco_pt_binned_plotter.plot_detector_normalised(unfolder)
+    reco_pt_binned_plotter.plot_detector_normalised(unfolder, alt_detector=alt_hist_reco_bg_subtracted)
     reco_pt_binned_plotter.plot_folded_unfolded_normalised(unfolder)
     reco_pt_binned_plotter.plot_folded_unfolded_with_mc_normalised(unfolder)
     reco_pt_binned_plotter.plot_folded_gen_normalised(unfolder)
