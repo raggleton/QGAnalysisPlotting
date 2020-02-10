@@ -257,7 +257,8 @@ PLOT_COLOURS = dict(
     unfolded_stat_colour=ROOT.kAzure+7,
     unfolded_total_colour=ROOT.kBlack,
     unfolded_unreg_colour=ROOT.kViolet+2,
-    alt_gen_colour=ROOT.kOrange-3,
+    # alt_gen_colour=ROOT.kOrange-3,
+    alt_gen_colour=ROOT.kViolet+1,
     alt_unfolded_colour=ROOT.kOrange-3,
     alt_reco_colour=ROOT.kOrange-3,
     # reco_mc_colour=ROOT.kGreen+2,
@@ -918,7 +919,7 @@ class GenPtBinnedPlotter(object):
                 tmp.append(this_syst_hist)
                 c = Contribution(this_syst_hist,
                                  label=syst_dict['label'],
-                                 line_color=syst_dict['colour'], 
+                                 line_color=syst_dict['colour'],
                                  line_width=0,
                                  # line_width=self.line_width,
                                  # line_style=2 if 'down' in syst_dict['label'].lower() else 1,
@@ -1852,6 +1853,324 @@ def do_all_plots_per_region_angle(setup, unpack_dict):
     return hbc
 
 
+def make_1d_unfolded_normalised(setup, hist_bin_chopper, unpack_dict):
+    """Make our own 1D plot with all normalised distributions"""
+    unfolder = unpack_dict['unfolder']
+    # unreg_unfolder = unpack_dict['unreg_unfolder']
+    alt_unfolder = unpack_dict['alt_unfolder']
+    alt_hist_truth = unpack_dict['alt_hist_truth']
+    # alt_hist_reco = unpack_dict['alt_hist_reco']
+    # alt_hist_reco_bg_subtracted = unpack_dict['alt_hist_reco_bg_subtracted']
+    # alt_hist_reco_bg_subtracted_gen_binning = unpack_dict['alt_hist_reco_bg_subtracted_gen_binning']
+
+    pt_bin_edges = unfolder.pt_bin_edges_gen
+    lambda_bin_edges = unfolder.variable_bin_edges_gen
+    num_pt_bins = len(pt_bin_edges)-1
+    num_lambda_bins = len(lambda_bin_edges)-1
+    nbins = num_pt_bins * num_lambda_bins
+    th1_args = ["", nbins, 0, nbins]
+    # FIXME: should the proper bin widths be used?
+    h1d_mc_gen = ROOT.TH1D("mc_gen_1d_all_%s_%s" % (setup.region['name'], setup.angle.var), *th1_args)
+    h1d_unfolded_total_errors = ROOT.TH1D("unfolded_total_errors_1d_all_%s_%s" % (setup.region['name'], setup.angle.var), *th1_args)
+    h1d_unfolded_stat_errors = ROOT.TH1D("unfolded_stat_errors_1d_all_%s_%s" % (setup.region['name'], setup.angle.var), *th1_args)
+    h1d_alt_unfolded_stat_errors = ROOT.TH1D("alt_unfolded_total_errors_1d_all_%s_%s" % (setup.region['name'], setup.angle.var), *th1_args)
+    h1d_alt_mc_gen = ROOT.TH1D("alt_mc_gen_1d_all_%s_%s" % (setup.region['name'], setup.angle.var), *th1_args)
+
+    # just in case
+    hist_bin_chopper = hist_bin_chopper or HistBinChopper(unfolder)
+    hist_bin_chopper.add_obj("hist_truth", unfolder.hist_truth)
+    hist_bin_chopper.add_obj("unfolded", unfolder.unfolded)
+    hist_bin_chopper.add_obj("unfolded_stat_err", unfolder.unfolded_stat_err)
+    hist_bin_chopper.add_obj("alt_unfolded_stat_err", alt_unfolder.unfolded_stat_err)
+    hist_bin_chopper.add_obj("alt_truth", alt_hist_truth)
+
+    for ibin, (pt_low, pt_high) in enumerate(zip(pt_bin_edges[:-1], pt_bin_edges[1:])):
+        mc_gen_hist_bin = hist_bin_chopper.get_pt_bin_normed_div_bin_width('hist_truth', ibin, binning_scheme='generator')
+        unfolded_hist_bin_total_errors = hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded', ibin, binning_scheme='generator')
+        unfolded_hist_bin_stat_errors = hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded_stat_err', ibin, binning_scheme='generator')
+        alt_unfolded_hist_bin_total_errors = hist_bin_chopper.get_pt_bin_normed_div_bin_width('alt_unfolded_stat_err', ibin, binning_scheme='generator')
+        alt_mc_gen_hist_bin = hist_bin_chopper.get_pt_bin_normed_div_bin_width('alt_truth', ibin, binning_scheme='generator')
+
+        for lbin in range(1, mc_gen_hist_bin.GetNbinsX()+1):
+            global_bin = (ibin * num_lambda_bins) + lbin
+            h1d_mc_gen.SetBinContent(global_bin, mc_gen_hist_bin.GetBinContent(lbin))
+            h1d_mc_gen.SetBinError(global_bin, mc_gen_hist_bin.GetBinError(lbin))
+
+            h1d_unfolded_total_errors.SetBinContent(global_bin, unfolded_hist_bin_total_errors.GetBinContent(lbin))
+            h1d_unfolded_total_errors.SetBinError(global_bin, unfolded_hist_bin_total_errors.GetBinError(lbin))
+
+            h1d_unfolded_stat_errors.SetBinContent(global_bin, unfolded_hist_bin_stat_errors.GetBinContent(lbin))
+            h1d_unfolded_stat_errors.SetBinError(global_bin, unfolded_hist_bin_stat_errors.GetBinError(lbin))
+
+            h1d_unfolded_stat_errors.SetBinContent(global_bin, unfolded_hist_bin_stat_errors.GetBinContent(lbin))
+            h1d_unfolded_stat_errors.SetBinError(global_bin, unfolded_hist_bin_stat_errors.GetBinError(lbin))
+
+            h1d_alt_unfolded_stat_errors.SetBinContent(global_bin, alt_unfolded_hist_bin_total_errors.GetBinContent(lbin))
+            h1d_alt_unfolded_stat_errors.SetBinError(global_bin, alt_unfolded_hist_bin_total_errors.GetBinError(lbin))
+
+            h1d_alt_mc_gen.SetBinContent(global_bin, alt_mc_gen_hist_bin.GetBinContent(lbin))
+            h1d_alt_mc_gen.SetBinError(global_bin, alt_mc_gen_hist_bin.GetBinError(lbin))
+
+    # Make into Contributions
+    line_width = 1
+    mc_gen_cont = Contribution(h1d_mc_gen,
+                               label="Generator (%s)" % (setup.region['mc_label']),
+                               line_color=PLOT_COLOURS['gen_colour'], line_width=line_width,
+                               marker_color=PLOT_COLOURS['gen_colour'], marker_size=0)
+
+    unfolded_total_cont = Contribution(h1d_unfolded_total_errors,
+                                       label="Unfolded (#tau = %.3g) (total err)\n(%s response matrix)" % (unfolder.tau, setup.region['mc_label']),
+                                       line_color=PLOT_COLOURS['unfolded_total_colour'], line_width=line_width, line_style=1,
+                                       marker_color=PLOT_COLOURS['unfolded_total_colour']) #marker_style=20, marker_size=0.75,
+
+    unfolded_stat_cont = Contribution(h1d_unfolded_stat_errors,
+                                      label="Unfolded (#tau = %.3g) (stat err)\n(%s response matrix)" % (unfolder.tau, setup.region['mc_label']),
+                                      line_color=PLOT_COLOURS['unfolded_stat_colour'], line_width=line_width, line_style=1,
+                                      marker_color=PLOT_COLOURS['unfolded_stat_colour'], marker_style=20, marker_size=0.75)
+
+    alt_unfolded_cont = Contribution(h1d_alt_unfolded_stat_errors,
+                                     label="Unfolded (#tau = %.3g) (stat err)\n(%s response matrix)" % (alt_unfolder.tau, setup.region['alt_mc_label']),
+                                     line_color=PLOT_COLOURS['alt_unfolded_colour'], line_width=line_width, line_style=1,
+                                     marker_color=PLOT_COLOURS['alt_unfolded_colour']) #marker_style=20, marker_size=0.75,
+
+    alt_mc_gen_cont = Contribution(h1d_alt_mc_gen,
+                                   label="Generator (%s)" % (setup.region['alt_mc_label']),
+                                   line_color=PLOT_COLOURS['alt_gen_colour'], line_width=line_width, line_style=2,
+                                   marker_color=PLOT_COLOURS['alt_gen_colour'], marker_size=0)
+
+    # Make plots
+    def _get_ylim(entries):
+        ymax = max([e.obj.GetMaximum() for e in entries])
+        ylim = (0, 3*ymax)  # room for labels
+        return ylim
+
+    def _modify_plot(this_plot):
+        this_plot.legend.SetX1(0.6)
+        this_plot.legend.SetY1(0.68)
+        this_plot.legend.SetX2(0.9)
+        this_plot.legend.SetY2(0.88)
+        # this_plot.left_margin = 0.16
+        this_plot.left_margin = 0.1
+        this_plot.default_canvas_size = (900, 700)
+        this_plot.y_padding_max_linear = 2
+
+    def _plot_pt_bins(plot):
+        plot.subplot_container.GetXaxis().SetTitleOffset(plot.subplot_container.GetXaxis().GetTitleOffset()*.9)
+
+        lines = []
+        texts = []
+        plot.main_pad.cd()
+        obj = plot.container.GetHistogram()
+        axis_low, axis_high = obj.GetMinimum(), obj.GetMaximum()
+        for ibin, _ in enumerate(pt_bin_edges[1:-1], 1):
+            pt_bin = ibin * num_lambda_bins
+            line = ROOT.TLine(pt_bin, axis_low, pt_bin, axis_high)
+            line.SetLineStyle(2)
+            line.SetLineColor(14)
+            line.Draw()
+            lines.append(line)
+
+        # lines on subplot if available
+        if isinstance(plot, Plot) and plot.subplot_pad:
+            plot.subplot_pad.cd()
+            y_low, y_high = plot.subplot_container.GetHistogram().GetMinimum(), plot.subplot_container.GetHistogram().GetMaximum()  # BINGO
+            for ibin, _ in enumerate(pt_bin_edges[1:-1], 1):
+                pt_bin = ibin * num_lambda_bins
+                line = ROOT.TLine(pt_bin, y_low, pt_bin, y_high)
+                line.SetLineStyle(2)
+                line.SetLineColor(14)
+                line.Draw()
+                lines.append(line)
+
+        plot.main_pad.cd()
+        plot.subplot_container.GetXaxis().SetLabelOffset(999)
+        # add bin texts
+        for ibin, (pt_val, pt_val_upper) in enumerate(zip(pt_bin_edges[:-1], pt_bin_edges[1:])):
+            labels_inside_align = 'lower'
+            
+            # fixgure out x location
+            pt_bin = ibin * num_lambda_bins
+            pt_bin_higher = (ibin+1) * num_lambda_bins
+            pt_bin_interval = pt_bin_higher - pt_bin
+            text_x = pt_bin + 0.35*(pt_bin_interval)
+            
+            # figure out y location from axes
+            axis_range = axis_high - axis_low
+            # assumes logarithmic?
+            if ROOT.gPad.GetLogy():
+                if axis_low <= 0:
+                    print("axis_low is %f so can't take log" %axis_low)
+                    return None, None
+                    # raise ValueError("axis_low is %f so can't take log" %axis_low)
+                log_axis_range = math.log10(axis_high) - math.log10(axis_low)
+                y_start = math.pow(10, 0.03*log_axis_range + math.log10(axis_low))
+                y_end = 10*axis_low
+            else:
+                y_start = (0.02*axis_range) + axis_low
+                y_start = (0.3*axis_range) + axis_low
+                y_end = 10*axis_low
+
+            if labels_inside_align == 'higher':
+                if ROOT.gPad.GetLogy():
+                    y_start = axis_high/10
+                    y_end = axis_high/1.05
+                else:
+                    y_start = axis_high*0.8
+                    y_end = axis_high*0.9
+
+            text = ROOT.TPaveText(text_x, y_start, text_x + .5*pt_bin_interval, y_start)
+            text.SetBorderSize(0)
+            text.SetFillStyle(0)
+            contents = '%g < p_{T} < %g GeV' % (pt_val, pt_val_upper)
+            # You have to style the thing that is returned by AddText, not the TPaveText obj itself
+            # WTAF
+            t = text.AddText(contents)  # t is a TText
+            t.SetTextColor(14)
+            t.SetTextAngle(89)
+            t.SetTextSize(0.0275)
+            if (isinstance(plot, Plot) and not plot.subplot_pad) or not isinstance(plot, Plot):
+                t.SetTextSize(0.02)  # account for the fact that a subplot makes things smaller
+            if labels_inside_align == 'lower':
+                t.SetTextAlign(ROOT.kHAlignLeft + ROOT.kVAlignTop)
+            else:
+                t.SetTextAlign(ROOT.kHAlignCenter + ROOT.kVAlignTop)
+            text.Draw()
+            texts.append(text)
+
+        return lines, texts
+
+    # Just unfolded + nominal MC
+    unfolded_total_cont.subplot = h1d_mc_gen
+    unfolded_stat_cont.subplot = h1d_mc_gen
+    title = (("{jet_algo}\n"
+              "{region_label} region")
+             .format(
+                jet_algo=setup.jet_algo,
+                region_label=setup.region['label'],
+                pt_str=setup.pt_var_str,
+            ))
+    # Only unfolded + truth
+    entries = [
+        mc_gen_cont,
+        unfolded_total_cont,
+        unfolded_stat_cont,
+    ]
+    plot = Plot(entries,
+                what="hist",
+                ytitle=setup.pt_bin_normalised_differential_label,
+                title=title,
+                xtitle=setup.angle_str + ', per %s bin' % (setup.pt_var_str),
+                has_data=setup.has_data,
+                ylim=_get_ylim(entries),
+                subplot_type='ratio',
+                subplot_title="Unfolded / Gen",
+                subplot_limits=(0, 2) if setup.has_data else (0.75, 1.25),
+        )
+    _modify_plot(plot)
+    plot.plot("NOSTACK E1")
+    l = _plot_pt_bins(plot)
+    plot.save("%s/unfolded_1d_normalised_%s_divBinWidth.%s" % (setup.output_dir, setup.append, setup.output_fmt))
+
+    # unfolded, truth, alt truth
+    alt_mc_gen_cont.subplot = h1d_mc_gen
+    entries = [
+        mc_gen_cont,
+        alt_mc_gen_cont,
+        unfolded_total_cont,
+        # unfolded_stat_cont,
+    ]
+    plot = Plot(entries,
+                what="hist",
+                ytitle=setup.pt_bin_normalised_differential_label,
+                title=title,
+                xtitle=setup.angle_str + ', per %s bin' % (setup.pt_var_str),
+                has_data=setup.has_data,
+                ylim=_get_ylim(entries),
+                subplot_type='ratio',
+                subplot_title="#splitline{Unfolded / Gen}{(%s)}" % (setup.region['mc_label']),
+                subplot_limits=(0, 2) if setup.has_data else (0.75, 1.25),
+        )
+    _modify_plot(plot)
+    plot.plot("NOSTACK E1")
+    l = _plot_pt_bins(plot)
+    plot.save("%s/unfolded_1d_normalised_alt_truth_%s_divBinWidth.%s" % (setup.output_dir, setup.append, setup.output_fmt))
+
+    # unfolded, truth, alt response
+    alt_unfolded_cont.subplot = h1d_mc_gen
+    entries = [
+        mc_gen_cont,
+        unfolded_total_cont,
+        # unfolded_stat_cont,
+        alt_unfolded_cont
+    ]
+    plot = Plot(entries,
+                what="hist",
+                ytitle=setup.pt_bin_normalised_differential_label,
+                title=title,
+                xtitle=setup.angle_str + ', per %s bin' % (setup.pt_var_str),
+                has_data=setup.has_data,
+                ylim=_get_ylim(entries),
+                subplot_type='ratio',
+                subplot_title="#splitline{Unfolded / Gen}{(%s)}" % (setup.region['mc_label']),
+                subplot_limits=(0, 2) if setup.has_data else (0.75, 1.25),
+        )
+    _modify_plot(plot)
+    plot.plot("NOSTACK E1")
+    l = _plot_pt_bins(plot)
+    plot.save("%s/unfolded_1d_normalised_alt_response_%s_divBinWidth.%s" % (setup.output_dir, setup.append, setup.output_fmt))
+
+    # unfolded, truth, alt response, alt truth
+    alt_unfolded_cont.subplot = h1d_mc_gen
+    entries = [
+        mc_gen_cont,
+        alt_mc_gen_cont,
+        unfolded_total_cont,
+        # unfolded_stat_cont,
+        alt_unfolded_cont
+    ]
+    plot = Plot(entries,
+                what="hist",
+                ytitle=setup.pt_bin_normalised_differential_label,
+                title=title,
+                xtitle=setup.angle_str + ', per %s bin' % (setup.pt_var_str),
+                has_data=setup.has_data,
+                ylim=_get_ylim(entries),
+                subplot_type='ratio',
+                subplot_title="#splitline{Unfolded / Gen}{(%s)}" % (setup.region['mc_label']),
+                subplot_limits=(0, 2) if setup.has_data else (0.75, 1.25),
+        )
+    _modify_plot(plot)
+    plot.plot("NOSTACK E1")
+    l, t = _plot_pt_bins(plot)
+    plot.save("%s/unfolded_1d_normalised_alt_response_truth_%s_divBinWidth.%s" % (setup.output_dir, setup.append, setup.output_fmt))
+
+    # unfolded (stat), truth, alt response, alt truth
+    alt_unfolded_cont.subplot = h1d_mc_gen
+    entries = [
+        mc_gen_cont,
+        alt_mc_gen_cont,
+        # unfolded_total_cont,
+        unfolded_stat_cont,
+        alt_unfolded_cont
+    ]
+    plot = Plot(entries,
+                what="hist",
+                ytitle=setup.pt_bin_normalised_differential_label,
+                title=title,
+                xtitle=setup.angle_str + ', per %s bin' % (setup.pt_var_str),
+                has_data=setup.has_data,
+                ylim=_get_ylim(entries),
+                subplot_type='ratio',
+                subplot_title="#splitline{Unfolded / Gen}{(%s)}" % (setup.region['mc_label']),
+                subplot_limits=(0, 2) if setup.has_data else (0.75, 1.25),
+        )
+    _modify_plot(plot)
+    plot.plot("NOSTACK E1")
+    l, t = _plot_pt_bins(plot)
+    plot.save("%s/unfolded_1d_normalised_stat_alt_response_truth_%s_divBinWidth.%s" % (setup.output_dir, setup.append, setup.output_fmt))
+
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("source",
@@ -1896,11 +2215,16 @@ if __name__ == "__main__":
             setattr(args, x, True)
 
     regions = setup_regions(args)
+    if len(regions) == 0:
+        raise RuntimeError("Need at least 1 region")
 
     if args.angles[0] == "all":
         angles = qgc.COMMON_VARS
     else:
         angles = [a for a in qgc.COMMON_VARS if a.var in args.angles]
+
+    if len(angles) == 0:
+        raise RuntimeError("Need at least 1 angle")
 
     jet_algo = "AK4 PF PUPPI"
     if "ak8puppi" in args.source:
@@ -1950,4 +2274,11 @@ if __name__ == "__main__":
                           output_dir=angle_output_dir,
                           has_data=has_data)
 
-            hist_bin_chopper = do_all_plots_per_region_angle(setup, unpack_dict)
+            # hist_bin_chopper = do_all_plots_per_region_angle(setup, unpack_dict)
+            hist_bin_chopper = None
+
+            # Do a 1D summary plot, with all the normalised plots with bins divided by their width
+            # (unlike the standard plot from MyUnfolderPlotter, which is absolute)
+            make_1d_unfolded_normalised(setup,
+                                        hist_bin_chopper,
+                                        unpack_dict)
