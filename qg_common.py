@@ -522,7 +522,9 @@ def get_parser():
                         '"uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" '
                         'and "uhh2.AnalysisModuleRunner.MC.MC_QCD_.root" in it. '
                         'Several dirs can be specified here, separated by a space.')
-    parser.add_argument("-o", "--output", help="Directory to put output plot dirs into", default=None)
+    parser.add_argument("-o", "--output", 
+                        help="Directory to put output plot dirs into", 
+                        default=".")
     return parser
 
 
