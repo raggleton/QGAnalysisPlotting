@@ -1859,7 +1859,26 @@ def do_all_plots_per_region_angle(setup, unpack_dict):
     return hbc
 
 
-def make_1d_unfolded_normalised(setup, hist_bin_chopper, unpack_dict):
+def make_big_1d_normalised(hist_bin_chopper, name, pt_bin_edges, lambda_bin_edges):
+    """Make big 1D plot with normalised distribution per pt bin"""
+    num_pt_bins = len(pt_bin_edges)-1
+    num_lambda_bins = len(lambda_bin_edges)-1
+    nbins = num_pt_bins * num_lambda_bins
+    th1_args = ["", nbins, 0, nbins]
+    # FIXME: should the proper bin widths be used?
+    h_new = ROOT.TH1D(name + "_1d_all_"+cut.get_unique_str(), *th1_args)
+    for ibin in enumerate(pt_bin_edges[:-1]):
+        hist_bin = hist_bin_chopper.get_pt_bin_normed_div_bin_width(name, ibin, binning_scheme='generator')
+
+        for lbin in range(1, hist_bin.GetNbinsX()+1):
+            global_bin = (ibin * num_lambda_bins) + lbin
+            h_new.SetBinContent(global_bin, hist_bin.GetBinContent(lbin))
+            h_new.SetBinError(global_bin, hist_bin.GetBinError(lbin))
+
+    return h_new
+
+
+def plot_1d_unfolded_normalised(setup, hist_bin_chopper, unpack_dict):
     """Make our own 1D plot with all normalised distributions"""
     unfolder = unpack_dict['unfolder']
     # unreg_unfolder = unpack_dict['unreg_unfolder']
@@ -1871,16 +1890,6 @@ def make_1d_unfolded_normalised(setup, hist_bin_chopper, unpack_dict):
 
     pt_bin_edges = unfolder.pt_bin_edges_gen
     lambda_bin_edges = unfolder.variable_bin_edges_gen
-    num_pt_bins = len(pt_bin_edges)-1
-    num_lambda_bins = len(lambda_bin_edges)-1
-    nbins = num_pt_bins * num_lambda_bins
-    th1_args = ["", nbins, 0, nbins]
-    # FIXME: should the proper bin widths be used?
-    h1d_mc_gen = ROOT.TH1D("mc_gen_1d_all_%s_%s" % (setup.region['name'], setup.angle.var), *th1_args)
-    h1d_unfolded_total_errors = ROOT.TH1D("unfolded_total_errors_1d_all_%s_%s" % (setup.region['name'], setup.angle.var), *th1_args)
-    h1d_unfolded_stat_errors = ROOT.TH1D("unfolded_stat_errors_1d_all_%s_%s" % (setup.region['name'], setup.angle.var), *th1_args)
-    h1d_alt_unfolded_stat_errors = ROOT.TH1D("alt_unfolded_total_errors_1d_all_%s_%s" % (setup.region['name'], setup.angle.var), *th1_args)
-    h1d_alt_mc_gen = ROOT.TH1D("alt_mc_gen_1d_all_%s_%s" % (setup.region['name'], setup.angle.var), *th1_args)
 
     # just in case
     hist_bin_chopper = hist_bin_chopper or HistBinChopper(unfolder)
@@ -1890,32 +1899,11 @@ def make_1d_unfolded_normalised(setup, hist_bin_chopper, unpack_dict):
     hist_bin_chopper.add_obj("alt_unfolded_stat_err", alt_unfolder.unfolded_stat_err)
     hist_bin_chopper.add_obj("alt_truth", alt_hist_truth)
 
-    for ibin, (pt_low, pt_high) in enumerate(zip(pt_bin_edges[:-1], pt_bin_edges[1:])):
-        mc_gen_hist_bin = hist_bin_chopper.get_pt_bin_normed_div_bin_width('hist_truth', ibin, binning_scheme='generator')
-        unfolded_hist_bin_total_errors = hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded', ibin, binning_scheme='generator')
-        unfolded_hist_bin_stat_errors = hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded_stat_err', ibin, binning_scheme='generator')
-        alt_unfolded_hist_bin_total_errors = hist_bin_chopper.get_pt_bin_normed_div_bin_width('alt_unfolded_stat_err', ibin, binning_scheme='generator')
-        alt_mc_gen_hist_bin = hist_bin_chopper.get_pt_bin_normed_div_bin_width('alt_truth', ibin, binning_scheme='generator')
-
-        for lbin in range(1, mc_gen_hist_bin.GetNbinsX()+1):
-            global_bin = (ibin * num_lambda_bins) + lbin
-            h1d_mc_gen.SetBinContent(global_bin, mc_gen_hist_bin.GetBinContent(lbin))
-            h1d_mc_gen.SetBinError(global_bin, mc_gen_hist_bin.GetBinError(lbin))
-
-            h1d_unfolded_total_errors.SetBinContent(global_bin, unfolded_hist_bin_total_errors.GetBinContent(lbin))
-            h1d_unfolded_total_errors.SetBinError(global_bin, unfolded_hist_bin_total_errors.GetBinError(lbin))
-
-            h1d_unfolded_stat_errors.SetBinContent(global_bin, unfolded_hist_bin_stat_errors.GetBinContent(lbin))
-            h1d_unfolded_stat_errors.SetBinError(global_bin, unfolded_hist_bin_stat_errors.GetBinError(lbin))
-
-            h1d_unfolded_stat_errors.SetBinContent(global_bin, unfolded_hist_bin_stat_errors.GetBinContent(lbin))
-            h1d_unfolded_stat_errors.SetBinError(global_bin, unfolded_hist_bin_stat_errors.GetBinError(lbin))
-
-            h1d_alt_unfolded_stat_errors.SetBinContent(global_bin, alt_unfolded_hist_bin_total_errors.GetBinContent(lbin))
-            h1d_alt_unfolded_stat_errors.SetBinError(global_bin, alt_unfolded_hist_bin_total_errors.GetBinError(lbin))
-
-            h1d_alt_mc_gen.SetBinContent(global_bin, alt_mc_gen_hist_bin.GetBinContent(lbin))
-            h1d_alt_mc_gen.SetBinError(global_bin, alt_mc_gen_hist_bin.GetBinError(lbin))
+    h1d_mc_gen = make_big_1d_normalised(hist_bin_chopper, 'hist_truth', pt_bin_edges, lambda_bin_edges)
+    h1d_unfolded_total_errors = make_big_1d_normalised(hist_bin_chopper, 'unfolded', pt_bin_edges, lambda_bin_edges)
+    h1d_unfolded_stat_errors = make_big_1d_normalised(hist_bin_chopper, 'unfolded_stat_err', pt_bin_edges, lambda_bin_edges)
+    h1d_alt_unfolded_stat_errors = make_big_1d_normalised(hist_bin_chopper, 'alt_unfolded_stat_err', pt_bin_edges, lambda_bin_edges)
+    h1d_alt_mc_gen = make_big_1d_normalised(hist_bin_chopper, 'alt_truth', pt_bin_edges, lambda_bin_edges)
 
     # Make into Contributions
     line_width = 1
@@ -2289,6 +2277,6 @@ if __name__ == "__main__":
 
             # Do a 1D summary plot, with all the normalised plots with bins divided by their width
             # (unlike the standard plot from MyUnfolderPlotter, which is absolute)
-            make_1d_unfolded_normalised(setup,
+            plot_1d_unfolded_normalised(setup,
                                         hist_bin_chopper,
                                         unpack_dict)
