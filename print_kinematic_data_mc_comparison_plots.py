@@ -97,7 +97,7 @@ def do_1D_plot(hists, output_filename, components_styles_dicts=None,
     xlim = [hists[0].GetBinLowEdge(low_bin-1), hists[0].GetBinLowEdge(high_bin+2)]
 
     p = Plot(contributions, what='hist',
-             ytitle="p.d.f." if normalise_hists else "N",
+             ytitle="#DeltaN/N" if normalise_hists else "N",
              title=title,
              xlim=xlim,
              ylim=ylim,
@@ -328,25 +328,25 @@ def do_zpj_distributions(root_dir):
     #                                   bin_by='Z')
 
     # Compare shapes
-    # do_all_1D_projection_plots_in_dir(directories=directories,
-    #                                   output_dir=os.path.join(root_dir, "ZPlusJets_data_mc_kin_comparison_normalised_compare"),
-    #                                   # output_dir=os.path.join(root_dir, "ZPlusJets_data_mc_kin_comparison_normalised_compare_KFactor"),
-    #                                   # output_dir=os.path.join(root_dir, "ZPlusJets_data_mc_kin_comparison_normalised_all"),
-    #                                   jet_config_str=jet_config_str,
-    #                                   components_styles_dicts=csd,
-    #                                   normalise_hists=True,
-    #                                   bin_by='Z')
-
-    # Preselection hists
-    directories_presel = directories = [cu.get_from_tfile(rf, "ZPlusJets_Presel") for rf in root_files]
     do_all_1D_projection_plots_in_dir(directories=directories,
-                                      output_dir=os.path.join(root_dir, "ZPlusJets_Presel_data_mc_kin_comparison_normalised_compare"),
+                                      output_dir=os.path.join(root_dir, "ZPlusJets_data_mc_kin_comparison_normalised_compare"),
                                       # output_dir=os.path.join(root_dir, "ZPlusJets_data_mc_kin_comparison_normalised_compare_KFactor"),
                                       # output_dir=os.path.join(root_dir, "ZPlusJets_data_mc_kin_comparison_normalised_all"),
                                       jet_config_str=jet_config_str,
                                       components_styles_dicts=csd,
                                       normalise_hists=True,
                                       bin_by='Z')
+
+    # Preselection hists
+    # directories_presel = directories = [cu.get_from_tfile(rf, "ZPlusJets_Presel") for rf in root_files]
+    # do_all_1D_projection_plots_in_dir(directories=directories,
+    #                                   output_dir=os.path.join(root_dir, "ZPlusJets_Presel_data_mc_kin_comparison_normalised_compare"),
+    #                                   # output_dir=os.path.join(root_dir, "ZPlusJets_data_mc_kin_comparison_normalised_compare_KFactor"),
+    #                                   # output_dir=os.path.join(root_dir, "ZPlusJets_data_mc_kin_comparison_normalised_all"),
+    #                                   jet_config_str=jet_config_str,
+    #                                   components_styles_dicts=csd,
+    #                                   normalise_hists=True,
+    #                                   bin_by='Z')
 
 
 
@@ -357,6 +357,6 @@ if __name__ == "__main__":
     for workdir in args.workdirs:
             do_dijet_distributions(workdir)
 
-            # do_zpj_distributions(workdir)
+            do_zpj_distributions(workdir)
 
     sys.exit(0)
