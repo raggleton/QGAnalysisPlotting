@@ -40,7 +40,7 @@ ROOT.gStyle.SetPaintTextFormat(".3f")
 OUTPUT_FMT = "pdf"
 
 
-def do_plot(entries, output_file, hist_name=None, xlim=None, ylim=None, rebin=2, is_data=True):
+def do_plot(entries, output_file, hist_name=None, xlim=None, ylim=None, rebin=2, is_data=True, is_ak8=False):
     components = []
     do_unweighted = any(["unweighted" in e.get('hist_name', hist_name) for e in entries])
     for ent in entries:
@@ -60,9 +60,11 @@ def do_plot(entries, output_file, hist_name=None, xlim=None, ylim=None, rebin=2,
                          rebin_hist=rebin
                         )
         )
+    title = 'AK8 PUPPI' if is_ak8 else 'AK4 PUPPI'
     plot = Plot(components,
                 what='hist',
                 has_data=is_data,
+                title=title,
                 xlim=xlim,
                 ylim=ylim,
                 ytitle="Unweighted N" if do_unweighted else 'N')
@@ -101,59 +103,61 @@ if __name__ == "__main__":
         'scale': 35918219492.947 / 29048.362
     }
     jet_ht_filename = "%s/%s" % (input_dir, qgc.JETHT_FILENAME)
+    is_ak8 = 'workdir_ak8' in input_dir
+    trig_prefix = 'HLT_AK8' if is_ak8 else 'HLT_'
     jet_ht_entries = [
         {
             'filename': jet_ht_filename,
             'ind': '0',
-            'label': "HLT_PFJet40",
+            'label': "%sPFJet40" % trig_prefix,
             'color': ROOT.kAzure,
         },
         {
             'filename': jet_ht_filename,
             'ind': '1',
-            'label': "HLT_PFJet60",
+            'label': "%sPFJet60" % trig_prefix,
             'color': ROOT.kOrange-2,
         },
         {
             'filename': jet_ht_filename,
             'ind': '2',
-            'label': "HLT_PFJet80",
+            'label': "%sPFJet80" % trig_prefix,
             'color': ROOT.kGreen+2,
         },
         {
             'filename': jet_ht_filename,
             'ind': '3',
-            'label': "HLT_PFJet140",
+            'label': "%sPFJet140" % trig_prefix,
             'color': ROOT.kMagenta+1,
         },
         {
             'filename': jet_ht_filename,
             'ind': '4',
-            'label': "HLT_PFJet200",
+            'label': "%sPFJet200" % trig_prefix,
             'color': ROOT.kCyan,
         },
         {
             'filename': jet_ht_filename,
             'ind': '5',
-            'label': "HLT_PFJet260",
+            'label': "%sPFJet260" % trig_prefix,
             'color': ROOT.kRed,
         },
         {
             'filename': jet_ht_filename,
             'ind': '6',
-            'label': "HLT_PFJet320",
+            'label': "%sPFJet320" % trig_prefix,
             'color': ROOT.kAzure+6,
         },
         {
             'filename': jet_ht_filename,
             'ind': '7',
-            'label': "HLT_PFJet400",
+            'label': "%sPFJet400" % trig_prefix,
             'color': ROOT.kOrange+3
         },
         {
             'filename': jet_ht_filename,
             'ind': '8',
-            'label': "HLT_PFJet450",
+            'label': "%sPFJet450" % trig_prefix,
             'color': ROOT.kGreen-7,
         },
     ]
@@ -172,7 +176,10 @@ if __name__ == "__main__":
         do_plot(this_data_entries,
                 output_file=output_filename,
                 xlim=[30, 2E3],
-                ylim=[10, 1E8] if 'unweighted' in ht_name else [1, 1E12])
+                ylim=[10, 1E8] if 'unweighted' in ht_name else [1, 1E12],
+                is_ak8=is_ak8)
+
+    exit()
 
     # QCD HT plots
     # --------------------------------------------------------------------------
@@ -238,7 +245,7 @@ if __name__ == "__main__":
     #             output_file=output_filename,
     #             xlim=[30, 2000],
     #             ylim=[10, 1E12],
-    #             is_data=False)
+    #             is_data=False, is_ak8=is_ak8)
 
     # DY HT plots
     # --------------------------------------------------------------------------
@@ -302,4 +309,4 @@ if __name__ == "__main__":
     #             output_file=output_filename,
     #             xlim=[30, 2000],
     #             ylim=[0.1, 1E8],
-    #             is_data=False)
+    #             is_data=False, is_ak8=is_ak8)
