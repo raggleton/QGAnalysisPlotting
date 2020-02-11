@@ -2182,7 +2182,10 @@ if __name__ == "__main__":
                         default=["all"])
     parser.add_argument("--outputDir",
                         default=None,
-                        help='Output directory (default is the source dir')
+                        help='Output directory (default is the source dir)')
+    parser.add_argument("--doBinnedPlots",
+                        action='store_true',
+                        help='Do all lambda/pt binned plots')
 
     region_group = parser.add_argument_group('Region selection')
     region_group.add_argument("--doAllRegions",
@@ -2274,8 +2277,9 @@ if __name__ == "__main__":
                           output_dir=angle_output_dir,
                           has_data=has_data)
 
-            # hist_bin_chopper = do_all_plots_per_region_angle(setup, unpack_dict)
             hist_bin_chopper = None
+            if args.doBinnedPlots:
+                hist_bin_chopper = do_all_plots_per_region_angle(setup, unpack_dict)
 
             # Do a 1D summary plot, with all the normalised plots with bins divided by their width
             # (unlike the standard plot from MyUnfolderPlotter, which is absolute)
