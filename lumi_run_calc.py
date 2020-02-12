@@ -89,17 +89,23 @@ if __name__ == "__main__":
     # brilcalc lumi --normtag /afs/cern.ch/user/l/lumipro/public/Normtags/normtag_PHYSICS.json \
     #  -i /afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions16/13TeV/ReReco/Final/Cert_271036-284044_13TeV_23Sep2016ReReco_Collisions16_JSON.txt \
     #  -u /pb --hltpath 'HLT_ZeroBias_v*' -o zero_bias.csv
-    df_zb = read_brilcalc_csv("zero_bias.csv")
-    do_results_per_trig(df_zb)
+    # df_zb = read_brilcalc_csv("zero_bias.csv")
+    # do_results_per_trig(df_zb)
 
     # brilcalc lumi --normtag /afs/cern.ch/user/l/lumipro/public/Normtags/normtag_PHYSICS.json \
     #  -i /afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions16/13TeV/ReReco/Final/Cert_271036-284044_13TeV_23Sep2016ReReco_Collisions16_JSON.txt \
     #  -u /pb --hltpath 'HLT_PFJet*_v*' -o pfjet.csv
-    df_jetht = read_brilcalc_csv("pfjet.csv")
-    do_results_per_trig(df_jetht)
+    # df_jetht = read_brilcalc_csv("pfjet.csv")
+    # do_results_per_trig(df_jetht)
 
     # brilcalc lumi --normtag /afs/cern.ch/user/l/lumipro/public/Normtags/normtag_PHYSICS.json \
     #  -i /afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions16/13TeV/ReReco/Final/Cert_271036-284044_13TeV_23Sep2016ReReco_Collisions16_JSON.txt \
     #  -u /pb --hltpath 'HLT_Iso*Mu24_v*' -o single_mu.csv
-    df_singlemu = read_brilcalc_csv("single_mu.csv")
-    do_results_per_trig(df_singlemu)
+    # df_singlemu = read_brilcalc_csv("single_mu.csv")
+    # do_results_per_trig(df_singlemu)
+
+    # brilcalc lumi --normtag /afs/cern.ch/user/l/lumipro/public/Normtags/normtag_PHYSICS.json \
+    #  -i /afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions16/13TeV/ReReco/Final/Cert_271036-284044_13TeV_23Sep2016ReReco_Collisions16_JSON.txt \
+    #  -u /pb --hltpath 'HLT_AK8PFJet*_v*' -o pfjet_lumis_ak8_2.csv
+    df_jetht_ak8 = read_brilcalc_csv("pfjet_lumis_ak8_2.csv")
+    do_results_per_trig(df_jetht_ak8)
