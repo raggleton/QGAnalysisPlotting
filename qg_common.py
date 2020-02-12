@@ -511,6 +511,14 @@ WW_FILENAME = "uhh2.AnalysisModuleRunner.MC.MC_WW.root"
 WZ_FILENAME = "uhh2.AnalysisModuleRunner.MC.MC_WZ.root"
 ZZ_FILENAME = "uhh2.AnalysisModuleRunner.MC.MC_ZZ.root"
 
+JETHT_RUNB_FILENAME = "uhh2.AnalysisModuleRunner.DATA.Data_JetHT_RunB.root"
+JETHT_RUNC_FILENAME = "uhh2.AnalysisModuleRunner.DATA.Data_JetHT_RunC.root"
+JETHT_RUND_FILENAME = "uhh2.AnalysisModuleRunner.DATA.Data_JetHT_RunD.root"
+JETHT_RUNE_FILENAME = "uhh2.AnalysisModuleRunner.DATA.Data_JetHT_RunE.root"
+JETHT_RUNF_FILENAME = "uhh2.AnalysisModuleRunner.DATA.Data_JetHT_RunF.root"
+JETHT_RUNG_FILENAME = "uhh2.AnalysisModuleRunner.DATA.Data_JetHT_RunG.root"
+JETHT_RUNH_FILENAME = "uhh2.AnalysisModuleRunner.DATA.Data_JetHT_RunH.root"
+
 
 def get_parser():
     """Return a parser to loop over several input dirs"""
