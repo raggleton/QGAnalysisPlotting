@@ -1786,36 +1786,31 @@ def do_all_plots_per_region_angle(setup, unpack_dict):
                                                bins=unfolder.pt_bin_edges_gen,
                                                hist_bin_chopper=hbc,
                                                unfolder=unfolder)
-    gen_pt_binned_plotter.plot_unfolded_unnormalised(unfolder)
-    gen_pt_binned_plotter.plot_unfolded_normalised(unfolder)
+    gen_pt_binned_plotter.plot_unfolded_unnormalised()
+    gen_pt_binned_plotter.plot_unfolded_normalised()
     if alt_hist_truth:
-        gen_pt_binned_plotter.plot_unfolded_with_alt_truth_normalised(unfolder=unfolder,
-                                                                      alt_truth=alt_hist_truth)
+        gen_pt_binned_plotter.plot_unfolded_with_alt_truth_normalised(alt_truth=alt_hist_truth)
 
     if unfolder.tau > 0 and unreg_unfolder:
-        gen_pt_binned_plotter.plot_unfolded_with_unreg_normalised(unfolder=unfolder,
-                                                                  unreg_unfolder=unreg_unfolder)
+        gen_pt_binned_plotter.plot_unfolded_with_unreg_normalised(unreg_unfolder=unreg_unfolder)
 
     if alt_unfolder:
-        gen_pt_binned_plotter.plot_unfolded_with_alt_response_normalised(unfolder=unfolder,
-                                                                         alt_unfolder=alt_unfolder)
-        gen_pt_binned_plotter.plot_unfolded_with_alt_response_truth_normalised(unfolder=unfolder,
-                                                                               alt_unfolder=alt_unfolder,
-                                                                               alt_truth=alt_hist_truth)
+        gen_pt_binned_plotter.plot_unfolded_with_alt_response_normalised(alt_unfolder=alt_unfolder)
+        gen_pt_binned_plotter.plot_unfolded_with_alt_response_truth_normalised(alt_unfolder=alt_unfolder, alt_truth=alt_hist_truth)
 
     if has_exp_systs:
-        gen_pt_binned_plotter.plot_uncertainty_shifts_normalised(unfolder=unfolder)
-        gen_pt_binned_plotter.plot_unfolded_with_exp_systs_normalised(unfolder=unfolder)
-        gen_pt_binned_plotter.plot_exp_syst_variation_normalised(unfolder=unfolder)
+        gen_pt_binned_plotter.plot_uncertainty_shifts_normalised()
+        gen_pt_binned_plotter.plot_unfolded_with_exp_systs_normalised()
+        gen_pt_binned_plotter.plot_exp_syst_variation_normalised()
 
     if has_model_systs:
-        gen_pt_binned_plotter.plot_unfolded_with_model_systs_normalised(unfolder=unfolder)
+        gen_pt_binned_plotter.plot_unfolded_with_model_systs_normalised()
 
     if has_pdf_systs:
-        gen_pt_binned_plotter.plot_unfolded_with_pdf_systs_normalised(unfolder=unfolder)
+        gen_pt_binned_plotter.plot_unfolded_with_pdf_systs_normalised()
 
     # if has_data:
-    gen_pt_binned_plotter.plot_detector_normalised(unfolder=unfolder, alt_detector=alt_hist_reco_bg_subtracted_gen_binning)
+    gen_pt_binned_plotter.plot_detector_normalised(alt_detector=alt_hist_reco_bg_subtracted_gen_binning)
 
     # Iterate through lambda bins - gen binning
     # ------------------------------------------------------------------
@@ -1823,27 +1818,26 @@ def do_all_plots_per_region_angle(setup, unpack_dict):
                                                       bins=unfolder.variable_bin_edges_gen,
                                                       hist_bin_chopper=hbc,
                                                       unfolder=unfolder)
-    lambda_pt_binned_plotter.plot_unfolded_unnormalised(unfolder)
+    lambda_pt_binned_plotter.plot_unfolded_unnormalised()
 
     if unfolder.tau > 0 and unreg_unfolder:
-        lambda_pt_binned_plotter.plot_unfolded_with_unreg_unnormalised(unfolder, unreg_unfolder)
+        lambda_pt_binned_plotter.plot_unfolded_with_unreg_unnormalised(unreg_unfolder)
 
     if alt_unfolder:
-        lambda_pt_binned_plotter.plot_unfolded_with_alt_response_unnormalised(unfolder=unfolder,
-                                                                              alt_unfolder=alt_unfolder)
+        lambda_pt_binned_plotter.plot_unfolded_with_alt_response_unnormalised(alt_unfolder=alt_unfolder)
 
     if has_exp_systs:
-        lambda_pt_binned_plotter.plot_uncertainty_shifts_unnormalised(unfolder=unfolder)
-        lambda_pt_binned_plotter.plot_unfolded_with_exp_systs_unnormalised(unfolder=unfolder)
+        lambda_pt_binned_plotter.plot_uncertainty_shifts_unnormalised()
+        lambda_pt_binned_plotter.plot_unfolded_with_exp_systs_unnormalised()
 
     if has_model_systs:
-        lambda_pt_binned_plotter.plot_unfolded_with_model_systs_unnormalised(unfolder=unfolder)
+        lambda_pt_binned_plotter.plot_unfolded_with_model_systs_unnormalised()
 
     if has_pdf_systs:
-        lambda_pt_binned_plotter.plot_unfolded_with_pdf_systs_unnormalised(unfolder=unfolder)
+        lambda_pt_binned_plotter.plot_unfolded_with_pdf_systs_unnormalised()
 
     # if has_data:
-    lambda_pt_binned_plotter.plot_detector_unnormalised(unfolder=unfolder, alt_detector=alt_hist_reco_bg_subtracted_gen_binning)
+    lambda_pt_binned_plotter.plot_detector_unnormalised(alt_detector=alt_hist_reco_bg_subtracted_gen_binning)
 
     # Iterate through pt bins - reco binning
     # ------------------------------------------------------------------
@@ -1851,10 +1845,10 @@ def do_all_plots_per_region_angle(setup, unpack_dict):
                                                  bins=unfolder.pt_bin_edges_reco,
                                                  hist_bin_chopper=hbc,
                                                  unfolder=unfolder)
-    reco_pt_binned_plotter.plot_detector_normalised(unfolder, alt_detector=alt_hist_reco_bg_subtracted)
-    reco_pt_binned_plotter.plot_folded_unfolded_normalised(unfolder)
-    reco_pt_binned_plotter.plot_folded_unfolded_with_mc_normalised(unfolder)
-    reco_pt_binned_plotter.plot_folded_gen_normalised(unfolder)
+    reco_pt_binned_plotter.plot_detector_normalised(alt_detector=alt_hist_reco_bg_subtracted)
+    reco_pt_binned_plotter.plot_folded_unfolded_normalised()
+    reco_pt_binned_plotter.plot_folded_unfolded_with_mc_normalised()
+    reco_pt_binned_plotter.plot_folded_gen_normalised()
 
     return hbc
 
