@@ -496,6 +496,11 @@ if __name__ == "__main__":
                             default=False,
                             help='Do only Herwig model systematics (i.e. those that modify input to be unfolded)')
 
+    syst_group.add_argument("--doModelSystsOnlyScale",
+                            type=lambda x:bool(distutils.util.strtobool(x)),
+                            default=False,
+                            help='Do only scale model systematics (i.e. those that modify input to be unfolded)')
+
     syst_group.add_argument("--doPDFSysts",
                             type=lambda x:bool(distutils.util.strtobool(x)),
                             default=False,
@@ -529,8 +534,11 @@ if __name__ == "__main__":
     if args.doPDFSysts and not args.MCinput:
         raise RuntimeError("Cannot do PDF systs and run over data")
 
-    if (args.doModelSysts or args.doModelSystsOnlyHerwig) and not args.MCinput:
+    if (args.doModelSysts or args.doModelSystsOnlyHerwig or args.doModelSystsOnlyScale) and not args.MCinput:
         raise RuntimeError("Cannot do model systs and run over data")
+
+    if args.doModelSystsOnlyHerwig and args.doModelSystsOnlyScale:
+        raise RuntimeError("Cannot do model systs only herwig and only scale")
 
     # if args.useAltResponse and args.doExperimentalSysts:
     #     args.doExperimentalSysts = False
@@ -710,6 +718,12 @@ if __name__ == "__main__":
         if not args.doExperimentalSysts:
             append += "NoExperimentalSyst"
 
+    elif args.doModelSystsOnlyScale:
+        args.doModelSysts = True
+        append += "_modelSystOnlyScale"
+        if not args.doExperimentalSysts:
+            append += "NoExperimentalSyst"
+
     if args.doPDFSysts:
         append += "_pdfSyst"
         if not args.doExperimentalSysts:
@@ -805,6 +819,10 @@ if __name__ == "__main__":
                 # only herwig related systs
                 orig_region['experimental_systematics'] = [s for s in orig_region['experimental_systematics']
                                                            if 'herwig' in s['label'].lower()]
+            elif args.doModelSystsOnlyScale:
+                # only scale related systs
+                orig_region['experimental_systematics'] = [s for s in orig_region['experimental_systematics']
+                                                           if 'scale' in s['label'].lower()]
 
         else:
             orig_region['experimental_systematics'] = []
