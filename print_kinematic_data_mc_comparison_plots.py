@@ -104,7 +104,8 @@ def do_1D_plot(hists, output_filename, components_styles_dicts=None,
              subplot_type="ratio" if do_ratio else None,
              subplot_title="MC / Data",
              subplot=contributions[0],
-             subplot_limits=(0.5, 1.5),
+             # subplot_limits=(0.5, 1.5),
+             subplot_limits=(0, 2) if logy else (0.5, 1.5),
              )
     # p.legend.SetX1(0.55)
     # # p.legend.SetX2(0.95)
@@ -120,9 +121,9 @@ def do_1D_plot(hists, output_filename, components_styles_dicts=None,
     p.plot(draw_opts)
 
     if logy:
-        p.set_logy()
+        p.set_logy(do_more_labels=False)
     if logx:
-        p.set_logx()
+        p.set_logx(do_more_labels=False)
 
     # p.save(os.path.join(output_dir, obj_name+".%s" % (OUTPUT_FMT)))
     p.save(output_filename)
@@ -133,7 +134,6 @@ def do_all_1D_projection_plots_in_dir(directories, output_dir, components_styles
                                       normalise_hists=True,
                                       jet_config_str="",
                                       signal_mask=None,
-                                      zb_first=False,
                                       bin_by=None):
     """
     Given a set of TDirs, loop over all 2D hists, do projection hists for chosen bins, and plot all TDir contributions on a canvas for comparison.
@@ -157,8 +157,6 @@ def do_all_1D_projection_plots_in_dir(directories, output_dir, components_styles
     common_list_of_obj = sorted(list(common_list_of_obj))
 
     pt_bins = qgc.PT_BINS
-    if zb_first:
-        components_styles_dicts = components_styles_dicts[1:]
 
     for obj_name in common_list_of_obj:
 
@@ -183,16 +181,9 @@ def do_all_1D_projection_plots_in_dir(directories, output_dir, components_styles
 
         objs = [d.Get(obj_name).Clone(obj_name + str(uuid1())) for d in directories]
 
-        # Special case for Dijets summing JetHT and ZeroBias
-        if zb_first:
-            # objs[0].Scale(35860)  # QCD scaling
-            objs[0].Scale(1235009.27580634)  # ZB scaling
-            objs[1].Add(objs[0])
-            objs = objs[1:]
-
         # Ignore TH1s
         if not isinstance(objs[0], (ROOT.TH2F, ROOT.TH2D, ROOT.TH2I)):
-            logx = obj_name in ["pt_jet", "pt_jet1", "pt_mumu", 'gen_ht', 'pt_jet_response_binning', 'pt_genjet_response_binning', ]
+            logx = obj_name in ["pt_jet", "pt_jet1", "pt_jet2", "pt_mumu", 'gen_ht', 'pt_jet_response_binning', 'pt_genjet_response_binning', 'pt_jet1_unweighted', 'pt_jet_unweighted']
             do_1D_plot(objs, components_styles_dicts=components_styles_dicts,
                        draw_opts=draw_opts, do_ratio=do_ratio, normalise_hists=normalise_hists, logy=True,
                        title=jet_config_str, logx=logx,
@@ -233,9 +224,13 @@ def do_all_1D_projection_plots_in_dir(directories, output_dir, components_styles
                 elif bin_by == "Z":
                     title = "#splitline{%s}{%d < p_{T}^{Z} < %d GeV}" % (jet_config_str, pt_min, pt_max)
 
+                logx = 'pt_jet_response' in obj_name
+
                 do_1D_plot(hists, components_styles_dicts=components_styles_dicts,
                            draw_opts=draw_opts, do_ratio=do_ratio,
-                           normalise_hists=normalise_hists, logy=False,
+                           normalise_hists=normalise_hists, 
+                           logx=logx,
+                           logy=False,
                            title=title,
                            output_filename=os.path.join(output_dir, obj_name+"_pt%dto%d.%s" % (pt_min, pt_max, OUTPUT_FMT)))
 
@@ -282,7 +277,6 @@ def do_dijet_distributions(root_dir):
     #                                   components_styles_dicts=csd,
     #                                   jet_config_str=jet_config_str,
     #                                   normalise_hists=False,
-    #                                   zb_first=False,
     #                                   bin_by='ave')
 
     # Compare shapes
@@ -293,7 +287,6 @@ def do_dijet_distributions(root_dir):
                                       # output_dir=os.path.join(root_dir, "Dijet_data_mc_kin_comparison_normalised_all"),
                                       components_styles_dicts=csd,
                                       jet_config_str=jet_config_str,
-                                      zb_first=False,
                                       bin_by='ave')
 
 
