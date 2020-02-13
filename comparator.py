@@ -415,15 +415,17 @@ class Plot(object):
 
     def _rescale_plot_labels(self, container, factor):
         # Eurgh, why does ROOT scale all these sizes?
-        container.GetXaxis().SetLabelSize(container.GetXaxis().GetLabelSize()/factor)
-        container.GetXaxis().SetTitleSize(container.GetXaxis().GetTitleSize()/factor)
-        container.GetXaxis().SetTitleOffset(container.GetXaxis().GetTitleOffset()*factor)  # doesn't seem to work?
-        container.GetXaxis().SetTickLength(container.GetXaxis().GetTickLength()/factor)
+        xax = container.GetXaxis()
+        xax.SetLabelSize(xax.GetLabelSize()/factor)
+        xax.SetTitleSize(xax.GetTitleSize()/factor)
+        xax.SetTitleOffset(xax.GetTitleOffset()*factor)  # doesn't seem to work?
+        xax.SetTickLength(xax.GetTickLength()/factor)
 
-        container.GetYaxis().SetLabelSize(container.GetYaxis().GetLabelSize()/factor)
-        container.GetYaxis().SetTitleSize(container.GetYaxis().GetTitleSize()/factor)
+        yax = container.GetYaxis()
+        yax.SetLabelSize(yax.GetLabelSize()/factor)
+        yax.SetTitleSize(yax.GetTitleSize()/factor)
         # magic numbers: 0.1 is the default margin, but scaling against that gives too much, so we knock it down by a bit
-        container.GetYaxis().SetTitleOffset(container.GetYaxis().GetTitleOffset()*factor*(0.7*self.left_margin/0.1))
+        yax.SetTitleOffset(yax.GetTitleOffset()*factor*(0.7*self.left_margin/0.1))
         # container.GetYaxis().SetTickLength(0.03/factor)
 
     def set_logx(self, state=True, do_more_labels=True):
@@ -660,7 +662,7 @@ class Plot(object):
         cms_latex.SetTextAlign(ROOT.kHAlignLeft + ROOT.kVAlignBottom)
         cms_latex.SetTextFont(42)
         cms_latex.SetTextSize(self.cms_text_font_size)
-        latex_height = 0.91
+        latex_height = 0.915
         # left_offset = (self.left_margin - 0.08)  # to account for left margin, magic numbers ahoy
 
         start_x = self.left_margin + self.text_left_offset
@@ -677,7 +679,7 @@ class Plot(object):
         # cms_latex.DrawLatex(0.14, latex_height, "#font[62]{CMS}#font[52]{ Preliminary}")
         # cms_latex.DrawLatex(0.14, latex_height, "#font[62]{CMS}")
         cms_latex.SetTextAlign(ROOT.kHAlignRight + ROOT.kVAlignBottom)
-        cms_latex.DrawLatex(0.95, latex_height, " 35.9 fb^{-1} (13 TeV)")
+        cms_latex.DrawLatex(0.94, latex_height, " 35.9 fb^{-1} (13 TeV)")
 
         # Add title to plot
         text_latex = ROOT.TLatex()
