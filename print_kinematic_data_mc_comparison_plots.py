@@ -258,7 +258,7 @@ def do_dijet_distributions(root_dir):
     mc_col3 = qgc.QCD_COLOURS[3]
     data_col = qgc.JETHT_COLOUR
     zb_col = ROOT.kGreen+2
-    msize = 1
+    msize = 0.75
     csd = [
         {"label": "Data", "line_color": data_col, "fill_color": data_col, "marker_color": data_col, "marker_style": 20, "fill_style": 0, "marker_size": msize},
         {"label": "QCD MC [MG+PY8]", "line_color": mc_col, "fill_color": mc_col, "marker_color": mc_col, "marker_style": 22, "fill_style": 0, "marker_size": msize},
@@ -301,7 +301,7 @@ def do_zpj_distributions(root_dir):
     mc_col2 = qgc.DY_COLOURS[2]
     mc_col3 = qgc.DY_COLOURS[3]
     data_col = qgc.SINGLE_MU_COLOUR
-    msize = 1
+    msize = 0.75
     csd = [
         {"label": "Data", "line_color": data_col, "fill_color": data_col, "marker_color": data_col, "marker_style": 20, "fill_style": 0, "marker_size": msize},
         {"label": "DY+Jets MC [MG+PY8]", "line_color": mc_col, "fill_color": mc_col, "marker_color": mc_col, "marker_style": 21, "fill_style": 0, "marker_size": msize},
