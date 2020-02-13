@@ -4,7 +4,7 @@
 
 Any other plots comparing more than one sample should go into its own script!
 
-USe addZeroBiasJetHT.py first to sum jetht and zerobias
+Make sure jetht and zerobias are hadded into same file
 """
 
 from __future__ import print_function
@@ -147,9 +147,6 @@ def do_plots(root_dir):
 
                 # JETHT/ZEROBIAS DATA
                 h2d_qcd_cen_data = grab_obj(os.path.join(root_dir, qgc.JETHT_ZB_FILENAME), "%s/%s" % (dj_cen_dirname, v))  # use already merged jetht+zb
-                # h2d_zb_data = grab_obj(os.path.join(root_dir, qgc.ZB_FILENAME), "%s/%s" % (dj_cen_dirname, v))
-                # h2d_zb_data.Scale(1235009.27580634)
-                # h2d_qcd_cen_data.Add(h2d_zb_data)
                 qcd_cen_kwargs_data = dict(line_color=qgc.JETHT_COLOUR, line_width=data_line_width, fill_color=qgc.JETHT_COLOUR,
                                            marker_color=qgc.JETHT_COLOUR, marker_style=cu.Marker.get(qgc.QCD_MARKER), marker_size=msize,
                                            label="Data")
@@ -205,9 +202,6 @@ def do_plots(root_dir):
 
                 # JETHT/ZEROBIAS DATA
                 h2d_qcd_fwd_data = grab_obj(os.path.join(root_dir, qgc.JETHT_ZB_FILENAME), "%s/%s" % (dj_fwd_dirname, v))  # use already merged jetht+zb
-                # h2d_zb_data = grab_obj(os.path.join(root_dir, qgc.ZB_FILENAME), "%s/%s" % (dj_cen_dirname, v))
-                # h2d_zb_data.Scale(1235009.27580634)
-                # h2d_qcd_cen_data.Add(h2d_zb_data)
                 qcd_fwd_kwargs_data = dict(line_color=qgc.JETHT_COLOUR, line_width=data_line_width, fill_color=qgc.JETHT_COLOUR,
                                            marker_color=qgc.JETHT_COLOUR, marker_style=cu.Marker.get(qgc.QCD_MARKER), marker_size=msize,
                                            label="Data")
