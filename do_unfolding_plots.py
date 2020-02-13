@@ -2086,7 +2086,7 @@ class BigNormalised1DPlotter(object):
                     subplot_limits=(0, 2) if setup.has_data else (0.75, 1.25)
                     )
         self._modify_plot(plot)
-        plot.plot("NOSTACK E1")
+        plot.plot("NOSTACK E")
         l, t = self._plot_pt_bins(plot)
         plot.save("%s/unfolded_1d_normalised_%s_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, self.setup.output_fmt))
 
@@ -2112,7 +2112,7 @@ class BigNormalised1DPlotter(object):
                     subplot_limits=(0, 2) if setup.has_data else (0.75, 1.25)
                     )
         self._modify_plot(plot)
-        plot.plot("NOSTACK E1")
+        plot.plot("NOSTACK E")
         l, t = self._plot_pt_bins(plot)
         plot.save("%s/unfolded_1d_normalised_alt_truth_%s_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, self.setup.output_fmt))
 
@@ -2138,7 +2138,7 @@ class BigNormalised1DPlotter(object):
                     subplot_limits=(0, 2) if setup.has_data else (0.75, 1.25)
                     )
         self._modify_plot(plot)
-        plot.plot("NOSTACK E1")
+        plot.plot("NOSTACK E")
         l, t = self._plot_pt_bins(plot)
         plot.save("%s/unfolded_1d_normalised_alt_response_%s_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, self.setup.output_fmt))
 
@@ -2167,7 +2167,7 @@ class BigNormalised1DPlotter(object):
                     subplot_limits=(0, 2) if setup.has_data else (0.75, 1.25)
                     )
         self._modify_plot(plot)
-        plot.plot("NOSTACK E1")
+        plot.plot("NOSTACK E")
         l, t = self._plot_pt_bins(plot)
         plot.save("%s/unfolded_1d_normalised_alt_response_truth_%s_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, self.setup.output_fmt))
 
@@ -2200,11 +2200,19 @@ class BigNormalised1DPlotter(object):
                         subplot_limits=(0, 2) if setup.has_data else (0.75, 1.25)
                         )
             self._modify_plot(plot)
-            plot.plot("NOSTACK E1")
+            plot.plot("NOSTACK E")
             l, t = self._plot_pt_bins(plot)
             plot.save("%s/unfolded_1d_normalised_exp_syst_%s_%s_divBinWidth.%s" % (self.setup.output_dir, syst_label_no_spaces, self.setup.append, self.setup.output_fmt))
 
     def plot_unfolded_model_systs(self):
+        all_entries = [Contribution(self.get_big_1d('hist_truth'),
+                                     **self.get_mc_truth_kwargs()),
+                       Contribution(self.get_big_1d('unfolded_stat_err'),
+                                    subplot=self.get_big_1d('hist_truth'),
+                                    **dict(self.get_unfolded_stat_err_kwargs(),
+                                           line_color=ROOT.kGray+2))
+                      ]
+
         for syst_dict in self.setup.region['model_systematics']:
             entries = [
                         Contribution(self.get_big_1d('hist_truth'),
@@ -2235,6 +2243,7 @@ class BigNormalised1DPlotter(object):
                              marker_color=syst_dict['colour'], marker_size=0,
                              subplot=self.get_big_1d(hbc_name_gen)),
             ])
+            all_entries.extend(entries[-2:])
             plot = Plot(entries, 'hist',
                         ytitle=self.setup.pt_bin_normalised_differential_label,
                         title=self.get_title(),
@@ -2246,9 +2255,70 @@ class BigNormalised1DPlotter(object):
                         subplot_limits=(0, 2) if setup.has_data else (0.75, 1.25)
                         )
             self._modify_plot(plot)
-            plot.plot("NOSTACK E1")
+            plot.plot("NOSTACK E")
             l, t = self._plot_pt_bins(plot)
             plot.save("%s/unfolded_1d_normalised_model_syst_%s_%s_divBinWidth.%s" % (self.setup.output_dir, syst_label_no_spaces, self.setup.append, self.setup.output_fmt))
+        
+        plot = Plot(all_entries, 'hist',
+                    ytitle=self.setup.pt_bin_normalised_differential_label,
+                    title=self.get_title(),
+                    xtitle=self.setup.angle_str + ', per %s bin' % (self.setup.pt_var_str),
+                    has_data=self.setup.has_data,
+                    ylim=self._get_ylim(entries),
+                    subplot_type='ratio',
+                    subplot_title="Unfolded / Gen",
+                    subplot_limits=(0, 2) if setup.has_data else (0.75, 1.25)
+                    )
+        self._modify_plot(plot)
+        plot.plot("NOSTACK E1")
+        l, t = self._plot_pt_bins(plot)
+        plot.save("%s/unfolded_1d_normalised_all_model_syst_%s_%s_divBinWidth.%s" % (self.setup.output_dir, syst_label_no_spaces, self.setup.append, self.setup.output_fmt))
+
+    def plot_unfolded_pdf_systs(self):
+        entries = [
+                    Contribution(self.get_big_1d('hist_truth'),
+                                 **self.get_mc_truth_kwargs()),
+                    Contribution(self.get_big_1d('unfolded_stat_err'),
+                                 subplot=self.get_big_1d('hist_truth'),
+                                 **dict(self.get_unfolded_stat_err_kwargs(),
+                                        line_color=ROOT.kGray+2))
+        ]
+        for syst_dict in self.setup.region['pdf_systematics']:
+            syst_unfolder = syst_dict['unfolder']
+            syst_label = syst_dict['label']
+            syst_label_no_spaces = cu.no_space_str(syst_dict['label'])
+
+            hbc_name_gen = 'model_syst_%s_hist_truth' % (syst_label_no_spaces)
+            self.hist_bin_chopper.add_obj(hbc_name_gen, syst_unfolder.hist_truth)
+
+            hbc_name = 'model_syst_%s_unfolded' % (syst_label_no_spaces)
+            self.hist_bin_chopper.add_obj(hbc_name, syst_unfolder.unfolded)
+
+            entries.extend([
+                Contribution(self.get_big_1d(hbc_name_gen),
+                             label="Generator (%s)" % (syst_label),
+                             line_color=syst_dict['colour'], line_width=self.line_width, line_style=2,
+                             marker_color=syst_dict['colour'], marker_size=0),
+                Contribution(self.get_big_1d(hbc_name),
+                             label="Unfolded (#tau = %.3g) (stat. err) (%s)" % (syst_unfolder.tau, syst_label),
+                             line_color=syst_dict['colour'], line_width=self.line_width, line_style=1,
+                             marker_color=syst_dict['colour'], marker_size=0,
+                             subplot=self.get_big_1d(hbc_name_gen)),
+            ])
+        plot = Plot(entries, 'hist',
+                    ytitle=self.setup.pt_bin_normalised_differential_label,
+                    title=self.get_title(),
+                    xtitle=self.setup.angle_str + ', per %s bin' % (self.setup.pt_var_str),
+                    has_data=self.setup.has_data,
+                    ylim=self._get_ylim(entries),
+                    subplot_type='ratio',
+                    subplot_title="Unfolded / Gen",
+                    subplot_limits=(0, 2) if setup.has_data else (0.75, 1.25)
+                    )
+        self._modify_plot(plot)
+        plot.plot("NOSTACK PLC PMC E")
+        l, t = self._plot_pt_bins(plot)
+        plot.save("%s/unfolded_1d_normalised_pdf_syst_%s_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, self.setup.output_fmt))
 
 
 def do_all_big_1d_plots_per_region_angle(setup, unpack_dict, hist_bin_chopper=None):
@@ -2287,6 +2357,8 @@ def do_all_big_1d_plots_per_region_angle(setup, unpack_dict, hist_bin_chopper=No
     if has_model_systs:
         big_plotter.plot_unfolded_model_systs()
 
+    if has_pdf_systs:
+        big_plotter.plot_unfolded_pdf_systs()
 
 
 if __name__ == "__main__":
