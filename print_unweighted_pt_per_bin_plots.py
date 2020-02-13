@@ -67,6 +67,7 @@ def do_plot(entries, output_file, hist_name=None, xlim=None, ylim=None, rebin=2,
                 title=title,
                 xlim=xlim,
                 ylim=ylim,
+                xtitle="p_{T}^{jet 1} [GeV]",
                 ytitle="Unweighted N" if do_unweighted else 'N')
     # plot.y_padding_min_log = 10 if 'unweighted' in hist_name else 10
     plot.default_canvas_size = (700, 600)
@@ -101,8 +102,10 @@ if __name__ == "__main__":
         'label': 'HLT_ZeroBias',
         'color': ROOT.kMagenta-9,
         'scale': 35918219492.947 / 29048.362
+        # 'scale': 1
     }
     jet_ht_filename = "%s/%s" % (input_dir, qgc.JETHT_FILENAME)
+    # jet_ht_filename = "%s/%s" % (input_dir, qgc.JETHT_RUNB_FILENAME)
     is_ak8 = 'workdir_ak8' in input_dir
     trig_prefix = 'HLT_AK8' if is_ak8 else 'HLT_'
     jet_ht_entries = [
@@ -110,13 +113,13 @@ if __name__ == "__main__":
             'filename': jet_ht_filename,
             'ind': '0',
             'label': "%sPFJet40" % trig_prefix,
-            'color': ROOT.kAzure,
+            'color': ROOT.kRed,
         },
         {
             'filename': jet_ht_filename,
             'ind': '1',
             'label': "%sPFJet60" % trig_prefix,
-            'color': ROOT.kOrange-2,
+            'color': ROOT.kBlue,
         },
         {
             'filename': jet_ht_filename,
@@ -128,42 +131,43 @@ if __name__ == "__main__":
             'filename': jet_ht_filename,
             'ind': '3',
             'label': "%sPFJet140" % trig_prefix,
-            'color': ROOT.kMagenta+1,
+            'color':  ROOT.kViolet+5,
         },
         {
             'filename': jet_ht_filename,
             'ind': '4',
             'label': "%sPFJet200" % trig_prefix,
-            'color': ROOT.kCyan,
+            'color': ROOT.kOrange,
         },
         {
             'filename': jet_ht_filename,
             'ind': '5',
             'label': "%sPFJet260" % trig_prefix,
-            'color': ROOT.kRed,
+            'color': ROOT.kTeal,
         },
         {
             'filename': jet_ht_filename,
             'ind': '6',
             'label': "%sPFJet320" % trig_prefix,
-            'color': ROOT.kAzure+6,
+            'color': ROOT.kViolet,
         },
         {
             'filename': jet_ht_filename,
             'ind': '7',
             'label': "%sPFJet400" % trig_prefix,
-            'color': ROOT.kOrange+3
+            'color': ROOT.kOrange-6
         },
         {
             'filename': jet_ht_filename,
             'ind': '8',
             'label': "%sPFJet450" % trig_prefix,
-            'color': ROOT.kGreen-7,
+            'color': ROOT.kAzure+1,
         },
     ]
     zb_hist_names = ["Dijet_tighter/pt_jet1", "Dijet_tighter/pt_jet1_unweighted"]
     jet_ht_hist_names = ["Dijet_jet_hist_{ind}/pt_1", "Dijet_jet_hist_unweighted_{ind}/pt_1"]
     for zb_name, ht_name in  zip(zb_hist_names, jet_ht_hist_names):
+        this_data_entries = []
         this_zb_entry = deepcopy(zb_entry)
         this_zb_entry['hist_name'] = zb_name
         this_data_entries = [this_zb_entry]
