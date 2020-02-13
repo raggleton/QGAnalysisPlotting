@@ -237,7 +237,7 @@ class Setup(object):
         self.pt_str = self.pt_var_str + " [GeV]"
         self.has_data = has_data
         self.angle = angle
-        angle_prepend = "groomed " if "groomed" in region['name'] else ""
+        angle_prepend = "Groomed " if "groomed" in region['name'] else ""
         this_angle_name = angle.name
         if (angle_prepend != ""
             and 'LHA' not in this_angle_name
@@ -392,7 +392,7 @@ class GenPtBinnedPlotter(object):
                              line_color=self.plot_colours['gen_colour'], line_width=self.line_width,
                              marker_color=self.plot_colours['gen_colour'], marker_size=0),
                 Contribution(unfolded_hist_bin_total_errors,
-                             label="Unfolded (#tau = %.3g) (total err)" % (self.unfolder.tau),
+                             label="Unfolded (#tau = %.3g) (total unc.)" % (self.unfolder.tau),
                              line_color=self.plot_colours['unfolded_total_colour'], line_width=self.line_width, line_style=1,
                              marker_color=self.plot_colours['unfolded_total_colour'],# marker_style=20, marker_size=0.75,
                              subplot=mc_gen_hist_bin),
@@ -424,7 +424,7 @@ class GenPtBinnedPlotter(object):
                              line_color=self.plot_colours['gen_colour'], line_width=self.line_width,
                              marker_color=self.plot_colours['gen_colour'], marker_size=0),
                 Contribution(unfolded_hist_bin_total_errors,
-                             label="Unfolded (#tau = %.3g) (total err)" % (self.unfolder.tau),
+                             label="Unfolded (#tau = %.3g) (total unc.)" % (self.unfolder.tau),
                              line_color=self.plot_colours['unfolded_total_colour'], line_width=self.line_width, line_style=1,
                              marker_color=self.plot_colours['unfolded_total_colour'],# marker_style=20, marker_size=0.75,
                              subplot=mc_gen_hist_bin),
@@ -465,7 +465,7 @@ class GenPtBinnedPlotter(object):
                              marker_color=self.plot_colours['alt_gen_colour'], marker_size=0,
                              subplot=mc_gen_hist_bin),
                 Contribution(unfolded_hist_bin_total_errors,
-                             label="Unfolded (#tau = %.3g) (total err)" % (self.unfolder.tau),
+                             label="Unfolded (#tau = %.3g) (total unc.)" % (self.unfolder.tau),
                              line_color=self.plot_colours['unfolded_total_colour'], line_width=self.line_width, line_style=1,
                              marker_color=self.plot_colours['unfolded_total_colour'], #marker_style=20, marker_size=0.75,
                              subplot=mc_gen_hist_bin),
@@ -499,12 +499,12 @@ class GenPtBinnedPlotter(object):
                              line_color=self.plot_colours['gen_colour'], line_width=self.line_width,
                              marker_color=self.plot_colours['gen_colour'], marker_size=0),
                 Contribution(unfolded_hist_bin_total_errors,
-                             label="Unfolded (#tau = %.3g) (total err)" % (self.unfolder.tau),
+                             label="Unfolded (#tau = %.3g) (total unc.)" % (self.unfolder.tau),
                              line_color=self.plot_colours['unfolded_total_colour'], line_width=self.line_width, line_style=1,
                              marker_color=self.plot_colours['unfolded_total_colour'], #marker_style=20, marker_size=0.75,
                              subplot=mc_gen_hist_bin),
                 Contribution(unreg_unfolded_hist_bin_total_errors,
-                             label="Unfolded (#tau = 0) (total err)",
+                             label="Unfolded (#tau = 0) (total unc.)",
                              line_color=self.plot_colours['unfolded_unreg_colour'], line_width=self.line_width, line_style=1,
                              marker_color=self.plot_colours['unfolded_unreg_colour'], #marker_style=20, marker_size=0.75,
                              subplot=mc_gen_hist_bin),
@@ -541,7 +541,7 @@ class GenPtBinnedPlotter(object):
                 #              line_color=alt_gen_colour, line_width=self.line_width, line_style=2,
                 #              marker_color=alt_gen_colour, marker_size=0),
                 Contribution(unfolded_hist_bin_total_errors,
-                             label="Unfolded (#tau = %.3g) (total err)\n(%s response matrix)" % (self.unfolder.tau, self.region['mc_label']),
+                             label="Unfolded (#tau = %.3g) (total unc.)\n(%s response matrix)" % (self.unfolder.tau, self.region['mc_label']),
                              line_color=self.plot_colours['unfolded_total_colour'], line_width=self.line_width, line_style=1,
                              marker_color=self.plot_colours['unfolded_total_colour'], #marker_style=20, marker_size=0.75,
                              subplot=mc_gen_hist_bin),
@@ -589,7 +589,7 @@ class GenPtBinnedPlotter(object):
                              marker_color=self.plot_colours['alt_gen_colour'], marker_size=0,
                              subplot=mc_gen_hist_bin),
                 Contribution(unfolded_hist_bin_total_errors,
-                             label="Unfolded (#tau = %.3g) (total err)\n(%s response matrix)" % (self.unfolder.tau, self.region['mc_label']),
+                             label="Unfolded (#tau = %.3g) (total unc.)\n(%s response matrix)" % (self.unfolder.tau, self.region['mc_label']),
                              line_color=self.plot_colours['unfolded_total_colour'], line_width=self.line_width, line_style=1,
                              marker_color=self.plot_colours['unfolded_total_colour'], #marker_style=20, marker_size=0.75,
                              subplot=mc_gen_hist_bin),
@@ -652,7 +652,7 @@ class GenPtBinnedPlotter(object):
                              line_color=self.plot_colours['gen_colour'], line_width=self.line_width,
                              marker_color=self.plot_colours['gen_colour'], marker_size=0),
                 Contribution(unfolded_hist_bin_total_errors,
-                             label="Unfolded (#tau = %.3g) (total err)" % (self.unfolder.tau),
+                             label="Unfolded (#tau = %.3g) (total unc.)" % (self.unfolder.tau),
                              line_color=self.plot_colours['unfolded_total_colour'], line_width=self.line_width, line_style=1,
                              marker_color=self.plot_colours['unfolded_total_colour'], #marker_style=20, marker_size=0.75,
                              subplot=mc_gen_hist_bin),
@@ -713,7 +713,7 @@ class GenPtBinnedPlotter(object):
                              line_color=self.plot_colours['gen_colour'], line_width=self.line_width,
                              marker_color=self.plot_colours['gen_colour'], marker_size=0),
                 Contribution(unfolded_hist_bin_total_errors,
-                             label="Unfolded (#tau = %.3g) (total err)" % (self.unfolder.tau),
+                             label="Unfolded (#tau = %.3g) (total unc.)" % (self.unfolder.tau),
                              line_color=self.plot_colours['unfolded_total_colour'], line_width=self.line_width, line_style=1,
                              marker_color=self.plot_colours['unfolded_total_colour'], #marker_style=20, marker_size=0.75,
                              subplot=mc_gen_hist_bin),
@@ -1119,7 +1119,7 @@ class GenLambdaBinnedPlotter(object):
                              line_color=self.plot_colours['gen_colour'], line_width=self.line_width,
                              marker_color=self.plot_colours['gen_colour'], marker_size=0),
                 Contribution(unfolded_hist_bin_total_errors,
-                             label="Unfolded (#tau = %.3g) (total err)" % (self.unfolder.tau),
+                             label="Unfolded (#tau = %.3g) (total unc.)" % (self.unfolder.tau),
                              line_color=self.plot_colours['unfolded_total_colour'], line_width=self.line_width, line_style=1,
                              marker_color=self.plot_colours['unfolded_total_colour'],# marker_style=20, marker_size=0.75,
                              subplot=mc_gen_hist_bin),
@@ -1157,12 +1157,12 @@ class GenLambdaBinnedPlotter(object):
                              line_color=self.plot_colours['gen_colour'], line_width=self.line_width,
                              marker_color=self.plot_colours['gen_colour'], marker_size=0),
                 Contribution(unfolded_hist_bin_total_errors,
-                             label="Unfolded (#tau = %.3g) (total err)" % (self.unfolder.tau),
+                             label="Unfolded (#tau = %.3g) (total unc.)" % (self.unfolder.tau),
                              line_color=self.plot_colours['unfolded_total_colour'], line_width=self.line_width, line_style=1,
                              marker_color=self.plot_colours['unfolded_total_colour'],# marker_style=20, marker_size=0.75,
                              subplot=mc_gen_hist_bin),
                 Contribution(unreg_unfolded_hist_bin_total_errors,
-                             label="Unfolded (#tau = 0) (total err)",
+                             label="Unfolded (#tau = 0) (total unc.)",
                              line_color=self.plot_colours['unfolded_unreg_colour'], line_width=self.line_width, line_style=1,
                              marker_color=self.plot_colours['unfolded_unreg_colour'], #marker_style=20, marker_size=0.75,
                              subplot=mc_gen_hist_bin),
@@ -1201,7 +1201,7 @@ class GenLambdaBinnedPlotter(object):
                 #              line_color=alt_gen_colour, line_width=self.line_width, line_style=2,
                 #              marker_color=alt_gen_colour, marker_size=0),
                 Contribution(unfolded_hist_bin_total_errors,
-                             label="Unfolded (#tau = %.3g) (total err)\n(%s response matrix)" % (self.unfolder.tau, self.region['mc_label']),
+                             label="Unfolded (#tau = %.3g) (total unc.)\n(%s response matrix)" % (self.unfolder.tau, self.region['mc_label']),
                              line_color=self.plot_colours['unfolded_total_colour'], line_width=self.line_width, line_style=1,
                              marker_color=self.plot_colours['unfolded_total_colour'], #marker_style=20, marker_size=0.75,
                              subplot=mc_gen_hist_bin),
@@ -1248,7 +1248,7 @@ class GenLambdaBinnedPlotter(object):
                                  line_color=syst_dict['colour'], line_width=self.line_width, line_style=2,
                                  marker_color=syst_dict['colour'], marker_size=0),
                     Contribution(syst_unfolded_hist_bin,
-                                 label="Unfolded (#tau = %.3g) (total err) (%s)" % (syst_unfolder.tau, syst_label),
+                                 label="Unfolded (#tau = %.3g) (total unc.) (%s)" % (syst_unfolder.tau, syst_label),
                                  line_color=syst_dict['colour'], line_width=self.line_width, line_style=1,
                                  marker_color=syst_dict['colour'], marker_size=0,
                                  subplot=syst_gen_hist_bin),
@@ -1264,7 +1264,7 @@ class GenLambdaBinnedPlotter(object):
                              line_color=self.plot_colours['gen_colour'], line_width=self.line_width,
                              marker_color=self.plot_colours['gen_colour'], marker_size=0),
                 Contribution(unfolded_hist_bin_total_errors,
-                             label="Unfolded (#tau = %.3g) (total err)" % (self.unfolder.tau),
+                             label="Unfolded (#tau = %.3g) (total unc.)" % (self.unfolder.tau),
                              line_color=self.plot_colours['unfolded_total_colour'], line_width=self.line_width, line_style=1,
                              marker_color=self.plot_colours['unfolded_total_colour'], #marker_style=20, marker_size=0.75,
                              subplot=mc_gen_hist_bin),
@@ -1307,7 +1307,7 @@ class GenLambdaBinnedPlotter(object):
 
                 pdf_entries.extend([
                     Contribution(pdf_unfolded_hist_bin,
-                                 label="Unfolded (#tau = %.3g) (total err) (%s)" % (pdf_unfolder.tau, pdf_label),
+                                 label="Unfolded (#tau = %.3g) (total unc.) (%s)" % (pdf_unfolder.tau, pdf_label),
                                  line_color=pdf_dict['colour'], line_width=1, line_style=1,
                                  marker_color=pdf_dict['colour'], marker_size=0,
                                  subplot=pdf_gen_hist_bin),
@@ -1327,7 +1327,7 @@ class GenLambdaBinnedPlotter(object):
                              line_color=self.plot_colours['gen_colour'], line_width=self.line_width,
                              marker_color=self.plot_colours['gen_colour'], marker_size=0),
                 Contribution(unfolded_hist_bin_total_errors,
-                             label="Unfolded (#tau = %.3g) (total err)" % (self.unfolder.tau),
+                             label="Unfolded (#tau = %.3g) (total unc.)" % (self.unfolder.tau),
                              line_color=self.plot_colours['unfolded_total_colour'], line_width=self.line_width, line_style=1,
                              marker_color=self.plot_colours['unfolded_total_colour'], #marker_style=20, marker_size=0.75,
                              subplot=mc_gen_hist_bin),
@@ -2028,7 +2028,7 @@ class BigNormalised1DPlotter(object):
 
     def get_unfolded_total_err_kwargs(self):
         return dict(
-            label="Unfolded (#tau = %.3g) (total err)\n(%s response matrix)" % (self.unfolder.tau, self.setup.region['mc_label']),
+            label="Unfolded (#tau = %.3g) (total unc.)\n(%s response matrix)" % (self.unfolder.tau, self.setup.region['mc_label']),
             line_color=PLOT_COLOURS['unfolded_total_colour'], line_width=self.line_width, line_style=1,
             marker_color=PLOT_COLOURS['unfolded_total_colour']
         )
@@ -2063,6 +2063,9 @@ class BigNormalised1DPlotter(object):
                         pt_str=self.setup.pt_var_str)
                )
 
+    def get_subplot_ylim(self):
+        return (0, 2) if self.setup.has_data else (0.7, 1.3)
+
     def get_big_1d(self, name):
         if self._cache_1d.get(name, None) is None:
             self._cache_1d[name] = self.make_big_1d_normalised_hist(name)
@@ -2087,7 +2090,7 @@ class BigNormalised1DPlotter(object):
                     ylim=self._get_ylim(entries),
                     subplot_type='ratio',
                     subplot_title="Unfolded / Gen",
-                    subplot_limits=(0, 2) if setup.has_data else (0.75, 1.25)
+                    subplot_limits=self.get_subplot_ylim()
                     )
         self._modify_plot(plot)
         plot.plot("NOSTACK E")
@@ -2113,7 +2116,7 @@ class BigNormalised1DPlotter(object):
                     ylim=self._get_ylim(entries),
                     subplot_type='ratio',
                     subplot_title="#splitline{* / Gen}{(%s)}" % (self.setup.region['mc_label']),
-                    subplot_limits=(0, 2) if setup.has_data else (0.75, 1.25)
+                    subplot_limits=self.get_subplot_ylim()
                     )
         self._modify_plot(plot)
         plot.plot("NOSTACK E")
@@ -2139,7 +2142,7 @@ class BigNormalised1DPlotter(object):
                     ylim=self._get_ylim(entries),
                     subplot_type='ratio',
                     subplot_title="Unfolded / Gen",
-                    subplot_limits=(0, 2) if setup.has_data else (0.75, 1.25)
+                    subplot_limits=self.get_subplot_ylim()
                     )
         self._modify_plot(plot)
         plot.plot("NOSTACK E")
@@ -2168,7 +2171,7 @@ class BigNormalised1DPlotter(object):
                     ylim=self._get_ylim(entries),
                     subplot_type='ratio',
                     subplot_title="#splitline{* / Gen}{(%s)}" % (self.setup.region['mc_label']),
-                    subplot_limits=(0, 2) if setup.has_data else (0.75, 1.25)
+                    subplot_limits=self.get_subplot_ylim()
                     )
         self._modify_plot(plot)
         plot.plot("NOSTACK E")
@@ -2201,7 +2204,7 @@ class BigNormalised1DPlotter(object):
                         ylim=self._get_ylim(entries),
                         subplot_type='ratio',
                         subplot_title="#splitline{Systematic}{/ Nominal}",
-                        subplot_limits=(0, 2) if setup.has_data else (0.75, 1.25)
+                        subplot_limits=self.get_subplot_ylim()
                         )
             self._modify_plot(plot)
             plot.plot("NOSTACK E")
@@ -2256,7 +2259,7 @@ class BigNormalised1DPlotter(object):
                         ylim=self._get_ylim(entries),
                         subplot_type='ratio',
                         subplot_title="Unfolded / Gen",
-                        subplot_limits=(0, 2) if setup.has_data else (0.75, 1.25)
+                        subplot_limits=self.get_subplot_ylim()
                         )
             self._modify_plot(plot)
             plot.plot("NOSTACK E")
@@ -2271,7 +2274,7 @@ class BigNormalised1DPlotter(object):
                     ylim=self._get_ylim(all_entries),
                     subplot_type='ratio',
                     subplot_title="Unfolded / Gen",
-                    subplot_limits=(0, 2) if setup.has_data else (0.75, 1.25)
+                    subplot_limits=self.get_subplot_ylim()
                     )
         self._modify_plot(plot)
         plot.plot("NOSTACK E")
@@ -2321,7 +2324,7 @@ class BigNormalised1DPlotter(object):
                     ylim=self._get_ylim(all_entries),
                     subplot_type='ratio',
                     subplot_title="Unfolded / Gen",
-                    subplot_limits=(0, 2) if setup.has_data else (0.75, 1.25)
+                    subplot_limits=self.get_subplot_ylim()
                     )
         self._modify_plot(plot)
         plot.plot("NOSTACK E")
@@ -2367,7 +2370,7 @@ class BigNormalised1DPlotter(object):
                     ylim=self._get_ylim(entries),
                     subplot_type='ratio',
                     subplot_title="Unfolded / Gen",
-                    subplot_limits=(0, 2) if setup.has_data else (0.75, 1.25)
+                    subplot_limits=self.get_subplot_ylim()
                     )
         self._modify_plot(plot)
         plot.legend.SetNColumns(3)
