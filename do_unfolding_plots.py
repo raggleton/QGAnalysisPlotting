@@ -12,6 +12,8 @@ import os
 os.nice(10)
 import sys
 import argparse
+import math
+from array import array
 
 import ROOT
 from MyStyle import My_Style
@@ -1871,6 +1873,8 @@ class BigNormalised1DPlotter(object):
         self.num_pt_bins = len(self.pt_bin_edges)-1
         self.num_lambda_bins = len(self.lambda_bin_edges)-1
         self.nbins = self.num_pt_bins * self.num_lambda_bins
+        self.all_bin_edges = None # gets filled the first time make_big_1d_normalised_hist() is called
+        self.plot_with_bin_widths = True # use bin widths in plot instead of uniform bin widths
         self.line_width = 1
 
         self._cache_1d = {}
@@ -1906,22 +1910,21 @@ class BigNormalised1DPlotter(object):
         texts = []
         plot.main_pad.cd()
         obj = plot.container.GetHistogram()
-        axis_low, axis_high = obj.GetMinimum(), obj.GetMaximum()
+        y_low, y_high = obj.GetMinimum(), obj.GetMaximum()
         for ibin, _ in enumerate(self.pt_bin_edges[1:-1], 1):
-            pt_bin = ibin * self.num_lambda_bins
-            line = ROOT.TLine(pt_bin, axis_low, pt_bin, axis_high)
+            pt_bin = self.all_bin_edges[ibin * self.num_lambda_bins]
+            plot.main_pad.cd()
+            line = ROOT.TLine(pt_bin, y_low, pt_bin, y_high)
             line.SetLineStyle(2)
             line.SetLineColor(14)
             line.Draw()
             lines.append(line)
 
-        # lines on subplot if available
-        if isinstance(plot, Plot) and plot.subplot_pad:
-            plot.subplot_pad.cd()
-            y_low, y_high = plot.subplot_container.GetHistogram().GetMinimum(), plot.subplot_container.GetHistogram().GetMaximum()  # BINGO
-            for ibin, _ in enumerate(self.pt_bin_edges[1:-1], 1):
-                pt_bin = ibin * self.num_lambda_bins
-                line = ROOT.TLine(pt_bin, y_low, pt_bin, y_high)
+            # lines on subplot if available
+            if isinstance(plot, Plot) and plot.subplot_pad:
+                plot.subplot_pad.cd()
+                subplot_y_low, subplot_y_high = plot.subplot_container.GetHistogram().GetMinimum(), plot.subplot_container.GetHistogram().GetMaximum()  # BINGO
+                line = ROOT.TLine(pt_bin, subplot_y_low, pt_bin, subplot_y_high)
                 line.SetLineStyle(2)
                 line.SetLineColor(14)
                 line.Draw()
@@ -1934,34 +1937,34 @@ class BigNormalised1DPlotter(object):
             labels_inside_align = 'lower'
 
             # fixgure out x location
-            pt_bin = ibin * self.num_lambda_bins
-            pt_bin_higher = (ibin+1) * self.num_lambda_bins
+            pt_bin = self.all_bin_edges[ibin * self.num_lambda_bins]
+            pt_bin_higher = self.all_bin_edges[(ibin+1) * self.num_lambda_bins]
             pt_bin_interval = pt_bin_higher - pt_bin
             text_x = pt_bin + 0.35*(pt_bin_interval)
 
             # figure out y location from axes
-            axis_range = axis_high - axis_low
+            axis_range = y_high - y_low
             # assumes logarithmic?
             if ROOT.gPad.GetLogy():
-                if axis_low <= 0:
-                    print("axis_low is %f so can't take log" %axis_low)
+                if y_low <= 0:
+                    print("y_low is %f so can't take log" %y_low)
                     return None, None
-                    # raise ValueError("axis_low is %f so can't take log" %axis_low)
-                log_axis_range = math.log10(axis_high) - math.log10(axis_low)
-                y_start = math.pow(10, 0.03*log_axis_range + math.log10(axis_low))
-                y_end = 10*axis_low
+                    # raise ValueError("y_low is %f so can't take log" %y_low)
+                log_axis_range = math.log10(y_high) - math.log10(y_low)
+                y_start = math.pow(10, 0.03*log_axis_range + math.log10(y_low))
+                y_end = 10*y_low
             else:
-                y_start = (0.02*axis_range) + axis_low
-                y_start = (0.3*axis_range) + axis_low
-                y_end = 10*axis_low
+                y_start = (0.02*axis_range) + y_low
+                y_start = (0.3*axis_range) + y_low
+                y_end = 10*y_low
 
             if labels_inside_align == 'higher':
                 if ROOT.gPad.GetLogy():
-                    y_start = axis_high/10
-                    y_end = axis_high/1.05
+                    y_start = y_high/10
+                    y_end = y_high/1.05
                 else:
-                    y_start = axis_high*0.8
-                    y_end = axis_high*0.9
+                    y_start = y_high*0.8
+                    y_end = y_high*0.9
 
             text = ROOT.TPaveText(text_x, y_start, text_x + .5*pt_bin_interval, y_start)
             text.SetBorderSize(0)
@@ -1984,10 +1987,21 @@ class BigNormalised1DPlotter(object):
 
         return lines, texts
 
-    def make_big_1d_normalised(self, name):
+    def make_big_1d_normalised_hist(self, name):
         """Make big 1D plot with normalised distribution per pt bin"""
-        # FIXME: should the proper bin widths be used?
-        h_new = ROOT.TH1D(name + "_1d_all_" + cu.get_unique_str(), "", self.nbins, 0, self.nbins)
+        if self.all_bin_edges is None:
+            if self.plot_with_bin_widths:
+                bins = []
+                for i in range(self.num_pt_bins):
+                    offset = i * math.ceil(self.lambda_bin_edges[-1])
+                    bins.extend(self.lambda_bin_edges[:-1] + offset)
+                    if i == (self.num_pt_bins-1):
+                        bins.append(self.lambda_bin_edges[-1:] + offset)
+                self.all_bin_edges = array('d', bins)
+            else:
+                self.all_bin_edges = array('d', list(range(0, self.nbins+1)))
+
+        h_new = ROOT.TH1D(name + "_1d_all_" + cu.get_unique_str(), "", self.nbins, self.all_bin_edges)
         for ibin, _ in enumerate(self.pt_bin_edges[:-1]):
             hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width(name, ibin, binning_scheme='generator')
 
@@ -2044,7 +2058,7 @@ class BigNormalised1DPlotter(object):
 
     def get_big_1d(self, name):
         if self._cache_1d.get(name, None) is None:
-            self._cache_1d[name] = self.make_big_1d_normalised(name)
+            self._cache_1d[name] = self.make_big_1d_normalised_hist(name)
         return self._cache_1d[name]
 
     def plot_unfolded_truth(self):
