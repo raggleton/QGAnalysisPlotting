@@ -208,28 +208,28 @@ def get_dijet_config(source_dir, central=True, groomed=False):
     if central and not groomed:
         this_dict = dijet_region_dict_template.copy()
         this_dict['dirname'] = 'Dijet_QG_Unfold_central_tighter'
-        this_dict['label'] = 'Dijet central'
+        this_dict['label'] = 'Dijet (central)'
         this_dict['name'] = 'Dijet_central'
         return this_dict
 
     elif not central and not groomed:
         this_dict = dijet_region_dict_template.copy()
         this_dict['dirname'] = 'Dijet_QG_Unfold_forward_tighter'
-        this_dict['label'] = 'Dijet forward'
+        this_dict['label'] = 'Dijet (forward)'
         this_dict['name'] = 'Dijet_forward'
         return this_dict
 
     elif central and groomed:
         this_dict = dijet_region_dict_template.copy()
         this_dict['dirname'] = 'Dijet_QG_Unfold_central_tighter_groomed'
-        this_dict['label'] = 'Dijet central'
+        this_dict['label'] = 'Dijet (central)'
         this_dict['name'] = 'Dijet_central_groomed'
         return this_dict
 
     elif not central and groomed:
         this_dict = dijet_region_dict_template.copy()
         this_dict['dirname'] = 'Dijet_QG_Unfold_forward_tighter_groomed'
-        this_dict['label'] = 'Dijet forward'
+        this_dict['label'] = 'Dijet (forward)'
         this_dict['name'] = 'Dijet_forward_groomed'
         return this_dict
 
