@@ -289,6 +289,9 @@ class Plot(object):
         self.subplot_pad_fudge = 0.01  # to get non-overlapping subplot axis
         self.subplot_line = None  # need this to remain visible...
         self.subplot_title = subplot_title
+        self.subplot_line_style = 2
+        self.subplot_line_width = 2
+        self.subplot_line_color = ROOT.kBlack
         self.is_preliminary = True
         self.has_data = has_data
 
@@ -753,9 +756,9 @@ class Plot(object):
                 if self.xlim and all([x is not None for x in self.xlim]):
                     # use user-set limits but ensure within in actual limits
                     self.subplot_line = ROOT.TLine(max(ax_min, self.xlim[0]), 1., min(ax_max, self.xlim[1]), 1.)
-                self.subplot_line.SetLineStyle(2)
-                self.subplot_line.SetLineWidth(2)
-                self.subplot_line.SetLineColor(ROOT.kBlack)
+                self.subplot_line.SetLineStyle(self.subplot_line_style)
+                self.subplot_line.SetLineWidth(self.subplot_line_width)
+                self.subplot_line.SetLineColor(self.subplot_line_color)
                 self.subplot_line.Draw()
 
             # Some resizing of subplot things
