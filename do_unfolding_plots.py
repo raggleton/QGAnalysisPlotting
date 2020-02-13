@@ -249,7 +249,8 @@ class Setup(object):
         self.angle_str = "{prepend}{name} ({lambda_str})".format(prepend=angle_prepend,
                                                                  name=this_angle_name,
                                                                  lambda_str=angle.lambda_str)
-        self.particle_title = "Particle-level " + self.angle_str
+        # self.particle_title = "Particle-level " + self.angle_str
+        self.particle_title = self.angle_str
         self.detector_title = "Detector-level " + self.angle_str
         self.pt_bin_normalised_differential_label = "#frac{1}{d#sigma/dp_{T}} #frac{d^{2}#sigma}{dp_{T} d%s}" % (angle.lambda_str)
         self.pt_bin_unnormalised_differential_label = "#frac{1}{dN/dp_{T}} #frac{d^{2}N}{dp_{T} d%s}" % (angle.lambda_str)  # FIXME
@@ -1874,7 +1875,7 @@ class BigNormalised1DPlotter(object):
         self.num_lambda_bins = len(self.lambda_bin_edges)-1
         self.nbins = self.num_pt_bins * self.num_lambda_bins
         self.all_bin_edges = None # gets filled the first time make_big_1d_normalised_hist() is called
-        self.plot_with_bin_widths = True # use bin widths in plot instead of uniform bin widths
+        self.plot_with_bin_widths = False # use bin widths in plot instead of uniform bin widths
         self.line_width = 1
 
         self._cache_1d = {}
@@ -1888,13 +1889,16 @@ class BigNormalised1DPlotter(object):
     @staticmethod
     def _modify_plot(this_plot):
         this_plot.legend.SetX1(0.6)
-        this_plot.legend.SetY1(0.68)
+        this_plot.legend.SetY1(0.72)
         this_plot.legend.SetX2(0.9)
         this_plot.legend.SetY2(0.88)
+        if len(this_plot.contributions) > 4:
+            this_plot.legend.SetNColumns(2)
         # this_plot.left_margin = 0.16
         this_plot.left_margin = 0.1
         this_plot.default_canvas_size = (900, 700)
         this_plot.y_padding_max_linear = 2
+        this_plot.subplot_pad_height = 0.4
         this_plot.subplot_line_style = 3
         this_plot.subplot_line_width = 1
         this_plot.subplot_line_color = ROOT.kGray+1
@@ -2258,21 +2262,71 @@ class BigNormalised1DPlotter(object):
             plot.plot("NOSTACK E")
             l, t = self._plot_pt_bins(plot)
             plot.save("%s/unfolded_1d_normalised_model_syst_%s_%s_divBinWidth.%s" % (self.setup.output_dir, syst_label_no_spaces, self.setup.append, self.setup.output_fmt))
-        
+
         plot = Plot(all_entries, 'hist',
                     ytitle=self.setup.pt_bin_normalised_differential_label,
                     title=self.get_title(),
                     xtitle=self.setup.angle_str + ', per %s bin' % (self.setup.pt_var_str),
                     has_data=self.setup.has_data,
-                    ylim=self._get_ylim(entries),
+                    ylim=self._get_ylim(all_entries),
                     subplot_type='ratio',
                     subplot_title="Unfolded / Gen",
                     subplot_limits=(0, 2) if setup.has_data else (0.75, 1.25)
                     )
         self._modify_plot(plot)
-        plot.plot("NOSTACK E1")
+        plot.plot("NOSTACK E")
         l, t = self._plot_pt_bins(plot)
         plot.save("%s/unfolded_1d_normalised_all_model_syst_%s_%s_divBinWidth.%s" % (self.setup.output_dir, syst_label_no_spaces, self.setup.append, self.setup.output_fmt))
+
+    def plot_unfolded_model_systs_only_scale(self):
+        all_entries = [Contribution(self.get_big_1d('hist_truth'),
+                                     **self.get_mc_truth_kwargs()),
+                       Contribution(self.get_big_1d('unfolded_stat_err'),
+                                    subplot=self.get_big_1d('hist_truth'),
+                                    **dict(self.get_unfolded_stat_err_kwargs(),
+                                           line_color=ROOT.kGray+2))
+                      ]
+
+        for syst_dict in self.setup.region['model_systematics']:
+            syst_unfolder = syst_dict['unfolder']
+            syst_label = syst_dict['label']
+            if 'Herwig' in syst_label or 'Pythia' in syst_label:
+                continue
+
+            syst_label_no_spaces = cu.no_space_str(syst_dict['label'])
+
+            hbc_name_gen = 'model_syst_%s_hist_truth' % (syst_label_no_spaces)
+            self.hist_bin_chopper.add_obj(hbc_name_gen, syst_unfolder.hist_truth)
+
+            hbc_name = 'model_syst_%s_unfolded' % (syst_label_no_spaces)
+            self.hist_bin_chopper.add_obj(hbc_name, syst_unfolder.unfolded)
+
+            all_entries.extend([
+                Contribution(self.get_big_1d(hbc_name_gen),
+                             label="Generator (%s)" % (syst_label),
+                             line_color=syst_dict['colour'], line_width=self.line_width, line_style=2,
+                             marker_color=syst_dict['colour'], marker_size=0),
+                Contribution(self.get_big_1d(hbc_name),
+                             label="Unfolded (#tau = %.3g) (stat. err) (%s)" % (syst_unfolder.tau, syst_label),
+                             line_color=syst_dict['colour'], line_width=self.line_width, line_style=1,
+                             marker_color=syst_dict['colour'], marker_size=0,
+                             subplot=self.get_big_1d(hbc_name_gen)),
+            ])
+
+        plot = Plot(all_entries, 'hist',
+                    ytitle=self.setup.pt_bin_normalised_differential_label,
+                    title=self.get_title(),
+                    xtitle=self.setup.angle_str + ', per %s bin' % (self.setup.pt_var_str),
+                    has_data=self.setup.has_data,
+                    ylim=self._get_ylim(all_entries),
+                    subplot_type='ratio',
+                    subplot_title="Unfolded / Gen",
+                    subplot_limits=(0, 2) if setup.has_data else (0.75, 1.25)
+                    )
+        self._modify_plot(plot)
+        plot.plot("NOSTACK E")
+        l, t = self._plot_pt_bins(plot)
+        plot.save("%s/unfolded_1d_normalised_scale_model_syst_%s_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, self.setup.output_fmt))
 
     def plot_unfolded_pdf_systs(self):
         entries = [
@@ -2316,6 +2370,8 @@ class BigNormalised1DPlotter(object):
                     subplot_limits=(0, 2) if setup.has_data else (0.75, 1.25)
                     )
         self._modify_plot(plot)
+        plot.legend.SetNColumns(3)
+        plot.legend.SetX1(0.5)
         plot.plot("NOSTACK PLC PMC E")
         l, t = self._plot_pt_bins(plot)
         plot.save("%s/unfolded_1d_normalised_pdf_syst_%s_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, self.setup.output_fmt))
@@ -2356,6 +2412,7 @@ def do_all_big_1d_plots_per_region_angle(setup, unpack_dict, hist_bin_chopper=No
 
     if has_model_systs:
         big_plotter.plot_unfolded_model_systs()
+        big_plotter.plot_unfolded_model_systs_only_scale()
 
     if has_pdf_systs:
         big_plotter.plot_unfolded_pdf_systs()
