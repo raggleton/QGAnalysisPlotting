@@ -504,7 +504,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             raise KeyError("No systematic %s, only have: %s" % (syst_label, ", ".join(self.syst_shifts.keys())))
         if self.systs_shifted[syst_label] is None:
             hist_shift = self.get_delta_sys_shift(syst_label).Clone('syst_shifted_unfolded_%s' % cu.no_space_str(syst_label))
-            unfolded = unfolded or self.unfolded
+            unfolded = unfolded or self.unfolded_stat_err
             hist_shift.Add(unfolded)  # TODO what about errors?
             self.systs_shifted[syst_label] = hist_shift
         return self.systs_shifted[syst_label]
