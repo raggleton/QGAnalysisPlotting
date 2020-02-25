@@ -257,7 +257,7 @@ class Plot(object):
         self.ylim = ylim
         self.y_padding_max_linear = 1.6  # factor to auto extend y upper limit for linear scale
         self.y_padding_max_log = 10  # factor to auto extend y upper limit for log scale
-        self.y_padding_min_linear = 1  # factor to auto extend y lower limit for linear scale
+        self.y_padding_min_linear = 1.4 # factor to auto extend y lower limit for linear scale
         self.y_padding_min_log = 0.1  # factor to auto extend y lower limit for log scale
         self.do_legend = legend
         self.legend = ROOT.TLegend(0.65, 0.6, 0.94, 0.85) if legend else None
@@ -508,9 +508,9 @@ class Plot(object):
                 modifier.SetMinimum(ymin * self.y_padding_min_log)
         else:
             if ymin < 0:
-                modifier.SetMinimum(ymin / self.y_padding_min_linear)
-            else:
                 modifier.SetMinimum(ymin * self.y_padding_min_linear)
+            elif ymin > 0:
+                modifier.SetMinimum(ymin / self.y_padding_min_linear)
 
     def plot(self, draw_opts=None, subplot_draw_opts=None):
         """Make the plot.
