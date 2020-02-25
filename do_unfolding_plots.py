@@ -14,6 +14,7 @@ import sys
 import argparse
 import math
 from array import array
+import pandas as pd
 
 import ROOT
 from MyStyle import My_Style
@@ -2376,6 +2377,34 @@ class BigNormalised1DPlotter(object):
         l, t = self._plot_pt_bins(plot)
         plot.save("%s/unfolded_1d_normalised_pdf_syst_%s_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, self.setup.output_fmt))
 
+    # def plot_folded_gen(self):
+    #     self.hist_bin_chopper.add_obj("hist_mc_reco_bg_subtracted", self.unfolder.hist_mc_reco_bg_subtracted)
+    #     mc_reco_hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width(, ibin, binning_scheme='detector')
+
+    #     self.hist_bin_chopper.add_obj("folded_mc_truth", self.unfolder.folded_mc_truth)
+    #     folded_mc_truth_hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('folded_mc_truth', ibin, binning_scheme='detector')
+
+    #     entries = [
+    #         Contribution(self.get_big_1d("hist_mc_reco_bg_subtracted"),
+    #                      label=""),
+    #         Contribution(self.get_big_1d("folded_mc_truth"),
+    #                      label="")
+    #     ]
+    #     plot = Plot(entries, 'hist',
+    #                 ytitle=self.setup.pt_bin_normalised_differential_label,
+    #                 title=self.get_title(),
+    #                 xtitle=self.setup.angle_str + ', per %s bin' % (self.setup.pt_var_str),
+    #                 has_data=self.setup.has_data,
+    #                 ylim=self._get_ylim(entries),
+    #                 subplot_type='ratio',
+    #                 subplot_title="Unfolded / Gen",
+    #                 subplot_limits=self.get_subplot_ylim()
+    #                 )
+    #     self._modify_plot(plot)
+    #     plot.plot("NOSTACK E")
+    #     l, t = self._plot_pt_bins(plot)
+    #     plot.save("%s/folded_gen_1d_normalised_%s_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, self.setup.output_fmt))
+
 
 def do_all_big_1d_plots_per_region_angle(setup, unpack_dict, hist_bin_chopper=None):
     unfolder = unpack_dict['unfolder']
@@ -2417,6 +2446,46 @@ def do_all_big_1d_plots_per_region_angle(setup, unpack_dict, hist_bin_chopper=No
     if has_pdf_systs:
         big_plotter.plot_unfolded_pdf_systs()
 
+
+def store_bottom_line_stats(all_chi2_stats, setup, unpack_dict):
+    unfolder = unpack_dict['unfolder']
+    smeared_chi2, smeared_ndf, smeared_p = unfolder.calculate_smeared_chi2()
+    smeared_alt = unfolder.fold_generator_level(unpack_dict['alt_hist_truth'])
+
+    # smeared_alt_chi2, smeared_alt_ndf, smeared_alt_p =
+    unfolded_chi2, unfolded_ndf, unfolded_p = unfolder.calculate_unfolded_chi2()
+
+    print("smeared:", smeared_chi2, smeared_ndf, smeared_p)
+    print("unfolded:", unfolded_chi2, unfolded_ndf, unfolded_p)
+    all_chi2_stats.append({
+            "region": setup.region['label'],
+            "is_groomed": "groomed" in setup.region['name'],
+            "angle": setup.angle.var,
+            # "angle": setup.angle_str,
+            "smeared_chi2": smeared_chi2,
+            "smeared_ndf": smeared_ndf,
+            "smeared_chi2ndf": smeared_chi2/smeared_ndf,
+            "smeared_p": smeared_p,
+            "unfolded_chi2": unfolded_chi2,
+            "unfolded_ndf": unfolded_ndf,
+            "unfolded_chi2ndf": unfolded_chi2/unfolded_ndf,
+            "unfolded_p": unfolded_p,
+    })
+
+def print_chi2_table(df):
+    df_sorted = df.sort_values(by=['region', 'angle'])
+    print(r'\begin{tabular}{c|c|c|c|c|c|c}')
+    print(r"Region & Angle & $\chi_{\text{unfolded}}^2$, $N_{DoF}$, $\chi_{\text{unfolded}}^2 / N_{DoF}$  & $p_{\text{unfolded}}$ & $\chi_{\text{smeared}}^2$, $N_{DoF}$, $\chi_{\text{smeared}}^2 / N_{DoF}$ & $p_{\text{smeared}}$ & $p_{\text{unfolded}} > p_{\text{smeared}}$\\")
+    print(r"\hline \\")
+    for row in df_sorted.itertuples():
+        angle_name = row.angle.replace("jet_", "").replace("_charged", " (charged)")
+        if row.is_groomed:
+            angle_name = "Groomed " + angle_name
+        print("%s & %s & %d / %d = %.3g & %.3g & %d / %d = %.3g & %.3g & %s \\\\" % (row.region, angle_name,
+                                                                                     row.unfolded_chi2, row.unfolded_ndf, row.unfolded_chi2ndf, row.unfolded_p,
+                                                                                     row.smeared_chi2, row.smeared_ndf, row.smeared_chi2ndf, row.smeared_p,
+                                                                                     "V" if row.unfolded_p > row.smeared_p else "X"))
+    print(r'\end{tabular}')
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
@@ -2481,6 +2550,8 @@ if __name__ == "__main__":
 
     has_data = not ('_MC_all' in args.source or '_MC_split' in args.source)
 
+    all_chi2_stats = []
+
     # Iterate through regions & variables
     for region in regions:
         region_dir = os.path.join(args.source, region['name'])
@@ -2529,6 +2600,15 @@ if __name__ == "__main__":
 
             # Do a 1D summary plot, with all the normalised plots with bins divided by their width
             # (unlike the standard plot from MyUnfolderPlotter, which is absolute)
-            do_all_big_1d_plots_per_region_angle(setup,
-                                                 unpack_dict,
-                                                 hist_bin_chopper)
+            # do_all_big_1d_plots_per_region_angle(setup,
+            #                                      unpack_dict,
+            #                                      hist_bin_chopper)
+
+            store_bottom_line_stats(all_chi2_stats, setup, unpack_dict)
+
+    df_stats = pd.DataFrame(all_chi2_stats)
+    df_stats['region'] = df_stats['region'].astype('category')
+    df_stats['angle'] = df_stats['angle'].astype('category')
+    print(df_stats.head())
+    print_chi2_table(df_stats)
+

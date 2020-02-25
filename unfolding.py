@@ -1492,15 +1492,6 @@ if __name__ == "__main__":
             title = "Error matrix (total), %s, %s region, %s" % (jet_algo, region['label'], angle_str)
             unfolder_plotter.draw_error_matrix_total(title=title, **plot_args)
 
-            # inv = unfolder.get_ematrix_total_inv()
-            # print(unfolder.tmatrixdsparse_to_ndarray(inv))
-            # vyy = unfolder.GetVyy()
-            # print(unfolder.tmatrixdsparse_to_ndarray(vyy))
-            smeared_chi2, smeared_ndf, smeared_p = unfolder.calculate_smeared_chi2()
-            print('smeared chi2:', smeared_chi2, smeared_ndf, smeared_p)
-            unfolded_chi2, unfolded_ndf, unfolded_p = unfolder.calculate_unfolded_chi2()
-            print('unfolded chi2:', unfolded_chi2, unfolded_ndf, unfolded_p)
-
             # Do forward-folding to check unfolding
             # ------------------------------------------------------------------
             # Do it on the unfolded result
@@ -1512,6 +1503,25 @@ if __name__ == "__main__":
                 title = "%s\n%s region, %s" % (jet_algo, region['label'], angle_str)
                 unfolder_plotter.draw_truth_folded(title=title, **plot_args)
 
+
+            # Do some bottom-line tests
+            # ------------------------------------------------------------------
+            smeared_chi2, smeared_ndf, smeared_p = unfolder.calculate_chi2(one_hist=unfolder.get_folded_mc_truth(),
+                                                                           other_hist=unfolder.hist_mc_reco_bg_subtracted,
+                                                                           cov_inv_matrix=unfolder.get_vyy_inv_ndarray(),
+                                                                           # cov_inv_matrix=unfolder.get_vyy_inv_no_bg_ndarray(),
+                                                                           detector_space=True,
+                                                                           ignore_underflow_bins=True,
+                                                                           debugging_dir=os.path.join(this_output_dir, 'smeared_chi2_debug'))
+            print('smeared chi2:', smeared_chi2, smeared_ndf, smeared_chi2/smeared_ndf, smeared_p)
+
+            unfolded_chi2, unfolded_ndf, unfolded_p = unfolder.calculate_chi2(one_hist=unfolder.unfolded,
+                                                                              other_hist=unfolder.hist_truth,
+                                                                              cov_inv_matrix=unfolder.get_vxx_inv_ndarray(),
+                                                                              detector_space=False,
+                                                                              ignore_underflow_bins=True,
+                                                                              debugging_dir=os.path.join(this_output_dir, 'unfolded_chi2_debug'))
+            print('unfolded chi2:', unfolded_chi2, unfolded_ndf, unfolded_chi2/unfolded_ndf, unfolded_p)
 
             # ------------------------------------------------------------------
             # UNFOLDING WITH ALTERNATIVE RESPONSE MATRIX
@@ -1529,6 +1539,10 @@ if __name__ == "__main__":
                 alt_hist_mc_gen = cu.get_from_tfile(region['alt_mc_tfile'], "%s/hist_%s_truth_all" % (region['dirname'], angle_shortname))
                 alt_hist_mc_reco = cu.get_from_tfile(region['alt_mc_tfile'], "%s/hist_%s_reco_all" % (region['dirname'], angle_shortname))
 
+                alt_scale = unfolder.hist_truth.Integral() / alt_hist_mc_gen.Integral()
+                alt_hist_mc_gen.Scale(alt_scale)
+                alt_hist_mc_reco.Scale(alt_scale)
+
                 # fakes-subtracted version
                 alt_hist_fakes = hist_fakes_reco_fraction.Clone("hist_fakes_alt")
                 alt_hist_fakes.Multiply(alt_hist_mc_reco)
@@ -1537,6 +1551,7 @@ if __name__ == "__main__":
 
                 # gen-binned versions of detector-level plots
                 alt_hist_mc_reco_gen_binning = cu.get_from_tfile(region['alt_mc_tfile'], "%s/hist_%s_reco_gen_binning" % (region['dirname'], angle_shortname))
+                alt_hist_mc_reco_gen_binning.Scale(alt_scale)
                 alt_hist_fakes_gen_binning = hist_fakes_reco_fraction_gen_binning.Clone("hist_fakes_alt_gen_binning")
                 alt_hist_fakes_gen_binning.Multiply(alt_hist_mc_reco_gen_binning)
                 alt_hist_mc_reco_bg_subtracted_gen_binning = alt_hist_mc_reco_gen_binning.Clone()
@@ -1710,6 +1725,30 @@ if __name__ == "__main__":
 
                 title = "Error matrix (total), %s, %s region, %s, %s response map" % (jet_algo, region['label'], angle_str, region['alt_mc_label'])
                 alt_unfolder_plotter.draw_error_matrix_total(title=title, **alt_plot_args)
+
+                # Do some more bottom-line tests:
+                # --------------------------------------------------------------
+                # Do before saving to file otherwise objects get deleted
+                if alt_unfolder:
+                    smeared_alt_chi2, smeared_alt_ndf, smeared_alt_p = unfolder.calculate_chi2(one_hist=alt_unfolder.get_folded_mc_truth(),
+                                                                                               other_hist=unfolder.hist_mc_reco_bg_subtracted,
+                                                                                               cov_inv_matrix=unfolder.get_vyy_inv_ndarray(),
+                                                                                               # cov_inv_matrix=unfolder.get_vyy_inv_no_bg_ndarray(),
+                                                                                               detector_space=True,
+                                                                                               ignore_underflow_bins=True,
+                                                                                               debugging_dir=os.path.join(this_output_dir, 'smeared_alt_chi2_debug'))
+                    print('smeared chi2 (alt MC):', smeared_alt_chi2, smeared_alt_ndf, smeared_alt_chi2/smeared_alt_ndf, smeared_alt_p)
+
+                print(unfolder.unfolded.Integral())
+                print(alt_hist_mc_gen.Integral())
+                if alt_hist_mc_gen:
+                    unfolded_alt_chi2, unfolded_alt_ndf, unfolded_alt_p = unfolder.calculate_chi2(one_hist=unfolder.unfolded,
+                                                                                                  other_hist=alt_hist_mc_gen,
+                                                                                                  cov_inv_matrix=unfolder.get_vxx_inv_ndarray(),
+                                                                                                  detector_space=False,
+                                                                                                  ignore_underflow_bins=True,
+                                                                                                  debugging_dir=os.path.join(this_output_dir, 'unfolded_alt_chi2_debug'))
+                    print('unfolded chi2 (alt MC):', unfolded_alt_chi2, unfolded_alt_ndf, unfolded_alt_chi2/unfolded_alt_ndf, unfolded_alt_p)
 
                 region['alt_unfolder'] = alt_unfolder
 
