@@ -4,7 +4,6 @@ import ROOT
 ROOT.PyConfig.IgnoreCommandLineOptions = True
 ROOT.gROOT.SetBatch(1)
 ROOT.TH1.SetDefaultSumw2()
-ROOT.gStyle.SetOptStat(0)
 
 ROOT.TGaxis.SetExponentOffset(-0.075, 0.01, "y")
 
@@ -69,9 +68,13 @@ My_Style.SetTitleXOffset(1.3)
 My_Style.SetTitleYOffset(1.5)
 
 # For the statistics box:
-My_Style.SetOptFile(0)
+My_Style.SetOptFile(0)  # what does this even do?
 My_Style.SetOptStat(0) # To display the mean and RMS:   SetOptStat("mr")
-
+My_Style.SetOptFit(1111)  # doesn't work with THStack unfortunately
 
 # For the legend
 My_Style.SetLegendBorderSize(0)
+
+My_Style.SetPaintTextFormat(".3g")
+
+My_Style.SetHistTopMargin(0.)

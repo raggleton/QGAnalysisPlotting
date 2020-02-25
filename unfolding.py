@@ -41,9 +41,6 @@ from do_unfolding_plots import do_all_plots_per_region_angle, Setup
 ROOT.PyConfig.IgnoreCommandLineOptions = True
 ROOT.gROOT.SetBatch(1)
 ROOT.TH1.SetDefaultSumw2()
-ROOT.gStyle.SetOptStat(0)
-ROOT.gStyle.SetPaintTextFormat(".3f")
-ROOT.gStyle.SetHistTopMargin(0.)
 
 
 # Control plot output format

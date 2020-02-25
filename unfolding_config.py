@@ -13,9 +13,6 @@ ROOT.gErrorIgnoreLevel = ROOT.kWarning
 ROOT.PyConfig.IgnoreCommandLineOptions = True
 ROOT.gROOT.SetBatch(1)
 ROOT.TH1.SetDefaultSumw2()
-ROOT.gStyle.SetOptStat(0)
-ROOT.gStyle.SetPaintTextFormat(".3f")
-ROOT.gStyle.SetHistTopMargin(0.)
 
 
 # FOR DIJET:

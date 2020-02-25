@@ -33,9 +33,6 @@ from unfolding_config import get_dijet_config, get_zpj_config
 ROOT.PyConfig.IgnoreCommandLineOptions = True
 ROOT.gROOT.SetBatch(1)
 ROOT.TH1.SetDefaultSumw2()
-ROOT.gStyle.SetOptStat(0)
-ROOT.gStyle.SetPaintTextFormat(".3f")
-ROOT.gStyle.SetHistTopMargin(0.)
 
 
 def setup_regions(args):

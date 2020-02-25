@@ -31,9 +31,7 @@ np.set_printoptions(edgeitems=3,infstr='Infinity',
 ROOT.PyConfig.IgnoreCommandLineOptions = True
 ROOT.gROOT.SetBatch(1)
 ROOT.TH1.SetDefaultSumw2()
-ROOT.gStyle.SetOptStat(0)
-ROOT.gStyle.SetPaintTextFormat(".3f")
-ROOT.gStyle.SetHistTopMargin(0.)
+
 
 # Load my derived class
 with open("MyTUnfoldDensity.cpp") as f:
