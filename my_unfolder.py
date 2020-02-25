@@ -75,6 +75,9 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         # inverse cov for chi2 tests
         "vyy_inv_tmatrix",
         "vxx_inv_th2",
+        "vyy_inv_no_bg_th2",
+        # cov matr
+        "vyy_no_bg_th2",
     ]
 
     def __init__(self,
@@ -701,17 +704,46 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             self.vyy_inv_ndarray = self.tmatrixdsparse_to_ndarray(self.vyy_inv_tmatrix)
         return self.vyy_inv_ndarray
 
+    def get_vyy_no_bg_th2(self):
+        if getattr(self, 'vyy_no_bg_th2', None) is None:
+            self.vyy_no_bg_th2 = self.make_cov_hist_from_errors(self.input_hist, inverse=False)
+        return self.vyy_no_bg_th2
+
+    def get_vyy_no_bg_ndarray(self):
+        if getattr(self, 'vyy_no_bg_ndarray', None) is None:
+            self.vyy_no_bg_ndarray, _ = self.th2_to_ndarray(self.get_vyy_no_bg_th2())
+        return self.vyy_no_bg_ndarray
+
+    def get_vyy_inv_no_bg_th2(self):
+        if getattr(self, 'vyy_inv_no_bg_th2', None) is None:
+            self.vyy_inv_no_bg_th2 = self.make_cov_hist_from_errors(self.input_hist, inverse=True)
+            # this_binning = self.detector_binning.FindNode('detector')
+            # self.vyy_inv_no_bg_th2 = this_binning.CreateErrorMatrixHistogram("ematrix_vyyinv_no_bg_"+cu.get_unique_str(), self.use_axis_binning) #, bin_map, "", "*[]")
+            # for i in range(1, self.input_hist.GetNbinsX()+1):
+            #     bin_err = self.input_hist.GetBinError(i)
+            #     new_err = 1./(bin_err*bin_err) if bin_err != 0 else 0
+            #     self.vyy_inv_no_bg_th2.SetBinContent(i, i, new_err)
+        return self.vyy_inv_no_bg_th2
+
+    def get_vyy_inv_no_bg_ndarray(self):
+        if getattr(self, 'vyy_inv_no_bg_ndarray', None) is None:
+            self.vyy_inv_no_bg_ndarray, _ = self.th2_to_ndarray(self.get_vyy_inv_no_bg_th2())
+        return self.vyy_inv_no_bg_ndarray
+
+    def get_vxx_inv_th2(self):
+        if getattr(self, 'vxx_inv_th2', None) is None:
+            # Have to manually create hist first, awkward
+            this_binning = self.generator_binning.FindNode('generator')
+            # I cannot figure out how to make the int** object for bin_map
+            # So we are trusting that the default args for title and axisSteering are correct
+            # Gnahhhhhhh
+            self.vxx_inv_th2 = this_binning.CreateErrorMatrixHistogram("ematrix_vxxinv_"+cu.get_unique_str(), self.use_axis_binning) #, bin_map, "", "*[]")
+            self.ErrorMatrixToHist(self.vxx_inv_th2, self.GetVxxInv())
+        return self.vxx_inv_th2
+
     def get_vxx_inv_ndarray(self):
         if getattr(self, 'vxx_inv_ndarray', None) is None:
-            if getattr(self, 'vxx_inv_th2', None) is None:
-                # Have to manually create hist first, awkward
-                this_binning = self.generator_binning.FindNode('generator')
-                # I cannot figure out how to make the int** object for bin_map
-                # So we are trusting that the default args for title and axisSteering are correct
-                # Gnahhhhhhh
-                self.vxx_inv_th2 = this_binning.CreateErrorMatrixHistogram("ematrix_vxxinv_"+cu.get_unique_str(), self.use_axis_binning) #, bin_map, "", "*[]")
-                self.ErrorMatrixToHist(self.vxx_inv_th2, self.GetVxxInv())
-            self.vxx_inv_ndarray, _ = self.th2_to_ndarray(self.vxx_inv_th2)
+            self.vxx_inv_ndarray, _ = self.th2_to_ndarray(self.get_vxx_inv_th2())
         return self.vxx_inv_ndarray
 
     def get_var_hist_pt_binned(self, hist1d, ibin_pt, binning_scheme='generator'):
