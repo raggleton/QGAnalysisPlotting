@@ -7,6 +7,7 @@ My_Style.cd()
 import bisect
 import os
 from array import array
+from math import sqrt
 
 # My stuff
 from comparator import Contribution, Plot, grab_obj
@@ -766,6 +767,42 @@ def extract_sample_name(label):
     return new_label
 
 
+def calc_mean_error(hist, covariance_matrix=None):
+    """Get error on the mean, using covariance matrix if available
+
+    covariance_matrix should be a 2D numpy array for this bin
+    If None, then assumes no correlation, and that the diagonal elements are square of bin error
+
+    Uses the fact that if f = A+B,
+    then sigma^2_f = sigma^2_A + sigma^2_B + 2*sigma_A*sigma_B
+    """
+    sum_sq = 0
+    for ibin in range(1, hist.GetNbinsX()+1):
+        # bin_h_i = hist.GetBinContent(ibin)
+        bin_x_i = hist.GetBinCenter(ibin)
+
+        for jbin in range(ibin, hist.GetNbinsX()+1):
+            # bin_h_j = hist.GetBinContent(jbin)
+            # Account for bin width scaling, and normalisation factor
+            # total_bin_width = hist.GetBinWidth(ibin) * hist.GetBinWidth(jbin) * scale_factor * scale_factor
+            this_err2 = 0
+            if ibin == jbin:
+                if covariance_matrix:
+                    this_err2 = bin_x_i*bin_x_i*covariance_matrix[ibin-1, ibin-1]
+                else:
+                    this_err2 = bin_x_i*bin_x_i*pow(hist.GetBinError(ibin), 2)
+            elif covariance_matrix:
+                # pass
+                bin_x_j = hist.GetBinCenter(jbin)
+                this_err2 = 2*bin_x_i*bin_x_j*covariance_matrix[ibin-1, jbin-1]  # should this be sqrt?
+
+            sum_sq += this_err2
+
+    # scale for total entries
+    # print('final', sum_sq, hist.Integral())
+    return sqrt(sum_sq) / hist.Integral()
+
+
 def do_mean_rms_summary_plot(entries,
                              bins,
                              output_filename,
@@ -837,7 +874,7 @@ def do_mean_rms_summary_plot(entries,
 
             hist = dataset_entry[0]
             this_mean.append(hist.GetMean())
-            this_mean_err.append(hist.GetMeanError())
+            this_mean_err.append(calc_mean_error(hist))
             this_rms.append(hist.GetRMS())
             this_rms_err.append(hist.GetRMSError())
 
