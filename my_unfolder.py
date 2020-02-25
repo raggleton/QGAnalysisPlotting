@@ -21,6 +21,7 @@ My_Style.cd()
 import common_utils as cu
 import qg_common as qgc
 import qg_general_plots as qgp
+from my_unfolder_plotter import MyUnfolderPlotter
 
 
 # This doesn't seem to work...sigh
@@ -563,6 +564,24 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             return hnew
 
     @staticmethod
+    def make_cov_hist_from_errors(h1d, do_squaring=True, inverse=True):
+        """Make TH2 from errors on TH1."""
+        nbins = h1d.GetNbinsX()
+        bin_edges = array('d', [h1d.GetBinLowEdge(i) for i in range(1, nbins+2)])
+        h = ROOT.TH2D(cu.get_unique_str(), "", nbins, bin_edges, nbins, bin_edges)
+        for i in range(1, nbins+1):
+            err = h1d.GetBinError(i)
+            if do_squaring:
+                err *= err
+            if inverse:
+                if err != 0:
+                    err = 1/err
+                else:
+                    err = 0
+            h.SetBinContent(i, i, err)
+        return h
+
+    @staticmethod
     def update_hist_bin_error(h_orig, h_to_be_updated):
         if h_orig.GetNbinsX() != h_to_be_updated.GetNbinsX():
             raise RuntimeError("Need same # x bins, %d vs %s" % (h_orig.GetNbinsX(), h_to_be_updated.GetNbinsX()))
@@ -928,6 +947,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         for ix in range(nbinsx):
             for iy in range(nbinsy):
                 h.SetBinContent(ix+1, iy+1, data[iy,ix])
+                h.SetBinError(ix+1, iy+1, 0)
         return h
 
     @staticmethod
@@ -995,28 +1015,30 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
 
         return self.folded_unfolded
 
+    def fold_generator_level(self, hist_truth):
+        oflow = False
+        # Convert hist to vector
+        gen_vec, gen_vec_err = self.th1_to_ndarray(hist_truth, oflow_x=oflow)
+
+        # Multiply
+        # Note that we need to transpose from row vec to column vec
+        folded_vec = self.probability_ndarray.dot(gen_vec.T)
+
+        # Convert vector to TH1
+        folded_mc_truth = self.ndarray_to_th1(folded_vec.T, has_oflow_x=oflow)
+
+        # Error propagation: if y = Ax, with covariance matrices Vyy and Vxx,
+        # respectively, then Vyy = (A*Vxx)*A^T
+        result = self.probability_ndarray.dot(self.construct_covariance_matrix(hist_truth))
+        folded_covariance = result.dot(self.probability_ndarray.T)
+        folded_errors = self.make_hist_from_diagonal_errors(folded_covariance)
+        self.update_hist_bin_error(h_orig=folded_errors, h_to_be_updated=folded_mc_truth)
+        return folded_mc_truth
+
     def get_folded_mc_truth(self):
         """Get response_matrix * MC truth"""
         if getattr(self, 'folded_mc_truth', None) is None:
-            oflow = False
-            # Convert hist to vector
-            gen_vec, gen_vec_err = self.th1_to_ndarray(self.hist_truth, oflow_x=oflow)
-
-            # Multiply
-            # Note that we need to transpose from row vec to column vec
-            folded_vec = self.probability_ndarray.dot(gen_vec.T)
-
-            # Convert vector to TH1
-            self.folded_mc_truth = self.ndarray_to_th1(folded_vec.T, has_oflow_x=oflow)
-
-            # Error propagation: if y = Ax, with covariance matrices Vyy and Vxx,
-            # respectively, then Vyy = (A*Vxx)*A^T
-            result = self.probability_ndarray.dot(self.construct_covariance_matrix(self.hist_truth))
-            folded_covariance = result.dot(self.probability_ndarray.T)
-            folded_errors = self.make_hist_from_diagonal_errors(folded_covariance)
-            self.update_hist_bin_error(h_orig=folded_errors, h_to_be_updated=self.folded_mc_truth)
-            print('folded_mc_truth 105:', self.folded_mc_truth.GetBinContent(105), '+-', self.folded_mc_truth.GetBinError(105))
-
+            self.folded_mc_truth = self.fold_generator_level(self.hist_truth)
         return self.folded_mc_truth
 
     def construct_covariance_matrix(self, hist):
@@ -1030,53 +1052,207 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             cov_matrix_ndarray[ind-1, ind-1] = err2
         return cov_matrix_ndarray
 
-    def calculate_smeared_chi2(self, ignore_underflow_bins=True):
-        # TODO: should this all be divided by bin width?
-        folded_vec, _ = self.th1_to_ndarray(self.get_folded_mc_truth(), False)
-        reco_bg_subtracted_vec, _ = self.th1_to_ndarray(self.hist_mc_reco_bg_subtracted, False)
-        delta = reco_bg_subtracted_vec - folded_vec
-        # print(delta.shape)
-        # print(delta)
+    def calculate_chi2(self, one_hist, other_hist, cov_inv_matrix, detector_space=True, ignore_underflow_bins=True, debugging_dir=None):
+        one_vec, _ = self.th1_to_ndarray(one_hist, False)
+        other_vec, _ = self.th1_to_ndarray(other_hist, False)
+        delta = one_vec - other_vec
+
+        first_signal_bin = 1
         if ignore_underflow_bins:
-            # print('start bin', self.detector_distribution.GetStartBin())
-            first_signal_bin = self.detector_distribution.GetStartBin()
-            # print('hist_mc_reco_bg_subtracted', self.hist_mc_reco_bg_subtracted.GetBinContent(first_signal_bin))
-            # print('reco_bg_subtracted_vec', reco_bg_subtracted_vec[0, first_signal_bin-1])
-            # print('delta', delta[0, first_signal_bin-1])
+            first_signal_bin = self.detector_distribution.GetStartBin() if detector_space else self.generator_distribution.GetStartBin()
             delta[0][:first_signal_bin-1] = 0. # subtract 1 as numpy indices start at 0, hists start at 1
-            # print(delta[0, 0:first_signal_bin-1])
-            # print(delta[0, first_signal_bin-1:first_signal_bin+5])
-            # print(reco_bg_subtracted_vec[0,first_signal_bin-5: first_signal_bin+5])
-        # vyy = self.tmatrixdsparse_to_ndarray(self.GetVyy())
-        # my_vyy = self.construct_covariance_matrix(self.)
 
-        vyy_inv = self.get_vyy_inv_ndarray()
-        inter = vyy_inv.dot(delta.T)
+        if isinstance(cov_inv_matrix, ROOT.TH2):
+            v_inv, _ = self.th2_to_ndarray(cov_inv_matrix)
+        else:
+            v_inv = cov_inv_matrix
+
+        inter = v_inv.dot(delta.T)
         chi2 = delta.dot(inter)[0][0]
         ndof = len(delta[0][first_signal_bin-1:])
         p = 1-scipy.stats.chi2.cdf(chi2, int(ndof))
+
+        if debugging_dir:
+            # print some debugging plots
+            debug_plotter = MyUnfolderPlotter(self, False)
+            # 1D inputs
+            entries = [
+                Contribution(one_hist, label='one_hist', line_color=ROOT.kBlack),
+                Contribution(other_hist, label='other_hist', line_color=ROOT.kRed, line_style=2)
+            ]
+            plot = Plot(entries, what='hist', has_data=False,)
+            plot.default_canvas_size = (800, 600)
+            plot.plot("NOSTACK HISTE")
+            l,t = debug_plotter.draw_pt_binning_lines(plot, which='reco' if detector_space else 'gen', axis='x')
+            plot.save(os.path.join(debugging_dir, 'one_other_hists.pdf'))
+
+            # Delta, with missing bins if necessary
+            delta_hist = self.ndarray_to_th1(delta)
+            entries = [
+                Contribution(delta_hist)
+            ]
+            plot = Plot(entries,
+                        what='hist',
+                        xtitle='%s bin' % ('Detector' if detector_space else 'Generator'),
+                        ytitle='one_hist - other_hist',
+                        has_data=False,
+                        )
+            plot.default_canvas_size = (800, 600)
+            plot.plot("NOSTACK HISTE")
+            l,t = debug_plotter.draw_pt_binning_lines(plot, which='reco' if detector_space else 'gen', axis='x')
+            plot.save(os.path.join(debugging_dir, 'delta.pdf'))
+
+            # Covariance matrix
+            canv = ROOT.TCanvas("c", "Inverse covariance matrix V^{-1}", 800, 600)
+            obj = cov_inv_matrix
+            if not isinstance(cov_inv_matrix, ROOT.TH2):
+                obj = self.ndarray_to_th2(v_inv)
+            obj.Draw("COLZ")
+            canv.SetLeftMargin(0.15)
+            canv.SetRightMargin(0.18)
+            canv.SetLogz(1)
+            cov_min = obj.GetMinimum(1E-20) / 10
+            obj.SetMinimum(cov_min)
+            cov_max = obj.GetMaximum() * 5
+            obj.SetMaximum(cov_max)
+
+            l,t = debug_plotter.draw_pt_binning_lines(obj, which='reco' if detector_space else 'gen', axis='x', do_underflow=True, do_labels_inside=False, do_labels_outside=True)
+            l2,t2 = debug_plotter.draw_pt_binning_lines(obj, which='reco' if detector_space else 'gen', axis='y', do_underflow=True, do_labels_inside=False, do_labels_outside=True)
+            canv.SaveAs(os.path.join(debugging_dir, 'cov_inv_matrix.pdf'))
+
+
+            # Components of delta * V_inv * delta before summing
+            components = delta * inter.T
+            components_hist = self.ndarray_to_th1(components)
+            y_max = components_hist.GetMaximum() * 1.2
+            entries = [
+                Contribution(components_hist)
+            ]
+            plot = Plot(entries,
+                        what='hist',
+                        xtitle='%s bin' % ('Detector' if detector_space else 'Generator'),
+                        ytitle='Component of chi2 (#Delta V^{-1} #Delta)',
+                        ylim=(0, y_max),
+                        has_data=False,
+                        )
+            plot.default_canvas_size = (800, 600)
+            plot.plot("NOSTACK HIST")
+            l,t = debug_plotter.draw_pt_binning_lines(plot, which='reco' if detector_space else 'gen', axis='x')
+            plot.save(os.path.join(debugging_dir, 'components.pdf'))
+
+            pt_bin_edges = self.pt_bin_edges_reco if detector_space else self.pt_bin_edges_gen
+            # for i in range(1, components_hist.GetNbinsX()+1):
+                # print(i, components_hist.GetBinContent(i))
+
+            for ibin_pt, (pt_low, pt_high) in enumerate(zip(pt_bin_edges[:-1], pt_bin_edges[1:])):
+                # plot component (delta * V_inv * delta) for this pt bin
+                this_h = self.get_var_hist_pt_binned(components_hist, ibin_pt, binning_scheme='detector' if detector_space else 'generator')
+                entries = [
+                    Contribution(this_h, label=None)
+                ]
+                plot = Plot(entries,
+                            what='hist',
+                            title='%g < p_{T} %g GeV' % (pt_low, pt_high),
+                            xtitle='lambda variable',
+                            ytitle='Component of chi2 (#Delta V^{-1} #Delta)',
+                            ylim=(0, y_max),
+                            has_data=False,
+                            )
+                plot.default_canvas_size = (800, 600)
+                plot.plot("NOSTACK TEXT HIST")
+                plot.save(os.path.join(debugging_dir, 'components_pt_bin_%d.pdf' % (ibin_pt)))
+
+                # plot delta for this pt bin
+                this_delta = self.get_var_hist_pt_binned(delta_hist, ibin_pt, binning_scheme='detector' if detector_space else 'generator')
+                entries = [
+                    Contribution(this_delta, label=None)
+                ]
+                plot = Plot(entries,
+                            what='hist',
+                            title='%g < p_{T} %g GeV' % (pt_low, pt_high),
+                            xtitle='lambda variable',
+                            ytitle='#Delta',
+                            # ylim=(0, y_max),
+                            has_data=False,
+                            )
+                plot.default_canvas_size = (800, 600)
+                plot.plot("NOSTACK HIST TEXT")
+                plot.save(os.path.join(debugging_dir, 'delta_pt_bin_%d.pdf' % (ibin_pt)))
+
+                # plot cov matrix for this bin
+                binning = self.detector_binning.FindNode("detectordistribution") if detector_space else self.generator_binning.FindNode("generatordistribution")
+                var_bins = np.array(binning.GetDistributionBinning(0))
+                pt_bins = np.array(binning.GetDistributionBinning(1))
+                # -1 since ndarray is 0 index, th2 are 1-indexed
+                start = binning.GetGlobalBinNumber(var_bins[0] * 1.001, pt_bins[ibin_pt]*1.001) - 1
+                end = binning.GetGlobalBinNumber(var_bins[-2] * 1.001, pt_bins[ibin_pt]*1.001) - 1
+                this_cov = self.ndarray_to_th2(v_inv[start:end+1,start:end+1])
+                canv = ROOT.TCanvas(cu.get_unique_str(), "Inverse covariance matrix V^{-1}", 800, 600)
+                this_cov.SetTitle("Inverse covariance matrix V^{-1} for %g < p_{T} < %g GeV" % (pt_low, pt_high))
+                this_cov.Draw("COLZ TEXT")
+                canv.SetLeftMargin(0.15)
+                canv.SetRightMargin(0.18)
+                # canv.SetLogz(1)
+                # this_cov.SetMinimum(cov_min)
+                # this_cov.SetMaximum(cov_max)
+                canv.SaveAs(os.path.join(debugging_dir, 'cov_inv_matrix_pt_bin_%d.pdf' % (ibin_pt)))
+
+            # histogram the non-zero components
+            h = ROOT.TH1D("h_components", "", 25 if detector_space else 10, -5, 5)
+            for i, x in enumerate(components[0]):
+                if x > 0:
+                    h.Fill(math.sqrt(x) * np.sign(delta[0][i]))
+            h.Fit('gaus')
+            entries = [
+                Contribution(h)
+            ]
+            plot = Plot(entries,
+                        what='hist',
+                        xtitle='sign(#Delta) #times #sqrt{#Delta V^{-1} #Delta}',
+                        ytitle='N',
+                        has_data=False,
+                        )
+            plot.default_canvas_size = (600, 600)
+            plot.plot("NOSTACK")
+            # have to plot TH1 not THStack to get fit box, this is ugly hack
+            canv = ROOT.TCanvas(cu.get_unique_str(), "", 800, 600)
+            entries[0].obj.Draw()
+            canv.SaveAs(os.path.join(debugging_dir, 'components_pull.pdf'))
+
         return chi2, ndof, p
 
-    def calculate_unfolded_chi2(self, ignore_underflow_bins=True):
-        """(unfolded - truth)^T V_unfolded^{-1} (unfolded - truth)"""
-        oflow = False
-        unfolded_vec, _ = self.th1_to_ndarray(self.unfolded, oflow)
-        gen_vec, _ = self.th1_to_ndarray(self.hist_truth, oflow_x=oflow)
-        delta = unfolded_vec - gen_vec
-        if ignore_underflow_bins:
-            first_signal_bin = self.generator_distribution.GetStartBin()
-            # print('first_signal_bin', first_signal_bin)
-            # print(self.generator_distribution.GetEndBin())
-            # print('truth', self.hist_truth.GetBinContent(first_signal_bin))
-            # print('truth', gen_vec[0][first_signal_bin-1:])
-            delta[0][:first_signal_bin-1] = 0
+    # def calculate_smeared_chi2(self, ignore_underflow_bins=True):
+    #     # TODO: should this all be divided by bin width?
+    #     folded_vec, _ = self.th1_to_ndarray(self.get_folded_mc_truth(), False)
+    #     reco_bg_subtracted_vec, _ = self.th1_to_ndarray(self.hist_mc_reco_bg_subtracted, False)
+    #     delta = reco_bg_subtracted_vec - folded_vec
+    #     if ignore_underflow_bins:
+    #         first_signal_bin = self.detector_distribution.GetStartBin()
+    #         delta[0][:first_signal_bin-1] = 0. # subtract 1 as numpy indices start at 0, hists start at 1
 
-        cov = self.get_vxx_inv_ndarray()
-        inter = cov.dot(delta.T)
-        chi2 = delta.dot(inter)[0][0]
-        ndof = len(delta[0][first_signal_bin-1:])
-        p = 1-scipy.stats.chi2.cdf(chi2, int(ndof))
-        return chi2, ndof, p
+    #     vyy_inv = self.get_vyy_inv_ndarray()
+    #     inter = vyy_inv.dot(delta.T)
+    #     chi2 = delta.dot(inter)[0][0]
+    #     ndof = len(delta[0][first_signal_bin-1:])
+    #     p = 1-scipy.stats.chi2.cdf(chi2, int(ndof))
+    #     return chi2, ndof, p
+
+    # def calculate_unfolded_chi2(self, ignore_underflow_bins=True):
+    #     """(unfolded - truth)^T V_unfolded^{-1} (unfolded - truth)"""
+    #     oflow = False
+    #     unfolded_vec, _ = self.th1_to_ndarray(self.unfolded, oflow)
+    #     gen_vec, _ = self.th1_to_ndarray(self.hist_truth, oflow_x=oflow)
+    #     delta = unfolded_vec - gen_vec
+    #     if ignore_underflow_bins:
+    #         first_signal_bin = self.generator_distribution.GetStartBin()
+    #         delta[0][:first_signal_bin-1] = 0
+
+    #     cov = self.get_vxx_inv_ndarray()
+    #     inter = cov.dot(delta.T)
+    #     chi2 = delta.dot(inter)[0][0]
+    #     ndof = len(delta[0][first_signal_bin-1:])
+    #     p = 1-scipy.stats.chi2.cdf(chi2, int(ndof))
+    #     return chi2, ndof, p
 
 
 
