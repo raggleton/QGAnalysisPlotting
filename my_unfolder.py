@@ -171,8 +171,11 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
                                      self.distribution,
                                      self.axisSteering)
 
-        self.use_axis_binning = True  # for things like get_probability_matrix()...but doesn't seem to do anything?!
-
+        # for things like get_probability_matrix()...but doesn't seem to do anything?!
+        # this is only used when output_distribution_name = 'generatordistribution': then it makes a TH2
+        # since it can map to it
+        # Otherwise it makes a TH1
+        self.use_axis_binning = False
         # self.probability_ndarray = self.response_matrix_to_probability_array(self.response_map)
         # self.probability_ndarray, _ = self.th2_to_ndarray(self.get_probability_matrix(), oflow_x=False, oflow_y=False)
         # self.probability_ndarray, _ = None, None
@@ -215,7 +218,8 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         self.systs_shifted = {}  # gets filled with get_syst_shifted_hist(), holds total unfolded with syst shift
         self.syst_ematrices = {}  # gets filled with get_ematrix_syst(), holds ematrix for each systeamtic
 
-        # use "generator" for signal + underflow region, "generatordistribution" for only signal region
+        # use "generator" for signal + underflow region
+        # "generatordistribution" only for ???
         self.output_distribution_name = "generator"
 
         self.folded_unfolded = None  # set in get_folded_unfolded()
@@ -612,19 +616,21 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
     def get_ematrix_input(self):
         """Get error matrix due to statistics from thing being unfolded"""
         if getattr(self, "ematrix_input", None) is None:
-            self.ematrix_input = self.GetEmatrixInput("ematrix_input_"+cu.get_unique_str(), "", "generator", "*[]", self.use_axis_binning)
+            self.ematrix_input = self.GetEmatrixInput("ematrix_input_"+cu.get_unique_str(), "", self.output_distribution_name, "*[]", self.use_axis_binning)
         return self.ematrix_input
 
     def get_ematrix_stat_response(self):
         """Statistical uncertainty error matrix from response matrix, should be considered a systematic uncert"""
         if getattr(self, "ematrix_stat_response", None) is None:
-            self.ematrix_stat_response = self.GetEmatrixSysUncorr("ematrix_stat_response_"+cu.get_unique_str(), "", "generator", "*[]", self.use_axis_binning)
+            self.ematrix_stat_response = self.GetEmatrixSysUncorr("ematrix_stat_response_"+cu.get_unique_str(), "", self.output_distribution_name, "*[]", self.use_axis_binning)
         return self.ematrix_stat_response
 
     def get_ematrix_total(self):
         """Total error matrix, from stat+systs"""
         if getattr(self, "ematrix_total", None) is None:
-            self.ematrix_total = self.GetEmatrixTotal("ematrix_total_"+cu.get_unique_str(), "", "generator", "*[]", self.use_axis_binning)
+            self.ematrix_total = self.GetEmatrixTotal("ematrix_total_"+cu.get_unique_str(), "", self.output_distribution_name, "*[]", self.use_axis_binning)
+            print(self.ematrix_total.GetNbinsX())
+            print(type(self.ematrix_total))
         return self.ematrix_total
 
     @property
@@ -681,7 +687,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
 
     def get_rhoij_total(self):
         if getattr(self, "rhoij_total", None) is None:
-            self.rhoij_total = self.GetRhoIJtotal("rhoij_total_"+cu.get_unique_str(), "", "generator", "*[]", self.use_axis_binning)
+            self.rhoij_total = self.GetRhoIJtotal("rhoij_total_"+cu.get_unique_str(), "", self.output_distribution_name, "*[]", self.use_axis_binning)
         return self.rhoij_total
 
     def get_probability_matrix(self):
