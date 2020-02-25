@@ -893,8 +893,8 @@ class MyUnfolderPlotter(object):
             entries.append(
                 Contribution(hist_reco,
                              label="Unfolding input (background-subtracted)" if is_bg_subtracted else "Unfolding input",
-                             line_color=reco_data_colour, line_width=1,
-                             marker_color=reco_data_colour, marker_size=0.6, marker_style=20,
+                             line_color=reco_data_colour if self.is_data else reco_mc_colour, line_width=1,
+                             marker_color=reco_data_colour if self.is_data else reco_mc_colour, marker_size=0.6, marker_style=20,
                              normalise_hist=False)
             )
 
