@@ -62,6 +62,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         "probability_matrix",
         # save error matrices
         "ematrix_input",
+        "ematrix_input_bg",
         "ematrix_stat_response",
         "ematrix_stat",
         "ematrix_tau",
@@ -325,6 +326,8 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         tfile.cd()
         super(ROOT.MyTUnfoldDensity, self).Write()
 
+    # SETUP INPUT, BACKGROUNDS
+    # --------------------------------------------------------------------------
     def set_input(self,
                   input_hist,
                   input_hist_gen_binning=None,
@@ -470,6 +473,8 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
                 results[global_bin] = (lambda_width, pt_width)
         return results
 
+    # HANDLE SYSTEMATIC UNCERTAINTIES
+    # --------------------------------------------------------------------------
     def add_sys_error(self, map_syst, name, mode):
         """Add systematic error via response map, arguments as per AddSysError()"""
         self.syst_maps[name] = map_syst
@@ -509,6 +514,8 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             self.systs_shifted[syst_label] = hist_shift
         return self.systs_shifted[syst_label]
 
+    # POST-UNFOLDING FUNCTIONS
+    # --------------------------------------------------------------------------
     def get_output(self, hist_name='unfolded'):
         """Get 1D unfolded histogram covering all bins"""
         print("Ndf:", self.GetNdf())
@@ -523,6 +530,8 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         self.chi2L = self.GetChi2L()
 
         self.unfolded = self.GetOutput(hist_name, "", self.output_distribution_name, "*[]", self.use_axis_binning)
+        print(type(self.unfolded))
+        print("unfolded has", self.unfolded.GetNbinsX())
         return self.unfolded
 
     def _post_process(self):
@@ -571,8 +580,13 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             return hnew
 
     @staticmethod
-    def make_cov_hist_from_errors(h1d, do_squaring=True, inverse=True):
-        """Make TH2 from errors on TH1."""
+    def make_diag_cov_hist_from_errors(h1d, do_squaring=True, inverse=False):
+        """Make diagonal TH2 from errors on TH1.
+
+        Assumes off-diag = 0.
+
+        Can also do inverse by doing 1/(err^2)
+        """
         nbins = h1d.GetNbinsX()
         bin_edges = array('d', [h1d.GetBinLowEdge(i) for i in range(1, nbins+2)])
         h = ROOT.TH2D(cu.get_unique_str(), "", nbins, bin_edges, nbins, bin_edges)
@@ -590,6 +604,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
 
     @staticmethod
     def update_hist_bin_error(h_orig, h_to_be_updated):
+        """Change the errors in h_to_be_updated to those from h_orig"""
         if h_orig.GetNbinsX() != h_to_be_updated.GetNbinsX():
             raise RuntimeError("Need same # x bins, %d vs %s" % (h_orig.GetNbinsX(), h_to_be_updated.GetNbinsX()))
         for i in range(0, h_orig.GetNbinsX()+2):
@@ -613,17 +628,52 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             self.bias_vector = self.GetBias("bias_"+cu.get_unique_str(), "", "generator", "*[]", self.use_axis_binning)
         return self.bias_vector
 
+    def get_probability_matrix(self):
+        if getattr(self, "probability_matrix", None) is None:
+            self.probability_matrix = self.GetProbabilityMatrix("prob_matrix_"+cu.get_unique_str(), "", self.use_axis_binning)
+        return self.probability_matrix
+
+    @property
+    def probability_ndarray(self):
+        cached_attr_name = '_probability_ndarray'
+        if not hasattr(self, cached_attr_name):
+            arr, _ = self.th2_to_ndarray(self.get_probability_matrix())
+            setattr(self, cached_attr_name, arr)
+        return getattr(self, cached_attr_name)
+
+    def get_rhoij_total(self):
+        if getattr(self, "rhoij_total", None) is None:
+            self.rhoij_total = self.GetRhoIJtotal("rhoij_total_"+cu.get_unique_str(), "", self.output_distribution_name, "*[]", self.use_axis_binning)
+        return self.rhoij_total
+
+    # LOTS OF COVARIANCE MATRIX FUNCTIONS
+    # --------------------------------------------------------------------------
     def get_ematrix_input(self):
         """Get error matrix due to statistics from thing being unfolded"""
         if getattr(self, "ematrix_input", None) is None:
             self.ematrix_input = self.GetEmatrixInput("ematrix_input_"+cu.get_unique_str(), "", self.output_distribution_name, "*[]", self.use_axis_binning)
         return self.ematrix_input
 
+    def get_ematrix_input_bg(self):
+        """Get error matrix due to statistics from thing being unfolded,
+        plus those from backgrounds"""
+        if getattr(self, "ematrix_input_bg", None) is None:
+            self.ematrix_input_bg = self.GetEmatrix("ematrix_input_bg_"+cu.get_unique_str(), "", self.output_distribution_name, "*[]", self.use_axis_binning)
+        return self.ematrix_input_bg
+
     def get_ematrix_stat_response(self):
         """Statistical uncertainty error matrix from response matrix, should be considered a systematic uncert"""
         if getattr(self, "ematrix_stat_response", None) is None:
             self.ematrix_stat_response = self.GetEmatrixSysUncorr("ematrix_stat_response_"+cu.get_unique_str(), "", self.output_distribution_name, "*[]", self.use_axis_binning)
         return self.ematrix_stat_response
+
+    @property
+    def ematrix_stat_response_ndarray(self):
+        cached_attr_name = '_ematrix_stat_response_ndarray'
+        if not hasattr(self, cached_attr_name):
+            arr, _ = self.th2_to_ndarray(self.get_ematrix_stat_response())
+            setattr(self, cached_attr_name, arr)
+        return getattr(self, cached_attr_name)
 
     def get_ematrix_total(self):
         """Total error matrix, from stat+systs"""
@@ -653,6 +703,14 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             self.GetEmatrix(self.ematrix_stat)
         return self.ematrix_stat
 
+    @property
+    def ematrix_stat_ndarray(self):
+        cached_attr_name = '_ematrix_stat_ndarray'
+        if not hasattr(self, cached_attr_name):
+            arr, _ = self.th2_to_ndarray(self.get_ematrix_stat())
+            setattr(self, cached_attr_name, arr)
+        return getattr(self, cached_attr_name)
+
     def get_ematrix_syst(self, syst_label):
         """Get error matrix from a systematic source"""
         if syst_label not in self.syst_shifts:
@@ -668,6 +726,15 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             self.GetEmatrixSysSource(hist, syst_label)
             self.syst_ematrices[syst_label] = hist
         return self.syst_ematrices[syst_label]
+
+    # property or getter?
+    @property
+    def ematrix_syst_ndarray(self, syst_label):
+        cached_attr_name = '_ematrix_syst_%s_ndarray' % (cu.no_space_str(syst_label))
+        if not hasattr(self, cached_attr_name):
+            arr, _ = self.th2_to_ndarray(self.get_ematrix_syst(syst_label))
+            setattr(self, cached_attr_name, arr)
+        return getattr(self, cached_attr_name)
 
     def get_ematrix_tau(self):
         """Get error matrix due to regularisation uncertainty"""
@@ -685,25 +752,8 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         """Total error matrix inverted, from stat+systs"""
         return self.InvertMSparseSymmPos(self.GetSummedErrorMatrixXX(), False)  # TMatrixDSparse
 
-    def get_rhoij_total(self):
-        if getattr(self, "rhoij_total", None) is None:
-            self.rhoij_total = self.GetRhoIJtotal("rhoij_total_"+cu.get_unique_str(), "", self.output_distribution_name, "*[]", self.use_axis_binning)
-        return self.rhoij_total
-
-    def get_probability_matrix(self):
-        if getattr(self, "probability_matrix", None) is None:
-            self.probability_matrix = self.GetProbabilityMatrix("prob_matrix_"+cu.get_unique_str(), "", self.use_axis_binning)
-        return self.probability_matrix
-
-    @property
-    def probability_ndarray(self):
-        cached_attr_name = '_probability_ndarray'
-        if not hasattr(self, cached_attr_name):
-            arr, _ = self.th2_to_ndarray(self.get_probability_matrix())
-            setattr(self, cached_attr_name, arr)
-        return getattr(self, cached_attr_name)
-
     def get_vyy_inv_ndarray(self):
+        """Get inverse of V_yy (ie input). Note done after BG-subtraction"""
         if getattr(self, 'vyy_inv_ndarray', None) is None:
             if getattr(self, 'vyy_inv_tmatrix', None) is None:
                 self.vyy_inv_tmatrix = self.GetVyyInv()
@@ -711,8 +761,9 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         return self.vyy_inv_ndarray
 
     def get_vyy_no_bg_th2(self):
+        """Same as get_vyy_inv_ndarray() but before BG-subtraction"""
         if getattr(self, 'vyy_no_bg_th2', None) is None:
-            self.vyy_no_bg_th2 = self.make_cov_hist_from_errors(self.input_hist, inverse=False)
+            self.vyy_no_bg_th2 = self.make_diag_cov_hist_from_errors(self.input_hist, inverse=False)
         return self.vyy_no_bg_th2
 
     def get_vyy_no_bg_ndarray(self):
@@ -722,7 +773,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
 
     def get_vyy_inv_no_bg_th2(self):
         if getattr(self, 'vyy_inv_no_bg_th2', None) is None:
-            self.vyy_inv_no_bg_th2 = self.make_cov_hist_from_errors(self.input_hist, inverse=True)
+            self.vyy_inv_no_bg_th2 = self.make_diag_cov_hist_from_errors(self.input_hist, inverse=True)
             # this_binning = self.detector_binning.FindNode('detector')
             # self.vyy_inv_no_bg_th2 = this_binning.CreateErrorMatrixHistogram("ematrix_vyyinv_no_bg_"+cu.get_unique_str(), self.use_axis_binning) #, bin_map, "", "*[]")
             # for i in range(1, self.input_hist.GetNbinsX()+1):
@@ -752,6 +803,9 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             self.vxx_inv_ndarray, _ = self.th2_to_ndarray(self.get_vxx_inv_th2())
         return self.vxx_inv_ndarray
 
+    # METHODS TO CHOP UP BIG 1D/2D HISTS
+    # --------------------------------------------------------------------------
+
     def get_var_hist_pt_binned(self, hist1d, ibin_pt, binning_scheme='generator'):
         """Get hist of variable for given pt bin from massive 1D hist that TUnfold makes"""
         # FIXME: assume no underflow?!
@@ -759,21 +813,32 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         var_bins = np.array(binning.GetDistributionBinning(0))
         pt_bins = np.array(binning.GetDistributionBinning(1))
 
-        # print("var_bins:", var_bins)
-        # print("pt_bins:", pt_bins)
-        # bin_num = binning.GetGlobalBinNumber(0.001, 51)
-        # print("Global bin num for (pt, lambda) = (51, 0.001) => %d" % (bin_num))
-        # print("This bin goes from %g to %g" % (hist1d.GetXaxis().GetBinLowEdge(bin_num), hist1d.GetXaxis().GetBinLowEdge(bin_num+1)))
-
         # need the -1 on ibin_pt, as it references an array index, whereas ROOT bins start at 1
         h = ROOT.TH1D("h_%d_%s" % (ibin_pt, cu.get_unique_str()), "", len(var_bins)-1, var_bins)
         for var_ind, var_value in enumerate(var_bins[:-1], 1):
             this_val = var_value * 1.001  # ensure its inside
             bin_num = binning.GetGlobalBinNumber(this_val, pt_bins[ibin_pt]*1.001)
-            # print("Global bin num for (pt, lambda) = (%.3f, %.3f) => %d" % (pt_bins[ibin_pt]*1.001, this_val, bin_num))
             h.SetBinContent(var_ind, hist1d.GetBinContent(bin_num))
             h.SetBinError(var_ind, hist1d.GetBinError(bin_num))
-            # print("Bin:", bin_num, this_val, pt_bins[ibin_pt], "=", hist1d.GetBinContent(bin_num), "+-", hist1d.GetBinError(bin_num))
+        return h
+
+    def get_var_2d_hist_pt_binned(self, hist2d, ibin_pt, binning_scheme='generator'):
+        """Get 2d hist for given pt bin from massive 2D hist"""
+        # FIXME: assume no underflow?!
+        binning = self.generator_binning.FindNode("generatordistribution") if binning_scheme == "generator" else self.detector_binning.FindNode("detectordistribution")
+        var_bins = np.array(binning.GetDistributionBinning(0))
+        pt_bins = np.array(binning.GetDistributionBinning(1))
+
+        # need the -1 on ibin_pt, as it references an array index, whereas ROOT bins start at 1
+        h = ROOT.TH2D("h2d_%d_%s" % (ibin_pt, cu.get_unique_str()), "", len(var_bins)-1, var_bins, len(var_bins)-1, var_bins)
+        for var_ind, var_value in enumerate(var_bins[:-1], 1):
+            this_val = var_value * 1.001  # ensure its inside
+            bin_num = binning.GetGlobalBinNumber(this_val, pt_bins[ibin_pt]*1.001)
+            for var_ind2, var_value2 in enumerate(var_bins[:-1], 1):
+                this_val2 = var_value2 * 1.001  # ensure its inside
+                bin_num2 = binning.GetGlobalBinNumber(this_val2, pt_bins[ibin_pt]*1.001)
+                h.SetBinContent(var_ind, var_ind2, hist2d.GetBinContent(bin_num, bin_num2))
+                h.SetBinError(var_ind, var_ind2, hist2d.GetBinError(bin_num, bin_num2))
         return h
 
     def get_pt_hist_var_binned(self, hist1d, ibin_var, binning_scheme='generator'):
@@ -792,8 +857,27 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             h.SetBinError(pt_ind, hist1d.GetBinError(bin_num))
         return h
 
-    # @staticmethod
-    def tmatrixdsparse_to_ndarray(self, matrix):
+    def get_pt_2d_hist_var_binned(self, hist2d, ibin_var, binning_scheme='generator'):
+        """Get 2d hist for given variable bin from massive 2D hist"""
+        # FIXME: assume no underflow?!
+        binning = self.generator_binning.FindNode("generatordistribution") if binning_scheme == "generator" else self.detector_binning.FindNode("detectordistribution")
+        var_bins = np.array(binning.GetDistributionBinning(0))
+        pt_bins = np.array(binning.GetDistributionBinning(1))
+
+        # need the -1 on ibin_var, as it references an array index, whereas ROOT bins start at 1
+        h = ROOT.TH1D("h2d_%d_%s" % (ibin_var, cu.get_unique_str()), "", len(pt_bins)-1, pt_bins)
+        for pt_ind, pt_value in enumerate(pt_bins[:-1], 1):
+            this_val = pt_value * 1.001  # ensure its inside
+            bin_num = binning.GetGlobalBinNumber(var_bins[ibin_var]*1.001, this_val)
+            for pt_ind2, pt_value2 in enumerate(pt_bins[:-1], 1):
+                this_val2 = pt_value * 1.001  # ensure its inside
+                bin_num2 = binning.GetGlobalBinNumber(var_bins[ibin_var]*1.001, this_val2)
+                h.SetBinContent(pt_ind, pt_ind2, hist2d.GetBinContent(bin_num, bin_num2))
+                h.SetBinError(pt_ind, pt_ind2, hist2d.GetBinError(bin_num, bin_num2))
+        return h
+
+    @staticmethod
+    def tmatrixdsparse_to_ndarray(matrix):
         ndarr = np.zeros(shape=(matrix.GetNrows(), matrix.GetNcols()))
 
         rows_A = matrix.GetRowIndexArray()
@@ -1001,21 +1085,8 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         else:
             return matrix
 
-    def response_matrix_to_probability_array(self, response_map):
-        """Convert response map to probability matrix
-
-        Non-trivial, since to normalise one must also take into account underflow bins
-        """
-        prob_array, prob_err = self.th2_to_ndarray(response_map, oflow_x=False, oflow_y=False)
-        # need one with oflow bins to normalise properly
-        prob_array_oflow, prob_err = self.th2_to_ndarray(response_map, oflow_x=False, oflow_y=True)
-        axis = 0 if self.orientation == ROOT.TUnfold.kHistMapOutputHoriz else 1
-        sum_over_y = prob_array_oflow.sum(axis=axis)
-        sum_over_y[sum_over_y==0] = 9999999  # avoid division errors
-        result = prob_array / sum_over_y
-
-        return result
-
+    # METHODS FOR FORWARD-FOLDING & CHI2 TESTS
+    # --------------------------------------------------------------------------
     def get_folded_unfolded(self):
         # don't use getfoldedoutput, because it doesn't have the updated errors from the total error matrix
         # so we'll have to do it ourselves
@@ -1067,7 +1138,8 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
 
         # Error propagation: if y = Ax, with covariance matrices Vyy and Vxx,
         # respectively, then Vyy = (A*Vxx)*A^T
-        result = self.probability_ndarray.dot(self.construct_covariance_matrix(hist_truth))
+        vxx = self.th1_to_ndarray(self.make_diag_cov_hist_from_errors(hist_truth, inverse=False), oflow)
+        result = self.probability_ndarray.dot(vxx)
         folded_covariance = result.dot(self.probability_ndarray.T)
         folded_errors = self.make_hist_from_diagonal_errors(folded_covariance)
         self.update_hist_bin_error(h_orig=folded_errors, h_to_be_updated=folded_mc_truth)
@@ -1078,17 +1150,6 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         if getattr(self, 'folded_mc_truth', None) is None:
             self.folded_mc_truth = self.fold_generator_level(self.hist_truth)
         return self.folded_mc_truth
-
-    def construct_covariance_matrix(self, hist):
-        """Make covariance hist from 1D hist. Diagonals are square of error"""
-        # Just to numpy array for now, can always use ndarray_to_th2()
-        nbins = hist.GetNbinsX()
-        cov_matrix_ndarray = np.zeros(shape=(nbins, nbins))  # important, otherwise can end up with wacko values
-        for ind in range(1, nbins):
-            err = hist.GetBinError(ind)
-            err2 = pow(err, 2)
-            cov_matrix_ndarray[ind-1, ind-1] = err2
-        return cov_matrix_ndarray
 
     def calculate_chi2(self, one_hist, other_hist, cov_inv_matrix, detector_space=True, ignore_underflow_bins=True, debugging_dir=None):
         one_vec, _ = self.th1_to_ndarray(one_hist, False)
@@ -1259,39 +1320,6 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
 
         return chi2, ndof, p
 
-    # def calculate_smeared_chi2(self, ignore_underflow_bins=True):
-    #     # TODO: should this all be divided by bin width?
-    #     folded_vec, _ = self.th1_to_ndarray(self.get_folded_mc_truth(), False)
-    #     reco_bg_subtracted_vec, _ = self.th1_to_ndarray(self.hist_mc_reco_bg_subtracted, False)
-    #     delta = reco_bg_subtracted_vec - folded_vec
-    #     if ignore_underflow_bins:
-    #         first_signal_bin = self.detector_distribution.GetStartBin()
-    #         delta[0][:first_signal_bin-1] = 0. # subtract 1 as numpy indices start at 0, hists start at 1
-
-    #     vyy_inv = self.get_vyy_inv_ndarray()
-    #     inter = vyy_inv.dot(delta.T)
-    #     chi2 = delta.dot(inter)[0][0]
-    #     ndof = len(delta[0][first_signal_bin-1:])
-    #     p = 1-scipy.stats.chi2.cdf(chi2, int(ndof))
-    #     return chi2, ndof, p
-
-    # def calculate_unfolded_chi2(self, ignore_underflow_bins=True):
-    #     """(unfolded - truth)^T V_unfolded^{-1} (unfolded - truth)"""
-    #     oflow = False
-    #     unfolded_vec, _ = self.th1_to_ndarray(self.unfolded, oflow)
-    #     gen_vec, _ = self.th1_to_ndarray(self.hist_truth, oflow_x=oflow)
-    #     delta = unfolded_vec - gen_vec
-    #     if ignore_underflow_bins:
-    #         first_signal_bin = self.generator_distribution.GetStartBin()
-    #         delta[0][:first_signal_bin-1] = 0
-
-    #     cov = self.get_vxx_inv_ndarray()
-    #     inter = cov.dot(delta.T)
-    #     chi2 = delta.dot(inter)[0][0]
-    #     ndof = len(delta[0][first_signal_bin-1:])
-    #     p = 1-scipy.stats.chi2.cdf(chi2, int(ndof))
-    #     return chi2, ndof, p
-
 
 
 def unfolder_from_tdir(tdir):
@@ -1346,3 +1374,204 @@ def unfolder_from_tdir(tdir):
         setattr(unfolder, attr_name, obj)
 
     return unfolder
+
+
+def unpack_unfolding_root_file(input_tfile, region, angle, do_alt_response=True, do_model_systs=True, do_pdf_systs=True):
+    input_tdir_name = "%s/%s" % (region['name'], angle.var)
+    input_tdir = input_tfile.Get(input_tdir_name)
+    cu.check_root_obj(input_tdir)
+    unfolder = unfolder_from_tdir(input_tdir)
+    print("...Loaded main unfolder")
+
+    list_of_obj = cu.get_list_of_element_names(input_tdir)
+
+    # Get unregularised unfolder, if available
+    unreg_tdir = [x for x in list_of_obj if x.startswith("unreg_unfolder")]
+    unreg_unfolder = None
+    if len(unreg_tdir) == 1:
+        unreg_unfolder = unfolder_from_tdir(input_tfile.Get(os.path.join(input_tdir_name, unreg_tdir[0])))
+        print("...Loaded comparison unregularised unfolder")
+
+    # Update if experimental systs
+    region['experimental_systematics'] = [k for k in region['experimental_systematics']
+                                          if k['label'] in unfolder.systs_shifted]
+
+    # Get alternate response object, if it exists
+    alt_unfolder = None
+    alt_hist_truth = None
+    alt_hist_reco = None
+    alt_hist_reco_bg_subtracted = None
+    alt_hist_reco_bg_subtracted_gen_binning = None
+    if do_alt_response:
+        alt_tdir_names = [x for x in list_of_obj if x.startswith("alt_response_")]
+        if len(alt_tdir_names)  == 1:
+            alt_tdir_name = alt_tdir_names[0]
+            alt_hist_truth = input_tfile.Get(os.path.join(input_tdir_name, alt_tdir_name, "alt_hist_mc_gen"))
+            alt_hist_reco = input_tfile.Get(os.path.join(input_tdir_name, alt_tdir_name, "alt_hist_mc_reco"))
+            alt_hist_reco_bg_subtracted = input_tfile.Get(os.path.join(input_tdir_name, alt_tdir_name, "alt_hist_mc_reco_bg_subtracted"))
+            alt_hist_reco_bg_subtracted_gen_binning = input_tfile.Get(os.path.join(input_tdir_name, alt_tdir_name, "alt_hist_mc_reco_bg_subtracted_gen_binning"))
+
+            # Need to check actually unfolder stored, and not just the parts above
+            alt_tdir = input_tfile.Get(os.path.join(input_tdir_name, alt_tdir_name))
+            alt_unf_obj = [x for x in cu.get_list_of_element_names(alt_tdir)]
+            if 'response_map' in alt_unf_obj:
+                alt_unfolder = unfolder_from_tdir(alt_tdir)
+                region['alt_unfolder'] = alt_unfolder
+                alt_unfolder_name = alt_tdir_name.replace("alt_response_", "")
+                if cu.no_space_str(region['alt_mc_label']) != alt_unfolder_name:
+                    raise RuntimeError("Bad unpacking of alt response unfolder: expected %s, got %s" % (region['alt_mc_label'], alt_unfolder_name))
+                print("...Loaded alt unfolder", alt_tdir_name)
+
+        if len(alt_tdir_names) > 1:
+            raise RuntimeError(">1 alt_response?! %s" % (alt_tdir_names))
+
+    # Get model systs
+    # print(list_of_obj)
+    if do_model_systs:
+        model_tdirs = [x for x in list_of_obj if x.startswith("modelSyst_")]
+        if len(model_tdirs) > 0:
+            for model_tdir_name in model_tdirs:
+                syst_name = model_tdir_name.replace("modelSyst_", "")
+                this_one = [x for x in region['model_systematics'] if cu.no_space_str(x['label']) == syst_name]
+                if len(this_one) == 0:
+                    print("No entry for model systematic", syst_name, "- skipping")
+                    continue
+                # TODO: check it agrees with region dict?
+                this_one[0]['unfolder'] = unfolder_from_tdir(input_tfile.Get(os.path.join(input_tdir_name, model_tdir_name)))
+                print("...Loaded", len(model_tdirs), "model systematic unfolders")
+    # remove entries without an unfolder
+    region['model_systematics'] = [k for k in region['model_systematics']
+                                   if k.get('unfolder', None) is not None]
+
+    # Get PDF systs
+    # For some reason, this is done as a list instead of dict
+    if do_pdf_systs:
+        pdf_tdirs = [x for x in list_of_obj if x.startswith("pdfSyst_")]
+        if len(pdf_tdirs) > 0:
+            # Remove original, construct all other
+            region['pdf_systematics'] = []
+
+            for pdf_tdir_name in pdf_tdirs:
+                pdf_name = pdf_tdir_name.replace("pdfSyst_", "")
+                region['pdf_systematics'].append({
+                    'label': pdf_name,
+                    'unfolder': unfolder_from_tdir(input_tfile.Get(os.path.join(input_tdir_name, pdf_tdir_name))),
+                    'colour': ROOT.kCyan+2,
+                })
+            print("...Loaded", len(pdf_tdirs), "PDF systematic unfolders")
+    # remove entries without an unfolder
+    region['pdf_systematics'] = [k for k in region['pdf_systematics']
+                                 if k.get('unfolder', None) is not None]
+
+    return dict(
+        unfolder=unfolder,
+        unreg_unfolder=unreg_unfolder,
+        alt_unfolder=alt_unfolder,
+        alt_hist_truth=alt_hist_truth,
+        alt_hist_reco=alt_hist_reco,
+        alt_hist_reco_bg_subtracted=alt_hist_reco_bg_subtracted,
+        alt_hist_reco_bg_subtracted_gen_binning=alt_hist_reco_bg_subtracted_gen_binning,
+    )
+
+
+class HistBinChopper(object):
+    """Get histogram for pt or variable bin, and cache it in dict, so can be used later"""
+
+    def __init__(self, unfolder):
+        self.unfolder = unfolder  # used to do the actual chopping of hists
+        self.objects = {}
+        self._cache = {}
+        self._cache_integral = {}
+
+    def add_obj(self, name, obj):
+        # TODO: allow overwrite?
+        self.objects[name] = obj
+
+    def get_bin_plot(self, name, ind, axis, do_norm=False, do_div_bin_width=False, binning_scheme='generator'):
+        """Get plot for given bin of specified axis
+        
+        Parameters
+        ----------
+        name : str
+            Name of object to use
+        ind : int
+            Bin index (0-indexed, 0 = 1st signal region bin)
+        axis : str
+            'pt' or 'lambda'
+        do_norm : bool, optional
+            Normalise to unity
+        do_div_bin_width : bool, optional
+            Divide by bin width
+        binning_scheme : str, optional
+            'generator' or 'detector'
+        
+        Returns
+        -------
+        TYPE
+            Description
+        
+        Raises
+        ------
+        KeyError
+            Description
+        """
+        if name not in self.objects:
+            raise KeyError("No %s in HistBinChopper.objects" % name)
+        key = self._generate_key(name, ind, axis, do_norm, do_div_bin_width, binning_scheme)
+        if key not in self._cache:
+            if axis == 'lambda':
+                self._cache[key] = self.unfolder.get_pt_hist_var_binned(self.objects[name], ind, binning_scheme)
+            else:
+                self._cache[key] = self.unfolder.get_var_hist_pt_binned(self.objects[name], ind, binning_scheme)
+
+            # havent done div bin width or normalising yet
+            self._cache_integral[key] = self._cache[key].Integral()
+
+            if do_div_bin_width and do_norm:
+                self._cache[key] = qgp.normalise_hist_divide_bin_width(self._cache[key])
+            elif do_div_bin_width and not do_norm:
+                self._cache[key] = qgp.hist_divide_bin_width(self._cache[key])
+            elif not do_div_bin_width and do_norm:
+                qgp.normalise_hist(self._cache[key])
+
+        return self._cache[key]
+
+    def get_bin_integral(self, name, ind, axis, binning_scheme='generator'):
+        """Get integral for bin `ind` of object `name`"""
+        if name not in self.objects:
+            raise KeyError("No %s in HistBinChopper.objects" % name)
+        key = self._generate_key(name, ind, axis, False, False, binning_scheme)
+        if key not in self._cache_integral:
+            self.get_bin_plot(name, ind, axis, False, False, binning_scheme)
+        return self._cache_integral[key]
+
+    @staticmethod
+    def _generate_key(name, ind, axis, do_norm, do_div_bin_width, binning_scheme):
+        """Generate consistent name for these args, options as in get_bin_plot()"""
+        if axis not in ['pt', 'lambda']:
+            raise ArgumentError('_generate_key(): axis must be "pt" or "lambda"')
+        key = name + "_%s_bin_%d_%s" % (axis, ind, binning_scheme)
+        if do_norm:
+            key += "_norm"
+        if do_div_bin_width:
+            key += "_divBinWidth"
+        return key
+
+    # TODO: remove these? just use get_bin_plot instead?
+    def get_pt_bin(self, name, ind, binning_scheme='generator'):
+        return self.get_bin_plot(name, ind, axis='pt', do_norm=False, do_div_bin_width=False, binning_scheme=binning_scheme)
+
+    def get_pt_bin_div_bin_width(self, name, ind, binning_scheme='generator'):
+        return self.get_bin_plot(name, ind, axis='pt', do_norm=False, do_div_bin_width=True, binning_scheme=binning_scheme)
+
+    def get_pt_bin_normed_div_bin_width(self, name, ind, binning_scheme='generator'):
+        return self.get_bin_plot(name, ind, axis='pt', do_norm=True, do_div_bin_width=True, binning_scheme=binning_scheme)
+
+    def get_lambda_bin(self, name, ind, binning_scheme='generator'):
+        return self.get_bin_plot(name, ind, axis='lambda', do_norm=False, do_div_bin_width=False, binning_scheme=binning_scheme)
+
+    def get_lambda_bin_div_bin_width(self, name, ind, binning_scheme='generator'):
+        return self.get_bin_plot(name, ind, axis='lambda', do_norm=False, do_div_bin_width=True, binning_scheme=binning_scheme)
+
+    def get_lambda_bin_normed_div_bin_width(self, name, ind, binning_scheme='generator'):
+        return self.get_bin_plot(name, ind, axis='lambda', do_norm=True, do_div_bin_width=True, binning_scheme=binning_scheme)

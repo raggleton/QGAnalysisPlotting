@@ -26,7 +26,7 @@ ROOT.gErrorIgnoreLevel = ROOT.kWarning
 import common_utils as cu
 import qg_common as qgc
 import qg_general_plots as qgp
-from my_unfolder import MyUnfolder, unfolder_from_tdir
+from my_unfolder import MyUnfolder, unfolder_from_tdir, HistBinChopper, unpack_unfolding_root_file
 from my_unfolder_plotter import MyUnfolderPlotter
 from unfolding_config import get_dijet_config, get_zpj_config
 
@@ -62,167 +62,6 @@ def setup_regions(args):
         zpj_region_groomed_dict = get_zpj_config(args.source, groomed=True)
         regions.append(zpj_region_groomed_dict)
     return regions
-
-
-def unpack_unfolding_root_file(input_tfile, region, angle, do_alt_response=True, do_model_systs=True, do_pdf_systs=True):
-    input_tdir_name = "%s/%s" % (region['name'], angle.var)
-    input_tdir = input_tfile.Get(input_tdir_name)
-    cu.check_root_obj(input_tdir)
-    unfolder = unfolder_from_tdir(input_tdir)
-    print("...Loaded main unfolder")
-
-    list_of_obj = cu.get_list_of_element_names(input_tdir)
-
-    # Get unregularised unfolder, if available
-    unreg_tdir = [x for x in list_of_obj if x.startswith("unreg_unfolder")]
-    unreg_unfolder = None
-    if len(unreg_tdir) == 1:
-        unreg_unfolder = unfolder_from_tdir(input_tfile.Get(os.path.join(input_tdir_name, unreg_tdir[0])))
-        print("...Loaded comparison unregularised unfolder")
-
-    # Update if experimental systs
-    region['experimental_systematics'] = [k for k in region['experimental_systematics']
-                                          if k['label'] in unfolder.systs_shifted]
-
-    # Get alternate response object, if it exists
-    alt_unfolder = None
-    alt_hist_truth = None
-    alt_hist_reco = None
-    alt_hist_reco_bg_subtracted = None
-    alt_hist_reco_bg_subtracted_gen_binning = None
-    if do_alt_response:
-        alt_tdir_names = [x for x in list_of_obj if x.startswith("alt_response_")]
-        if len(alt_tdir_names)  == 1:
-            alt_tdir_name = alt_tdir_names[0]
-            alt_hist_truth = input_tfile.Get(os.path.join(input_tdir_name, alt_tdir_name, "alt_hist_mc_gen"))
-            alt_hist_reco = input_tfile.Get(os.path.join(input_tdir_name, alt_tdir_name, "alt_hist_mc_reco"))
-            alt_hist_reco_bg_subtracted = input_tfile.Get(os.path.join(input_tdir_name, alt_tdir_name, "alt_hist_mc_reco_bg_subtracted"))
-            alt_hist_reco_bg_subtracted_gen_binning = input_tfile.Get(os.path.join(input_tdir_name, alt_tdir_name, "alt_hist_mc_reco_bg_subtracted_gen_binning"))
-
-            # Need to check actually unfolder stored, and not just the parts above
-            alt_tdir = input_tfile.Get(os.path.join(input_tdir_name, alt_tdir_name))
-            alt_unf_obj = [x for x in cu.get_list_of_element_names(alt_tdir)]
-            if 'response_map' in alt_unf_obj:
-                alt_unfolder = unfolder_from_tdir(alt_tdir)
-                region['alt_unfolder'] = alt_unfolder
-                alt_unfolder_name = alt_tdir_name.replace("alt_response_", "")
-                if cu.no_space_str(region['alt_mc_label']) != alt_unfolder_name:
-                    raise RuntimeError("Bad unpacking of alt response unfolder: expected %s, got %s" % (region['alt_mc_label'], alt_unfolder_name))
-                print("...Loaded alt unfolder", alt_tdir_name)
-
-        if len(alt_tdir_names) > 1:
-            raise RuntimeError(">1 alt_response?! %s" % (alt_tdir_names))
-
-    # Get model systs
-    # print(list_of_obj)
-    if do_model_systs:
-        model_tdirs = [x for x in list_of_obj if x.startswith("modelSyst_")]
-        if len(model_tdirs) > 0:
-            for model_tdir_name in model_tdirs:
-                syst_name = model_tdir_name.replace("modelSyst_", "")
-                this_one = [x for x in region['model_systematics'] if cu.no_space_str(x['label']) == syst_name]
-                if len(this_one) == 0:
-                    print("No entry for model systematic", syst_name, "- skipping")
-                    continue
-                # TODO: check it agrees with region dict?
-                this_one[0]['unfolder'] = unfolder_from_tdir(input_tfile.Get(os.path.join(input_tdir_name, model_tdir_name)))
-                print("...Loaded", len(model_tdirs), "model systematic unfolders")
-    # remove entries without an unfolder
-    region['model_systematics'] = [k for k in region['model_systematics']
-                                   if k.get('unfolder', None) is not None]
-
-    # Get PDF systs
-    # For some reason, this is done as a list instead of dict
-    if do_pdf_systs:
-        pdf_tdirs = [x for x in list_of_obj if x.startswith("pdfSyst_")]
-        if len(pdf_tdirs) > 0:
-            # Remove original, construct all other
-            region['pdf_systematics'] = []
-
-            for pdf_tdir_name in pdf_tdirs:
-                pdf_name = pdf_tdir_name.replace("pdfSyst_", "")
-                region['pdf_systematics'].append({
-                    'label': pdf_name,
-                    'unfolder': unfolder_from_tdir(input_tfile.Get(os.path.join(input_tdir_name, pdf_tdir_name))),
-                    'colour': ROOT.kCyan+2,
-                })
-            print("...Loaded", len(pdf_tdirs), "PDF systematic unfolders")
-    # remove entries without an unfolder
-    region['pdf_systematics'] = [k for k in region['pdf_systematics']
-                                 if k.get('unfolder', None) is not None]
-
-    return dict(
-        unfolder=unfolder,
-        unreg_unfolder=unreg_unfolder,
-        alt_unfolder=alt_unfolder,
-        alt_hist_truth=alt_hist_truth,
-        alt_hist_reco=alt_hist_reco,
-        alt_hist_reco_bg_subtracted=alt_hist_reco_bg_subtracted,
-        alt_hist_reco_bg_subtracted_gen_binning=alt_hist_reco_bg_subtracted_gen_binning,
-    )
-
-
-class HistBinChopper(object):
-    """Get histogram for pt or variable bin, and cache it in dict, so can be used later"""
-
-    def __init__(self, unfolder):
-        self.unfolder = unfolder
-        self.objects = {}
-        self._cache = {}
-
-    def add_obj(self, name, obj):
-        # TODO: allow overwrite?
-        self.objects[name] = obj
-
-    def get_bin_plot(self, name, ind, axis, do_norm=False, do_div_bin_width=False, binning_scheme='generator'):
-        """Get plot for given bin of specified axis"""
-        if name not in self.objects:
-            raise KeyError("No %s in HistBinChopper.objects" % name)
-        key = self._generate_key(name, ind, axis, do_norm, do_div_bin_width, binning_scheme)
-        if key not in self._cache:
-            if axis == 'lambda':
-                self._cache[key] = self.unfolder.get_pt_hist_var_binned(self.objects[name], ind, binning_scheme)
-            else:
-                self._cache[key] = self.unfolder.get_var_hist_pt_binned(self.objects[name], ind, binning_scheme)
-
-            if do_div_bin_width and do_norm:
-                self._cache[key] = qgp.normalise_hist_divide_bin_width(self._cache[key])
-            elif do_div_bin_width and not do_norm:
-                self._cache[key] = qgp.hist_divide_bin_width(self._cache[key])
-            elif not do_div_bin_width and do_norm:
-                qgp.normalise_hist(self._cache[key])
-
-        return self._cache[key]
-
-    @staticmethod
-    def _generate_key(name, ind, axis, do_norm, do_div_bin_width, binning_scheme):
-        if axis not in ['pt', 'lambda']:
-            raise ArgumentError('_generate_key(): axis must be "pt" or "lambda"')
-        key = name + "_%s_bin_%d_%s" % (axis, ind, binning_scheme)
-        if do_norm:
-            key += "_norm"
-        if do_div_bin_width:
-            key += "_divBinWidth"
-        return key
-
-    # TODO: remove these? just use get_bin_plot instead?
-    def get_pt_bin(self, name, ind, binning_scheme='generator'):
-        return self.get_bin_plot(name, ind, axis='pt', do_norm=False, do_div_bin_width=False, binning_scheme=binning_scheme)
-
-    def get_pt_bin_div_bin_width(self, name, ind, binning_scheme='generator'):
-        return self.get_bin_plot(name, ind, axis='pt', do_norm=False, do_div_bin_width=True, binning_scheme=binning_scheme)
-
-    def get_pt_bin_normed_div_bin_width(self, name, ind, binning_scheme='generator'):
-        return self.get_bin_plot(name, ind, axis='pt', do_norm=True, do_div_bin_width=True, binning_scheme=binning_scheme)
-
-    def get_lambda_bin(self, name, ind, binning_scheme='generator'):
-        return self.get_bin_plot(name, ind, axis='lambda', do_norm=False, do_div_bin_width=False, binning_scheme=binning_scheme)
-
-    def get_lambda_bin_div_bin_width(self, name, ind, binning_scheme='generator'):
-        return self.get_bin_plot(name, ind, axis='lambda', do_norm=False, do_div_bin_width=True, binning_scheme=binning_scheme)
-
-    def get_lambda_bin_normed_div_bin_width(self, name, ind, binning_scheme='generator'):
-        return self.get_bin_plot(name, ind, axis='lambda', do_norm=True, do_div_bin_width=True, binning_scheme=binning_scheme)
 
 
 class Setup(object):
@@ -279,6 +118,7 @@ PLOT_COLOURS = dict(
     reco_folded_mc_truth_colour=ROOT.kGreen+2,
 )
 
+
 def calc_auto_xlim(entries):
     """Figure out x axis range that includes all non-0 bins from all Contributions"""
     if len(entries) == 0:
@@ -312,6 +152,7 @@ def calc_auto_xlim(entries):
     else:
         # default x max
         return None
+
 
 # FIXME: generalise this and LambdaBinnedPlotter into one generic BinnedPlotter?
 # Although each has different set of plots, so not easy/possible
@@ -894,6 +735,7 @@ class GenPtBinnedPlotter(object):
         (basically the subplot from plot_unfolded_with_exp_systs_normalised)
         """
         def _convert_error_bars_to_error_ratio_hist(h, direction=1):
+            """Create hist with bin content = error shift / bin value, 0 error"""
             h_new = h.Clone(h.GetName() + cu.get_unique_str())
             for ibin in range(1, h_new.GetNbinsX()+1):
                 if h.GetBinContent(ibin) > 0:
@@ -904,6 +746,7 @@ class GenPtBinnedPlotter(object):
             return h_new
 
         def _convert_syst_shift_to_error_ratio_hist(h_syst, h_nominal):
+            """Create h_syst / h_nominal without error bars"""
             h_new = h_syst.Clone(h_syst.GetName() + cu.get_unique_str())
             h_new.Divide(h_nominal)
             for ibin in range(1, h_new.GetNbinsX()+1):
@@ -911,6 +754,8 @@ class GenPtBinnedPlotter(object):
             return h_new
 
         for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
+            # Calculate the new total for this bin
+
             # Get total for this bin
             unfolded_hist_bin_total_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded', ibin, binning_scheme='generator')
             # Get stat. unc. from input for this bin

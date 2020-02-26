@@ -26,10 +26,9 @@ My_Style.cd()
 import common_utils as cu
 import qg_common as qgc
 import qg_general_plots as qgp
-from my_unfolder import MyUnfolder, unfolder_from_tdir
+from my_unfolder import MyUnfolder, unfolder_from_tdir, HistBinChopper, unpack_unfolding_root_file
 from my_unfolder_plotter import MyUnfolderPlotter
 from unfolding_config import get_dijet_config, get_zpj_config
-import do_unfolding_plots as dup
 
 
 ROOT.gErrorIgnoreLevel = ROOT.kWarning
@@ -486,13 +485,13 @@ if __name__ == "__main__":
                 print('Unpacking', region['name'], angle.name)
                 append = "%s_%s" % (region['name'], angle.var)  # common str to put on filenames, etc. don't need angle_prepend as 'groomed' in region name
                 input_tfile = cu.TFileCacher(root_filename)  # keep this here otherwise crashes
-                unpack_dict = dup.unpack_unfolding_root_file(input_tfile, region, angle, do_alt_response=True, do_model_systs=False, do_pdf_systs=False)
+                unpack_dict = unpack_unfolding_root_file(input_tfile, region, angle, do_alt_response=True, do_model_systs=False, do_pdf_systs=False)
                 unfolder = unpack_dict['unfolder']
                 unreg_unfolder = unpack_dict['unreg_unfolder']
                 alt_unfolder = unpack_dict['alt_unfolder']
                 alt_hist_truth = unpack_dict['alt_hist_truth']
                 print(alt_hist_truth)
-                hbc = dup.HistBinChopper(unfolder)
+                hbc = HistBinChopper(unfolder)
                 hbc.add_obj("unfolded", unfolder.unfolded)
                 hbc.add_obj("unfolded_stat_err", unfolder.unfolded_stat_err)
                 hbc.add_obj("hist_truth", unfolder.hist_truth)
