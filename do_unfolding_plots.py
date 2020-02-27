@@ -2300,14 +2300,27 @@ def do_all_big_1d_plots_per_region_angle(setup, unpack_dict, hist_bin_chopper=No
 
 def store_bottom_line_stats(all_chi2_stats, setup, unpack_dict):
     unfolder = unpack_dict['unfolder']
-    smeared_chi2, smeared_ndf, smeared_p = unfolder.calculate_smeared_chi2()
-    smeared_alt = unfolder.fold_generator_level(unpack_dict['alt_hist_truth'])
 
+    smeared_chi2, smeared_ndf, smeared_p = unfolder.calculate_chi2(one_hist=unfolder.get_folded_mc_truth(),
+                                                                   other_hist=unfolder.hist_mc_reco_bg_subtracted,
+                                                                   cov_inv_matrix=unfolder.get_vyy_inv_ndarray(),
+                                                                   # cov_inv_matrix=unfolder.get_vyy_inv_no_bg_ndarray(),
+                                                                   detector_space=True,
+                                                                   ignore_underflow_bins=True,
+                                                                   debugging_dir=None)
+    print('smeared chi2:', smeared_chi2, smeared_ndf, smeared_chi2/smeared_ndf, smeared_p)
+
+    unfolded_chi2, unfolded_ndf, unfolded_p = unfolder.calculate_chi2(one_hist=unfolder.unfolded,
+                                                                      other_hist=unfolder.hist_truth,
+                                                                      cov_inv_matrix=unfolder.get_vxx_inv_ndarray(),
+                                                                      detector_space=False,
+                                                                      ignore_underflow_bins=True,
+                                                                      debugging_dir=None)
+    print('unfolded chi2:', unfolded_chi2, unfolded_ndf, unfolded_chi2/unfolded_ndf, unfolded_p)
+
+    # smeared_alt = unfolder.fold_generator_level(unpack_dict['alt_hist_truth'])
     # smeared_alt_chi2, smeared_alt_ndf, smeared_alt_p =
-    unfolded_chi2, unfolded_ndf, unfolded_p = unfolder.calculate_unfolded_chi2()
 
-    print("smeared:", smeared_chi2, smeared_ndf, smeared_p)
-    print("unfolded:", unfolded_chi2, unfolded_ndf, unfolded_p)
     all_chi2_stats.append({
             "region": setup.region['label'],
             "is_groomed": "groomed" in setup.region['name'],
