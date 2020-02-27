@@ -1130,7 +1130,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
 
         # Error propagation: if y = Ax, with covariance matrices Vyy and Vxx,
         # respectively, then Vyy = (A*Vxx)*A^T
-        vxx = self.th1_to_ndarray(self.make_diag_cov_hist_from_errors(hist_truth, inverse=False), oflow)
+        vxx, _ = self.th2_to_ndarray(self.make_diag_cov_hist_from_errors(hist_truth, inverse=False), oflow)
         result = self.probability_ndarray.dot(vxx)
         folded_covariance = result.dot(self.probability_ndarray.T)
         folded_errors = self.make_hist_from_diagonal_errors(folded_covariance)
@@ -1489,7 +1489,7 @@ class HistBinChopper(object):
         ind : int
             Bin index (0-indexed, 0 = 1st signal region bin)
         axis : str
-            'pt' or 'lambda'
+            'pt' or 'lambda', i.e. axis to get bin ind of
         do_norm : bool, optional
             Normalise to unity
         do_div_bin_width : bool, optional
