@@ -799,79 +799,6 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             self.vxx_inv_ndarray, _ = cu.th2_to_ndarray(self.get_vxx_inv_th2())
         return self.vxx_inv_ndarray
 
-    # METHODS TO CHOP UP BIG 1D/2D HISTS
-    # --------------------------------------------------------------------------
-
-    def get_var_hist_pt_binned(self, hist1d, ibin_pt, binning_scheme='generator'):
-        """Get hist of variable for given pt bin from massive 1D hist that TUnfold makes"""
-        # FIXME: assume no underflow?!
-        binning = self.generator_binning.FindNode("generatordistribution") if binning_scheme == "generator" else self.detector_binning.FindNode("detectordistribution")
-        var_bins = np.array(binning.GetDistributionBinning(0))
-        pt_bins = np.array(binning.GetDistributionBinning(1))
-
-        # need the -1 on ibin_pt, as it references an array index, whereas ROOT bins start at 1
-        h = ROOT.TH1D("h_%d_%s" % (ibin_pt, cu.get_unique_str()), "", len(var_bins)-1, var_bins)
-        for var_ind, var_value in enumerate(var_bins[:-1], 1):
-            this_val = var_value * 1.001  # ensure its inside
-            bin_num = binning.GetGlobalBinNumber(this_val, pt_bins[ibin_pt]*1.001)
-            h.SetBinContent(var_ind, hist1d.GetBinContent(bin_num))
-            h.SetBinError(var_ind, hist1d.GetBinError(bin_num))
-        return h
-
-    def get_var_2d_hist_pt_binned(self, hist2d, ibin_pt, binning_scheme='generator'):
-        """Get 2d hist for given pt bin from massive 2D hist"""
-        # FIXME: assume no underflow?!
-        binning = self.generator_binning.FindNode("generatordistribution") if binning_scheme == "generator" else self.detector_binning.FindNode("detectordistribution")
-        var_bins = np.array(binning.GetDistributionBinning(0))
-        pt_bins = np.array(binning.GetDistributionBinning(1))
-
-        # need the -1 on ibin_pt, as it references an array index, whereas ROOT bins start at 1
-        h = ROOT.TH2D("h2d_%d_%s" % (ibin_pt, cu.get_unique_str()), "", len(var_bins)-1, var_bins, len(var_bins)-1, var_bins)
-        for var_ind, var_value in enumerate(var_bins[:-1], 1):
-            this_val = var_value * 1.001  # ensure its inside
-            bin_num = binning.GetGlobalBinNumber(this_val, pt_bins[ibin_pt]*1.001)
-            for var_ind2, var_value2 in enumerate(var_bins[:-1], 1):
-                this_val2 = var_value2 * 1.001  # ensure its inside
-                bin_num2 = binning.GetGlobalBinNumber(this_val2, pt_bins[ibin_pt]*1.001)
-                h.SetBinContent(var_ind, var_ind2, hist2d.GetBinContent(bin_num, bin_num2))
-                h.SetBinError(var_ind, var_ind2, hist2d.GetBinError(bin_num, bin_num2))
-        return h
-
-    def get_pt_hist_var_binned(self, hist1d, ibin_var, binning_scheme='generator'):
-        """Get hist of pt for given variable bin from massive 1D hist that TUnfold makes"""
-        # FIXME: assume no underflow?!
-        binning = self.generator_binning.FindNode("generatordistribution") if binning_scheme == "generator" else self.detector_binning.FindNode("detectordistribution")
-        var_bins = np.array(binning.GetDistributionBinning(0))
-        pt_bins = np.array(binning.GetDistributionBinning(1))
-
-        # need the -1 on ibin_var, as it references an array index, whereas ROOT bins start at 1
-        h = ROOT.TH1D("h_%d_%s" % (ibin_var, cu.get_unique_str()), "", len(pt_bins)-1, pt_bins)
-        for pt_ind, pt_value in enumerate(pt_bins[:-1], 1):
-            this_val = pt_value * 1.001  # ensure its inside
-            bin_num = binning.GetGlobalBinNumber(var_bins[ibin_var]*1.001, this_val)
-            h.SetBinContent(pt_ind, hist1d.GetBinContent(bin_num))
-            h.SetBinError(pt_ind, hist1d.GetBinError(bin_num))
-        return h
-
-    def get_pt_2d_hist_var_binned(self, hist2d, ibin_var, binning_scheme='generator'):
-        """Get 2d hist for given variable bin from massive 2D hist"""
-        # FIXME: assume no underflow?!
-        binning = self.generator_binning.FindNode("generatordistribution") if binning_scheme == "generator" else self.detector_binning.FindNode("detectordistribution")
-        var_bins = np.array(binning.GetDistributionBinning(0))
-        pt_bins = np.array(binning.GetDistributionBinning(1))
-
-        # need the -1 on ibin_var, as it references an array index, whereas ROOT bins start at 1
-        h = ROOT.TH1D("h2d_%d_%s" % (ibin_var, cu.get_unique_str()), "", len(pt_bins)-1, pt_bins)
-        for pt_ind, pt_value in enumerate(pt_bins[:-1], 1):
-            this_val = pt_value * 1.001  # ensure its inside
-            bin_num = binning.GetGlobalBinNumber(var_bins[ibin_var]*1.001, this_val)
-            for pt_ind2, pt_value2 in enumerate(pt_bins[:-1], 1):
-                this_val2 = pt_value * 1.001  # ensure its inside
-                bin_num2 = binning.GetGlobalBinNumber(var_bins[ibin_var]*1.001, this_val2)
-                h.SetBinContent(pt_ind, pt_ind2, hist2d.GetBinContent(bin_num, bin_num2))
-                h.SetBinError(pt_ind, pt_ind2, hist2d.GetBinError(bin_num, bin_num2))
-        return h
-
     @staticmethod
     def calculate_singular_max_min(matrix):
         """Calculate max & min singular values condition number as per StatsComm guidelines
@@ -1078,7 +1005,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
 
             for ibin_pt, (pt_low, pt_high) in enumerate(zip(pt_bin_edges[:-1], pt_bin_edges[1:])):
                 # plot component (delta * V_inv * delta) for this pt bin
-                this_h = self.get_var_hist_pt_binned(components_hist, ibin_pt, binning_scheme='detector' if detector_space else 'generator')
+                this_h = self.hist_bin_chopper.get_var_hist_pt_binned(components_hist, ibin_pt, binning_scheme='detector' if detector_space else 'generator')
                 entries = [
                     Contribution(this_h, label=None)
                 ]
@@ -1095,7 +1022,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
                 plot.save(os.path.join(debugging_dir, 'components_pt_bin_%d.pdf' % (ibin_pt)))
 
                 # plot delta for this pt bin
-                this_delta = self.get_var_hist_pt_binned(delta_hist, ibin_pt, binning_scheme='detector' if detector_space else 'generator')
+                this_delta = self.hist_bin_chopper.get_var_hist_pt_binned(delta_hist, ibin_pt, binning_scheme='detector' if detector_space else 'generator')
                 entries = [
                     Contribution(this_delta, label=None)
                 ]

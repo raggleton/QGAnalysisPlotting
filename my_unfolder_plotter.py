@@ -1082,9 +1082,7 @@ class MyUnfolderPlotter(object):
         means, means_err = [], []
         rms, rms_err = [], []
         for ibin_pt in range(0, len(self.unfolder.pt_bin_edges_gen)-1):
-            hist = qgp.normalise_hist_divide_bin_width(
-                        self.unfolder.get_var_hist_pt_binned(self.unfolder.unfolded, ibin_pt, binning_scheme='generator')
-                    )
+            hist = self.unfolder.hist_bin_chopper.get_lambda_bin_normed_div_bin_width(self.unfolder.unfolded, ibin_pt, binning_scheme='generator')
             means.append(hist.GetMean())
             means_err.append(hist.GetMeanError())
             rms.append(hist.GetRMS())
@@ -1120,11 +1118,9 @@ class MyUnfolderPlotter(object):
             syst_means, syst_means_err = [], []
             syst_rms, syst_rms_err = [], []
             for ibin_pt in range(0, len(self.unfolder.pt_bin_edges_gen)-1):
-                hist = qgp.normalise_hist_divide_bin_width(
-                        self.unfolder.get_var_hist_pt_binned(
-                            self.unfolder.get_syst_shifted_hist(syst_name, unfolded=self.unfolder.unfolded_stat_err),
-                                                           ibin_pt, binning_scheme='generator')
-                        )
+                hist = self.unfolder.hist_bin_chopper.get_pt_bin_normed_div_bin_width(
+                          self.unfolder.get_syst_shifted_hist(syst_name, unfolded=self.unfolder.unfolded_stat_err),
+                          ibin_pt, binning_scheme='generator')
                 syst_means.append(hist.GetMean())
                 syst_means_err.append(hist.GetMeanError())
                 syst_rms.append(hist.GetRMS())
