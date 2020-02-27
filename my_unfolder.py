@@ -558,6 +558,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             self.get_delta_sys_shift(syst_label)
             self.get_ematrix_syst(syst_label)
             self.get_syst_shifted_hist(syst_label)
+        self.setup_normalised_results()
 
     @staticmethod
     def make_hist_from_diagonal_errors(h2d, do_sqrt=True):
@@ -1092,6 +1093,81 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         return chi2, ndof, p
 
 
+    # METHODS FOR NORMALISED RESULTS
+    # --------------------------------------------------------------------------
+    @staticmethod
+    def remove_error_bars(h):
+        for i in range(1, h.GetNbinsX()+1):
+            h.SetBinError(i, 0)
+
+    def setup_normalised_results(self):
+        """Setup normalised results per pt bin.
+
+        In particular recalculates uncertainties, since the systematic one are non-trivial.
+        We must re-calcualted the systematic shifts on the _normalised_ result,
+        then add those in quadrature per bin of each histogram.
+        """
+        self.hist_bin_chopper.add_obj('unfolded', self.get_output())
+        self.hist_bin_chopper.add_obj('unfolded_stat_err', self.get_unfolded_with_ematrix_stat())
+        self.hist_bin_chopper.add_obj('unfolded_rsp_err', self.get_unfolded_with_ematrix_rsp())
+
+        for syst_label in self.syst_maps.keys():
+            shifted_name = 'syst_shifted_%s_unfolded' % cu.no_space_str(syst_label)
+            self.hist_bin_chopper.add_obj(shifted_name, self.get_syst_shifted_hist(syst_label, unfolded=self.get_unfolded_with_ematrix_stat()))
+
+            # add this to to HistBinChopper for later, but it isn't used
+            # Just to bypass internal checks that it exists in its cached objects
+            shift_name = 'syst_shift_%s' % cu.no_space_str(syst_label)
+            self.hist_bin_chopper.add_obj(shift_name, self.get_delta_sys_shift(syst_label))
+
+            # Now manually recalculate the syst shifts and store them
+            for ibin_pt in range(len(self.pt_bin_edges_gen[:-1])):
+                syst_hist = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width(shifted_name, ibin_pt, binning_scheme='generator').Clone()
+                nominal_hist = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded_stat_err', ibin_pt, binning_scheme='generator')
+                syst_hist.Add(nominal_hist, -1)
+                self.remove_error_bars(syst_hist)
+                key = self.hist_bin_chopper._generate_key('syst_shift_%s' % cu.no_space_str(syst_label),
+                                                          ind=ibin_pt,
+                                                          axis='pt',
+                                                          do_norm=True,
+                                                          do_div_bin_width=True,
+                                                          binning_scheme='generator')
+                self.hist_bin_chopper._cache[key] = syst_hist
+
+        def _convert_error_shift_to_error_bars(h_unshifted, h_shifted):
+            h = h_unshifted.Clone(cu.get_unique_str())
+            for i in range(1, h_unshifted.GetNbinsX()+1):
+                h.SetBinError(i, h_shifted.GetBinContent(i))
+            return h
+
+        # For each pt bin, recalculate total error in quadrature and store in unfolded hist
+        for ibin_pt in range(len(self.pt_bin_edges_gen[:-1])):
+            unfolded_hist_bin_stat_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded_stat_err', ibin_pt, binning_scheme='generator')
+            unfolded_hist_bin_rsp_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded_rsp_err', ibin_pt, binning_scheme='generator')
+
+            error_bar_hists = [unfolded_hist_bin_stat_errors, unfolded_hist_bin_rsp_errors]
+            # convert all shifts to error bars
+            for syst_label in self.syst_maps.keys():
+                obj_name = 'syst_shift_%s' % cu.no_space_str(syst_label)
+                syst_shift = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width(obj_name, ibin_pt, binning_scheme='generator')
+                error_bar_hists.append(_convert_error_shift_to_error_bars(unfolded_hist_bin_stat_errors, syst_shift))
+
+            # Get normalised hist with nominal unfolded value, and change error bars
+            # to be quadrature sum of those we want (stat+rsp+systs)
+            h_total = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded', ibin_pt, binning_scheme='generator')
+            for i in range(1, h_total.GetNbinsX()+1):
+                err2 = sum([pow(h.GetBinError(i), 2) for h in error_bar_hists])
+                h_total.SetBinError(i, math.sqrt(err2))
+
+            # Update cache
+            key = self.hist_bin_chopper._generate_key('unfolded',
+                                                      ind=ibin_pt,
+                                                      axis='pt',
+                                                      do_norm=True,
+                                                      do_div_bin_width=True,
+                                                      binning_scheme='generator')
+            self.hist_bin_chopper._cache[key] = h_total
+
 
 def unfolder_from_tdir(tdir):
     """Recover MyUnfolder from tdirectory
@@ -1143,6 +1219,8 @@ def unfolder_from_tdir(tdir):
     for attr_name in MyUnfolder._simple_attr:
         obj = tdir.Get(attr_name)
         setattr(unfolder, attr_name, obj)
+
+    unfolder.setup_normalised_results()
 
     return unfolder
 
