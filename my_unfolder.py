@@ -1323,6 +1323,7 @@ class HistBinChopper(object):
         thing = self.generator_binning if binning_scheme == "generator" else self.detector_binning
         if thing is None:
             raise RuntimeError("No valid TUnfoldBinning object for binning scheme '%s'" % binning_scheme)
+        return thing
 
     def add_obj(self, name, obj):
         # TODO: allow overwrite?
