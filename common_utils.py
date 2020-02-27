@@ -9,6 +9,7 @@ from sys import platform as _platform
 import numpy as np
 import math
 import argparse
+from array import array
 from itertools import chain
 from collections import OrderedDict
 
@@ -365,7 +366,7 @@ def get_bin_edges(hist, axis):
 
 
 class Marker(object):
-    
+
     shape_dict = OrderedDict()
     shape_dict['circle'] = {'filled': 20, 'open': 24}
     shape_dict['square'] = {'filled': 21, 'open': 25}
@@ -377,7 +378,7 @@ class Marker(object):
     shape_dict['crossX'] = {'filled': 47, 'open': 46}
     shape_dict['doubleDiamond'] = {'filled': 43, 'open': 42}
     shape_dict['3star'] = {'filled': 39, 'open': 37}
-    
+
 
     def __init__(self, shape='circle', filled=True):
         self.fill_state = filled
@@ -386,7 +387,7 @@ class Marker(object):
     @staticmethod
     def get(shape, filled=True):
         if shape not in Marker.shape_dict.keys():
-            raise RuntimeError("Unknown marker shape %s" % (shape))        
+            raise RuntimeError("Unknown marker shape %s" % (shape))
         return Marker.shape_dict[shape]['filled' if filled else 'open']
 
     def cycle(self, filled=True, cycle_filling=False, only_cycle_filling=False):
@@ -413,4 +414,170 @@ def no_space_str(s):
 
 def str_restore_space(s):
     return s.replace(SPACE_REPLACEMENT_CHAR, " ")
+
+
+# Various methods to convert between ROOT things and numpy
+# ------------------------------------------------------------------------------
+
+def tmatrixdsparse_to_ndarray(matrix):
+    ndarr = np.zeros(shape=(matrix.GetNrows(), matrix.GetNcols()))
+
+    rows_A = matrix.GetRowIndexArray()
+    cols_A = matrix.GetColIndexArray()
+    data_A = matrix.GetMatrixArray()
+    for iy in range(matrix.GetNrows()):
+        for indexA in range(rows_A[iy], rows_A[iy+1]):
+            ix = cols_A[indexA]
+            # print([x for x in self.GetXToHist()])
+            # TODO: care about orientation?
+            ndarr[iy, ix] = data_A[indexA]
+    return ndarr
+
+
+def th2_to_tmatrixd(hist, include_uflow=False, include_oflow=False):
+    n_rows = hist.GetNbinsY()
+    n_cols = hist.GetNbinsX()
+
+    # ignore for now as too complicated
+    # if include_uflow:
+    #     n_rows += 1
+    #     n_cols += 1
+    # if include_oflow:
+    #     n_rows += 1
+    #     n_cols += 1
+
+    # taken from https://root.cern.ch/doc/master/TH2_8cxx_source.html#l03739
+    m = ROOT.TMatrixD(n_rows, n_cols)
+    ilow = m.GetRowLwb()
+    iup  = m.GetRowUpb()
+    jlow = m.GetColLwb()
+    jup  = m.GetColUpb()
+    for i in range(ilow, iup+1):
+        for j in range(jlow, jup+1):
+            m[i,j] = hist.GetBinContent(j-jlow+1,i-ilow+1)
+    return m
+
+
+def th1_to_ndarray(hist_A, oflow_x=False):
+    """Convert TH1 to numpy ndarray"""
+    ncol = hist_A.GetNbinsX()
+    if oflow_x:
+        ncol += 2
+    result = np.zeros(shape=(1, ncol), dtype=np.float64)
+    errors = np.zeros(shape=(1, ncol), dtype=np.float64)
+
+    # Get ROOT indices to loop over
+    x_start = 0 if oflow_x else 1
+    x_end = hist_A.GetNbinsX()
+    if oflow_x:
+        x_end += 1
+
+    # x_ind for numpy as always starts at 0
+    # ix for ROOT
+    for x_ind, ix in enumerate(range(x_start, x_end+1)):
+        result[0][x_ind] = hist_A.GetBinContent(ix)
+        errors[0][x_ind] = hist_A.GetBinError(ix)
+
+    # check sparsity
+    return result, errors
+
+
+def ndarray_to_th1(nd_array, has_oflow_x=False):
+    """Convert numpy ndarray row vector to TH1, with shape (1, nbins)
+
+    Use has_oflow_x to include the under/overflow bins
+    """
+    nbinsx = nd_array.shape[1]
+    nbins_hist = nbinsx
+    if has_oflow_x:
+        nbins_hist -= 2
+
+    # need the 0.5 offset to match TUnfold
+    h = ROOT.TH1F(get_unique_str(), "", nbins_hist, 0.5, nbins_hist+0.5)
+
+    x_start = 1
+    x_end = nbins_hist
+
+    if has_oflow_x:
+        x_start = 0
+        x_end = nbins_hist+1
+
+    for x_ind, ix in enumerate(range(x_start, x_end+1)):
+        h.SetBinContent(ix, nd_array[0][x_ind])
+        h.SetBinError(ix, math.sqrt(abs(nd_array[0][x_ind])))
+        #FIXME how to do errors
+    return h
+
+
+def th2_to_ndarray(hist_A, oflow_x=False, oflow_y=False):
+    """Convert TH2 to numpy ndarray
+
+    Don't use verison in common_utils - wrong axes?
+    """
+    ncol = hist_A.GetNbinsX()
+    if oflow_x:
+        ncol += 2
+    nrow = hist_A.GetNbinsY()
+    if oflow_y:
+        nrow += 2
+
+    result = np.zeros(shape=(nrow, ncol), dtype=np.float64)
+    errors = np.zeros(shape=(nrow, ncol), dtype=np.float64)
+    # access via result[irow][icol]
+
+    # Get ROOT indices to loop over
+    y_start = 0 if oflow_y else 1
+    y_end = hist_A.GetNbinsY()
+    if oflow_y:
+        y_end += 1
+
+    x_start = 0 if oflow_x else 1
+    x_end = hist_A.GetNbinsX()
+    if oflow_x:
+        x_end += 1
+
+    # y_ind, x_ind for numpy as always starts at 0
+    # iy, ix for ROOT
+    for y_ind, iy in enumerate(range(y_start, y_end+1)):
+        for x_ind, ix in enumerate(range(x_start, x_end+1)):
+            result[y_ind][x_ind] = hist_A.GetBinContent(ix, iy)
+            errors[y_ind][x_ind] = hist_A.GetBinError(ix, iy)
+
+    # check sparsity
+    # num_empty = np.count_nonzero(result == 0)
+    # num_entries = result.size
+    # sparsity = num_empty / float(num_entries)
+    # print("Converting TH2 to ndarray...")
+    # print("num_empty:", num_empty)
+    # print("num_entries:", num_entries)
+    # print("sparsity:", sparsity)
+    # if (sparsity > 0.5):
+    #     print("Matrix has %d/%d empty entries - consider using sparse matrix (which I don't know how to do yet)" % (num_empty, num_entries))
+
+    return result, errors
+
+
+def ndarray_to_th2(data):
+    nbinsy, nbinsx = data.shape
+    binsx = array('d', list(range(1, nbinsx+2)))
+    binsy = array('d', list(range(1, nbinsy+2)))
+    h = ROOT.TH2D(get_unique_str(), "", nbinsx, binsx, nbinsy, binsy)
+    for ix in range(nbinsx):
+        for iy in range(nbinsy):
+            h.SetBinContent(ix+1, iy+1, data[iy,ix])
+            h.SetBinError(ix+1, iy+1, 0)
+    return h
+
+
+def normalise_ndarray(matrix, by):
+    if by == 'col':
+        matrix = matrix.T # makes life a bit easier
+    for i in range(matrix.shape[0]):
+        row_sum = matrix[i].sum()
+        if row_sum != 0:
+            matrix[i] = matrix[i] / row_sum
+    if by == 'col':
+        return matrix.T
+    else:
+        return matrix
 

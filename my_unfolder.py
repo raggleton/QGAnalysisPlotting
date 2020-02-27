@@ -177,7 +177,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         # Otherwise it makes a TH1
         self.use_axis_binning = False
         # self.probability_ndarray = self.response_matrix_to_probability_array(self.response_map)
-        # self.probability_ndarray, _ = self.th2_to_ndarray(self.get_probability_matrix(), oflow_x=False, oflow_y=False)
+        # self.probability_ndarray, _ = cu.th2_to_ndarray(self.get_probability_matrix(), oflow_x=False, oflow_y=False)
         # self.probability_ndarray, _ = None, None
 
         # hists that will be assigned later
@@ -640,7 +640,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
     def probability_ndarray(self):
         cached_attr_name = '_probability_ndarray'
         if not hasattr(self, cached_attr_name):
-            arr, _ = self.th2_to_ndarray(self.get_probability_matrix())
+            arr, _ = cu.th2_to_ndarray(self.get_probability_matrix())
             setattr(self, cached_attr_name, arr)
         return getattr(self, cached_attr_name)
 
@@ -667,7 +667,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
     def ematrix_stat_response_ndarray(self):
         cached_attr_name = '_ematrix_stat_response_ndarray'
         if not hasattr(self, cached_attr_name):
-            arr, _ = self.th2_to_ndarray(self.get_ematrix_stat_response())
+            arr, _ = cu.th2_to_ndarray(self.get_ematrix_stat_response())
             setattr(self, cached_attr_name, arr)
         return getattr(self, cached_attr_name)
 
@@ -683,7 +683,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
     def ematrix_total_ndarray(self):
         cached_attr_name = '_ematrix_total_ndarray'
         if not hasattr(self, cached_attr_name):
-            arr, _ = self.th2_to_ndarray(self.get_ematrix_total())
+            arr, _ = cu.th2_to_ndarray(self.get_ematrix_total())
             setattr(self, cached_attr_name, arr)
         return getattr(self, cached_attr_name)
 
@@ -703,7 +703,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
     def ematrix_stat_ndarray(self):
         cached_attr_name = '_ematrix_stat_ndarray'
         if not hasattr(self, cached_attr_name):
-            arr, _ = self.th2_to_ndarray(self.get_ematrix_stat())
+            arr, _ = cu.th2_to_ndarray(self.get_ematrix_stat())
             setattr(self, cached_attr_name, arr)
         return getattr(self, cached_attr_name)
 
@@ -728,7 +728,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
     def ematrix_syst_ndarray(self, syst_label):
         cached_attr_name = '_ematrix_syst_%s_ndarray' % (cu.no_space_str(syst_label))
         if not hasattr(self, cached_attr_name):
-            arr, _ = self.th2_to_ndarray(self.get_ematrix_syst(syst_label))
+            arr, _ = cu.th2_to_ndarray(self.get_ematrix_syst(syst_label))
             setattr(self, cached_attr_name, arr)
         return getattr(self, cached_attr_name)
 
@@ -753,7 +753,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         if getattr(self, 'vyy_inv_ndarray', None) is None:
             if getattr(self, 'vyy_inv_tmatrix', None) is None:
                 self.vyy_inv_tmatrix = self.GetVyyInv()
-            self.vyy_inv_ndarray = self.tmatrixdsparse_to_ndarray(self.vyy_inv_tmatrix)
+            self.vyy_inv_ndarray = cu.tmatrixdsparse_to_ndarray(self.vyy_inv_tmatrix)
         return self.vyy_inv_ndarray
 
     def get_vyy_no_bg_th2(self):
@@ -764,7 +764,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
 
     def get_vyy_no_bg_ndarray(self):
         if getattr(self, 'vyy_no_bg_ndarray', None) is None:
-            self.vyy_no_bg_ndarray, _ = self.th2_to_ndarray(self.get_vyy_no_bg_th2())
+            self.vyy_no_bg_ndarray, _ = cu.th2_to_ndarray(self.get_vyy_no_bg_th2())
         return self.vyy_no_bg_ndarray
 
     def get_vyy_inv_no_bg_th2(self):
@@ -780,7 +780,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
 
     def get_vyy_inv_no_bg_ndarray(self):
         if getattr(self, 'vyy_inv_no_bg_ndarray', None) is None:
-            self.vyy_inv_no_bg_ndarray, _ = self.th2_to_ndarray(self.get_vyy_inv_no_bg_th2())
+            self.vyy_inv_no_bg_ndarray, _ = cu.th2_to_ndarray(self.get_vyy_inv_no_bg_th2())
         return self.vyy_inv_no_bg_ndarray
 
     def get_vxx_inv_th2(self):
@@ -796,7 +796,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
 
     def get_vxx_inv_ndarray(self):
         if getattr(self, 'vxx_inv_ndarray', None) is None:
-            self.vxx_inv_ndarray, _ = self.th2_to_ndarray(self.get_vxx_inv_th2())
+            self.vxx_inv_ndarray, _ = cu.th2_to_ndarray(self.get_vxx_inv_th2())
         return self.vxx_inv_ndarray
 
     # METHODS TO CHOP UP BIG 1D/2D HISTS
@@ -873,45 +873,6 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         return h
 
     @staticmethod
-    def tmatrixdsparse_to_ndarray(matrix):
-        ndarr = np.zeros(shape=(matrix.GetNrows(), matrix.GetNcols()))
-
-        rows_A = matrix.GetRowIndexArray()
-        cols_A = matrix.GetColIndexArray()
-        data_A = matrix.GetMatrixArray()
-        for iy in range(matrix.GetNrows()):
-            for indexA in range(rows_A[iy], rows_A[iy+1]):
-                ix = cols_A[indexA]
-                # print([x for x in self.GetXToHist()])
-                # TODO: care about orientation?
-                ndarr[iy, ix] = data_A[indexA]
-        return ndarr
-
-    @staticmethod
-    def th2_to_tmatrixd(hist, include_uflow=False, include_oflow=False):
-        n_rows = hist.GetNbinsY()
-        n_cols = hist.GetNbinsX()
-
-        # ignore for now as too complicated
-        # if include_uflow:
-        #     n_rows += 1
-        #     n_cols += 1
-        # if include_oflow:
-        #     n_rows += 1
-        #     n_cols += 1
-
-        # taken from https://root.cern.ch/doc/master/TH2_8cxx_source.html#l03739
-        m = ROOT.TMatrixD(n_rows, n_cols)
-        ilow = m.GetRowLwb()
-        iup  = m.GetRowUpb()
-        jlow = m.GetColLwb()
-        jup  = m.GetColUpb()
-        for i in range(ilow, iup+1):
-            for j in range(jlow, jup+1):
-                m[i,j] = hist.GetBinContent(j-jlow+1,i-ilow+1)
-        return m
-
-    @staticmethod
     def calculate_singular_max_min(matrix):
         """Calculate max & min singular values condition number as per StatsComm guidelines
 
@@ -938,7 +899,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         These are also stored for later usage if needed (since expensive to calc)
         """
         if getattr(self, 'condition_number', None) is None:
-            sigma_max, sigma_min = self.calculate_singular_max_min(self.th2_to_tmatrixd(self.get_probability_matrix()))
+            sigma_max, sigma_min = self.calculate_singular_max_min(cu.th2_to_tmatrixd(self.get_probability_matrix()))
             if sigma_min == 0:
                 # avoid DivisionError
                 print("Minmum singular value = 0, condition number = Infinity")
@@ -956,130 +917,6 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             print(" - You probably should regularize this")
         else:
             print(" - You probably should look into regularization")
-
-    @staticmethod
-    def th1_to_ndarray(hist_A, oflow_x=False):
-        """Convert TH1 to numpy ndarray"""
-        ncol = hist_A.GetNbinsX()
-        if oflow_x:
-            ncol += 2
-        result = np.zeros(shape=(1, ncol), dtype=np.float64)
-        errors = np.zeros(shape=(1, ncol), dtype=np.float64)
-
-        # Get ROOT indices to loop over
-        x_start = 0 if oflow_x else 1
-        x_end = hist_A.GetNbinsX()
-        if oflow_x:
-            x_end += 1
-
-        # x_ind for numpy as always starts at 0
-        # ix for ROOT
-        for x_ind, ix in enumerate(range(x_start, x_end+1)):
-            result[0][x_ind] = hist_A.GetBinContent(ix)
-            errors[0][x_ind] = hist_A.GetBinError(ix)
-
-        # check sparsity
-        return result, errors
-
-    @staticmethod
-    def ndarray_to_th1(nd_array, has_oflow_x=False):
-        """Convert numpy ndarray row vector to TH1, with shape (1, nbins)
-
-        Use has_oflow_x to include the under/overflow bins
-        """
-        nbinsx = nd_array.shape[1]
-        nbins_hist = nbinsx
-        if has_oflow_x:
-            nbins_hist -= 2
-
-        # need the 0.5 offset to match TUnfold
-        h = ROOT.TH1F(cu.get_unique_str(), "", nbins_hist, 0.5, nbins_hist+0.5)
-
-        x_start = 1
-        x_end = nbins_hist
-
-        if has_oflow_x:
-            x_start = 0
-            x_end = nbins_hist+1
-
-        for x_ind, ix in enumerate(range(x_start, x_end+1)):
-            h.SetBinContent(ix, nd_array[0][x_ind])
-            h.SetBinError(ix, math.sqrt(abs(nd_array[0][x_ind])))
-            #FIXME how to do errors
-        return h
-
-    @staticmethod
-    def th2_to_ndarray(hist_A, oflow_x=False, oflow_y=False):
-        """Convert TH2 to numpy ndarray
-
-        Don't use verison in common_utils - wrong axes?
-        """
-        ncol = hist_A.GetNbinsX()
-        if oflow_x:
-            ncol += 2
-        nrow = hist_A.GetNbinsY()
-        if oflow_y:
-            nrow += 2
-
-        result = np.zeros(shape=(nrow, ncol), dtype=np.float64)
-        errors = np.zeros(shape=(nrow, ncol), dtype=np.float64)
-        # access via result[irow][icol]
-
-        # Get ROOT indices to loop over
-        y_start = 0 if oflow_y else 1
-        y_end = hist_A.GetNbinsY()
-        if oflow_y:
-            y_end += 1
-
-        x_start = 0 if oflow_x else 1
-        x_end = hist_A.GetNbinsX()
-        if oflow_x:
-            x_end += 1
-
-        # y_ind, x_ind for numpy as always starts at 0
-        # iy, ix for ROOT
-        for y_ind, iy in enumerate(range(y_start, y_end+1)):
-            for x_ind, ix in enumerate(range(x_start, x_end+1)):
-                result[y_ind][x_ind] = hist_A.GetBinContent(ix, iy)
-                errors[y_ind][x_ind] = hist_A.GetBinError(ix, iy)
-
-        # check sparsity
-        # num_empty = np.count_nonzero(result == 0)
-        # num_entries = result.size
-        # sparsity = num_empty / float(num_entries)
-        # print("Converting TH2 to ndarray...")
-        # print("num_empty:", num_empty)
-        # print("num_entries:", num_entries)
-        # print("sparsity:", sparsity)
-        # if (sparsity > 0.5):
-        #     print("Matrix has %d/%d empty entries - consider using sparse matrix (which I don't know how to do yet)" % (num_empty, num_entries))
-
-        return result, errors
-
-    @staticmethod
-    def ndarray_to_th2(data):
-        nbinsy, nbinsx = data.shape
-        binsx = array('d', list(range(1, nbinsx+2)))
-        binsy = array('d', list(range(1, nbinsy+2)))
-        h = ROOT.TH2D(cu.get_unique_str(), "", nbinsx, binsx, nbinsy, binsy)
-        for ix in range(nbinsx):
-            for iy in range(nbinsy):
-                h.SetBinContent(ix+1, iy+1, data[iy,ix])
-                h.SetBinError(ix+1, iy+1, 0)
-        return h
-
-    @staticmethod
-    def normalise_ndarray(matrix, by):
-        if by == 'col':
-            matrix = matrix.T # makes life a bit easier
-        for i in range(matrix.shape[0]):
-            row_sum = matrix[i].sum()
-            if row_sum != 0:
-                matrix[i] = matrix[i] / row_sum
-        if by == 'col':
-            return matrix.T
-        else:
-            return matrix
 
     # METHODS FOR FORWARD-FOLDING & CHI2 TESTS
     # --------------------------------------------------------------------------
@@ -1100,18 +937,18 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             oflow = False
 
             # Get unfolded results as array
-            unfolded_vector, _ = self.th1_to_ndarray(self.unfolded, oflow)
+            unfolded_vector, _ = cu.th1_to_ndarray(self.unfolded, oflow)
 
             # Multiply
             # Note that we need to transpose from row vec to column vec
             folded_vec = self.probability_ndarray.dot(unfolded_vector.T)
 
             # Convert vector to TH1
-            self.folded_unfolded = self.ndarray_to_th1(folded_vec.T, has_oflow_x=oflow)
+            self.folded_unfolded = cu.ndarray_to_th1(folded_vec.T, has_oflow_x=oflow)
 
             # Error propagation: if y = Ax, with covariance matrices Vyy and Vxx,
             # respectively, then Vyy = (A*Vxx)*A^T
-            unfolded_covariance_matrix, _ = self.th2_to_ndarray((self.get_ematrix_total()), oflow_x=oflow, oflow_y=oflow)
+            unfolded_covariance_matrix, _ = cu.th2_to_ndarray((self.get_ematrix_total()), oflow_x=oflow, oflow_y=oflow)
             result = self.probability_ndarray.dot(unfolded_covariance_matrix)
             folded_covariance = result.dot(self.probability_ndarray.T)
             folded_errors = self.make_hist_from_diagonal_errors(folded_covariance)
@@ -1123,18 +960,18 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
     def fold_generator_level(self, hist_truth):
         oflow = False
         # Convert hist to vector
-        gen_vec, gen_vec_err = self.th1_to_ndarray(hist_truth, oflow_x=oflow)
+        gen_vec, gen_vec_err = cu.th1_to_ndarray(hist_truth, oflow_x=oflow)
 
         # Multiply
         # Note that we need to transpose from row vec to column vec
         folded_vec = self.probability_ndarray.dot(gen_vec.T)
 
         # Convert vector to TH1
-        folded_mc_truth = self.ndarray_to_th1(folded_vec.T, has_oflow_x=oflow)
+        folded_mc_truth = cu.ndarray_to_th1(folded_vec.T, has_oflow_x=oflow)
 
         # Error propagation: if y = Ax, with covariance matrices Vyy and Vxx,
         # respectively, then Vyy = (A*Vxx)*A^T
-        vxx, _ = self.th2_to_ndarray(self.make_diag_cov_hist_from_errors(hist_truth, inverse=False), oflow)
+        vxx, _ = cu.th2_to_ndarray(self.make_diag_cov_hist_from_errors(hist_truth, inverse=False), oflow)
         result = self.probability_ndarray.dot(vxx)
         folded_covariance = result.dot(self.probability_ndarray.T)
         folded_errors = self.make_hist_from_diagonal_errors(folded_covariance)
@@ -1148,8 +985,8 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         return self.folded_mc_truth
 
     def calculate_chi2(self, one_hist, other_hist, cov_inv_matrix, detector_space=True, ignore_underflow_bins=True, debugging_dir=None):
-        one_vec, _ = self.th1_to_ndarray(one_hist, False)
-        other_vec, _ = self.th1_to_ndarray(other_hist, False)
+        one_vec, _ = cu.th1_to_ndarray(one_hist, False)
+        other_vec, _ = cu.th1_to_ndarray(other_hist, False)
         delta = one_vec - other_vec
 
         first_signal_bin = 1
@@ -1158,7 +995,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             delta[0][:first_signal_bin-1] = 0. # subtract 1 as numpy indices start at 0, hists start at 1
 
         if isinstance(cov_inv_matrix, ROOT.TH2):
-            v_inv, _ = self.th2_to_ndarray(cov_inv_matrix)
+            v_inv, _ = cu.th2_to_ndarray(cov_inv_matrix)
         else:
             v_inv = cov_inv_matrix
 
@@ -1182,7 +1019,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             plot.save(os.path.join(debugging_dir, 'one_other_hists.pdf'))
 
             # Delta, with missing bins if necessary
-            delta_hist = self.ndarray_to_th1(delta)
+            delta_hist = cu.ndarray_to_th1(delta)
             entries = [
                 Contribution(delta_hist)
             ]
@@ -1201,7 +1038,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             canv = ROOT.TCanvas("c", "Inverse covariance matrix V^{-1}", 800, 600)
             obj = cov_inv_matrix
             if not isinstance(cov_inv_matrix, ROOT.TH2):
-                obj = self.ndarray_to_th2(v_inv)
+                obj = cu.ndarray_to_th2(v_inv)
             obj.Draw("COLZ")
             canv.SetLeftMargin(0.15)
             canv.SetRightMargin(0.18)
@@ -1218,7 +1055,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
 
             # Components of delta * V_inv * delta before summing
             components = delta * inter.T
-            components_hist = self.ndarray_to_th1(components)
+            components_hist = cu.ndarray_to_th1(components)
             y_max = components_hist.GetMaximum() * 1.2
             entries = [
                 Contribution(components_hist)
@@ -1281,7 +1118,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
                 # -1 since ndarray is 0 index, th2 are 1-indexed
                 start = binning.GetGlobalBinNumber(var_bins[0] * 1.001, pt_bins[ibin_pt]*1.001) - 1
                 end = binning.GetGlobalBinNumber(var_bins[-2] * 1.001, pt_bins[ibin_pt]*1.001) - 1
-                this_cov = self.ndarray_to_th2(v_inv[start:end+1,start:end+1])
+                this_cov = cu.ndarray_to_th2(v_inv[start:end+1,start:end+1])
                 canv = ROOT.TCanvas(cu.get_unique_str(), "Inverse covariance matrix V^{-1}", 800, 600)
                 this_cov.SetTitle("Inverse covariance matrix V^{-1} for %g < p_{T} < %g GeV" % (pt_low, pt_high))
                 this_cov.Draw("COLZ TEXT")
