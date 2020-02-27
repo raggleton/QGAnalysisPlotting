@@ -689,20 +689,60 @@ class GenPtBinnedPlotter(object):
             unfolded_hist_bin_total_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded', ibin, binning_scheme='generator')
             # Get stat. unc. from input for this bin
             unfolded_hist_bin_stat_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded_stat_err', ibin, binning_scheme='generator')
+            # Get stat. unc. from response matrix for this bin
+            # Create unfolded hist, but with errors from response matrix stats
+            error_stat_response = self.unfolder.make_hist_from_diagonal_errors(self.unfolder.get_ematrix_stat_response(), do_sqrt=True) # note that bin contents need to be correct, otherwise won't normalise correctly
+            unfolded_syst_err = self.unfolder.unfolded.Clone("unfolded_syst_err")
+            self.unfolder.update_hist_bin_error(h_orig=error_stat_response, h_to_be_updated=unfolded_syst_err)
+            self.hist_bin_chopper.add_obj("unfolded_syst_err", unfolded_syst_err)
+            unfolded_hist_bin_rsp_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded_syst_err', ibin, binning_scheme='generator')
+
+            def _convert_error_shift_to_error_bars(h_unshifted, h_shifted):
+                h = h_unshifted.Clone(cu.get_unique_str())
+                for i in range(1, h_unshifted.GetNbinsX()+1):
+                    h.SetBinError(i, h_shifted.GetBinContent(i) - h_unshifted.GetBinContent(i))
+                return h
+            
+            def _remove_error_bars(h):
+                for i in range(1, h.GetNbinsX()+1):
+                    h.SetBinError(i, 0)
+
+            error_bar_hists = [unfolded_hist_bin_stat_errors, unfolded_hist_bin_rsp_errors]
 
             entries = []
             for syst_dict in self.region['experimental_systematics']:
                 syst_label_no_spaces = cu.no_space_str(syst_dict['label'])
                 self.hist_bin_chopper.add_obj('syst_shifted_%s_unfolded' % syst_label_no_spaces, self.unfolder.systs_shifted[syst_dict['label']])
                 syst_unfolded_hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('syst_shifted_%s_unfolded' % (syst_label_no_spaces), ibin, binning_scheme='generator')
+                _remove_error_bars(syst_unfolded_hist_bin)
                 c = Contribution(syst_unfolded_hist_bin,
                                  label=syst_dict['label'],
                                  line_color=syst_dict['colour'], line_width=self.line_width,
                                  line_style=2 if 'down' in syst_dict['label'].lower() else 1,
                                  marker_color=syst_dict['colour'], marker_size=0,
-                                 subplot=unfolded_hist_bin_total_errors)
+                                 subplot=unfolded_hist_bin_stat_errors)
                 entries.append(c)
 
+                h_syst = _convert_error_shift_to_error_bars(unfolded_hist_bin_total_errors, syst_unfolded_hist_bin)
+                error_bar_hists.append(h_syst)
+
+            h_total = unfolded_hist_bin_stat_errors.Clone(cu.get_unique_str())
+            for i in range(1, h_total.GetNbinsX()+1):
+                err2 = sum([pow(h.GetBinError(i), 2) for h in error_bar_hists])
+                h_total.SetBinError(i, math.sqrt(err2))
+
+            entries.append(
+                Contribution(unfolded_hist_bin_total_errors,
+                             label="Unfolded (#tau = %.3g) (total unc.)" % (self.unfolder.tau),
+                             line_color=ROOT.kRed, line_width=self.line_width, line_style=1,
+                             marker_color=ROOT.kRed, marker_style=20, marker_size=0.75),
+            )
+            entries.append(
+                Contribution(h_total,
+                             label="Unfolded (#tau = %.3g) (total normed unc.)" % (self.unfolder.tau),
+                             line_color=ROOT.kGreen, line_width=self.line_width, line_style=1,
+                             marker_color=ROOT.kGreen, marker_style=20, marker_size=0.75),
+            )
             entries.append(
                 Contribution(unfolded_hist_bin_stat_errors,
                              label="Unfolded (#tau = %.3g) (stat. unc.)" % (self.unfolder.tau),
@@ -727,7 +767,7 @@ class GenPtBinnedPlotter(object):
             plot.legend.SetY2(0.88)
             if len(entries) > 5: plot.legend.SetNColumns(2)
             # plot.subplot_limits = (0.9, 1.1)
-            plot.plot("NOSTACK E1")
+            plot.plot("NOSTACK ][ E1")
             plot.save("%s/unfolded_syst_variations_%s_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
 
     def plot_exp_syst_variation_normalised(self):
@@ -754,7 +794,6 @@ class GenPtBinnedPlotter(object):
             return h_new
 
         for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
-            # Calculate the new total for this bin
 
             # Get total for this bin
             unfolded_hist_bin_total_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded', ibin, binning_scheme='generator')
@@ -763,14 +802,20 @@ class GenPtBinnedPlotter(object):
             # Get stat. unc. from response matrix for this bin
             unfolded_hist_bin_rsp_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded_syst_err', ibin, binning_scheme='generator')
 
+            error_bar_hists = [unfolded_hist_bin_stat_errors, unfolded_hist_bin_rsp_errors]
+
+            def _convert_error_shift_to_error_bars(h_unshifted, h_shifted):
+                h = h_unshifted.Clone(cu.get_unique_str())
+                for i in range(1, h_unshifted.GetNbinsX()+1):
+                    h.SetBinError(i, h_shifted.GetBinContent(i) - h_unshifted.GetBinContent(i))
+                return h
+
             entries = []
-            tmp = []
             for syst_dict, mark in zip(self.region['experimental_systematics'], cu.Marker().cycle(cycle_filling=True)):
                 syst_label_no_spaces = cu.no_space_str(syst_dict['label'])
                 self.hist_bin_chopper.add_obj('syst_shifted_%s_unfolded' % syst_label_no_spaces, self.unfolder.systs_shifted[syst_dict['label']])
                 syst_unfolded_hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('syst_shifted_%s_unfolded' % (syst_label_no_spaces), ibin, binning_scheme='generator')
                 this_syst_hist = _convert_syst_shift_to_error_ratio_hist(syst_unfolded_hist_bin, unfolded_hist_bin_total_errors)
-                tmp.append(this_syst_hist)
                 c = Contribution(this_syst_hist,
                                  label=syst_dict['label'],
                                  line_color=syst_dict['colour'],
@@ -780,6 +825,15 @@ class GenPtBinnedPlotter(object):
                                  marker_color=syst_dict['colour'], marker_size=1.25,
                                  marker_style=mark)
                 entries.append(c)
+
+                h_syst = _convert_error_shift_to_error_bars(unfolded_hist_bin_total_errors, syst_unfolded_hist_bin)
+                error_bar_hists.append(h_syst)
+
+
+            h_total = unfolded_hist_bin_stat_errors.Clone(cu.get_unique_str())
+            for i in range(1, h_total.GetNbinsX()+1):
+                err2 = sum([pow(h.GetBinError(i), 2) for h in error_bar_hists])
+                h_total.SetBinError(i, math.sqrt(err2))
 
             entries.extend([
                 Contribution(_convert_error_bars_to_error_ratio_hist(unfolded_hist_bin_total_errors),
@@ -791,6 +845,16 @@ class GenPtBinnedPlotter(object):
                 Contribution(_convert_error_bars_to_error_ratio_hist(unfolded_hist_bin_total_errors, -1),
                              line_color=self.plot_colours['unfolded_total_colour'], line_width=self.line_width, line_style=2,
                              marker_color=self.plot_colours['unfolded_total_colour'], marker_style=20, marker_size=0,
+                             fill_style=0, fill_color=15),
+                Contribution(_convert_error_bars_to_error_ratio_hist(h_total),
+                             label="Total uncertainty normed",
+                             line_color=ROOT.kGreen, line_width=self.line_width, line_style=2,
+                             marker_color=ROOT.kGreen, marker_style=20, marker_size=0,
+                             fill_style=0, fill_color=15),
+                # Add in the -ve side, but no label as we don't want it in the legend
+                Contribution(_convert_error_bars_to_error_ratio_hist(h_total, -1),
+                             line_color=ROOT.kGreen, line_width=self.line_width, line_style=2,
+                             marker_color=ROOT.kGreen, marker_style=20, marker_size=0,
                              fill_style=0, fill_color=15),
                 Contribution(_convert_error_bars_to_error_ratio_hist(unfolded_hist_bin_stat_errors),
                              label="Input stats",
@@ -816,6 +880,7 @@ class GenPtBinnedPlotter(object):
 
             if not self.check_entries(entries, "plot_exp_syst_variation_normalised %d" % ibin):
                 return
+            xlim = calc_auto_xlim(entries)
             plot = Plot(entries,
                         xtitle=self.setup.particle_title,
                         ytitle='Variation / nominal (on normalised distribution)',
@@ -823,7 +888,7 @@ class GenPtBinnedPlotter(object):
                         title=self.get_pt_bin_title(bin_edge_low, bin_edge_high),
                         has_data=self.setup.has_data,
                         ylim=(0.7, 1.5),
-                        xlim=calc_auto_xlim(entries),
+                        xlim=xlim,
                         subplot_type=None)
             self._modify_plot(plot)
             plot.default_canvas_size = (800, 700)
@@ -833,6 +898,16 @@ class GenPtBinnedPlotter(object):
             plot.legend.SetY2(0.88)
             if len(entries) > 5: plot.legend.SetNColumns(2)
             plot.plot("NOSTACK P L") # hard to get one that is points for systs, and line for stats
+            plot.main_pad.cd()
+            if xlim is not None:
+                line = ROOT.TLine(xlim[0], 1, xlim[1], 1)
+            else:
+                xmin = unfolded_hist_bin_stat_errors.GetXaxis().GetBinLowEdge(1)
+                xmax = unfolded_hist_bin_stat_errors.GetXaxis().GetBinLowEdge(unfolded_hist_bin_stat_errors.GetNbinsX()+1)
+                line = ROOT.TLine(xmin, 1, xmax, 1)
+            line.SetLineColor(ROOT.kGray+2)
+            line.SetLineColor(ROOT.kBlack)
+            line.Draw()
             plot.save("%s/unfolded_syst_variations_vs_nominal_%s_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
 
 
