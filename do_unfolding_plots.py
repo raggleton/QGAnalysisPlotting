@@ -579,34 +579,24 @@ class GenPtBinnedPlotter(object):
 
     def plot_uncertainty_shifts_normalised(self):
         """Do plots of fractional uncertainty shifts on *normalised* unfolded distribution"""
-        # Create unfolded hist, but with errors from response matrix stats
-        error_stat_response = self.unfolder.make_hist_from_diagonal_errors(self.unfolder.get_ematrix_stat_response(), do_sqrt=True) # note that bin contents need to be correct, otherwise won't normalise correctly
-        unfolded_syst_err = self.unfolder.unfolded.Clone("unfolded_syst_err")
-        self.unfolder.update_hist_bin_error(h_orig=error_stat_response, h_to_be_updated=unfolded_syst_err)
-
         for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
             entries = []
             # Get total for this bin
-            unfolded_hist_bin_total_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded', ibin, binning_scheme='generator')
+            unfolded_hist_bin_total_errors = self.unfolder.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded', ibin, binning_scheme='generator')
             # Get stat. unc. from input for this bin
-            unfolded_hist_bin_stat_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded_stat_err', ibin, binning_scheme='generator')
+            unfolded_hist_bin_stat_errors = self.unfolder.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded_stat_err', ibin, binning_scheme='generator')
             # Get stat. unc. from response matrix for this bin
-            self.hist_bin_chopper.add_obj("unfolded_syst_err", unfolded_syst_err)
-            unfolded_hist_bin_rsp_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded_syst_err', ibin, binning_scheme='generator')
+            unfolded_hist_bin_rsp_errors = self.unfolder.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded_rsp_err', ibin, binning_scheme='generator')
 
             for syst_dict in self.region['experimental_systematics']:
-                # For each systematic, get the normalised shifted distribution for this bin
-                # Then calculate the shift wrt nominal result, and hence fraction,
-                # then save and plot that
-                syst_label_no_spaces = cu.no_space_str(syst_dict['label'])
-                self.hist_bin_chopper.add_obj('syst_shifted_%s_unfolded' % syst_label_no_spaces, self.unfolder.systs_shifted[syst_dict['label']])
-                syst_unfolded_hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('syst_shifted_%s_unfolded' % (syst_label_no_spaces), ibin, binning_scheme='generator')
-                syst_unfolded_fraction = syst_unfolded_hist_bin.Clone()
-                syst_unfolded_fraction.Add(unfolded_hist_bin_total_errors, -1)
+                # For each systematic, get the normalised shift and hence fraction
+                obj_name = 'syst_shift_%s' % cu.no_space_str(syst_dict['label'])
+                syst_unfolded_fraction = self.unfolder.hist_bin_chopper.get_pt_bin_normed_div_bin_width(obj_name, ibin, binning_scheme='generator').Clone()
                 syst_unfolded_fraction.Divide(unfolded_hist_bin_total_errors)
                 # Set to abs values so can plot log
                 for i in range(1, syst_unfolded_fraction.GetNbinsX()+1):
                     syst_unfolded_fraction.SetBinContent(i, abs(syst_unfolded_fraction.GetBinContent(i)))
+                    syst_unfolded_fraction.SetBinError(i, 0)
                 c = Contribution(syst_unfolded_fraction,
                                  label=syst_dict['label'],
                                  line_color=syst_dict['colour'],
@@ -686,34 +676,20 @@ class GenPtBinnedPlotter(object):
         """Plot shifted unfolded normalised distributions for each syst"""
         for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
             # Get total for this bin
-            unfolded_hist_bin_total_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded', ibin, binning_scheme='generator')
+            unfolded_hist_bin_total_errors = self.unfolder.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded', ibin, binning_scheme='generator')
             # Get stat. unc. from input for this bin
-            unfolded_hist_bin_stat_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded_stat_err', ibin, binning_scheme='generator')
+            unfolded_hist_bin_stat_errors = self.unfolder.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded_stat_err', ibin, binning_scheme='generator')
             # Get stat. unc. from response matrix for this bin
-            # Create unfolded hist, but with errors from response matrix stats
-            error_stat_response = self.unfolder.make_hist_from_diagonal_errors(self.unfolder.get_ematrix_stat_response(), do_sqrt=True) # note that bin contents need to be correct, otherwise won't normalise correctly
-            unfolded_syst_err = self.unfolder.unfolded.Clone("unfolded_syst_err")
-            self.unfolder.update_hist_bin_error(h_orig=error_stat_response, h_to_be_updated=unfolded_syst_err)
-            self.hist_bin_chopper.add_obj("unfolded_syst_err", unfolded_syst_err)
-            unfolded_hist_bin_rsp_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded_syst_err', ibin, binning_scheme='generator')
-
-            def _convert_error_shift_to_error_bars(h_unshifted, h_shifted):
-                h = h_unshifted.Clone(cu.get_unique_str())
-                for i in range(1, h_unshifted.GetNbinsX()+1):
-                    h.SetBinError(i, h_shifted.GetBinContent(i) - h_unshifted.GetBinContent(i))
-                return h
+            unfolded_hist_bin_rsp_errors = self.unfolder.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded_rsp_err', ibin, binning_scheme='generator')
 
             def _remove_error_bars(h):
                 for i in range(1, h.GetNbinsX()+1):
                     h.SetBinError(i, 0)
 
-            error_bar_hists = [unfolded_hist_bin_stat_errors, unfolded_hist_bin_rsp_errors]
-
             entries = []
             for syst_dict in self.region['experimental_systematics']:
                 syst_label_no_spaces = cu.no_space_str(syst_dict['label'])
-                self.hist_bin_chopper.add_obj('syst_shifted_%s_unfolded' % syst_label_no_spaces, self.unfolder.systs_shifted[syst_dict['label']])
-                syst_unfolded_hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('syst_shifted_%s_unfolded' % (syst_label_no_spaces), ibin, binning_scheme='generator')
+                syst_unfolded_hist_bin = self.unfolder.hist_bin_chopper.get_pt_bin_normed_div_bin_width('syst_shifted_%s_unfolded' % (syst_label_no_spaces), ibin, binning_scheme='generator')
                 _remove_error_bars(syst_unfolded_hist_bin)
                 c = Contribution(syst_unfolded_hist_bin,
                                  label=syst_dict['label'],
@@ -723,25 +699,11 @@ class GenPtBinnedPlotter(object):
                                  subplot=unfolded_hist_bin_stat_errors)
                 entries.append(c)
 
-                h_syst = _convert_error_shift_to_error_bars(unfolded_hist_bin_total_errors, syst_unfolded_hist_bin)
-                error_bar_hists.append(h_syst)
-
-            h_total = unfolded_hist_bin_stat_errors.Clone(cu.get_unique_str())
-            for i in range(1, h_total.GetNbinsX()+1):
-                err2 = sum([pow(h.GetBinError(i), 2) for h in error_bar_hists])
-                h_total.SetBinError(i, math.sqrt(err2))
-
             entries.append(
                 Contribution(unfolded_hist_bin_total_errors,
                              label="Unfolded (#tau = %.3g) (total unc.)" % (self.unfolder.tau),
                              line_color=ROOT.kRed, line_width=self.line_width, line_style=1,
                              marker_color=ROOT.kRed, marker_style=20, marker_size=0.75),
-            )
-            entries.append(
-                Contribution(h_total,
-                             label="Unfolded (#tau = %.3g) (total normed unc.)" % (self.unfolder.tau),
-                             line_color=ROOT.kGreen, line_width=self.line_width, line_style=1,
-                             marker_color=ROOT.kGreen, marker_style=20, marker_size=0.75),
             )
             entries.append(
                 Contribution(unfolded_hist_bin_stat_errors,
@@ -767,7 +729,7 @@ class GenPtBinnedPlotter(object):
             plot.legend.SetY2(0.88)
             if len(entries) > 5: plot.legend.SetNColumns(2)
             # plot.subplot_limits = (0.9, 1.1)
-            plot.plot("NOSTACK ][ E1")
+            plot.plot("NOSTACK E1")
             plot.save("%s/unfolded_syst_variations_%s_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
 
     def plot_exp_syst_variation_normalised(self):
@@ -796,25 +758,16 @@ class GenPtBinnedPlotter(object):
         for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
 
             # Get total for this bin
-            unfolded_hist_bin_total_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded', ibin, binning_scheme='generator')
+            unfolded_hist_bin_total_errors = self.unfolder.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded', ibin, binning_scheme='generator')
             # Get stat. unc. from input for this bin
-            unfolded_hist_bin_stat_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded_stat_err', ibin, binning_scheme='generator')
+            unfolded_hist_bin_stat_errors = self.unfolder.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded_stat_err', ibin, binning_scheme='generator')
             # Get stat. unc. from response matrix for this bin
-            unfolded_hist_bin_rsp_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded_syst_err', ibin, binning_scheme='generator')
-
-            error_bar_hists = [unfolded_hist_bin_stat_errors, unfolded_hist_bin_rsp_errors]
-
-            def _convert_error_shift_to_error_bars(h_unshifted, h_shifted):
-                h = h_unshifted.Clone(cu.get_unique_str())
-                for i in range(1, h_unshifted.GetNbinsX()+1):
-                    h.SetBinError(i, h_shifted.GetBinContent(i) - h_unshifted.GetBinContent(i))
-                return h
+            unfolded_hist_bin_rsp_errors = self.unfolder.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded_rsp_err', ibin, binning_scheme='generator')
 
             entries = []
             for syst_dict, mark in zip(self.region['experimental_systematics'], cu.Marker().cycle(cycle_filling=True)):
                 syst_label_no_spaces = cu.no_space_str(syst_dict['label'])
-                self.hist_bin_chopper.add_obj('syst_shifted_%s_unfolded' % syst_label_no_spaces, self.unfolder.systs_shifted[syst_dict['label']])
-                syst_unfolded_hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('syst_shifted_%s_unfolded' % (syst_label_no_spaces), ibin, binning_scheme='generator')
+                syst_unfolded_hist_bin = self.unfolder.hist_bin_chopper.get_pt_bin_normed_div_bin_width('syst_shifted_%s_unfolded' % (syst_label_no_spaces), ibin, binning_scheme='generator')
                 this_syst_hist = _convert_syst_shift_to_error_ratio_hist(syst_unfolded_hist_bin, unfolded_hist_bin_total_errors)
                 c = Contribution(this_syst_hist,
                                  label=syst_dict['label'],
@@ -826,15 +779,6 @@ class GenPtBinnedPlotter(object):
                                  marker_style=mark)
                 entries.append(c)
 
-                h_syst = _convert_error_shift_to_error_bars(unfolded_hist_bin_total_errors, syst_unfolded_hist_bin)
-                error_bar_hists.append(h_syst)
-
-
-            h_total = unfolded_hist_bin_stat_errors.Clone(cu.get_unique_str())
-            for i in range(1, h_total.GetNbinsX()+1):
-                err2 = sum([pow(h.GetBinError(i), 2) for h in error_bar_hists])
-                h_total.SetBinError(i, math.sqrt(err2))
-
             entries.extend([
                 Contribution(_convert_error_bars_to_error_ratio_hist(unfolded_hist_bin_total_errors),
                              label="Total uncertainty",
@@ -845,16 +789,6 @@ class GenPtBinnedPlotter(object):
                 Contribution(_convert_error_bars_to_error_ratio_hist(unfolded_hist_bin_total_errors, -1),
                              line_color=self.plot_colours['unfolded_total_colour'], line_width=self.line_width, line_style=2,
                              marker_color=self.plot_colours['unfolded_total_colour'], marker_style=20, marker_size=0,
-                             fill_style=0, fill_color=15),
-                Contribution(_convert_error_bars_to_error_ratio_hist(h_total),
-                             label="Total uncertainty normed",
-                             line_color=ROOT.kGreen, line_width=self.line_width, line_style=2,
-                             marker_color=ROOT.kGreen, marker_style=20, marker_size=0,
-                             fill_style=0, fill_color=15),
-                # Add in the -ve side, but no label as we don't want it in the legend
-                Contribution(_convert_error_bars_to_error_ratio_hist(h_total, -1),
-                             line_color=ROOT.kGreen, line_width=self.line_width, line_style=2,
-                             marker_color=ROOT.kGreen, marker_style=20, marker_size=0,
                              fill_style=0, fill_color=15),
                 Contribution(_convert_error_bars_to_error_ratio_hist(unfolded_hist_bin_stat_errors),
                              label="Input stats",
@@ -1273,11 +1207,6 @@ class GenLambdaBinnedPlotter(object):
 
     def plot_uncertainty_shifts_unnormalised(self):
         """Do plots of fractional uncertainty shifts on *unnormalised* unfolded distribution"""
-        # Create unfolded hist, but with errors from response matrix stats
-        error_stat_response = self.unfolder.make_hist_from_diagonal_errors(self.unfolder.get_ematrix_stat_response(), do_sqrt=True) # note that bin contents need to be correct, otherwise won't normalise correctly
-        unfolded_syst_err = self.unfolder.unfolded.Clone("unfolded_syst_err")
-        self.unfolder.update_hist_bin_error(h_orig=error_stat_response, h_to_be_updated=unfolded_syst_err)
-
         for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
             entries = []
             # Get total for this bin
@@ -1285,8 +1214,7 @@ class GenLambdaBinnedPlotter(object):
             # Get stat. unc. from input for this bin
             unfolded_hist_bin_stat_errors = self.hist_bin_chopper.get_lambda_bin_div_bin_width('unfolded_stat_err', ibin, binning_scheme='generator')
             # Get stat. unc. from response matrix for this bin
-            self.hist_bin_chopper.add_obj("unfolded_syst_err", unfolded_syst_err)
-            unfolded_hist_bin_rsp_errors = self.hist_bin_chopper.get_lambda_bin_div_bin_width('unfolded_syst_err', ibin, binning_scheme='generator')
+            unfolded_hist_bin_rsp_errors = self.hist_bin_chopper.get_lambda_bin_div_bin_width('unfolded_rsp_err', ibin, binning_scheme='generator')
 
             for syst_dict in self.region['experimental_systematics']:
                 # For each systematic, get the normalised shifted distribution for this bin
@@ -1705,8 +1633,9 @@ def do_all_plots_per_region_angle(setup, unpack_dict):
     # Big 1D plots to compare things
     hbc = HistBinChopper(generator_binning=unfolder.generator_binning.FindNode("generatordistribution"),
                          detector_binning=unfolder.detector_binning.FindNode("detectordistribution"))
-    hbc.add_obj("unfolded", unfolder.unfolded)
-    hbc.add_obj("unfolded_stat_err", unfolder.unfolded_stat_err)
+    hbc.add_obj("unfolded", unfolder.get_output())
+    hbc.add_obj('unfolded_stat_err', unfolder.get_unfolded_with_ematrix_stat())
+    hbc.add_obj('unfolded_rsp_err', unfolder.get_unfolded_with_ematrix_rsp())
     hbc.add_obj("hist_truth", unfolder.hist_truth)
 
     # Iterate through pt bins - gen binning
