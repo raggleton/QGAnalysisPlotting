@@ -72,6 +72,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         # unfolded
         "unfolded",
         "unfolded_stat_err",
+        "unfolded_rsp_err",
         # inverse cov for chi2 tests
         "vyy_inv_tmatrix",
         "vxx_inv_th2",
@@ -210,11 +211,12 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         self.backgrounds = {}  # gets filled with subtract_background()
         self.backgrounds_gen_binning = {}  # gets filled with subtract_background_gen_binning()
 
-        self.unfolded = None  # set in get_output()
+        self.unfolded = None  # set in get_output(), total error
         self.unfolded_stat_err = None  # set in get_unfolded_with_ematrix_stat()
+        self.unfolded_rsp_err = None  # set in get_unfolded_with_ematrix_rsp()
 
         self.syst_maps = {}  # gets filled with add_sys_error()
-        self.syst_shifts = {}  # gets filled with get_sys_shift(), just shift in unfolded value from specific syst
+        self.syst_shifts = {}  # gets filled with get_delta_sys_shift(), just shift in unfolded value from specific syst
         self.systs_shifted = {}  # gets filled with get_syst_shifted_hist(), holds total unfolded with syst shift
         self.syst_ematrices = {}  # gets filled with get_ematrix_syst(), holds ematrix for each systeamtic
 
@@ -512,7 +514,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             raise KeyError("No systematic %s, only have: %s" % (syst_label, ", ".join(self.syst_shifts.keys())))
         if self.systs_shifted[syst_label] is None:
             hist_shift = self.get_delta_sys_shift(syst_label).Clone('syst_shifted_unfolded_%s' % cu.no_space_str(syst_label))
-            unfolded = unfolded or self.unfolded_stat_err
+            unfolded = unfolded or self.get_unfolded_with_ematrix_stat()
             hist_shift.Add(unfolded)  # TODO what about errors?
             self.systs_shifted[syst_label] = hist_shift
         return self.systs_shifted[syst_label]
@@ -521,20 +523,20 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
     # --------------------------------------------------------------------------
     def get_output(self, hist_name='unfolded'):
         """Get 1D unfolded histogram covering all bins"""
-        print("Ndf:", self.GetNdf())
-        self.Ndf = self.GetNdf()
-        print("Npar:", self.GetNpar())
-        self.Npar = self.GetNpar()
-        print("chi2sys:", self.GetChi2Sys())
-        self.chi2sys = self.GetChi2Sys()
-        print("chi2A:", self.GetChi2A())
-        self.chi2A = self.GetChi2A()
-        print("chi2L:", self.GetChi2L())
-        self.chi2L = self.GetChi2L()
+        if getattr(self, 'unfolded', None) is None:
+            print("Ndf:", self.GetNdf())
+            self.Ndf = self.GetNdf()
+            print("Npar:", self.GetNpar())
+            self.Npar = self.GetNpar()
+            print("chi2sys:", self.GetChi2Sys())
+            self.chi2sys = self.GetChi2Sys()
+            print("chi2A:", self.GetChi2A())
+            self.chi2A = self.GetChi2A()
+            print("chi2L:", self.GetChi2L())
+            self.chi2L = self.GetChi2L()
 
-        self.unfolded = self.GetOutput(hist_name, "", self.output_distribution_name, "*[]", self.use_axis_binning)
-        print(type(self.unfolded))
-        print("unfolded has", self.unfolded.GetNbinsX())
+            self.unfolded = self.GetOutput(hist_name, "", self.output_distribution_name, "*[]", self.use_axis_binning)
+            print("self.unfolded is a", type(self.unfolded), "and has", self.unfolded.GetNbinsX())
         return self.unfolded
 
     def _post_process(self):
@@ -548,6 +550,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         self.get_probability_matrix()
         self.update_unfolded_with_ematrix_total()
         self.get_unfolded_with_ematrix_stat()
+        self.get_unfolded_with_ematrix_rsp()
         self.get_folded_unfolded()
         self.get_folded_mc_truth()
         for syst_label in self.syst_shifts.keys():
@@ -616,15 +619,23 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
     def update_unfolded_with_ematrix_total(self):
         """Update unfolded hist with total errors from total error matrix"""
         error_total_1d = self.make_hist_from_diagonal_errors(self.get_ematrix_total(), do_sqrt=True) # note that bin contents = 0, only bin errors are non-0
-        self.update_hist_bin_error(h_orig=error_total_1d, h_to_be_updated=self.unfolded)
+        self.update_hist_bin_error(h_orig=error_total_1d, h_to_be_updated=self.get_output())
 
     def get_unfolded_with_ematrix_stat(self):
         """Make copy of unfolded, but only stat errors"""
         if getattr(self, 'unfolded_stat_err', None) is None:
             error_1d = self.make_hist_from_diagonal_errors(self.get_ematrix_stat(), do_sqrt=True) # note that bin contents = 0, only bin errors are non-0
-            self.unfolded_stat_err = self.unfolded.Clone("unfolded_stat_err")
+            self.unfolded_stat_err = self.get_output().Clone("unfolded_stat_err")
             self.update_hist_bin_error(h_orig=error_1d, h_to_be_updated=self.unfolded_stat_err)
         return self.unfolded_stat_err
+
+    def get_unfolded_with_ematrix_rsp(self):
+        """Create unfolded with error bars from response matrix uncertainties"""
+        if getattr(self, 'unfolded_rsp_err', None) is None:
+            error_stat_response = self.make_hist_from_diagonal_errors(self.get_ematrix_stat_response(), do_sqrt=True) # note that bin contents need to be correct, otherwise won't normalise correctly
+            self.unfolded_rsp_err = self.get_output().Clone("unfolded_rsp_err")
+            self.update_hist_bin_error(h_orig=error_stat_response, h_to_be_updated=self.unfolded_rsp_err)
+        return self.unfolded_rsp_err
 
     def get_bias_vector(self):
         if getattr(self, "bias_vector", None) is None:
@@ -864,7 +875,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             oflow = False
 
             # Get unfolded results as array
-            unfolded_vector, _ = cu.th1_to_ndarray(self.unfolded, oflow)
+            unfolded_vector, _ = cu.th1_to_ndarray(self.get_output(), oflow)
 
             # Multiply
             # Note that we need to transpose from row vec to column vec
