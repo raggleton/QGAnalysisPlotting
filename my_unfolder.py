@@ -62,7 +62,6 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         "probability_matrix",
         # save error matrices
         "ematrix_input",
-        "ematrix_input_bg",
         "ematrix_stat_response",
         "ematrix_stat",
         "ematrix_tau",
@@ -653,13 +652,6 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         if getattr(self, "ematrix_input", None) is None:
             self.ematrix_input = self.GetEmatrixInput("ematrix_input_"+cu.get_unique_str(), "", self.output_distribution_name, "*[]", self.use_axis_binning)
         return self.ematrix_input
-
-    def get_ematrix_input_bg(self):
-        """Get error matrix due to statistics from thing being unfolded,
-        plus those from backgrounds"""
-        if getattr(self, "ematrix_input_bg", None) is None:
-            self.ematrix_input_bg = self.GetEmatrix("ematrix_input_bg_"+cu.get_unique_str(), "", self.output_distribution_name, "*[]", self.use_axis_binning)
-        return self.ematrix_input_bg
 
     def get_ematrix_stat_response(self):
         """Statistical uncertainty error matrix from response matrix, should be considered a systematic uncert"""
