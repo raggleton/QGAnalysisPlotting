@@ -226,6 +226,10 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         self.folded_unfolded_tunfold = None  # set in get_folded_unfolded()
         self.folded_mc_truth = None  # set in get_folded_mc_truth()
 
+        # For producing normalised distributions
+        self.hist_bin_chopper = HistBinChopper(generator_binning=self.generator_binning.FindNode("generatordistribution"),
+                                               detector_binning=self.detector_binning.FindNode("detectordistribution"))
+
     def save_binning(self, print_xml=True, txt_filename=None):
         """Save binning scheme to txt and/or print XML to screen"""
         if txt_filename:
@@ -1469,19 +1473,99 @@ def unpack_unfolding_root_file(input_tfile, region, angle, do_alt_response=True,
 class HistBinChopper(object):
     """Get histogram for pt or variable bin, and cache it in dict, so can be used later"""
 
-    def __init__(self, unfolder):
-        self.unfolder = unfolder  # used to do the actual chopping of hists
+    def __init__(self, generator_binning, detector_binning):
+        self.generator_binning = generator_binning
+        self.detector_binning = detector_binning
         self.objects = {}
         self._cache = {}
         self._cache_integral = {}
+
+    def get_binning(self, binning_scheme):
+        if binning_scheme not in ['generator', 'detector']:
+            raise ArgumentError('binning_scheme must be "generator" or "detector"')
+        thing = self.generator_binning if binning_scheme == "generator" else self.detector_binning
+        if thing is None:
+            raise RuntimeError("No valid TUnfoldBinning object for binning scheme '%s'" % binning_scheme)
 
     def add_obj(self, name, obj):
         # TODO: allow overwrite?
         self.objects[name] = obj
 
+    def get_var_hist_pt_binned(self, hist1d, ibin_pt, binning_scheme='generator'):
+        """Get hist of variable for given pt bin from massive 1D hist that TUnfold makes"""
+        # FIXME: assume no underflow?!
+        binning = self.get_binning(binning_scheme)
+        var_bins = np.array(binning.GetDistributionBinning(0))
+        pt_bins = np.array(binning.GetDistributionBinning(1))
+
+        # need the -1 on ibin_pt, as it references an array index, whereas ROOT bins start at 1
+        h = ROOT.TH1D("h_%d_%s" % (ibin_pt, cu.get_unique_str()), "", len(var_bins)-1, var_bins)
+        for var_ind, var_value in enumerate(var_bins[:-1], 1):
+            this_val = var_value * 1.001  # ensure its inside
+            bin_num = binning.GetGlobalBinNumber(this_val, pt_bins[ibin_pt]*1.001)
+            h.SetBinContent(var_ind, hist1d.GetBinContent(bin_num))
+            h.SetBinError(var_ind, hist1d.GetBinError(bin_num))
+        return h
+
+    def get_var_2d_hist_pt_binned(self, hist2d, ibin_pt, binning_scheme='generator'):
+        """Get 2d hist for given pt bin from massive 2D hist"""
+        # FIXME: assume no underflow?!
+        binning = self.get_binning(binning_scheme)
+        var_bins = np.array(binning.GetDistributionBinning(0))
+        pt_bins = np.array(binning.GetDistributionBinning(1))
+
+        # need the -1 on ibin_pt, as it references an array index, whereas ROOT bins start at 1
+        h = ROOT.TH2D("h2d_%d_%s" % (ibin_pt, cu.get_unique_str()), "", len(var_bins)-1, var_bins, len(var_bins)-1, var_bins)
+        for var_ind, var_value in enumerate(var_bins[:-1], 1):
+            this_val = var_value * 1.001  # ensure its inside
+            bin_num = binning.GetGlobalBinNumber(this_val, pt_bins[ibin_pt]*1.001)
+            for var_ind2, var_value2 in enumerate(var_bins[:-1], 1):
+                this_val2 = var_value2 * 1.001  # ensure its inside
+                bin_num2 = binning.GetGlobalBinNumber(this_val2, pt_bins[ibin_pt]*1.001)
+                h.SetBinContent(var_ind, var_ind2, hist2d.GetBinContent(bin_num, bin_num2))
+                h.SetBinError(var_ind, var_ind2, hist2d.GetBinError(bin_num, bin_num2))
+        return h
+
+    def get_pt_hist_var_binned(self, hist1d, ibin_var, binning_scheme='generator'):
+        """Get hist of pt for given variable bin from massive 1D hist that TUnfold makes"""
+        # FIXME: assume no underflow?!
+        binning = self.get_binning(binning_scheme)
+        var_bins = np.array(binning.GetDistributionBinning(0))
+        pt_bins = np.array(binning.GetDistributionBinning(1))
+
+        # need the -1 on ibin_var, as it references an array index, whereas ROOT bins start at 1
+        h = ROOT.TH1D("h_%d_%s" % (ibin_var, cu.get_unique_str()), "", len(pt_bins)-1, pt_bins)
+        for pt_ind, pt_value in enumerate(pt_bins[:-1], 1):
+            this_val = pt_value * 1.001  # ensure its inside
+            bin_num = binning.GetGlobalBinNumber(var_bins[ibin_var]*1.001, this_val)
+            h.SetBinContent(pt_ind, hist1d.GetBinContent(bin_num))
+            h.SetBinError(pt_ind, hist1d.GetBinError(bin_num))
+        return h
+
+    def get_pt_2d_hist_var_binned(self, hist2d, ibin_var, binning_scheme='generator'):
+        """Get 2d hist for given variable bin from massive 2D hist"""
+        # FIXME: assume no underflow?!
+        binning = self.get_binning(binning_scheme)
+        var_bins = np.array(binning.GetDistributionBinning(0))
+        pt_bins = np.array(binning.GetDistributionBinning(1))
+
+        # need the -1 on ibin_var, as it references an array index, whereas ROOT bins start at 1
+        h = ROOT.TH1D("h2d_%d_%s" % (ibin_var, cu.get_unique_str()), "", len(pt_bins)-1, pt_bins)
+        for pt_ind, pt_value in enumerate(pt_bins[:-1], 1):
+            this_val = pt_value * 1.001  # ensure its inside
+            bin_num = binning.GetGlobalBinNumber(var_bins[ibin_var]*1.001, this_val)
+            for pt_ind2, pt_value2 in enumerate(pt_bins[:-1], 1):
+                this_val2 = pt_value * 1.001  # ensure its inside
+                bin_num2 = binning.GetGlobalBinNumber(var_bins[ibin_var]*1.001, this_val2)
+                h.SetBinContent(pt_ind, pt_ind2, hist2d.GetBinContent(bin_num, bin_num2))
+                h.SetBinError(pt_ind, pt_ind2, hist2d.GetBinError(bin_num, bin_num2))
+        return h
+
     def get_bin_plot(self, name, ind, axis, do_norm=False, do_div_bin_width=False, binning_scheme='generator'):
-        """Get plot for given bin of specified axis
-        
+        """Get plot for given bin (index=ind) of specified axis.
+
+        Note, only considers signal region
+
         Parameters
         ----------
         name : str
@@ -1496,12 +1580,12 @@ class HistBinChopper(object):
             Divide by bin width
         binning_scheme : str, optional
             'generator' or 'detector'
-        
+
         Returns
         -------
         TYPE
             Description
-        
+
         Raises
         ------
         KeyError
@@ -1512,9 +1596,9 @@ class HistBinChopper(object):
         key = self._generate_key(name, ind, axis, do_norm, do_div_bin_width, binning_scheme)
         if key not in self._cache:
             if axis == 'lambda':
-                self._cache[key] = self.unfolder.get_pt_hist_var_binned(self.objects[name], ind, binning_scheme)
+                self._cache[key] = self.get_pt_hist_var_binned(self.objects[name], ind, binning_scheme)
             else:
-                self._cache[key] = self.unfolder.get_var_hist_pt_binned(self.objects[name], ind, binning_scheme)
+                self._cache[key] = self.get_var_hist_pt_binned(self.objects[name], ind, binning_scheme)
 
             # havent done div bin width or normalising yet
             self._cache_integral[key] = self._cache[key].Integral()

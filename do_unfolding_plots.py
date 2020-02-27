@@ -1703,7 +1703,8 @@ def do_all_plots_per_region_angle(setup, unpack_dict):
     alt_hist_reco_bg_subtracted_gen_binning = unpack_dict['alt_hist_reco_bg_subtracted_gen_binning']
 
     # Big 1D plots to compare things
-    hbc = HistBinChopper(unfolder)
+    hbc = HistBinChopper(generator_binning=unfolder.generator_binning.FindNode("generatordistribution"), 
+                         detector_binning=unfolder.detector_binning.FindNode("detectordistribution"))
     hbc.add_obj("unfolded", unfolder.unfolded)
     hbc.add_obj("unfolded_stat_err", unfolder.unfolded_stat_err)
     hbc.add_obj("hist_truth", unfolder.hist_truth)
@@ -2333,7 +2334,8 @@ def do_all_big_1d_plots_per_region_angle(setup, unpack_dict, hist_bin_chopper=No
 
     if not hist_bin_chopper:
         # unreg_unfolder = unpack_dict['unreg_unfolder']
-        hist_bin_chopper = HistBinChopper(unfolder)
+        hist_bin_chopper = HistBinChopper(generator_binning=unfolder.generator_binning.FindNode("generatordistribution"), 
+                                          detector_binning=unfolder.detector_binning.FindNode("detectordistribution"))
         hist_bin_chopper.add_obj("hist_truth", unfolder.hist_truth)
         hist_bin_chopper.add_obj("unfolded", unfolder.unfolded)
         hist_bin_chopper.add_obj("unfolded_stat_err", unfolder.unfolded_stat_err)

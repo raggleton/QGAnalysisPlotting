@@ -491,7 +491,8 @@ if __name__ == "__main__":
                 alt_unfolder = unpack_dict['alt_unfolder']
                 alt_hist_truth = unpack_dict['alt_hist_truth']
                 print(alt_hist_truth)
-                hbc = HistBinChopper(unfolder)
+                hbc = HistBinChopper(generator_binning=unfolder.generator_binning.FindNode("generatordistribution"), 
+                                     detector_binning=unfolder.detector_binning.FindNode("detectordistribution"))
                 hbc.add_obj("unfolded", unfolder.unfolded)
                 hbc.add_obj("unfolded_stat_err", unfolder.unfolded_stat_err)
                 hbc.add_obj("hist_truth", unfolder.hist_truth)
