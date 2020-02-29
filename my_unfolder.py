@@ -1343,7 +1343,9 @@ class HistBinChopper(object):
 
     def add_obj(self, name, obj):
         # TODO: allow overwrite?
-        self.objects[name] = obj
+        if name not in self.objects and obj is not None:
+            self.objects[name] = obj
+
     def update(self, other):
         """Update this object's cached things with those from another HistBinChopper"""
         self.objects.update(other.objects)
