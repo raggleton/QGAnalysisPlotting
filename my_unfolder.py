@@ -1344,6 +1344,11 @@ class HistBinChopper(object):
     def add_obj(self, name, obj):
         # TODO: allow overwrite?
         self.objects[name] = obj
+    def update(self, other):
+        """Update this object's cached things with those from another HistBinChopper"""
+        self.objects.update(other.objects)
+        self._cache.update(other._cache)
+        self._cache_integral.update(other._cache_integral)
 
     def get_var_hist_pt_binned(self, hist1d, ibin_pt, binning_scheme='generator'):
         """Get hist of variable for given pt bin from massive 1D hist that TUnfold makes"""

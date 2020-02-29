@@ -284,13 +284,11 @@ class GenPtBinnedPlotter(object):
             plot.plot("NOSTACK E1")
             plot.save("%s/unfolded_%s_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
 
-    def plot_unfolded_with_alt_truth_normalised(self, alt_truth):
+    def plot_unfolded_with_alt_truth_normalised(self):
         for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
             mc_gen_hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('hist_truth', ibin, binning_scheme='generator')
             unfolded_hist_bin_stat_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded_stat_err', ibin, binning_scheme='generator')
             unfolded_hist_bin_total_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded', ibin, binning_scheme='generator')
-
-            self.hist_bin_chopper.add_obj('alt_hist_truth', alt_truth)
             alt_mc_gen_hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('alt_hist_truth', ibin, binning_scheme='generator')
 
             entries = [
@@ -324,12 +322,10 @@ class GenPtBinnedPlotter(object):
             plot.plot("NOSTACK E1")
             plot.save("%s/unfolded_%s_alt_truth_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
 
-    def plot_unfolded_with_unreg_normalised(self, unreg_unfolder):
+    def plot_unfolded_with_unreg_normalised(self):
         for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
             mc_gen_hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('hist_truth', ibin, binning_scheme='generator')
             unfolded_hist_bin_total_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded', ibin, binning_scheme='generator')
-
-            self.hist_bin_chopper.add_obj("unreg_unfolded", unreg_unfolder.unfolded)
             unreg_unfolded_hist_bin_total_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unreg_unfolded', ibin, binning_scheme='generator')
 
             entries = [
@@ -360,10 +356,6 @@ class GenPtBinnedPlotter(object):
 
     def plot_unfolded_with_alt_response_normalised(self, alt_unfolder):
         for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
-            # TODO: should this be inside or outside this func?
-            self.hist_bin_chopper.add_obj("alt_unfolded_stat_err", alt_unfolder.unfolded_stat_err)
-            self.hist_bin_chopper.add_obj("alt_hist_truth", alt_unfolder.hist_truth)
-
             mc_gen_hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('hist_truth', ibin, binning_scheme='generator')
             unfolded_hist_bin_total_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded', ibin, binning_scheme='generator')
             unfolded_hist_bin_stat_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded_stat_err', ibin, binning_scheme='generator')
@@ -405,17 +397,13 @@ class GenPtBinnedPlotter(object):
             plot.plot("NOSTACK E1")
             plot.save("%s/unfolded_%s_alt_response_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
 
-    def plot_unfolded_with_alt_response_truth_normalised(self, alt_unfolder, alt_truth):
+    def plot_unfolded_with_alt_response_truth_normalised(self, alt_unfolder):
         for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
-            # TODO: should this be inside or outside this func?
-            self.hist_bin_chopper.add_obj("alt_unfolded_stat_err", alt_unfolder.unfolded_stat_err)
-            self.hist_bin_chopper.add_obj("alt_truth", alt_truth)
-
             mc_gen_hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('hist_truth', ibin, binning_scheme='generator')
             unfolded_hist_bin_total_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded', ibin, binning_scheme='generator')
             unfolded_hist_bin_stat_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded_stat_err', ibin, binning_scheme='generator')
             alt_unfolded_hist_bin_total_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('alt_unfolded_stat_err', ibin, binning_scheme='generator')
-            alt_mc_gen_hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('alt_truth', ibin, binning_scheme='generator')
+            alt_mc_gen_hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('alt_hist_truth', ibin, binning_scheme='generator')
 
             entries = [
                 Contribution(mc_gen_hist_bin,
@@ -582,16 +570,16 @@ class GenPtBinnedPlotter(object):
         for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
             entries = []
             # Get total for this bin
-            unfolded_hist_bin_total_errors = self.unfolder.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded', ibin, binning_scheme='generator')
+            unfolded_hist_bin_total_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded', ibin, binning_scheme='generator')
             # Get stat. unc. from input for this bin
-            unfolded_hist_bin_stat_errors = self.unfolder.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded_stat_err', ibin, binning_scheme='generator')
+            unfolded_hist_bin_stat_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded_stat_err', ibin, binning_scheme='generator')
             # Get stat. unc. from response matrix for this bin
-            unfolded_hist_bin_rsp_errors = self.unfolder.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded_rsp_err', ibin, binning_scheme='generator')
+            unfolded_hist_bin_rsp_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded_rsp_err', ibin, binning_scheme='generator')
 
             for syst_dict in self.region['experimental_systematics']:
                 # For each systematic, get the normalised shift and hence fraction
                 obj_name = 'syst_shift_%s' % cu.no_space_str(syst_dict['label'])
-                syst_unfolded_fraction = self.unfolder.hist_bin_chopper.get_pt_bin_normed_div_bin_width(obj_name, ibin, binning_scheme='generator').Clone()
+                syst_unfolded_fraction = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width(obj_name, ibin, binning_scheme='generator').Clone()
                 syst_unfolded_fraction.Divide(unfolded_hist_bin_total_errors)
                 # Set to abs values so can plot log
                 for i in range(1, syst_unfolded_fraction.GetNbinsX()+1):
@@ -676,11 +664,11 @@ class GenPtBinnedPlotter(object):
         """Plot shifted unfolded normalised distributions for each syst"""
         for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
             # Get total for this bin
-            unfolded_hist_bin_total_errors = self.unfolder.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded', ibin, binning_scheme='generator')
+            unfolded_hist_bin_total_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded', ibin, binning_scheme='generator')
             # Get stat. unc. from input for this bin
-            unfolded_hist_bin_stat_errors = self.unfolder.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded_stat_err', ibin, binning_scheme='generator')
+            unfolded_hist_bin_stat_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded_stat_err', ibin, binning_scheme='generator')
             # Get stat. unc. from response matrix for this bin
-            unfolded_hist_bin_rsp_errors = self.unfolder.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded_rsp_err', ibin, binning_scheme='generator')
+            unfolded_hist_bin_rsp_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded_rsp_err', ibin, binning_scheme='generator')
 
             def _remove_error_bars(h):
                 for i in range(1, h.GetNbinsX()+1):
@@ -689,7 +677,7 @@ class GenPtBinnedPlotter(object):
             entries = []
             for syst_dict in self.region['experimental_systematics']:
                 syst_label_no_spaces = cu.no_space_str(syst_dict['label'])
-                syst_unfolded_hist_bin = self.unfolder.hist_bin_chopper.get_pt_bin_normed_div_bin_width('syst_shifted_%s_unfolded' % (syst_label_no_spaces), ibin, binning_scheme='generator')
+                syst_unfolded_hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('syst_shifted_%s_unfolded' % (syst_label_no_spaces), ibin, binning_scheme='generator')
                 _remove_error_bars(syst_unfolded_hist_bin)
                 c = Contribution(syst_unfolded_hist_bin,
                                  label=syst_dict['label'],
@@ -702,8 +690,8 @@ class GenPtBinnedPlotter(object):
             entries.append(
                 Contribution(unfolded_hist_bin_total_errors,
                              label="Unfolded (#tau = %.3g) (total unc.)" % (self.unfolder.tau),
-                             line_color=ROOT.kRed, line_width=self.line_width, line_style=1,
-                             marker_color=ROOT.kRed, marker_style=20, marker_size=0.75),
+                             line_color=self.plot_colours['unfolded_total_colour'], line_width=self.line_width, line_style=1,
+                             marker_color=self.plot_colours['unfolded_total_colour'], marker_style=20, marker_size=0.75),
             )
             entries.append(
                 Contribution(unfolded_hist_bin_stat_errors,
@@ -758,16 +746,16 @@ class GenPtBinnedPlotter(object):
         for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
 
             # Get total for this bin
-            unfolded_hist_bin_total_errors = self.unfolder.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded', ibin, binning_scheme='generator')
+            unfolded_hist_bin_total_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded', ibin, binning_scheme='generator')
             # Get stat. unc. from input for this bin
-            unfolded_hist_bin_stat_errors = self.unfolder.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded_stat_err', ibin, binning_scheme='generator')
+            unfolded_hist_bin_stat_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded_stat_err', ibin, binning_scheme='generator')
             # Get stat. unc. from response matrix for this bin
-            unfolded_hist_bin_rsp_errors = self.unfolder.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded_rsp_err', ibin, binning_scheme='generator')
+            unfolded_hist_bin_rsp_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded_rsp_err', ibin, binning_scheme='generator')
 
             entries = []
             for syst_dict, mark in zip(self.region['experimental_systematics'], cu.Marker().cycle(cycle_filling=True)):
                 syst_label_no_spaces = cu.no_space_str(syst_dict['label'])
-                syst_unfolded_hist_bin = self.unfolder.hist_bin_chopper.get_pt_bin_normed_div_bin_width('syst_shifted_%s_unfolded' % (syst_label_no_spaces), ibin, binning_scheme='generator')
+                syst_unfolded_hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('syst_shifted_%s_unfolded' % (syst_label_no_spaces), ibin, binning_scheme='generator')
                 this_syst_hist = _convert_syst_shift_to_error_ratio_hist(syst_unfolded_hist_bin, unfolded_hist_bin_total_errors)
                 c = Contribution(this_syst_hist,
                                  label=syst_dict['label'],
@@ -847,9 +835,7 @@ class GenPtBinnedPlotter(object):
 
     def plot_detector_normalised(self, alt_detector=None):
         for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
-            self.hist_bin_chopper.add_obj("input_hist_gen_binning_bg_subtracted", self.unfolder.input_hist_gen_binning_bg_subtracted)
             input_hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('input_hist_gen_binning_bg_subtracted', ibin, binning_scheme='generator')
-            self.hist_bin_chopper.add_obj("hist_mc_reco_gen_binning_bg_subtracted", self.unfolder.hist_mc_reco_gen_binning_bg_subtracted)
             mc_hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('hist_mc_reco_gen_binning_bg_subtracted', ibin, binning_scheme='generator')
 
             entries = [
@@ -993,13 +979,11 @@ class GenLambdaBinnedPlotter(object):
             plot.set_logy(do_more_labels=False)
             plot.save("%s/unfolded_unnormalised_%s_lambda_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
 
-    def plot_unfolded_with_unreg_unnormalised(self, unreg_unfolder):
+    def plot_unfolded_with_unreg_unnormalised(self):
         for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
             mc_gen_hist_bin = self.hist_bin_chopper.get_lambda_bin_div_bin_width('hist_truth', ibin, binning_scheme='generator')
             unfolded_hist_bin_stat_errors = self.hist_bin_chopper.get_lambda_bin_div_bin_width('unfolded_stat_err', ibin, binning_scheme='generator')
             unfolded_hist_bin_total_errors = self.hist_bin_chopper.get_lambda_bin_div_bin_width('unfolded', ibin, binning_scheme='generator')
-
-            self.hist_bin_chopper.add_obj("unreg_unfolded", unreg_unfolder.unfolded)
             unreg_unfolded_hist_bin_total_errors = self.hist_bin_chopper.get_lambda_bin_div_bin_width('unreg_unfolded', ibin, binning_scheme='generator')
 
             # unnormalised version
@@ -1033,10 +1017,6 @@ class GenLambdaBinnedPlotter(object):
 
     def plot_unfolded_with_alt_response_unnormalised(self, alt_unfolder):
         for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
-            # TODO: should this be inside or outside this func?
-            self.hist_bin_chopper.add_obj("alt_unfolded_stat_err", alt_unfolder.unfolded_stat_err)
-            self.hist_bin_chopper.add_obj("alt_hist_truth", alt_unfolder.hist_truth)
-
             mc_gen_hist_bin = self.hist_bin_chopper.get_lambda_bin_div_bin_width('hist_truth', ibin, binning_scheme='generator')
             unfolded_hist_bin_total_errors = self.hist_bin_chopper.get_lambda_bin_div_bin_width('unfolded', ibin, binning_scheme='generator')
             unfolded_hist_bin_stat_errors = self.hist_bin_chopper.get_lambda_bin_div_bin_width('unfolded_stat_err', ibin, binning_scheme='generator')
@@ -1357,9 +1337,7 @@ class GenLambdaBinnedPlotter(object):
 
     def plot_detector_unnormalised(self, alt_detector=None):
         for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
-            self.hist_bin_chopper.add_obj("input_hist_gen_binning_bg_subtracted", self.unfolder.input_hist_gen_binning_bg_subtracted)
             input_hist_bin = self.hist_bin_chopper.get_lambda_bin_div_bin_width('input_hist_gen_binning_bg_subtracted', ibin, binning_scheme='generator')
-            self.hist_bin_chopper.add_obj("hist_mc_reco_gen_binning_bg_subtracted", self.unfolder.hist_mc_reco_gen_binning_bg_subtracted)
             mc_hist_bin = self.hist_bin_chopper.get_lambda_bin_div_bin_width('hist_mc_reco_gen_binning_bg_subtracted', ibin, binning_scheme='generator')
 
             entries = [
@@ -1462,9 +1440,7 @@ class RecoPtBinnedPlotter(object):
 
     def plot_detector_normalised(self, alt_detector=None):
         for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
-            self.hist_bin_chopper.add_obj("input_hist_bg_subtracted", self.unfolder.input_hist_bg_subtracted)
             input_hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('input_hist_bg_subtracted', ibin, binning_scheme='detector')
-            self.hist_bin_chopper.add_obj("hist_mc_reco_bg_subtracted", self.unfolder.hist_mc_reco_bg_subtracted)
             mc_hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('hist_mc_reco_bg_subtracted', ibin, binning_scheme='detector')
 
             entries = [
@@ -1507,9 +1483,7 @@ class RecoPtBinnedPlotter(object):
 
     def plot_folded_unfolded_normalised(self):
         for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
-            self.hist_bin_chopper.add_obj("input_hist_bg_subtracted", self.unfolder.input_hist_bg_subtracted)
             input_hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('input_hist_bg_subtracted', ibin, binning_scheme='detector')
-            self.hist_bin_chopper.add_obj("folded_unfolded", self.unfolder.folded_unfolded)
             folded_unfolded_hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('folded_unfolded', ibin, binning_scheme='detector')
 
             entries = [
@@ -1540,11 +1514,8 @@ class RecoPtBinnedPlotter(object):
 
     def plot_folded_unfolded_with_mc_normalised(self):
         for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
-            self.hist_bin_chopper.add_obj("hist_mc_reco_bg_subtracted", self.unfolder.hist_mc_reco_bg_subtracted)
             mc_reco_hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('hist_mc_reco_bg_subtracted', ibin, binning_scheme='detector')
-            self.hist_bin_chopper.add_obj("input_hist_bg_subtracted", self.unfolder.input_hist_bg_subtracted)
             input_hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('input_hist_bg_subtracted', ibin, binning_scheme='detector')
-            self.hist_bin_chopper.add_obj("folded_unfolded", self.unfolder.folded_unfolded)
             folded_unfolded_hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('folded_unfolded', ibin, binning_scheme='detector')
 
             entries = [
@@ -1580,9 +1551,7 @@ class RecoPtBinnedPlotter(object):
 
     def plot_folded_gen_normalised(self):
         for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
-            self.hist_bin_chopper.add_obj("hist_mc_reco_bg_subtracted", self.unfolder.hist_mc_reco_bg_subtracted)
             mc_reco_hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('hist_mc_reco_bg_subtracted', ibin, binning_scheme='detector')
-            self.hist_bin_chopper.add_obj("folded_mc_truth", self.unfolder.folded_mc_truth)
             folded_mc_truth_hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('folded_mc_truth', ibin, binning_scheme='detector')
 
             entries = [
@@ -1633,10 +1602,8 @@ def do_all_plots_per_region_angle(setup, unpack_dict):
     # Big 1D plots to compare things
     hbc = HistBinChopper(generator_binning=unfolder.generator_binning.FindNode("generatordistribution"),
                          detector_binning=unfolder.detector_binning.FindNode("detectordistribution"))
-    hbc.add_obj("unfolded", unfolder.get_output())
-    hbc.add_obj('unfolded_stat_err', unfolder.get_unfolded_with_ematrix_stat())
-    hbc.add_obj('unfolded_rsp_err', unfolder.get_unfolded_with_ematrix_rsp())
     hbc.add_obj("hist_truth", unfolder.hist_truth)
+    hbc.update(unfolder.hist_bin_chopper)   # update the HistBinChopper with the new normalised systematics already produced in unfolder
 
     # Iterate through pt bins - gen binning
     # ------------------------------------------------------------------
@@ -1647,14 +1614,17 @@ def do_all_plots_per_region_angle(setup, unpack_dict):
     gen_pt_binned_plotter.plot_unfolded_unnormalised()
     gen_pt_binned_plotter.plot_unfolded_normalised()
     if alt_hist_truth:
-        gen_pt_binned_plotter.plot_unfolded_with_alt_truth_normalised(alt_truth=alt_hist_truth)
+        gen_pt_binned_plotter.hist_bin_chopper.add_obj('alt_hist_truth', alt_hist_truth)
+        gen_pt_binned_plotter.plot_unfolded_with_alt_truth_normalised()
 
     if unfolder.tau > 0 and unreg_unfolder:
-        gen_pt_binned_plotter.plot_unfolded_with_unreg_normalised(unreg_unfolder=unreg_unfolder)
+        gen_pt_binned_plotter.hist_bin_chopper.add_obj("unreg_unfolded", unreg_unfolder.unfolded)
+        gen_pt_binned_plotter.plot_unfolded_with_unreg_normalised()
 
     if alt_unfolder:
+        gen_pt_binned_plotter.hist_bin_chopper.add_obj("alt_unfolded_stat_err", alt_unfolder.unfolded_stat_err)
         gen_pt_binned_plotter.plot_unfolded_with_alt_response_normalised(alt_unfolder=alt_unfolder)
-        gen_pt_binned_plotter.plot_unfolded_with_alt_response_truth_normalised(alt_unfolder=alt_unfolder, alt_truth=alt_hist_truth)
+        gen_pt_binned_plotter.plot_unfolded_with_alt_response_truth_normalised(alt_unfolder=alt_unfolder)
 
     if has_exp_systs:
         gen_pt_binned_plotter.plot_uncertainty_shifts_normalised()
@@ -1668,14 +1638,17 @@ def do_all_plots_per_region_angle(setup, unpack_dict):
         gen_pt_binned_plotter.plot_unfolded_with_pdf_systs_normalised()
 
     # if has_data:
+    gen_pt_binned_plotter.hist_bin_chopper.add_obj("input_hist_gen_binning_bg_subtracted", unfolder.input_hist_gen_binning_bg_subtracted)
+    gen_pt_binned_plotter.hist_bin_chopper.add_obj("hist_mc_reco_gen_binning_bg_subtracted", unfolder.hist_mc_reco_gen_binning_bg_subtracted)
     gen_pt_binned_plotter.plot_detector_normalised(alt_detector=alt_hist_reco_bg_subtracted_gen_binning)
 
     # Iterate through lambda bins - gen binning
     # ------------------------------------------------------------------
     lambda_pt_binned_plotter = GenLambdaBinnedPlotter(setup=setup,
                                                       bins=unfolder.variable_bin_edges_gen,
-                                                      hist_bin_chopper=hbc,
+                                                      hist_bin_chopper=hbc,  # this is the same object as gen_pt_binned_plotter, so has all the objects already
                                                       unfolder=unfolder)
+
     lambda_pt_binned_plotter.plot_unfolded_unnormalised()
 
     if unfolder.tau > 0 and unreg_unfolder:
@@ -1699,6 +1672,10 @@ def do_all_plots_per_region_angle(setup, unpack_dict):
 
     # Iterate through pt bins - reco binning
     # ------------------------------------------------------------------
+    hbc.add_obj("hist_mc_reco_bg_subtracted", unfolder.hist_mc_reco_bg_subtracted)
+    hbc.add_obj("input_hist_bg_subtracted", unfolder.input_hist_bg_subtracted)
+    hbc.add_obj("folded_unfolded", unfolder.folded_unfolded)
+    hbc.add_obj("folded_mc_truth", unfolder.folded_mc_truth)
     reco_pt_binned_plotter = RecoPtBinnedPlotter(setup=setup,
                                                  bins=unfolder.pt_bin_edges_reco,
                                                  hist_bin_chopper=hbc,
@@ -1949,7 +1926,7 @@ class BigNormalised1DPlotter(object):
         entries = [
             Contribution(self.get_big_1d('hist_truth'),
                          **self.get_mc_truth_kwargs()),
-            Contribution(self.get_big_1d('alt_truth'),
+            Contribution(self.get_big_1d('alt_hist_truth'),
                          subplot=self.get_big_1d('hist_truth'),
                          **self.get_alt_mc_truth_kwargs()),
             Contribution(self.get_big_1d('unfolded'),
@@ -2001,7 +1978,7 @@ class BigNormalised1DPlotter(object):
         entries = [
             Contribution(self.get_big_1d('hist_truth'),
                          **self.get_mc_truth_kwargs()),
-            Contribution(self.get_big_1d('alt_truth'),
+            Contribution(self.get_big_1d('alt_hist_truth'),
                          subplot=self.get_big_1d('hist_truth'),
                          **self.get_alt_mc_truth_kwargs()),
             Contribution(self.get_big_1d('unfolded'),
@@ -2266,12 +2243,11 @@ def do_all_big_1d_plots_per_region_angle(setup, unpack_dict, hist_bin_chopper=No
         hist_bin_chopper = HistBinChopper(generator_binning=unfolder.generator_binning.FindNode("generatordistribution"),
                                           detector_binning=unfolder.detector_binning.FindNode("detectordistribution"))
         hist_bin_chopper.add_obj("hist_truth", unfolder.hist_truth)
-        hist_bin_chopper.add_obj("unfolded", unfolder.unfolded)
-        hist_bin_chopper.add_obj("unfolded_stat_err", unfolder.unfolded_stat_err)
+        hist_bin_chopper.update(unfolder.hist_bin_chopper)
         if alt_unfolder:
             hist_bin_chopper.add_obj("alt_unfolded_stat_err", alt_unfolder.unfolded_stat_err)
         if alt_hist_truth:
-            hist_bin_chopper.add_obj("alt_truth", alt_hist_truth)
+            hist_bin_chopper.add_obj("alt_hist_truth", alt_hist_truth)
 
     has_exp_systs = len(setup.region['experimental_systematics']) > 0
     has_model_systs = len(setup.region['model_systematics']) > 0
@@ -2464,9 +2440,9 @@ if __name__ == "__main__":
 
             # Do a 1D summary plot, with all the normalised plots with bins divided by their width
             # (unlike the standard plot from MyUnfolderPlotter, which is absolute)
-            # do_all_big_1d_plots_per_region_angle(setup,
-            #                                      unpack_dict,
-            #                                      hist_bin_chopper)
+            do_all_big_1d_plots_per_region_angle(setup,
+                                                 unpack_dict,
+                                                 hist_bin_chopper)
 
             store_bottom_line_stats(all_chi2_stats, setup, unpack_dict)
 
