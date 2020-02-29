@@ -35,7 +35,7 @@ from my_unfolder import MyUnfolder
 from my_unfolder_plotter import MyUnfolderPlotter
 from unfolding_regularisation_classes import TauScanner, LCurveScanner
 from unfolding_config import get_dijet_config, get_zpj_config
-from do_unfolding_plots import do_all_plots_per_region_angle, Setup
+from do_unfolding_plots import Setup, do_all_plots_per_region_angle, do_all_big_1d_plots_per_region_angle
 
 
 ROOT.PyConfig.IgnoreCommandLineOptions = True
@@ -2313,7 +2313,11 @@ if __name__ == "__main__":
                     alt_hist_reco_bg_subtracted=alt_hist_mc_reco_bg_subtracted,
                     alt_hist_reco_bg_subtracted_gen_binning=alt_hist_mc_reco_bg_subtracted_gen_binning,
                 )
-                do_all_plots_per_region_angle(setup, unfold_dict)
+                hbc = do_all_plots_per_region_angle(setup, unfold_dict)
+
+                do_all_big_1d_plots_per_region_angle(setup,
+                                                     unfold_dict,
+                                                     hbc)
 
             # DO SUMMARY PLOT
             # ------------------------------------------------------------------
