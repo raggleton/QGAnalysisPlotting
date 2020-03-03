@@ -80,12 +80,12 @@ def get_dijet_config(source_dir, central=True, groomed=False):
                 "linestyle": 2,
             },
             {
-                "label": "JEC up",
+                "label": "JES up",
                 "tfile": os.path.join(source_dir_systs, 'jecsmear_directionUp', qgc.QCD_FILENAME),
                 "colour": ROOT.kGreen+2,
             },
             {
-                "label": "JEC down",
+                "label": "JES down",
                 "tfile": os.path.join(source_dir_systs, 'jecsmear_directionDown', qgc.QCD_FILENAME),
                 "colour": ROOT.kGreen+2,
                 "linestyle": 2,
@@ -322,12 +322,12 @@ def get_zpj_config(source_dir, groomed=False):
                 "linestyle": 2,
             },
             {
-                "label": "JEC up",
+                "label": "JES up",
                 "tfile": os.path.join(source_dir_systs, 'jecsmear_directionUp', qgc.DY_FILENAME),
                 "colour": ROOT.kGreen+2,
             },
             {
-                "label": "JEC down",
+                "label": "JES down",
                 "tfile": os.path.join(source_dir_systs, 'jecsmear_directionDown', qgc.DY_FILENAME),
                 "colour": ROOT.kGreen+2,
                 "linestyle": 2,
