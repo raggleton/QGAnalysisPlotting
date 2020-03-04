@@ -400,10 +400,14 @@ if __name__ == "__main__":
                         nargs='+',
                         help="Lambda angles to unfold, or 'all' for all of them")
 
+    standard_bool_description = (" True values are 'y', 'yes', 't', 'true', 'on' and '1'."
+                                 " False values are 'n', 'no', 'f', 'false', 'off' and '0'.")
+
     parser.add_argument("--doSummaryPlot",
                         type=lambda x:bool(distutils.util.strtobool(x)),
                         default=False,
-                        help='Do summary plot')
+                        help=('Do summary plot.'
+                              + standard_bool_description))
 
     parser.add_argument("--noBinnedPlots",
                         action='store_true',
@@ -459,54 +463,64 @@ if __name__ == "__main__":
     mc_group.add_argument("--MCinput",
                           type=lambda x:bool(distutils.util.strtobool(x)),
                           default=False,
-                          help='Unfold MC instead of data')
+                          help=('Unfold MC instead of data.'
+                                + standard_bool_description))
 
     mc_group.add_argument("--MCsplit",
                           type=lambda x:bool(distutils.util.strtobool(x)),
                           default=False,
-                          help='Split MC between response & 1D reco, good for testing procedure')
+                          help=('Split MC between response & 1D reco, good for testing procedure.'
+                                + standard_bool_description))
 
     bg_group = parser.add_argument_group("Backgrounds options")
     bg_group.add_argument("--subtractBackgrounds",
                           type=lambda x:bool(distutils.util.strtobool(x)),
                           default=False,
-                          help='Subtract true backgrounds (e.g. ttbar)')
+                          help=('Subtract true backgrounds (e.g. ttbar).'
+                                + standard_bool_description))
 
     syst_group = parser.add_argument_group('Systematics options')
     syst_group.add_argument("--doExperimentalSysts",
                             type=lambda x:bool(distutils.util.strtobool(x)),
                             default=False,
-                            help='Do experimental systematics (i.e. those that modify response matrix)')
+                            help=('Do experimental systematics (i.e. those that modify response matrix).'
+                                  + standard_bool_description))
 
     syst_group.add_argument("--doExperimentalSystsOnlyHerwig",
                             type=lambda x:bool(distutils.util.strtobool(x)),
                             default=False,
-                            help='Do Herwig experimental systematics (i.e. those that modify response matrix)')
+                            help=('Do only Herwig experimental systematics (i.e. those that modify response matrix).'
+                                  + standard_bool_description))
 
     syst_group.add_argument("--doModelSysts",
                             type=lambda x:bool(distutils.util.strtobool(x)),
                             default=False,
-                            help='Do model systematics (i.e. those that modify input to be unfolded)')
+                            help=('Do model systematics (i.e. those that modify input to be unfolded).'
+                                   + standard_bool_description))
 
     syst_group.add_argument("--doModelSystsOnlyHerwig",
                             type=lambda x:bool(distutils.util.strtobool(x)),
                             default=False,
-                            help='Do only Herwig model systematics (i.e. those that modify input to be unfolded)')
+                            help=('Do only Herwig model systematics (i.e. those that modify input to be unfolded).'
+                                   + standard_bool_description))
 
     syst_group.add_argument("--doModelSystsOnlyScale",
                             type=lambda x:bool(distutils.util.strtobool(x)),
                             default=False,
-                            help='Do only scale model systematics (i.e. those that modify input to be unfolded)')
+                            help=('Do only scale model systematics (i.e. those that modify input to be unfolded).'
+                                   + standard_bool_description))
 
     syst_group.add_argument("--doPDFSysts",
                             type=lambda x:bool(distutils.util.strtobool(x)),
                             default=False,
-                            help='Do pdf systematics (may be slow!)')
+                            help=('Do pdf systematics (may be slow!).'
+                                   + standard_bool_description))
 
     syst_group.add_argument("--useAltResponse",
                             type=lambda x:bool(distutils.util.strtobool(x)),
                             default=False,
-                            help='Use alternate response matrix to unfold')
+                            help=('Use alternate response matrix to unfold.'
+                                   + standard_bool_description))
 
     args = parser.parse_args()
     print("")
