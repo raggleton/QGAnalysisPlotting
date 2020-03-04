@@ -724,15 +724,21 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         if syst_label not in self.syst_shifts:
             raise KeyError("No systematic %s, only have: %s" % (syst_label, ", ".join(self.syst_shifts.keys())))
         if self.syst_ematrices[syst_label] is None:
-            # Have to manually create hist first, awkward
-            this_binning = self.generator_binning.FindNode('generator')
-            # I cannot figure out how to make the int** object for bin_map
-            # So we are trusting that the default args for title and axisSteering are correct
-            # Gnahhhhhhh
-            syst_label_no_spaces = cu.no_space_str(syst_label)
-            hist = this_binning.CreateErrorMatrixHistogram("ematrix_syst_%s_%s" % (syst_label_no_spaces, cu.get_unique_str()), self.use_axis_binning) #, bin_map, "", "*[]")
-            self.GetEmatrixSysSource(hist, syst_label)
-            self.syst_ematrices[syst_label] = hist
+            # query the variables inside TUnfolder itself
+            syst_source_names = [x.GetName() for x in self.GetSysSources()]
+            if syst_label in syst_source_names:
+                # Have to manually create hist first, awkward
+                this_binning = self.generator_binning.FindNode('generator')
+                # I cannot figure out how to make the int** object for bin_map
+                # So we are trusting that the default args for title and axisSteering are correct
+                # Gnahhhhhhh
+                syst_label_no_spaces = cu.no_space_str(syst_label)
+                hist = this_binning.CreateErrorMatrixHistogram("ematrix_syst_%s_%s" % (syst_label_no_spaces, cu.get_unique_str()), self.use_axis_binning) #, bin_map, "", "*[]")
+                self.GetEmatrixSysSource(hist, syst_label)
+                self.syst_ematrices[syst_label] = hist
+            else:
+                # TODO: make it ourself from deltaX
+                pass
         return self.syst_ematrices[syst_label]
 
     # property or getter?

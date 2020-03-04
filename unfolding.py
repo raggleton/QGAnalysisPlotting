@@ -31,7 +31,7 @@ ROOT.gErrorIgnoreLevel = ROOT.kWarning
 import common_utils as cu
 import qg_common as qgc
 import qg_general_plots as qgp
-from my_unfolder import MyUnfolder
+from my_unfolder import MyUnfolder, unpack_unfolding_root_file
 from my_unfolder_plotter import MyUnfolderPlotter
 from unfolding_regularisation_classes import TauScanner, LCurveScanner
 from unfolding_config import get_dijet_config, get_zpj_config
@@ -492,6 +492,13 @@ if __name__ == "__main__":
                             help=('Do only Herwig experimental systematics (i.e. those that modify response matrix).'
                                   + standard_bool_description))
 
+    syst_group.add_argument("--doExperimentalSystsFromFile",
+                            default=None,
+                            help='Do experimental systematics (i.e. those that modify response matrix) ' \
+                                 'but get shifts from previous unfolding. This should be a directory ' \
+                                 'made by a previous running of unfolding.py ' \
+                                 'that covers the different signal regions & variables')
+
     syst_group.add_argument("--doModelSysts",
                             type=lambda x:bool(distutils.util.strtobool(x)),
                             default=False,
@@ -550,6 +557,12 @@ if __name__ == "__main__":
 
     if args.doModelSystsOnlyHerwig and args.doModelSystsOnlyScale:
         raise RuntimeError("Cannot do model systs only herwig and only scale")
+
+    if (args.doExperimentalSysts or args.doExperimentalSystsOnlyHerwig) and args.doExperimentalSystsFromFile:
+        args.doExperimentalSysts = False
+        args.doExperimentalSystsOnlyHerwig = False
+        print("Warning: will use experimental systs from --doExperimentalSystsFromFile option only, "
+              "ignoring --doExperimentalSysts and --doExperimentalSystsOnlyHerwig")
 
     # if args.useAltResponse and args.doExperimentalSysts:
     #     args.doExperimentalSysts = False
@@ -718,6 +731,9 @@ if __name__ == "__main__":
         args.doExperimentalSysts = True
         append += "_experimentalSystOnlyHerwig"
 
+    if args.doExperimentalSystsFromFile:
+        append += "_experimentalSystFromFile"
+
     if args.doModelSysts:
         append += "_modelSyst"
         if not args.doExperimentalSysts:
@@ -820,12 +836,12 @@ if __name__ == "__main__":
         # Modify systematics as necessary
         # ----------------------------------------------------------------------
 
-        if args.doExperimentalSysts:
+        if args.doExperimentalSysts or args.doExperimentalSystsFromFile:
             # Remove the lumi one if we have no backgrounds, or the user has not said to remove backgrounds
             orig_region['experimental_systematics'] = [syst_dict for syst_dict in orig_region['experimental_systematics']
-                                                  if not ('lumi' in syst_dict['label'].lower()
-                                                           and (len(orig_region.get('backgrounds', [])) == 0
-                                                                or not args.subtractBackgrounds))]
+                                                       if not ('lumi' in syst_dict['label'].lower()
+                                                               and (len(orig_region.get('backgrounds', [])) == 0
+                                                                    or not args.subtractBackgrounds))]
             if args.doExperimentalSystsOnlyHerwig:
                 # only herwig related systs
                 orig_region['experimental_systematics'] = [s for s in orig_region['experimental_systematics']
@@ -1362,19 +1378,57 @@ if __name__ == "__main__":
                 unfolder_plotter.draw_Lx_minus_bias(title=title, **plot_args)
 
             # Do unfolding!
-            # ---------------------
+            # ------------------------------------------------------------------
             unfolder.do_unfolding(tau)
             unfolded_1d = unfolder.get_output(hist_name="unfolded_1d")
             chosen_bin = 18
             print("Bin %d:" % chosen_bin, unfolded_1d.GetBinContent(chosen_bin))
             print("original uncert:", unfolded_1d.GetBinError(chosen_bin))
+
+            # Calculate experimental uncertainty shifts using results from another unfolding
+            # ------------------------------------------------------------------
+            if args.doExperimentalSystsFromFile is not None:
+                print("Getting experimental systematics from another file...")
+                angle_output_dir = "%s/%s/%s" % (args.doExperimentalSystsFromFile, region['name'], angle.var)
+                this_root_filename = os.path.join(angle_output_dir, "unfolding_result.root")
+                if not os.path.isfile(this_root_filename):
+                    raise IOError("Cannot find systematics file, %s" % this_root_filename)
+                ref_tfile = cu.TFileCacher(this_root_filename)
+                unpack_dict = unpack_unfolding_root_file(ref_tfile, region, angle)
+                reference_unfolder = unpack_dict['unfolder']
+                ref_unfolded = reference_unfolder.unfolded
+                for syst_label in reference_unfolder.syst_maps.keys():
+                    # Note that this is potentially a bit dodgy - the
+                    # underlying TUnfoldensity object has no knowledge of this syst
+                    # Get shift on absolute result
+                    new_delta_shift = reference_unfolder.get_delta_sys_shift(syst_label).Clone()
+                    # Calc relative difference
+                    new_delta_shift.Divide(ref_unfolded)
+                    # Apply to our nominal unfolded result & store
+                    # We only need the delta shift (like normal),
+                    # since _post_process() calcualte everything from that
+                    new_delta_shift.Multiply(unfolder.unfolded)
+                    unfolder.syst_shifts[syst_label] = new_delta_shift
+                    unfolder.syst_maps[syst_label] = reference_unfolder.syst_maps[syst_label]
+                    unfolder.systs_shifted[syst_label] = None  # gets calculated in get_syst_shifted_hist()
+                    unfolder.syst_ematrices[syst_label] = None
+
+                # update region info
+                # TODO what if the config has fewer than in the reference unfolder?
+                region['experimental_systematics'] = [syst_dict for syst_dict in region['experimental_systematics']
+                                                      if syst_dict['label'] in reference_unfolder.syst_maps.keys()]
+
+            # Do lots of extra gubbins, like caching matrices,
+            # creating unfolded hists with different levels of uncertianties,
+            # setting up normalised uncertainties
+            # ------------------------------------------------------------------
             unfolder._post_process()
 
             # Get various error matrices
             # ------------------------------------------------------------------
             # stat errors only - do before or after systematics?
-            print("stat uncert:", unfolder.unfolded_stat_err.GetBinError(chosen_bin))
-            print("new uncert:", unfolder.unfolded.GetBinError(chosen_bin))
+            print("stat uncert:", unfolder.get_unfolded_with_ematrix_stat().GetBinError(chosen_bin))
+            print("new uncert:", unfolder.get_output().GetBinError(chosen_bin))
 
             # hist1, err1 = cu.th1_to_arr(unfolded_1d)
             # hist2, err2 = cu.th1_to_arr(hist_mc_gen)
@@ -1384,11 +1438,11 @@ if __name__ == "__main__":
 
             # Get shifts due to systematics
             # ------------------------------------------------------------------
-            systematic_shift_hists = []
-            if args.doExperimentalSysts:
-                for syst_dict in region['experimental_systematics']:
-                    h_syst = unfolder.get_delta_sys_shift(syst_label=syst_dict['label'])
-                    systematic_shift_hists.append(h_syst)
+            # systematic_shift_hists = []
+            # if args.doExperimentalSysts:
+            #     for syst_dict in region['experimental_systematics']:
+            #         h_syst = unfolder.get_delta_sys_shift(syst_label=syst_dict['label'])
+            #         systematic_shift_hists.append(h_syst)
 
             # Draw big 1D distributions
             # ------------------------------------------------------------------
