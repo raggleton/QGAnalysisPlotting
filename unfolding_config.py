@@ -175,15 +175,15 @@ def get_dijet_config(source_dir, central=True, groomed=False):
             {
                 "label": "Herwig++",
                 "tfile": input_mc_qcd_herwig_tfile,
-                "colour": ROOT.kOrange-3,
+                "colour": ROOT.kBlue-3,
                 "unfolder": None,
             },
-            {
-                "label": "Herwig++ (reweighted)",  # don't put in p_{T} as braces cause havoc
-                "tfile": input_mc_qcd_herwig_tfile_reweight,
-                "colour": ROOT.kOrange+4,
-                "unfolder": None,
-            },
+            # {
+            #     "label": "Herwig++ (reweighted)",  # don't put in p_{T} as braces cause havoc
+            #     "tfile": input_mc_qcd_herwig_tfile_reweight,
+            #     "colour": ROOT.kOrange+4,
+            #     "unfolder": None,
+            # },
             # {
             #     "label": "Pythia8",
             #     "tfile": input_mc_qcd_pythia_tfile,
@@ -414,12 +414,12 @@ def get_zpj_config(source_dir, groomed=False):
                 "colour": ROOT.kAzure+5,
                 "unfolder": None,
             },
-            {
-                "label": "MG+Herwig++",
-                "tfile": input_mc_dy_mgherwig_tfile,
-                "colour": ROOT.kOrange-3,
-                "unfolder": None,
-            },
+            # {
+            #     "label": "MG+Herwig++",
+            #     "tfile": input_mc_dy_mgherwig_tfile,
+            #     "colour": ROOT.kOrange-3,
+            #     "unfolder": None,
+            # },
             {
                 "label": "Herwig++",
                 "tfile": input_mc_dy_herwig_tfile,
