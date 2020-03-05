@@ -809,7 +809,7 @@ class GenPtBinnedPlotter(object):
                         what="hist",
                         title=self.get_pt_bin_title(bin_edge_low, bin_edge_high),
                         has_data=self.setup.has_data,
-                        ylim=(0.7, 1.5),
+                        ylim=(0.7, 1.5) if "Dijet" in self.setup.region['name'] else (0.3, 1.9),
                         xlim=xlim,
                         subplot_type=None)
             self._modify_plot(plot)
