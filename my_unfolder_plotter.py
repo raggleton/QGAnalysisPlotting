@@ -38,6 +38,27 @@ class MyUnfolderPlotter(object):
         self.unfolder = unfolder
         self.output_fmt = 'pdf'
         self.is_data = is_data
+        self.default_palette = ROOT.kBird
+
+        # Custom colour scheme - french flag colouring
+        NRGBs = 5
+        self.ff_ncont = 256
+        # Set max & min such that 0 is in the middle
+        stops = [ 0.00, 0.49, 0.51, 0.52, 1.00 ]
+        red = [ 0.00, 1.00, 1.00, 1.00, 1.00]
+        green = [ 0.00, 1.00, 1.00, 1.00, 0.00 ]
+        blue = [ 1.00, 1.00, 1.00, 1.00, 0.00 ]
+        stopsArray = array('d', stops)
+        redArray = array('d', red)
+        greenArray = array('d', green)
+        blueArray = array('d', blue)
+        french_flag_cols = ROOT.TColor.CreateGradientColorTable(NRGBs, stopsArray, redArray, greenArray, blueArray, self.ff_ncont)
+        # store for later use
+        self.french_flag_palette = array('i', [french_flag_cols+i for i in range(self.ff_ncont)])
+        ROOT.gStyle.SetPalette(self.default_palette)
+
+    def set_french_flag_colours(self):
+        ROOT.gStyle.SetPalette(self.ff_ncont, self.french_flag_palette)
 
     @staticmethod
     def generate_2d_canvas(size=(800, 600)):
@@ -50,6 +71,7 @@ class MyUnfolderPlotter(object):
     # @staticmethod
     def draw_2d_hist(self, h2d, title, output_filename,
                      logz=True, z_min=None, z_max=None,
+                     equal_pos_neg_z=False,
                      xtitle="Generator bin",
                      ytitle="Generator bin",
                      canvas_size=(800, 600),
@@ -90,6 +112,12 @@ class MyUnfolderPlotter(object):
         elif logz:
             h2d.SetMinimum(h2d.GetMinimum(1E-40) / 10.)
 
+        if equal_pos_neg_z:
+            max_z = max(h2d.GetMaximum(), abs(h2d.GetMinimum()))
+            h2d.SetMaximum(max_z)
+            h2d.SetMinimum(-max_z)
+            self.set_french_flag_colours()
+
         if draw_bin_lines_x:
             lx, tx = self.draw_pt_binning_lines(h2d,
                                                 which='gen' if 'gen' in xtitle.lower() else 'reco',
@@ -111,6 +139,9 @@ class MyUnfolderPlotter(object):
         canv.SaveAs(output_filename)
         if 'splitline' in title:
             ROOT.gStyle.SetTitleFontSize(orig_title_font_size)
+        if equal_pos_neg_z:
+            ROOT.gStyle.SetPalette(self.default_palette)
+
 
 
     def plot_bias_vector(self, output_dir='.', append="", title=""):
@@ -165,30 +196,57 @@ class MyUnfolderPlotter(object):
 
     # TODO: generalise to some "draw_2d_hist()"?
     def draw_error_matrix_input(self, output_dir='.', append="", title=""):
-        output_filename = "%s/err_map_stat_input_%s.%s" % (output_dir, append, self.output_fmt)
+        output_filename = "%s/err_map_stat_input_%s_logZ.%s" % (output_dir, append, self.output_fmt)
         self.draw_2d_hist(self.unfolder.get_ematrix_input(),
                           title=title,
                           output_filename=output_filename,
                           draw_bin_lines_x=True,
                           draw_bin_lines_y=True,
                           canvas_size=(800, 700))
+        output_filename = "%s/err_map_stat_input_%s_linZ.%s" % (output_dir, append, self.output_fmt)
+        self.draw_2d_hist(self.unfolder.get_ematrix_input(),
+                          title=title,
+                          output_filename=output_filename,
+                          draw_bin_lines_x=True,
+                          draw_bin_lines_y=True,
+                          logz=False,
+                          equal_pos_neg_z=True,
+                          canvas_size=(800, 700))
 
     def draw_error_matrix_stat(self, output_dir='.', append="", title=""):
-        output_filename = "%s/err_map_stat_%s.%s" % (output_dir, append, self.output_fmt)
+        output_filename = "%s/err_map_stat_%s_logZ.%s" % (output_dir, append, self.output_fmt)
         self.draw_2d_hist(self.unfolder.get_ematrix_stat(),
                           title=title,
                           output_filename=output_filename,
                           draw_bin_lines_x=True,
                           draw_bin_lines_y=True,
                           canvas_size=(800, 700))
+        output_filename = "%s/err_map_stat_%s_linZ.%s" % (output_dir, append, self.output_fmt)
+        self.draw_2d_hist(self.unfolder.get_ematrix_stat(),
+                          title=title,
+                          output_filename=output_filename,
+                          draw_bin_lines_x=True,
+                          draw_bin_lines_y=True,
+                          logz=False,
+                          equal_pos_neg_z=True,
+                          canvas_size=(800, 700))
 
     def draw_error_matrix_stat_response(self, output_dir='.', append="", title=""):
-        output_filename = "%s/err_map_stat_response_%s.%s" % (output_dir, append, self.output_fmt)
+        output_filename = "%s/err_map_stat_response_%s_logZ.%s" % (output_dir, append, self.output_fmt)
         self.draw_2d_hist(self.unfolder.get_ematrix_stat_response(),
                           title=title,
                           output_filename=output_filename,
                           draw_bin_lines_x=True,
                           draw_bin_lines_y=True,
+                          canvas_size=(800, 700))
+        output_filename = "%s/err_map_stat_response_%s_linZ.%s" % (output_dir, append, self.output_fmt)
+        self.draw_2d_hist(self.unfolder.get_ematrix_stat_response(),
+                          title=title,
+                          output_filename=output_filename,
+                          draw_bin_lines_x=True,
+                          draw_bin_lines_y=True,
+                          logz=False,
+                          equal_pos_neg_z=True,
                           canvas_size=(800, 700))
 
     def draw_error_matrix_tau(self, output_dir='.', append="", title=""):
@@ -202,36 +260,43 @@ class MyUnfolderPlotter(object):
 
     def draw_error_matrix_syst(self, syst_label, output_dir='.', append="", title=""):
         syst_label_no_spaces = syst_label.replace(" ", "_")
-        output_filename = "%s/err_map_syst_%s_%s.%s" % (output_dir, syst_label_no_spaces, append, self.output_fmt)
+        output_filename = "%s/err_map_syst_%s_%s_logZ.%s" % (output_dir, syst_label_no_spaces, append, self.output_fmt)
         self.draw_2d_hist(self.unfolder.get_ematrix_syst(syst_label),
                           title=title,
                           output_filename=output_filename,
                           draw_bin_lines_x=True,
                           draw_bin_lines_y=True,
                           canvas_size=(800, 700))
+        output_filename = "%s/err_map_syst_%s_%s_linZ.%s" % (output_dir, syst_label_no_spaces, append, self.output_fmt)
+        self.draw_2d_hist(self.unfolder.get_ematrix_syst(syst_label),
+                          title=title,
+                          output_filename=output_filename,
+                          draw_bin_lines_x=True,
+                          draw_bin_lines_y=True,
+                          logz=False,
+                          equal_pos_neg_z=True,
+                          canvas_size=(800, 700))
 
     def draw_error_matrix_total(self, output_dir='.', append="", title=""):
-        output_filename = "%s/err_map_total_%s.%s" % (output_dir, append, self.output_fmt)
+        output_filename = "%s/err_map_total_%s_logZ.%s" % (output_dir, append, self.output_fmt)
         self.draw_2d_hist(self.unfolder.get_ematrix_total(),
                           title=title,
                           output_filename=output_filename,
                           draw_bin_lines_x=True,
                           draw_bin_lines_y=True,
                           canvas_size=(800, 700))
+        output_filename = "%s/err_map_total_%s_linZ.%s" % (output_dir, append, self.output_fmt)
+        self.draw_2d_hist(self.unfolder.get_ematrix_total(),
+                          title=title,
+                          output_filename=output_filename,
+                          draw_bin_lines_x=True,
+                          draw_bin_lines_y=True,
+                          logz=False,
+                          equal_pos_neg_z=True,
+                          canvas_size=(800, 700))
 
     def draw_correlation_matrix(self, draw_values=False, draw_binning_lines=True, output_dir='.', append="", title=""):
-        # Custom colour scheme - french flag colouring
-        NRGBs = 3
-        NCont = 99
-        stops = [ 0.00, 0.53, 1.00 ]
-        red = [ 0.00, 1.00, 1.00]
-        green = [ 0.00, 1.00, 0.00 ]
-        blue = [ 1.00, 1.00, 0.00 ]
-        stopsArray = array('d', stops)
-        redArray = array('d', red)
-        greenArray = array('d', green)
-        blueArray = array('d', blue)
-        ROOT.TColor.CreateGradientColorTable(NRGBs, stopsArray, redArray, greenArray, blueArray, NCont)
+        self.set_french_flag_colours()
 
         canv = self.generate_2d_canvas((800, 700))
         canv.SetLeftMargin(0.11)
@@ -261,7 +326,7 @@ class MyUnfolderPlotter(object):
             ly, ty = self.draw_pt_binning_lines(corr_map, which='gen', axis='y', do_labels_inside=False, do_labels_outside=True)
         output_filename = "%s/rho_map%s_%s.%s" % (output_dir, val_str, append, self.output_fmt)
         canv.SaveAs(output_filename)
-        ROOT.gStyle.SetPalette(ROOT.kBird)
+        ROOT.gStyle.SetPalette(self.default_palette)
 
     def draw_background_fractions(self, output_dir='.', append="", title=""):
         """Do plot of individual background fractions, a cumulative one, and one with all sources non-cumulative"""
@@ -332,24 +397,25 @@ class MyUnfolderPlotter(object):
                                           do_labels_outside=False)
         output_filename = "%s/bg_fraction_all_nostack_%s.%s" % (output_dir, append, self.output_fmt)
         plot.save(output_filename)
-        ROOT.gStyle.SetPalette(ROOT.kBird)
+        ROOT.gStyle.SetPalette(self.default_palette)
 
     def draw_L_matrix(self, output_dir='.', append="", title=""):
         """Draw L matrix used for regularisation"""
         Lmatrix = self.unfolder.GetL("hist_Lmatrix_%s" % (append), title)
-        # Custom colour scheme - french flag colouring
-        NRGBs = 5
-        NCont = 256
-        # Set max & min such that 0 is in the middle
-        stops = [ 0.00, 0.49, 0.5, 0.51, 1.00 ]
-        red = [ 0.00, 1.00, 1.00, 1.00, 1.00]
-        green = [ 0.00, 1.00, 1.00, 1.00, 0.00 ]
-        blue = [ 1.00, 1.00, 1.00, 1.00, 0.00 ]
-        stopsArray = array('d', stops)
-        redArray = array('d', red)
-        greenArray = array('d', green)
-        blueArray = array('d', blue)
-        ROOT.TColor.CreateGradientColorTable(NRGBs, stopsArray, redArray, greenArray, blueArray, NCont)
+        self.set_french_flag_colour()
+        # # Custom colour scheme - french flag colouring
+        # NRGBs = 5
+        # NCont = 256
+        # # Set max & min such that 0 is in the middle
+        # stops = [ 0.00, 0.49, 0.5, 0.51, 1.00 ]
+        # red = [ 0.00, 1.00, 1.00, 1.00, 1.00]
+        # green = [ 0.00, 1.00, 1.00, 1.00, 0.00 ]
+        # blue = [ 1.00, 1.00, 1.00, 1.00, 0.00 ]
+        # stopsArray = array('d', stops)
+        # redArray = array('d', red)
+        # greenArray = array('d', green)
+        # blueArray = array('d', blue)
+        # ROOT.TColor.CreateGradientColorTable(NRGBs, stopsArray, redArray, greenArray, blueArray, NCont)
 
         canv = MyUnfolderPlotter.generate_2d_canvas()
         this_title = "%s;%s;%s" % (title, "Generator bin", "n_{R} bin")
@@ -368,7 +434,7 @@ class MyUnfolderPlotter(object):
         output_filename = "%s/L_matrix_%s.%s" % (output_dir, append, self.output_fmt)
         cu.check_dir_exists_create(output_dir)
         canv.SaveAs(output_filename)
-        ROOT.gStyle.SetPalette(ROOT.kBird)
+        ROOT.gStyle.SetPalette(self.default_palette)
 
     def draw_L_matrix_squared(self, output_dir='.', append="", title=""):
         """Draw L^T L, used for regularisation"""
