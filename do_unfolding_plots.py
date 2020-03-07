@@ -1756,20 +1756,69 @@ def do_all_plots_per_region_angle(setup, unpack_dict):
 
 class BigNormalised1DPlotter(object):
 
+    # TODO: Some of this seems very overlapped with MyUnfolderPlotter...
+
     def __init__(self, setup, hist_bin_chopper, unfolder):
         self.setup = setup
         self.hist_bin_chopper = hist_bin_chopper
         self.unfolder = unfolder
-        self.pt_bin_edges = unfolder.pt_bin_edges_gen
-        self.lambda_bin_edges = unfolder.variable_bin_edges_gen
-        self.num_pt_bins = len(self.pt_bin_edges)-1
-        self.num_lambda_bins = len(self.lambda_bin_edges)-1
-        self.nbins = self.num_pt_bins * self.num_lambda_bins
-        self.all_bin_edges = None # gets filled the first time make_big_1d_normalised_hist() is called
         self.plot_with_bin_widths = False # use bin widths in plot instead of uniform bin widths
+
+        self.pt_bin_edges_generator = unfolder.pt_bin_edges_gen
+        self.num_pt_bins_generator = len(self.pt_bin_edges_generator)-1
+        self.lambda_bin_edges_generator = unfolder.variable_bin_edges_gen
+        self.num_lambda_bins_generator = len(self.lambda_bin_edges_generator)-1
+        self.nbins_generator = self.num_pt_bins_generator * self.num_lambda_bins_generator
+        self.all_bin_edges_generator = self._calc_bin_edges('generator')
+
+        self.pt_bin_edges_detector = unfolder.pt_bin_edges_reco
+        self.num_pt_bins_detector = len(self.pt_bin_edges_detector)-1
+        self.lambda_bin_edges_detector = unfolder.variable_bin_edges_reco
+        self.num_lambda_bins_detector = len(self.lambda_bin_edges_detector)-1
+        self.nbins_detector = self.num_pt_bins_detector * self.num_lambda_bins_detector
+        self.all_bin_edges_detector = self._calc_bin_edges('detector')
+
         self.line_width = 1
 
         self._cache_1d = {}
+
+    # urgh, is there a better way?
+    def pt_bin_edges(self, binning_scheme):
+        return self.pt_bin_edges_generator if binning_scheme == 'generator' else self.pt_bin_edges_detector
+
+    def lambda_bin_edges(self, binning_scheme):
+        return self.lambda_bin_edges_generator if binning_scheme == 'generator' else self.lambda_bin_edges_detector
+
+    def num_pt_bins(self, binning_scheme):
+        return self.num_pt_bins_generator if binning_scheme == 'generator' else self.num_pt_bins_detector
+
+    def num_lambda_bins(self, binning_scheme):
+        return self.num_lambda_bins_generator if binning_scheme == 'generator' else self.num_lambda_bins_detector
+
+    def nbins(self, binning_scheme):
+        return self.nbins_generator if binning_scheme == 'generator' else self.nbins_detector
+
+    def all_bin_edges(self, binning_scheme):
+        return self.all_bin_edges_generator if binning_scheme == 'generator' else self.all_bin_edges_detector
+
+    def _calc_bin_edges(self, binning_scheme='generator'):
+        pt_bin_edges = self.pt_bin_edges(binning_scheme)
+        lambda_bin_edges = self.lambda_bin_edges(binning_scheme)
+        num_pt_bins = self.num_pt_bins(binning_scheme)
+        num_lambda_bins = self.num_lambda_bins(binning_scheme)
+        nbins = self.nbins(binning_scheme)
+
+        if self.plot_with_bin_widths:
+            bins = []
+            for i in range(num_pt_bins):
+                offset = i * math.ceil(lambda_bin_edges[-1])
+                bins.extend(lambda_bin_edges[:-1] + offset)
+                if i == (num_pt_bins-1):
+                    bins.append(lambda_bin_edges[-1:] + offset)
+            all_bin_edges = array('d', bins)
+        else:
+            all_bin_edges = array('d', list(range(0, nbins+1)))
+        return all_bin_edges
 
     @staticmethod
     def _get_ylim(entries):
@@ -1795,12 +1844,12 @@ class BigNormalised1DPlotter(object):
         this_plot.subplot_line_color = ROOT.kGray+1
 
 
-    def _plot_pt_bins(self, plot):
+    def _plot_pt_bins(self, plot, binning_scheme='generator'):
         sub_xax = plot.subplot_container.GetXaxis()
         sub_xax.SetTitleOffset(sub_xax.GetTitleOffset()*.9)
         sub_xax.SetTitleOffset(sub_xax.GetTitleOffset()*.9)
         sub_xax.SetLabelOffset(999)
-        ndiv = self.num_pt_bins
+        ndiv = self.num_pt_bins(binning_scheme)
         plot.container.GetXaxis().SetNdivisions(ndiv, False)
         sub_xax.SetNdivisions(ndiv, False)
 
@@ -1809,8 +1858,9 @@ class BigNormalised1DPlotter(object):
         plot.main_pad.cd()
         obj = plot.container.GetHistogram()
         y_low, y_high = obj.GetMinimum(), obj.GetMaximum()
-        for ibin, _ in enumerate(self.pt_bin_edges[1:-1], 1):
-            pt_bin = self.all_bin_edges[ibin * self.num_lambda_bins]
+
+        for ibin, _ in enumerate(self.pt_bin_edges(binning_scheme)[1:-1], 1):
+            pt_bin = self.all_bin_edges(binning_scheme)[ibin * self.num_lambda_bins(binning_scheme)]
             plot.main_pad.cd()
             line = ROOT.TLine(pt_bin, y_low, pt_bin, y_high)
             line.SetLineStyle(2)
@@ -1831,12 +1881,12 @@ class BigNormalised1DPlotter(object):
         plot.main_pad.cd()
 
         # add bin texts
-        for ibin, (pt_val, pt_val_upper) in enumerate(zip(self.pt_bin_edges[:-1], self.pt_bin_edges[1:])):
+        for ibin, (pt_val, pt_val_upper) in enumerate(zip(self.pt_bin_edges(binning_scheme)[:-1], self.pt_bin_edges(binning_scheme)[1:])):
             labels_inside_align = 'lower'
 
             # fixgure out x location
-            pt_bin = self.all_bin_edges[ibin * self.num_lambda_bins]
-            pt_bin_higher = self.all_bin_edges[(ibin+1) * self.num_lambda_bins]
+            pt_bin = self.all_bin_edges(binning_scheme)[ibin * self.num_lambda_bins(binning_scheme)]
+            pt_bin_higher = self.all_bin_edges(binning_scheme)[(ibin+1) * self.num_lambda_bins(binning_scheme)]
             pt_bin_interval = pt_bin_higher - pt_bin
             text_x = pt_bin + 0.35*(pt_bin_interval)
 
@@ -1885,26 +1935,14 @@ class BigNormalised1DPlotter(object):
 
         return lines, texts
 
-    def make_big_1d_normalised_hist(self, name):
+    def make_big_1d_normalised_hist(self, name, binning_scheme='generator'):
         """Make big 1D plot with normalised distribution per pt bin"""
-        if self.all_bin_edges is None:
-            if self.plot_with_bin_widths:
-                bins = []
-                for i in range(self.num_pt_bins):
-                    offset = i * math.ceil(self.lambda_bin_edges[-1])
-                    bins.extend(self.lambda_bin_edges[:-1] + offset)
-                    if i == (self.num_pt_bins-1):
-                        bins.append(self.lambda_bin_edges[-1:] + offset)
-                self.all_bin_edges = array('d', bins)
-            else:
-                self.all_bin_edges = array('d', list(range(0, self.nbins+1)))
-
-        h_new = ROOT.TH1D(name + "_1d_all_" + cu.get_unique_str(), "", self.nbins, self.all_bin_edges)
-        for ibin, _ in enumerate(self.pt_bin_edges[:-1]):
-            hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width(name, ibin, binning_scheme='generator')
+        h_new = ROOT.TH1D(name + "_1d_all_" + cu.get_unique_str(), "", self.nbins(binning_scheme), self.all_bin_edges(binning_scheme))
+        for ibin, _ in enumerate(self.pt_bin_edges(binning_scheme)[:-1]):
+            hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width(name, ibin, binning_scheme=binning_scheme)
 
             for lbin in range(1, hist_bin.GetNbinsX()+1):
-                global_bin = (ibin * self.num_lambda_bins) + lbin
+                global_bin = (ibin * self.num_lambda_bins(binning_scheme)) + lbin
                 h_new.SetBinContent(global_bin, hist_bin.GetBinContent(lbin))
                 h_new.SetBinError(global_bin, hist_bin.GetBinError(lbin))
 
@@ -1957,20 +1995,21 @@ class BigNormalised1DPlotter(object):
     def get_subplot_ylim(self):
         return (0, 2) if self.setup.has_data else (0.7, 1.3)
 
-    def get_big_1d(self, name):
-        if self._cache_1d.get(name, None) is None:
-            self._cache_1d[name] = self.make_big_1d_normalised_hist(name)
-        return self._cache_1d[name]
+    def get_big_1d(self, name, binning_scheme='generator'):
+        key = name + '_' + binning_scheme
+        if self._cache_1d.get(key, None) is None:
+            self._cache_1d[key] = self.make_big_1d_normalised_hist(name, binning_scheme)
+        return self._cache_1d[key]
 
     def plot_unfolded_truth(self):
         entries = [
-            Contribution(self.get_big_1d('hist_truth'),
+            Contribution(self.get_big_1d('hist_truth', 'generator'),
                          **self.get_mc_truth_kwargs()),
-            Contribution(self.get_big_1d('unfolded'),
-                         subplot=self.get_big_1d('hist_truth'),
+            Contribution(self.get_big_1d('unfolded', 'generator'),
+                         subplot=self.get_big_1d('hist_truth', 'generator'),
                          **self.get_unfolded_total_err_kwargs()),
-            Contribution(self.get_big_1d('unfolded_stat_err'),
-                         subplot=self.get_big_1d('hist_truth'),
+            Contribution(self.get_big_1d('unfolded_stat_err', 'generator'),
+                         subplot=self.get_big_1d('hist_truth', 'generator'),
                          **self.get_unfolded_stat_err_kwargs()),
         ]
         plot = Plot(entries, 'hist',
@@ -1988,15 +2027,51 @@ class BigNormalised1DPlotter(object):
         l, t = self._plot_pt_bins(plot)
         plot.save("%s/unfolded_1d_normalised_%s_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, self.setup.output_fmt))
 
+    def plot_reco_input(self):
+        entries = []
+        self.hist_bin_chopper.add_obj("input_hist_bg_subtracted", self.unfolder.input_hist_bg_subtracted)
+        self.hist_bin_chopper.add_obj("hist_mc_reco_bg_subtracted", self.unfolder.hist_mc_reco_bg_subtracted)
+        entries.append(
+            Contribution(self.get_big_1d("input_hist_bg_subtracted", 'detector'),
+                         label="Data bg-subtracted [detector-level]",
+                         line_color=ROOT.kBlack, line_width=0,
+                         marker_color=ROOT.kBlack, marker_size=0.6, marker_style=20,
+                         normalise_hist=False, subplot=self.get_big_1d("hist_mc_reco_bg_subtracted", 'detector'),
+                         subplot_line_width=1),
+        )
+
+        entries.append(
+            Contribution(self.get_big_1d("hist_mc_reco_bg_subtracted", 'detector'),
+                         label="MC bg-subtracted [detector-level]",
+                         line_color=ROOT.kAzure+4, line_width=1,
+                         marker_color=ROOT.kAzure+4, marker_size=0,
+                         normalise_hist=False),
+        )
+
+        plot = Plot(entries, 'hist',
+                    ytitle=self.setup.pt_bin_normalised_differential_label,
+                    title=self.get_title(),
+                    xtitle=self.setup.angle_str + ', per %s bin' % (self.setup.pt_var_str),
+                    has_data=self.setup.has_data,
+                    ylim=self._get_ylim(entries),
+                    subplot_type='ratio',
+                    subplot_title="Data / MC",
+                    subplot_limits=self.get_subplot_ylim()
+                    )
+        self._modify_plot(plot)
+        plot.plot("NOSTACK E")
+        l, t = self._plot_pt_bins(plot, binning_scheme='detector')
+        plot.save("%s/detector_1d_normalised_%s_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, self.setup.output_fmt))
+
     def plot_unfolded_truth_alt_truth(self):
         entries = [
-            Contribution(self.get_big_1d('hist_truth'),
+            Contribution(self.get_big_1d('hist_truth', 'generator'),
                          **self.get_mc_truth_kwargs()),
-            Contribution(self.get_big_1d('alt_hist_truth'),
-                         subplot=self.get_big_1d('hist_truth'),
+            Contribution(self.get_big_1d('alt_hist_truth', 'generator'),
+                         subplot=self.get_big_1d('hist_truth', 'generator'),
                          **self.get_alt_mc_truth_kwargs()),
-            Contribution(self.get_big_1d('unfolded'),
-                         subplot=self.get_big_1d('hist_truth'),
+            Contribution(self.get_big_1d('unfolded', 'generator'),
+                         subplot=self.get_big_1d('hist_truth', 'generator'),
                          **self.get_unfolded_total_err_kwargs()),
         ]
         plot = Plot(entries, 'hist',
@@ -2016,13 +2091,13 @@ class BigNormalised1DPlotter(object):
 
     def plot_unfolded_truth_alt_response(self, alt_unfolder):
         entries = [
-            Contribution(self.get_big_1d('hist_truth'),
+            Contribution(self.get_big_1d('hist_truth', 'generator'),
                          **self.get_mc_truth_kwargs()),
-            Contribution(self.get_big_1d('unfolded_stat_err'),
-                         subplot=self.get_big_1d('hist_truth'),
+            Contribution(self.get_big_1d('unfolded_stat_err', 'generator'),
+                         subplot=self.get_big_1d('hist_truth', 'generator'),
                          **self.get_unfolded_stat_err_kwargs()),
-            Contribution(self.get_big_1d('alt_unfolded_stat_err'),
-                         subplot=self.get_big_1d('hist_truth'),
+            Contribution(self.get_big_1d('alt_unfolded_stat_err', 'generator'),
+                         subplot=self.get_big_1d('hist_truth', 'generator'),
                          **self.get_alt_unfolded_stat_err_kwargs(alt_unfolder)),
         ]
         plot = Plot(entries, 'hist',
@@ -2042,16 +2117,16 @@ class BigNormalised1DPlotter(object):
 
     def plot_unfolded_truth_alt_response_truth(self, alt_unfolder):
         entries = [
-            Contribution(self.get_big_1d('hist_truth'),
+            Contribution(self.get_big_1d('hist_truth', 'generator'),
                          **self.get_mc_truth_kwargs()),
-            Contribution(self.get_big_1d('alt_hist_truth'),
-                         subplot=self.get_big_1d('hist_truth'),
+            Contribution(self.get_big_1d('alt_hist_truth', 'generator'),
+                         subplot=self.get_big_1d('hist_truth', 'generator'),
                          **self.get_alt_mc_truth_kwargs()),
-            Contribution(self.get_big_1d('unfolded'),
-                         subplot=self.get_big_1d('hist_truth'),
+            Contribution(self.get_big_1d('unfolded', 'generator'),
+                         subplot=self.get_big_1d('hist_truth', 'generator'),
                          **self.get_unfolded_total_err_kwargs()),
-            Contribution(self.get_big_1d('alt_unfolded_stat_err'),
-                         subplot=self.get_big_1d('hist_truth'),
+            Contribution(self.get_big_1d('alt_unfolded_stat_err', 'generator'),
+                         subplot=self.get_big_1d('hist_truth', 'generator'),
                          **self.get_alt_unfolded_stat_err_kwargs(alt_unfolder)),
         ]
         plot = Plot(entries, 'hist',
@@ -2072,21 +2147,21 @@ class BigNormalised1DPlotter(object):
     def plot_unfolded_exp_systs(self):
         for syst_dict in self.setup.region['experimental_systematics']:
             entries = [
-                        # Contribution(self.get_big_1d('hist_truth'),
+                        # Contribution(self.get_big_1d('hist_truth', 'generator'),
                         #  **self.get_mc_truth_kwargs()),
-                        Contribution(self.get_big_1d('unfolded_stat_err'),
+                        Contribution(self.get_big_1d('unfolded_stat_err', 'generator'),
                                      **dict(self.get_unfolded_stat_err_kwargs(),
                                             line_color=ROOT.kGray+2))
             ]
             syst_label_no_spaces = cu.no_space_str(syst_dict['label'])
             hbc_name = 'syst_shifted_%s_unfolded' % syst_label_no_spaces
             self.hist_bin_chopper.add_obj(hbc_name, self.unfolder.systs_shifted[syst_dict['label']])
-            entries.append(Contribution(self.get_big_1d(hbc_name),
+            entries.append(Contribution(self.get_big_1d(hbc_name, 'generator'),
                                         label=syst_dict['label'],
                                         line_color=syst_dict['colour'], line_width=self.line_width,
                                         line_style=2 if 'down' in syst_dict['label'].lower() else 1,
                                         marker_color=syst_dict['colour'], marker_size=0,
-                                        subplot=self.get_big_1d('unfolded_stat_err')))
+                                        subplot=self.get_big_1d('unfolded_stat_err', 'generator')))
             plot = Plot(entries, 'hist',
                         ytitle=self.setup.pt_bin_normalised_differential_label,
                         title=self.get_title(),
@@ -2103,20 +2178,20 @@ class BigNormalised1DPlotter(object):
             plot.save("%s/unfolded_1d_normalised_exp_syst_%s_%s_divBinWidth.%s" % (self.setup.output_dir, syst_label_no_spaces, self.setup.append, self.setup.output_fmt))
 
     def plot_unfolded_model_systs(self):
-        all_entries = [Contribution(self.get_big_1d('hist_truth'),
+        all_entries = [Contribution(self.get_big_1d('hist_truth', 'generator'),
                                      **self.get_mc_truth_kwargs()),
-                       Contribution(self.get_big_1d('unfolded_stat_err'),
-                                    subplot=self.get_big_1d('hist_truth'),
+                       Contribution(self.get_big_1d('unfolded_stat_err', 'generator'),
+                                    subplot=self.get_big_1d('hist_truth', 'generator'),
                                     **dict(self.get_unfolded_stat_err_kwargs(),
                                            line_color=ROOT.kGray+2))
                       ]
 
         for syst_dict in self.setup.region['model_systematics']:
             entries = [
-                        Contribution(self.get_big_1d('hist_truth'),
+                        Contribution(self.get_big_1d('hist_truth', 'generator'),
                                      **self.get_mc_truth_kwargs()),
-                        Contribution(self.get_big_1d('unfolded_stat_err'),
-                                     subplot=self.get_big_1d('hist_truth'),
+                        Contribution(self.get_big_1d('unfolded_stat_err', 'generator'),
+                                     subplot=self.get_big_1d('hist_truth', 'generator'),
                                      **dict(self.get_unfolded_stat_err_kwargs(),
                                             line_color=ROOT.kGray+2))
             ]
@@ -2131,15 +2206,15 @@ class BigNormalised1DPlotter(object):
             self.hist_bin_chopper.add_obj(hbc_name, syst_unfolder.unfolded)
 
             entries.extend([
-                Contribution(self.get_big_1d(hbc_name_gen),
+                Contribution(self.get_big_1d(hbc_name_gen, 'generator'),
                              label="Generator (%s)" % (syst_label),
                              line_color=syst_dict['colour'], line_width=self.line_width, line_style=2,
                              marker_color=syst_dict['colour'], marker_size=0),
-                Contribution(self.get_big_1d(hbc_name),
+                Contribution(self.get_big_1d(hbc_name, 'generator'),
                              label="Unfolded (#tau = %.3g) (stat. err) (%s)" % (syst_unfolder.tau, syst_label),
                              line_color=syst_dict['colour'], line_width=self.line_width, line_style=1,
                              marker_color=syst_dict['colour'], marker_size=0,
-                             subplot=self.get_big_1d(hbc_name_gen)),
+                             subplot=self.get_big_1d(hbc_name_gen, 'generator')),
             ])
             all_entries.extend(entries[-2:])
             plot = Plot(entries, 'hist',
@@ -2173,10 +2248,10 @@ class BigNormalised1DPlotter(object):
         plot.save("%s/unfolded_1d_normalised_all_model_syst_%s_%s_divBinWidth.%s" % (self.setup.output_dir, syst_label_no_spaces, self.setup.append, self.setup.output_fmt))
 
     def plot_unfolded_model_systs_only_scale(self):
-        all_entries = [Contribution(self.get_big_1d('hist_truth'),
+        all_entries = [Contribution(self.get_big_1d('hist_truth', 'generator'),
                                      **self.get_mc_truth_kwargs()),
-                       Contribution(self.get_big_1d('unfolded_stat_err'),
-                                    subplot=self.get_big_1d('hist_truth'),
+                       Contribution(self.get_big_1d('unfolded_stat_err', 'generator'),
+                                    subplot=self.get_big_1d('hist_truth', 'generator'),
                                     **dict(self.get_unfolded_stat_err_kwargs(),
                                            line_color=ROOT.kGray+2))
                       ]
@@ -2196,15 +2271,15 @@ class BigNormalised1DPlotter(object):
             self.hist_bin_chopper.add_obj(hbc_name, syst_unfolder.unfolded)
 
             all_entries.extend([
-                Contribution(self.get_big_1d(hbc_name_gen),
+                Contribution(self.get_big_1d(hbc_name_gen, 'generator'),
                              label="Generator (%s)" % (syst_label),
                              line_color=syst_dict['colour'], line_width=self.line_width, line_style=2,
                              marker_color=syst_dict['colour'], marker_size=0),
-                Contribution(self.get_big_1d(hbc_name),
+                Contribution(self.get_big_1d(hbc_name, 'generator'),
                              label="Unfolded (#tau = %.3g) (stat. err) (%s)" % (syst_unfolder.tau, syst_label),
                              line_color=syst_dict['colour'], line_width=self.line_width, line_style=1,
                              marker_color=syst_dict['colour'], marker_size=0,
-                             subplot=self.get_big_1d(hbc_name_gen)),
+                             subplot=self.get_big_1d(hbc_name_gen, 'generator')),
             ])
 
         plot = Plot(all_entries, 'hist',
@@ -2224,10 +2299,10 @@ class BigNormalised1DPlotter(object):
 
     def plot_unfolded_pdf_systs(self):
         entries = [
-                    Contribution(self.get_big_1d('hist_truth'),
+                    Contribution(self.get_big_1d('hist_truth', 'generator'),
                                  **self.get_mc_truth_kwargs()),
-                    Contribution(self.get_big_1d('unfolded_stat_err'),
-                                 subplot=self.get_big_1d('hist_truth'),
+                    Contribution(self.get_big_1d('unfolded_stat_err', 'generator'),
+                                 subplot=self.get_big_1d('hist_truth', 'generator'),
                                  **dict(self.get_unfolded_stat_err_kwargs(),
                                         line_color=ROOT.kGray+2))
         ]
@@ -2243,15 +2318,15 @@ class BigNormalised1DPlotter(object):
             self.hist_bin_chopper.add_obj(hbc_name, syst_unfolder.unfolded)
 
             entries.extend([
-                Contribution(self.get_big_1d(hbc_name_gen),
+                Contribution(self.get_big_1d(hbc_name_gen, 'generator'),
                              label="Generator (%s)" % (syst_label),
                              line_color=syst_dict['colour'], line_width=self.line_width, line_style=2,
                              marker_color=syst_dict['colour'], marker_size=0),
-                Contribution(self.get_big_1d(hbc_name),
+                Contribution(self.get_big_1d(hbc_name, 'generator'),
                              label="Unfolded (#tau = %.3g) (stat. err) (%s)" % (syst_unfolder.tau, syst_label),
                              line_color=syst_dict['colour'], line_width=self.line_width, line_style=1,
                              marker_color=syst_dict['colour'], marker_size=0,
-                             subplot=self.get_big_1d(hbc_name_gen)),
+                             subplot=self.get_big_1d(hbc_name_gen, 'generator')),
             ])
         plot = Plot(entries, 'hist',
                     ytitle=self.setup.pt_bin_normalised_differential_label,
@@ -2278,9 +2353,9 @@ class BigNormalised1DPlotter(object):
     #     folded_mc_truth_hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('folded_mc_truth', ibin, binning_scheme='detector')
 
     #     entries = [
-    #         Contribution(self.get_big_1d("hist_mc_reco_bg_subtracted"),
+    #         Contribution(self.get_big_1d("hist_mc_reco_bg_subtracted", 'generator'),
     #                      label=""),
-    #         Contribution(self.get_big_1d("folded_mc_truth"),
+    #         Contribution(self.get_big_1d("folded_mc_truth", 'generator'),
     #                      label="")
     #     ]
     #     plot = Plot(entries, 'hist',
@@ -2320,7 +2395,10 @@ def do_all_big_1d_plots_per_region_angle(setup, unpack_dict, hist_bin_chopper=No
     has_pdf_systs = len(setup.region['pdf_systematics']) > 0
 
     big_plotter = BigNormalised1DPlotter(setup, hist_bin_chopper, unfolder)
+    big_plotter.plot_with_bin_widths = True
+
     big_plotter.plot_unfolded_truth()
+    big_plotter.plot_reco_input()
 
     if alt_hist_truth:
         big_plotter.plot_unfolded_truth_alt_truth()
