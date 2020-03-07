@@ -220,9 +220,9 @@ class GenPtBinnedPlotter(object):
 
     def plot_unfolded_unnormalised(self):
         for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
-            mc_gen_hist_bin = self.hist_bin_chopper.get_pt_bin('hist_truth', ibin, binning_scheme='generator')
-            unfolded_hist_bin_stat_errors = self.hist_bin_chopper.get_pt_bin('unfolded_stat_err', ibin, binning_scheme='generator')
-            unfolded_hist_bin_total_errors = self.hist_bin_chopper.get_pt_bin('unfolded', ibin, binning_scheme='generator')
+            mc_gen_hist_bin = self.hist_bin_chopper.get_pt_bin_div_bin_width('hist_truth', ibin, binning_scheme='generator')
+            unfolded_hist_bin_stat_errors = self.hist_bin_chopper.get_pt_bin_div_bin_width('unfolded_stat_err', ibin, binning_scheme='generator')
+            unfolded_hist_bin_total_errors = self.hist_bin_chopper.get_pt_bin_div_bin_width('unfolded', ibin, binning_scheme='generator')
 
             # unnormalised version
             entries = [
