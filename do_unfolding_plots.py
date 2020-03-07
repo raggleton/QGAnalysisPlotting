@@ -91,8 +91,10 @@ class Setup(object):
         self.detector_title = "Detector-level " + self.angle_str
         self.pt_bin_normalised_differential_label = "#frac{1}{d#sigma/dp_{T}} #frac{d^{2}#sigma}{dp_{T} d%s}" % (angle.lambda_str)
         self.pt_bin_unnormalised_differential_label = "#frac{1}{dN/dp_{T}} #frac{d^{2}N}{dp_{T} d%s}" % (angle.lambda_str)  # FIXME
+        self.pt_bin_unnormalised_differential_label = "N"
         self.lambda_bin_normalised_differential_label = "#frac{1}{d#sigma/d%s} #frac{d^{2}#sigma}{dp_{T} d%s}" % (angle.lambda_str, angle.lambda_str)
         self.lambda_bin_unnormalised_differential_label = "#frac{1}{dN/d%s} #frac{d^{2}N}{dp_{T} d%s}" % (angle.lambda_str, angle.lambda_str)  # FIXME
+        self.lambda_bin_unnormalised_differential_label = "N"
         self.output_dir = output_dir
         self.output_fmt = 'pdf'
         self.append = "%s_%s" % (region['name'], angle.var)  # common str to put on filenames, etc. don't need angle_prepend as 'groomed' in region name
@@ -244,7 +246,7 @@ class GenPtBinnedPlotter(object):
             if not self.check_entries(entries, "plot_unfolded_unnormalised %d" % (ibin)):
                 return
             plot = Plot(entries,
-                        ytitle="N",
+                        ytitle=self.setup.pt_bin_unnormalised_differential_label,
                         title=self.get_pt_bin_title(bin_edge_low, bin_edge_high),
                         **self.pt_bin_plot_args)
             self._modify_plot(plot)
@@ -720,6 +722,65 @@ class GenPtBinnedPlotter(object):
             plot.plot("NOSTACK E1")
             plot.save("%s/unfolded_syst_variations_%s_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
 
+    def plot_unfolded_with_exp_systs_unnormalised(self):
+        """Plot shifted unfolded absolute distributions for each syst"""
+        for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
+            # Get total for this bin
+            unfolded_hist_bin_total_errors = self.hist_bin_chopper.get_pt_bin_div_bin_width('unfolded', ibin, binning_scheme='generator')
+            # Get stat. unc. from input for this bin
+            unfolded_hist_bin_stat_errors = self.hist_bin_chopper.get_pt_bin_div_bin_width('unfolded_stat_err', ibin, binning_scheme='generator')
+            # Get stat. unc. from response matrix for this bin
+            unfolded_hist_bin_rsp_errors = self.hist_bin_chopper.get_pt_bin_div_bin_width('unfolded_rsp_err', ibin, binning_scheme='generator')
+
+            def _remove_error_bars(h):
+                for i in range(1, h.GetNbinsX()+1):
+                    h.SetBinError(i, 0)
+
+            entries = []
+            for syst_dict in self.region['experimental_systematics']:
+                syst_unfolded_hist_bin = self.hist_bin_chopper.get_pt_bin_div_bin_width('syst_shifted_%s_unfolded' % cu.no_space_str(syst_dict['label']), ibin, binning_scheme='generator')
+                _remove_error_bars(syst_unfolded_hist_bin)
+                c = Contribution(syst_unfolded_hist_bin,
+                                 label=syst_dict['label'],
+                                 line_color=syst_dict['colour'], line_width=self.line_width,
+                                 line_style=2 if 'down' in syst_dict['label'].lower() else 1,
+                                 marker_color=syst_dict['colour'], marker_size=0,
+                                 subplot=unfolded_hist_bin_stat_errors)
+                entries.append(c)
+
+            entries.append(
+                Contribution(unfolded_hist_bin_total_errors,
+                             label="Unfolded (#tau = %.3g) (total unc.)" % (self.unfolder.tau),
+                             line_color=self.plot_colours['unfolded_total_colour'], line_width=self.line_width, line_style=1,
+                             marker_color=self.plot_colours['unfolded_total_colour'], marker_style=20, marker_size=0.75),
+            )
+            entries.append(
+                Contribution(unfolded_hist_bin_stat_errors,
+                             label="Unfolded (#tau = %.3g) (stat. unc.)" % (self.unfolder.tau),
+                             line_color=self.plot_colours['unfolded_stat_colour'], line_width=self.line_width, line_style=1,
+                             marker_color=self.plot_colours['unfolded_stat_colour'], marker_style=20, marker_size=0.75),
+            )
+            if not self.check_entries(entries, "plot_unfolded_with_exp_systs_normalised %d" % ibin):
+                return
+            plot = Plot(entries,
+                        xtitle=self.setup.particle_title,
+                        ytitle=self.setup.pt_bin_unnormalised_differential_label,
+                        what="hist",
+                        title=self.get_pt_bin_title(bin_edge_low, bin_edge_high),
+                        has_data=self.setup.has_data,
+                        subplot_type='ratio',
+                        subplot_title='Syst / nominal',
+                        subplot_limits=(0.75, 1.25))
+            self._modify_plot(plot)
+            plot.legend.SetX1(0.53)
+            plot.legend.SetY1(0.7)
+            plot.legend.SetX2(0.96)
+            plot.legend.SetY2(0.88)
+            if len(entries) > 5: plot.legend.SetNColumns(2)
+            # plot.subplot_limits = (0.9, 1.1)
+            plot.plot("NOSTACK E1")
+            plot.save("%s/unfolded_syst_variations_unnormalised_%s_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
+
     def plot_exp_syst_variation_normalised(self):
         """Plot varation / central value on normalised hists
         (basically the subplot from plot_unfolded_with_exp_systs_normalised)
@@ -970,7 +1031,7 @@ class GenLambdaBinnedPlotter(object):
             if not self.check_entries(entries, "plot_unfolded_unnormalised %d" % (ibin)):
                 return
             plot = Plot(entries,
-                        ytitle="N",
+                        ytitle=self.setup.pt_bin_unnormalised_differential_label,
                         title=self.get_lambda_bin_title(bin_edge_low, bin_edge_high),
                         **self.lambda_bin_plot_args)
             self._modify_plot(plot)
@@ -1006,7 +1067,7 @@ class GenLambdaBinnedPlotter(object):
             if not self.check_entries(entries, "plot_unfolded_with_unreg_unnormalised %d" % (ibin)):
                 return
             plot = Plot(entries,
-                        ytitle="N",
+                        ytitle=self.setup.pt_bin_unnormalised_differential_label,
                         title=self.get_lambda_bin_title(bin_edge_low, bin_edge_high),
                         **self.lambda_bin_plot_args)
             self._modify_plot(plot)
@@ -1167,7 +1228,7 @@ class GenLambdaBinnedPlotter(object):
             if not self.check_entries(pdf_entries, "plot_unfolded_with_pdf_systs_unnormalised %d" % (ibin)):
                 return
             plot = Plot(pdf_entries,
-                        ytitle="N",
+                        ytitle=self.setup.pt_bin_unnormalised_differential_label,
                         title=self.get_lambda_bin_title(bin_edge_low, bin_edge_high),
                         **self.lambda_bin_plot_args)
             self._modify_plot(plot)
@@ -1603,6 +1664,9 @@ def do_all_plots_per_region_angle(setup, unpack_dict):
     hbc = HistBinChopper(generator_binning=unfolder.generator_binning.FindNode("generatordistribution"),
                          detector_binning=unfolder.detector_binning.FindNode("detectordistribution"))
     hbc.add_obj("hist_truth", unfolder.hist_truth)
+    hbc.add_obj('unfolded', unfolder.get_output())
+    hbc.add_obj('unfolded_stat_err', unfolder.get_unfolded_with_ematrix_stat())
+    hbc.add_obj('unfolded_rsp_err', unfolder.get_unfolded_with_ematrix_rsp())
     hbc.update(unfolder.hist_bin_chopper)   # update the HistBinChopper with the new normalised systematics already produced in unfolder
 
     # Iterate through pt bins - gen binning
@@ -1611,8 +1675,9 @@ def do_all_plots_per_region_angle(setup, unpack_dict):
                                                bins=unfolder.pt_bin_edges_gen,
                                                hist_bin_chopper=hbc,
                                                unfolder=unfolder)
-    gen_pt_binned_plotter.plot_unfolded_unnormalised()
     gen_pt_binned_plotter.plot_unfolded_normalised()
+    gen_pt_binned_plotter.plot_unfolded_unnormalised()
+
     if alt_hist_truth:
         gen_pt_binned_plotter.hist_bin_chopper.add_obj('alt_hist_truth', alt_hist_truth)
         gen_pt_binned_plotter.plot_unfolded_with_alt_truth_normalised()
@@ -1630,6 +1695,7 @@ def do_all_plots_per_region_angle(setup, unpack_dict):
         gen_pt_binned_plotter.plot_uncertainty_shifts_normalised()
         gen_pt_binned_plotter.plot_unfolded_with_exp_systs_normalised()
         gen_pt_binned_plotter.plot_exp_syst_variation_normalised()
+        gen_pt_binned_plotter.plot_unfolded_with_exp_systs_unnormalised()
 
     if has_model_systs:
         gen_pt_binned_plotter.plot_unfolded_with_model_systs_normalised()
