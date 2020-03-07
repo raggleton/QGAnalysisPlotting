@@ -181,6 +181,16 @@ class MyUnfolderPlotter(object):
                           draw_bin_lines_y=True,
                           canvas_size=(800, 700))
 
+    def draw_response_matrix_normed_by_detector_pt(self, output_dir='.', append="", title=""):
+        output_filename = "%s/response_map_normed_reco_pt_%s.%s" % (output_dir, append, self.output_fmt)
+        self.draw_2d_hist(self.unfolder.get_response_normed_by_detector_pt(),
+                          title=title,
+                          output_filename=output_filename,
+                          xtitle='Generator bin', ytitle='Detector bin',
+                          draw_bin_lines_x=True,
+                          draw_bin_lines_y=True,
+                          canvas_size=(800, 700))
+
     def draw_probability_matrix(self, output_dir='.', append="", title=""):
         output_filename = "%s/probability_map_%s.%s" % (output_dir, append, self.output_fmt)
         self.draw_2d_hist(self.unfolder.get_probability_matrix(),

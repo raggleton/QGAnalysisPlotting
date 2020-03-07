@@ -863,6 +863,49 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         else:
             print(" - You probably should look into regularization")
 
+    def get_response_normed_by_detector_pt(self):
+        if getattr(self, 'response_map_normed_by_detector_pt', None) is None:
+            normed_response_map = self.response_map.Clone("response_map_normed_by_detector_pt")
+            sums = []
+            bins = list(self.pt_bin_edges_underflow_reco) + list(self.pt_bin_edges_reco)[1:]
+            # print(bins)
+            # First get the sum over all bins corresponding to this reco pT bin
+            # Means summing over a number of reco lambda bins, and all generator bins
+            for ibin_pt, (pt, pt_next) in enumerate(zip(bins[:-1], bins[1:])):
+                # print(ibin_pt, pt, pt_next)
+                this_sum = 0
+                var = self.variable_bin_edges_reco[0] * 1.00000001
+                # urgh this is horrible, but crashes if you use self.detector_binning.GetGlobalBinNumber() whyyyy
+                # need separate binning obj for each value, else it misses bins
+                binning = self.detector_distribution_underflow if pt in self.pt_bin_edges_underflow_reco else self.detector_distribution
+                binning_next = self.detector_distribution_underflow if pt_next in self.pt_bin_edges_underflow_reco else self.detector_distribution
+                global_bin_reco = binning.GetGlobalBinNumber(var, pt*1.00001)
+                global_bin_reco_next = binning_next.GetGlobalBinNumber(var, pt_next*1.00001)
+                # print(ibin_pt, pt, pt_next, global_bin_reco, global_bin_reco_next)
+                for i_reco in range(global_bin_reco, global_bin_reco_next):
+                    for global_bin_gen in range(self.response_map.GetNbinsX()+1):
+                        this_sum += self.response_map.GetBinContent(global_bin_gen, i_reco)
+                sums.append(this_sum)
+            # print(sums)
+
+            # Now set the new bin contents and error bars by scaling using these sums
+            for ibin_pt, (pt, pt_next) in enumerate(zip(bins[:-1], bins[1:])):
+                var = self.variable_bin_edges_reco[0] * 1.00000001
+                # urgh this is horrible, but crashes if you use self.detector_binning.GetGlobalBinNumber() whyyyy
+                binning = self.detector_distribution_underflow if pt in self.pt_bin_edges_underflow_reco else self.detector_distribution
+                binning_next = self.detector_distribution_underflow if pt_next in self.pt_bin_edges_underflow_reco else self.detector_distribution
+                global_bin_reco = binning.GetGlobalBinNumber(var, pt*1.00001)
+                global_bin_reco_next = binning_next.GetGlobalBinNumber(var, pt_next*1.00001)
+                for i_reco in range(global_bin_reco, global_bin_reco_next):
+                    for global_bin_gen in range(self.response_map.GetNbinsX()+1):
+                        factor = 1./sums[ibin_pt] if sums[ibin_pt] != 0 else 0
+                        # print("new content", global_bin_gen, i_reco, self.response_map.GetBinContent(global_bin_gen, i_reco) * factor)
+                        normed_response_map.SetBinContent(global_bin_gen, i_reco, self.response_map.GetBinContent(global_bin_gen, i_reco) * factor)
+                        normed_response_map.SetBinError(global_bin_gen, i_reco, self.response_map.GetBinError(global_bin_gen, i_reco) * factor)
+
+            self.response_map_normed_by_detector_pt = normed_response_map
+        return self.response_map_normed_by_detector_pt
+
     # METHODS FOR FORWARD-FOLDING & CHI2 TESTS
     # --------------------------------------------------------------------------
     def get_folded_unfolded(self):
