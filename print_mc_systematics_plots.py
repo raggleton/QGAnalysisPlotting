@@ -61,6 +61,7 @@ def do_plots(nominal_dir, herwig_dir, output_dir,
     nominal_tfile = cu.TFileCacher(os.path.join(nominal_dir, main_filename))
     herwig_filename = qgc.QCD_HERWIG_FILENAME
     herwig_tfile = cu.TFileCacher(os.path.join(herwig_dir, herwig_filename)) if herwig_dir else None
+    data_tfile = cu.TFileCacher(os.path.join(nominal_dir, qgc.JETHT_ZB_FILENAME))
 
     syst_up_tfiles = [cu.TFileCacher(os.path.join(syst_dir, main_filename)) for (syst_dir, _, _) in syst_ups]
     syst_down_tfiles = [cu.TFileCacher(os.path.join(syst_dir, main_filename)) for (syst_dir, _, _) in syst_downs]
@@ -119,6 +120,14 @@ def do_plots(nominal_dir, herwig_dir, output_dir,
                                           subplot=nominal_hist)
                     dijet_entries.append((qgp.get_projection_plot(h2d_qcd_mc3, start_val, end_val), qcd_kwargs_mc3))
 
+            # JETHT-ZB DATA
+            h2d_qcd_data = data_tfile.Get("%s/%s" % (plot_dirname, v))
+            qcd_kwargs_data = dict(line_color=ROOT.kBlack, line_width=lw, fill_color=ROOT.kBlack,
+                                   marker_color=ROOT.kBlack, marker_style=cu.Marker.get('circle'), marker_size=1,
+                                   label="Data", subplot=nominal_hist)
+            data_hist = qgp.get_projection_plot(h2d_qcd_data, start_val, end_val)
+            dijet_entries.append((data_hist, qcd_kwargs_data))
+
             # rebin here only affects constant bin width plots
             # other set of plots uses binning structure defined at the top
             rebin = 5
@@ -175,6 +184,7 @@ def do_plots(nominal_dir, herwig_dir, output_dir,
             qgp.do_comparison_plot(dijet_entries,
                                    "%s/ptBinned/%s_pt%dto%d_dijet.%s" % (output_dir, v, start_val, end_val, OUTPUT_FMT),
                                    rebin=rebin,
+                                   draw_opt="NOSTACK HIST E",
                                    title="%d < p_{T}^{jet} < %d GeV\n%s" % (start_val, end_val, jet_str),
                                    xtitle=ang.name + " (" + ang.lambda_str + ")",
                                    xlim=xlim, ylim=ylim,
@@ -278,6 +288,15 @@ if __name__ == "__main__":
 
     all_up_shifts = []
     all_down_shifts = []
+
+    if args.doHerwig:
+        print('Doing Herwig')
+        do_plots(args.nominal,
+                 herwig_dir=herwig_dir,
+                 output_dir=os.path.join(args.outputDir, 'herwig'),
+                 syst_ups=[],
+                 syst_downs=[]
+                 )
 
     if args.doChargedHadron:
         print('Doing ChargedHadron')
