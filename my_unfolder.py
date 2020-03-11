@@ -1212,6 +1212,76 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
                                                       binning_scheme='generator')
             self.hist_bin_chopper._cache[key] = variations_envelope
 
+    def create_normalised_pdf_syst_uncertainty(self, pdf_systs):
+        """Create PDF uncertainty from unfolded PDF variation inputs
+
+        This is done by taking in all the unfolded pdf systematics results,
+        then getting the normalised result for each pT bin.
+        Then do same for truth hists.
+        We can then figure out the envelope of (unfolded/truth) from the pdf variations.
+        We can then store this as an extra uncertianty, to be added in quadrature later.
+
+        This is done because we are adding an uncertainty that corresponds to a
+        change in the input being unfolded, and how well we handle that.
+        As opposed to just comparing the unfolded results, which only tells
+        about theoretical uncertainties in your MC.
+
+        This is probably the same size as putting it in as an "experimental" syst,
+        instead varying the response matrix.
+
+        pdf_systs is a list of dicts, the ones produced in unfolding.py
+        Each has the form:
+        {
+            "label": "PDF",  # this is a tempalte entry, used for future
+            "tfile": os.path.join(source_dir_systs, 'PDFvariationsTrue', qgc.QCD_FILENAME),
+            "colour": ROOT.kCyan+2,
+            "unfolder": None,
+        }
+        """
+        for syst in pdf_systs:
+            syst['hbc_key_unfolded'] = 'pdf_syst_%s_unfolded' % cu.no_space_str(syst['label'])
+            self.hist_bin_chopper.add_obj(syst['hbc_key_unfolded'], syst['unfolder'].get_unfolded_with_ematrix_stat())
+
+            syst['hbc_key_truth'] = 'pdf_syst_%s_hist_truth' % cu.no_space_str(syst['label'])
+            self.hist_bin_chopper.add_obj(syst['hbc_key_truth'], syst['unfolder'].hist_truth)
+
+        # Add dummy object to hist_bin_chopper for later, so we can directly manipulate the cache
+        uncert_name = "pdf_uncert"
+        self.hist_bin_chopper.add_obj(uncert_name, self.get_unfolded_with_ematrix_stat())
+
+        self.hist_bin_chopper.add_obj('unfolded_stat_err', self.get_unfolded_with_ematrix_stat())
+        # print("Doing pdf variation")
+        for ibin_pt in range(len(self.pt_bin_edges_gen[:-1])):
+            variations_ratio = []
+            for syst in pdf_systs:
+                # Get normalised results for each variation, calulate ratio
+                vr = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width(syst['hbc_key_unfolded'], ibin_pt, binning_scheme='generator').Clone(cu.get_unique_str())
+                vt = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width(syst['hbc_key_truth'], ibin_pt, binning_scheme='generator')
+                vr.Divide(vt)
+                variations_ratio.append(vr)
+
+            # Calculate envelope error bar from RMS of ratio in each bin
+            # pdf error bar is then ratio * nominal result
+            nominal = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded_stat_err', ibin_pt, binning_scheme='generator')
+            variations_envelope = nominal.Clone("pdf_envelope_pt_bin%d" % ibin_pt)
+            # print("pt bin", ibin_pt)
+            for ix in range(1, variations_envelope.GetNbinsX()+1):
+                # np.std does sqrt((abs(x - x.mean())**2) / (len(x) - ddof)),
+                # and the PDF4LHC recommendation is N-1 in the denominator
+                rms_ratio = np.std([abs(v.GetBinContent(ix) - 1)
+                                    for v in variations_ratio], ddof=1)
+                variations_envelope.SetBinError(ix, rms_ratio*nominal.GetBinContent(ix))
+                # print("bin", ix, "max ratio", max_ratio, "setting error", max_ratio*nominal.GetBinContent(ix))
+
+            # Store in hist_bin_chopper for later
+            key = self.hist_bin_chopper._generate_key(uncert_name,
+                                                      ind=ibin_pt,
+                                                      axis='pt',
+                                                      do_norm=True,
+                                                      do_div_bin_width=True,
+                                                      binning_scheme='generator')
+            self.hist_bin_chopper._cache[key] = variations_envelope
+
     @staticmethod
     def remove_error_bars(h):
         for i in range(1, h.GetNbinsX()+1):
@@ -1285,9 +1355,13 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
                 syst_shift = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width(obj_name, ibin_pt, binning_scheme='generator')
                 error_bar_hists.append(self.convert_error_shift_to_error_bars(unfolded_hist_bin_stat_errors, syst_shift))
 
-            # Add in scale systs
+            # Add in scale syst
             if "scale_uncert" in self.hist_bin_chopper.objects:
                 error_bar_hists.append(self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('scale_uncert', ibin_pt, binning_scheme='generator'))
+
+            # Add in PDF syst
+            if "pdf_uncert" in self.hist_bin_chopper.objects:
+                error_bar_hists.append(self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('pdf_uncert', ibin_pt, binning_scheme='generator'))
 
             # Get normalised hist with nominal unfolded value, and change error bars
             # to be quadrature sum of those we want (stat+rsp+systs)
@@ -1428,6 +1502,9 @@ def unpack_unfolding_root_file(input_tfile, region, angle, do_alt_response=True,
     # remove entries without an unfolder
     region['model_systematics'] = [k for k in region['model_systematics']
                                    if k.get('unfolder', None) is not None]
+    # setup normalised errors
+    if len(region['model_systematics']) > 0:
+        unfolder.create_normalised_scale_syst_uncertainty(region['model_systematics'])
 
     # Get PDF systs
     # For some reason, this is done as a list instead of dict
@@ -1448,6 +1525,11 @@ def unpack_unfolding_root_file(input_tfile, region, angle, do_alt_response=True,
     # remove entries without an unfolder
     region['pdf_systematics'] = [k for k in region['pdf_systematics']
                                  if k.get('unfolder', None) is not None]
+    # setup normalised errors
+    if len(region['pdf_systematics']) > 0:
+        unfolder.create_normalised_pdf_syst_uncertainty(region['pdf_systematics'])
+
+    unfolder.setup_normalised_results()
 
     return dict(
         unfolder=unfolder,

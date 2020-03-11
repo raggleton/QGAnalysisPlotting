@@ -2368,6 +2368,8 @@ if __name__ == "__main__":
                     # ----------------------------------------------------------
                     pdf_unfolder.save_to_tfile(pdf_tdir)
 
+                unfolder.create_normalised_pdf_syst_uncertainty(region['pdf_systematics'])
+
             # ------------------------------------------------------------------
             # Finally update normalised results
             # ------------------------------------------------------------------

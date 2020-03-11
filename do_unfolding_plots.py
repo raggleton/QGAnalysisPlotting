@@ -829,7 +829,7 @@ class GenPtBinnedPlotter(object):
                                  marker_style=mark)
                 entries.append(c)
 
-            # Add scale systs
+            # Add scale syst
             if "scale_uncert"  in self.hist_bin_chopper.objects:
                 scale_hist = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('scale_uncert', ibin, binning_scheme='generator')
                 scale_col = ROOT.kTeal-8
@@ -843,6 +843,23 @@ class GenPtBinnedPlotter(object):
                     Contribution(_convert_error_bars_to_error_ratio_hist(scale_hist, -1),
                                 line_color=scale_col, line_width=self.line_width, line_style=2,
                                 marker_color=scale_col, marker_style=20, marker_size=0,
+                                fill_style=0, fill_color=15)
+                ])
+            
+            # Add pdf syst
+            if "pdf_uncert"  in self.hist_bin_chopper.objects:
+                pdf_hist = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('pdf_uncert', ibin, binning_scheme='generator')
+                pdf_col = ROOT.kOrange+4
+                entries.extend([
+                    Contribution(_convert_error_bars_to_error_ratio_hist(pdf_hist),
+                                label='PDF uncertainty',
+                                line_color=pdf_col, line_width=self.line_width, line_style=2,
+                                marker_color=pdf_col, marker_style=20, marker_size=0,
+                                fill_style=0, fill_color=15),
+                    # add -ve side, no label as we don't want it in legend
+                    Contribution(_convert_error_bars_to_error_ratio_hist(pdf_hist, -1),
+                                line_color=pdf_col, line_width=self.line_width, line_style=2,
+                                marker_color=pdf_col, marker_style=20, marker_size=0,
                                 fill_style=0, fill_color=15)
                 ])
 
@@ -1717,11 +1734,11 @@ def do_all_plots_per_region_angle(setup, unpack_dict):
     if has_model_systs:
         gen_pt_binned_plotter.plot_unfolded_with_model_systs_normalised()
 
-    if has_exp_systs or has_model_systs:
-        gen_pt_binned_plotter.plot_syst_variation_normalised()
-
     if has_pdf_systs:
         gen_pt_binned_plotter.plot_unfolded_with_pdf_systs_normalised()
+
+    if has_exp_systs or has_model_systs or has_pdf_systs:
+        gen_pt_binned_plotter.plot_syst_variation_normalised()
 
     # if has_data:
     gen_pt_binned_plotter.hist_bin_chopper.add_obj("input_hist_gen_binning_bg_subtracted", unfolder.input_hist_gen_binning_bg_subtracted)
