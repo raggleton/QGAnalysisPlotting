@@ -781,7 +781,7 @@ class GenPtBinnedPlotter(object):
             plot.plot("NOSTACK E1")
             plot.save("%s/unfolded_syst_variations_unnormalised_%s_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
 
-    def plot_exp_syst_variation_normalised(self):
+    def plot_syst_variation_normalised(self):
         """Plot varation / central value on normalised hists
         (basically the subplot from plot_unfolded_with_exp_systs_normalised)
         """
@@ -814,6 +814,7 @@ class GenPtBinnedPlotter(object):
             unfolded_hist_bin_rsp_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded_rsp_err', ibin, binning_scheme='generator')
 
             entries = []
+            # Add experimental systs
             for syst_dict, mark in zip(self.region['experimental_systematics'], cu.Marker().cycle(cycle_filling=True)):
                 syst_label_no_spaces = cu.no_space_str(syst_dict['label'])
                 syst_unfolded_hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('syst_shifted_%s_unfolded' % (syst_label_no_spaces), ibin, binning_scheme='generator')
@@ -827,6 +828,23 @@ class GenPtBinnedPlotter(object):
                                  marker_color=syst_dict['colour'], marker_size=1.25,
                                  marker_style=mark)
                 entries.append(c)
+
+            # Add scale systs
+            if "scale_uncert"  in self.hist_bin_chopper.objects:
+                scale_hist = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('scale_uncert', ibin, binning_scheme='generator')
+                scale_col = ROOT.kTeal-8
+                entries.extend([
+                    Contribution(_convert_error_bars_to_error_ratio_hist(scale_hist),
+                                label='Scale uncertainty',
+                                line_color=scale_col, line_width=self.line_width, line_style=2,
+                                marker_color=scale_col, marker_style=20, marker_size=0,
+                                fill_style=0, fill_color=15),
+                    # add -ve side, no label as we don't want it in legend
+                    Contribution(_convert_error_bars_to_error_ratio_hist(scale_hist, -1),
+                                line_color=scale_col, line_width=self.line_width, line_style=2,
+                                marker_color=scale_col, marker_style=20, marker_size=0,
+                                fill_style=0, fill_color=15)
+                ])
 
             entries.extend([
                 Contribution(_convert_error_bars_to_error_ratio_hist(unfolded_hist_bin_total_errors),
@@ -861,7 +879,7 @@ class GenPtBinnedPlotter(object):
                              fill_style=0, fill_color=13),
             ])
 
-            if not self.check_entries(entries, "plot_exp_syst_variation_normalised %d" % ibin):
+            if not self.check_entries(entries, "plot_syst_variation_normalised %d" % ibin):
                 return
             xlim = calc_auto_xlim(entries)
             plot = Plot(entries,
@@ -1694,11 +1712,13 @@ def do_all_plots_per_region_angle(setup, unpack_dict):
     if has_exp_systs:
         gen_pt_binned_plotter.plot_uncertainty_shifts_normalised()
         gen_pt_binned_plotter.plot_unfolded_with_exp_systs_normalised()
-        gen_pt_binned_plotter.plot_exp_syst_variation_normalised()
         gen_pt_binned_plotter.plot_unfolded_with_exp_systs_unnormalised()
 
     if has_model_systs:
         gen_pt_binned_plotter.plot_unfolded_with_model_systs_normalised()
+
+    if has_exp_systs or has_model_systs:
+        gen_pt_binned_plotter.plot_syst_variation_normalised()
 
     if has_pdf_systs:
         gen_pt_binned_plotter.plot_unfolded_with_pdf_systs_normalised()

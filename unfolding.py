@@ -846,10 +846,10 @@ if __name__ == "__main__":
                 # only herwig related systs
                 orig_region['experimental_systematics'] = [s for s in orig_region['experimental_systematics']
                                                            if 'herwig' in s['label'].lower()]
-            elif args.doModelSystsOnlyScale:
-                # only scale related systs
-                orig_region['experimental_systematics'] = [s for s in orig_region['experimental_systematics']
-                                                           if 'scale' in s['label'].lower()]
+            # elif args.doModelSystsOnlyScale:
+            #     # only scale related systs
+            #     orig_region['experimental_systematics'] = [s for s in orig_region['experimental_systematics']
+            #                                                if 'scale' in s['label'].lower()]
 
         else:
             orig_region['experimental_systematics'] = []
@@ -861,6 +861,10 @@ if __name__ == "__main__":
             # only herwig related systs
             orig_region['model_systematics'] = [s for s in orig_region['model_systematics']
                                                 if 'herwig' in s['label'].lower()]
+        elif args.doModelSystsOnlyScale:
+            # only scale related systs
+            orig_region['model_systematics'] = [s for s in orig_region['model_systematics']
+                                                if 'mu' in s['label'].lower()]
 
         if not args.doPDFSysts:
             orig_region['pdf_systematics'] = []
@@ -2103,7 +2107,9 @@ if __name__ == "__main__":
                     output_filename = "%s/unfolded_1d_modelSyst_%s.%s" % (syst_output_dir, syst_label_no_spaces, syst_unfolder_plotter.output_fmt)
                     plot.save(output_filename)
 
-
+                # Update main unfolder with these unfolded variations
+                unfolder.create_normalised_scale_syst_uncertainty(region['model_systematics'])
+                
                 # Do big 1D plot of nominal & all systs
                 # --------------------------------------------------------------
                 entries = []
@@ -2361,6 +2367,11 @@ if __name__ == "__main__":
                     # Save important stuff to TFile
                     # ----------------------------------------------------------
                     pdf_unfolder.save_to_tfile(pdf_tdir)
+
+            # ------------------------------------------------------------------
+            # Finally update normalised results
+            # ------------------------------------------------------------------
+            unfolder.setup_normalised_results()
 
             # Save everything to TFile
             print("DONE...saving unfolder to ROOT file")
