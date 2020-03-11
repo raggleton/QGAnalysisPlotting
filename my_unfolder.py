@@ -1149,16 +1149,23 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         for i in range(1, h.GetNbinsX()+1):
             h.SetBinError(i, 0)
 
-    def setup_normalised_results(self):
-        """Setup normalised results per pt bin.
+    @staticmethod
+    def convert_error_shift_to_error_bars(h_unshifted, h_shifted):
+        """Create histogram with bin contents from h_unshifted,
+        and error bars from h_shifted"""
+        h = h_unshifted.Clone(cu.get_unique_str())
+        for i in range(1, h_unshifted.GetNbinsX()+1):
+            h.SetBinError(i, h_shifted.GetBinContent(i))
+        return h
+
+    def setup_normalised_experimental_systs(self):
+        """Setup normalised experimental uncertainties
 
         In particular recalculates uncertainties, since the systematic one are non-trivial.
         We must re-calcualted the systematic shifts on the _normalised_ result,
         then add those in quadrature per bin of each histogram.
         """
-        self.hist_bin_chopper.add_obj('unfolded', self.get_output())
         self.hist_bin_chopper.add_obj('unfolded_stat_err', self.get_unfolded_with_ematrix_stat())
-        self.hist_bin_chopper.add_obj('unfolded_rsp_err', self.get_unfolded_with_ematrix_rsp())
 
         for syst_label in self.syst_maps.keys():
             shifted_name = 'syst_shifted_%s_unfolded' % cu.no_space_str(syst_label)
@@ -1183,11 +1190,17 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
                                                           binning_scheme='generator')
                 self.hist_bin_chopper._cache[key] = syst_hist
 
-        def _convert_error_shift_to_error_bars(h_unshifted, h_shifted):
-            h = h_unshifted.Clone(cu.get_unique_str())
-            for i in range(1, h_unshifted.GetNbinsX()+1):
-                h.SetBinError(i, h_shifted.GetBinContent(i))
-            return h
+
+    def setup_normalised_results(self):
+        """Setup final normalised results per pt bin with all uncertainties.
+
+        Includes setting up normalised experimental systematics.
+        """
+        self.hist_bin_chopper.add_obj('unfolded', self.get_output())
+        self.hist_bin_chopper.add_obj('unfolded_stat_err', self.get_unfolded_with_ematrix_stat())
+        self.hist_bin_chopper.add_obj('unfolded_rsp_err', self.get_unfolded_with_ematrix_rsp())
+
+        self.setup_normalised_experimental_systs()
 
         # For each pt bin, recalculate total error in quadrature and store in unfolded hist
         for ibin_pt in range(len(self.pt_bin_edges_gen[:-1])):
@@ -1198,8 +1211,12 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             # convert all shifts to error bars
             for syst_label in self.syst_maps.keys():
                 obj_name = 'syst_shift_%s' % cu.no_space_str(syst_label)
+                # Here we access the things we just manually put in the cache - must match up with key!
+                # Don't worry about it being normed etc - that is just so keys agree, and it matches
+                # up with the nominal result (which we do want normed_div_bin_width)
                 syst_shift = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width(obj_name, ibin_pt, binning_scheme='generator')
-                error_bar_hists.append(_convert_error_shift_to_error_bars(unfolded_hist_bin_stat_errors, syst_shift))
+                error_bar_hists.append(self.convert_error_shift_to_error_bars(unfolded_hist_bin_stat_errors, syst_shift))
+
 
             # Get normalised hist with nominal unfolded value, and change error bars
             # to be quadrature sum of those we want (stat+rsp+systs)
