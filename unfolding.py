@@ -1525,6 +1525,24 @@ if __name__ == "__main__":
                            output_filename="%s/projection_reco_%s.%s" % (this_output_dir, append, OUTPUT_FMT),
                            print_bin_comparison=False)
 
+            if len(region['experimental_systematics']) > 0 and MC_INPUT:
+                # Do a big absolute 1D plot for sanity
+                syst_contributions = [
+                    Contribution(unfolder.get_syst_shifted_hist(sdict['label'], unfolder.get_unfolded_with_ematrix_stat()),
+                                 label=sdict['label'],
+                                 line_color=sdict['colour'], line_style=2 if 'down' in sdict['label'].lower() else 1, line_width=1,
+                                 marker_color=sdict['colour'], marker_size=0, marker_style=21,
+                                 subplot=unfolder.get_unfolded_with_ematrix_stat())
+                    for sdict in region['experimental_systematics']
+                ]
+                unfolder_plotter.draw_unfolded_1d(do_unfolded=True, do_gen=False,
+                                                  output_dir=this_output_dir,
+                                                  append='exp_systs_%s' % append,
+                                                  title=title,
+                                                  other_contributions=syst_contributions,
+                                                  subplot_title='#splitline{Variation /}{nominal}')
+
+
             # Draw matrices
             # ------------------------------------------------------------------
             unfolder_plotter.plot_bias_vector(title=title, **plot_args)
@@ -2165,6 +2183,37 @@ if __name__ == "__main__":
                 plot.save(output_filename)
 
 
+            if len(region['model_systematics']) > 0 and MC_INPUT:
+                # Do a big absolute 1D plots for sanity
+                model_contributions = [
+                    Contribution(mdict['unfolder'].input_hist_bg_subtracted,
+                                 label=mdict['label'],
+                                 line_color=mdict['colour'], line_style=1, line_width=1,
+                                 marker_color=mdict['colour'], marker_size=0, marker_style=21,
+                                 subplot=unfolder.input_hist_bg_subtracted)
+                    for mdict in region['model_systematics']
+                ]
+                unfolder_plotter.draw_detector_1d(do_reco_mc_bg_sub=True,
+                                                  output_dir=this_output_dir,
+                                                  append='bg_fakes_subtracted_model_systs_%s' % append,
+                                                  title=title,
+                                                  other_contributions=model_contributions)
+                model_contributions = [
+                    Contribution(mdict['unfolder'].get_unfolded_with_ematrix_stat(),
+                                 label=mdict['label'],
+                                 line_color=mdict['colour'], line_style=1, line_width=1,
+                                 marker_color=mdict['colour'], marker_size=0, marker_style=21,
+                                 subplot=unfolder.get_unfolded_with_ematrix_stat())
+                    for mdict in region['model_systematics']
+                ]
+                unfolder_plotter.draw_unfolded_1d(do_unfolded=True, do_gen=False,
+                                                  output_dir=this_output_dir,
+                                                  append='model_systs_%s' % append,
+                                                  title=title,
+                                                  other_contributions=model_contributions,
+                                                  subplot_title='#splitline{Variation /}{nominal}')
+
+
             # ------------------------------------------------------------------
             # DO PDF VARIATIONS
             # ------------------------------------------------------------------
@@ -2370,6 +2419,36 @@ if __name__ == "__main__":
 
                 unfolder.create_normalised_pdf_syst_uncertainty(region['pdf_systematics'])
 
+            if len(region['pdf_systematics']) > 0 and MC_INPUT:
+                # Do a big absolute 1D plot for sanity
+                pdf_contributions = [
+                    Contribution(pdict['unfolder'].input_hist_bg_subtracted,
+                                 label=pdict['label'],
+                                 line_color=pdict['colour'], line_style=1, line_width=1,
+                                 marker_color=pdict['colour'], marker_size=0, marker_style=21,
+                                 subplot=unfolder.input_hist_bg_subtracted)
+                    for pdict in region['pdf_systematics']
+                ]
+                unfolder_plotter.draw_detector_1d(do_reco_mc_bg_sub=True,
+                                                  output_dir=this_output_dir,
+                                                  append='bg_fakes_subtracted_pdf_systs_%s' % append,
+                                                  title=title,
+                                                  other_contributions=pdf_contributions)
+
+                pdf_contributions = [
+                    Contribution(pdict['unfolder'].get_unfolded_with_ematrix_stat(),
+                                 label=pdict['label'],
+                                 line_color=pdict['colour'], line_style=1, line_width=1,
+                                 marker_color=pdict['colour'], marker_size=0, marker_style=21,
+                                 subplot=unfolder.get_unfolded_with_ematrix_stat())
+                    for pdict in region['pdf_systematics']
+                ]
+                unfolder_plotter.draw_unfolded_1d(do_unfolded=True, do_gen=False,
+                                                  output_dir=this_output_dir,
+                                                  append='pdf_systs_%s' % append,
+                                                  title=title,
+                                                  other_contributions=pdf_contributions,
+                                                  subplot_title='#splitline{Variation /}{nominal}')
             # ------------------------------------------------------------------
             # Finally update normalised results
             # ------------------------------------------------------------------

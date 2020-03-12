@@ -707,7 +707,7 @@ class MyUnfolderPlotter(object):
 
     def draw_unfolded_1d(self, do_gen=True, do_unfolded=True,
                          other_contributions=None,
-                         output_dir='.', append='', title=''):
+                         output_dir='.', append='', title='', subplot_title=None):
         """Simple plot of unfolded & gen, by bin number (ie non physical axes)"""
         entries = []
 
@@ -734,27 +734,38 @@ class MyUnfolderPlotter(object):
         if other_contributions:
             entries.extend(other_contributions)
 
+        do_subplot = any([e.subplot is not None for e in entries])
+
         plot = Plot(entries,
                     what='hist',
                     title=title,
                     xtitle="Generator bin number",
                     ytitle="N",
-                    subplot_type='ratio',
-                    subplot_title='#splitline{Unfolded %s /}{MC Gen}' % label,
+                    subplot_type='ratio' if do_subplot else None,
+                    subplot_title=subplot_title if subplot_title else '#splitline{Unfolded %s /}{MC Gen}' % label,
                     subplot_limits=(0.75, 1.25),
                     has_data=self.is_data)
         plot.default_canvas_size = (800, 600)
         # plot.text_left_offset = 0.05  # have to bodge this
-        plot.plot("NOSTACK HISTE", "NOSTACK HISTE")
+        if len(entries) < 20:
+          plot.plot("NOSTACK HISTE")
+        else:
+          plot.plot("NOSTACK HIST PLC PMC")
         # plot.main_pad.SetLogy(1)
         plot.set_logy(do_more_labels=False, override_check=True)
         ymax = max([o.GetMaximum() for o in plot.contributions_objs])
         plot.container.SetMaximum(ymax * 500)
         ymin = min(c.obj.GetMinimum(1E-8) for c in entries)
         plot.container.SetMinimum(ymin*0.01)  # space for bin labels as well
-        plot.legend.SetY1NDC(0.77)
+        plot.main_pad.cd()
+        plot.legend.SetY1NDC(0.7)
+        plot.legend.SetY2NDC(0.88)
         plot.legend.SetX1NDC(0.65)
         plot.legend.SetX2NDC(0.88)
+        if len(entries) > 5:
+          plot.legend.SetNColumns(2)
+        if len(entries) > 50:
+          plot.legend.SetNColumns(3)
         # draw pt bin lines
         plot.main_pad.cd()
         lines, text = self.draw_pt_binning_lines(plot, which='gen', axis='x', do_underflow=True)
@@ -819,20 +830,27 @@ class MyUnfolderPlotter(object):
                              normalise_hist=False),
             )
 
+        other_contrib_with_subplot = False
         if other_contributions:
             entries.extend(other_contributions)
+            other_contrib_with_subplot = any([c.subplot is not None for c in other_contributions])
+
+        do_subplot = (do_reco_mc and do_reco_data) or (do_reco_mc_bg_sub and do_reco_data_bg_sub) or other_contrib_with_subplot
 
         plot = Plot(entries,
                     what='hist',
                     title=title,
                     xtitle="Detector bin number",
                     ytitle="N",
-                    subplot_type='ratio' if ((do_reco_mc and do_reco_data) or (do_reco_mc_bg_sub and do_reco_data_bg_sub)) else None,
+                    subplot_type='ratio' if do_subplot else None,
                     subplot_title='Data / MC',
                     subplot_limits=(0.75, 1.25),
                     has_data=(do_reco_data or do_reco_data_bg_sub))
         plot.default_canvas_size = (800, 600)
-        plot.plot("NOSTACK HISTE")
+        if len(entries) < 20:
+          plot.plot("NOSTACK HISTE")
+        else:
+          plot.plot("NOSTACK HIST PLC PMC")
         plot.set_logy(do_more_labels=False)
         ymax = max([o.GetMaximum() for o in plot.contributions_objs])
         plot.container.SetMaximum(ymax * 200)
@@ -845,9 +863,15 @@ class MyUnfolderPlotter(object):
                                           labels_inside_align='lower'
                                           )
         # # plot.container.SetMinimum(0.001)
-        plot.legend.SetY1NDC(0.77)
+        plot.main_pad.cd()
+        plot.legend.SetY1NDC(0.7)
+        plot.legend.SetY2NDC(0.88)
         plot.legend.SetX1NDC(0.65)
         plot.legend.SetX2NDC(0.88)
+        if len(entries) > 5:
+          plot.legend.SetNColumns(2)
+        if len(entries) > 50:
+          plot.legend.SetNColumns(3)
         if append != "":
             append = "_" + append
         output_filename = "%s/detector_reco_binning%s.%s" % (output_dir, append, self.output_fmt)
