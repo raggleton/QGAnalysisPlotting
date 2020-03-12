@@ -845,7 +845,7 @@ class GenPtBinnedPlotter(object):
                                 marker_color=scale_col, marker_style=20, marker_size=0,
                                 fill_style=0, fill_color=15)
                 ])
-            
+
             # Add pdf syst
             if "pdf_uncert"  in self.hist_bin_chopper.objects:
                 pdf_hist = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('pdf_uncert', ibin, binning_scheme='generator')

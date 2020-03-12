@@ -19,7 +19,7 @@ import math
 import distutils
 from distutils import util
 from itertools import product
-from copy import copy
+from copy import copy, deepcopy
 
 import ROOT
 from MyStyle import My_Style
@@ -418,6 +418,8 @@ if __name__ == "__main__":
                         default='',
                         help='Output directory')
 
+    # SIGNAL REGION OPTIONS
+    # --------------------------------------------------------------------------
     region_group = parser.add_argument_group('Region selection')
     region_group.add_argument("--doAllRegions",
                               action='store_true',
@@ -441,6 +443,8 @@ if __name__ == "__main__":
                               action='store_true',
                               help='Do unfolding for groomed Z+jet jets')
 
+    # REGULARISATION OPTIONS
+    # --------------------------------------------------------------------------
     regularization_group = parser.add_argument_group('Regularization options')
     regularization_group.add_argument("--regularize",
                                       choices=['None', 'tau', 'L'],
@@ -459,35 +463,41 @@ if __name__ == "__main__":
                                       default=0,
                                       help='Bias factor for regularization')
 
+    # MC INPUT OPTIONS
+    # --------------------------------------------------------------------------
     mc_group = parser.add_argument_group('MC input options')
     mc_group.add_argument("--MCinput",
-                          type=lambda x:bool(distutils.util.strtobool(x)),
+                          type=lambda x: bool(distutils.util.strtobool(x)),
                           default=False,
                           help=('Unfold MC instead of data.'
                                 + standard_bool_description))
 
     mc_group.add_argument("--MCsplit",
-                          type=lambda x:bool(distutils.util.strtobool(x)),
+                          type=lambda x: bool(distutils.util.strtobool(x)),
                           default=False,
                           help=('Split MC between response & 1D reco, good for testing procedure.'
                                 + standard_bool_description))
 
+    # BACKGROUNDS OPTIONS
+    # --------------------------------------------------------------------------
     bg_group = parser.add_argument_group("Backgrounds options")
     bg_group.add_argument("--subtractBackgrounds",
-                          type=lambda x:bool(distutils.util.strtobool(x)),
+                          type=lambda x: bool(distutils.util.strtobool(x)),
                           default=False,
                           help=('Subtract true backgrounds (e.g. ttbar).'
                                 + standard_bool_description))
 
+    # EXPERIMENTAL SYST OPTIONS
+    # --------------------------------------------------------------------------
     syst_group = parser.add_argument_group('Systematics options')
     syst_group.add_argument("--doExperimentalSysts",
-                            type=lambda x:bool(distutils.util.strtobool(x)),
+                            type=lambda x: bool(distutils.util.strtobool(x)),
                             default=False,
                             help=('Do experimental systematics (i.e. those that modify response matrix).'
                                   + standard_bool_description))
 
     syst_group.add_argument("--doExperimentalSystsOnlyHerwig",
-                            type=lambda x:bool(distutils.util.strtobool(x)),
+                            type=lambda x: bool(distutils.util.strtobool(x)),
                             default=False,
                             help=('Do only Herwig experimental systematics (i.e. those that modify response matrix).'
                                   + standard_bool_description))
@@ -499,32 +509,44 @@ if __name__ == "__main__":
                                  'made by a previous running of unfolding.py ' \
                                  'that covers the different signal regions & variables')
 
+    # MODEL SYST OPTIONS
+    # --------------------------------------------------------------------------
     syst_group.add_argument("--doModelSysts",
-                            type=lambda x:bool(distutils.util.strtobool(x)),
+                            type=lambda x: bool(distutils.util.strtobool(x)),
                             default=False,
                             help=('Do model systematics (i.e. those that modify input to be unfolded).'
                                    + standard_bool_description))
 
     syst_group.add_argument("--doModelSystsOnlyHerwig",
-                            type=lambda x:bool(distutils.util.strtobool(x)),
+                            type=lambda x: bool(distutils.util.strtobool(x)),
                             default=False,
                             help=('Do only Herwig model systematics (i.e. those that modify input to be unfolded).'
                                    + standard_bool_description))
 
     syst_group.add_argument("--doModelSystsOnlyScale",
-                            type=lambda x:bool(distutils.util.strtobool(x)),
+                            type=lambda x: bool(distutils.util.strtobool(x)),
                             default=False,
                             help=('Do only scale model systematics (i.e. those that modify input to be unfolded).'
                                    + standard_bool_description))
 
+    syst_group.add_argument("--doModelSystsFromFile",
+                            default=None,
+                            help='Get model systematics from file. This should be a directory ' \
+                                 'made by a previous running of unfolding.py ' \
+                                 'that covers the different signal regions & variables')
+
+    # PDF SYST OPTIONS
+    # --------------------------------------------------------------------------
     syst_group.add_argument("--doPDFSysts",
-                            type=lambda x:bool(distutils.util.strtobool(x)),
+                            type=lambda x: bool(distutils.util.strtobool(x)),
                             default=False,
                             help=('Do pdf systematics (may be slow!).'
                                    + standard_bool_description))
 
+    # ALT RESPONSE
+    # --------------------------------------------------------------------------
     syst_group.add_argument("--useAltResponse",
-                            type=lambda x:bool(distutils.util.strtobool(x)),
+                            type=lambda x: bool(distutils.util.strtobool(x)),
                             default=False,
                             help=('Use alternate response matrix to unfold.'
                                    + standard_bool_description))
@@ -556,13 +578,20 @@ if __name__ == "__main__":
         raise RuntimeError("Cannot do model systs and run over data")
 
     if args.doModelSystsOnlyHerwig and args.doModelSystsOnlyScale:
-        raise RuntimeError("Cannot do model systs only herwig and only scale")
+        raise RuntimeError("Cannot do both --doModelSystsOnlyHerwig and --doModelSystsOnlyScale")
 
     if (args.doExperimentalSysts or args.doExperimentalSystsOnlyHerwig) and args.doExperimentalSystsFromFile:
         args.doExperimentalSysts = False
         args.doExperimentalSystsOnlyHerwig = False
         print("Warning: will use experimental systs from --doExperimentalSystsFromFile option only, "
               "ignoring --doExperimentalSysts and --doExperimentalSystsOnlyHerwig")
+
+    if (args.doModelSystsOnlyScale or args.doModelSystsOnlyHerwig or args.doModelSysts) and args.doModelSystsFromFile:
+        args.doModelSysts = False
+        args.doModelSystsOnlyScale = False
+        args.doModelSystsOnlyHerwig = False
+        print("Warning: will use model systs from --doModelSystsFromFile option only, "
+              "ignoring --doModelSysts, --doModelSystsOnlyHerwig, -- doModelSystsOnlyScale")
 
     # if args.useAltResponse and args.doExperimentalSysts:
     #     args.doExperimentalSysts = False
@@ -751,6 +780,9 @@ if __name__ == "__main__":
         if not args.doExperimentalSysts:
             append += "NoExperimentalSyst"
 
+    if args.doModelSystsFromFile:
+        append += "_modelSystFromFile"
+
     if args.doPDFSysts:
         append += "_pdfSyst"
         if not args.doExperimentalSysts:
@@ -846,15 +878,11 @@ if __name__ == "__main__":
                 # only herwig related systs
                 orig_region['experimental_systematics'] = [s for s in orig_region['experimental_systematics']
                                                            if 'herwig' in s['label'].lower()]
-            # elif args.doModelSystsOnlyScale:
-            #     # only scale related systs
-            #     orig_region['experimental_systematics'] = [s for s in orig_region['experimental_systematics']
-            #                                                if 'scale' in s['label'].lower()]
 
         else:
             orig_region['experimental_systematics'] = []
 
-        if not args.doModelSysts:
+        if not (args.doModelSysts or args.doModelSystsFromFile):
             orig_region['model_systematics'] = []
 
         elif args.doModelSystsOnlyHerwig:
@@ -1391,14 +1419,16 @@ if __name__ == "__main__":
 
             # Calculate experimental uncertainty shifts using results from another unfolding
             # ------------------------------------------------------------------
+            ref_tfile_exp = None
             if args.doExperimentalSystsFromFile is not None:
                 print("Getting experimental systematics from another file...")
                 angle_output_dir = "%s/%s/%s" % (args.doExperimentalSystsFromFile, region['name'], angle.var)
                 this_root_filename = os.path.join(angle_output_dir, "unfolding_result.root")
                 if not os.path.isfile(this_root_filename):
                     raise IOError("Cannot find systematics file, %s" % this_root_filename)
-                ref_tfile = cu.TFileCacher(this_root_filename)
-                unpack_dict = unpack_unfolding_root_file(ref_tfile, region, angle)
+                ref_tfile_exp = cu.TFileCacher(this_root_filename)
+                region_copy = deepcopy(region)
+                unpack_dict = unpack_unfolding_root_file(ref_tfile_exp, region_copy, angle)
                 reference_unfolder = unpack_dict['unfolder']
                 ref_unfolded = reference_unfolder.unfolded
                 for syst_label in reference_unfolder.syst_maps.keys():
@@ -1419,12 +1449,11 @@ if __name__ == "__main__":
 
                 # update region info
                 # TODO what if the config has fewer than in the reference unfolder?
-                region['experimental_systematics'] = [syst_dict for syst_dict in region['experimental_systematics']
+                region['experimental_systematics'] = [syst_dict for syst_dict in region_copy['experimental_systematics']
                                                       if syst_dict['label'] in reference_unfolder.syst_maps.keys()]
 
             # Do lots of extra gubbins, like caching matrices,
             # creating unfolded hists with different levels of uncertianties,
-            # setting up normalised uncertainties
             # ------------------------------------------------------------------
             unfolder._post_process()
 
@@ -1439,14 +1468,6 @@ if __name__ == "__main__":
             # cov, cov_err = cu.th2_to_arr(ematrix_total)
             # chi2 = calculate_chi2(hist1, hist2, cov)
             # print("my chi2 =", chi2)
-
-            # Get shifts due to systematics
-            # ------------------------------------------------------------------
-            # systematic_shift_hists = []
-            # if args.doExperimentalSysts:
-            #     for syst_dict in region['experimental_systematics']:
-            #         h_syst = unfolder.get_delta_sys_shift(syst_label=syst_dict['label'])
-            #         systematic_shift_hists.append(h_syst)
 
             # Draw big 1D distributions
             # ------------------------------------------------------------------
@@ -1490,10 +1511,6 @@ if __name__ == "__main__":
                                                    output_dir=this_output_dir,
                                                    append='bg_fakes_subtracted_%s' % append,
                                                    title=title)
-
-            # Draw collapsed distributions
-            # ---------------------
-            # TODO!
 
             # Draw projections of response matrix vs 1D hist to check normalisation OK
             # Only makes sense if the same MC events go into matrix & 1D plot
@@ -2126,8 +2143,9 @@ if __name__ == "__main__":
                     plot.save(output_filename)
 
                 # Update main unfolder with these unfolded variations
+                # --------------------------------------------------------------
                 unfolder.create_normalised_scale_syst_uncertainty(region['model_systematics'])
-                
+
                 # Do big 1D plot of nominal & all systs
                 # --------------------------------------------------------------
                 entries = []
@@ -2182,6 +2200,42 @@ if __name__ == "__main__":
                 output_filename = "%s/unfolded_1d_modelSyst_%s.%s" % (this_output_dir, append, syst_unfolder_plotter.output_fmt)
                 plot.save(output_filename)
 
+
+            ref_tfile_model = None
+            if args.doModelSystsFromFile is not None:
+                model_dir = "%s/%s/%s" % (args.doModelSystsFromFile, region['name'], angle.var)
+                this_root_filename = os.path.join(model_dir, "unfolding_result.root")
+                ref_tfile_model = cu.TFileCacher(this_root_filename)
+                region_copy = orig_region.copy()
+                reference_dict = unpack_unfolding_root_file(ref_tfile_model,
+                                                            region_copy,
+                                                            angle,
+                                                            do_alt_response=False,
+                                                            do_model_systs=True,
+                                                            do_pdf_systs=False)
+                # update original region object
+                region['model_systematics'] = region_copy['model_systematics']
+
+                # Add dummy object to hist_bin_chopper for later, so we can directly manipulate the cache
+                uncert_name = "scale_uncert"
+                unfolder.hist_bin_chopper.add_obj(uncert_name, unfolder.get_unfolded_with_ematrix_stat())
+                unfolder.hist_bin_chopper.add_obj("unfolded_stat_err", unfolder.get_unfolded_with_ematrix_stat())
+
+                for ibin_pt in range(len(unfolder.pt_bin_edges_gen[:-1])):
+                    # Calculate scale uncertainty by taking relative uncertainty
+                    # from reference file, and applying to this result
+                    key = unfolder.hist_bin_chopper._generate_key(uncert_name,
+                                                                  ind=ibin_pt,
+                                                                  axis='pt',
+                                                                  do_norm=True,
+                                                                  do_div_bin_width=True,
+                                                                  binning_scheme='generator')
+                    ref_scale_syst = reference_dict['unfolder'].hist_bin_chopper._cache[key]
+                    scale_syst = unfolder.hist_bin_chopper.get_pt_bin_normed_div_bin_width("unfolded_stat_err", ibin_pt, binning_scheme='generator').Clone()
+                    for i in range(1, scale_syst.GetNbinsX()+1):
+                        rel_err = ref_scale_syst.GetBinError(i) / ref_scale_syst.GetBinContent(i)
+                        scale_syst.SetBinError(i, rel_err * scale_syst.GetBinContent(i))
+                    unfolder.hist_bin_chopper._cache[key] = scale_syst
 
             if len(region['model_systematics']) > 0 and MC_INPUT:
                 # Do a big absolute 1D plots for sanity

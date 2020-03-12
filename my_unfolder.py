@@ -687,8 +687,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         """Total error matrix, from stat+systs"""
         if getattr(self, "ematrix_total", None) is None:
             self.ematrix_total = self.GetEmatrixTotal("ematrix_total_"+cu.get_unique_str(), "", self.output_distribution_name, "*[]", self.use_axis_binning)
-            print(self.ematrix_total.GetNbinsX())
-            print(type(self.ematrix_total))
+            print("ematrix_total is:", type(self.ematrix_total), "with #xbins:", self.ematrix_total.GetNbinsX())
         return self.ematrix_total
 
     @property
@@ -1061,8 +1060,6 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             plot.save(os.path.join(debugging_dir, 'components.pdf'))
 
             pt_bin_edges = self.pt_bin_edges_reco if detector_space else self.pt_bin_edges_gen
-            # for i in range(1, components_hist.GetNbinsX()+1):
-                # print(i, components_hist.GetBinContent(i))
 
             for ibin_pt, (pt_low, pt_high) in enumerate(zip(pt_bin_edges[:-1], pt_bin_edges[1:])):
                 # plot component (delta * V_inv * delta) for this pt bin
@@ -1145,7 +1142,8 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
     # METHODS FOR NORMALISED RESULTS
     # --------------------------------------------------------------------------
     def create_normalised_scale_syst_uncertainty(self, scale_systs):
-        """Create scale uncertainty from unfolded scale variation inputs
+        """Create scale uncertainty from unfolded scale variation inputs.
+        Stores hist where error bar is envelope of variations in (unfolded/gen).
 
         This is done by taking in all the unfolded scale systematics results,
         then getting the normalised result for each pT bin.
@@ -1182,6 +1180,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         self.hist_bin_chopper.add_obj(uncert_name, self.get_unfolded_with_ematrix_stat())
 
         self.hist_bin_chopper.add_obj('unfolded_stat_err', self.get_unfolded_with_ematrix_stat())
+
         # print("Doing scale variation")
         for ibin_pt in range(len(self.pt_bin_edges_gen[:-1])):
             variations_ratio = []
@@ -1348,6 +1347,8 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             error_bar_hists = [unfolded_hist_bin_stat_errors, unfolded_hist_bin_rsp_errors]
             # convert all shifts to error bars
             for syst_label in self.syst_maps.keys():
+                if ibin_pt ==0:
+                    print("Adding", syst_label, "uncertainty to normalised result...")
                 obj_name = 'syst_shift_%s' % cu.no_space_str(syst_label)
                 # Here we access the things we just manually put in the cache - must match up with key!
                 # Don't worry about it being normed etc - that is just so keys agree, and it matches
@@ -1357,10 +1358,14 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
 
             # Add in scale syst
             if "scale_uncert" in self.hist_bin_chopper.objects:
+                if ibin_pt ==0:
+                    print("Adding scale uncertainty to normalised result...")
                 error_bar_hists.append(self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('scale_uncert', ibin_pt, binning_scheme='generator'))
 
             # Add in PDF syst
             if "pdf_uncert" in self.hist_bin_chopper.objects:
+                if ibin_pt ==0:
+                    print("Adding PDF uncertainty to normalised result...")
                 error_bar_hists.append(self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('pdf_uncert', ibin_pt, binning_scheme='generator'))
 
             # Get normalised hist with nominal unfolded value, and change error bars
@@ -1498,12 +1503,13 @@ def unpack_unfolding_root_file(input_tfile, region, angle, do_alt_response=True,
                     continue
                 # TODO: check it agrees with region dict?
                 this_one[0]['unfolder'] = unfolder_from_tdir(input_tfile.Get(os.path.join(input_tdir_name, model_tdir_name)))
-                print("...Loaded", len(model_tdirs), "model systematic unfolders")
+            print("...Loaded", len(model_tdirs), "model systematic unfolders")
     # remove entries without an unfolder
     region['model_systematics'] = [k for k in region['model_systematics']
                                    if k.get('unfolder', None) is not None]
     # setup normalised errors
     if len(region['model_systematics']) > 0:
+        print("Doing normalised scale uncertainties")
         unfolder.create_normalised_scale_syst_uncertainty(region['model_systematics'])
 
     # Get PDF systs
@@ -1527,6 +1533,7 @@ def unpack_unfolding_root_file(input_tfile, region, angle, do_alt_response=True,
                                  if k.get('unfolder', None) is not None]
     # setup normalised errors
     if len(region['pdf_systematics']) > 0:
+        print("Doing normalised PDF uncertainties")
         unfolder.create_normalised_pdf_syst_uncertainty(region['pdf_systematics'])
 
     unfolder.setup_normalised_results()
@@ -1673,6 +1680,9 @@ class HistBinChopper(object):
         """
         if name not in self.objects:
             raise KeyError("No %s in HistBinChopper.objects" % name)
+        if self.objects[name] is None:
+            raise RuntimeError("HistBinChopper.objects[%s] is None" % name)
+
         key = self._generate_key(name, ind, axis, do_norm, do_div_bin_width, binning_scheme)
         if key not in self._cache:
             if axis == 'lambda':
