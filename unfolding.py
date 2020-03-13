@@ -543,6 +543,12 @@ if __name__ == "__main__":
                             help=('Do pdf systematics (may be slow!).'
                                    + standard_bool_description))
 
+    syst_group.add_argument("--doPDFSystsFromFile",
+                            default=None,
+                            help='Get PDF systematics from file. This should be a directory ' \
+                                 'made by a previous running of unfolding.py ' \
+                                 'that covers the different signal regions & variables')
+
     # ALT RESPONSE
     # --------------------------------------------------------------------------
     syst_group.add_argument("--useAltResponse",
@@ -592,6 +598,10 @@ if __name__ == "__main__":
         args.doModelSystsOnlyHerwig = False
         print("Warning: will use model systs from --doModelSystsFromFile option only, "
               "ignoring --doModelSysts, --doModelSystsOnlyHerwig, -- doModelSystsOnlyScale")
+
+    if args.doPDFSystsFromFile and args.doPDFSysts:
+        args.doPDFSysts = False
+        print("Warning: will use PDF systs from --doPDFSystsFromFile option only, ignoring --doPDFSysts")
 
     # if args.useAltResponse and args.doExperimentalSysts:
     #     args.doExperimentalSysts = False
@@ -788,6 +798,9 @@ if __name__ == "__main__":
         if not args.doExperimentalSysts:
             append += "NoExperimentalSyst"
 
+    if args.doPDFSystsFromFile:
+        append += "_pdfSystFromFile"
+
     if args.useAltResponse:
         append += "_altResponse"
 
@@ -808,7 +821,7 @@ if __name__ == "__main__":
         # reg_axis_str += "_invTruthUseUnfolded"
 
     area_constraint = ROOT.TUnfold.kEConstraintArea
-    area_constraint = ROOT.TUnfold.kEConstraintNone
+    # area_constraint = ROOT.TUnfold.kEConstraintNone
     area_constraint_str = "Area" if area_constraint == ROOT.TUnfold.kEConstraintArea else "None"
 
     regularize_str = "regularize%s%s%s" % (str(REGULARIZE).capitalize(), bias_str, reg_axis_str)
@@ -894,7 +907,7 @@ if __name__ == "__main__":
             orig_region['model_systematics'] = [s for s in orig_region['model_systematics']
                                                 if 'mu' in s['label'].lower()]
 
-        if not args.doPDFSysts:
+        if not (args.doPDFSysts or args.doPDFSystsFromFile):
             orig_region['pdf_systematics'] = []
 
         # Do 1D unfolding of pt
@@ -2201,10 +2214,13 @@ if __name__ == "__main__":
                 plot.save(output_filename)
 
 
+            # Load model (scale) systs from another reference file, and calc fractional
+            # uncertainty, apply to this unfolded result
             ref_tfile_model = None
             if args.doModelSystsFromFile is not None:
                 model_dir = "%s/%s/%s" % (args.doModelSystsFromFile, region['name'], angle.var)
                 this_root_filename = os.path.join(model_dir, "unfolding_result.root")
+                # do NOT use save variable name as for exp or pdf systs...things will disappear
                 ref_tfile_model = cu.TFileCacher(this_root_filename)
                 region_copy = orig_region.copy()
                 reference_dict = unpack_unfolding_root_file(ref_tfile_model,
@@ -2473,6 +2489,46 @@ if __name__ == "__main__":
 
                 unfolder.create_normalised_pdf_syst_uncertainty(region['pdf_systematics'])
 
+            # Load PDF syst from another reference file, and calc fractional
+            # uncertainty, apply to this unfolded result
+            ref_tfile_pdf = None
+            if args.doPDFSystsFromFile is not None:
+                pdf_dir = "%s/%s/%s" % (args.doPDFSystsFromFile, region['name'], angle.var)
+                this_root_filename = os.path.join(pdf_dir, "unfolding_result.root")
+                # do NOT use save variable name as for exp or model systs...things will disappear
+                ref_tfile_pdf = cu.TFileCacher(this_root_filename)
+                region_copy_pdf = orig_region.copy()
+                reference_dict = unpack_unfolding_root_file(ref_tfile_pdf,
+                                                            region_copy_pdf,
+                                                            angle,
+                                                            do_alt_response=False,
+                                                            do_pdf_systs=True,
+                                                            do_model_systs=False)
+                # update original region object
+                region['pdf_systematics'] = region_copy_pdf['pdf_systematics']
+
+                # Add dummy object to hist_bin_chopper for later, so we can directly manipulate the cache
+                uncert_name = "pdf_uncert"
+                unfolder.hist_bin_chopper.add_obj(uncert_name, unfolder.get_unfolded_with_ematrix_stat())
+                unfolder.hist_bin_chopper.add_obj("unfolded_stat_err", unfolder.get_unfolded_with_ematrix_stat())
+
+                for ibin_pt in range(len(unfolder.pt_bin_edges_gen[:-1])):
+                    # Calculate PDF uncertainty by taking relative uncertainty
+                    # from reference file, and applying to this result
+                    key = unfolder.hist_bin_chopper._generate_key(uncert_name,
+                                                                  ind=ibin_pt,
+                                                                  axis='pt',
+                                                                  do_norm=True,
+                                                                  do_div_bin_width=True,
+                                                                  binning_scheme='generator')
+                    ref_scale_syst = reference_dict['unfolder'].hist_bin_chopper._cache[key]
+                    scale_syst = unfolder.hist_bin_chopper.get_pt_bin_normed_div_bin_width("unfolded_stat_err", ibin_pt, binning_scheme='generator').Clone()
+                    for i in range(1, scale_syst.GetNbinsX()+1):
+                        rel_err = ref_scale_syst.GetBinError(i) / ref_scale_syst.GetBinContent(i)
+                        scale_syst.SetBinError(i, rel_err * scale_syst.GetBinContent(i))
+                    unfolder.hist_bin_chopper._cache[key] = scale_syst
+
+
             if len(region['pdf_systematics']) > 0 and MC_INPUT:
                 # Do a big absolute 1D plot for sanity
                 pdf_contributions = [
@@ -2503,6 +2559,7 @@ if __name__ == "__main__":
                                                   title=title,
                                                   other_contributions=pdf_contributions,
                                                   subplot_title='#splitline{Variation /}{nominal}')
+
             # ------------------------------------------------------------------
             # Finally update normalised results
             # ------------------------------------------------------------------
