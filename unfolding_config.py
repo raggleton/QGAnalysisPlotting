@@ -193,7 +193,7 @@ def get_dijet_config(source_dir, central=True, groomed=False):
         ],
         "pdf_systematics": [
             {
-                "label": "PDF",  # this is a tempalte entry, used for future
+                "label": "PDF",  # this is a template entry, used for future
                 "tfile": os.path.join(source_dir_systs, 'PDFvariationsTrue', qgc.QCD_FILENAME),
                 "colour": ROOT.kCyan+2,
                 "unfolder": None,

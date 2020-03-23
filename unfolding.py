@@ -11,13 +11,9 @@ from __future__ import print_function, division
 
 import os
 os.nice(10)
-import sys
-import argparse
 from array import array
 import numpy as np
 import math
-import distutils
-from distutils import util
 from itertools import product
 from copy import copy, deepcopy
 
@@ -36,7 +32,7 @@ from my_unfolder_plotter import MyUnfolderPlotter
 from unfolding_regularisation_classes import TauScanner, LCurveScanner
 from unfolding_config import get_dijet_config, get_zpj_config
 from do_unfolding_plots import Setup, do_all_plots_per_region_angle, do_all_big_1d_plots_per_region_angle
-
+from unfolding_logistics import get_unfolding_argparser, get_unfolding_output_dir
 
 ROOT.PyConfig.IgnoreCommandLineOptions = True
 ROOT.gROOT.SetBatch(1)
@@ -391,176 +387,12 @@ ROOT.gInterpreter.ProcessLine(my_binning_xml_code)
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("source",
-                        help="Source directory with ROOT files")
-
-    parser.add_argument("--angles",
-                        choices=list(qgc.VAR_UNFOLD_DICT.keys()) + ["all"],
-                        nargs='+',
-                        help="Lambda angles to unfold, or 'all' for all of them")
-
-    standard_bool_description = (" True values are 'y', 'yes', 't', 'true', 'on' and '1'."
-                                 " False values are 'n', 'no', 'f', 'false', 'off' and '0'.")
-
-    parser.add_argument("--doSummaryPlot",
-                        type=lambda x:bool(distutils.util.strtobool(x)),
-                        default=False,
-                        help=('Do summary plot.'
-                              + standard_bool_description))
-
-    parser.add_argument("--noBinnedPlots",
-                        action='store_true',
-                        default=False,
-                        help="Don't do binned plots")
-
-    parser.add_argument("--outputDir",
-                        default='',
-                        help='Output directory')
-
-    # SIGNAL REGION OPTIONS
-    # --------------------------------------------------------------------------
-    region_group = parser.add_argument_group('Region selection')
-    region_group.add_argument("--doAllRegions",
-                              action='store_true',
-                              help='Do unfolding for all regions (dijet, Z+J, groomed, ungroomed)')
-    region_group.add_argument("--doDijetCentral",
-                              action='store_true',
-                              help='Do unfolding for dijet (central) jets')
-    region_group.add_argument("--doDijetForward",
-                              action='store_true',
-                              help='Do unfolding for dijet (forward) jets')
-    region_group.add_argument("--doDijetCentralGroomed",
-                              action='store_true',
-                              help='Do unfolding for groomed dijet (central) jets')
-    region_group.add_argument("--doDijetForwardGroomed",
-                              action='store_true',
-                              help='Do unfolding for groomed dijet (forward) jets')
-    region_group.add_argument("--doZPJ",
-                              action='store_true',
-                              help='Do unfolding for Z+jet jets')
-    region_group.add_argument("--doZPJGroomed",
-                              action='store_true',
-                              help='Do unfolding for groomed Z+jet jets')
-
-    # REGULARISATION OPTIONS
-    # --------------------------------------------------------------------------
-    regularization_group = parser.add_argument_group('Regularization options')
-    regularization_group.add_argument("--regularize",
-                                      choices=['None', 'tau', 'L'],
-                                      default='None',
-                                      help='Regularization scheme')
-    regularization_group.add_argument("--regularizeAxis",
-                                      choices=['both', 'pt', 'angle'],
-                                      default='both',
-                                      help='Axis to regularize')
-    regularization_group.add_argument("--nScan",
-                                      type=int,
-                                      default=100,
-                                      help='Number of scan points for regularization')
-    regularization_group.add_argument("--biasFactor",
-                                      type=float,
-                                      default=0,
-                                      help='Bias factor for regularization')
-
-    # MC INPUT OPTIONS
-    # --------------------------------------------------------------------------
-    mc_group = parser.add_argument_group('MC input options')
-    mc_group.add_argument("--MCinput",
-                          type=lambda x: bool(distutils.util.strtobool(x)),
-                          default=False,
-                          help=('Unfold MC instead of data.'
-                                + standard_bool_description))
-
-    mc_group.add_argument("--MCsplit",
-                          type=lambda x: bool(distutils.util.strtobool(x)),
-                          default=False,
-                          help=('Split MC between response & 1D reco, good for testing procedure.'
-                                + standard_bool_description))
-
-    # BACKGROUNDS OPTIONS
-    # --------------------------------------------------------------------------
-    bg_group = parser.add_argument_group("Backgrounds options")
-    bg_group.add_argument("--subtractBackgrounds",
-                          type=lambda x: bool(distutils.util.strtobool(x)),
-                          default=False,
-                          help=('Subtract true backgrounds (e.g. ttbar).'
-                                + standard_bool_description))
-
-    # EXPERIMENTAL SYST OPTIONS
-    # --------------------------------------------------------------------------
-    syst_group = parser.add_argument_group('Systematics options')
-    syst_group.add_argument("--doExperimentalSysts",
-                            type=lambda x: bool(distutils.util.strtobool(x)),
-                            default=False,
-                            help=('Do experimental systematics (i.e. those that modify response matrix).'
-                                  + standard_bool_description))
-
-    syst_group.add_argument("--doExperimentalSystsOnlyHerwig",
-                            type=lambda x: bool(distutils.util.strtobool(x)),
-                            default=False,
-                            help=('Do only Herwig experimental systematics (i.e. those that modify response matrix).'
-                                  + standard_bool_description))
-
-    syst_group.add_argument("--doExperimentalSystsFromFile",
-                            default=None,
-                            help='Do experimental systematics (i.e. those that modify response matrix) ' \
-                                 'but get shifts from previous unfolding. This should be a directory ' \
-                                 'made by a previous running of unfolding.py ' \
-                                 'that covers the different signal regions & variables')
-
-    # MODEL SYST OPTIONS
-    # --------------------------------------------------------------------------
-    syst_group.add_argument("--doModelSysts",
-                            type=lambda x: bool(distutils.util.strtobool(x)),
-                            default=False,
-                            help=('Do model systematics (i.e. those that modify input to be unfolded).'
-                                   + standard_bool_description))
-
-    syst_group.add_argument("--doModelSystsOnlyHerwig",
-                            type=lambda x: bool(distutils.util.strtobool(x)),
-                            default=False,
-                            help=('Do only Herwig model systematics (i.e. those that modify input to be unfolded).'
-                                   + standard_bool_description))
-
-    syst_group.add_argument("--doModelSystsOnlyScale",
-                            type=lambda x: bool(distutils.util.strtobool(x)),
-                            default=False,
-                            help=('Do only scale model systematics (i.e. those that modify input to be unfolded).'
-                                   + standard_bool_description))
-
-    syst_group.add_argument("--doModelSystsFromFile",
-                            default=None,
-                            help='Get model systematics from file. This should be a directory ' \
-                                 'made by a previous running of unfolding.py ' \
-                                 'that covers the different signal regions & variables')
-
-    # PDF SYST OPTIONS
-    # --------------------------------------------------------------------------
-    syst_group.add_argument("--doPDFSysts",
-                            type=lambda x: bool(distutils.util.strtobool(x)),
-                            default=False,
-                            help=('Do pdf systematics (may be slow!).'
-                                   + standard_bool_description))
-
-    syst_group.add_argument("--doPDFSystsFromFile",
-                            default=None,
-                            help='Get PDF systematics from file. This should be a directory ' \
-                                 'made by a previous running of unfolding.py ' \
-                                 'that covers the different signal regions & variables')
-
-    # ALT RESPONSE
-    # --------------------------------------------------------------------------
-    syst_group.add_argument("--useAltResponse",
-                            type=lambda x: bool(distutils.util.strtobool(x)),
-                            default=False,
-                            help=('Use alternate response matrix to unfold.'
-                                   + standard_bool_description))
-
+    parser = get_unfolding_argparser(description=__doc__)
     args = parser.parse_args()
     print("")
     print(args)
 
+    # Do various post-parsing checks
     if args.doAllRegions:
         for x in ['doDijetCentral', 'doDijetForward', 'doDijetCentralGroomed', 'doDijetForwardGroomed', 'doZPJ', 'doZPJGroomed']:
             setattr(args, x, True)
@@ -738,106 +570,17 @@ if __name__ == "__main__":
 
     # Setup various options
     # --------------------------------------------------------------------------
-
     REGULARIZE = args.regularize
-
-    # Run with MC input instead of data
     MC_INPUT = args.MCinput
-    mc_append = "_MC" if MC_INPUT else "_DATA"
-
-    # If True, use part of MC for response matrix, and separate part for unfolding
-    # as independent test
-    # Should always be false for data
-    if not args.MCinput:
-        print("Ignoring your --MCsplit setting as running over data")
-
     MC_SPLIT = args.MCsplit if args.MCinput else False
-    if MC_INPUT:
-        mc_append += "_split" if MC_SPLIT else "_all"
-
     SUBTRACT_FAKES = True  # this should alwys be True
-    sub_append = "_subFakes" if SUBTRACT_FAKES else ""
 
-    append = ""
-
-    if args.subtractBackgrounds:
-        append += "_subBkg"
-
-    if args.doExperimentalSysts:
-        append += "_experimentalSyst"
-
-    if args.doExperimentalSystsOnlyHerwig:
-        args.doExperimentalSysts = True
-        append += "_experimentalSystOnlyHerwig"
-
-    if args.doExperimentalSystsFromFile:
-        append += "_experimentalSystFromFile"
-
-    if args.doModelSysts:
-        append += "_modelSyst"
-        if not args.doExperimentalSysts:
-            append += "NoExperimentalSyst"
-
-    if args.doModelSystsOnlyHerwig:
-        args.doModelSysts = True
-        append += "_modelSystOnlyHerwig"
-        if not args.doExperimentalSysts:
-            append += "NoExperimentalSyst"
-
-    elif args.doModelSystsOnlyScale:
-        args.doModelSysts = True
-        append += "_modelSystOnlyScale"
-        if not args.doExperimentalSysts:
-            append += "NoExperimentalSyst"
-
-    if args.doModelSystsFromFile:
-        append += "_modelSystFromFile"
-
-    if args.doPDFSysts:
-        append += "_pdfSyst"
-        if not args.doExperimentalSysts:
-            append += "NoExperimentalSyst"
-
-    if args.doPDFSystsFromFile:
-        append += "_pdfSystFromFile"
-
-    if args.useAltResponse:
-        append += "_altResponse"
-
-    bias_str = ""
-    if args.biasFactor != 0:
-        bias_str = "_biasFactor%g" % args.biasFactor
-        bias_str = bias_str.replace(".", "p")
-
-    reg_axis_str = ""
-    if REGULARIZE != "None":
-        if args.regularizeAxis == 'pt':
-            reg_axis_str = '_onlyRegPt'
-        elif args.regularizeAxis == 'angle':
-            reg_axis_str = '_onlyRegAngle'
-        # reg_axis_str += "_onlyBinFactors"
-        # reg_axis_str += "_invTruthMoreBins"
-        reg_axis_str += "_invTruth"
-        # reg_axis_str += "_invTruthUseUnfolded"
-
-    area_constraint = ROOT.TUnfold.kEConstraintArea
-    # area_constraint = ROOT.TUnfold.kEConstraintNone
-    area_constraint_str = "Area" if area_constraint == ROOT.TUnfold.kEConstraintArea else "None"
-
-    regularize_str = "regularize%s%s%s" % (str(REGULARIZE).capitalize(), bias_str, reg_axis_str)
-
-    str_parts = dict(
-        regularize_str=regularize_str,
-        mc_append=mc_append,
-        area=area_constraint_str,
-        append=append,
-        sub_append=sub_append,
-    )
-    output_dir = os.path.join(src_dir, "unfolding_{regularize_str}{mc_append}{sub_append}_densityModeBinWidth_constraint{area}{append}_signalRegionOnly".format(**str_parts))
+    output_dir = os.path.join(src_dir, get_unfolding_output_dir(args))
 
     if args.outputDir:
         output_dir = args.outputDir
     cu.check_dir_exists_create(output_dir)
+
     print("")
     print("Outputting to", output_dir)
     print("")
@@ -1067,7 +810,7 @@ if __name__ == "__main__":
                                   pt_bin_edges_underflow_reco=pt_bin_edges_underflow_reco,
                                   pt_bin_edges_underflow_gen=pt_bin_edges_underflow_gen,
                                   orientation=ROOT.TUnfold.kHistMapOutputHoriz,
-                                  constraintMode=area_constraint,
+                                  constraintMode=args.areaConstraint,
                                   # regMode=ROOT.TUnfold.kRegModeCurvature,
                                   # densityFlags=ROOT.TUnfoldDensity.kDensityModeBinWidth, # important as we have varying bin sizes!
                                   regMode=ROOT.TUnfold.kRegModeNone,
