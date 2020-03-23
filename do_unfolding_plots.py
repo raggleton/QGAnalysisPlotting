@@ -567,6 +567,67 @@ class GenPtBinnedPlotter(object):
             plot.save("%s/unfolded_%s_pdf_model_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
             ROOT.gStyle.SetPalette(ROOT.kViridis)
 
+    def plot_unfolded_with_pdf_systs_unnormalised(self):
+        for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
+            pdf_entries = []
+            for pdf_dict in self.region['pdf_systematics']:
+                pdf_unfolder = pdf_dict['unfolder']
+                pdf_label = pdf_dict['label']
+                pdf_label_no_spaces = cu.no_space_str(pdf_dict['label'])
+
+                self.hist_bin_chopper.add_obj('pdf_syst_%s_unfolded' % (pdf_label_no_spaces), pdf_unfolder.unfolded)
+                self.hist_bin_chopper.add_obj('pdf_syst_%s_hist_truth' % (pdf_label_no_spaces), pdf_unfolder.hist_truth)
+
+                pdf_unfolded_hist_bin = self.hist_bin_chopper.get_pt_bin_div_bin_width('pdf_syst_%s_unfolded' % (pdf_label_no_spaces), ibin, binning_scheme='generator')
+                pdf_gen_hist_bin = self.hist_bin_chopper.get_pt_bin_div_bin_width('pdf_syst_%s_hist_truth' % (pdf_label_no_spaces), ibin, binning_scheme='generator')
+
+                pdf_entries.extend([
+                    Contribution(pdf_unfolded_hist_bin,
+                                 label="Unfolded (#tau = %.3g) (stat. err) (%s)" % (pdf_unfolder.tau, pdf_label),
+                                 line_color=pdf_dict['colour'], line_width=1, line_style=1,
+                                 marker_color=pdf_dict['colour'], marker_size=0,
+                                 subplot=pdf_gen_hist_bin),
+                    Contribution(pdf_gen_hist_bin,
+                                 label="Generator (%s)" % (pdf_label),
+                                 line_color=pdf_dict['colour'], line_width=1, line_style=2,
+                                 marker_color=pdf_dict['colour'], marker_size=0),
+                ])
+
+            # add nominal ones last
+            mc_gen_hist_bin = self.hist_bin_chopper.get_pt_bin_div_bin_width('hist_truth', ibin, binning_scheme='generator')
+            unfolded_hist_bin_total_errors = self.hist_bin_chopper.get_pt_bin_div_bin_width('unfolded', ibin, binning_scheme='generator')
+
+            pdf_entries.extend([
+                Contribution(mc_gen_hist_bin,
+                             label="Generator (%s)" % (self.region['mc_label']),
+                             line_color=self.plot_colours['gen_colour'], line_width=self.line_width,
+                             marker_color=self.plot_colours['gen_colour'], marker_size=0),
+                Contribution(unfolded_hist_bin_total_errors,
+                             label="Unfolded (#tau = %.3g) (total unc.)" % (self.unfolder.tau),
+                             line_color=self.plot_colours['unfolded_total_colour'], line_width=self.line_width, line_style=1,
+                             marker_color=self.plot_colours['unfolded_total_colour'], #marker_style=20, marker_size=0.75,
+                             subplot=mc_gen_hist_bin),
+            ])
+            if not self.check_entries(pdf_entries, "plot_unfolded_with_model_systs_unnormalised_pt_bin %d" % (ibin)):
+                return
+            plot = Plot(pdf_entries,
+                        ytitle=self.setup.pt_bin_unnormalised_differential_label,
+                        title=self.get_pt_bin_title(bin_edge_low, bin_edge_high),
+                        **self.pt_bin_plot_args)
+            self._modify_plot(plot)
+            plot.legend.SetX1(0.53)
+            plot.legend.SetY1(0.7)
+            plot.legend.SetX2(0.96)
+            plot.legend.SetY2(0.88)
+            if len(pdf_entries) > 5:
+                plot.legend.SetNColumns(2)
+            if len(pdf_entries) > 15:
+                plot.legend.SetNColumns(3)
+            ROOT.gStyle.SetPalette(55)
+            plot.plot("NOSTACK E1 PLC PMC")
+            plot.save("%s/unfolded_%s_pdf_model_unnormalised_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
+            ROOT.gStyle.SetPalette(ROOT.kViridis)
+
     def plot_uncertainty_shifts_normalised(self):
         """Do plots of fractional uncertainty shifts on *normalised* unfolded distribution"""
         for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
@@ -1676,6 +1737,206 @@ class RecoPtBinnedPlotter(object):
             plot.plot("NOSTACK E1")
             plot.save("%s/detector_folded_gen_%s_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
 
+    def plot_detector_with_model_systs_normalised(self):
+        for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
+            # add nominal
+            mc_reco_hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('hist_mc_reco_bg_subtracted', ibin, binning_scheme='detector')
+            entries = [
+                Contribution(mc_reco_hist_bin,
+                             label="MC (reco, bg-subtracted)",
+                             line_color=self.plot_colours['reco_mc_colour'], line_width=self.line_width,
+                             marker_color=self.plot_colours['reco_mc_colour'], marker_style=20, marker_size=0),
+            ]
+            # add model variations
+            for model_dict in self.region['model_systematics']:
+                model_unfolder = model_dict['unfolder']
+                model_label = model_dict['label']
+                model_label_no_spaces = cu.no_space_str(model_dict['label'])
+                name = 'hist_mc_reco_bg_subtracted_model_%s' % model_label_no_spaces
+                self.hist_bin_chopper.add_obj(name, model_unfolder.input_hist_bg_subtracted)
+                entries.append(
+                    Contribution(self.hist_bin_chopper.get_pt_bin_normed_div_bin_width(name, ibin, binning_scheme='detector'),
+                                 label="%s" % (model_label),
+                                 line_color=model_dict['colour'], line_width=1, line_style=1,
+                                 marker_color=model_dict['colour'], marker_size=0,
+                                 subplot=mc_reco_hist_bin)
+                )
+
+            if not self.check_entries(entries, "plot_detector_with_model_systs_normalised %d" % (ibin)):
+                continue
+            plot = Plot(entries,
+                        xtitle=self.setup.detector_title,
+                        ytitle=self.setup.pt_bin_normalised_differential_label,
+                        what="hist",
+                        title=self.get_pt_bin_title(bin_edge_low, bin_edge_high),
+                        has_data=self.setup.has_data,
+                        subplot_type='ratio',
+                        subplot_title='#splitline{Variation /}{Nominal}',
+                        subplot_limits=(0.75, 1.25),)
+            self._modify_plot(plot)
+            plot.legend.SetX1(0.53)
+            plot.legend.SetY1(0.7)
+            plot.legend.SetX2(0.96)
+            plot.legend.SetY2(0.88)
+            if len(entries) > 5:
+                plot.legend.SetNColumns(2)
+            if len(entries) > 15:
+                plot.legend.SetNColumns(3)
+            ROOT.gStyle.SetPalette(55)
+            plot.plot("NOSTACK PLC PMC E1")
+            plot.save("%s/detector_reco_binning_bg_subtracted_model_systs_%s_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
+            ROOT.gStyle.SetPalette(ROOT.kViridis)
+
+    def plot_detector_with_model_systs_unnormalised(self):
+        for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
+            # add nominal
+            mc_reco_hist_bin = self.hist_bin_chopper.get_pt_bin_div_bin_width('hist_mc_reco_bg_subtracted', ibin, binning_scheme='detector')
+            entries = [
+                Contribution(mc_reco_hist_bin,
+                             label="MC (reco, bg-subtracted)",
+                             line_color=self.plot_colours['reco_mc_colour'], line_width=self.line_width,
+                             marker_color=self.plot_colours['reco_mc_colour'], marker_style=20, marker_size=0),
+            ]
+            # add model variations
+            for model_dict in self.region['model_systematics']:
+                model_unfolder = model_dict['unfolder']
+                model_label = model_dict['label']
+                model_label_no_spaces = cu.no_space_str(model_dict['label'])
+                name = 'hist_mc_reco_bg_subtracted_model_%s' % model_label_no_spaces
+                self.hist_bin_chopper.add_obj(name, model_unfolder.input_hist_bg_subtracted)
+                entries.append(
+                    Contribution(self.hist_bin_chopper.get_pt_bin_div_bin_width(name, ibin, binning_scheme='detector'),
+                                 label="%s" % (model_label),
+                                 line_color=model_dict['colour'], line_width=1, line_style=1,
+                                 marker_color=model_dict['colour'], marker_size=0,
+                                 subplot=mc_reco_hist_bin)
+                )
+
+            if not self.check_entries(entries, "plot_detector_with_model_systs_normalised %d" % (ibin)):
+                continue
+            plot = Plot(entries,
+                        xtitle=self.setup.detector_title,
+                        ytitle=self.setup.pt_bin_unnormalised_differential_label,
+                        what="hist",
+                        title=self.get_pt_bin_title(bin_edge_low, bin_edge_high),
+                        has_data=self.setup.has_data,
+                        subplot_type='ratio',
+                        subplot_title='#splitline{Variation /}{Nominal}',
+                        subplot_limits=(0.5, 1.5),)
+            self._modify_plot(plot)
+            plot.legend.SetX1(0.53)
+            plot.legend.SetY1(0.7)
+            plot.legend.SetX2(0.96)
+            plot.legend.SetY2(0.88)
+            if len(entries) > 5:
+                plot.legend.SetNColumns(2)
+            if len(entries) > 15:
+                plot.legend.SetNColumns(3)
+            ROOT.gStyle.SetPalette(55)
+            plot.plot("NOSTACK PLC PMC E1")
+            plot.save("%s/detector_reco_binning_bg_subtracted_model_systs_unnormalised_%s_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
+            ROOT.gStyle.SetPalette(ROOT.kViridis)
+
+    def plot_detector_with_pdf_systs_normalised(self):
+        for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
+            # add nominal
+            mc_reco_hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('hist_mc_reco_bg_subtracted', ibin, binning_scheme='detector')
+            entries = [
+                Contribution(mc_reco_hist_bin,
+                             label="MC (reco, bg-subtracted)",
+                             line_color=self.plot_colours['reco_mc_colour'], line_width=self.line_width,
+                             marker_color=self.plot_colours['reco_mc_colour'], marker_style=20, marker_size=0),
+            ]
+            # add PDF variations
+            for pdf_dict in self.region['pdf_systematics']:
+                pdf_unfolder = pdf_dict['unfolder']
+                pdf_label = pdf_dict['label']
+                pdf_label_no_spaces = cu.no_space_str(pdf_dict['label'])
+                name = 'hist_mc_reco_bg_subtracted_PDF_%s' % pdf_label_no_spaces
+                self.hist_bin_chopper.add_obj(name, pdf_unfolder.input_hist_bg_subtracted)
+                entries.append(
+                    Contribution(self.hist_bin_chopper.get_pt_bin_normed_div_bin_width(name, ibin, binning_scheme='detector'),
+                                 label="%s" % (pdf_label),
+                                 line_color=pdf_dict['colour'], line_width=1, line_style=1,
+                                 marker_color=pdf_dict['colour'], marker_size=0,
+                                 subplot=mc_reco_hist_bin)
+                )
+
+            if not self.check_entries(entries, "plot_detector_with_pdf_systs_normalised %d" % (ibin)):
+                continue
+            plot = Plot(entries,
+                        xtitle=self.setup.detector_title,
+                        ytitle=self.setup.pt_bin_normalised_differential_label,
+                        what="hist",
+                        title=self.get_pt_bin_title(bin_edge_low, bin_edge_high),
+                        has_data=self.setup.has_data,
+                        subplot_type='ratio',
+                        subplot_title='#splitline{Variation /}{Nominal}',
+                        subplot_limits=(0.75, 1.25),)
+            self._modify_plot(plot)
+            plot.legend.SetX1(0.53)
+            plot.legend.SetY1(0.7)
+            plot.legend.SetX2(0.96)
+            plot.legend.SetY2(0.88)
+            if len(entries) > 5:
+                plot.legend.SetNColumns(2)
+            if len(entries) > 15:
+                plot.legend.SetNColumns(3)
+            ROOT.gStyle.SetPalette(55)
+            plot.plot("NOSTACK PLC PMC E1")
+            plot.save("%s/detector_reco_binning_bg_subtracted_pdf_systs_%s_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
+            ROOT.gStyle.SetPalette(ROOT.kViridis)
+
+    def plot_detector_with_pdf_systs_unnormalised(self):
+        for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
+            # add nominal
+            mc_reco_hist_bin = self.hist_bin_chopper.get_pt_bin_div_bin_width('hist_mc_reco_bg_subtracted', ibin, binning_scheme='detector')
+            entries = [
+                Contribution(mc_reco_hist_bin,
+                             label="MC (reco, bg-subtracted)",
+                             line_color=self.plot_colours['reco_mc_colour'], line_width=self.line_width,
+                             marker_color=self.plot_colours['reco_mc_colour'], marker_style=20, marker_size=0),
+            ]
+            # add PDF variations
+            for pdf_dict in self.region['pdf_systematics']:
+                pdf_unfolder = pdf_dict['unfolder']
+                pdf_label = pdf_dict['label']
+                pdf_label_no_spaces = cu.no_space_str(pdf_dict['label'])
+                name = 'hist_mc_reco_bg_subtracted_PDF_%s' % pdf_label_no_spaces
+                self.hist_bin_chopper.add_obj(name, pdf_unfolder.input_hist_bg_subtracted)
+                entries.append(
+                    Contribution(self.hist_bin_chopper.get_pt_bin_div_bin_width(name, ibin, binning_scheme='detector'),
+                                 label="%s" % (pdf_label),
+                                 line_color=pdf_dict['colour'], line_width=1, line_style=1,
+                                 marker_color=pdf_dict['colour'], marker_size=0,
+                                 subplot=mc_reco_hist_bin)
+                )
+
+            if not self.check_entries(entries, "plot_detector_with_pdf_systs_normalised %d" % (ibin)):
+                continue
+            plot = Plot(entries,
+                        xtitle=self.setup.detector_title,
+                        ytitle=self.setup.pt_bin_unnormalised_differential_label,
+                        what="hist",
+                        title=self.get_pt_bin_title(bin_edge_low, bin_edge_high),
+                        has_data=self.setup.has_data,
+                        subplot_type='ratio',
+                        subplot_title='#splitline{Variation /}{Nominal}',
+                        subplot_limits=(0.5, 1.5),)
+            self._modify_plot(plot)
+            plot.legend.SetX1(0.53)
+            plot.legend.SetY1(0.7)
+            plot.legend.SetX2(0.96)
+            plot.legend.SetY2(0.88)
+            if len(entries) > 5:
+                plot.legend.SetNColumns(2)
+            if len(entries) > 15:
+                plot.legend.SetNColumns(3)
+            ROOT.gStyle.SetPalette(55)
+            plot.plot("NOSTACK PLC PMC E1")
+            plot.save("%s/detector_reco_binning_bg_subtracted_pdf_systs_unnormalised_%s_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
+            ROOT.gStyle.SetPalette(ROOT.kViridis)
+
 
 def do_all_plots_per_region_angle(setup, unpack_dict):
     # Note that experimental systs are only different response matrices, and are stored in the main unfolder
@@ -1695,7 +1956,6 @@ def do_all_plots_per_region_angle(setup, unpack_dict):
     alt_hist_reco_bg_subtracted = unpack_dict['alt_hist_reco_bg_subtracted']
     alt_hist_reco_bg_subtracted_gen_binning = unpack_dict['alt_hist_reco_bg_subtracted_gen_binning']
 
-    # Big 1D plots to compare things
     hbc = HistBinChopper(generator_binning=unfolder.generator_binning.FindNode("generatordistribution"),
                          detector_binning=unfolder.detector_binning.FindNode("detectordistribution"))
     hbc.add_obj("hist_truth", unfolder.hist_truth)
@@ -1706,6 +1966,7 @@ def do_all_plots_per_region_angle(setup, unpack_dict):
 
     # Iterate through pt bins - gen binning
     # ------------------------------------------------------------------
+    print("Doing GenPtBinnedPlotter...")
     gen_pt_binned_plotter = GenPtBinnedPlotter(setup=setup,
                                                bins=unfolder.pt_bin_edges_gen,
                                                hist_bin_chopper=hbc,
@@ -1736,6 +1997,7 @@ def do_all_plots_per_region_angle(setup, unpack_dict):
 
     if has_pdf_systs:
         gen_pt_binned_plotter.plot_unfolded_with_pdf_systs_normalised()
+        gen_pt_binned_plotter.plot_unfolded_with_pdf_systs_unnormalised()
 
     if has_exp_systs or has_model_systs or has_pdf_systs:
         gen_pt_binned_plotter.plot_syst_variation_normalised()
@@ -1747,6 +2009,7 @@ def do_all_plots_per_region_angle(setup, unpack_dict):
 
     # Iterate through lambda bins - gen binning
     # ------------------------------------------------------------------
+    print("Doing GenLambdaBinnedPlotter...")
     lambda_pt_binned_plotter = GenLambdaBinnedPlotter(setup=setup,
                                                       bins=unfolder.variable_bin_edges_gen,
                                                       hist_bin_chopper=hbc,  # this is the same object as gen_pt_binned_plotter, so has all the objects already
@@ -1775,6 +2038,7 @@ def do_all_plots_per_region_angle(setup, unpack_dict):
 
     # Iterate through pt bins - reco binning
     # ------------------------------------------------------------------
+    print("Doing RecoPtBinnedPlotter...")
     hbc.add_obj("hist_mc_reco_bg_subtracted", unfolder.hist_mc_reco_bg_subtracted)
     hbc.add_obj("input_hist_bg_subtracted", unfolder.input_hist_bg_subtracted)
     hbc.add_obj("folded_unfolded", unfolder.folded_unfolded)
@@ -1787,6 +2051,14 @@ def do_all_plots_per_region_angle(setup, unpack_dict):
     reco_pt_binned_plotter.plot_folded_unfolded_normalised()
     reco_pt_binned_plotter.plot_folded_unfolded_with_mc_normalised()
     reco_pt_binned_plotter.plot_folded_gen_normalised()
+
+    if has_model_systs:
+        reco_pt_binned_plotter.plot_detector_with_model_systs_normalised()
+        reco_pt_binned_plotter.plot_detector_with_model_systs_unnormalised()
+
+    if has_pdf_systs:
+        reco_pt_binned_plotter.plot_detector_with_pdf_systs_normalised()
+        reco_pt_binned_plotter.plot_detector_with_pdf_systs_unnormalised()
 
     return hbc
 
