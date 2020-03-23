@@ -2249,7 +2249,10 @@ if __name__ == "__main__":
                     ref_scale_syst = reference_dict['unfolder'].hist_bin_chopper._cache[key]
                     scale_syst = unfolder.hist_bin_chopper.get_pt_bin_normed_div_bin_width("unfolded_stat_err", ibin_pt, binning_scheme='generator').Clone()
                     for i in range(1, scale_syst.GetNbinsX()+1):
-                        rel_err = ref_scale_syst.GetBinError(i) / ref_scale_syst.GetBinContent(i)
+                        if ref_scale_syst.GetBinContent(i) != 0:
+                            rel_err = ref_scale_syst.GetBinError(i) / ref_scale_syst.GetBinContent(i)
+                        else:
+                            rel_err = 0
                         scale_syst.SetBinError(i, rel_err * scale_syst.GetBinContent(i))
                     unfolder.hist_bin_chopper._cache[key] = scale_syst
 
@@ -2521,12 +2524,15 @@ if __name__ == "__main__":
                                                                   do_norm=True,
                                                                   do_div_bin_width=True,
                                                                   binning_scheme='generator')
-                    ref_scale_syst = reference_dict['unfolder'].hist_bin_chopper._cache[key]
-                    scale_syst = unfolder.hist_bin_chopper.get_pt_bin_normed_div_bin_width("unfolded_stat_err", ibin_pt, binning_scheme='generator').Clone()
-                    for i in range(1, scale_syst.GetNbinsX()+1):
-                        rel_err = ref_scale_syst.GetBinError(i) / ref_scale_syst.GetBinContent(i)
-                        scale_syst.SetBinError(i, rel_err * scale_syst.GetBinContent(i))
-                    unfolder.hist_bin_chopper._cache[key] = scale_syst
+                    ref_pdf_syst = reference_dict['unfolder'].hist_bin_chopper._cache[key]
+                    pdf_syst = unfolder.hist_bin_chopper.get_pt_bin_normed_div_bin_width("unfolded_stat_err", ibin_pt, binning_scheme='generator').Clone()
+                    for i in range(1, pdf_syst.GetNbinsX()+1):
+                        if ref_pdf_syst.GetBinContent(i) != 0:
+                            rel_err = ref_pdf_syst.GetBinError(i) / ref_pdf_syst.GetBinContent(i)
+                        else:
+                            rel_err = 0
+                        pdf_syst.SetBinError(i, rel_err * pdf_syst.GetBinContent(i))
+                    unfolder.hist_bin_chopper._cache[key] = pdf_syst
 
 
             if len(region['pdf_systematics']) > 0 and MC_INPUT:
