@@ -24,6 +24,7 @@ ROOT.TH1.SetDefaultSumw2()
 
 
 AREA_OPT_DICT = {'Area': ROOT.TUnfold.kEConstraintArea, 'None': ROOT.TUnfold.kEConstraintNone}
+AREA_OPT_INV_DICT = {v: k for k, v in AREA_OPT_DICT.items()}
 
 
 def get_unfolding_argparser(description='', parser=None):
@@ -63,6 +64,7 @@ def get_unfolding_argparser(description='', parser=None):
 
     parser.add_argument("--areaConstraint",
                         default='None',
+                        type=lambda x: AREA_OPT_DICT[x],
                         choices=AREA_OPT_DICT.keys(),
                         help='Area constraint.')
 
@@ -285,15 +287,10 @@ def get_unfolding_output_dir(args):
 
     regularize_str = "regularize%s%s%s" % (str(args.regularize).capitalize(), bias_str, reg_axis_str)
 
-    area_constraint_str = args.areaConstraint
-
-    # Replace str with ROOT enum
-    args.areaConstraint = AREA_OPT_DICT[args.areaConstraint]
-
     str_parts = dict(
         regularize_str=regularize_str,
         mc_append=mc_append,
-        area=area_constraint_str,
+        area=AREA_OPT_INV_DICT[args.areaConstraint],
         append=append,
         sub_append=sub_append,
     )
