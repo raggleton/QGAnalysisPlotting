@@ -32,7 +32,7 @@ from my_unfolder_plotter import MyUnfolderPlotter
 from unfolding_regularisation_classes import TauScanner, LCurveScanner
 from unfolding_config import get_dijet_config, get_zpj_config
 from do_unfolding_plots import Setup, do_all_plots_per_region_angle, do_all_big_1d_plots_per_region_angle
-from unfolding_logistics import get_unfolding_argparser, get_unfolding_output_dir
+from unfolding_logistics import get_unfolding_argparser, get_unfolding_output_dir, sanitise_args
 
 ROOT.PyConfig.IgnoreCommandLineOptions = True
 ROOT.gROOT.SetBatch(1)
@@ -391,63 +391,21 @@ if __name__ == "__main__":
     args = parser.parse_args()
     print("")
     print(args)
+    print("")
+    sanitise_args(args)
+    output_dir = get_unfolding_output_dir(args)
+    cu.check_dir_exists_create(output_dir)
+    print("")
+    print(args)
 
-    # Do various post-parsing checks
-    if args.doAllRegions:
-        for x in ['doDijetCentral', 'doDijetForward', 'doDijetCentralGroomed', 'doDijetForwardGroomed', 'doZPJ', 'doZPJGroomed']:
-            setattr(args, x, True)
+    print("")
+    print("Outputting to", output_dir)
+    print("")
 
-    if not any([args.doDijetCentral, args.doDijetForward, args.doDijetCentralGroomed, args.doDijetForwardGroomed, args.doZPJ, args.doZPJGroomed]):
-        raise RuntimeError("You need to specify at least one signal region e.g. --doDijetCentral")
-
-    if not args.MCinput and args.doModelSysts:
-        raise RuntimeError("You cannot do both model systs and run on data")
-
-    if args.MCinput and args.subtractBackgrounds:
-        print("")
-        print("!!!! Cannot subtract backgrounds while using MC input, ignoring for now")
-        print("")
-        args.subtractBackgrounds = False
-
-    if args.doPDFSysts and not args.MCinput:
-        raise RuntimeError("Cannot do PDF systs and run over data")
-
-    if (args.doModelSysts or args.doModelSystsOnlyHerwig or args.doModelSystsOnlyScale) and not args.MCinput:
-        raise RuntimeError("Cannot do model systs and run over data")
-
-    if args.doModelSystsOnlyHerwig and args.doModelSystsOnlyScale:
-        raise RuntimeError("Cannot do both --doModelSystsOnlyHerwig and --doModelSystsOnlyScale")
-
-    if (args.doExperimentalSysts or args.doExperimentalSystsOnlyHerwig) and args.doExperimentalSystsFromFile:
-        args.doExperimentalSysts = False
-        args.doExperimentalSystsOnlyHerwig = False
-        print("Warning: will use experimental systs from --doExperimentalSystsFromFile option only, "
-              "ignoring --doExperimentalSysts and --doExperimentalSystsOnlyHerwig")
-
-    if (args.doModelSystsOnlyScale or args.doModelSystsOnlyHerwig or args.doModelSysts) and args.doModelSystsFromFile:
-        args.doModelSysts = False
-        args.doModelSystsOnlyScale = False
-        args.doModelSystsOnlyHerwig = False
-        print("Warning: will use model systs from --doModelSystsFromFile option only, "
-              "ignoring --doModelSysts, --doModelSystsOnlyHerwig, -- doModelSystsOnlyScale")
-
-    if args.doPDFSystsFromFile and args.doPDFSysts:
-        args.doPDFSysts = False
-        print("Warning: will use PDF systs from --doPDFSystsFromFile option only, ignoring --doPDFSysts")
-
-    # if args.useAltResponse and args.doExperimentalSysts:
-    #     args.doExperimentalSysts = False
-    #     print("You cannot use both --useAltResponse and --doExperimentalSysts: disabling doExperimentalSysts")
-
-    # # TODO handle both?
-    # if args.useAltResponse and args.doModelSysts:
-    #     args.doExperimentalSysts = False
-    #     print("You cannot use both --useAltResponse and --doModelSysts: disabling doModelSysts")
+    src_dir = args.source
 
     # Setup files and regions to unfold
     # --------------------------------------------------------------------------
-    src_dir = args.source
-
     regions = []
 
     # Configure Dijet regions
@@ -574,17 +532,6 @@ if __name__ == "__main__":
     MC_INPUT = args.MCinput
     MC_SPLIT = args.MCsplit if args.MCinput else False
     SUBTRACT_FAKES = True  # this should alwys be True
-
-    # Default to putting things into src_dir, otherwise in wherever the user says
-    output_dir = os.path.join(src_dir, get_unfolding_output_dir(args))
-    if args.outputDir:
-        output_dir = os.path.join(args.outputDir, get_unfolding_output_dir(args))
-
-    cu.check_dir_exists_create(output_dir)
-
-    print("")
-    print("Outputting to", output_dir)
-    print("")
 
     jet_algo = "AK4 PF PUPPI"
     if "ak8puppi" in src_dir:

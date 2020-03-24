@@ -209,6 +209,60 @@ def get_unfolding_argparser(description='', parser=None):
     return parser
 
 
+def sanitise_args(args):
+    """Do various post-parsing checks"""
+    if args.doAllRegions:
+        for x in ['doDijetCentral', 'doDijetForward', 'doDijetCentralGroomed', 'doDijetForwardGroomed', 'doZPJ', 'doZPJGroomed']:
+            setattr(args, x, True)
+
+    if not any([args.doDijetCentral, args.doDijetForward, args.doDijetCentralGroomed, args.doDijetForwardGroomed, args.doZPJ, args.doZPJGroomed]):
+        raise RuntimeError("You need to specify at least one signal region e.g. --doDijetCentral")
+
+    if not args.MCinput and args.doModelSysts:
+        raise RuntimeError("You cannot do both model systs and run on data")
+
+    if args.MCinput and args.subtractBackgrounds:
+        print("")
+        print("!!!! Cannot subtract backgrounds while using MC input, ignoring for now")
+        print("")
+        args.subtractBackgrounds = False
+
+    if args.doPDFSysts and not args.MCinput:
+        raise RuntimeError("Cannot do PDF systs and run over data")
+
+    if (args.doModelSysts or args.doModelSystsOnlyHerwig or args.doModelSystsOnlyScale) and not args.MCinput:
+        raise RuntimeError("Cannot do model systs and run over data")
+
+    if args.doModelSystsOnlyHerwig and args.doModelSystsOnlyScale:
+        raise RuntimeError("Cannot do both --doModelSystsOnlyHerwig and --doModelSystsOnlyScale")
+
+    if (args.doExperimentalSysts or args.doExperimentalSystsOnlyHerwig) and args.doExperimentalSystsFromFile:
+        args.doExperimentalSysts = False
+        args.doExperimentalSystsOnlyHerwig = False
+        print("Warning: will use experimental systs from --doExperimentalSystsFromFile option only, "
+              "ignoring --doExperimentalSysts and --doExperimentalSystsOnlyHerwig")
+
+    if (args.doModelSystsOnlyScale or args.doModelSystsOnlyHerwig or args.doModelSysts) and args.doModelSystsFromFile:
+        args.doModelSysts = False
+        args.doModelSystsOnlyScale = False
+        args.doModelSystsOnlyHerwig = False
+        print("Warning: will use model systs from --doModelSystsFromFile option only, "
+              "ignoring --doModelSysts, --doModelSystsOnlyHerwig, -- doModelSystsOnlyScale")
+
+    if args.doPDFSystsFromFile and args.doPDFSysts:
+        args.doPDFSysts = False
+        print("Warning: will use PDF systs from --doPDFSystsFromFile option only, ignoring --doPDFSysts")
+
+    # if args.useAltResponse and args.doExperimentalSysts:
+    #     args.doExperimentalSysts = False
+    #     print("You cannot use both --useAltResponse and --doExperimentalSysts: disabling doExperimentalSysts")
+
+    # # TODO handle both?
+    # if args.useAltResponse and args.doModelSysts:
+    #     args.doExperimentalSysts = False
+    #     print("You cannot use both --useAltResponse and --doModelSysts: disabling doModelSysts")
+
+
 def get_unfolding_output_dir(args):
     """Get name of outputdir for a given set of options
 
@@ -295,6 +349,11 @@ def get_unfolding_output_dir(args):
         sub_append=sub_append,
     )
     output_dir = "unfolding_{regularize_str}{mc_append}{sub_append}_densityModeBinWidth_constraint{area}{append}_signalRegionOnly".format(**str_parts)
+    # Default to putting things into args.source, otherwise in wherever the user says
+    if args.outputDir:
+        output_dir = os.path.join(args.source, output_dir)
+    else:
+        output_dir = os.path.join(args.outputDir, get_unfolding_output_dir(args))
     return output_dir
 
 
@@ -306,6 +365,7 @@ if __name__ == "__main__":
     unfolding_parser = subparser.add_parser('out', help='Get output directory name.')
     get_unfolding_argparser(description='', parser=unfolding_parser)
     args = parser.parse_args()
+    sanitise_args(args)
     # print(args)
     if args.out:
         print(get_unfolding_output_dir(args))
