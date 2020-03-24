@@ -575,10 +575,11 @@ if __name__ == "__main__":
     MC_SPLIT = args.MCsplit if args.MCinput else False
     SUBTRACT_FAKES = True  # this should alwys be True
 
+    # Default to putting things into src_dir, otherwise in wherever the user says
     output_dir = os.path.join(src_dir, get_unfolding_output_dir(args))
-
     if args.outputDir:
-        output_dir = args.outputDir
+        output_dir = os.path.join(args.outputDir, get_unfolding_output_dir(args))
+
     cu.check_dir_exists_create(output_dir)
 
     print("")
