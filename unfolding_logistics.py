@@ -351,9 +351,9 @@ def get_unfolding_output_dir(args):
     output_dir = "unfolding_{regularize_str}{mc_append}{sub_append}_densityModeBinWidth_constraint{area}{append}_signalRegionOnly".format(**str_parts)
     # Default to putting things into args.source, otherwise in wherever the user says
     if args.outputDir:
-        output_dir = os.path.join(args.source, output_dir)
+        output_dir = os.path.join(args.outputDir, output_dir)
     else:
-        output_dir = os.path.join(args.outputDir, get_unfolding_output_dir(args))
+        output_dir = os.path.join(args.source, get_unfolding_output_dir(args))
     return output_dir
 
 
