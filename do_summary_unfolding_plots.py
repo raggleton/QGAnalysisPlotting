@@ -41,8 +41,14 @@ class SummaryPlotter(object):
     """Do lots of summary plots"""
 
     def __init__(self, jet_algos, regions, angles, pt_bins_dijet, pt_bins_zpj, df, output_dir, has_data):
+        if len(jet_algos) == 0:
+            raise RuntimeError("jet_algos is empty")
         self.jet_algos = jet_algos
+        if len(regions) == 0:
+            raise RuntimeError("regions is empty")
         self.regions = regions
+        if len(angles) == 0:
+            raise RuntimeError("angles is empty")
         self.angles = angles
         self.pt_bins_dijet = pt_bins_dijet
         self.pt_bins_zpj = pt_bins_zpj
@@ -67,7 +73,7 @@ class SummaryPlotter(object):
         """Plot mean vs pt for dijet (cen+fwd) & Z+jet on one plot,
         per angle, per jet algo, per groomed/ungroomed"""
         print('plot_dijet_zpj_means_vs_pt_all...')
-        for jet_algo, angle, groomed in product(self.jet_algos[:1], self.angles[:], [False, True][:]):
+        for jet_algo, angle, groomed in product(self.jet_algos, self.angles, [False, True]):
             print("  ...doing", jet_algo['label'], angle.name, 'groomed' if groomed else 'ungroomed')
             self.plot_dijet_zpj_means_vs_pt_one_angle_one_jet(angle, jet_algo, do_groomed=groomed, output_dir='%s/plot_dijet_zpj_means_vs_pt_all' % self.output_dir)
 
@@ -75,7 +81,7 @@ class SummaryPlotter(object):
         """Plot mean vs pt for dijet (cen+fwd) on one plot,
         per angle, per jet algo, per groomed/ungroomed"""
         print('plot_dijet_zpj_means_vs_pt_all...')
-        for jet_algo, angle, groomed in product(self.jet_algos[:1], self.angles[:], [False, True][:]):
+        for jet_algo, angle, groomed in product(self.jet_algos, self.angles, [False, True]):
             print("  ...doing", jet_algo['label'], angle.name, 'groomed' if groomed else 'ungroomed')
             self.plot_dijet_zpj_means_vs_pt_one_angle_one_jet(angle, jet_algo, do_groomed=groomed, output_dir='%s/plot_dijet_means_vs_pt_all' % self.output_dir, do_zpj=False)
 
@@ -83,7 +89,7 @@ class SummaryPlotter(object):
         """Plot mean vs pt for zpj on one plot,
         per angle, per jet algo, per groomed/ungroomed"""
         print('plot_dijet_zpj_means_vs_pt_all...')
-        for jet_algo, angle, groomed in product(self.jet_algos[:1], self.angles[:], [False, True][:]):
+        for jet_algo, angle, groomed in product(self.jet_algos, self.angles, [False, True]):
             print("  ...doing", jet_algo['label'], angle.name, 'groomed' if groomed else 'ungroomed')
             self.plot_dijet_zpj_means_vs_pt_one_angle_one_jet(angle, jet_algo, do_groomed=groomed, output_dir='%s/plot_zpj_means_vs_pt_all' % self.output_dir, do_dijet=False)
 
@@ -225,7 +231,7 @@ class SummaryPlotter(object):
         """Plot mean vs pt for dijet (cen+fwd) & Z+jet on one plot,
         per angle, per jet algo, per groomed/ungroomed"""
         print('plot_dijet_zpj_rms_vs_pt_all...')
-        for jet_algo, angle, groomed in product(self.jet_algos[:1], self.angles[:], [False, True][:]):
+        for jet_algo, angle, groomed in product(self.jet_algos, self.angles, [False, True]):
             print("  ...doing", jet_algo['label'], angle.name, 'groomed' if groomed else 'ungroomed')
             self.plot_dijet_zpj_rms_vs_pt_one_angle_one_jet(angle, jet_algo, do_groomed=groomed, output_dir='%s/plot_dijet_zpj_rms_vs_pt_all' % self.output_dir)
 
@@ -233,7 +239,7 @@ class SummaryPlotter(object):
         """Plot mean vs pt for dijet (cen+fwd) on one plot,
         per angle, per jet algo, per groomed/ungroomed"""
         print('plot_dijet_zpj_rms_vs_pt_all...')
-        for jet_algo, angle, groomed in product(self.jet_algos[:1], self.angles[:], [False, True][:]):
+        for jet_algo, angle, groomed in product(self.jet_algos, self.angles, [False, True]):
             print("  ...doing", jet_algo['label'], angle.name, 'groomed' if groomed else 'ungroomed')
             self.plot_dijet_zpj_rms_vs_pt_one_angle_one_jet(angle, jet_algo, do_groomed=groomed, output_dir='%s/plot_dijet_rms_vs_pt_all' % self.output_dir, do_zpj=False)
 
@@ -241,7 +247,7 @@ class SummaryPlotter(object):
         """Plot mean vs pt for zpj on one plot,
         per angle, per jet algo, per groomed/ungroomed"""
         print('plot_dijet_zpj_rms_vs_pt_all...')
-        for jet_algo, angle, groomed in product(self.jet_algos[:1], self.angles[:], [False, True][:]):
+        for jet_algo, angle, groomed in product(self.jet_algos, self.angles, [False, True]):
             print("  ...doing", jet_algo['label'], angle.name, 'groomed' if groomed else 'ungroomed')
             self.plot_dijet_zpj_rms_vs_pt_one_angle_one_jet(angle, jet_algo, do_groomed=groomed, output_dir='%s/plot_zpj_rms_vs_pt_all' % self.output_dir, do_dijet=False)
 
@@ -433,154 +439,205 @@ def calc_hist_mean_error(hist, covariance_matrix, scale_factor):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("ak4source",
+    parser.add_argument("--ak4source",
                         help="Source directory for AK4 jets (should be the one made by unfolding.py")
     parser.add_argument("--ak8source",
                         help="Source directory for AK8 jets (should be the one made by unfolding.py")
+    parser.add_argument("--h5input",
+                        help="Read data from H5 input file (from previous running of this script)")
     parser.add_argument("--outputDir",
                         default=None,
                         help='Output directory (default is the source dir')
     args = parser.parse_args()
-    if not args.outputDir:
-        args.outputDir = os.path.join(args.ak4source, 'SummaryPlots')
 
-    results_dicts = []
+    # Get data
+    if not any([args.h5input, args.ak4source, args.ak8source]):
+        raise RuntimeError("Need one of --h5input or --ak4input/--ak8input")
 
-    jet_algos = [
-        {'src': args.ak4source, 'label': 'AK4 PUPPI', 'name': 'ak4puppi'},
-    ]
-    if args.ak8source:
-        jet_algos.append({'src': args.ak8source, 'label': 'AK8 PUPPI', 'name': 'ak8puppi'})
+    if args.h5input is None:
+        # ----------------------------------------------------------------------
+        # READ IN DATA FROM UNFOLDING ROOT FILES
+        # ----------------------------------------------------------------------
+        if not args.outputDir and args.ak4source:
+            args.outputDir = os.path.join(args.ak4source, 'SummaryPlots')
+        elif not args.outputDir and args.ak8source:
+            args.outputDir = os.path.join(args.ak8source, 'SummaryPlots')
 
-    for jet_algo in jet_algos:
-        source_dir = jet_algo['src']
-        regions = [
-            get_dijet_config(source_dir, central=True, groomed=False),
-            get_dijet_config(source_dir, central=False, groomed=False),
-            get_dijet_config(source_dir, central=True, groomed=True),
-            get_dijet_config(source_dir, central=False, groomed=True),
-            get_zpj_config(source_dir, groomed=False),
-            get_zpj_config(source_dir, groomed=True),
-        ]
+        results_dicts = []
 
-        for region in regions:
-            region_dir = os.path.join(source_dir, region['name'])
-            if not os.path.isdir(region_dir):
-                print("! Warning ! cannot find region dir", region_dir, '- skipping region')
-                continue
+        jet_algos = []
+        if args.ak4source:
+            jet_algos.append({'src': args.ak4source, 'label': 'AK4 PUPPI', 'name': 'ak4puppi'})
+        if args.ak8source:
+            jet_algos.append({'src': args.ak8source, 'label': 'AK8 PUPPI', 'name': 'ak8puppi'})
 
-            angles = qgc.COMMON_VARS
-            for angle in angles:
-                angle_output_dir = "%s/%s" % (region_dir, angle.var)
-                if not os.path.isdir(angle_output_dir):
-                    print("! Warning ! cannot find angle dir", angle_output_dir, '- skipping angle', angle.var)
+        for jet_algo in jet_algos:
+            source_dir = jet_algo['src']
+            regions = [
+                get_dijet_config(source_dir, central=True, groomed=False),
+                get_dijet_config(source_dir, central=False, groomed=False),
+                get_dijet_config(source_dir, central=True, groomed=True),
+                get_dijet_config(source_dir, central=False, groomed=True),
+                get_zpj_config(source_dir, groomed=False),
+                get_zpj_config(source_dir, groomed=True),
+            ]
+
+            for region in regions:
+                region_dir = os.path.join(source_dir, region['name'])
+                if not os.path.isdir(region_dir):
+                    print("! Warning ! cannot find region dir", region_dir, '- skipping region')
                     continue
 
-                # TODO: put this in a method / class
-                # Check if ROOT file exists
-                root_filename = os.path.join(angle_output_dir, "unfolding_result.root")
-                if not os.path.isfile(root_filename):
-                    print("! Warning ! cannot fine unfolding ROOT file", root_filename, ' - skipping angle')
+                angles = qgc.COMMON_VARS
+                for angle in angles:
+                    angle_output_dir = "%s/%s" % (region_dir, angle.var)
+                    if not os.path.isdir(angle_output_dir):
+                        print("! Warning ! cannot find angle dir", angle_output_dir, '- skipping angle', angle.var)
+                        continue
 
-                print('Unpacking', region['name'], angle.name)
-                append = "%s_%s" % (region['name'], angle.var)  # common str to put on filenames, etc. don't need angle_prepend as 'groomed' in region name
-                input_tfile = cu.TFileCacher(root_filename)  # keep this here otherwise crashes
-                unpack_dict = unpack_unfolding_root_file(input_tfile, region, angle, do_alt_response=True, do_model_systs=False, do_pdf_systs=False)
-                unfolder = unpack_dict['unfolder']
-                unreg_unfolder = unpack_dict['unreg_unfolder']
-                alt_unfolder = unpack_dict['alt_unfolder']
-                alt_hist_truth = unpack_dict['alt_hist_truth']
-                print(alt_hist_truth)
-                hbc = HistBinChopper(generator_binning=unfolder.generator_binning.FindNode("generatordistribution"), 
-                                     detector_binning=unfolder.detector_binning.FindNode("detectordistribution"))
-                hbc.add_obj("unfolded", unfolder.unfolded)
-                hbc.add_obj("unfolded_stat_err", unfolder.unfolded_stat_err)
-                hbc.add_obj("hist_truth", unfolder.hist_truth)
-                hbc.add_obj("alt_hist_truth", alt_hist_truth)
+                    # TODO: put this in a method / class
+                    # Check if ROOT file exists
+                    root_filename = os.path.join(angle_output_dir, "unfolding_result.root")
+                    if not os.path.isfile(root_filename):
+                        print("! Warning ! cannot fine unfolding ROOT file", root_filename, ' - skipping angle')
 
-                # Iterate through pt bins, get lambda histogram for that bin,
-                # derive metrics from it, save
-                key = 'signal_gen'
-                if 'ZPlusJets' in region['name']:
-                    key = 'signal_zpj_gen'
-                pt_bins = qgc.PT_UNFOLD_DICT[key]
+                    print('Unpacking', region['name'], angle.name)
+                    append = "%s_%s" % (region['name'], angle.var)  # common str to put on filenames, etc. don't need angle_prepend as 'groomed' in region name
+                    input_tfile = cu.TFileCacher(root_filename)  # keep this here otherwise crashes
+                    unpack_dict = unpack_unfolding_root_file(input_tfile, region, angle, do_alt_response=True, do_model_systs=False, do_pdf_systs=False)
+                    unfolder = unpack_dict['unfolder']
+                    unreg_unfolder = unpack_dict['unreg_unfolder']
+                    alt_unfolder = unpack_dict['alt_unfolder']
+                    alt_hist_truth = unpack_dict['alt_hist_truth']
+                    print(alt_hist_truth)
+                    hbc = HistBinChopper(generator_binning=unfolder.generator_binning.FindNode("generatordistribution"),
+                                         detector_binning=unfolder.detector_binning.FindNode("detectordistribution"))
+                    hbc.add_obj("unfolded", unfolder.unfolded)
+                    hbc.add_obj("unfolded_stat_err", unfolder.unfolded_stat_err)
+                    hbc.add_obj("hist_truth", unfolder.hist_truth)
+                    hbc.add_obj("alt_hist_truth", alt_hist_truth)
 
-                for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(pt_bins[:-1], pt_bins[1:])):
-                    # mc_gen_hist_bin_unnorm_div_bin_width = hbc.get_pt_bin_div_bin_width('hist_truth', ibin)
-                    # mc_gen_hist_bin = hbc.get_pt_bin_normed_div_bin_width('hist_truth', ibin)
-                    mc_gen_hist_bin_unnorm = hbc.get_pt_bin('hist_truth', ibin)
-                    # print('unnorm', mc_gen_hist_bin_unnorm.Integral())
-                    # print('unnorm_div_bin_width', mc_gen_hist_bin_unnorm_div_bin_width.Integral())
-                    # print('norm', mc_gen_hist_bin.Integral())
-                    # unfolded_hist_bin_stat_errors = hbc.get_pt_bin_normed_div_bin_width('unfolded_stat_err', ibin)
-                    # unfolded_hist_bin_total_errors = hbc.get_pt_bin_normed_div_bin_width('unfolded', ibin)
-                    unfolded_hist_bin_unnorm = hbc.get_pt_bin('unfolded', ibin)
+                    # Iterate through pt bins, get lambda histogram for that bin,
+                    # derive metrics from it, save
+                    key = 'signal_gen'
+                    if 'ZPlusJets' in region['name']:
+                        key = 'signal_zpj_gen'
+                    pt_bins = qgc.PT_UNFOLD_DICT[key]
 
-                    # alt_mc_gen_hist_bin = hbc.get_pt_bin_normed_div_bin_width('alt_hist_truth', ibin)
-                    alt_mc_gen_hist_bin_unnorm = hbc.get_pt_bin('alt_hist_truth', ibin)
+                    for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(pt_bins[:-1], pt_bins[1:])):
+                        # mc_gen_hist_bin_unnorm_div_bin_width = hbc.get_pt_bin_div_bin_width('hist_truth', ibin)
+                        # mc_gen_hist_bin = hbc.get_pt_bin_normed_div_bin_width('hist_truth', ibin)
+                        mc_gen_hist_bin_unnorm = hbc.get_pt_bin('hist_truth', ibin)
+                        # print('unnorm', mc_gen_hist_bin_unnorm.Integral())
+                        # print('unnorm_div_bin_width', mc_gen_hist_bin_unnorm_div_bin_width.Integral())
+                        # print('norm', mc_gen_hist_bin.Integral())
+                        # unfolded_hist_bin_stat_errors = hbc.get_pt_bin_normed_div_bin_width('unfolded_stat_err', ibin)
+                        # unfolded_hist_bin_total_errors = hbc.get_pt_bin_normed_div_bin_width('unfolded', ibin)
+                        unfolded_hist_bin_unnorm = hbc.get_pt_bin('unfolded', ibin)
 
-                    # GetMean() equivalent to
-                    # sum([hist.GetBinContent(ibin)*hist.GetBinCenter(ibin) for ibin in range(1, hist.GetNbinsX()+1)]) /
-                    #  sum([hist.GetBinContent(ibin) for ibin in range(1, hist.GetNbinsX()+1)])
+                        # alt_mc_gen_hist_bin = hbc.get_pt_bin_normed_div_bin_width('alt_hist_truth', ibin)
+                        alt_mc_gen_hist_bin_unnorm = hbc.get_pt_bin('alt_hist_truth', ibin)
 
-                    # print("ROOT mean:", mc_gen_hist_bin.GetMean())
-                    # print("my mean:", calc_hist_mean(mc_gen_hist_bin))
-                    start_lambda = unfolder.variable_bin_edges_gen[0]*1.0000001
-                    end_lambda = unfolder.variable_bin_edges_gen[-2]*1.0000001
-                    this_pt = bin_edge_low*1.0000001
-                    start_bin = unfolder.generator_distribution.GetGlobalBinNumber(start_lambda, this_pt)
-                    end_bin = unfolder.generator_distribution.GetGlobalBinNumber(end_lambda, this_pt)
-                    # -1 as ROOT bins start at 1, numpy starts at 0
-                    this_cov_matrix = unfolder.ematrix_total_ndarray[start_bin-1:end_bin, start_bin-1:end_bin]
-                    # print("my mean error:", calc_hist_mean_error(mc_gen_hist_bin, this_cov_matrix, mc_gen_hist_bin_unnorm.Integral()))
-                    # print("ROOT get mean error:", mc_gen_hist_bin.GetMeanError())
+                        # GetMean() equivalent to
+                        # sum([hist.GetBinContent(ibin)*hist.GetBinCenter(ibin) for ibin in range(1, hist.GetNbinsX()+1)]) /
+                        #  sum([hist.GetBinContent(ibin) for ibin in range(1, hist.GetNbinsX()+1)])
+
+                        # print("ROOT mean:", mc_gen_hist_bin.GetMean())
+                        # print("my mean:", calc_hist_mean(mc_gen_hist_bin))
+                        start_lambda = unfolder.variable_bin_edges_gen[0]*1.0000001
+                        end_lambda = unfolder.variable_bin_edges_gen[-2]*1.0000001
+                        this_pt = bin_edge_low*1.0000001
+                        start_bin = unfolder.generator_distribution.GetGlobalBinNumber(start_lambda, this_pt)
+                        end_bin = unfolder.generator_distribution.GetGlobalBinNumber(end_lambda, this_pt)
+                        # -1 as ROOT bins start at 1, numpy starts at 0
+                        this_cov_matrix = unfolder.ematrix_total_ndarray[start_bin-1:end_bin, start_bin-1:end_bin]
+                        # print("my mean error:", calc_hist_mean_error(mc_gen_hist_bin, this_cov_matrix, mc_gen_hist_bin_unnorm.Integral()))
+                        # print("ROOT get mean error:", mc_gen_hist_bin.GetMeanError())
 
 
-                    result_dict = {
-                        'jet_algo': jet_algo['name'],
-                        'region': region['name'],
-                        'isgroomed': 'groomed' in region['name'].lower(),
-                        'pt_bin': ibin,
-                        'angle': angle.var,
-                        # 'mean': calc_hist_mean(unfolded_hist_bin_total_errors),
-                        'mean': unfolded_hist_bin_unnorm.GetMean(),
-                        # 'mean_err': unfolded_hist_bin_total_errors.GetMeanError(),
-                        'mean_err': calc_hist_mean_error(unfolded_hist_bin_unnorm, this_cov_matrix, 1),
+                        result_dict = {
+                            'jet_algo': jet_algo['name'],
+                            'region': region['name'],
+                            'isgroomed': 'groomed' in region['name'].lower(),
+                            'pt_bin': ibin,
+                            'angle': angle.var,
+                            # 'mean': calc_hist_mean(unfolded_hist_bin_total_errors),
+                            'mean': unfolded_hist_bin_unnorm.GetMean(),
+                            # 'mean_err': unfolded_hist_bin_total_errors.GetMeanError(),
+                            'mean_err': calc_hist_mean_error(unfolded_hist_bin_unnorm, this_cov_matrix, 1),
 
-                        'mean_truth': mc_gen_hist_bin_unnorm.GetMean(),
-                        # 'mean_err_truth': mc_gen_hist_bin.GetMeanError(),
-                        'mean_err_truth': 0,
+                            'mean_truth': mc_gen_hist_bin_unnorm.GetMean(),
+                            # 'mean_err_truth': mc_gen_hist_bin.GetMeanError(),
+                            'mean_err_truth': 0,
 
-                        'mean_alt_truth': alt_mc_gen_hist_bin_unnorm.GetMean(),
-                        'mean_err_alt_truth': 0,
+                            'mean_alt_truth': alt_mc_gen_hist_bin_unnorm.GetMean(),
+                            'mean_err_alt_truth': 0,
 
-                        'rms': unfolded_hist_bin_unnorm.GetRMS(),
-                        'rms_err': unfolded_hist_bin_unnorm.GetRMSError(),  # FIXME
+                            'rms': unfolded_hist_bin_unnorm.GetRMS(),
+                            'rms_err': unfolded_hist_bin_unnorm.GetRMSError(),  # FIXME
 
-                        'rms_truth': mc_gen_hist_bin_unnorm.GetRMS(),
-                        'rms_err_truth': 0,
+                            'rms_truth': mc_gen_hist_bin_unnorm.GetRMS(),
+                            'rms_err_truth': 0,
 
-                        'rms_alt_truth': alt_mc_gen_hist_bin_unnorm.GetRMS(),
-                        'rms_err_alt_truth': 0,
-                    }
-                    results_dicts.append(result_dict)
+                            'rms_alt_truth': alt_mc_gen_hist_bin_unnorm.GetRMS(),
+                            'rms_err_alt_truth': 0,
+                        }
+                        results_dicts.append(result_dict)
 
-    df = pd.DataFrame(results_dicts)
-    df['jet_algo'] = df['jet_algo'].astype('category')
-    df['region'] = df['region'].astype('category')
-    df['angle'] = df['angle'].astype('category')
-    print(df.head())
-    print(len(df.index), 'entries in dataframe')
-    print(df.dtypes)
+                    input_tfile.Close()
 
+        df = pd.DataFrame(results_dicts)
+        df['jet_algo'] = df['jet_algo'].astype('category')
+        df['region'] = df['region'].astype('category')
+        df['angle'] = df['angle'].astype('category')
+        print(df.head())
+        print(len(df.index), 'entries in dataframe')
+        print(df.dtypes)
+
+        # need format='table' to store category dtype
+        df.to_hdf(os.path.join(args.outputDir, 'store.h5'), key='df', format='table')
+
+    else:
+        # ----------------------------------------------------------------------
+        # READ IN DATA FROM H5 FILE
+        # -----------------------------------------------------------------------
+        print("Reading in from data existing HDF5 file...")
+        if not args.outputDir:
+            args.outputDir = os.path.dirname(os.path.abspath(args.h5input))
+
+        with pd.HDFStore(args.h5input) as store:
+            df = store['df']
+
+        print(df.head())
+
+        all_jet_algos = [
+            {'src': args.ak4source, 'label': 'AK4 PUPPI', 'name': 'ak4puppi'},
+            {'src': args.ak8source, 'label': 'AK8 PUPPI', 'name': 'ak8puppi'}
+        ]
+        jet_algos = [j for j in all_jet_algos if j['name'] in df['jet_algo'].unique()]
+
+        all_regions = [
+            get_dijet_config('', central=True, groomed=False),
+            get_dijet_config('', central=False, groomed=False),
+            get_dijet_config('', central=True, groomed=True),
+            get_dijet_config('', central=False, groomed=True),
+            get_zpj_config('', groomed=False),
+            get_zpj_config('', groomed=True),
+        ]
+        regions = [r for r in all_regions if r['name'] in df['region'].unique()]
+        angles = [a for a in qgc.COMMON_VARS if a.var in df['angle'].unique()]
+
+    # --------------------------------------------------------------------------
+    # Do all the plotting
+    # --------------------------------------------------------------------------
     plotter = SummaryPlotter(jet_algos,
-                             regions,
+                             regions,  # not used
                              angles,
                              qgc.PT_UNFOLD_DICT['signal_gen'],
                              qgc.PT_UNFOLD_DICT['signal_zpj_gen'],
                              df,
                              args.outputDir,
-                             has_data='_DATA_' in args.ak4source)
+                             has_data=True)
     plotter.plot_dijet_zpj_means_vs_pt_all()
     plotter.plot_dijet_means_vs_pt_all()
     plotter.plot_zpj_means_vs_pt_all()
