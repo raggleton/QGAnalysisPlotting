@@ -353,7 +353,7 @@ def get_unfolding_output_dir(args):
     if args.outputDir:
         output_dir = os.path.join(args.outputDir, output_dir)
     else:
-        output_dir = os.path.join(args.source, get_unfolding_output_dir(args))
+        output_dir = os.path.join(args.source, output_dir)
     return output_dir
 
 
