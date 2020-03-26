@@ -2262,8 +2262,13 @@ if __name__ == "__main__":
             # ------------------------------------------------------------------
             unfolder.setup_normalised_results()
 
+
             # Save everything to TFile
-            print("DONE...saving unfolder to ROOT file")
+            print("...saving unfolder to pickle file")
+            pickle_filename = os.path.join("%s/unfolding_result.pkl" % (this_output_dir))
+            unfolder.save_to_pickle(pickle_filename)
+
+            print("...saving unfolder to ROOT file")
             unfolder.save_to_tfile(this_tdir)
 
             # ------------------------------------------------------------------

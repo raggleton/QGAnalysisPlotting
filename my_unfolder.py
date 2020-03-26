@@ -12,6 +12,7 @@ import os
 from itertools import chain
 import scipy
 from scipy import stats
+import pickle
 
 import ROOT
 from MyStyle import My_Style
@@ -330,6 +331,27 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         # Write the TUnfoldDensity object
         tfile.cd()
         super(ROOT.MyTUnfoldDensity, self).Write()
+
+    def save_to_pickle(self, filename):
+        """Save MyUnfolder instance to pickle file"""
+        # Note that we can't just save the whole MyUnfolder object to pickle file
+        # For some reason it crashes, despite testing with different protocols
+        # The stupid thing is that we can pickle each attribute separately,
+        # so why can't we pickel the whole damn thing?
+        # I think there is something weird going on with __new__ - this is the step
+        # where it normally seg faults.
+        # PyROOT probably does something stupid with it.
+        # So we save each attribute separately, then restore each later
+        with open(filename, "wb") as f:
+            # first save a list of the keys of the items, since we lose this when pickling
+            list_of_items = list(self.__dict__.keys())
+            pickle.dump(list_of_items, f)
+            # now save all the objects
+            for n in list_of_items:
+                o = self.__dict__[n]
+                # print(n, type(o), o)
+                pickle.dump(o, f)
+        print("Saved to", filename)
 
     # SETUP INPUT, BACKGROUNDS
     # --------------------------------------------------------------------------
@@ -1547,6 +1569,41 @@ def unpack_unfolding_root_file(input_tfile, region, angle, do_alt_response=True,
         alt_hist_reco_bg_subtracted=alt_hist_reco_bg_subtracted,
         alt_hist_reco_bg_subtracted_gen_binning=alt_hist_reco_bg_subtracted_gen_binning,
     )
+
+
+def unpack_unfolder_from_pickle(filename):
+    """Get MyUnfolder object from pickle file"""
+    # Note that we can't just save the whole MyUnfolder object to pickle file
+    # For some reason it crashes, despite testing with different protocols
+    # The stupid thing is that we can pickle each attribute separately,
+    # so why can't we pickel the whole damn thing?
+    # I think there is something weird going on with __new__ - this is the step
+    # where it normally seg faults.
+    # PyROOT probably does something stupid with it.
+    # So now we have to create a blank MyUnfolder, then fill it with all the
+    # individual attributes we saved
+    items = {}
+    with open(filename, 'rb') as f:
+        list_of_obj = pickle.load(f)
+        for l in list_of_obj:
+            obj = pickle.load(f)
+            items[l] = obj
+    if len(items) == 0:
+        raise RuntimeError("Found 0 objects in pickle file, expected %d" % len(list_of_obj))
+
+    # Now create empty MyUnfolder object via a trick with type()
+    # Do I use __bases__, or
+    # (ROOT.MyTUnfoldDensity, ROOT.TUnfoldDensity, ROOT.TUnfoldSys, ROOT.TUnfold, ROOT.TObject) ?
+    # Note that the usual
+    # mro()/__mro__/inspect.getmro() doesn't work, crashes
+    # unfolder = type("MyUnfolder", MyUnfolder.__bases__, {})
+    # unfolder.__dict__.update(items)
+    # Actually that doesn't work either... can't update __dict__ since MethodProxy
+
+    # Just use __new__ here... be careful with it though
+    unfolder = MyUnfolder.__new__(MyUnfolder)
+    unfolder.__dict__.update(items)
+    return unfolder
 
 
 class HistBinChopper(object):
