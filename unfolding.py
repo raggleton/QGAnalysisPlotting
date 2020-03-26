@@ -16,6 +16,7 @@ import numpy as np
 import math
 from itertools import product
 from copy import copy, deepcopy
+import pickle
 
 import ROOT
 from MyStyle import My_Style
@@ -2262,11 +2263,23 @@ if __name__ == "__main__":
             # ------------------------------------------------------------------
             unfolder.setup_normalised_results()
 
+            region['unfolder'] = unfolder
 
-            # Save everything to TFile
-            print("...saving unfolder to pickle file")
+            # ------------------------------------------------------------------
+            # Save everything to pickle / TFile
+            # ------------------------------------------------------------------
+            
             pickle_filename = os.path.join("%s/unfolding_result.pkl" % (this_output_dir))
-            unfolder.save_to_pickle(pickle_filename)
+            print("...saving unfolder to pickle file", pickle_filename)
+            unfolder.print_attr_sizes()
+
+            with open(pickle_filename, "wb") as f:
+                pickle.dump(unfolder, f)
+                # print(region.keys())
+                # for k in region.keys():
+                #     if 'tfile' in k:
+                #         region[k] = None
+                # pickle.dump(region, f)
 
             print("...saving unfolder to ROOT file")
             unfolder.save_to_tfile(this_tdir)

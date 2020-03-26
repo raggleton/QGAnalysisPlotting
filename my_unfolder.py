@@ -5,10 +5,11 @@ Main class to handle unfolding
 
 from __future__ import print_function, division
 
+import os
+import sys
 from array import array
 import numpy as np
 import math
-import os
 from itertools import chain
 import scipy
 from scipy import stats
@@ -332,26 +333,38 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         tfile.cd()
         super(ROOT.MyTUnfoldDensity, self).Write()
 
-    def save_to_pickle(self, filename):
-        """Save MyUnfolder instance to pickle file"""
-        # Note that we can't just save the whole MyUnfolder object to pickle file
-        # For some reason it crashes, despite testing with different protocols
-        # The stupid thing is that we can pickle each attribute separately,
-        # so why can't we pickel the whole damn thing?
-        # I think there is something weird going on with __new__ - this is the step
-        # where it normally seg faults.
-        # PyROOT probably does something stupid with it.
-        # So we save each attribute separately, then restore each later
-        with open(filename, "wb") as f:
-            # first save a list of the keys of the items, since we lose this when pickling
-            list_of_items = list(self.__dict__.keys())
-            pickle.dump(list_of_items, f)
-            # now save all the objects
-            for n in list_of_items:
-                o = self.__dict__[n]
-                # print(n, type(o), o)
-                pickle.dump(o, f)
-        print("Saved to", filename)
+    def __getstate__(self):
+        # Copy the object's state from self.__dict__ which contains
+        # all our instance attributes. Always use the dict.copy()
+        # method to avoid modifying the original state.
+        state = self.__dict__.copy()
+        # Remove the large entries from being pickled
+        # Normally they can be reconstructed from ROOT objects intstead
+        del state['_probability_ndarray']
+        del state['response_map_normed_by_detector_pt']
+        del state['vyy_inv_ndarray']
+        del state['vxx_inv_ndarray']
+        return state
+
+    def __reduce__(self):
+        # This is the magic method needed to pickle this class
+        # For some reason, this class has issue with __new__
+        # Note that this isn't quite perfect; it doesn't quite reproduce the
+        # same object, e.g. inherited TUnfold methods no longer work
+        return type, (self.__class__.__name__, self.__class__.__bases__, self.__getstate__())
+
+    def print_attr_sizes(self, descending=True):
+        """Print size of each attribute in __dict__"""
+        # Get size of each obj by looking at it's pickled bytestring size
+        size_dict = {}
+        for k, v in self.__dict__.items():
+            obj_pkl = pickle.dumps(v)
+            size_dict[k] = sys.getsizeof(obj_pkl)
+
+        # print out, sorted by size
+        sorted_dict = {k:v for k,v in sorted(size_dict.items(), key=lambda x: x[1], reverse=descending)}
+        for k, v in sorted_dict.items():
+            print(k, v)
 
     # SETUP INPUT, BACKGROUNDS
     # --------------------------------------------------------------------------
