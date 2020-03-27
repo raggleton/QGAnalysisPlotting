@@ -1,57 +1,43 @@
 #!/bin/bash -e
 
-function generateNickname {
-    CHANNEL=$1
-    MCINPUT=$2
-    MCSPLIT=$3
-    SYST=$4
-    ANGLE=$5
+# Run all the unfolding jobs for a given signal region, for a given angle
+# Script gets given the following parameters:
+# parameters   = CHANNEL ANGLE
 
-    MCSTR=""
-    if [[ $MCINPUT == "True" ]]
-    then 
-        MCSTR="_MC"
-        if [[ $MCSPLIT == "True" ]]
-        then 
-            MCSTR="${MCSTR}_split" 
-        else
-            MCSTR="${MCSTR}_all"
-        fi
-    fi
-    SYSTSTR=""
-    if [[ $SYST == "True" ]]; then SYSTSTR="_syst"; fi
-
-    echo "${CHANNEL}${MCSTR}${SYSTSTR}_densityModeBinWidth_constraintArea_${ANGLE}"
-}
-
+# Setup CMSSW etc
+CMSSW_AREA=/nfs/dust/cms/user/aggleton/QG/102X/CMSSW_10_2_10/src
+# cmssw setup triggers this err so turn it off for now
+set +u
 source /cvmfs/cms.cern.ch/cmsset_default.sh
-cd /nfs/dust/cms/user/aggleton/QG/CMSSW_8_0_24_patch1/src
+cd ${CMSSW_AREA}
 eval `scramv1 runtime -sh`
-cd /nfs/dust/cms/user/aggleton/QG/CMSSW_8_0_24_patch1/src/UHH2/QGAnalysis/Analysis/QGAnalysisPlotting
+cd ${CMSSW_AREA}/UHH2/QGAnalysisPlotting/
 printenv | sort
-# Run both unregularized and regularized
+set -u
+
+# Actually run all the unfolding jobs
 set -x
-ODIR="unfolding_output"
-# run with systematics
-SYST="True"
-NICKNAME=$(generateNickname $CHANNEL $MCINPUT $MCSPLIT $SYST $ANGLE)
+ODIR="${INPUTDIR}/unfolding_output"
 
-OUTPUTDIR1="${ODIR}/unfolding_regNone_${NICKNAME}"
-python unfolding.py $INPUTDIR --do$CHANNEL --regularize=None --MCinput=$MCINPUT --MCsplit=$MCSPLIT --doSyst=$SYST --outputDir=$OUTPUTDIR1 --angles $ANGLE
+# MC input, split (closure test), and alt response
+python unfolding.py $INPUTDIR --do$CHANNEL --regularize=None --MCinput=True --MCsplit=True --useAltResponse=True --angles $ANGLE --noBinnedPlots --outputDir=$ODIR
 
-OUTPUTDIR2="${ODIR}/unfolding_regTau_${NICKNAME}"
-python unfolding.py $INPUTDIR --do$CHANNEL --regularize=tau --MCinput=$MCINPUT --MCsplit=$MCSPLIT --doSyst=$SYST --outputDir=$OUTPUTDIR2 --angles $ANGLE
+# MC input, not split - use to derive model, exp, pdf systs for data
+ARGS="$INPUTDIR --outputDir=$ODIR --do$CHANNEL --regularize=None --MCinput=True --MCsplit=False --useAltResponse=False --doExperimentalSysts=True --doModelSystsOnlyScale=True --doPDFSysts=True --angles $ANGLE --noBinnedPlots"
+# stash location of output file for use later with data
+REFFILE=$(python unfolding_logistics.py out $ARGS)
+python unfolding.py $ARGS
 
-# repeat without any systematics
-SYST="False"
-NICKNAME=$(generateNickname $CHANNEL $MCINPUT $MCSPLIT $SYST $ANGLE)
+# Data input, use previous MC file to get systs
+python unfolding.py --outputDir=$ODIR $INPUTDIR --do$CHANNEL --regularize=None --MCinput=False --MCsplit=False --useAltResponse=False --doExperimentalSystsFromFile=$REFFILE --doModelSystsFromFile=$REFFILE --doPDFSystsFromFile=$REFFILE --angles $ANGLE --noBinnedPlots
 
-OUTPUTDIR3="${ODIR}/unfolding_regNone_${NICKNAME}"
-python unfolding.py $INPUTDIR --do$CHANNEL --regularize=None --MCinput=$MCINPUT --MCsplit=$MCSPLIT --doSyst=$SYST --outputDir=$OUTPUTDIR3 --angles $ANGLE
-
-OUTPUTDIR4="${ODIR}/unfolding_regTau_${NICKNAME}"
-python unfolding.py $INPUTDIR --do$CHANNEL --regularize=tau --MCinput=$MCINPUT --MCsplit=$MCSPLIT --doSyst=$SYST --outputDir=$OUTPUTDIR4 --angles $ANGLE
+# Data input, use alt response matrix as cross-check
+python unfolding.py --outputDir=$ODIR $INPUTDIR --do$CHANNEL --regularize=None --MCinput=False --MCsplit=False --useAltResponse=True --angles $ANGLE --noBinnedPlots
 
 # Zip up output files
-cd $ODIR && tar cvzf unfolding_${NICKNAME}.tar.gz ${OUTPUTDIR1#$ODIR/} ${OUTPUTDIR2#$ODIR/} ${OUTPUTDIR3#$ODIR/} ${OUTPUTDIR4#$ODIR/} && sleep 10 && cd ..
+# Not needed?
+#cd $ODIR && tar cvzf unfolding_${NICKNAME}.tar.gz ${OUTPUTDIR1#$ODIR/} ${OUTPUTDIR2#$ODIR/} ${OUTPUTDIR3#$ODIR/} ${OUTPUTDIR4#$ODIR/} && sleep 10 && cd ..
+#cd $ODIR && tar cvzf unfolding_${CHANNEL}_${MCINPUT}_${MCSPLIT}_${ANGLE}.tar.gz $ODIR/* && sleep 10 && cd ..
 set +x
+set +u
+
