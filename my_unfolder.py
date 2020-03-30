@@ -100,13 +100,14 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
                  axisSteering='*[b]'):
 
         self.response_map = response_map
-        # check no uflow
-        if orientation == ROOT.TUnfold.kHistMapOutputHoriz:
-            if response_map.GetBinContent(0, 0) != 0 or response_map.GetBinContent(0, 1) != 0:
-                raise RuntimeError("Your response_map has entries in 0th gen bin - this means you've got unintended underflow!")
-        elif orientation == ROOT.TUnfold.kHistMapOutputVert:
-            if response_map.GetBinContent(0, 1) != 0 or response_map.GetBinContent(1, 0) != 0:
-                raise RuntimeError("Your response_map has entries in 0th gen bin - this means you've got unintended underflow!")
+        if self.response_map is not None:
+            # check no uflow
+            if orientation == ROOT.TUnfold.kHistMapOutputHoriz:
+                if response_map.GetBinContent(0, 0) != 0 or response_map.GetBinContent(0, 1) != 0:
+                    raise RuntimeError("Your response_map has entries in 0th gen bin - this means you've got unintended underflow!")
+            elif orientation == ROOT.TUnfold.kHistMapOutputVert:
+                if response_map.GetBinContent(0, 1) != 0 or response_map.GetBinContent(1, 0) != 0:
+                    raise RuntimeError("Your response_map has entries in 0th gen bin - this means you've got unintended underflow!")
         self.variable_name = variable_name
         self.variable_name_safe = cu.no_space_str(variable_name)
 
@@ -116,14 +117,14 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         self.nbins_variable_gen = len(variable_bin_edges_gen)-1 if variable_bin_edges_gen is not None else 0
 
         self.pt_bin_edges_reco = pt_bin_edges_reco
-        self.nbins_pt_reco = len(pt_bin_edges_reco)-1
+        self.nbins_pt_reco = len(pt_bin_edges_reco)-1 if pt_bin_edges_reco is not None else 0
         self.pt_bin_edges_gen = pt_bin_edges_gen
-        self.nbins_pt_gen = len(pt_bin_edges_gen)-1
+        self.nbins_pt_gen = len(pt_bin_edges_gen)-1 if pt_bin_edges_gen is not None else 0
 
         self.pt_bin_edges_underflow_reco = pt_bin_edges_underflow_reco
-        self.nbins_pt_underflow_reco = len(pt_bin_edges_underflow_reco)-1
+        self.nbins_pt_underflow_reco = len(pt_bin_edges_underflow_reco)-1 if pt_bin_edges_underflow_reco is not None else 0
         self.pt_bin_edges_underflow_gen = pt_bin_edges_underflow_gen
-        self.nbins_pt_underflow_gen = len(pt_bin_edges_underflow_gen)-1
+        self.nbins_pt_underflow_gen = len(pt_bin_edges_underflow_gen)-1 if pt_bin_edges_underflow_gen is not None else 0
 
         # Binning setup here MUST match how it was setup in making the input files, otherwise
         # you will have untold pain and suffering!
@@ -135,12 +136,14 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         self.detector_distribution_underflow = self.detector_binning.AddBinning("detectordistribution_underflow")
         if self.variable_bin_edges_reco is not None:
             self.detector_distribution_underflow.AddAxis(self.variable_name, self.nbins_variable_reco, self.variable_bin_edges_reco, var_uf, var_of)
-        self.detector_distribution_underflow.AddAxis("pt", self.nbins_pt_underflow_reco, self.pt_bin_edges_underflow_reco, False, False)
+        if self.pt_bin_edges_underflow_reco is not None:
+            self.detector_distribution_underflow.AddAxis("pt", self.nbins_pt_underflow_reco, self.pt_bin_edges_underflow_reco, False, False)
 
         self.detector_distribution = self.detector_binning.AddBinning("detectordistribution")
         if self.variable_bin_edges_reco is not None:
             self.detector_distribution.AddAxis(self.variable_name, self.nbins_variable_reco, self.variable_bin_edges_reco, var_uf, var_of)
-        self.detector_distribution.AddAxis("pt", self.nbins_pt_reco, self.pt_bin_edges_reco, False, pt_of)
+        if self.pt_bin_edges_reco is not None:
+            self.detector_distribution.AddAxis("pt", self.nbins_pt_reco, self.pt_bin_edges_reco, False, pt_of)
 
 
         self.generator_binning = ROOT.TUnfoldBinning("generator")
@@ -148,12 +151,14 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         self.generator_distribution_underflow = self.generator_binning.AddBinning("generatordistribution_underflow")
         if self.variable_bin_edges_gen is not None:
             self.generator_distribution_underflow.AddAxis(self.variable_name, self.nbins_variable_gen, self.variable_bin_edges_gen, var_uf, var_of)
-        self.generator_distribution_underflow.AddAxis("pt", self.nbins_pt_underflow_gen, self.pt_bin_edges_underflow_gen, pt_uf, False)
+        if self.pt_bin_edges_underflow_gen is not None:
+            self.generator_distribution_underflow.AddAxis("pt", self.nbins_pt_underflow_gen, self.pt_bin_edges_underflow_gen, pt_uf, False)
 
         self.generator_distribution = self.generator_binning.AddBinning("generatordistribution")
         if self.variable_bin_edges_gen is not None:
             self.generator_distribution.AddAxis(self.variable_name, self.nbins_variable_gen, self.variable_bin_edges_gen, var_uf, var_of)
-        self.generator_distribution.AddAxis("pt", self.nbins_pt_gen, self.pt_bin_edges_gen, False, pt_of)
+        if self.pt_bin_edges_gen is not None:
+            self.generator_distribution.AddAxis("pt", self.nbins_pt_gen, self.pt_bin_edges_gen, False, pt_of)
 
         self.orientation = orientation
         self.constraintMode = constraintMode
@@ -162,17 +167,25 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         self.distribution = distribution
         self.axisSteering = axisSteering
 
-        ROOT.TUnfoldDensity.__init__(self,
-                                     self.response_map,
-                                     self.orientation,
-                                     self.regMode,
-                                     self.constraintMode,
-                                     self.densityFlags,
-                                     self.generator_binning,
-                                     self.detector_binning,
-                                     # hmm these take preference over whatever is use for scantau?
-                                     self.distribution,
-                                     self.axisSteering)
+        tunf_args = [
+            self.response_map,
+            self.orientation,
+            self.regMode,
+            self.constraintMode,
+            self.densityFlags,
+            self.generator_binning,
+            self.detector_binning,
+            # hmm these take preference over whatever is use for scantau?
+            self.distribution,
+            self.axisSteering
+        ]
+        # Ensure all necessary arguments are there, or invoke blank ctor
+        # Be careful - some will be 0 intentionally but evaulate False
+        # Thus need to do is not None instead
+        if all([a is not None for a in tunf_args]):
+            ROOT.TUnfoldDensity.__init__(self, *tunf_args)
+        else:
+            ROOT.TUnfoldDensity.__init__(self)
 
         # for things like get_probability_matrix()...but doesn't seem to do anything?!
         # this is only used when output_distribution_name = 'generatordistribution': then it makes a TH2
