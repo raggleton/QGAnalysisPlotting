@@ -4,8 +4,15 @@
 // 
 // IMPORTANT: don't start with a block comment...wont work
 
+#ifndef My_TUnfoldDensity
+#define My_TUnfoldDensity
+
+#include "TUnfoldDensity.h"
+
 class MyTUnfoldDensity : public TUnfoldDensity {
 public:
+    MyTUnfoldDensity(void);   // constructor for derived classes, do nothing
+
     MyTUnfoldDensity(const TH2 *hist_A,
                      EHistMap histmap,
                      ERegMode regmode = kRegModeCurvature,
@@ -159,4 +166,10 @@ public:
     Bool_t AddRegularisationCondition(Int_t i0, Double_t f0, Int_t i1=-1, Double_t f1=0., Int_t i2=-1, Double_t f2=0.) { return TUnfold::AddRegularisationCondition(i0,f0,i1,f1,i2,f2); } // add regularisation condition for a triplet of output bins
     Bool_t AddRegularisationCondition(Int_t nEle, const Int_t *indices, const Double_t *rowData) { return TUnfold::AddRegularisationCondition(nEle, indices, rowData); } // add a regularisation condition
 
+    ClassDef(MyTUnfoldDensity, 1) //My Unfolding with density regularisation
+
 };
+
+ClassImp(MyTUnfoldDensity);
+
+#endif

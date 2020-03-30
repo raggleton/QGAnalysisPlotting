@@ -11,12 +11,14 @@ from __future__ import print_function, division
 
 import os
 os.nice(10)
+import sys
 from array import array
 import numpy as np
 import math
 from itertools import product
 from copy import copy, deepcopy
 import pickle
+import lzma
 
 import ROOT
 from MyStyle import My_Style
@@ -2268,20 +2270,38 @@ if __name__ == "__main__":
             # ------------------------------------------------------------------
             # Save everything to pickle / TFile
             # ------------------------------------------------------------------
-            
+            print("")
+            print("unfolder attr sizes:")
+            print("-"*80)
+            cu.print_dict_item_sizes(unfolder.__dict__)
+            print("-"*80)
+
             pickle_filename = os.path.join("%s/unfolding_result.pkl" % (this_output_dir))
-            print("...saving unfolder to pickle file", pickle_filename)
-            unfolder.print_attr_sizes()
+            print(">> Saving to pickle file", pickle_filename)
 
-            with open(pickle_filename, "wb") as f:
-                pickle.dump(unfolder, f)
-                # print(region.keys())
-                # for k in region.keys():
-                #     if 'tfile' in k:
-                #         region[k] = None
-                # pickle.dump(region, f)
+            # LZMA for huge space saving
+            with lzma.open(pickle_filename, "wb") as f:
+                for k in region.keys():
+                    # don't save TFiles, change back to filepath
+                    if isinstance(region[k], ROOT.TFile):
+                        print(" - closing", k)
+                        filename = region[k].GetName()
+                        region[k].Close()
+                        region[k] = filename
+                print("")
+                print("region sizes:")
+                print("-"*80)
+                cu.print_dict_item_sizes(region)
+                print("-"*80)
+                pickle.dump(region, f) # protocol doesn't make a diff here
 
-            print("...saving unfolder to ROOT file")
+            print("Testing pickled file...")
+            with lzma.open(pickle_filename, "rb") as f:
+                data = pickle.load(f)
+                print("...unpickled data:", data)
+                print("...data['unfolder'].hist_bin_chopper.objects:", data['unfolder'].hist_bin_chopper.objects)
+
+            print(">> Saving unfolder to ROOT file")
             unfolder.save_to_tfile(this_tdir)
 
             # ------------------------------------------------------------------

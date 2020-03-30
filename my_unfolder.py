@@ -13,7 +13,7 @@ import math
 from itertools import chain
 import scipy
 from scipy import stats
-import pickle
+import inspect
 
 import ROOT
 from MyStyle import My_Style
@@ -98,6 +98,8 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
                  densityFlags=ROOT.TUnfoldDensity.kDensityModeBinWidth,
                  distribution='generatordistribution',
                  axisSteering='*[b]'):
+
+        # print("Calling __init__ with args:", locals())
 
         self.response_map = response_map
         if self.response_map is not None:
@@ -351,33 +353,42 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         # all our instance attributes. Always use the dict.copy()
         # method to avoid modifying the original state.
         state = self.__dict__.copy()
+        def _del_state(key):
+            if key in state:
+                del state[key]
         # Remove the large entries from being pickled
         # Normally they can be reconstructed from ROOT objects intstead
-        del state['_probability_ndarray']
-        del state['response_map_normed_by_detector_pt']
-        del state['vyy_inv_ndarray']
-        del state['vxx_inv_ndarray']
+        _del_state('_probability_ndarray')
+        _del_state('response_map_normed_by_detector_pt')
+        _del_state('vyy_inv_ndarray')
+        _del_state('vxx_inv_ndarray')
         return state
+
+    # def __new__(cls, *args, **kwargs):
+    #     print("__new__ called with:")
+    #     print("cls:", cls)
+    #     print("args:", args)
+    #     print("kwargs:", kwargs)
+    #     obj = super(MyUnfolder, cls).__new__(cls)
+    #     return obj
 
     def __reduce__(self):
         # This is the magic method needed to pickle this class
-        # For some reason, this class has issue with __new__
-        # Note that this isn't quite perfect; it doesn't quite reproduce the
-        # same object, e.g. inherited TUnfold methods no longer work
-        return type, (self.__class__.__name__, self.__class__.__bases__, self.__getstate__())
+        # For some reason, this class has issue with __new__?
+        # We pass the attributes needed for the ctor from __getstate__
+        # using the getfullargspec() method
+        # If we didn't do that, we'd need to return an empty tuple as the 2nd
+        # arg, and allow __init__ to take an empty ctor
+        # (i.e. default every arg to None)
 
-    def print_attr_sizes(self, descending=True):
-        """Print size of each attribute in __dict__"""
-        # Get size of each obj by looking at it's pickled bytestring size
-        size_dict = {}
-        for k, v in self.__dict__.items():
-            obj_pkl = pickle.dumps(v)
-            size_dict[k] = sys.getsizeof(obj_pkl)
-
-        # print out, sorted by size
-        sorted_dict = {k:v for k,v in sorted(size_dict.items(), key=lambda x: x[1], reverse=descending)}
-        for k, v in sorted_dict.items():
-            print(k, v)
+        # print("Calling __reduce__")
+        argspec = inspect.getfullargspec(MyUnfolder.__init__)
+        # print(argspec)
+        state = self.__getstate__()
+        # print("state:", state)
+        this_args = [state.get(a, None) for a in argspec.args if a != "self"]
+        # print("this_args:", this_args)
+        return (self.__class__, tuple(this_args), state)
 
     # SETUP INPUT, BACKGROUNDS
     # --------------------------------------------------------------------------
@@ -1595,41 +1606,6 @@ def unpack_unfolding_root_file(input_tfile, region, angle, do_alt_response=True,
         alt_hist_reco_bg_subtracted=alt_hist_reco_bg_subtracted,
         alt_hist_reco_bg_subtracted_gen_binning=alt_hist_reco_bg_subtracted_gen_binning,
     )
-
-
-def unpack_unfolder_from_pickle(filename):
-    """Get MyUnfolder object from pickle file"""
-    # Note that we can't just save the whole MyUnfolder object to pickle file
-    # For some reason it crashes, despite testing with different protocols
-    # The stupid thing is that we can pickle each attribute separately,
-    # so why can't we pickel the whole damn thing?
-    # I think there is something weird going on with __new__ - this is the step
-    # where it normally seg faults.
-    # PyROOT probably does something stupid with it.
-    # So now we have to create a blank MyUnfolder, then fill it with all the
-    # individual attributes we saved
-    items = {}
-    with open(filename, 'rb') as f:
-        list_of_obj = pickle.load(f)
-        for l in list_of_obj:
-            obj = pickle.load(f)
-            items[l] = obj
-    if len(items) == 0:
-        raise RuntimeError("Found 0 objects in pickle file, expected %d" % len(list_of_obj))
-
-    # Now create empty MyUnfolder object via a trick with type()
-    # Do I use __bases__, or
-    # (ROOT.MyTUnfoldDensity, ROOT.TUnfoldDensity, ROOT.TUnfoldSys, ROOT.TUnfold, ROOT.TObject) ?
-    # Note that the usual
-    # mro()/__mro__/inspect.getmro() doesn't work, crashes
-    # unfolder = type("MyUnfolder", MyUnfolder.__bases__, {})
-    # unfolder.__dict__.update(items)
-    # Actually that doesn't work either... can't update __dict__ since MethodProxy
-
-    # Just use __new__ here... be careful with it though
-    unfolder = MyUnfolder.__new__(MyUnfolder)
-    unfolder.__dict__.update(items)
-    return unfolder
 
 
 class HistBinChopper(object):

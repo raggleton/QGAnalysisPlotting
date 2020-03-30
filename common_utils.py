@@ -5,6 +5,7 @@ import re
 import ROOT
 import os
 from subprocess import call
+import sys
 from sys import platform as _platform
 import numpy as np
 import math
@@ -12,6 +13,7 @@ import argparse
 from array import array
 from itertools import chain
 from collections import OrderedDict
+import pickle
 
 
 ROOT.PyConfig.IgnoreCommandLineOptions = True
@@ -413,12 +415,30 @@ SPACE_REPLACEMENT_CHAR = "-"
 
 
 def no_space_str(s):
-    return s.replace(" ", SPACE_REPLACEMENT_CHAR)
+    return s.replace(" ", SPACE_REPLACEMENT_CHAR) if s else s
 
 
 def str_restore_space(s):
-    return s.replace(SPACE_REPLACEMENT_CHAR, " ")
+    return s.replace(SPACE_REPLACEMENT_CHAR, " ") if s else s
 
+
+def print_dict_item_sizes(this_dict, descending=True):
+    """Print out size of elements in dict
+
+    Uses pickle to get the "true" size
+    If descending is True, then do largest size first.
+    """
+    size_dict = {}
+    # print("size dict:", this_dict)
+    for k, v in this_dict.items():
+        # print("Getting...", k)
+        obj_pkl = pickle.dumps(v)
+        size_dict[k] = sys.getsizeof(obj_pkl)
+
+    # print out, sorted by size
+    sorted_dict = {k:v for k,v in sorted(size_dict.items(), key=lambda x: x[1], reverse=descending)}
+    for k, v in sorted_dict.items():
+        print(k, v, type(this_dict[k]))
 
 # Various methods to convert between ROOT things and numpy
 # ------------------------------------------------------------------------------
@@ -584,4 +604,13 @@ def normalise_ndarray(matrix, by):
         return matrix.T
     else:
         return matrix
+
+
+def shift_to_covariance(hist):
+    """Convert 1D shift histogram to 2D covariance matrix, using V = x x^T"""
+    xax = hist.GetXaxis()
+    bins = array('d', [xax.GetBinLowEdge(i) for i in range(hist.GetNbinsX()+1)])
+    nbins = len(bins) - 1
+    h2d = ROOT.TH2D("covariance_" + hist.GetName(), "Covariance;%s;%s" % (xax.GetTitle(), xax.GetTitle()), nbins, bins, nbins, bins)
+    return h2d
 
