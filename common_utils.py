@@ -100,6 +100,9 @@ class TFileCacher(object):
             self.objects[obj_name] = get_from_tfile(self.tfile, obj_name)
         return self.objects[obj_name]
 
+    def Close(self):
+        self.tfile.Close()
+
 
 def open_root_file(filename, mode="READ"):
     """Safe way to open ROOT file. Could be improved."""
