@@ -30,7 +30,7 @@ ROOT.gErrorIgnoreLevel = ROOT.kWarning
 import common_utils as cu
 import qg_common as qgc
 import qg_general_plots as qgp
-from my_unfolder import MyUnfolder, unpack_unfolding_root_file
+from my_unfolder import MyUnfolder
 from my_unfolder_plotter import MyUnfolderPlotter
 from unfolding_regularisation_classes import TauScanner, LCurveScanner
 from unfolding_config import get_dijet_config, get_zpj_config
@@ -1576,6 +1576,10 @@ if __name__ == "__main__":
                 alt_unfolder.save_to_tfile(alt_tdir)
 
             # Bit gnarly - have to save this stuff manually
+            region["alt_hist_mc_gen"] = alt_hist_mc_gen
+            region["alt_hist_mc_reco"] = alt_hist_mc_reco
+            region["alt_hist_mc_reco_bg_subtracted"] = alt_hist_mc_reco_bg_subtracted
+            region["alt_hist_mc_reco_bg_subtracted_gen_binning"] = alt_hist_mc_reco_bg_subtracted_gen_binning
             alt_tdir.WriteTObject(alt_hist_mc_gen, "alt_hist_mc_gen")
             alt_tdir.WriteTObject(alt_hist_mc_reco, "alt_hist_mc_reco")
             alt_tdir.WriteTObject(alt_hist_mc_reco_bg_subtracted, "alt_hist_mc_reco_bg_subtracted")
@@ -2325,20 +2329,9 @@ if __name__ == "__main__":
                               angle=angle,
                               output_dir=this_output_dir,
                               has_data=not MC_INPUT)
-                unfold_dict = dict(
-                    unfolder=unfolder,
-                    unreg_unfolder=unreg_unfolder,
-                    alt_unfolder=alt_unfolder,
-                    alt_hist_truth=alt_hist_mc_gen,
-                    alt_hist_reco=alt_hist_mc_reco,
-                    alt_hist_reco_bg_subtracted=alt_hist_mc_reco_bg_subtracted,
-                    alt_hist_reco_bg_subtracted_gen_binning=alt_hist_mc_reco_bg_subtracted_gen_binning,
-                )
-                hbc = do_all_plots_per_region_angle(setup, unfold_dict)
+                hbc = do_all_plots_per_region_angle(setup)
 
-                do_all_big_1d_plots_per_region_angle(setup,
-                                                     unfold_dict,
-                                                     hbc)
+                do_all_big_1d_plots_per_region_angle(setup, hbc)
 
             # DO SUMMARY PLOT
             # ------------------------------------------------------------------

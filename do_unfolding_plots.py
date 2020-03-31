@@ -15,6 +15,8 @@ import argparse
 import math
 from array import array
 import pandas as pd
+import lzma
+import pickle
 
 import ROOT
 from MyStyle import My_Style
@@ -1938,23 +1940,24 @@ class RecoPtBinnedPlotter(object):
             ROOT.gStyle.SetPalette(ROOT.kViridis)
 
 
-def do_all_plots_per_region_angle(setup, unpack_dict):
+def do_all_plots_per_region_angle(setup):
     # Note that experimental systs are only different response matrices, and are stored in the main unfolder
-    has_exp_systs = len(setup.region['experimental_systematics']) > 0
-    has_model_systs = len(setup.region['model_systematics']) > 0
-    has_pdf_systs = len(setup.region['pdf_systematics']) > 0
+    region = setup.region
+    has_exp_systs = len(region['experimental_systematics']) > 0
+    has_model_systs = len(region['model_systematics']) > 0
+    has_pdf_systs = len(region['pdf_systematics']) > 0
 
     if has_exp_systs: print("We have experimental systs")
     if has_model_systs: print("We have model systs")
     if has_pdf_systs: print("We have pdf systs")
 
-    unfolder = unpack_dict['unfolder']
-    unreg_unfolder = unpack_dict['unreg_unfolder']
-    alt_unfolder = unpack_dict['alt_unfolder']
-    alt_hist_truth = unpack_dict['alt_hist_truth']
-    alt_hist_reco = unpack_dict['alt_hist_reco']
-    alt_hist_reco_bg_subtracted = unpack_dict['alt_hist_reco_bg_subtracted']
-    alt_hist_reco_bg_subtracted_gen_binning = unpack_dict['alt_hist_reco_bg_subtracted_gen_binning']
+    unfolder = region['unfolder']
+    unreg_unfolder = region.get('unreg_unfolder', None)
+    alt_unfolder = region.get('alt_unfolder', None)
+    alt_hist_truth = region.get('alt_hist_truth', None)
+    alt_hist_reco = region.get('alt_hist_reco', None)
+    alt_hist_reco_bg_subtracted = region.get('alt_hist_reco_bg_subtracted', None)
+    alt_hist_reco_bg_subtracted_gen_binning = region.get('alt_hist_reco_bg_subtracted_gen_binning', None)
 
     hbc = HistBinChopper(generator_binning=unfolder.generator_binning.FindNode("generatordistribution"),
                          detector_binning=unfolder.detector_binning.FindNode("detectordistribution"))
@@ -2067,22 +2070,22 @@ class BigNormalised1DPlotter(object):
 
     # TODO: Some of this seems very overlapped with MyUnfolderPlotter...
 
-    def __init__(self, setup, hist_bin_chopper, unfolder):
+    def __init__(self, setup, hist_bin_chopper):
         self.setup = setup
         self.hist_bin_chopper = hist_bin_chopper
-        self.unfolder = unfolder
+        self.unfolder = setup.region['unfolder']
         self.plot_with_bin_widths = False # use bin widths in plot instead of uniform bin widths
 
-        self.pt_bin_edges_generator = unfolder.pt_bin_edges_gen
+        self.pt_bin_edges_generator = self.unfolder.pt_bin_edges_gen
         self.num_pt_bins_generator = len(self.pt_bin_edges_generator)-1
-        self.lambda_bin_edges_generator = unfolder.variable_bin_edges_gen
+        self.lambda_bin_edges_generator = self.unfolder.variable_bin_edges_gen
         self.num_lambda_bins_generator = len(self.lambda_bin_edges_generator)-1
         self.nbins_generator = self.num_pt_bins_generator * self.num_lambda_bins_generator
         self.all_bin_edges_generator = self._calc_bin_edges('generator')
 
-        self.pt_bin_edges_detector = unfolder.pt_bin_edges_reco
+        self.pt_bin_edges_detector = self.unfolder.pt_bin_edges_reco
         self.num_pt_bins_detector = len(self.pt_bin_edges_detector)-1
-        self.lambda_bin_edges_detector = unfolder.variable_bin_edges_reco
+        self.lambda_bin_edges_detector = self.unfolder.variable_bin_edges_reco
         self.num_lambda_bins_detector = len(self.lambda_bin_edges_detector)-1
         self.nbins_detector = self.num_pt_bins_detector * self.num_lambda_bins_detector
         self.all_bin_edges_detector = self._calc_bin_edges('detector')
@@ -2152,8 +2155,8 @@ class BigNormalised1DPlotter(object):
         this_plot.subplot_line_width = 1
         this_plot.subplot_line_color = ROOT.kGray+1
 
-
     def _plot_pt_bins(self, plot, binning_scheme='generator'):
+        """Plot vertical pt bin lines"""
         sub_xax = plot.subplot_container.GetXaxis()
         sub_xax.SetTitleOffset(sub_xax.GetTitleOffset()*.9)
         sub_xax.SetTitleOffset(sub_xax.GetTitleOffset()*.9)
@@ -2683,10 +2686,11 @@ class BigNormalised1DPlotter(object):
     #     plot.save("%s/folded_gen_1d_normalised_%s_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, self.setup.output_fmt))
 
 
-def do_all_big_1d_plots_per_region_angle(setup, unpack_dict, hist_bin_chopper=None):
-    unfolder = unpack_dict['unfolder']
-    alt_unfolder = unpack_dict['alt_unfolder']
-    alt_hist_truth = unpack_dict['alt_hist_truth']
+def do_all_big_1d_plots_per_region_angle(setup, hist_bin_chopper=None):
+    region = setup.region
+    unfolder = region['unfolder']
+    alt_unfolder = region.get('alt_unfolder', None)
+    alt_hist_truth = region.get('alt_hist_truth', None)
 
     if not hist_bin_chopper:
         # unreg_unfolder = unpack_dict['unreg_unfolder']
@@ -2699,11 +2703,11 @@ def do_all_big_1d_plots_per_region_angle(setup, unpack_dict, hist_bin_chopper=No
         if alt_hist_truth:
             hist_bin_chopper.add_obj("alt_hist_truth", alt_hist_truth)
 
-    has_exp_systs = len(setup.region['experimental_systematics']) > 0
-    has_model_systs = len(setup.region['model_systematics']) > 0
-    has_pdf_systs = len(setup.region['pdf_systematics']) > 0
+    has_exp_systs = len(region['experimental_systematics']) > 0
+    has_model_systs = len(region['model_systematics']) > 0
+    has_pdf_systs = len(region['pdf_systematics']) > 0
 
-    big_plotter = BigNormalised1DPlotter(setup, hist_bin_chopper, unfolder)
+    big_plotter = BigNormalised1DPlotter(setup, hist_bin_chopper)
     big_plotter.plot_with_bin_widths = True
 
     big_plotter.plot_unfolded_truth()
@@ -2727,8 +2731,8 @@ def do_all_big_1d_plots_per_region_angle(setup, unpack_dict, hist_bin_chopper=No
         big_plotter.plot_unfolded_pdf_systs()
 
 
-def store_bottom_line_stats(all_chi2_stats, setup, unpack_dict):
-    unfolder = unpack_dict['unfolder']
+def store_bottom_line_stats(all_chi2_stats, setup):
+    unfolder = setup.region['unfolder']
 
     smeared_chi2, smeared_ndf, smeared_p = unfolder.calculate_chi2(one_hist=unfolder.get_folded_mc_truth(),
                                                                    other_hist=unfolder.hist_mc_reco_bg_subtracted,
@@ -2858,26 +2862,23 @@ if __name__ == "__main__":
                 print("! Warning ! cannot find angle dir", angle_output_dir, '- skipping angle', angle.var)
                 continue
 
-            # TODO: put this in a method / class
-            # Check if ROOT file exists
-            root_filename = os.path.join(angle_output_dir, "unfolding_result.root")
-            if not os.path.isfile(root_filename):
-                print("! Warning ! cannot fine unfolding ROOT file", root_filename, ' - skipping angle')
+            # Get region dict from pickle file
+            pickle_filename = os.path.join(angle_output_dir, "unfolding_result.pkl")
+            if not os.path.isfile(pickle_filename):
+                print("! Warning ! cannot fine unfolding pickle file", pickle_filename, ' - skipping angle')
+            with lzma.open(pickle_filename, "rb") as f:
+                unpickled_region = pickle.load(f)
+
+            # check
+            if region['name'] != unpickled_region['name']:
+                raise RuntimeError("Mismatch region name")
+
+            region.update(unpickled_region)
 
             append = "%s_%s" % (region['name'], angle.var)  # common str to put on filenames, etc. don't need angle_prepend as 'groomed' in region name
             print("*"*120)
             print("Region/var: %s" % (append))
             print("*"*120)
-
-            input_tfile = cu.TFileCacher(root_filename)  # keep this here otherwise crashes
-            unpack_dict = unpack_unfolding_root_file(input_tfile, region, angle)
-            # we have
-            # - unfolder
-            # - unreg_unfolder
-            # - alt_unfolder
-            # - experimental_systematics[] in unfolder
-            # - model_systematics[] in unfolder
-            # - pdf[] in unfolder
 
             # MAKE ALL THE PLOTS
             # ------------------------------------------------------------------
@@ -2889,15 +2890,13 @@ if __name__ == "__main__":
 
             hist_bin_chopper = None
             if args.doBinnedPlots:
-                hist_bin_chopper = do_all_plots_per_region_angle(setup, unpack_dict)
+                hist_bin_chopper = do_all_plots_per_region_angle(setup)
 
             # Do a 1D summary plot, with all the normalised plots with bins divided by their width
             # (unlike the standard plot from MyUnfolderPlotter, which is absolute)
-            do_all_big_1d_plots_per_region_angle(setup,
-                                                 unpack_dict,
-                                                 hist_bin_chopper)
+            do_all_big_1d_plots_per_region_angle(setup, hist_bin_chopper)
 
-            store_bottom_line_stats(all_chi2_stats, setup, unpack_dict)
+            store_bottom_line_stats(all_chi2_stats, setup)
 
     df_stats = pd.DataFrame(all_chi2_stats)
     df_stats['region'] = df_stats['region'].astype('category')
