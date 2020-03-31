@@ -1131,13 +1131,14 @@ if __name__ == "__main__":
             if args.doExperimentalSystsFromFile is not None:
                 print("Getting experimental systematics from another file...")
                 angle_output_dir = "%s/%s/%s" % (args.doExperimentalSystsFromFile, region['name'], angle.var)
-                this_root_filename = os.path.join(angle_output_dir, "unfolding_result.root")
-                if not os.path.isfile(this_root_filename):
-                    raise IOError("Cannot find systematics file, %s" % this_root_filename)
-                ref_tfile_exp = cu.TFileCacher(this_root_filename)
-                region_copy = deepcopy(region)
-                unpack_dict = unpack_unfolding_root_file(ref_tfile_exp, region_copy, angle)
-                reference_unfolder = unpack_dict['unfolder']
+                this_pkl_filename = os.path.join(angle_output_dir, "unfolding_result.pkl")
+                if not os.path.isfile(this_pkl_filename):
+                    raise IOError("Cannot find systematics file, %s" % this_pkl_filename)
+
+                with lzma.open(this_pkl_filename, "rb") as f:
+                    exp_syst_region = pickle.load(f)
+
+                reference_unfolder = exp_syst_region['unfolder']
                 ref_unfolded = reference_unfolder.unfolded
                 for syst_label in reference_unfolder.syst_maps.keys():
                     # Note that this is potentially a bit dodgy - the
@@ -1157,7 +1158,7 @@ if __name__ == "__main__":
 
                 # update region info
                 # TODO what if the config has fewer than in the reference unfolder?
-                region['experimental_systematics'] = [syst_dict for syst_dict in region_copy['experimental_systematics']
+                region['experimental_systematics'] = [syst_dict for syst_dict in exp_syst_region['experimental_systematics']
                                                       if syst_dict['label'] in reference_unfolder.syst_maps.keys()]
 
             # Do lots of extra gubbins, like caching matrices,
@@ -1914,18 +1915,15 @@ if __name__ == "__main__":
             ref_tfile_model = None
             if args.doModelSystsFromFile is not None:
                 model_dir = "%s/%s/%s" % (args.doModelSystsFromFile, region['name'], angle.var)
-                this_root_filename = os.path.join(model_dir, "unfolding_result.root")
-                # do NOT use save variable name as for exp or pdf systs...things will disappear
-                ref_tfile_model = cu.TFileCacher(this_root_filename)
-                region_copy = orig_region.copy()
-                reference_dict = unpack_unfolding_root_file(ref_tfile_model,
-                                                            region_copy,
-                                                            angle,
-                                                            do_alt_response=False,
-                                                            do_model_systs=True,
-                                                            do_pdf_systs=False)
-                # update original region object
-                region['model_systematics'] = region_copy['model_systematics']
+
+                this_pkl_filename = os.path.join(model_dir, "unfolding_result.pkl")
+                if not os.path.isfile(this_pkl_filename):
+                    raise IOError("Cannot find model systematics file, %s" % this_pkl_filename)
+                with lzma.open(this_pkl_filename, "rb") as f:
+                    model_syst_region = pickle.load(f)
+
+                # update original region object with the model syst info from the reference file
+                region['model_systematics'] = model_syst_region['model_systematics']
 
                 # Add dummy object to hist_bin_chopper for later, so we can directly manipulate the cache
                 uncert_name = "scale_uncert"
@@ -1934,14 +1932,15 @@ if __name__ == "__main__":
 
                 for ibin_pt in range(len(unfolder.pt_bin_edges_gen[:-1])):
                     # Calculate scale uncertainty by taking relative uncertainty
-                    # from reference file, and applying to this result
+                    # from reference file (which was already calculated in the 1st running),
+                    # and applying to this result
                     key = unfolder.hist_bin_chopper._generate_key(uncert_name,
                                                                   ind=ibin_pt,
                                                                   axis='pt',
                                                                   do_norm=True,
                                                                   do_div_bin_width=True,
                                                                   binning_scheme='generator')
-                    ref_scale_syst = reference_dict['unfolder'].hist_bin_chopper._cache[key]
+                    ref_scale_syst = model_syst_region['unfolder'].hist_bin_chopper._cache[key]
                     scale_syst = unfolder.hist_bin_chopper.get_pt_bin_normed_div_bin_width("unfolded_stat_err", ibin_pt, binning_scheme='generator').Clone()
                     for i in range(1, scale_syst.GetNbinsX()+1):
                         if ref_scale_syst.GetBinContent(i) != 0:
@@ -2192,18 +2191,15 @@ if __name__ == "__main__":
             ref_tfile_pdf = None
             if args.doPDFSystsFromFile is not None:
                 pdf_dir = "%s/%s/%s" % (args.doPDFSystsFromFile, region['name'], angle.var)
-                this_root_filename = os.path.join(pdf_dir, "unfolding_result.root")
-                # do NOT use save variable name as for exp or model systs...things will disappear
-                ref_tfile_pdf = cu.TFileCacher(this_root_filename)
-                region_copy_pdf = orig_region.copy()
-                reference_dict = unpack_unfolding_root_file(ref_tfile_pdf,
-                                                            region_copy_pdf,
-                                                            angle,
-                                                            do_alt_response=False,
-                                                            do_pdf_systs=True,
-                                                            do_model_systs=False)
-                # update original region object
-                region['pdf_systematics'] = region_copy_pdf['pdf_systematics']
+
+                this_pkl_filename = os.path.join(pdf_dir, "unfolding_result.pkl")
+                if not os.path.isfile(this_pkl_filename):
+                    raise IOError("Cannot find PDF systematics file, %s" % this_pkl_filename)
+                with lzma.open(this_pkl_filename, "rb") as f:
+                    pdf_syst_region = pickle.load(f)
+
+                # update original region object from reference file
+                region['pdf_systematics'] = pdf_syst_region['pdf_systematics']
 
                 # Add dummy object to hist_bin_chopper for later, so we can directly manipulate the cache
                 uncert_name = "pdf_uncert"
@@ -2212,14 +2208,15 @@ if __name__ == "__main__":
 
                 for ibin_pt in range(len(unfolder.pt_bin_edges_gen[:-1])):
                     # Calculate PDF uncertainty by taking relative uncertainty
-                    # from reference file, and applying to this result
+                    # from reference file (which has already been calculated in the 1st running),
+                    # and applying to this result
                     key = unfolder.hist_bin_chopper._generate_key(uncert_name,
                                                                   ind=ibin_pt,
                                                                   axis='pt',
                                                                   do_norm=True,
                                                                   do_div_bin_width=True,
                                                                   binning_scheme='generator')
-                    ref_pdf_syst = reference_dict['unfolder'].hist_bin_chopper._cache[key]
+                    ref_pdf_syst = pdf_syst_region['unfolder'].hist_bin_chopper._cache[key]
                     pdf_syst = unfolder.hist_bin_chopper.get_pt_bin_normed_div_bin_width("unfolded_stat_err", ibin_pt, binning_scheme='generator').Clone()
                     for i in range(1, pdf_syst.GetNbinsX()+1):
                         if ref_pdf_syst.GetBinContent(i) != 0:
@@ -2278,8 +2275,6 @@ if __name__ == "__main__":
             print("-"*80)
 
             pickle_filename = os.path.join("%s/unfolding_result.pkl" % (this_output_dir))
-            print(">> Saving to pickle file", pickle_filename)
-
             # LZMA for huge space saving
             with lzma.open(pickle_filename, "wb") as f:
                 # recursively change TFile objects back to filenames
@@ -2304,6 +2299,9 @@ if __name__ == "__main__":
                 cu.print_dict_item_sizes(region, recursive=True)
                 print("-"*80)
                 pickle.dump(region, f) # protocol doesn't make a diff here
+
+            print(">> Saved to pickle file", pickle_filename)
+            print("")
 
             print("Testing pickled file...")
             with lzma.open(pickle_filename, "rb") as f:

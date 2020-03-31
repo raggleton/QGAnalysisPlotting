@@ -141,7 +141,8 @@ def get_from_tfile(tfile, obj_name, info=False):
     if obj == None:
         raise IOError("No object named %s in %s" % (obj_name, tfile.GetName()))
     else:
-        obj.SetDirectory(0)  # Free it from the TFile ownership
+        if isinstance(obj, (ROOT.TH1, ROOT.TH2, ROOT.TH3)):
+            obj.SetDirectory(0)  # Free it from the TFile ownership
         return obj
 
 
