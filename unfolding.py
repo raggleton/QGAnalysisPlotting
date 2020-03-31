@@ -40,7 +40,7 @@ from unfolding_logistics import get_unfolding_argparser, get_unfolding_output_di
 ROOT.PyConfig.IgnoreCommandLineOptions = True
 ROOT.gROOT.SetBatch(1)
 ROOT.TH1.SetDefaultSumw2()
-
+ROOT.TH1.AddDirectory(False)  # VERY IMPORTANT - somewhere, closing a TFile for exp systs deletes a map...dunno why
 
 # Control plot output format
 OUTPUT_FMT = "pdf"
@@ -125,6 +125,7 @@ def rm_large_rel_error_bins(hist, relative_err_threshold=-1):
     if relative_err_threshold < 0:
         return hist
     new_hist = hist.Clone()
+    new_hist.SetDirectory(0)
     for ix in range(hist.GetNbinsX()+1):
         for iy in range(hist.GetNbinsY()+1):
             val = hist.GetBinContent(ix, iy)
@@ -2273,7 +2274,7 @@ if __name__ == "__main__":
             print("")
             print("unfolder attr sizes:")
             print("-"*80)
-            cu.print_dict_item_sizes(unfolder.__dict__)
+            cu.print_dict_item_sizes(unfolder.__dict__, recursive=True)
             print("-"*80)
 
             pickle_filename = os.path.join("%s/unfolding_result.pkl" % (this_output_dir))
@@ -2281,25 +2282,38 @@ if __name__ == "__main__":
 
             # LZMA for huge space saving
             with lzma.open(pickle_filename, "wb") as f:
-                for k in region.keys():
-                    # don't save TFiles, change back to filepath
-                    if isinstance(region[k], ROOT.TFile):
-                        print(" - closing", k)
-                        filename = region[k].GetName()
-                        region[k].Close()
-                        region[k] = filename
+                # recursively change TFile objects back to filenames
+                def _convert_tfile_to_str(d):
+                    for k in d.keys():
+                        # TODO: write pickler class?
+                        if isinstance(d[k], ROOT.TFile):
+                            filename = d[k].GetName()
+                            print(" - closing", k, filename)
+                            d[k].Close()
+                            d[k] = filename
+                        elif isinstance(d[k], dict):
+                            _convert_tfile_to_str(d[k])
+                        elif isinstance(d[k], list):
+                            for x in d[k]:
+                                _convert_tfile_to_str(x)
+                _convert_tfile_to_str(region)
+
                 print("")
                 print("region sizes:")
                 print("-"*80)
-                cu.print_dict_item_sizes(region)
+                cu.print_dict_item_sizes(region, recursive=True)
                 print("-"*80)
                 pickle.dump(region, f) # protocol doesn't make a diff here
 
             print("Testing pickled file...")
             with lzma.open(pickle_filename, "rb") as f:
                 data = pickle.load(f)
-                print("...unpickled data:", data)
-                print("...data['unfolder'].hist_bin_chopper.objects:", data['unfolder'].hist_bin_chopper.objects)
+                print("")
+                print("...unpickled data:")
+                print("    ", data)
+                print("")
+                print("...data['unfolder'].hist_bin_chopper.objects:")
+                print("    ", data['unfolder'].hist_bin_chopper.objects)
 
             print(">> Saving unfolder to ROOT file")
             unfolder.save_to_tfile(this_tdir)

@@ -422,23 +422,44 @@ def str_restore_space(s):
     return s.replace(SPACE_REPLACEMENT_CHAR, " ") if s else s
 
 
-def print_dict_item_sizes(this_dict, descending=True):
-    """Print out size of elements in dict
+def get_dict_item_sizes(this_dict, recursive=True):
+    """Get size of elements in dict.
+
+    Can do dicts recursively
 
     Uses pickle to get the "true" size
-    If descending is True, then do largest size first.
     """
     size_dict = {}
     # print("size dict:", this_dict)
     for k, v in this_dict.items():
-        # print("Getting...", k)
-        obj_pkl = pickle.dumps(v)
-        size_dict[k] = sys.getsizeof(obj_pkl)
+        # print("Getting...", k, type(v), v)
+        this_key = "[%s]" % k
+        if isinstance(v, dict) and recursive:
+            tsd = get_dict_item_sizes(v, recursive)
+            # print("k,tsd:", k, tsd)
+            size_dict.update({"%s%s" % (this_key, kk) : vv for kk, vv in tsd.items()})
+            # print("new size_dict from dict", size_dict)
+        else:
+            obj_pkl = pickle.dumps(v)
+            size_dict[this_key] = sys.getsizeof(obj_pkl)
+            # print("new size_dict", size_dict)
+
+    return size_dict
+
+
+def print_dict_item_sizes(this_dict, descending=True, recursive=True):
+    """Print out size of elements in dict
+
+    If descending is True, then do largest size first.
+
+    If recursive is True, then do dicts recursively.
+    """
+    size_dict = get_dict_item_sizes(this_dict, recursive)
 
     # print out, sorted by size
     sorted_dict = {k:v for k,v in sorted(size_dict.items(), key=lambda x: x[1], reverse=descending)}
     for k, v in sorted_dict.items():
-        print(k, v, type(this_dict[k]))
+        print(k, v)
 
 # Various methods to convert between ROOT things and numpy
 # ------------------------------------------------------------------------------
