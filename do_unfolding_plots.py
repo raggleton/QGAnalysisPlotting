@@ -15,7 +15,7 @@ import argparse
 import math
 from array import array
 import pandas as pd
-import bz2
+import lzma
 import pickle
 
 import ROOT
@@ -2868,7 +2868,7 @@ if __name__ == "__main__":
             pickle_filename = os.path.join(angle_output_dir, "unfolding_result.pkl")
             if not os.path.isfile(pickle_filename):
                 print("! Warning ! cannot fine unfolding pickle file", pickle_filename, ' - skipping angle')
-            with bz2.BZ2File(pickle_filename, "r") as f:
+            with lzma.open(pickle_filename, "rb") as f:
                 unpickled_region = pickle.load(f)
 
             # check

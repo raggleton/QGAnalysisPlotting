@@ -18,7 +18,7 @@ import math
 from itertools import product
 from copy import copy, deepcopy
 import pickle
-import bz2
+import lzma
 
 import ROOT
 from MyStyle import My_Style
@@ -1135,7 +1135,7 @@ if __name__ == "__main__":
                 if not os.path.isfile(this_pkl_filename):
                     raise IOError("Cannot find systematics file, %s" % this_pkl_filename)
 
-                with bz2.BZ2File(this_pkl_filename, "r") as f:
+                with lzma.open(this_pkl_filename, "rb") as f:
                     exp_syst_region = pickle.load(f)
 
                 reference_unfolder = exp_syst_region['unfolder']
@@ -1923,7 +1923,7 @@ if __name__ == "__main__":
                 this_pkl_filename = os.path.join(model_dir, "unfolding_result.pkl")
                 if not os.path.isfile(this_pkl_filename):
                     raise IOError("Cannot find model systematics file, %s" % this_pkl_filename)
-                with bz2.BZ2File(this_pkl_filename, "r") as f:
+                with lzma.open(this_pkl_filename, "rb") as f:
                     model_syst_region = pickle.load(f)
 
                 # update original region object with the model syst info from the reference file
@@ -2199,7 +2199,7 @@ if __name__ == "__main__":
                 this_pkl_filename = os.path.join(pdf_dir, "unfolding_result.pkl")
                 if not os.path.isfile(this_pkl_filename):
                     raise IOError("Cannot find PDF systematics file, %s" % this_pkl_filename)
-                with bz2.BZ2File(this_pkl_filename, "r") as f:
+                with lzma.open(this_pkl_filename, "rb") as f:
                     pdf_syst_region = pickle.load(f)
 
                 # update original region object from reference file
@@ -2279,8 +2279,8 @@ if __name__ == "__main__":
             print("-"*80)
 
             pickle_filename = os.path.join("%s/unfolding_result.pkl" % (this_output_dir))
-            # BZ2 for huge space saving, don't use LZMA as not in py2 on NAF
-            with bz2.BZ2File(pickle_filename, 'w') as f:
+            # LZMA for huge space saving
+            with lzma.open(pickle_filename, "wb") as f:
                 # recursively change TFile objects back to filenames
                 def _convert_tfile_to_str(d):
                     for k in d.keys():
@@ -2308,7 +2308,7 @@ if __name__ == "__main__":
             print("")
 
             print("Testing pickled file...")
-            with bz2.BZ2File(pickle_filename, 'r') as f:
+            with lzma.open(pickle_filename, "rb") as f:
                 data = pickle.load(f)
                 print("")
                 print("...unpickled data:")
