@@ -1954,6 +1954,19 @@ if __name__ == "__main__":
                         scale_syst.SetBinError(i, rel_err * scale_syst.GetBinContent(i))
                     unfolder.hist_bin_chopper._cache[key] = scale_syst
 
+                # Save copies of Unfolders to TFile
+                # ----------------------------------------------------------
+                for ind, syst_dict in enumerate(region['model_systematics']):
+                    syst_label = syst_dict['label']
+                    syst_label_no_spaces = cu.no_space_str(syst_dict['label'])
+                    this_tdir.cd()
+                    syst_tdir_name = "modelSyst_"+syst_label_no_spaces
+                    syst_tdir = this_tdir.mkdir(syst_tdir_name)
+                    syst_tdir.cd()
+                    model_unfolder = syst_dict['unfolder']
+                    model_unfolder.save_to_tfile(syst_tdir)
+
+
             if len(region['model_systematics']) > 0 and MC_INPUT:
                 # Do a big absolute 1D plots for sanity
                 model_contributions = [
@@ -2230,6 +2243,17 @@ if __name__ == "__main__":
                         pdf_syst.SetBinError(i, rel_err * pdf_syst.GetBinContent(i))
                     unfolder.hist_bin_chopper._cache[key] = pdf_syst
 
+                # Save copies of Unfolders to TFile
+                # ----------------------------------------------------------
+                for ind, pdf_dict in enumerate(pdf_syst_region['pdf_systematics']):
+                    pdf_label = pdf_dict['label']
+                    pdf_label_no_spaces = cu.no_space_str(pdf_label)
+                    this_tdir.cd()
+                    pdf_tdir_name = "pdfSyst_"+pdf_label_no_spaces
+                    pdf_tdir = this_tdir.mkdir(pdf_tdir_name)
+                    pdf_tdir.cd()
+                    pdf_unfolder = pdf_dict['unfolder']
+                    pdf_unfolder.save_to_tfile(pdf_tdir)
 
             if len(region['pdf_systematics']) > 0 and MC_INPUT:
                 # Do a big absolute 1D plot for sanity
