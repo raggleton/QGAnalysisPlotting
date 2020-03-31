@@ -14,6 +14,7 @@ from itertools import chain
 import scipy
 from scipy import stats
 import inspect
+import warnings
 
 import ROOT
 from MyStyle import My_Style
@@ -1447,8 +1448,10 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
 def unfolder_from_tdir(tdir):
     """Recover MyUnfolder from tdirectory
 
-    Massive pain, but can't figure out how to serialize via pickle or ROOT
+    Massive pain, prefer pickling instead
     """
+    warnings.warn("Favour pickling/unpickling instead of ROOT unpacking", DeprecationWarning)
+
     unfolder = MyUnfolder(response_map=cu.get_from_tfile(tdir, "response_map"),
                           variable_bin_edges_reco=np.array(cu.get_from_tfile(tdir, "variable_bin_edges_reco")),
                           variable_bin_edges_gen=np.array(cu.get_from_tfile(tdir, "variable_bin_edges_gen")),
@@ -1501,6 +1504,12 @@ def unfolder_from_tdir(tdir):
 
 
 def unpack_unfolding_root_file(input_tfile, region, angle, do_alt_response=True, do_model_systs=True, do_pdf_systs=True):
+    """Unpack Unfolders, systematics, etc from ROOT file
+
+    Prefer unpickling instead!
+    """
+    warnings.warn("Favour pickling/unpickling instead of ROOT unpacking", DeprecationWarning)
+
     input_tdir_name = "%s/%s" % (region['name'], angle.var)
     input_tdir = input_tfile.Get(input_tdir_name)
     cu.check_root_obj(input_tdir)

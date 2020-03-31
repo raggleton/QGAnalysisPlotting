@@ -28,7 +28,7 @@ ROOT.gErrorIgnoreLevel = ROOT.kWarning
 import common_utils as cu
 import qg_common as qgc
 import qg_general_plots as qgp
-from my_unfolder import MyUnfolder, unfolder_from_tdir, HistBinChopper, unpack_unfolding_root_file
+from my_unfolder import MyUnfolder, HistBinChopper
 from my_unfolder_plotter import MyUnfolderPlotter
 from unfolding_config import get_dijet_config, get_zpj_config
 
@@ -2731,7 +2731,8 @@ def do_all_big_1d_plots_per_region_angle(setup, hist_bin_chopper=None):
         big_plotter.plot_unfolded_pdf_systs()
 
 
-def store_bottom_line_stats(all_chi2_stats, setup):
+def get_bottom_line_stats(setup):
+    """Construct dict of bottom-line (i.e. chi2) stats for this region/angle combo"""
     unfolder = setup.region['unfolder']
 
     smeared_chi2, smeared_ndf, smeared_p = unfolder.calculate_chi2(one_hist=unfolder.get_folded_mc_truth(),
@@ -2754,7 +2755,7 @@ def store_bottom_line_stats(all_chi2_stats, setup):
     # smeared_alt = unfolder.fold_generator_level(unpack_dict['alt_hist_truth'])
     # smeared_alt_chi2, smeared_alt_ndf, smeared_alt_p =
 
-    all_chi2_stats.append({
+    return {
             "region": setup.region['label'],
             "is_groomed": "groomed" in setup.region['name'],
             "angle": setup.angle.var,
@@ -2767,7 +2768,8 @@ def store_bottom_line_stats(all_chi2_stats, setup):
             "unfolded_ndf": unfolded_ndf,
             "unfolded_chi2ndf": unfolded_chi2/unfolded_ndf,
             "unfolded_p": unfolded_p,
-    })
+    }
+
 
 def print_chi2_table(df):
     df_sorted = df.sort_values(by=['region', 'angle'])
@@ -2896,7 +2898,7 @@ if __name__ == "__main__":
             # (unlike the standard plot from MyUnfolderPlotter, which is absolute)
             do_all_big_1d_plots_per_region_angle(setup, hist_bin_chopper)
 
-            store_bottom_line_stats(all_chi2_stats, setup)
+            all_chi2_stats.append(get_bottom_line_stats(setup))
 
     df_stats = pd.DataFrame(all_chi2_stats)
     df_stats['region'] = df_stats['region'].astype('category')
