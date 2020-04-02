@@ -347,7 +347,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
 
         # Write the TUnfoldDensity object
         tfile.cd()
-        super(ROOT.MyTUnfoldDensity, self).Write()
+        # super(ROOT.MyTUnfoldDensity, self).Write()
 
     def __getstate__(self):
         # Copy the object's state from self.__dict__ which contains
