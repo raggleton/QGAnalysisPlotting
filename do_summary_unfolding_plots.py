@@ -593,8 +593,6 @@ if __name__ == "__main__":
                         }
                         results_dicts.append(result_dict)
 
-                    input_tfile.Close()
-
         df = pd.DataFrame(results_dicts)
         df['jet_algo'] = df['jet_algo'].astype('category')
         df['region'] = df['region'].astype('category')
