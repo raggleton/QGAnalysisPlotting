@@ -140,54 +140,58 @@ class SummaryPlotter(object):
         zpj_col = ROOT.kBlue
         m_size = 1
         entries = []
+        # Spaces in legend labels are important for padding
+        # Add data
         if do_dijet:
             entries.extend([
-                Contribution(dijet_central_hist, label='Dijet (central)',
+                Contribution(dijet_central_hist, label=' Dijet (central)',
                              line_color=dijet_cen_col, line_width=2,
                              marker_color=dijet_cen_col, marker_style=cu.Marker.get('circle', True), marker_size=m_size),
-                Contribution(dijet_forward_hist, label='Dijet (forward)',
+                Contribution(dijet_forward_hist, label=' Dijet (forward)',
                              line_color=dijet_fwd_col, line_width=2,
                              marker_color=dijet_fwd_col, marker_style=cu.Marker.get('square', True), marker_size=m_size),
             ])
         if do_zpj:
             entries.extend([
-                Contribution(zpj_hist, label='Z+jet',
+                Contribution(zpj_hist, label=' Z+jet',
                              line_color=zpj_col, line_width=2,
                              marker_color=zpj_col, marker_style=cu.Marker.get('triangleUp', True), marker_size=m_size),
             ])
+        # Add nominal MC
         if do_dijet:
             entries.extend([
                 # TODO: make truth plotting optional, also plot alternate generators
-                Contribution(dijet_central_hist_truth, label='Dijet (central) [%s]' % (self.mc_label),
+                Contribution(dijet_central_hist_truth, label='#splitline{ Dijet (central)  }{ [%s]}' % (self.mc_label),
                              line_color=dijet_cen_col, line_width=2, line_style=2,
                              marker_color=dijet_cen_col, marker_style=cu.Marker.get('circle', False), marker_size=0,
                              subplot=dijet_central_hist),
-                Contribution(dijet_forward_hist_truth, label='Dijet (forward) [%s]' % (self.mc_label),
+                Contribution(dijet_forward_hist_truth, label='#splitline{ Dijet (forward)  }{ [%s]}' % (self.mc_label),
                              line_color=dijet_fwd_col, line_width=2, line_style=2,
                              marker_color=dijet_fwd_col, marker_style=cu.Marker.get('square', False), marker_size=0,
                              subplot=dijet_forward_hist),
             ])
         if do_zpj:
             entries.extend([
-                Contribution(zpj_hist_truth, label='Z+jet [%s]' % (self.mc_label),
+                Contribution(zpj_hist_truth, label='#splitline{ Z+jet  }{ [%s]}' % (self.mc_label),
                              line_color=zpj_col, line_width=2, line_style=2,
                              marker_color=zpj_col, marker_style=cu.Marker.get('triangleUp', False), marker_size=0,
                              subplot=zpj_hist),
             ])
+        # add alt MC
         if do_dijet:
             entries.extend([
-                Contribution(dijet_central_hist_alt_truth, label='Dijet (central) [%s]' % (self.alt_mc_label),
+                Contribution(dijet_central_hist_alt_truth, label='#splitline{ Dijet (central)  }{ [%s]}' % (self.alt_mc_label),
                              line_color=dijet_cen_col, line_width=2, line_style=3,
                              marker_color=dijet_cen_col, marker_style=cu.Marker.get('circle', False), marker_size=0,
                              subplot=dijet_central_hist),
-                Contribution(dijet_forward_hist_alt_truth, label='Dijet (forward) [%s]' % (self.alt_mc_label),
+                Contribution(dijet_forward_hist_alt_truth, label='#splitline{ Dijet (forward)  }{ [%s]}' % (self.alt_mc_label),
                              line_color=dijet_fwd_col, line_width=2, line_style=3,
                              marker_color=dijet_fwd_col, marker_style=cu.Marker.get('square', False), marker_size=0,
                              subplot=dijet_forward_hist),
             ])
         if do_zpj:
             entries.extend([
-                Contribution(zpj_hist_alt_truth, label='Z+jet [%s]' % (self.alt_mc_label),
+                Contribution(zpj_hist_alt_truth, label='#splitline{ Z+jet}{ [%s]}' % (self.alt_mc_label),
                              line_color=zpj_col, line_width=2, line_style=3,
                              marker_color=zpj_col, marker_style=cu.Marker.get('triangleUp', False), marker_size=0,
                              subplot=zpj_hist),
@@ -295,56 +299,58 @@ class SummaryPlotter(object):
         m_size = 1
         mc_label='MG+Pythia8'
         entries = []
+        # Spaces in legend labels are important for padding
+        # Add data
         if do_dijet:
             entries.extend([
-                Contribution(dijet_central_hist, label='Dijet (central)',
+                Contribution(dijet_central_hist, label=' Dijet (central)',
                              line_color=dijet_cen_col, line_width=2,
                              marker_color=dijet_cen_col, marker_style=cu.Marker.get('circle', True), marker_size=m_size),
-                Contribution(dijet_forward_hist, label='Dijet (forward)',
+                Contribution(dijet_forward_hist, label=' Dijet (forward)',
                              line_color=dijet_fwd_col, line_width=2,
                              marker_color=dijet_fwd_col, marker_style=cu.Marker.get('square', True), marker_size=m_size),
             ])
         if do_zpj:
             entries.extend([
-
-                Contribution(zpj_hist, label='Z+jet',
+                Contribution(zpj_hist, label=' Z+jet',
                              line_color=zpj_col, line_width=2,
                              marker_color=zpj_col, marker_style=cu.Marker.get('triangleUp', True), marker_size=m_size),
             ])
+        # Add nominal MC
         if do_dijet:
             entries.extend([
                 # TODO: make truth plotting optional, also plot alternate generators
-                Contribution(dijet_central_hist_truth, label='Dijet (central) [%s]' % (self.mc_label),
+                Contribution(dijet_central_hist_truth, label='#splitline{ Dijet (central)  }{ [%s]}' % (self.mc_label),
                              line_color=dijet_cen_col, line_width=2, line_style=2,
                              marker_color=dijet_cen_col, marker_style=cu.Marker.get('circle', False), marker_size=0,
                              subplot=dijet_central_hist),
-                Contribution(dijet_forward_hist_truth, label='Dijet (forward) [%s]' % (self.mc_label),
+                Contribution(dijet_forward_hist_truth, label='#splitline{ Dijet (forward)  }{ [%s]}' % (self.mc_label),
                              line_color=dijet_fwd_col, line_width=2, line_style=2,
                              marker_color=dijet_fwd_col, marker_style=cu.Marker.get('square', False), marker_size=0,
                              subplot=dijet_forward_hist),
             ])
-
         if do_zpj:
             entries.extend([
-                Contribution(zpj_hist_truth, label='Z+jet [%s]' % (self.mc_label),
+                Contribution(zpj_hist_truth, label='#splitline{ Z+jet  }{ [%s]}' % (self.mc_label),
                              line_color=zpj_col, line_width=2, line_style=2,
                              marker_color=zpj_col, marker_style=cu.Marker.get('triangleUp', False), marker_size=0,
                              subplot=zpj_hist),
-                ])
+            ])
+        # add alt MC
         if do_dijet:
             entries.extend([
-                Contribution(dijet_central_hist_alt_truth, label='Dijet (central) [%s]' % (self.alt_mc_label),
+                Contribution(dijet_central_hist_alt_truth, label='#splitline{ Dijet (central)  }{ [%s]}' % (self.alt_mc_label),
                              line_color=dijet_cen_col, line_width=2, line_style=3,
                              marker_color=dijet_cen_col, marker_style=cu.Marker.get('circle', False), marker_size=0,
                              subplot=dijet_central_hist),
-                Contribution(dijet_forward_hist_alt_truth, label='Dijet (forward) [%s]' % (self.alt_mc_label),
+                Contribution(dijet_forward_hist_alt_truth, label='#splitline{ Dijet (forward)  }{ [%s]}' % (self.alt_mc_label),
                              line_color=dijet_fwd_col, line_width=2, line_style=3,
                              marker_color=dijet_fwd_col, marker_style=cu.Marker.get('square', False), marker_size=0,
                              subplot=dijet_forward_hist),
             ])
         if do_zpj:
             entries.extend([
-                Contribution(zpj_hist_alt_truth, label='Z+jet [%s]' % (self.alt_mc_label),
+                Contribution(zpj_hist_alt_truth, label='#splitline{ Z+jet}{ [%s]}' % (self.alt_mc_label),
                              line_color=zpj_col, line_width=2, line_style=3,
                              marker_color=zpj_col, marker_style=cu.Marker.get('triangleUp', False), marker_size=0,
                              subplot=zpj_hist),
