@@ -2326,7 +2326,7 @@ if __name__ == "__main__":
                 print("-"*80)
                 cu.print_dict_item_sizes(region, recursive=True)
                 print("-"*80)
-                pickle.dump(region, f) # protocol doesn't make a diff here
+                pickle.dump(region, f, protocol=2) # protocol 2 means very compatible across python versions
 
             print(">> Saved to pickle file", pickle_filename)
             print("")
