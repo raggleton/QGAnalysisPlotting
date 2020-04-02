@@ -210,26 +210,45 @@ class SummaryPlotter(object):
                                                              name=this_angle_name,
                                                              lambda_str=angle.lambda_str)
         h_max = max([c.obj.GetMaximum() for c in entries])
+        h_min = min([c.obj.GetMinimum(1E-10) for c in entries])
+        h_range = h_max - h_min
+        ylim = (max(0, h_min-(h_range*0.2)), h_max + (h_range*0.8))
         plot = Plot(entries,
                     what='hist',
                     xtitle='Jet p_{T} [GeV]',
                     ytitle=angle_str,
                     title="%s jets" % (jet_algo['label']),
-                    ylim=(0, h_max*1.75),
+                    # ylim=(0, h_max*1.75),
+                    # ylim=(h_min*0.75, h_max*1.5),
+                    ylim=ylim,
                     has_data=self.has_data,
                     subplot_type='ratio',
                     subplot_title='MC / Data',
                     subplot_limits=(0.5, 1.5) if self.has_data else (0.9, 1.1)
                     )
+        # plot.default_canvas_size = (700, 600)
         plot.title_start_y = 0.85
         plot.title_left_offset = 0.05
         plot.title_font_size = 0.035
         plot.legend.SetX1(0.55)
-        plot.legend.SetX2(0.88)
-        plot.legend.SetY1(0.7)
-        plot.legend.SetY2(0.85+0.02)
+        plot.legend.SetX2(0.78)
+        plot.legend.SetY1(0.68)
+        plot.legend.SetY2(0.92)
+        if len(entries) > 3:
+            plot.legend.SetNColumns(2)
+            plot.legend.SetX1(0.50)
+            plot.legend.SetY1(0.68)
+            plot.legend.SetX2(0.92)
+            plot.legend.SetY2(0.92)
+            # plot.legend.SetBorderSize(1)
+            # plot.legend.SetLineColor(ROOT.kBlack)
+            plot.title_left_offset = 0.02
+        if len(entries) > 6:
+            plot.legend.SetNColumns(3)
+        plot.legend.SetY2(0.87)
         plot.left_margin = 0.16
-        # plot.default_canvas_size = (600, 800)
+        plot.subplot_line_style = 1
+        plot.y_padding_max_linear = 1.9
         plot.plot("NOSTACK E1 X0", "NOSTACK E1")
         # plot.get_modifier().GetYaxis().SetTitleOffset(plot.get_modifier().GetYaxis().GetTitleOffset()*1.1)
         plot.set_logx(do_more_labels=False)
@@ -379,15 +398,29 @@ class SummaryPlotter(object):
                     subplot_type='ratio',
                     subplot_title='MC / Data',
                     subplot_limits=(0.5, 1.5) if self.has_data else (0.9, 1.1))
+        # plot.default_canvas_size = (700, 600)
         plot.title_start_y = 0.85
         plot.title_left_offset = 0.05
         plot.title_font_size = 0.035
         plot.legend.SetX1(0.55)
-        plot.legend.SetY1(0.7)
-        plot.legend.SetX2(0.88)
-        plot.legend.SetY2(0.85+0.02)
+        plot.legend.SetX2(0.78)
+        plot.legend.SetY1(0.68)
+        plot.legend.SetY2(0.92)
+        if len(entries) > 3:
+            plot.legend.SetNColumns(2)
+            plot.legend.SetX1(0.50)
+            plot.legend.SetY1(0.68)
+            plot.legend.SetX2(0.92)
+            plot.legend.SetY2(0.92)
+            # plot.legend.SetBorderSize(1)
+            # plot.legend.SetLineColor(ROOT.kBlack)
+            plot.title_left_offset = 0.02
+        if len(entries) > 6:
+            plot.legend.SetNColumns(3)
+        plot.legend.SetY2(0.87)
         plot.left_margin = 0.16
-        plot.y_padding_min_linear = 0.5
+        plot.subplot_line_style = 1
+        plot.y_padding_max_linear = 1.9
         # plot.default_canvas_size = (600, 800)
         plot.plot("NOSTACK E1 X0", "NOSTACK E1")
         # plot.get_modifier().GetYaxis().SetTitleOffset(plot.get_modifier().GetYaxis().GetTitleOffset()*1.1)
