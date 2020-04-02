@@ -1325,22 +1325,22 @@ if __name__ == "__main__":
 
             # Do some bottom-line tests
             # ------------------------------------------------------------------
-            smeared_chi2, smeared_ndf, smeared_p = unfolder.calculate_chi2(one_hist=unfolder.get_folded_mc_truth(),
-                                                                           other_hist=unfolder.hist_mc_reco_bg_subtracted,
-                                                                           cov_inv_matrix=unfolder.get_vyy_inv_ndarray(),
-                                                                           # cov_inv_matrix=unfolder.get_vyy_inv_no_bg_ndarray(),
-                                                                           detector_space=True,
-                                                                           ignore_underflow_bins=True,
-                                                                           debugging_dir=os.path.join(this_output_dir, 'smeared_chi2_debug'))
-            print('smeared chi2:', smeared_chi2, smeared_ndf, smeared_chi2/smeared_ndf, smeared_p)
+            # smeared_chi2, smeared_ndf, smeared_p = unfolder.calculate_chi2(one_hist=unfolder.get_folded_mc_truth(),
+            #                                                                other_hist=unfolder.hist_mc_reco_bg_subtracted,
+            #                                                                cov_inv_matrix=unfolder.get_vyy_inv_ndarray(),
+            #                                                                # cov_inv_matrix=unfolder.get_vyy_inv_no_bg_ndarray(),
+            #                                                                detector_space=True,
+            #                                                                ignore_underflow_bins=True,
+            #                                                                debugging_dir=os.path.join(this_output_dir, 'smeared_chi2_debug'))
+            # print('smeared chi2:', smeared_chi2, smeared_ndf, smeared_chi2/smeared_ndf, smeared_p)
 
-            unfolded_chi2, unfolded_ndf, unfolded_p = unfolder.calculate_chi2(one_hist=unfolder.unfolded,
-                                                                              other_hist=unfolder.hist_truth,
-                                                                              cov_inv_matrix=unfolder.get_vxx_inv_ndarray(),
-                                                                              detector_space=False,
-                                                                              ignore_underflow_bins=True,
-                                                                              debugging_dir=os.path.join(this_output_dir, 'unfolded_chi2_debug'))
-            print('unfolded chi2:', unfolded_chi2, unfolded_ndf, unfolded_chi2/unfolded_ndf, unfolded_p)
+            # unfolded_chi2, unfolded_ndf, unfolded_p = unfolder.calculate_chi2(one_hist=unfolder.unfolded,
+            #                                                                   other_hist=unfolder.hist_truth,
+            #                                                                   cov_inv_matrix=unfolder.get_vxx_inv_ndarray(),
+            #                                                                   detector_space=False,
+            #                                                                   ignore_underflow_bins=True,
+            #                                                                   debugging_dir=os.path.join(this_output_dir, 'unfolded_chi2_debug'))
+            # print('unfolded chi2:', unfolded_chi2, unfolded_ndf, unfolded_chi2/unfolded_ndf, unfolded_p)
 
             # ------------------------------------------------------------------
             # UNFOLDING WITH ALTERNATIVE RESPONSE MATRIX
@@ -1548,26 +1548,26 @@ if __name__ == "__main__":
                 # Do some more bottom-line tests:
                 # --------------------------------------------------------------
                 # Do before saving to file otherwise objects get deleted
-                if alt_unfolder:
-                    smeared_alt_chi2, smeared_alt_ndf, smeared_alt_p = unfolder.calculate_chi2(one_hist=alt_unfolder.get_folded_mc_truth(),
-                                                                                               other_hist=unfolder.hist_mc_reco_bg_subtracted,
-                                                                                               cov_inv_matrix=unfolder.get_vyy_inv_ndarray(),
-                                                                                               # cov_inv_matrix=unfolder.get_vyy_inv_no_bg_ndarray(),
-                                                                                               detector_space=True,
-                                                                                               ignore_underflow_bins=True,
-                                                                                               debugging_dir=os.path.join(this_output_dir, 'smeared_alt_chi2_debug'))
-                    print('smeared chi2 (alt MC):', smeared_alt_chi2, smeared_alt_ndf, smeared_alt_chi2/smeared_alt_ndf, smeared_alt_p)
+                # if alt_unfolder:
+                #     smeared_alt_chi2, smeared_alt_ndf, smeared_alt_p = unfolder.calculate_chi2(one_hist=alt_unfolder.get_folded_mc_truth(),
+                #                                                                                other_hist=unfolder.hist_mc_reco_bg_subtracted,
+                #                                                                                cov_inv_matrix=unfolder.get_vyy_inv_ndarray(),
+                #                                                                                # cov_inv_matrix=unfolder.get_vyy_inv_no_bg_ndarray(),
+                #                                                                                detector_space=True,
+                #                                                                                ignore_underflow_bins=True,
+                #                                                                                debugging_dir=os.path.join(this_output_dir, 'smeared_alt_chi2_debug'))
+                #     print('smeared chi2 (alt MC):', smeared_alt_chi2, smeared_alt_ndf, smeared_alt_chi2/smeared_alt_ndf, smeared_alt_p)
 
-                print(unfolder.unfolded.Integral())
-                print(alt_hist_mc_gen.Integral())
-                if alt_hist_mc_gen:
-                    unfolded_alt_chi2, unfolded_alt_ndf, unfolded_alt_p = unfolder.calculate_chi2(one_hist=unfolder.unfolded,
-                                                                                                  other_hist=alt_hist_mc_gen,
-                                                                                                  cov_inv_matrix=unfolder.get_vxx_inv_ndarray(),
-                                                                                                  detector_space=False,
-                                                                                                  ignore_underflow_bins=True,
-                                                                                                  debugging_dir=os.path.join(this_output_dir, 'unfolded_alt_chi2_debug'))
-                    print('unfolded chi2 (alt MC):', unfolded_alt_chi2, unfolded_alt_ndf, unfolded_alt_chi2/unfolded_alt_ndf, unfolded_alt_p)
+                # print(unfolder.unfolded.Integral())
+                # print(alt_hist_mc_gen.Integral())
+                # if alt_hist_mc_gen:
+                #     unfolded_alt_chi2, unfolded_alt_ndf, unfolded_alt_p = unfolder.calculate_chi2(one_hist=unfolder.unfolded,
+                #                                                                                   other_hist=alt_hist_mc_gen,
+                #                                                                                   cov_inv_matrix=unfolder.get_vxx_inv_ndarray(),
+                #                                                                                   detector_space=False,
+                #                                                                                   ignore_underflow_bins=True,
+                #                                                                                   debugging_dir=os.path.join(this_output_dir, 'unfolded_alt_chi2_debug'))
+                #     print('unfolded chi2 (alt MC):', unfolded_alt_chi2, unfolded_alt_ndf, unfolded_alt_chi2/unfolded_alt_ndf, unfolded_alt_p)
 
                 region['alt_unfolder'] = alt_unfolder
 
