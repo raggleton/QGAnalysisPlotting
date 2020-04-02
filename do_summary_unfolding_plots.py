@@ -100,6 +100,8 @@ class SummaryPlotter(object):
         """Do plot of mean lambda vs pt, for the dijet cen+fwd and zpj regions, for a given angle/jet algo/grooming"""
         df = self.df
         mask = ((df['angle'] == angle.var) & (df['jet_algo'] == jet_algo['name']) & (df['isgroomed'] == do_groomed))
+        if not mask.any():
+            return
 
         region_name = 'Dijet_central'
         if do_groomed:
@@ -258,6 +260,8 @@ class SummaryPlotter(object):
         """Do plot of RMS lambda vs pt, for the dijet cen+fwd and zpj regions, for a given angle/jet algo/grooming"""
         df = self.df
         mask = ((df['angle'] == angle.var) & (df['jet_algo'] == jet_algo['name']) & (df['isgroomed'] == do_groomed))
+        if not mask.any():
+            return
 
         region_name = 'Dijet_central'
         if do_groomed:
@@ -615,38 +619,53 @@ if __name__ == "__main__":
 
         print(df.head())
 
-        all_jet_algos = [
-            {'src': args.ak4source, 'label': 'AK4 PUPPI', 'name': 'ak4puppi'},
-            {'src': args.ak8source, 'label': 'AK8 PUPPI', 'name': 'ak8puppi'}
-        ]
-        jet_algos = [j for j in all_jet_algos if j['name'] in df['jet_algo'].unique()]
+    # Filter only regions/algos/angles in the dataframe, since it could have
+    # been modified earlier
+    all_jet_algos = [
+        {'src': args.ak4source, 'label': 'AK4 PUPPI', 'name': 'ak4puppi'},
+        {'src': args.ak8source, 'label': 'AK8 PUPPI', 'name': 'ak8puppi'}
+    ]
+    jet_algos = [j for j in all_jet_algos if j['name'] in df['jet_algo'].unique()]
+    print("Plotting jet_algos:", jet_algos)
 
-        all_regions = [
-            get_dijet_config('', central=True, groomed=False),
-            get_dijet_config('', central=False, groomed=False),
-            get_dijet_config('', central=True, groomed=True),
-            get_dijet_config('', central=False, groomed=True),
-            get_zpj_config('', groomed=False),
-            get_zpj_config('', groomed=True),
-        ]
-        regions = [r for r in all_regions if r['name'] in df['region'].unique()]
-        angles = [a for a in qgc.COMMON_VARS if a.var in df['angle'].unique()]
+    all_regions = [
+        get_dijet_config('', central=True, groomed=False),
+        get_dijet_config('', central=False, groomed=False),
+        get_dijet_config('', central=True, groomed=True),
+        get_dijet_config('', central=False, groomed=True),
+        get_zpj_config('', groomed=False),
+        get_zpj_config('', groomed=True),
+    ]
+    regions = [r for r in all_regions if r['name'] in df['region'].unique()]
+    print("Plotting regions:", regions)
+
+    angles = [a for a in qgc.COMMON_VARS if a.var in df['angle'].unique()]
+    print("Plotting angles:", angles)
 
     # --------------------------------------------------------------------------
     # Do all the plotting
     # --------------------------------------------------------------------------
     plotter = SummaryPlotter(jet_algos,
-                             regions,  # not used
+                             regions,
                              angles,
                              qgc.PT_UNFOLD_DICT['signal_gen'],
                              qgc.PT_UNFOLD_DICT['signal_zpj_gen'],
                              df,
                              args.outputDir,
                              has_data=True)
-    plotter.plot_dijet_zpj_means_vs_pt_all()
-    plotter.plot_dijet_means_vs_pt_all()
-    plotter.plot_zpj_means_vs_pt_all()
+    
+    has_dijet = any(["Dijet" in r['name'] for r in regions])
+    has_zpj = any(["ZPlusJet" in r['name'] for r in regions])
+    
+    if has_dijet:
+        plotter.plot_dijet_means_vs_pt_all()
+        # plotter.plot_dijet_rms_vs_pt_all()
+    
+    if has_zpj:
+        plotter.plot_zpj_means_vs_pt_all()
+        # plotter.plot_zpj_rms_vs_pt_all()
+    
+    if has_dijet and has_zpj:
+        plotter.plot_dijet_zpj_means_vs_pt_all()
+        # plotter.plot_dijet_zpj_rms_vs_pt_all()
 
-    plotter.plot_dijet_zpj_rms_vs_pt_all()
-    plotter.plot_dijet_rms_vs_pt_all()
-    plotter.plot_zpj_rms_vs_pt_all()
