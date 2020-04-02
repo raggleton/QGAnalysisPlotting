@@ -16,6 +16,8 @@ import pandas as pd
 from itertools import product
 from array import array
 from math import sqrt
+import lzma
+import pickle
 
 import ROOT
 from MyStyle import My_Style
@@ -26,12 +28,13 @@ My_Style.cd()
 import common_utils as cu
 import qg_common as qgc
 import qg_general_plots as qgp
-from my_unfolder import MyUnfolder, unfolder_from_tdir, HistBinChopper, unpack_unfolding_root_file
+from my_unfolder import MyUnfolder, HistBinChopper
 from my_unfolder_plotter import MyUnfolderPlotter
 from unfolding_config import get_dijet_config, get_zpj_config
 
 
 ROOT.gErrorIgnoreLevel = ROOT.kWarning
+ROOT.gErrorIgnoreLevel = ROOT.kError
 ROOT.PyConfig.IgnoreCommandLineOptions = True
 ROOT.gROOT.SetBatch(1)
 ROOT.TH1.SetDefaultSumw2()
@@ -495,26 +498,28 @@ if __name__ == "__main__":
                         print("! Warning ! cannot find angle dir", angle_output_dir, '- skipping angle', angle.var)
                         continue
 
-                    # TODO: put this in a method / class
-                    # Check if ROOT file exists
-                    root_filename = os.path.join(angle_output_dir, "unfolding_result.root")
-                    if not os.path.isfile(root_filename):
-                        print("! Warning ! cannot fine unfolding ROOT file", root_filename, ' - skipping angle')
+                    # Get region dict from pickle file
+                    pickle_filename = os.path.join(angle_output_dir, "unfolding_result.pkl")
+                    if not os.path.isfile(pickle_filename):
+                        print("! Warning ! cannot fine unfolding pickle file", pickle_filename, ' - skipping angle')
+                    with lzma.open(pickle_filename, 'r') as f:
+                        unpickled_region = pickle.load(f)
 
-                    print('Unpacking', region['name'], angle.name)
+                    # check
+                    if region['name'] != unpickled_region['name']:
+                        raise RuntimeError("Mismatch region name")
+
+                    region.update(unpickled_region)
+
                     append = "%s_%s" % (region['name'], angle.var)  # common str to put on filenames, etc. don't need angle_prepend as 'groomed' in region name
-                    input_tfile = cu.TFileCacher(root_filename)  # keep this here otherwise crashes
-                    unpack_dict = unpack_unfolding_root_file(input_tfile, region, angle, do_alt_response=True, do_model_systs=False, do_pdf_systs=False)
-                    unfolder = unpack_dict['unfolder']
-                    unreg_unfolder = unpack_dict['unreg_unfolder']
-                    alt_unfolder = unpack_dict['alt_unfolder']
-                    alt_hist_truth = unpack_dict['alt_hist_truth']
-                    print(alt_hist_truth)
-                    hbc = HistBinChopper(generator_binning=unfolder.generator_binning.FindNode("generatordistribution"),
-                                         detector_binning=unfolder.detector_binning.FindNode("detectordistribution"))
-                    hbc.add_obj("unfolded", unfolder.unfolded)
-                    hbc.add_obj("unfolded_stat_err", unfolder.unfolded_stat_err)
+                    print("*"*120)
+                    print("Region/var: %s" % (append))
+                    print("*"*120)
+
+                    unfolder = region['unfolder']
+                    hbc = unfolder.hist_bin_chopper
                     hbc.add_obj("hist_truth", unfolder.hist_truth)
+                    alt_hist_truth = region.get("alt_hist_mc_gen", None)
                     hbc.add_obj("alt_hist_truth", alt_hist_truth)
 
                     # Iterate through pt bins, get lambda histogram for that bin,
