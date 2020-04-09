@@ -65,6 +65,8 @@ class SummaryPlotter(object):
     @staticmethod
     def data_to_hist(data, data_err, bins):
         if len(data) != len(bins)-1:
+            print("data:", data)
+            print("bins:", bins)
             raise RuntimeError("len(data) != len(bins)-1")
         h = ROOT.TH1D("h_"+cu.get_unique_str(), "", len(bins)-1, array('d', bins))
         for ind, (y, err) in enumerate(zip(data, data_err), 1):
@@ -83,7 +85,7 @@ class SummaryPlotter(object):
     def plot_dijet_means_vs_pt_all(self):
         """Plot mean vs pt for dijet (cen+fwd) on one plot,
         per angle, per jet algo, per groomed/ungroomed"""
-        print('plot_dijet_zpj_means_vs_pt_all...')
+        print('plot_dijet_means_vs_pt_all...')
         for jet_algo, angle, groomed in product(self.jet_algos, self.angles, [False, True]):
             print("  ...doing", jet_algo['label'], angle.name, 'groomed' if groomed else 'ungroomed')
             self.plot_dijet_zpj_means_vs_pt_one_angle_one_jet(angle, jet_algo, do_groomed=groomed, output_dir='%s/plot_dijet_means_vs_pt_all' % self.output_dir, do_zpj=False)
@@ -91,7 +93,7 @@ class SummaryPlotter(object):
     def plot_zpj_means_vs_pt_all(self):
         """Plot mean vs pt for zpj on one plot,
         per angle, per jet algo, per groomed/ungroomed"""
-        print('plot_dijet_zpj_means_vs_pt_all...')
+        print('plot_zpj_means_vs_pt_all...')
         for jet_algo, angle, groomed in product(self.jet_algos, self.angles, [False, True]):
             print("  ...doing", jet_algo['label'], angle.name, 'groomed' if groomed else 'ungroomed')
             self.plot_dijet_zpj_means_vs_pt_one_angle_one_jet(angle, jet_algo, do_groomed=groomed, output_dir='%s/plot_zpj_means_vs_pt_all' % self.output_dir, do_dijet=False)
@@ -266,7 +268,7 @@ class SummaryPlotter(object):
     def plot_dijet_rms_vs_pt_all(self):
         """Plot mean vs pt for dijet (cen+fwd) on one plot,
         per angle, per jet algo, per groomed/ungroomed"""
-        print('plot_dijet_zpj_rms_vs_pt_all...')
+        print('plot_dijet_rms_vs_pt_all...')
         for jet_algo, angle, groomed in product(self.jet_algos, self.angles, [False, True]):
             print("  ...doing", jet_algo['label'], angle.name, 'groomed' if groomed else 'ungroomed')
             self.plot_dijet_zpj_rms_vs_pt_one_angle_one_jet(angle, jet_algo, do_groomed=groomed, output_dir='%s/plot_dijet_rms_vs_pt_all' % self.output_dir, do_zpj=False)
@@ -274,7 +276,7 @@ class SummaryPlotter(object):
     def plot_zpj_rms_vs_pt_all(self):
         """Plot mean vs pt for zpj on one plot,
         per angle, per jet algo, per groomed/ungroomed"""
-        print('plot_dijet_zpj_rms_vs_pt_all...')
+        print('plot_zpj_rms_vs_pt_all...')
         for jet_algo, angle, groomed in product(self.jet_algos, self.angles, [False, True]):
             print("  ...doing", jet_algo['label'], angle.name, 'groomed' if groomed else 'ungroomed')
             self.plot_dijet_zpj_rms_vs_pt_one_angle_one_jet(angle, jet_algo, do_groomed=groomed, output_dir='%s/plot_zpj_rms_vs_pt_all' % self.output_dir, do_dijet=False)
@@ -669,7 +671,7 @@ if __name__ == "__main__":
         {'src': args.ak8source, 'label': 'AK8 PUPPI', 'name': 'ak8puppi'}
     ]
     jet_algos = [j for j in all_jet_algos if j['name'] in df['jet_algo'].unique()]
-    print("Plotting jet_algos:", jet_algos)
+    # print("Plotting jet_algos:", jet_algos)
 
     all_regions = [
         get_dijet_config('', central=True, groomed=False),
@@ -680,10 +682,10 @@ if __name__ == "__main__":
         get_zpj_config('', groomed=True),
     ]
     regions = [r for r in all_regions if r['name'] in df['region'].unique()]
-    print("Plotting regions:", regions)
+    # print("Plotting regions:", regions)
 
     angles = [a for a in qgc.COMMON_VARS if a.var in df['angle'].unique()]
-    print("Plotting angles:", angles)
+    # print("Plotting angles:", angles)
 
     # --------------------------------------------------------------------------
     # Do all the plotting
@@ -696,10 +698,10 @@ if __name__ == "__main__":
                              df,
                              args.outputDir,
                              has_data=True)
-    
+
     has_dijet = any(["Dijet" in r['name'] for r in regions])
     has_zpj = any(["ZPlusJet" in r['name'] for r in regions])
-    
+
     if has_dijet:
         plotter.plot_dijet_means_vs_pt_all()
         # plotter.plot_dijet_rms_vs_pt_all()
@@ -707,7 +709,7 @@ if __name__ == "__main__":
     if has_zpj:
         plotter.plot_zpj_means_vs_pt_all()
         # plotter.plot_zpj_rms_vs_pt_all()
-    
+
     if has_dijet and has_zpj:
         plotter.plot_dijet_zpj_means_vs_pt_all()
         # plotter.plot_dijet_zpj_rms_vs_pt_all()
