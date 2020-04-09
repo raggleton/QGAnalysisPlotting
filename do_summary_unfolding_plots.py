@@ -491,6 +491,10 @@ if __name__ == "__main__":
                         help="Source directory for AK8 jets (should be the one made by unfolding.py")
     parser.add_argument("--h5input",
                         help="Read data from H5 input file (from previous running of this script)")
+    parser.add_argument("--h5output",
+                        default=None,
+                        help=("Store data as H5 output file (ignored if --h5input used). "
+                              "Default if <outputDir>/store.h5"))
     parser.add_argument("--outputDir",
                         default=None,
                         help='Output directory (default is the source dir')
@@ -640,8 +644,10 @@ if __name__ == "__main__":
         print(len(df.index), 'entries in dataframe')
         print(df.dtypes)
 
+        if args.h5output is None:
+            args.h5output = os.path.join(args.outputDir, "store.h5")
         # need format='table' to store category dtype
-        df.to_hdf(os.path.join(args.outputDir, 'store.h5'), key='df', format='table')
+        df.to_hdf(args.h5output, key='df', format='table')
 
     else:
         # ----------------------------------------------------------------------
