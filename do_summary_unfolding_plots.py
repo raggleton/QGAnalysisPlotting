@@ -13,7 +13,8 @@ os.nice(10)
 import sys
 import argparse
 import pandas as pd
-from itertools import product
+import numpy as np
+from itertools import product, chain
 from array import array
 from math import sqrt
 import lzma
@@ -39,6 +40,56 @@ ROOT.PyConfig.IgnoreCommandLineOptions = True
 ROOT.gROOT.SetBatch(1)
 ROOT.TH1.SetDefaultSumw2()
 
+# import hunter
+# hunter.trace(module='my_unfolder', action=hunter.CallPrinter)
+
+
+COMMON_STYLE_DICT = {
+    "line_width": 2,
+    "dijet_cen_color": ROOT.kBlack,
+    "dijet_fwd_color": ROOT.kRed,
+    "zpj_color": ROOT.kBlue,
+    "jet_pt_units_str": "Jet p_{T} [GeV]",
+
+    "data_line_style": 1,
+    "data_color": ROOT.kBlack,
+
+    "mc_line_style": 2,
+    # format: 3ijk,
+    # i=distance between lines,
+    # j=angle between 0 and 90 degrees (5 = not drawn),
+    # k=angle between 90 and 180 degrees (5 = not drawn)
+    "mc_fill_style": 3445,
+    "mc_color": ROOT.kBlue+1,
+
+    "mc_alt_line_style": 3,
+    "mc_alt_fill_style": 3454,
+    "mc_alt_color": ROOT.kAzure+1,
+}
+
+
+def create_angle_label(angle, do_groomed=False):
+    angle_prepend = "Groomed " if do_groomed else ""
+    if "charged" in angle.var:
+        if angle_prepend != "":
+            angle_prepend += "c"
+        else:
+            angle_prepend += "C"
+        angle_prepend += "harged-only "
+
+    # this_angle_name = angle.name
+    # if (angle_prepend != ""
+    #     and 'LHA' not in this_angle_name
+    #     and "_{T}" not in this_angle_name
+    #     and "PUPPI" not in this_angle_name):
+    #     # lower case if Groomed..., but be careful of e.g. pTD, LHA
+    #     this_angle_name = this_angle_name[0].lower() + this_angle_name[1:]
+
+    # for plot axis titles
+    angle_str = "{prepend}{lambda_str}".format(prepend=angle_prepend,
+                                                 lambda_str=angle.lambda_str)
+    return angle_str
+
 
 class SummaryPlotter(object):
     """Do lots of summary plots"""
@@ -59,6 +110,7 @@ class SummaryPlotter(object):
         self.output_fmt = 'pdf'
         self.output_dir = output_dir
         self.has_data = has_data
+        self.is_preliminary = True
         self.mc_label = 'MG+Pythia8'
         self.alt_mc_label = 'Herwig++'
 
@@ -136,27 +188,27 @@ class SummaryPlotter(object):
             zpj_hist_truth = self.data_to_hist(zpj_data['mean_truth'], zpj_data['mean_err_truth'], self.pt_bins_zpj[:-2])
             zpj_hist_alt_truth = self.data_to_hist(zpj_data['mean_alt_truth'], zpj_data['mean_err_alt_truth'], self.pt_bins_zpj[:-2])
 
-        # unify this?
-        dijet_cen_col = ROOT.kBlack
-        dijet_fwd_col = ROOT.kRed
-        zpj_col = ROOT.kBlue
+        dijet_cen_col = COMMON_STYLE_DICT['dijet_cen_color']
+        dijet_fwd_col = COMMON_STYLE_DICT['dijet_fwd_color']
+        zpj_col = COMMON_STYLE_DICT['zpj_color']
         m_size = 1
+        lw = COMMON_STYLE_DICT['line_width']
         entries = []
         # Spaces in legend labels are important for padding
         # Add data
         if do_dijet:
             entries.extend([
                 Contribution(dijet_central_hist, label=' Dijet (central)',
-                             line_color=dijet_cen_col, line_width=2,
+                             line_color=dijet_cen_col, line_width=lw,
                              marker_color=dijet_cen_col, marker_style=cu.Marker.get('circle', True), marker_size=m_size),
                 Contribution(dijet_forward_hist, label=' Dijet (forward)',
-                             line_color=dijet_fwd_col, line_width=2,
+                             line_color=dijet_fwd_col, line_width=lw,
                              marker_color=dijet_fwd_col, marker_style=cu.Marker.get('square', True), marker_size=m_size),
             ])
         if do_zpj:
             entries.extend([
                 Contribution(zpj_hist, label=' Z+jet',
-                             line_color=zpj_col, line_width=2,
+                             line_color=zpj_col, line_width=lw,
                              marker_color=zpj_col, marker_style=cu.Marker.get('triangleUp', True), marker_size=m_size),
             ])
         # Add nominal MC
@@ -164,18 +216,18 @@ class SummaryPlotter(object):
             entries.extend([
                 # TODO: make truth plotting optional, also plot alternate generators
                 Contribution(dijet_central_hist_truth, label='#splitline{ Dijet (central)  }{ [%s]}' % (self.mc_label),
-                             line_color=dijet_cen_col, line_width=2, line_style=2,
+                             line_color=dijet_cen_col, line_width=lw, line_style=COMMON_STYLE_DICT['mc_line_style'],
                              marker_color=dijet_cen_col, marker_style=cu.Marker.get('circle', False), marker_size=0,
                              subplot=dijet_central_hist),
                 Contribution(dijet_forward_hist_truth, label='#splitline{ Dijet (forward)  }{ [%s]}' % (self.mc_label),
-                             line_color=dijet_fwd_col, line_width=2, line_style=2,
+                             line_color=dijet_fwd_col, line_width=lw, line_style=COMMON_STYLE_DICT['mc_line_style'],
                              marker_color=dijet_fwd_col, marker_style=cu.Marker.get('square', False), marker_size=0,
                              subplot=dijet_forward_hist),
             ])
         if do_zpj:
             entries.extend([
                 Contribution(zpj_hist_truth, label='#splitline{ Z+jet  }{ [%s]}' % (self.mc_label),
-                             line_color=zpj_col, line_width=2, line_style=2,
+                             line_color=zpj_col, line_width=lw, line_style=COMMON_STYLE_DICT['mc_line_style'],
                              marker_color=zpj_col, marker_style=cu.Marker.get('triangleUp', False), marker_size=0,
                              subplot=zpj_hist),
             ])
@@ -183,47 +235,39 @@ class SummaryPlotter(object):
         if do_dijet:
             entries.extend([
                 Contribution(dijet_central_hist_alt_truth, label='#splitline{ Dijet (central)  }{ [%s]}' % (self.alt_mc_label),
-                             line_color=dijet_cen_col, line_width=2, line_style=3,
+                             line_color=dijet_cen_col, line_width=lw, line_style=COMMON_STYLE_DICT['mc_alt_line_style'],
                              marker_color=dijet_cen_col, marker_style=cu.Marker.get('circle', False), marker_size=0,
                              subplot=dijet_central_hist),
                 Contribution(dijet_forward_hist_alt_truth, label='#splitline{ Dijet (forward)  }{ [%s]}' % (self.alt_mc_label),
-                             line_color=dijet_fwd_col, line_width=2, line_style=3,
+                             line_color=dijet_fwd_col, line_width=lw, line_style=COMMON_STYLE_DICT['mc_alt_line_style'],
                              marker_color=dijet_fwd_col, marker_style=cu.Marker.get('square', False), marker_size=0,
                              subplot=dijet_forward_hist),
             ])
         if do_zpj:
             entries.extend([
                 Contribution(zpj_hist_alt_truth, label='#splitline{ Z+jet}{ [%s]}' % (self.alt_mc_label),
-                             line_color=zpj_col, line_width=2, line_style=3,
+                             line_color=zpj_col, line_width=2, line_style=COMMON_STYLE_DICT['mc_alt_line_style'],
                              marker_color=zpj_col, marker_style=cu.Marker.get('triangleUp', False), marker_size=0,
                              subplot=zpj_hist),
             ])
 
-        angle_prepend = "Groomed " if do_groomed else ""
-        this_angle_name = angle.name
-        if (angle_prepend != ""
-            and 'LHA' not in this_angle_name
-            and "_{T}" not in this_angle_name
-            and "PUPPI" not in this_angle_name):
-            # lower case if Groomed..., but be careful of e.g. pTD, LHA
-            this_angle_name = this_angle_name[0].lower() + this_angle_name[1:]
         # for plot axis titles
-        angle_str = "#LT {prepend}{name}  {lambda_str} #GT".format(prepend=angle_prepend,
-                                                             name=this_angle_name,
-                                                             lambda_str=angle.lambda_str)
+        angle_str = "#LT %s #GT" % create_angle_label(angle, do_groomed)
+
         h_max = max([c.obj.GetMaximum() for c in entries])
         h_min = min([c.obj.GetMinimum(1E-10) for c in entries])
         h_range = h_max - h_min
         ylim = (max(0, h_min-(h_range*0.2)), h_max + (h_range*0.8))
         plot = Plot(entries,
                     what='hist',
-                    xtitle='Jet p_{T} [GeV]',
+                    xtitle=COMMON_STYLE_DICT['jet_pt_units_str'],
                     ytitle=angle_str,
                     title="%s jets" % (jet_algo['label']),
                     # ylim=(0, h_max*1.75),
                     # ylim=(h_min*0.75, h_max*1.5),
                     ylim=ylim,
                     has_data=self.has_data,
+                    is_preliminary=self.is_preliminary,
                     subplot_type='ratio',
                     subplot_title='MC / Data',
                     subplot_limits=(0.5, 1.5) if self.has_data else (0.9, 1.1)
@@ -314,27 +358,27 @@ class SummaryPlotter(object):
             zpj_hist_alt_truth = self.data_to_hist(zpj_data['rms_alt_truth'], zpj_data['rms_err_alt_truth'], self.pt_bins_zpj[:-2])
 
         # unify this?
-        dijet_cen_col = ROOT.kBlack
-        dijet_fwd_col = ROOT.kRed
-        zpj_col = ROOT.kBlue
+        dijet_cen_col = COMMON_STYLE_DICT['dijet_cen_color']
+        dijet_fwd_col = COMMON_STYLE_DICT['dijet_fwd_color']
+        zpj_col = COMMON_STYLE_DICT['zpj_color']
         m_size = 1
-        mc_label='MG+Pythia8'
+        lw = COMMON_STYLE_DICT['line_width']
         entries = []
         # Spaces in legend labels are important for padding
         # Add data
         if do_dijet:
             entries.extend([
                 Contribution(dijet_central_hist, label=' Dijet (central)',
-                             line_color=dijet_cen_col, line_width=2,
+                             line_color=dijet_cen_col, line_width=lw,
                              marker_color=dijet_cen_col, marker_style=cu.Marker.get('circle', True), marker_size=m_size),
                 Contribution(dijet_forward_hist, label=' Dijet (forward)',
-                             line_color=dijet_fwd_col, line_width=2,
+                             line_color=dijet_fwd_col, line_width=lw,
                              marker_color=dijet_fwd_col, marker_style=cu.Marker.get('square', True), marker_size=m_size),
             ])
         if do_zpj:
             entries.extend([
                 Contribution(zpj_hist, label=' Z+jet',
-                             line_color=zpj_col, line_width=2,
+                             line_color=zpj_col, line_width=lw,
                              marker_color=zpj_col, marker_style=cu.Marker.get('triangleUp', True), marker_size=m_size),
             ])
         # Add nominal MC
@@ -342,18 +386,18 @@ class SummaryPlotter(object):
             entries.extend([
                 # TODO: make truth plotting optional, also plot alternate generators
                 Contribution(dijet_central_hist_truth, label='#splitline{ Dijet (central)  }{ [%s]}' % (self.mc_label),
-                             line_color=dijet_cen_col, line_width=2, line_style=2,
+                             line_color=dijet_cen_col, line_width=lw, line_style=COMMON_STYLE_DICT['mc_line_style'],
                              marker_color=dijet_cen_col, marker_style=cu.Marker.get('circle', False), marker_size=0,
                              subplot=dijet_central_hist),
                 Contribution(dijet_forward_hist_truth, label='#splitline{ Dijet (forward)  }{ [%s]}' % (self.mc_label),
-                             line_color=dijet_fwd_col, line_width=2, line_style=2,
+                             line_color=dijet_fwd_col, line_width=lw, line_style=COMMON_STYLE_DICT['mc_line_style'],
                              marker_color=dijet_fwd_col, marker_style=cu.Marker.get('square', False), marker_size=0,
                              subplot=dijet_forward_hist),
             ])
         if do_zpj:
             entries.extend([
                 Contribution(zpj_hist_truth, label='#splitline{ Z+jet  }{ [%s]}' % (self.mc_label),
-                             line_color=zpj_col, line_width=2, line_style=2,
+                             line_color=zpj_col, line_width=lw, line_style=COMMON_STYLE_DICT['mc_line_style'],
                              marker_color=zpj_col, marker_style=cu.Marker.get('triangleUp', False), marker_size=0,
                              subplot=zpj_hist),
             ])
@@ -361,42 +405,33 @@ class SummaryPlotter(object):
         if do_dijet:
             entries.extend([
                 Contribution(dijet_central_hist_alt_truth, label='#splitline{ Dijet (central)  }{ [%s]}' % (self.alt_mc_label),
-                             line_color=dijet_cen_col, line_width=2, line_style=3,
+                             line_color=dijet_cen_col, line_width=lw, line_style=COMMON_STYLE_DICT['mc_alt_line_style'],
                              marker_color=dijet_cen_col, marker_style=cu.Marker.get('circle', False), marker_size=0,
                              subplot=dijet_central_hist),
                 Contribution(dijet_forward_hist_alt_truth, label='#splitline{ Dijet (forward)  }{ [%s]}' % (self.alt_mc_label),
-                             line_color=dijet_fwd_col, line_width=2, line_style=3,
+                             line_color=dijet_fwd_col, line_width=lw, line_style=COMMON_STYLE_DICT['mc_alt_line_style'],
                              marker_color=dijet_fwd_col, marker_style=cu.Marker.get('square', False), marker_size=0,
                              subplot=dijet_forward_hist),
             ])
         if do_zpj:
             entries.extend([
                 Contribution(zpj_hist_alt_truth, label='#splitline{ Z+jet}{ [%s]}' % (self.alt_mc_label),
-                             line_color=zpj_col, line_width=2, line_style=3,
+                             line_color=zpj_col, line_width=lw, line_style=COMMON_STYLE_DICT['mc_alt_line_style'],
                              marker_color=zpj_col, marker_style=cu.Marker.get('triangleUp', False), marker_size=0,
                              subplot=zpj_hist),
             ])
 
-        angle_prepend = "Groomed " if do_groomed else ""
-        this_angle_name = angle.name
-        if (angle_prepend != ""
-            and 'LHA' not in this_angle_name
-            and "_{T}" not in this_angle_name
-            and "PUPPI" not in this_angle_name):
-            # lower case if Groomed..., but be careful of e.g. pTD, LHA
-            this_angle_name = this_angle_name[0].lower() + this_angle_name[1:]
-        # for plot axis titles
-        angle_str = "RMS {prepend}{name}  {lambda_str}".format(prepend=angle_prepend,
-                                                             name=this_angle_name,
-                                                             lambda_str=angle.lambda_str)
+        angle_str = "RMS %s" % create_angle_label(angle, do_groomed)
+
         h_max = max([c.obj.GetMaximum() for c in entries])
         plot = Plot(entries,
                     what='hist',
-                    xtitle='Jet p_{T} [GeV]',
+                    xtitle=COMMON_STYLE_DICT['jet_pt_units_str'],
                     ytitle=angle_str,
                     title="%s jets" % (jet_algo['label']),
                     # ylim=(0, h_max*1.75),
                     has_data=self.has_data,
+                    is_preliminary=self.is_preliminary,
                     subplot_type='ratio',
                     subplot_title='MC / Data',
                     subplot_limits=(0.5, 1.5) if self.has_data else (0.9, 1.1))
@@ -430,15 +465,370 @@ class SummaryPlotter(object):
         groomed_str = '_groomed' if do_groomed else ''
         plot.save("%s/dijet_zpj_rms_vs_pt_%s%s_%s.%s" % (output_dir, angle.var, groomed_str, jet_algo['name'], self.output_fmt))
 
+    @staticmethod
+    def _make_hist_from_values(value_error_pairs, bins=None, title="", name="", bin_names=None):
+        name = name or cu.get_unique_str()
+        if bins is not None:
+            nbins = len(bins)-1
+            if len(value_error_pairs) != nbins:
+                return ValueError("len(value) != len(bins)-1")
+            h = ROOT.TH1D(name, title, bins)
+        else:
+            nbins = len(value_error_pairs)
+            h = ROOT.TH1D(name, title, nbins, 0, nbins)
+        if bin_names is not None:
+            if len(bin_names) != nbins:
+                raise ValueError("len(bin_names) != len(value_error_pairs)")
+        for i, (v, e) in enumerate(value_error_pairs, 1):
+            if bin_names is not None:
+                h.GetXaxis().SetBinLabel(i, bin_names[i-1])
+            h.SetBinContent(i, v)
+            h.SetBinError(i, e)
+        return h
+
+    @staticmethod
+    def _style_data_hist(hist):
+        hist.SetLineStyle(COMMON_STYLE_DICT['data_line_style'])
+
+    @staticmethod
+    def _style_mc_hist(hist):
+        # hist.SetLineStyle(COMMON_STYLE_DICT['mc_line_style'])
+        hist.SetLineColor(COMMON_STYLE_DICT['mc_color'])
+        hist.SetFillStyle(COMMON_STYLE_DICT['mc_fill_style'])
+        hist.SetFillColor(COMMON_STYLE_DICT['mc_color'])
+        hist.SetMarkerColor(COMMON_STYLE_DICT['mc_color'])
+        hist.SetMarkerSize(0)
+
+    @staticmethod
+    def _style_alt_mc_hist(hist):
+        # hist.SetLineStyle(COMMON_STYLE_DICT['mc_alt_line_style'])
+        hist.SetLineColor(COMMON_STYLE_DICT['mc_alt_color'])
+        hist.SetFillStyle(COMMON_STYLE_DICT['mc_alt_fill_style'])
+        hist.SetFillColor(COMMON_STYLE_DICT['mc_alt_color'])
+        hist.SetMarkerColor(COMMON_STYLE_DICT['mc_alt_color'])
+        hist.SetMarkerSize(0)
+
+    @staticmethod
+    def calc_hists_max_min(hists):
+        y_up, y_down = -999999, 999999
+        for h in hists:
+            y_up = max(max([h.GetBinContent(i) + h.GetBinError(i) for i in range(1, h.GetNbinsX()+1)]), y_up)
+            y_down = min(min([h.GetBinContent(i) - h.GetBinError(i) for i in range(1, h.GetNbinsX()+1)]), y_down)
+        return y_up, y_down
+
+    def plot_mean_rms_bins_summary(self, selections, output_file):
+
+        # Construct data for plots
+        mean_hists, rms_hists = [], []
+
+        gc_stash = [] # to stop stuff being deleted
+
+        for selection_group in selections:
+
+            mean_entries_data = []
+            mean_entries_mc = []
+            mean_entries_alt_mc = []
+
+            rms_entries_data = []
+            rms_entries_mc = []
+            rms_entries_alt_mc = []
+
+            labels = []
+
+            for query, label in selection_group['selections']:
+                print(query)
+                results = self.df.query(query)
+                if len(results.index) != 1:
+                    print(query)
+                    print(results)
+                    raise ValueError("Got != 1 results, check query")
+
+                labels.append(label)
+                mean_entries_data.append([results['mean'], results['mean_err']])
+                mean_entries_mc.append([results['mean_truth'], results['mean_truth']*0.05]) # DUMMY
+                mean_entries_alt_mc.append([results['mean_alt_truth'], results['mean_alt_truth']*0.05]) # DUMMY
+                # mean_entries_mc.append([results['mean_truth'], results['mean_err_truth']])
+                # mean_entries_alt_mc.append([results['mean_alt_truth'], results['mean_err_alt_truth']])
+
+                rms_entries_data.append([results['rms'], results['rms_err']])
+                rms_entries_mc.append([results['rms_truth'], results['rms_truth']*0.05]) # DUMMY
+                rms_entries_alt_mc.append([results['rms_alt_truth'], results['rms_alt_truth']*0.05]) # DUMMY
+                # rms_entries_mc.append([results['rms_truth'], results['rms_err_truth']])
+                # rms_entries_alt_mc.append([results['rms_alt_truth'], results['rms_err_alt_truth']])
+
+            bin_names = labels
+            hist_mean_data = self._make_hist_from_values(mean_entries_data, bin_names=bin_names)
+            self._style_data_hist(hist_mean_data)
+            hist_mean_mc = self._make_hist_from_values(mean_entries_mc, bin_names=bin_names)
+            self._style_mc_hist(hist_mean_mc)
+            hist_mean_alt_mc = self._make_hist_from_values(mean_entries_alt_mc, bin_names=bin_names)
+            self._style_alt_mc_hist(hist_mean_alt_mc)
+
+            mean_hists.append([hist_mean_data, hist_mean_mc, hist_mean_alt_mc])
+
+            hist_rms_data = self._make_hist_from_values(rms_entries_data, bin_names=bin_names)
+            self._style_data_hist(hist_rms_data)
+            hist_rms_mc = self._make_hist_from_values(rms_entries_mc, bin_names=bin_names)
+            self._style_mc_hist(hist_rms_mc)
+            hist_rms_alt_mc = self._make_hist_from_values(rms_entries_alt_mc, bin_names=bin_names)
+            self._style_alt_mc_hist(hist_rms_alt_mc)
+
+            rms_hists.append([hist_rms_data, hist_rms_mc, hist_rms_alt_mc])
+
+        # Setup canvas and pads
+        canvas = ROOT.TCanvas("c_"+cu.get_unique_str(), "", 1200, 600)
+        canvas.SetBottomMargin(0.0)
+        canvas.SetTopMargin(0.0)
+        canvas.SetLeftMargin(0.0)
+        canvas.SetRightMargin(0.0)
+        canvas.cd()
+
+        # For each selection group, create 2 pads, one for mean, one for RMS
+        mean_pads, rms_pads = [], []
+        n_pads = len(selections)
+
+        right_margin = 0.12 # gap between right end of plots and edge of canvas, used for legend
+        pad_left_titles_gap = 0.01 # gap between pad_left_titles and all plots
+        pad_to_pad_gap = 0.005  # gap between plot pad columns
+        # how far in from the left the first plotting pad starts. used for y axis title
+        pad_offset_x = 0.04
+        # figure out width per pad - get total width available, then divide by number of pads
+        pad_width = (1 - pad_offset_x - right_margin - (pad_to_pad_gap*(n_pads - 1))) / n_pads
+        pad_offset_bottom = 0.01 # spacing between bottom of RMS pad and canvas edge
+        pad_offset_top = 0.01  # spacing between top of mean pad and canvas edge
+
+        epsilon = 0.0  # fudge to avoid overlapping axis labels, but doesn't work
+
+        pad_height = 1-pad_offset_top - pad_offset_bottom  # total space available for mean & RMS pads
+        pad_mid_height = (0.5*pad_height) + pad_offset_bottom
+
+        # per-pad margins: these determine where the hist axes lie, and are fractions of the pad width/height
+        pad_right_margin = 0.02
+        pad_left_margin = 0.2
+        pad_top_bottom_margin = 0.16  # use for both top margin on mean plots, and bottom margin on rms plots, to get equal sized plots
+        # extra bit of bottom margin for x axis labels
+        rms_pad_bottom_extra = 0.33
+        # now recalc mid height, to give half more space to lower plot
+        # need to scale by lower pad height, since padding is a fraction of pad height
+        extra_height = rms_pad_bottom_extra*(pad_mid_height-pad_offset_bottom)
+        pad_mid_height += (1.45*extra_height / 2)  #.75 is a fudge factor... need to figure out properly
+
+        for isel, selection_group in enumerate(selections):
+            canvas.cd()
+            pad_start_x = pad_offset_x + (isel*pad_to_pad_gap) + (isel*pad_width)
+            pad_end_x = pad_start_x + pad_width
+            # Create pad for mean hist - upper half of this column
+            pad_mean = ROOT.TPad(cu.get_unique_str(), "", pad_start_x, pad_mid_height-epsilon, pad_end_x, 1-pad_offset_top)
+            # pad_mean.SetFillColor(isel+2)
+            # pad_mean.SetFillStyle(1001)
+            pad_mean.SetFillStyle(4000)
+            pad_mean.SetBottomMargin(epsilon)
+            pad_mean.SetRightMargin(pad_right_margin)
+            pad_mean.SetLeftMargin(pad_left_margin)
+            pad_mean.SetTopMargin(pad_top_bottom_margin)
+            pad_mean.SetTicks(1, 1)
+            pad_mean.Draw()
+            mean_pads.append(pad_mean)
+
+            canvas.cd()
+            # Create pad for mean hist - lower half of this column
+            pad_rms = ROOT.TPad(cu.get_unique_str(), "", pad_start_x, pad_offset_bottom, pad_end_x, pad_mid_height+epsilon)
+            # pad_rms.SetFillColor(isel+2)
+            # pad_rms.SetFillStyle(3003)
+            # pad_rms.SetFillColor(0)
+            pad_rms.SetFillStyle(4000)
+            pad_rms.SetTopMargin(0)
+            pad_rms.SetRightMargin(pad_right_margin)
+            pad_rms.SetLeftMargin(pad_left_margin)
+            pad_rms.SetBottomMargin(pad_top_bottom_margin+rms_pad_bottom_extra)
+            pad_rms.SetTicks(1, 1)
+            pad_rms.Draw()
+            rms_pads.append(pad_rms)
+
+
+        # Now draw the histograms
+        for isel, (selection_group, mean_pad, mean_hist_group, rms_pad, rms_hist_group) \
+            in enumerate(zip(selections, mean_pads, mean_hists,  rms_pads, rms_hists)):
+            mean_pad.cd()  # this causes a segfault for no reason?
+
+            mean_hist_group[2].Draw("E2")
+            mean_hist_group[1].Draw("E2 L SAME")
+            mean_hist_group[0].Draw("E1 SAME")
+
+            mean_draw_hist = mean_hist_group[2]
+            # remove x axis label
+            xax = mean_draw_hist.GetXaxis()
+            xax.SetLabelSize(0)
+            xax.SetTitleSize(0)
+
+            factor = 1.5
+            xax.SetTickLength(xax.GetTickLength()*factor)
+
+            yax = mean_draw_hist.GetYaxis()
+            label_size_fudge = 1.4
+            yax.SetLabelSize(yax.GetLabelSize()*factor*label_size_fudge)
+            label_offset_fudge = 4
+            yax.SetLabelOffset(yax.GetLabelOffset()*factor*label_offset_fudge)
+            tick_fudge = 2
+            yax.SetTickLength(yax.GetTickLength()*factor*tick_fudge)
+            yax.SetNdivisions(1005)  # fewer big ticks so less chance of overlapping with lower plot
+
+            # Set range using bin contents + error bars
+            y_up, y_down = self.calc_hists_max_min(mean_hist_group)
+            y_range = y_up - y_down
+            down_padding = 0.2 * y_range
+            up_padding = 0.2 * y_range
+            mean_draw_hist.SetMinimum(y_down - down_padding)
+            mean_draw_hist.SetMaximum(y_up + up_padding)
+
+            rms_pad.cd()
+            rms_hist_group[2].Draw("E2 L")
+            rms_hist_group[1].Draw("E2 L SAME")
+            rms_hist_group[0].Draw("E1 SAME")
+
+            rms_draw_hist = rms_hist_group[2]
+            xax = rms_draw_hist.GetXaxis()
+            xax.CenterLabels()
+            xax.LabelsOption("v")
+
+            xax.SetTickLength(xax.GetTickLength()*factor)
+            xax.SetLabelSize(xax.GetLabelSize()*factor*2)
+            xax.SetLabelOffset(xax.GetLabelOffset()*factor)
+
+            yax = rms_draw_hist.GetYaxis()
+            yax.SetLabelSize(yax.GetLabelSize()*factor*label_size_fudge)
+            yax.SetLabelOffset(yax.GetLabelOffset()*factor*label_offset_fudge)
+            yax.SetTickLength(yax.GetTickLength()*factor*tick_fudge*1.5)  # extra bit of fudging, probably becasue pads are sligthly different sizes
+            yax.SetNdivisions(1005)
+
+            # Set range using bin contents + error bars
+            y_up, y_down = self.calc_hists_max_min(rms_hist_group)
+            y_range = y_up - y_down
+            down_padding = 0.2 * y_range
+            up_padding = 0.22 * y_range
+            rms_draw_hist.SetMinimum(y_down - down_padding)
+            rms_draw_hist.SetMaximum(y_up + up_padding)
+
+            # Draw variable name
+            var_latex = ROOT.TLatex()
+            var_latex.SetTextAlign(ROOT.kHAlignCenter + ROOT.kVAlignBottom)
+            var_latex.SetTextSize(0.1)
+            # var_latex.SetTextFont(42)
+            # these are relative to the RMS pad! not the canvas
+            # put in middle of the plot (if 0.5, woud look off-centre)
+            var_x = 0.5*(1-pad_right_margin-pad_left_margin) + pad_left_margin
+            var_y = 0.03  # do by eye
+            var_latex.DrawLatexNDC(var_x, var_y, selection_group['label'])
+            gc_stash.append(var_latex)
+
+        canvas.cd()
+
+        # Add legend
+        # Bit of a hack here - to get the fill hashing style the same as in the plots,
+        # we have to put it in a pad of the same size as a plotting pad
+        # This is because the hashing separation is scaled by the pad size
+        # So we can't just put the legend in the global canvas.
+        # We also can't modify the fill style of the legend entries (I tried, it does nothing)
+        leg_y_top = 0.93
+        leg_x_right = 1-0.0
+        leg_pad = ROOT.TPad("leg_pad_"+cu.get_unique_str(), "", leg_x_right-mean_pads[0].GetAbsWNDC(), leg_y_top-mean_pads[0].GetAbsHNDC(), leg_x_right, leg_y_top)
+        leg_pad.SetFillStyle(4000)
+        leg_pad.SetLeftMargin(0)
+        leg_pad.SetRightMargin(0)
+        leg_pad.SetTopMargin(0)
+        leg_pad.SetBottomMargin(0)
+        leg_pad.Draw()
+        leg_pad.cd()
+        gc_stash.append(leg_pad)
+        # These sizes are chosen by eye
+        leg = ROOT.TLegend(0.28, 0.3, 1, 1)
+        leg.AddEntry(mean_hists[0][0], "Data" ,"EL")
+        le_mc = leg.AddEntry(mean_hists[0][1], self.mc_label ,"F")
+        le_mc_alt = leg.AddEntry(mean_hists[0][2], self.alt_mc_label ,"F")
+        leg.Draw()
+
+        canvas.cd()
+
+        # Add mean, RMS text
+        text_width = pad_offset_x
+        text_x = (0.5 * pad_offset_x) - (0.5*text_width)
+        # let ROOT center it, just make the box the height of the axis
+        text_y_end = 1 - pad_offset_top - (pad_top_bottom_margin*mean_pads[0].GetAbsHNDC())
+        text_y = 1 - pad_offset_top - mean_pads[0].GetAbsHNDC()
+        mean_text = ROOT.TPaveText(text_x, text_y, text_x+text_width, text_y_end, "NDC NB")
+        mean_text.SetFillStyle(0)
+        mean_text.SetBorderSize(0)
+        t_mean = mean_text.AddText("Mean")
+        t_mean.SetTextAngle(90)
+        text_size = 0.04
+        t_mean.SetTextSize(text_size)
+        mean_text.Draw()
+
+        # let ROOT center it, just make the box the height of the axis
+        text_y = rms_pads[0].GetAbsHNDC() * (pad_top_bottom_margin + rms_pad_bottom_extra) + pad_offset_bottom
+        text_y_end = rms_pads[0].GetAbsHNDC() + pad_offset_bottom
+        rms_text = ROOT.TPaveText(text_x, text_y, text_x+text_width, text_y_end, "NDC NB")
+        rms_text.SetFillStyle(0)
+        rms_text.SetBorderSize(0)
+        t_mean = rms_text.AddText("RMS")
+        t_mean.SetTextAngle(90)
+        text_size = 0.04
+        t_mean.SetTextSize(text_size)
+        rms_text.Draw()
+
+        # Add CMS text
+        cms_latex = ROOT.TLatex()
+        cms_latex.SetTextAlign(ROOT.kHAlignLeft + ROOT.kVAlignBottom)
+        cms_latex.SetTextFont(42)
+        cms_latex.SetTextSize(0.04)
+        # Get the text sitting just above the axes of the mean plot
+        # Axes end inside the mean pad at (1-pad_top_bottom_margin), but this has
+        # to be scaled to canvas NDC
+        # Then add a little extra spacing ontop to separate text from axes line
+        latex_height = 1 - (pad_offset_top) - (mean_pads[0].GetAbsHNDC() * pad_top_bottom_margin) + 0.02
+
+        # Want it to start at the left edge of the first plot
+        start_x = pad_offset_x + (pad_width*pad_left_margin)
+        # start_x = 100
+        if self.is_preliminary:
+            if self.has_data:
+                cms_latex.DrawLatexNDC(start_x, latex_height, "#font[62]{CMS}#font[52]{ Preliminary}")
+            else:
+                cms_latex.DrawLatexNDC(start_x, latex_height, "#font[62]{CMS}#font[52]{ Preliminary Simulation}")
+        else:
+            if self.has_data:
+                cms_latex.DrawLatexNDC(start_x, latex_height, "#font[62]{CMS}")
+            else:
+                cms_latex.DrawLatexNDC(start_x, latex_height, "#font[62]{CMS}#font[52]{ Simulation}")
+        cms_latex.SetTextAlign(ROOT.kHAlignRight + ROOT.kVAlignBottom)
+        # Get the lumi text aligned to right edge of axes
+        # i.e. 1-pad_right_margin, but remember to scale by pad width
+        end_x = 1 - right_margin - (mean_pads[0].GetAbsWNDC() * pad_right_margin)
+        end_x = 0.985
+        cms_latex.DrawLatexNDC(end_x, latex_height, " 35.9 fb^{-1} (13 TeV)")
+        gc_stash.append(cms_latex)
+
+        canvas.Update()
+        canvas.SaveAs(output_file)
+
 
 def calc_hist_mean(hist):
-    return sum([hist.GetBinContent(ibin)*hist.GetBinWidth(ibin)*hist.GetBinCenter(ibin) for ibin in range(1, hist.GetNbinsX()+1)]) / sum([hist.GetBinContent(ibin)*hist.GetBinWidth(ibin) for ibin in range(1, hist.GetNbinsX()+1)])
+    """Manual calculation of mean of normalised histogram, taking into account bin width
+
+    Note that this is exactly the formula for a weighted mean, where the bin areas are the weights
+    (since already divided by bin width), and the bin centres are the "data"
+    https://en.wikipedia.org/wiki/Weighted_arithmetic_mean
+    """
+    numerator = sum([hist.GetBinContent(ibin)*hist.GetBinWidth(ibin)*hist.GetBinCenter(ibin) for ibin in range(1, hist.GetNbinsX()+1)])
+    denominator = sum([hist.GetBinContent(ibin)*hist.GetBinWidth(ibin) for ibin in range(1, hist.GetNbinsX()+1)])
+    return numerator / denominator
 
 
 def calc_hist_mean_error(hist, covariance_matrix, scale_factor):
     """Get error on the mean using covariance matrix
 
-    covariance_matrix shoudl be a 2D numpy array for this bin
+    hist is a TH1
+    covariance_matrix should be a 2D numpy array for this bin
 
     Uses the fact that if f = A+B,
     then sigma^2_f = sigma^2_A + sigma^2_B + 2*sigma_A*sigma_B
@@ -540,7 +930,7 @@ if __name__ == "__main__":
                     print("! Warning ! cannot find region dir", region_dir, '- skipping region')
                     continue
 
-                angles = qgc.COMMON_VARS
+                angles = qgc.COMMON_VARS[:]
                 for angle in angles:
                     angle_output_dir = "%s/%s" % (region_dir, angle.var)
                     if not os.path.isdir(angle_output_dir):
@@ -579,18 +969,22 @@ if __name__ == "__main__":
                     pt_bins = qgc.PT_UNFOLD_DICT[key]
 
                     for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(pt_bins[:-1], pt_bins[1:])):
+                        # print("pt bin", ibin, "=", bin_edge_low, bin_edge_high)
                         # mc_gen_hist_bin_unnorm_div_bin_width = hbc.get_pt_bin_div_bin_width('hist_truth', ibin)
-                        # mc_gen_hist_bin = hbc.get_pt_bin_normed_div_bin_width('hist_truth', ibin)
-                        mc_gen_hist_bin_unnorm = hbc.get_pt_bin('hist_truth', ibin)
+                        mc_gen_hist_bin = hbc.get_pt_bin_normed_div_bin_width('hist_truth', ibin)
+                        # mc_gen_hist_bin_unnorm = hbc.get_pt_bin('hist_truth', ibin)
                         # print('unnorm', mc_gen_hist_bin_unnorm.Integral())
                         # print('unnorm_div_bin_width', mc_gen_hist_bin_unnorm_div_bin_width.Integral())
                         # print('norm', mc_gen_hist_bin.Integral())
                         # unfolded_hist_bin_stat_errors = hbc.get_pt_bin_normed_div_bin_width('unfolded_stat_err', ibin)
-                        # unfolded_hist_bin_total_errors = hbc.get_pt_bin_normed_div_bin_width('unfolded', ibin)
-                        unfolded_hist_bin_unnorm = hbc.get_pt_bin('unfolded', ibin)
+                        unfolded_hist_bin_total_errors = hbc.get_pt_bin_normed_div_bin_width('unfolded', ibin)
+                        # unfolded_hist_bin_unnorm = hbc.get_pt_bin('unfolded', ibin)
 
-                        # alt_mc_gen_hist_bin = hbc.get_pt_bin_normed_div_bin_width('alt_hist_truth', ibin)
-                        alt_mc_gen_hist_bin_unnorm = hbc.get_pt_bin('alt_hist_truth', ibin)
+                        # for i in range(1, unfolded_hist_bin_total_errors.GetNbinsX()+1):
+                            # print(i, unfolded_hist_bin_total_errors.GetBinContent(i))
+
+                        alt_mc_gen_hist_bin = hbc.get_pt_bin_normed_div_bin_width('alt_hist_truth', ibin)
+                        # alt_mc_gen_hist_bin_unnorm = hbc.get_pt_bin('alt_hist_truth', ibin)
 
                         # GetMean() equivalent to
                         # sum([hist.GetBinContent(ibin)*hist.GetBinCenter(ibin) for ibin in range(1, hist.GetNbinsX()+1)]) /
@@ -604,7 +998,18 @@ if __name__ == "__main__":
                         start_bin = unfolder.generator_distribution.GetGlobalBinNumber(start_lambda, this_pt)
                         end_bin = unfolder.generator_distribution.GetGlobalBinNumber(end_lambda, this_pt)
                         # -1 as ROOT bins start at 1, numpy starts at 0
-                        this_cov_matrix = unfolder.ematrix_total_ndarray[start_bin-1:end_bin, start_bin-1:end_bin]
+                        # this_cov_matrix = unfolder.ematrix_total_ndarray[start_bin-1:end_bin, start_bin-1:end_bin]
+
+                        mean, err = cu.th1_to_ndarray(unfolded_hist_bin_total_errors)
+                        # reshape so 2D thing, so .T works
+                        if len(err.shape) == 1:
+                            err = err.reshape(1, err.shape[0])
+                        this_cov_matrix = err.T.dot(err) # NB x^T * x, since x is a row vector instead of column
+
+                        # Create covariance matrix by using delta delta^T, where delta is the vector of error bars
+                        # This probably makes some assumptions about correlation though...
+
+
                         # print("my mean error:", calc_hist_mean_error(mc_gen_hist_bin, this_cov_matrix, mc_gen_hist_bin_unnorm.Integral()))
                         # print("ROOT get mean error:", mc_gen_hist_bin.GetMeanError())
 
@@ -615,25 +1020,30 @@ if __name__ == "__main__":
                             'isgroomed': 'groomed' in region['name'].lower(),
                             'pt_bin': ibin,
                             'angle': angle.var,
-                            # 'mean': calc_hist_mean(unfolded_hist_bin_total_errors),
-                            'mean': unfolded_hist_bin_unnorm.GetMean(),
+                            'mean': calc_hist_mean(unfolded_hist_bin_total_errors),
+                            # 'mean': unfolded_hist_bin_unnorm.GetMean(),
                             # 'mean_err': unfolded_hist_bin_total_errors.GetMeanError(),
-                            'mean_err': calc_hist_mean_error(unfolded_hist_bin_unnorm, this_cov_matrix, 1),
+                            'mean_err': calc_hist_mean_error(unfolded_hist_bin_total_errors, this_cov_matrix, 1),
 
-                            'mean_truth': mc_gen_hist_bin_unnorm.GetMean(),
+                            # 'mean_truth': mc_gen_hist_bin_unnorm.GetMean(),
+                            'mean_truth': calc_hist_mean(mc_gen_hist_bin),
                             # 'mean_err_truth': mc_gen_hist_bin.GetMeanError(),
                             'mean_err_truth': 0,
 
-                            'mean_alt_truth': alt_mc_gen_hist_bin_unnorm.GetMean(),
+                            # 'mean_alt_truth': alt_mc_gen_hist_bin_unnorm.GetMean(),
+                            'mean_alt_truth': calc_hist_mean(alt_mc_gen_hist_bin),
                             'mean_err_alt_truth': 0,
 
-                            'rms': unfolded_hist_bin_unnorm.GetRMS(),
-                            'rms_err': unfolded_hist_bin_unnorm.GetRMSError(),  # FIXME
+                            # 'rms': unfolded_hist_bin_unnorm.GetRMS(),
+                            # 'rms_err': unfolded_hist_bin_unnorm.GetRMSError(),  # FIXME
 
-                            'rms_truth': mc_gen_hist_bin_unnorm.GetRMS(),
+                            'rms': unfolded_hist_bin_total_errors.GetRMS(),
+                            'rms_err': unfolded_hist_bin_total_errors.GetRMSError(),  # FIXME
+
+                            'rms_truth': mc_gen_hist_bin.GetRMS(),
                             'rms_err_truth': 0,
 
-                            'rms_alt_truth': alt_mc_gen_hist_bin_unnorm.GetRMS(),
+                            'rms_alt_truth': alt_mc_gen_hist_bin.GetRMS(),
                             'rms_err_alt_truth': 0,
                         }
                         results_dicts.append(result_dict)
@@ -686,6 +1096,8 @@ if __name__ == "__main__":
 
     angles = [a for a in qgc.COMMON_VARS if a.var in df['angle'].unique()]
     # print("Plotting angles:", angles)
+    charged_only_angles = [a for a in angles if "charged" in a.var]
+    charged_and_neutral_angles = [a for a in angles if "charged" not in a.var]
 
     # --------------------------------------------------------------------------
     # Do all the plotting
@@ -702,15 +1114,63 @@ if __name__ == "__main__":
     has_dijet = any(["Dijet" in r['name'] for r in regions])
     has_zpj = any(["ZPlusJet" in r['name'] for r in regions])
 
+    pt_bins = qgc.PT_UNFOLD_DICT['signal_gen']
+    low_pt = 120
+    low_pt_bin = np.where(pt_bins == low_pt)[0][0]
+    low_pt_str = "[%g, %g] GeV" % (low_pt, pt_bins[low_pt_bin+1])
+
+    high_pt = 800
+    high_pt_bin = np.where(pt_bins == high_pt)[0][0]
+    high_pt_str = "[%g, %g] GeV" % (high_pt, pt_bins[high_pt_bin+1])
+
+    ak4_str = "AK4"
+    ak8_str = "AK8"
+
     if has_dijet:
-        plotter.plot_dijet_means_vs_pt_all()
+        # plotter.plot_dijet_means_vs_pt_all()
         # plotter.plot_dijet_rms_vs_pt_all()
-    
-    if has_zpj:
-        plotter.plot_zpj_means_vs_pt_all()
+
+        selections = []
+        for angle in charged_and_neutral_angles:
+            this_angle_str = "%s (%s)" % (angle.name, angle.lambda_str)
+            # this_angle_str = "%s" % (angle.lambda_str)
+            this_selection = [
+                ('jet_algo=="ak4puppi" & pt_bin==%d & ~isgroomed & region=="Dijet_central" & angle=="%s"' % (low_pt_bin, angle.var),
+                    "{jet_str}, {pt_str}".format(jet_str=ak4_str, pt_str=low_pt_str)),
+                    # "#splitline{{{jet_str}}}{{{pt_str}}}".format(jet_str=ak4_str, pt_str=low_pt_str)),
+
+                ('jet_algo=="ak4puppi" & pt_bin==%d & ~isgroomed & region=="Dijet_central" & angle=="%s"' % (high_pt_bin, angle.var),
+                    "{jet_str}, {pt_str}".format(jet_str=ak4_str, pt_str=high_pt_str)),
+                    # "#splitline{{{jet_str}}}{{{pt_str}}}".format(jet_str=ak4_str, pt_str=high_pt_str)),
+
+                ('jet_algo=="ak8puppi" & pt_bin==%d & ~isgroomed & region=="Dijet_central" & angle=="%s"' % (low_pt_bin, angle.var),
+                    "{jet_str}, {pt_str}".format(jet_str=ak8_str, pt_str=low_pt_str)),
+                    # "#splitline{{{jet_str}}}{{{pt_str}}}".format(jet_str=ak8_str, pt_str=low_pt_str)),
+
+                ('jet_algo=="ak8puppi" & pt_bin==%d & ~isgroomed & region=="Dijet_central" & angle=="%s_charged"' % (low_pt_bin, angle.var),
+                    "#splitline{{{jet_str}, {pt_str}}}{{Charged-only}}".format(jet_str=ak8_str, pt_str=low_pt_str)),
+                    # "#splitline{{#splitline{{{jet_str}}}{{{pt_str}}}}}{{Charged-only}}".format(jet_str=ak8_str, pt_str=low_pt_str)),
+
+                # FIXME need groomed ak4 instead
+                ('jet_algo=="ak8puppi" & pt_bin==%d & ~isgroomed & region=="Dijet_central" & angle=="%s_charged"' % (low_pt_bin, angle.var),
+                    "#splitline{{{jet_str}, {pt_str}}}{{Charged-only}}".format(jet_str=ak8_str, pt_str=low_pt_str)),
+                    # "#splitline{{#splitline{{{jet_str}}}{{{pt_str}}}}}{{Charged-only}}".format(jet_str=ak8_str, pt_str=low_pt_str)),
+
+                # ('jet_algo=="ak4puppi" & pt_bin==%d & isgroomed  & region=="Dijet_central" & angle=="%s"' % (low_pt_bin, angle.var),
+                #     "{jet_str}, {pt_str}".format(jet_str=ak8_str, pt_str=low_pt_str)),
+            ]
+            selections.append({'label': this_angle_str, 'selections': this_selection})
+
+        plotter.plot_mean_rms_bins_summary(
+            selections=selections,
+            output_file=os.path.join(args.outputDir, "dijet_mean_rms_summary.pdf")
+        )
+
+    # if has_zpj:
+    #     plotter.plot_zpj_means_vs_pt_all()
         # plotter.plot_zpj_rms_vs_pt_all()
 
-    if has_dijet and has_zpj:
-        plotter.plot_dijet_zpj_means_vs_pt_all()
+    # if has_dijet and has_zpj:
+    #     plotter.plot_dijet_zpj_means_vs_pt_all()
         # plotter.plot_dijet_zpj_rms_vs_pt_all()
 
