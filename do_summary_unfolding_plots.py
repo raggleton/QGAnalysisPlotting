@@ -111,7 +111,7 @@ class SummaryPlotter(object):
         self.output_dir = output_dir
         self.has_data = has_data
         self.is_preliminary = True
-        self.mc_label = 'MG+Pythia8'
+        self.mc_label = 'MG5+Pythia8'
         self.alt_mc_label = 'Herwig++'
 
     @staticmethod
@@ -587,60 +587,70 @@ class SummaryPlotter(object):
         mean_pads, rms_pads = [], []
         n_pads = len(selections)
 
-        right_margin = 0.12 # gap between right end of plots and edge of canvas, used for legend
-        pad_left_titles_gap = 0.01 # gap between pad_left_titles and all plots
+        # gap between right end of plots and edge of canvas, used for legend
+        right_margin = 0.12
+        # pad_left_titles_gap = 0.01 # gap between pad_left_titles and all plots
         pad_to_pad_gap = 0.005  # gap between plot pad columns
         # how far in from the left the first plotting pad starts. used for y axis title
-        pad_offset_x = 0.04
+        left_margin = 0.04
         # figure out width per pad - get total width available, then divide by number of pads
-        pad_width = (1 - pad_offset_x - right_margin - (pad_to_pad_gap*(n_pads - 1))) / n_pads
+        pad_width = (1 - left_margin - right_margin - (pad_to_pad_gap*(n_pads - 1))) / n_pads
+
         pad_offset_bottom = 0.01 # spacing between bottom of RMS pad and canvas edge
-        pad_offset_top = 0.01  # spacing between top of mean pad and canvas edge
+        pad_offset_top = 0.08  # spacing between top of mean pad and canvas edge - for CMS and lumi text
 
-        epsilon = 0.0  # fudge to avoid overlapping axis labels, but doesn't work
-
-        pad_height = 1-pad_offset_top - pad_offset_bottom  # total space available for mean & RMS pads
-        pad_mid_height = (0.5*pad_height) + pad_offset_bottom
-
-        # per-pad margins: these determine where the hist axes lie, and are fractions of the pad width/height
+        # per-pad margins: these determine where the hist axes lie,
+        # and are fractions of the **pad** width/height, not the global canvas
         pad_right_margin = 0.02
         pad_left_margin = 0.2
-        pad_top_bottom_margin = 0.16  # use for both top margin on mean plots, and bottom margin on rms plots, to get equal sized plots
-        # extra bit of bottom margin for x axis labels
-        rms_pad_bottom_extra = 0.33
-        # now recalc mid height, to give half more space to lower plot
-        # need to scale by lower pad height, since padding is a fraction of pad height
-        extra_height = rms_pad_bottom_extra*(pad_mid_height-pad_offset_bottom)
-        pad_mid_height += (1.45*extra_height / 2)  #.75 is a fudge factor... need to figure out properly
+
+        # bottom margin includes space for x axis labels
+        # note that we apply it BOTH to the upper and lower pads,
+        # even though the labels are on the lower pads, since we need the pads
+        # to be exactly the same size, in order to get man things the same size,
+        # e.g. ticks, labels, hatching, all of which depend on pad size,
+        # and not histogram axes size!
+        pad_bottom_margin = 0.49
+
+        # extra bit to add to the top margins of lower and upper pads
+        # to ensure y axis numbers don't get cut off
+        pad_top_margin = 0.012
+
+        # pad height is constrained by the available space
+        # (i.e. after pad_offset_top and pad_offset_bottom),
+        # and the fact that we want the pads to overlap exactly by both the
+        # top and bottom margins, to ensure that the x axes align vertically
+        pad_height = (1 - pad_offset_top - pad_offset_bottom) / (2 - pad_bottom_margin - pad_top_margin)
 
         for isel, selection_group in enumerate(selections):
             canvas.cd()
-            pad_start_x = pad_offset_x + (isel*pad_to_pad_gap) + (isel*pad_width)
+            pad_start_x = left_margin + (isel*pad_to_pad_gap) + (isel*pad_width)
             pad_end_x = pad_start_x + pad_width
             # Create pad for mean hist - upper half of this column
-            pad_mean = ROOT.TPad(cu.get_unique_str(), "", pad_start_x, pad_mid_height-epsilon, pad_end_x, 1-pad_offset_top)
-            # pad_mean.SetFillColor(isel+2)
-            # pad_mean.SetFillStyle(1001)
+            pad_mean = ROOT.TPad(cu.get_unique_str(), "", pad_start_x, 1-pad_offset_top-pad_height, pad_end_x, 1-pad_offset_top)
+            ROOT.SetOwnership(pad_mean, False)
+            pad_mean.SetFillColor(isel+2)
+            pad_mean.SetFillStyle(3004)
             pad_mean.SetFillStyle(4000)
-            pad_mean.SetBottomMargin(epsilon)
+            pad_mean.SetTopMargin(pad_top_margin)
+            pad_mean.SetBottomMargin(pad_bottom_margin)
             pad_mean.SetRightMargin(pad_right_margin)
             pad_mean.SetLeftMargin(pad_left_margin)
-            pad_mean.SetTopMargin(pad_top_bottom_margin)
             pad_mean.SetTicks(1, 1)
             pad_mean.Draw()
             mean_pads.append(pad_mean)
 
             canvas.cd()
             # Create pad for mean hist - lower half of this column
-            pad_rms = ROOT.TPad(cu.get_unique_str(), "", pad_start_x, pad_offset_bottom, pad_end_x, pad_mid_height+epsilon)
-            # pad_rms.SetFillColor(isel+2)
-            # pad_rms.SetFillStyle(3003)
-            # pad_rms.SetFillColor(0)
+            pad_rms = ROOT.TPad(cu.get_unique_str(), "", pad_start_x, pad_offset_bottom, pad_end_x, pad_offset_bottom+pad_height)
+            ROOT.SetOwnership(pad_rms, False)
+            pad_rms.SetFillColor(isel+2)
+            pad_rms.SetFillStyle(3003)
             pad_rms.SetFillStyle(4000)
-            pad_rms.SetTopMargin(0)
+            pad_rms.SetTopMargin(pad_top_margin)
+            pad_rms.SetBottomMargin(pad_bottom_margin)
             pad_rms.SetRightMargin(pad_right_margin)
             pad_rms.SetLeftMargin(pad_left_margin)
-            pad_rms.SetBottomMargin(pad_top_bottom_margin+rms_pad_bottom_extra)
             pad_rms.SetTicks(1, 1)
             pad_rms.Draw()
             rms_pads.append(pad_rms)
@@ -665,13 +675,15 @@ class SummaryPlotter(object):
             xax.SetTickLength(xax.GetTickLength()*factor)
 
             yax = mean_draw_hist.GetYaxis()
-            label_size_fudge = 1.4
+            label_size_fudge = 1.6
             yax.SetLabelSize(yax.GetLabelSize()*factor*label_size_fudge)
             label_offset_fudge = 4
             yax.SetLabelOffset(yax.GetLabelOffset()*factor*label_offset_fudge)
-            tick_fudge = 2
+            tick_fudge = 4
             yax.SetTickLength(yax.GetTickLength()*factor*tick_fudge)
-            yax.SetNdivisions(1005)  # fewer big ticks so less chance of overlapping with lower plot
+            n_divisions = 1005  # fewer big ticks so less chance of overlapping with lower plot
+            # n_divisions = 510  # default
+            yax.SetNdivisions(n_divisions)
 
             # Set range using bin contents + error bars
             y_up, y_down = self.calc_hists_max_min(mean_hist_group)
@@ -698,8 +710,8 @@ class SummaryPlotter(object):
             yax = rms_draw_hist.GetYaxis()
             yax.SetLabelSize(yax.GetLabelSize()*factor*label_size_fudge)
             yax.SetLabelOffset(yax.GetLabelOffset()*factor*label_offset_fudge)
-            yax.SetTickLength(yax.GetTickLength()*factor*tick_fudge*1.5)  # extra bit of fudging, probably becasue pads are sligthly different sizes
-            yax.SetNdivisions(1005)
+            yax.SetTickLength(yax.GetTickLength()*factor*tick_fudge)  # extra bit of fudging, probably becasue pads are sligthly different sizes
+            yax.SetNdivisions(n_divisions)
 
             # Set range using bin contents + error bars
             y_up, y_down = self.calc_hists_max_min(rms_hist_group)
@@ -732,6 +744,8 @@ class SummaryPlotter(object):
         leg_y_top = 0.93
         leg_x_right = 1-0.0
         leg_pad = ROOT.TPad("leg_pad_"+cu.get_unique_str(), "", leg_x_right-mean_pads[0].GetAbsWNDC(), leg_y_top-mean_pads[0].GetAbsHNDC(), leg_x_right, leg_y_top)
+        # leg_pad.SetFillColor(ROOT.kYellow)
+        # leg_pad.SetFillStyle(3004)
         leg_pad.SetFillStyle(4000)
         leg_pad.SetLeftMargin(0)
         leg_pad.SetRightMargin(0)
@@ -740,21 +754,21 @@ class SummaryPlotter(object):
         leg_pad.Draw()
         leg_pad.cd()
         gc_stash.append(leg_pad)
-        # These sizes are chosen by eye
-        leg = ROOT.TLegend(0.28, 0.3, 1, 1)
+        leg = ROOT.TLegend(0.28, mean_pads[0].GetBottomMargin(), 1, 1)
         leg.AddEntry(mean_hists[0][0], "Data" ,"EL")
         le_mc = leg.AddEntry(mean_hists[0][1], self.mc_label ,"F")
         le_mc_alt = leg.AddEntry(mean_hists[0][2], self.alt_mc_label ,"F")
+        leg.SetTextSize(0.08)
         leg.Draw()
 
         canvas.cd()
 
         # Add mean, RMS text
-        text_width = pad_offset_x
-        text_x = (0.5 * pad_offset_x) - (0.5*text_width)
+        text_width = left_margin
+        text_x = (0.5 * left_margin) - (0.5*text_width)
         # let ROOT center it, just make the box the height of the axis
-        text_y_end = 1 - pad_offset_top - (pad_top_bottom_margin*mean_pads[0].GetAbsHNDC())
-        text_y = 1 - pad_offset_top - mean_pads[0].GetAbsHNDC()
+        text_y_end = 1 - pad_offset_top - (pad_top_margin*mean_pads[0].GetAbsHNDC())
+        text_y = 1 - pad_offset_top - mean_pads[0].GetAbsHNDC() + (mean_pads[0].GetAbsHNDC()*pad_bottom_margin)
         mean_text = ROOT.TPaveText(text_x, text_y, text_x+text_width, text_y_end, "NDC NB")
         mean_text.SetFillStyle(0)
         mean_text.SetBorderSize(0)
@@ -765,8 +779,8 @@ class SummaryPlotter(object):
         mean_text.Draw()
 
         # let ROOT center it, just make the box the height of the axis
-        text_y = rms_pads[0].GetAbsHNDC() * (pad_top_bottom_margin + rms_pad_bottom_extra) + pad_offset_bottom
-        text_y_end = rms_pads[0].GetAbsHNDC() + pad_offset_bottom
+        text_y = (rms_pads[0].GetAbsHNDC() * pad_bottom_margin) + pad_offset_bottom
+        text_y_end = (rms_pads[0].GetAbsHNDC() * (1-pad_top_margin)) + pad_offset_bottom
         rms_text = ROOT.TPaveText(text_x, text_y, text_x+text_width, text_y_end, "NDC NB")
         rms_text.SetFillStyle(0)
         rms_text.SetBorderSize(0)
@@ -782,14 +796,14 @@ class SummaryPlotter(object):
         cms_latex.SetTextFont(42)
         cms_latex.SetTextSize(0.04)
         # Get the text sitting just above the axes of the mean plot
-        # Axes end inside the mean pad at (1-pad_top_bottom_margin), but this has
+        # Axes end inside the mean pad at (1-top_margin), but this has
         # to be scaled to canvas NDC
         # Then add a little extra spacing ontop to separate text from axes line
-        latex_height = 1 - (pad_offset_top) - (mean_pads[0].GetAbsHNDC() * pad_top_bottom_margin) + 0.02
+        latex_height = 1 - pad_offset_top - (mean_pads[0].GetAbsHNDC() * mean_pads[0].GetTopMargin()) + 0.02
 
         # Want it to start at the left edge of the first plot
-        start_x = pad_offset_x + (pad_width*pad_left_margin)
-        # start_x = 100
+        start_x = left_margin + (pad_width*pad_left_margin)
+        # # start_x = 100
         if self.is_preliminary:
             if self.has_data:
                 cms_latex.DrawLatexNDC(start_x, latex_height, "#font[62]{CMS}#font[52]{ Preliminary}")
@@ -801,10 +815,10 @@ class SummaryPlotter(object):
             else:
                 cms_latex.DrawLatexNDC(start_x, latex_height, "#font[62]{CMS}#font[52]{ Simulation}")
         cms_latex.SetTextAlign(ROOT.kHAlignRight + ROOT.kVAlignBottom)
-        # Get the lumi text aligned to right edge of axes
-        # i.e. 1-pad_right_margin, but remember to scale by pad width
+        # # Get the lumi text aligned to right edge of axes
+        # # i.e. 1-pad_right_margin, but remember to scale by pad width
         end_x = 1 - right_margin - (mean_pads[0].GetAbsWNDC() * pad_right_margin)
-        end_x = 0.985
+        end_x = 0.985  # to match legend
         cms_latex.DrawLatexNDC(end_x, latex_height, " 35.9 fb^{-1} (13 TeV)")
         gc_stash.append(cms_latex)
 
