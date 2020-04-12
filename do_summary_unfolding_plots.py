@@ -744,6 +744,7 @@ class SummaryPlotter(object):
         leg_y_top = 0.93
         leg_x_right = 1-0.0
         leg_pad = ROOT.TPad("leg_pad_"+cu.get_unique_str(), "", leg_x_right-mean_pads[0].GetAbsWNDC(), leg_y_top-mean_pads[0].GetAbsHNDC(), leg_x_right, leg_y_top)
+        ROOT.SetOwnership(leg_pad, False)  # important! otherwise seg fault
         # leg_pad.SetFillColor(ROOT.kYellow)
         # leg_pad.SetFillStyle(3004)
         leg_pad.SetFillStyle(4000)
