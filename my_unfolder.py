@@ -385,7 +385,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         # (i.e. default every arg to None)
 
         # print("Calling __reduce__")
-        argspec = inspect.getfullargspec(MyUnfolder.__init__)
+        argspec = inspect.getargspec(MyUnfolder.__init__)
         # print(argspec)
         state = self.__getstate__()
         # print("state:", state)
