@@ -800,6 +800,8 @@ if __name__ == "__main__":
                                hist_mc_reco_gen_binning_bg_subtracted=hist_mc_reco_gen_binning_bg_subtracted,
                                bias_factor=args.biasFactor)
 
+            unfolder.hist_bin_chopper.add_obj('hist_truth', unfolder.hist_truth)
+
             # Add systematic errors as different response matrices
             # ------------------------------------------------------------------
             if args.doExperimentalSysts:
@@ -931,6 +933,7 @@ if __name__ == "__main__":
                                          hist_mc_reco_gen_binning=hist_mc_reco_gen_binning,
                                          hist_mc_reco_gen_binning_bg_subtracted=hist_mc_reco_gen_binning_bg_subtracted,
                                          bias_factor=0)
+
 
                 # For now, ignore experimental systematics
 
@@ -1376,6 +1379,8 @@ if __name__ == "__main__":
                 alt_hist_fakes_gen_binning.Multiply(alt_hist_mc_reco_gen_binning)
                 alt_hist_mc_reco_bg_subtracted_gen_binning = alt_hist_mc_reco_gen_binning.Clone()
                 alt_hist_mc_reco_bg_subtracted_gen_binning.Add(alt_hist_fakes_gen_binning, -1)
+
+                unfolder.hist_bin_chopper.add_obj('alt_hist_truth', alt_hist_mc_gen)
 
             this_tdir.cd()
             alt_tdir = this_tdir.mkdir("alt_response_%s" % cu.no_space_str(region['alt_mc_label']))
