@@ -15,6 +15,8 @@ import scipy
 from scipy import stats
 import inspect
 import warnings
+import pickle
+import lzma
 
 import ROOT
 from MyStyle import My_Style
@@ -1443,6 +1445,59 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
                                                       do_div_bin_width=True,
                                                       binning_scheme='generator')
             self.hist_bin_chopper._cache[key] = h_total
+
+
+def pickle_region(region, output_filename, infos=True, convert_tfile_to_str=True):
+    """pickle a region dict
+    
+    You should use this + unpickle_region() to ensure correct compression algo used
+
+    Parameters
+    ----------
+    region : dict
+        region dict, with unfolder + other infos, systematics, etc
+    output_filename : str
+        pickle filename
+    infos : bool, optional
+        Print out sizes of components
+    convert_tfile_to_str : bool, optional
+        Convert TFile to their filepath names before pickling
+    """
+    if convert_tfile_to_str:
+        # recursively change TFile objects back to filenames
+        def _convert_tfile_to_str(d):
+            for k in d.keys():
+                # TODO: write pickler class?
+                if isinstance(d[k], ROOT.TFile):
+                    filename = d[k].GetName()
+                    if infos:
+                        print(" - closing", k, filename)
+                    d[k].Close()
+                    d[k] = filename
+                elif isinstance(d[k], dict):
+                    _convert_tfile_to_str(d[k])
+                elif isinstance(d[k], list):
+                    for x in d[k]:
+                        _convert_tfile_to_str(x)
+        _convert_tfile_to_str(region)
+    if infos:
+        print("")
+        print("region sizes:")
+        print("-"*80)
+        cu.print_dict_item_sizes(region, recursive=True)
+        print("-"*80)
+    # LZMA for huge space saving
+    with lzma.open(output_filename, "wb") as f:
+        pickle.dump(region, f, protocol=2) # protocol 2 means very compatible across python versions
+
+
+def unpickle_region(pickle_filename):
+    """Retreive region dict from pickle file"""
+    if not os.path.isfile(pickle_filename):
+        print("! Warning ! cannot find unfolding pickle file", pickle_filename, ' - skipping')
+    with lzma.open(pickle_filename, 'r') as f:
+        unpickled_region = pickle.load(f)
+    return unpickled_region
 
 
 def unfolder_from_tdir(tdir):

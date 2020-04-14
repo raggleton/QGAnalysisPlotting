@@ -17,8 +17,6 @@ import numpy as np
 import math
 from itertools import product
 from copy import copy, deepcopy
-import pickle
-import lzma
 
 import ROOT
 from MyStyle import My_Style
@@ -30,7 +28,7 @@ ROOT.gErrorIgnoreLevel = ROOT.kWarning
 import common_utils as cu
 import qg_common as qgc
 import qg_general_plots as qgp
-from my_unfolder import MyUnfolder
+from my_unfolder import MyUnfolder, pickle_region, unpickle_region
 from my_unfolder_plotter import MyUnfolderPlotter
 from unfolding_regularisation_classes import TauScanner, LCurveScanner
 from unfolding_config import get_dijet_config, get_zpj_config
@@ -1135,8 +1133,7 @@ if __name__ == "__main__":
                 if not os.path.isfile(this_pkl_filename):
                     raise IOError("Cannot find systematics file, %s" % this_pkl_filename)
 
-                with lzma.open(this_pkl_filename, "rb") as f:
-                    exp_syst_region = pickle.load(f)
+                exp_syst_region = unpickle_region(this_pkl_filename)
 
                 reference_unfolder = exp_syst_region['unfolder']
                 ref_unfolded = reference_unfolder.unfolded
@@ -1923,8 +1920,7 @@ if __name__ == "__main__":
                 this_pkl_filename = os.path.join(model_dir, "unfolding_result.pkl")
                 if not os.path.isfile(this_pkl_filename):
                     raise IOError("Cannot find model systematics file, %s" % this_pkl_filename)
-                with lzma.open(this_pkl_filename, "rb") as f:
-                    model_syst_region = pickle.load(f)
+                model_syst_region = unpickle_region(this_pkl_filename)
 
                 # update original region object with the model syst info from the reference file
                 region['model_systematics'] = model_syst_region['model_systematics']
@@ -2212,8 +2208,7 @@ if __name__ == "__main__":
                 this_pkl_filename = os.path.join(pdf_dir, "unfolding_result.pkl")
                 if not os.path.isfile(this_pkl_filename):
                     raise IOError("Cannot find PDF systematics file, %s" % this_pkl_filename)
-                with lzma.open(this_pkl_filename, "rb") as f:
-                    pdf_syst_region = pickle.load(f)
+                pdf_syst_region = unpickle_region(this_pkl_filename)
 
                 # update original region object from reference file
                 region['pdf_systematics'] = pdf_syst_region['pdf_systematics']
@@ -2303,43 +2298,19 @@ if __name__ == "__main__":
             print("-"*80)
 
             pickle_filename = os.path.join("%s/unfolding_result.pkl" % (this_output_dir))
-            # LZMA for huge space saving
-            with lzma.open(pickle_filename, "wb") as f:
-                # recursively change TFile objects back to filenames
-                def _convert_tfile_to_str(d):
-                    for k in d.keys():
-                        # TODO: write pickler class?
-                        if isinstance(d[k], ROOT.TFile):
-                            filename = d[k].GetName()
-                            print(" - closing", k, filename)
-                            d[k].Close()
-                            d[k] = filename
-                        elif isinstance(d[k], dict):
-                            _convert_tfile_to_str(d[k])
-                        elif isinstance(d[k], list):
-                            for x in d[k]:
-                                _convert_tfile_to_str(x)
-                _convert_tfile_to_str(region)
-
-                print("")
-                print("region sizes:")
-                print("-"*80)
-                cu.print_dict_item_sizes(region, recursive=True)
-                print("-"*80)
-                pickle.dump(region, f, protocol=2) # protocol 2 means very compatible across python versions
-
+            pickle_region(region, pickle_filename, infos=True, convert_tfile_to_str=True)
             print(">> Saved to pickle file", pickle_filename)
             print("")
 
+            # test the pickle file by un-pickling it
             print("Testing pickled file...")
-            with lzma.open(pickle_filename, "rb") as f:
-                data = pickle.load(f)
-                print("")
-                print("...unpickled data:")
-                print("    ", data)
-                print("")
-                print("...data['unfolder'].hist_bin_chopper.objects:")
-                print("    ", data['unfolder'].hist_bin_chopper.objects)
+            data = unpickle_region(pickle_filename)
+            print("")
+            print("...unpickled data:")
+            print("    ", data)
+            print("")
+            print("...data['unfolder'].hist_bin_chopper.objects:")
+            print("    ", data['unfolder'].hist_bin_chopper.objects)
 
             print(">> Saving unfolder to ROOT file")
             unfolder.save_to_tfile(this_tdir)

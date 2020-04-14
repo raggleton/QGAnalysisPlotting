@@ -15,8 +15,6 @@ import argparse
 import math
 from array import array
 import pandas as pd
-import lzma
-import pickle
 
 import ROOT
 from MyStyle import My_Style
@@ -28,7 +26,7 @@ ROOT.gErrorIgnoreLevel = ROOT.kWarning
 import common_utils as cu
 import qg_common as qgc
 import qg_general_plots as qgp
-from my_unfolder import MyUnfolder, HistBinChopper
+from my_unfolder import MyUnfolder, HistBinChopper, unpickle_region
 from my_unfolder_plotter import MyUnfolderPlotter
 from unfolding_config import get_dijet_config, get_zpj_config
 
@@ -2866,10 +2864,7 @@ if __name__ == "__main__":
 
             # Get region dict from pickle file
             pickle_filename = os.path.join(angle_output_dir, "unfolding_result.pkl")
-            if not os.path.isfile(pickle_filename):
-                print("! Warning ! cannot fine unfolding pickle file", pickle_filename, ' - skipping angle')
-            with lzma.open(pickle_filename, "rb") as f:
-                unpickled_region = pickle.load(f)
+            unpickled_region = unpickle_region(pickle_filename)
 
             # check
             if region['name'] != unpickled_region['name']:
