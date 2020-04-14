@@ -489,15 +489,19 @@ class Plot(object):
 
         modifier = self.get_modifier()
         ymax = max([o.GetMaximum() for o in self.contributions_objs])
+
         if self.main_pad.GetLogy():
-            modifier.SetMaximum(ymax * self.y_padding_max_log)
+            ymax *= self.y_padding_max_log
         else:
-            modifier.SetMaximum(ymax * self.y_padding_max_linear)
+            ymax *= self.y_padding_max_linear
+        # print("Set y maximum automatically to", ymax)
+        modifier.SetMaximum(ymax)
 
         # this is tricky... how to handle various cases like -ve, ignoring 0s
         if isinstance(self.contributions_objs[0], ROOT.TH1):
             ymin = min([o.GetMinimum() for o in self.contributions_objs])
             if ymin >= 0:
+                # So there are no negative values - find smallest non-zero one then
                 ymin = min([o.GetMinimum(1E-20) for o in self.contributions_objs])
         else:
             # TGraph doesn't have the argument
@@ -505,12 +509,19 @@ class Plot(object):
 
         if self.main_pad.GetLogy():
             if ymin > 0:
-                modifier.SetMinimum(ymin * self.y_padding_min_log)
+                ymin *= self.y_padding_min_log
+            else:
+                print("Warning: log y axis but ymin < 0:", ymin)
+                print("Not changing minimum")
+                ymin = modifier.GetMinimum()
         else:
             if ymin < 0:
-                modifier.SetMinimum(ymin * self.y_padding_min_linear)
+                ymin *= self.y_padding_min_linear
             elif ymin > 0:
-                modifier.SetMinimum(ymin / self.y_padding_min_linear)
+                ymin /= self.y_padding_min_linear
+
+        # print("Set y minimum automatically to", ymin)
+        modifier.SetMinimum(ymin)
 
     def plot(self, draw_opts=None, subplot_draw_opts=None):
         """Make the plot.
