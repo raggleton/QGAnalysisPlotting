@@ -17,6 +17,7 @@ import inspect
 import warnings
 import pickle
 import lzma
+import gzip
 
 import ROOT
 from MyStyle import My_Style
@@ -1486,8 +1487,11 @@ def pickle_region(region, output_filename, infos=True, convert_tfile_to_str=True
         print("-"*80)
         cu.print_dict_item_sizes(region, recursive=True)
         print("-"*80)
-    # LZMA for huge space saving
-    with lzma.open(output_filename, "wb") as f:
+    # LZMA for huge space saving, but very slow when unpickling lots of big dicts
+    # i.e. with PDF + exp + model systs
+    # with lzma.open(output_filename, "wb") as f:
+    # gzip for speed and some space saving
+    with gzip.open(output_filename, "wb") as f:
         pickle.dump(region, f, protocol=2) # protocol 2 means very compatible across python versions
 
 
@@ -1495,7 +1499,8 @@ def unpickle_region(pickle_filename):
     """Retreive region dict from pickle file"""
     if not os.path.isfile(pickle_filename):
         print("! Warning ! cannot find unfolding pickle file", pickle_filename, ' - skipping')
-    with lzma.open(pickle_filename, 'r') as f:
+    # with lzma.open(pickle_filename, 'r') as f:
+    with gzip.open(pickle_filename, 'r') as f:
         unpickled_region = pickle.load(f)
     return unpickled_region
 
