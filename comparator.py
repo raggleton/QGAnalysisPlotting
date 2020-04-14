@@ -210,7 +210,7 @@ class Plot(object):
                  title=None, xtitle=None, ytitle=None, xlim=None, ylim=None,
                  legend=True, extend=False,
                  subplot=None, subplot_type=None, subplot_title=None, subplot_limits=None,
-                 has_data=True):
+                 has_data=True, is_preliminary=True):
         """
         contributions: list
             List of Contribution objects.
@@ -290,8 +290,8 @@ class Plot(object):
         self.subplot_line_style = 2
         self.subplot_line_width = 2
         self.subplot_line_color = ROOT.kBlack
-        self.is_preliminary = True
         self.has_data = has_data
+        self.is_preliminary = is_preliminary
 
     def add_contribution(self, *contribution):
         """Add Contribution to Plot. Can be single item or list."""
