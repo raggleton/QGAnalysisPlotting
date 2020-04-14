@@ -16,7 +16,6 @@ from scipy import stats
 import inspect
 import warnings
 import pickle
-import lzma
 import gzip
 
 import ROOT
@@ -1463,7 +1462,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
 
 def pickle_region(region, output_filename, infos=True, convert_tfile_to_str=True):
     """pickle a region dict
-    
+
     You should use this + unpickle_region() to ensure correct compression algo used
 
     Parameters
