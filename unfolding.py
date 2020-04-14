@@ -654,6 +654,10 @@ if __name__ == "__main__":
             this_tdir.cd()
             # this_tdir.WriteTObject(hist_mc_gen_pt_physical, "mc_gen_pt")
 
+            output_tfile_slim = ROOT.TFile("%s/unfolding_result_slim.root" % (this_output_dir), "RECREATE")
+            output_tfile_slim.mkdir(new_tdir)
+            this_slim_tdir = output_tfile_slim.Get(new_tdir)
+            this_slim_tdir.cd()
 
             # Setup MyUnfolder object to do unfolding etc
             # -------------------------------------------
@@ -2302,6 +2306,12 @@ if __name__ == "__main__":
             print(">> Saved to pickle file", pickle_filename)
             print("")
 
+            print(">> Saving unfolder to ROOT file")
+            print(unfolder.hist_bin_chopper.objects)
+            print(unfolder.hist_bin_chopper._cache)
+            unfolder.save_to_tfile(this_tdir)
+            unfolder.save_unfolded_binned_hists_to_tfile(this_slim_tdir)
+
             # test the pickle file by un-pickling it
             print("Testing pickled file...")
             data = unpickle_region(pickle_filename)
@@ -2311,9 +2321,6 @@ if __name__ == "__main__":
             print("")
             print("...data['unfolder'].hist_bin_chopper.objects:")
             print("    ", data['unfolder'].hist_bin_chopper.objects)
-
-            print(">> Saving unfolder to ROOT file")
-            unfolder.save_to_tfile(this_tdir)
 
             # ------------------------------------------------------------------
             # PLOT LOTS OF THINGS
@@ -2347,3 +2354,6 @@ if __name__ == "__main__":
             #                                  region_title=region_label)
 
     print("Saved hists to", output_tfile.GetName())
+    print("Saved minimal hists to", output_tfile_slim.GetName())
+    output_tfile.Close()
+    output_tfile_slim.Close()

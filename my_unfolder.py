@@ -352,6 +352,19 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         tfile.cd()
         # super(ROOT.MyTUnfoldDensity, self).Write()
 
+    def save_unfolded_binned_hists_to_tfile(self, tfile):
+        if "unfolded_stat_err" not in self.hist_bin_chopper.objects:
+            print("Cannot save unfolded_stat_err binned as not in HistBinChopper")
+            return
+
+        if "unfolded" not in self.hist_bin_chopper.objects:
+            print("Cannot save unfolded binned as not in HistBinChopper")
+            return
+        for ibin_pt in range(len(self.pt_bin_edges_gen[:-1])):
+
+            tfile.WriteTObject(self.hist_bin_chopper.get_pt_bin_normed_div_bin_width("unfolded_stat_err", ibin_pt, 'generator'), "unfolded_stat_err_norm_divBinWidth_%d" % (ibin_pt))
+            tfile.WriteTObject(self.hist_bin_chopper.get_pt_bin_normed_div_bin_width("unfolded", ibin_pt, 'generator'), "unfolded_norm_divBinWidth_%d" % (ibin_pt))
+
     def __getstate__(self):
         # Copy the object's state from self.__dict__ which contains
         # all our instance attributes. Always use the dict.copy()
