@@ -1795,7 +1795,7 @@ class RecoPtBinnedPlotter(object):
             if len(entries) > 15:
                 plot.legend.SetNColumns(3)
             ROOT.gStyle.SetPalette(55)
-            plot.plot("NOSTACK PLC PMC E1")
+            plot.plot("NOSTACK E1")
             plot.save("%s/detector_reco_binning_bg_subtracted_model_systs_%s_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
             ROOT.gStyle.SetPalette(ROOT.kViridis)
 
@@ -1845,7 +1845,7 @@ class RecoPtBinnedPlotter(object):
             if len(entries) > 15:
                 plot.legend.SetNColumns(3)
             ROOT.gStyle.SetPalette(55)
-            plot.plot("NOSTACK PLC PMC E1")
+            plot.plot("NOSTACK E1")
             plot.save("%s/detector_reco_binning_bg_subtracted_model_systs_unnormalised_%s_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
             ROOT.gStyle.SetPalette(ROOT.kViridis)
 
