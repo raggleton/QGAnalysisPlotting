@@ -109,6 +109,7 @@ PLOT_COLOURS = dict(
     # alt_gen_colour=ROOT.kOrange-3,
     alt_gen_colour=ROOT.kViolet+1,
     alt_unfolded_colour=ROOT.kOrange-3,
+    alt_unfolded_total_colour=ROOT.kOrange-7,
     alt_reco_colour=ROOT.kOrange-3,
     # reco_mc_colour=ROOT.kGreen+2,
     # reco_mc_colour=ROOT.kAzure-7,
@@ -361,7 +362,8 @@ class GenPtBinnedPlotter(object):
             mc_gen_hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('hist_truth', ibin, binning_scheme='generator')
             unfolded_hist_bin_total_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded', ibin, binning_scheme='generator')
             unfolded_hist_bin_stat_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded_stat_err', ibin, binning_scheme='generator')
-            alt_unfolded_hist_bin_total_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('alt_unfolded_stat_err', ibin, binning_scheme='generator')
+            alt_unfolded_hist_bin_stat_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('alt_unfolded_stat_err', ibin, binning_scheme='generator')
+            alt_unfolded_hist_bin_total_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('alt_unfolded', ibin, binning_scheme='generator')
             # alt_mc_gen_hist_gin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('alt_hist_truth', ibin, binning_scheme='generator')
 
             entries = [
@@ -384,6 +386,11 @@ class GenPtBinnedPlotter(object):
                              marker_color=self.plot_colours['unfolded_stat_colour'], marker_style=20, marker_size=0.75,
                              subplot=mc_gen_hist_bin),
                 Contribution(alt_unfolded_hist_bin_total_errors,
+                             label="Unfolded (#tau = %.3g) (total unc.)\n(%s response matrix)" % (alt_unfolder.tau, self.region['alt_mc_label']),
+                             line_color=self.plot_colours['alt_unfolded_total_colour'], line_width=self.line_width, line_style=1,
+                             marker_color=self.plot_colours['alt_unfolded_total_colour'], #marker_style=20, marker_size=0.75,
+                             subplot=mc_gen_hist_bin),
+                Contribution(alt_unfolded_hist_bin_stat_errors,
                              label="Unfolded (#tau = %.3g) (stat. unc.)\n(%s response matrix)" % (alt_unfolder.tau, self.region['alt_mc_label']),
                              line_color=self.plot_colours['alt_unfolded_colour'], line_width=self.line_width, line_style=1,
                              marker_color=self.plot_colours['alt_unfolded_colour'], #marker_style=20, marker_size=0.75,
@@ -1985,6 +1992,7 @@ def do_all_plots_per_region_angle(setup):
 
     if alt_unfolder:
         gen_pt_binned_plotter.hist_bin_chopper.add_obj("alt_unfolded_stat_err", alt_unfolder.unfolded_stat_err)
+        gen_pt_binned_plotter.hist_bin_chopper.add_obj("alt_unfolded", alt_unfolder.unfolded)
         gen_pt_binned_plotter.plot_unfolded_with_alt_response_normalised(alt_unfolder=alt_unfolder)
         gen_pt_binned_plotter.plot_unfolded_with_alt_response_truth_normalised(alt_unfolder=alt_unfolder)
 
