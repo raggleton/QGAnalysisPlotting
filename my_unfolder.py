@@ -1411,6 +1411,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
 
         Includes setting up normalised experimental systematics.
         """
+        self.hist_bin_chopper.add_obj('hist_truth', self.hist_truth)
         self.hist_bin_chopper.add_obj('unfolded', self.get_output())
         self.hist_bin_chopper.add_obj('unfolded_stat_err', self.get_unfolded_with_ematrix_stat())
         self.hist_bin_chopper.add_obj('unfolded_rsp_err', self.get_unfolded_with_ematrix_rsp())
