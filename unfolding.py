@@ -1575,6 +1575,8 @@ if __name__ == "__main__":
                 #                                                                                   debugging_dir=os.path.join(this_output_dir, 'unfolded_alt_chi2_debug'))
                 #     print('unfolded chi2 (alt MC):', unfolded_alt_chi2, unfolded_alt_ndf, unfolded_alt_chi2/unfolded_alt_ndf, unfolded_alt_p)
 
+                alt_unfolder.setup_normalised_results()
+
                 region['alt_unfolder'] = alt_unfolder
 
                 # Save important stuff to TFile
@@ -1782,10 +1784,10 @@ if __name__ == "__main__":
                     print("Bin %d:" % (chosen_bin), syst_unfolded_1d.GetBinContent(chosen_bin))
                     print("original uncert:", syst_unfolded_1d.GetBinError(chosen_bin))
                     syst_unfolder._post_process()
+                    syst_unfolder.setup_normalised_results()
 
                     syst_title = "%s\n%s region, %s, %s input" % (jet_algo, region['label'], angle_str, syst_label)
                     syst_unfolder_plotter.draw_unfolded_1d(title=syst_title, **syst_plot_args)
-
                     region['model_systematics'][ind]['unfolder'] = syst_unfolder
 
                     # Save important stuff to TFile
@@ -2196,6 +2198,8 @@ if __name__ == "__main__":
                     print("Bin %d:" % (chosen_bin), pdf_unfolded_1d.GetBinContent(chosen_bin))
                     print("original uncert:", pdf_unfolded_1d.GetBinError(chosen_bin))
                     pdf_unfolder._post_process()
+
+                    pdf_unfolder.setup_normalised_results()
 
                     pdf_title = "%s\n%s region, %s, %s input" % (jet_algo, region['label'], angle_str, pdf_label)
                     pdf_unfolder_plotter.draw_unfolded_1d(title=pdf_title, **pdf_plot_args)
