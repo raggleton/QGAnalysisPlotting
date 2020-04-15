@@ -463,13 +463,10 @@ class GenPtBinnedPlotter(object):
             for syst_dict in self.region['model_systematics']:
                 syst_unfolder = syst_dict['unfolder']
                 syst_label = syst_dict['label']
-                syst_label_no_spaces = cu.no_space_str(syst_dict['label'])
 
-                self.hist_bin_chopper.add_obj('model_syst_%s_unfolded' % (syst_label_no_spaces), syst_unfolder.unfolded)
-                self.hist_bin_chopper.add_obj('model_syst_%s_hist_truth' % (syst_label_no_spaces), syst_unfolder.hist_truth)
-
-                syst_unfolded_hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('model_syst_%s_unfolded' % (syst_label_no_spaces), ibin, binning_scheme='generator')
-                syst_gen_hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('model_syst_%s_hist_truth' % (syst_label_no_spaces), ibin, binning_scheme='generator')
+                # Get binned hists from the model unfolder, since the error bars may have been setup specially
+                syst_unfolded_hist_bin = syst_unfolder.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded', ibin, binning_scheme='generator')
+                syst_gen_hist_bin = syst_unfolder.hist_bin_chopper.get_pt_bin_normed_div_bin_width('hist_truth', ibin, binning_scheme='generator')
 
                 syst_entries.extend([
                     Contribution(syst_gen_hist_bin,
@@ -1001,7 +998,6 @@ class GenPtBinnedPlotter(object):
             line.Draw()
             plot.save("%s/unfolded_syst_variations_vs_nominal_%s_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
 
-
     def plot_detector_normalised(self, alt_detector=None):
         for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
             input_hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('input_hist_gen_binning_bg_subtracted', ibin, binning_scheme='generator')
@@ -1235,13 +1231,9 @@ class GenLambdaBinnedPlotter(object):
             for syst_dict in self.region['model_systematics']:
                 syst_unfolder = syst_dict['unfolder']
                 syst_label = syst_dict['label']
-                syst_label_no_spaces = cu.no_space_str(syst_dict['label'])
 
-                self.hist_bin_chopper.add_obj('model_syst_%s_unfolded' % (syst_label_no_spaces), syst_unfolder.unfolded)
-                self.hist_bin_chopper.add_obj('model_syst_%s_hist_truth' % (syst_label_no_spaces), syst_unfolder.hist_truth)
-
-                syst_unfolded_hist_bin = self.hist_bin_chopper.get_lambda_bin_div_bin_width('model_syst_%s_unfolded' % (syst_label_no_spaces), ibin, binning_scheme='generator')
-                syst_gen_hist_bin = self.hist_bin_chopper.get_lambda_bin_div_bin_width('model_syst_%s_hist_truth' % (syst_label_no_spaces), ibin, binning_scheme='generator')
+                syst_unfolded_hist_bin = syst_unfolder.hist_bin_chopper.get_lambda_bin_div_bin_width('unfolded', ibin, binning_scheme='generator')
+                syst_gen_hist_bin = syst_unfolder.hist_bin_chopper.get_lambda_bin_div_bin_width('hist_truth', ibin, binning_scheme='generator')
 
                 syst_entries.extend([
                     Contribution(syst_gen_hist_bin,
@@ -1352,7 +1344,6 @@ class GenLambdaBinnedPlotter(object):
             plot.set_logy(do_more_labels=False)
             plot.save("%s/unfolded_unnormalised_%s_pdf_model_lambda_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
             ROOT.gStyle.SetPalette(ROOT.kViridis)
-
 
     def plot_uncertainty_shifts_unnormalised(self):
         """Do plots of fractional uncertainty shifts on *unnormalised* unfolded distribution"""
