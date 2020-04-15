@@ -362,9 +362,11 @@ class GenPtBinnedPlotter(object):
             mc_gen_hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('hist_truth', ibin, binning_scheme='generator')
             unfolded_hist_bin_total_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded', ibin, binning_scheme='generator')
             unfolded_hist_bin_stat_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded_stat_err', ibin, binning_scheme='generator')
-            alt_unfolded_hist_bin_stat_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('alt_unfolded_stat_err', ibin, binning_scheme='generator')
-            alt_unfolded_hist_bin_total_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('alt_unfolded', ibin, binning_scheme='generator')
-            # alt_mc_gen_hist_gin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('alt_hist_truth', ibin, binning_scheme='generator')
+            # Note that we have to use the hist_bin_chopper in alt_unfolder to get
+            # the correct total errors on each binned hist, since it is
+            # constructed in a normalised way
+            alt_unfolded_hist_bin_stat_errors = alt_unfolder.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded_stat_err', ibin, binning_scheme='generator')
+            alt_unfolded_hist_bin_total_errors = alt_unfolder.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded', ibin, binning_scheme='generator')
 
             entries = [
                 Contribution(mc_gen_hist_bin,
@@ -411,8 +413,11 @@ class GenPtBinnedPlotter(object):
             mc_gen_hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('hist_truth', ibin, binning_scheme='generator')
             unfolded_hist_bin_total_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded', ibin, binning_scheme='generator')
             unfolded_hist_bin_stat_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded_stat_err', ibin, binning_scheme='generator')
-            alt_unfolded_hist_bin_total_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('alt_unfolded_stat_err', ibin, binning_scheme='generator')
             alt_mc_gen_hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('alt_hist_truth', ibin, binning_scheme='generator')
+            # Note that we have to use the hist_bin_chopper in alt_unfolder to get
+            # the correct total errors on each binned hist, since it is
+            # constructed in a normalised way
+            alt_unfolded_hist_bin_total_errors = alt_unfolder.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded_stat_err', ibin, binning_scheme='generator')
 
             entries = [
                 Contribution(mc_gen_hist_bin,
@@ -1184,7 +1189,7 @@ class GenLambdaBinnedPlotter(object):
             mc_gen_hist_bin = self.hist_bin_chopper.get_lambda_bin_div_bin_width('hist_truth', ibin, binning_scheme='generator')
             unfolded_hist_bin_total_errors = self.hist_bin_chopper.get_lambda_bin_div_bin_width('unfolded', ibin, binning_scheme='generator')
             unfolded_hist_bin_stat_errors = self.hist_bin_chopper.get_lambda_bin_div_bin_width('unfolded_stat_err', ibin, binning_scheme='generator')
-            alt_unfolded_hist_bin_total_errors = self.hist_bin_chopper.get_lambda_bin_div_bin_width('alt_unfolded_stat_err', ibin, binning_scheme='generator')
+            alt_unfolded_hist_bin_total_errors = alt_unfolder.hist_bin_chopper.get_lambda_bin_div_bin_width('unfolded', ibin, binning_scheme='generator')
             alt_mc_gen_hist_gin = self.hist_bin_chopper.get_lambda_bin_div_bin_width('alt_hist_truth', ibin, binning_scheme='generator')
 
             entries = [
@@ -1991,8 +1996,6 @@ def do_all_plots_per_region_angle(setup):
         gen_pt_binned_plotter.plot_unfolded_with_unreg_normalised()
 
     if alt_unfolder:
-        gen_pt_binned_plotter.hist_bin_chopper.add_obj("alt_unfolded_stat_err", alt_unfolder.unfolded_stat_err)
-        gen_pt_binned_plotter.hist_bin_chopper.add_obj("alt_unfolded", alt_unfolder.unfolded)
         gen_pt_binned_plotter.plot_unfolded_with_alt_response_normalised(alt_unfolder=alt_unfolder)
         gen_pt_binned_plotter.plot_unfolded_with_alt_response_truth_normalised(alt_unfolder=alt_unfolder)
 
@@ -2253,11 +2256,12 @@ class BigNormalised1DPlotter(object):
 
         return lines, texts
 
-    def make_big_1d_normalised_hist(self, name, binning_scheme='generator'):
+    def make_big_1d_normalised_hist(self, name, binning_scheme='generator', hist_bin_chopper=None):
         """Make big 1D plot with normalised distribution per pt bin"""
+        hist_bin_chopper = hist_bin_chopper or self.hist_bin_chopper
         h_new = ROOT.TH1D(name + "_1d_all_" + cu.get_unique_str(), "", self.nbins(binning_scheme), self.all_bin_edges(binning_scheme))
         for ibin, _ in enumerate(self.pt_bin_edges(binning_scheme)[:-1]):
-            hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width(name, ibin, binning_scheme=binning_scheme)
+            hist_bin = hist_bin_chopper.get_pt_bin_normed_div_bin_width(name, ibin, binning_scheme=binning_scheme)
 
             for lbin in range(1, hist_bin.GetNbinsX()+1):
                 global_bin = (ibin * self.num_lambda_bins(binning_scheme)) + lbin
@@ -2313,10 +2317,19 @@ class BigNormalised1DPlotter(object):
     def get_subplot_ylim(self):
         return (0, 2) if self.setup.has_data else (0.7, 1.3)
 
-    def get_big_1d(self, name, binning_scheme='generator'):
+    def get_big_1d(self, name, binning_scheme='generator', hist_bin_chopper=None, hist_bin_chopper_key=None):
+        """Getter for big 1D hist - use cached version if available, otherwise create and store in cache
+
+        By default uses the main unfolder.hist_bin_chopper to construct the hists
+        using histogram cached name "name". Can also specify an alternate
+        hist_bin_chopper, as well as a key for it (default is same as name arg)
+        This allows you to do e.g. name="alt_unfolded", hist_bin_chopper_key="unfolded"
+        to store the unfolded hist from alt_unfolder in this cache as "alt_unfolded"
+        """
         key = name + '_' + binning_scheme
         if self._cache_1d.get(key, None) is None:
-            self._cache_1d[key] = self.make_big_1d_normalised_hist(name, binning_scheme)
+            hist_bin_chopper_key = hist_bin_chopper_key or name
+            self._cache_1d[key] = self.make_big_1d_normalised_hist(hist_bin_chopper_key, binning_scheme=binning_scheme, hist_bin_chopper=hist_bin_chopper)
         return self._cache_1d[key]
 
     def plot_unfolded_truth(self):
@@ -2414,7 +2427,9 @@ class BigNormalised1DPlotter(object):
             Contribution(self.get_big_1d('unfolded_stat_err', 'generator'),
                          subplot=self.get_big_1d('hist_truth', 'generator'),
                          **self.get_unfolded_stat_err_kwargs()),
-            Contribution(self.get_big_1d('alt_unfolded_stat_err', 'generator'),
+            Contribution(self.get_big_1d('alt_unfolded_stat_err', 'generator',
+                                         hist_bin_chopper=alt_unfolder.hist_bin_chopper,
+                                         hist_bin_chopper_key='unfolded_stat_err'),
                          subplot=self.get_big_1d('hist_truth', 'generator'),
                          **self.get_alt_unfolded_stat_err_kwargs(alt_unfolder)),
         ]
@@ -2443,7 +2458,9 @@ class BigNormalised1DPlotter(object):
             Contribution(self.get_big_1d('unfolded', 'generator'),
                          subplot=self.get_big_1d('hist_truth', 'generator'),
                          **self.get_unfolded_total_err_kwargs()),
-            Contribution(self.get_big_1d('alt_unfolded_stat_err', 'generator'),
+            Contribution(self.get_big_1d('alt_unfolded_stat_err', 'generator',
+                                         hist_bin_chopper=alt_unfolder.hist_bin_chopper,
+                                         hist_bin_chopper_key='unfolded_stat_err'),
                          subplot=self.get_big_1d('hist_truth', 'generator'),
                          **self.get_alt_unfolded_stat_err_kwargs(alt_unfolder)),
         ]
