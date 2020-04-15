@@ -500,7 +500,14 @@ ZPJ_ALL_FILENAME = "uhh2.AnalysisModuleRunner.MC.MC_MGPYTHIA_DYJetsToLL_M-50_HT-
 
 QCD_HERWIG_FILENAME = "uhh2.AnalysisModuleRunner.MC.MC_HERWIG_QCD.root"
 QCD_HERWIG_PTREWEIGHT_FILENAME = "uhh2.AnalysisModuleRunner.MC.MC_HERWIG_QCD_PtReweight.root"
-DY_HERWIG_FILENAME = "uhh2.AnalysisModuleRunner.MC.MC_HERWIG_DYJetsToLL.root"
+
+DY_HERWIG_INCL_FILENAME = "uhh2.AnalysisModuleRunner.MC.MC_HERWIG_DYJetsToLL_Incl.root"
+DY_HERWIG_LOW_PT_FILENAME = "uhh2.AnalysisModuleRunner.MC.MC_HERWIG_DYJetsToLL_Incl_PartonKtMax300.root"
+DY_HERWIG_HIGH_PT_FILENAME = "uhh2.AnalysisModuleRunner.MC.MC_HERWIG_DYJetsToLL_JetKtMin170_PartonKtMin300.root"
+DY_HERWIG_LOW_HIGH_PT_FILENAME = "uhh2.AnalysisModuleRunner.MC.MC_HERWIG_DYJetsToLL_merged_PartonKtMin300.root"
+
+DY_HERWIG_FILENAME = DY_HERWIG_LOW_HIGH_PT_FILENAME
+
 DY_MG_HERWIG_FILENAME = "uhh2.AnalysisModuleRunner.MC.MC_MG_HERWIG_DYJetsToLL.root"
 DY_AMCATNLO_FILENAME = "uhh2.AnalysisModuleRunner.MC.MC_AMCATNLO_DYJetsToLL.root"
 

@@ -237,6 +237,7 @@ def get_zpj_config(source_dir, groomed=False):
     input_mc_dy_mgpythia_tfile = os.path.join(source_dir, qgc.DY_FILENAME)
     input_mc_dy_mgherwig_tfile = os.path.join(source_dir, qgc.DY_MG_HERWIG_FILENAME)
     input_mc_dy_herwig_tfile = os.path.join(source_dir, qgc.DY_HERWIG_FILENAME)
+    input_mc_dy_herwig_tfile = os.path.join(source_dir, qgc.DY_HERWIG_LOW_HIGH_PT_FILENAME)
 
     input_singlemu_tfile = os.path.join(source_dir, qgc.SINGLE_MU_FILENAME)
 

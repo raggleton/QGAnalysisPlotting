@@ -16,7 +16,6 @@ import ROOT
 from MyStyle import My_Style
 from comparator import Contribution, Plot
 My_Style.cd()
-ROOT.gErrorIgnoreLevel = ROOT.kWarning
 
 # my packages
 import common_utils as cu
@@ -27,6 +26,7 @@ ROOT.PyConfig.IgnoreCommandLineOptions = True
 ROOT.gROOT.SetBatch(1)
 ROOT.TH1.SetDefaultSumw2()
 ROOT.gStyle.SetTitleXOffset(1.5)
+# ROOT.gErrorIgnoreLevel = ROOT.kWarning
 
 # Control plot output format
 OUTPUT_FMT = "pdf"
@@ -99,8 +99,8 @@ def do_plot(incl_hist, low_pt_hist, high_pt_hist, merged_hist, output_filename, 
             draw_opt += " SAME"
         hst.Draw(draw_opt)
         first_drawing = False
-        leg_entries.append([low_pt_hist, 'Inclusive, qScale < 200 GeV'])
-        leg_entries.append([high_pt_hist, 'My sample, qScale > 200 GeV'])
+        leg_entries.append([low_pt_hist, 'Inclusive, k_{T} < 300 GeV'])
+        leg_entries.append([high_pt_hist, 'My sample, k_{T} > 300 GeV'])
 
     if merged_hist is not None:
         merged_hist.SetAxisRange(xmin, xmax, 'X')
@@ -123,7 +123,11 @@ if __name__ == "__main__":
     tfile_incl = cu.TFileCacher(os.path.join(workdir, qgc.DY_HERWIG_INCL_FILENAME))
     tfile_low_pt = cu.TFileCacher(os.path.join(workdir, qgc.DY_HERWIG_LOW_PT_FILENAME))
     tfile_high_pt = cu.TFileCacher(os.path.join(workdir, qgc.DY_HERWIG_HIGH_PT_FILENAME))
-    tfile_merged = cu.TFileCacher(os.path.join(workdir, qgc.DY_HERWIG_LOW_HIGH_PT_FILENAME))
+    # tfile_merged = cu.TFileCacher(os.path.join(workdir, qgc.DY_HERWIG_LOW_HIGH_PT_FILENAME))
+
+    plot_dir = os.path.join(workdir, "PartonKtMin300")
+    if not os.path.isdir(plot_dir):
+        os.makedirs(plot_dir)
 
     # q scale plot
     qscale_name = "ZPlusJets_gen/q_scale"
@@ -133,9 +137,9 @@ if __name__ == "__main__":
     style_low_pt_hist(h_qscale_low_pt)
     h_qscale_high_pt = tfile_high_pt.Get(qscale_name)
     style_high_pt_hist(h_qscale_high_pt)
-    h_qscale_merged = tfile_merged.Get(qscale_name)
-    style_merged_hist(h_qscale_merged)
-    output_filename = os.path.join(workdir, "qscale.pdf")
+    # h_qscale_merged = tfile_merged.Get(qscale_name)
+    # style_merged_hist(h_qscale_merged)
+    output_filename = os.path.join(plot_dir, "qscale.pdf")
     do_plot(h_qscale_incl, h_qscale_low_pt, h_qscale_high_pt, None, output_filename, logy=True)
 
     # genjet pt plot
@@ -146,9 +150,9 @@ if __name__ == "__main__":
     style_low_pt_hist(pt_genjet_low_pt)
     pt_genjet_high_pt = tfile_high_pt.Get(pt_genjet_name)
     style_high_pt_hist(pt_genjet_high_pt)
-    pt_genjet_merged = tfile_merged.Get(pt_genjet_name)
-    style_merged_hist(pt_genjet_merged)
-    output_filename = os.path.join(workdir, "pt_genjet.pdf")
+    # pt_genjet_merged = tfile_merged.Get(pt_genjet_name)
+    # style_merged_hist(pt_genjet_merged)
+    output_filename = os.path.join(plot_dir, "pt_genjet.pdf")
     do_plot(pt_genjet_incl, pt_genjet_low_pt, pt_genjet_high_pt, None, output_filename, logy=True, xmax=1000)
 
     # recojet pt plot
@@ -160,10 +164,10 @@ if __name__ == "__main__":
     style_low_pt_hist(h_pt_jet_low_pt, rebin)
     h_pt_jet_high_pt = tfile_high_pt.Get(pt_jet_name)
     style_high_pt_hist(h_pt_jet_high_pt, rebin)
-    h_pt_jet_merged = tfile_merged.Get(pt_jet_name)
-    style_merged_hist(h_pt_jet_merged, rebin)
-    output_filename = os.path.join(workdir, "pt_jet.pdf")
-    do_plot(h_pt_jet_incl, h_pt_jet_low_pt, h_pt_jet_high_pt, None, output_filename, logy=True, logx=False, xmin=20, xmax=1000)
+    # h_pt_jet_merged = tfile_merged.Get(pt_jet_name)
+    # style_merged_hist(h_pt_jet_merged, rebin)
+    output_filename = os.path.join(plot_dir, "pt_jet.pdf")
+    do_plot(h_pt_jet_incl, h_pt_jet_low_pt, h_pt_jet_high_pt, None, output_filename, logy=True, logx=False, xmin=0, xmax=1000)
 
     # gen jet kT
     kt_name = "ZPlusJets/genjet_kt"
@@ -174,10 +178,10 @@ if __name__ == "__main__":
     style_low_pt_hist(h_kt_low_pt, rebin)
     h_kt_high_pt = tfile_high_pt.Get(kt_name)
     style_high_pt_hist(h_kt_high_pt, rebin)
-    h_kt_merged = tfile_merged.Get(kt_name)
-    style_merged_hist(h_kt_merged, rebin)
-    output_filename = os.path.join(workdir, "genjet_kt.pdf")
-    do_plot(h_kt_incl, h_kt_low_pt, h_kt_high_pt, None, output_filename, logy=True, logx=False, xmin=20, xmax=1000)
+    # h_kt_merged = tfile_merged.Get(kt_name)
+    # style_merged_hist(h_kt_merged, rebin)
+    output_filename = os.path.join(plot_dir, "gen_kt.pdf")
+    do_plot(h_kt_incl, h_kt_low_pt, h_kt_high_pt, None, output_filename, logy=True, logx=False, xmin=0, xmax=1000)
 
     # ptZ plot
     ptZ_name = "ZPlusJets/pt_mumu"
@@ -188,7 +192,7 @@ if __name__ == "__main__":
     style_low_pt_hist(h_ptZ_low_pt, rebin)
     h_ptZ_high_pt = tfile_high_pt.Get(ptZ_name)
     style_high_pt_hist(h_ptZ_high_pt, rebin)
-    h_ptZ_merged = tfile_merged.Get(ptZ_name)
-    style_merged_hist(h_ptZ_merged, rebin)
-    output_filename = os.path.join(workdir, "ptZ.pdf")
-    do_plot(h_ptZ_incl, h_ptZ_low_pt, h_ptZ_high_pt, None, output_filename, logy=True, logx=False, xmin=30, xmax=1000)
+    # h_ptZ_merged = tfile_merged.Get(ptZ_name)
+    # style_merged_hist(h_ptZ_merged, rebin)
+    output_filename = os.path.join(plot_dir, "pt_mumu.pdf")
+    do_plot(h_ptZ_incl, h_ptZ_low_pt, h_ptZ_high_pt, None, output_filename, logy=True, logx=False, xmin=0, xmax=1000)
