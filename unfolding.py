@@ -1865,7 +1865,9 @@ if __name__ == "__main__":
 
                 # Update main unfolder with these unfolded variations
                 # --------------------------------------------------------------
-                unfolder.create_normalised_scale_syst_uncertainty(region['model_systematics'])
+                scale_model_systs = [r for r in region['model_systematics'] if 'scale' in r['label'].lower()]
+                if len(scale_model_systs) > 0:
+                    unfolder.create_normalised_scale_syst_uncertainty(scale_model_systs)
 
                 # Do big 1D plot of nominal & all systs
                 # --------------------------------------------------------------
@@ -1937,7 +1939,8 @@ if __name__ == "__main__":
                 region['model_systematics'] = model_syst_region['model_systematics']
 
                 # Add dummy object to hist_bin_chopper for later, so we can directly manipulate the cache
-                uncert_name = "scale_uncert"
+                # this replaces the procedure in create_normalised_scale_syst_uncertainty()
+                uncert_name = "scale_uncert"  # this is used later in setup_normalised_results()
                 unfolder.hist_bin_chopper.add_obj(uncert_name, unfolder.get_unfolded_with_ematrix_stat())
                 unfolder.hist_bin_chopper.add_obj("unfolded_stat_err", unfolder.get_unfolded_with_ematrix_stat())
 
