@@ -465,7 +465,7 @@ class GenPtBinnedPlotter(object):
                                  line_color=syst_dict['colour'], line_width=self.line_width, line_style=2,
                                  marker_color=syst_dict['colour'], marker_size=0),
                     Contribution(syst_unfolded_hist_bin,
-                                 label="Unfolded (#tau = %.3g) (stat. err) (%s)" % (syst_unfolder.tau, syst_label),
+                                 label="Unfolded (#tau = %.3g) (total unc.) (%s)" % (syst_unfolder.tau, syst_label),
                                  line_color=syst_dict['colour'], line_width=self.line_width, line_style=1,
                                  marker_color=syst_dict['colour'], marker_size=0,
                                  subplot=syst_gen_hist_bin),
@@ -522,7 +522,7 @@ class GenPtBinnedPlotter(object):
 
                 pdf_entries.extend([
                     Contribution(pdf_unfolded_hist_bin,
-                                 label="Unfolded (#tau = %.3g) (stat. err) (%s)" % (pdf_unfolder.tau, pdf_label),
+                                 label="Unfolded (#tau = %.3g) (stat. unc.) (%s)" % (pdf_unfolder.tau, pdf_label),
                                  line_color=pdf_dict['colour'], line_width=1, line_style=1,
                                  marker_color=pdf_dict['colour'], marker_size=0,
                                  subplot=pdf_gen_hist_bin),
@@ -583,7 +583,7 @@ class GenPtBinnedPlotter(object):
 
                 pdf_entries.extend([
                     Contribution(pdf_unfolded_hist_bin,
-                                 label="Unfolded (#tau = %.3g) (stat. err) (%s)" % (pdf_unfolder.tau, pdf_label),
+                                 label="Unfolded (#tau = %.3g) (stat. unc.) (%s)" % (pdf_unfolder.tau, pdf_label),
                                  line_color=pdf_dict['colour'], line_width=1, line_style=1,
                                  marker_color=pdf_dict['colour'], marker_size=0,
                                  subplot=pdf_gen_hist_bin),
@@ -1756,7 +1756,7 @@ class RecoPtBinnedPlotter(object):
                 self.hist_bin_chopper.add_obj(name, model_unfolder.input_hist_bg_subtracted)
                 entries.append(
                     Contribution(self.hist_bin_chopper.get_pt_bin_normed_div_bin_width(name, ibin, binning_scheme='detector'),
-                                 label="%s" % (model_label),
+                                 label="%s (bg-subtracted)" % (model_label),
                                  line_color=model_dict['colour'], line_width=1, line_style=1,
                                  marker_color=model_dict['colour'], marker_size=0,
                                  subplot=mc_reco_hist_bin)
@@ -1806,7 +1806,7 @@ class RecoPtBinnedPlotter(object):
                 self.hist_bin_chopper.add_obj(name, model_unfolder.input_hist_bg_subtracted)
                 entries.append(
                     Contribution(self.hist_bin_chopper.get_pt_bin_div_bin_width(name, ibin, binning_scheme='detector'),
-                                 label="%s" % (model_label),
+                                 label="%s (bg-subtracted)" % (model_label),
                                  line_color=model_dict['colour'], line_width=1, line_style=1,
                                  marker_color=model_dict['colour'], marker_size=0,
                                  subplot=mc_reco_hist_bin)
@@ -2521,7 +2521,7 @@ class BigNormalised1DPlotter(object):
                              line_color=syst_dict['colour'], line_width=self.line_width, line_style=2,
                              marker_color=syst_dict['colour'], marker_size=0),
                 Contribution(self.get_big_1d(hbc_name, 'generator'),
-                             label="Unfolded (#tau = %.3g) (stat. err) (%s)" % (syst_unfolder.tau, syst_label),
+                             label="Unfolded (#tau = %.3g) (stat. unc.) (%s)" % (syst_unfolder.tau, syst_label),
                              line_color=syst_dict['colour'], line_width=self.line_width, line_style=1,
                              marker_color=syst_dict['colour'], marker_size=0,
                              subplot=self.get_big_1d(hbc_name_gen, 'generator')),
@@ -2586,7 +2586,7 @@ class BigNormalised1DPlotter(object):
                              line_color=syst_dict['colour'], line_width=self.line_width, line_style=2,
                              marker_color=syst_dict['colour'], marker_size=0),
                 Contribution(self.get_big_1d(hbc_name, 'generator'),
-                             label="Unfolded (#tau = %.3g) (stat. err) (%s)" % (syst_unfolder.tau, syst_label),
+                             label="Unfolded (#tau = %.3g) (stat. unc.) (%s)" % (syst_unfolder.tau, syst_label),
                              line_color=syst_dict['colour'], line_width=self.line_width, line_style=1,
                              marker_color=syst_dict['colour'], marker_size=0,
                              subplot=self.get_big_1d(hbc_name_gen, 'generator')),
@@ -2633,7 +2633,7 @@ class BigNormalised1DPlotter(object):
                              line_color=syst_dict['colour'], line_width=self.line_width, line_style=2,
                              marker_color=syst_dict['colour'], marker_size=0),
                 Contribution(self.get_big_1d(hbc_name, 'generator'),
-                             label="Unfolded (#tau = %.3g) (stat. err) (%s)" % (syst_unfolder.tau, syst_label),
+                             label="Unfolded (#tau = %.3g) (stat. unc.) (%s)" % (syst_unfolder.tau, syst_label),
                              line_color=syst_dict['colour'], line_width=self.line_width, line_style=1,
                              marker_color=syst_dict['colour'], marker_size=0,
                              subplot=self.get_big_1d(hbc_name_gen, 'generator')),
