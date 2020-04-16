@@ -254,7 +254,9 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
 
         # For setting/getting total scale & PDF uncerts from HistBinChopper
         self.scale_uncert_name = "scale_uncert"
+        self.scale_uncert_ematrix_name = "scale_uncert_ematrix"
         self.pdf_uncert_name = "pdf_uncert"
+        self.pdf_uncert_ematrix_name = "pdf_uncert_ematrix"
 
     def save_binning(self, print_xml=True, txt_filename=None):
         """Save binning scheme to txt and/or print XML to screen"""
@@ -1291,6 +1293,37 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
                                                       binning_scheme='generator')
             self.hist_bin_chopper._cache[key] = variations_envelope
 
+
+    def create_normalised_scale_syst_ematrices(self):
+        """Create ematrix corresponding to scale uncertainty for each pt bin
+
+        Calculated as x.x^T, where x is the difference between the scale-uncert
+        normalised hist, and the nominal normalised hist
+
+        Stored in self.hist_bin_chopper with key self.scale_uncert_ematrix_name
+        """
+        # add dummy object to HistBinChopper.objects so check doesn't fail
+        self.hist_bin_chopper.add_obj(self.scale_uncert_ematrix_name, self.get_unfolded_with_ematrix_stat())
+
+        for ibin_pt in range(len(self.pt_bin_edges_gen[:-1])):
+            nominal = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded_stat_err',
+                                                                             ibin_pt,
+                                                                             binning_scheme='generator')
+            scale_hist = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width(self.scale_uncert_name,
+                                                                               ibin_pt,
+                                                                               binning_scheme='generator')
+            scale_shift = self.convert_error_bars_to_error_shift(scale_hist)
+            scale_shift.Add(nominal, -1)
+            scale_ematrix = cu.shift_to_covariance(scale_shift)
+            key = self.hist_bin_chopper._generate_key(self.scale_uncert_ematrix_name,
+                                                      ind=ibin_pt,
+                                                      axis='pt',
+                                                      do_norm=True,
+                                                      do_div_bin_width=True,
+                                                      binning_scheme='generator')
+            self.hist_bin_chopper._cache[key] = scale_ematrix
+
+
     def create_normalised_pdf_syst_uncertainty(self, pdf_systs):
         """Create PDF uncertainty from unfolded PDF variation inputs
 
@@ -1360,10 +1393,50 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
                                                       binning_scheme='generator')
             self.hist_bin_chopper._cache[key] = variations_envelope
 
+    def create_normalised_pdf_syst_ematrices(self):
+        """Create ematrix corresponding to pdf uncertainty for each pt bin
+
+        Calculated as x.x^T, where x is the difference between the pdf-uncert
+        normalised hist, and the nominal normalised hist
+
+        Stored in self.hist_bin_chopper with key self.pdf_uncert_ematrix_name
+        """
+        # add dummy object to HistBinChopper.objects so check doesn't fail
+        self.hist_bin_chopper.add_obj(self.pdf_uncert_ematrix_name, self.get_unfolded_with_ematrix_stat())
+
+        for ibin_pt in range(len(self.pt_bin_edges_gen[:-1])):
+            nominal = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded_stat_err',
+                                                                             ibin_pt,
+                                                                             binning_scheme='generator')
+            pdf_hist = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width(self.pdf_uncert_name,
+                                                                               ibin_pt,
+                                                                               binning_scheme='generator')
+            pdf_shift = self.convert_error_bars_to_error_shift(pdf_hist)
+            pdf_shift.Add(nominal, -1)
+            pdf_ematrix = cu.shift_to_covariance(pdf_shift)
+            key = self.hist_bin_chopper._generate_key(self.pdf_uncert_ematrix_name,
+                                                      ind=ibin_pt,
+                                                      axis='pt',
+                                                      do_norm=True,
+                                                      do_div_bin_width=True,
+                                                      binning_scheme='generator')
+            self.hist_bin_chopper._cache[key] = pdf_ematrix
+
+
     @staticmethod
     def remove_error_bars(h):
         for i in range(1, h.GetNbinsX()+1):
             h.SetBinError(i, 0)
+
+    @staticmethod
+    def convert_error_bars_to_error_shift(h):
+        """Create histogram with bin contents equal to error bar on h,
+        and 0 error bars"""
+        h_new = h.Clone(cu.get_unique_str())
+        for i in range(1, h.GetNbinsX()+1):
+            h_new.SetBinContent(i, h.GetBinError(i))
+            h_new.SetBinError(i, 0)
+        return h_new
 
     @staticmethod
     def convert_error_shift_to_error_bars(h_unshifted, h_shifted):
@@ -1421,8 +1494,6 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
                                                           do_div_bin_width=True,
                                                           binning_scheme='generator')
                 self.hist_bin_chopper._cache[key] = syst_ematrix
-
-
 
     def setup_normalised_results(self):
         """Setup final normalised results per pt bin with all uncertainties.

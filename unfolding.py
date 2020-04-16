@@ -1868,6 +1868,7 @@ if __name__ == "__main__":
                 scale_model_systs = [r for r in region['model_systematics'] if 'mu' in r['label'].lower()]
                 if len(scale_model_systs) > 0:
                     unfolder.create_normalised_scale_syst_uncertainty(scale_model_systs)
+                    unfolder.create_normalised_scale_syst_ematrices()
 
                 # Do big 1D plot of nominal & all systs
                 # --------------------------------------------------------------
@@ -1962,6 +1963,8 @@ if __name__ == "__main__":
                             rel_err = 0
                         scale_syst.SetBinError(i, rel_err * scale_syst.GetBinContent(i))
                     unfolder.hist_bin_chopper._cache[key] = scale_syst
+
+                unfolder.create_normalised_scale_syst_ematrices()
 
                 # Save copies of Unfolders to TFile
                 # ----------------------------------------------------------
@@ -2213,6 +2216,7 @@ if __name__ == "__main__":
                     pdf_unfolder.save_to_tfile(pdf_tdir)
 
                 unfolder.create_normalised_pdf_syst_uncertainty(region['pdf_systematics'])
+                unfolder.create_normalised_pdf_syst_ematrices()
 
             # Load PDF syst from another reference file, and calc fractional
             # uncertainty, apply to this unfolded result
@@ -2252,6 +2256,8 @@ if __name__ == "__main__":
                         pdf_syst.SetBinError(i, rel_err * pdf_syst.GetBinContent(i))
                     unfolder.hist_bin_chopper._cache[key] = pdf_syst
 
+                unfolder.create_normalised_pdf_syst_ematrices()
+
                 # Save copies of Unfolders to TFile
                 # ----------------------------------------------------------
                 for ind, pdf_dict in enumerate(pdf_syst_region['pdf_systematics']):
@@ -2263,6 +2269,7 @@ if __name__ == "__main__":
                     pdf_tdir.cd()
                     pdf_unfolder = pdf_dict['unfolder']
                     pdf_unfolder.save_to_tfile(pdf_tdir)
+
 
             if len(region['pdf_systematics']) > 0 and MC_INPUT:
                 # Do a big absolute 1D plot for sanity
