@@ -1329,14 +1329,10 @@ if __name__ == "__main__":
     has_dijet = any(["Dijet" in r['name'] for r in regions])
     has_zpj = any(["ZPlusJet" in r['name'] for r in regions])
 
-    pt_bins = qgc.PT_UNFOLD_DICT['signal_gen']
+    # For summary plots
     low_pt = 120
-    low_pt_bin = np.where(pt_bins == low_pt)[0][0]
-    low_pt_str = "[%g, %g] GeV" % (low_pt, pt_bins[low_pt_bin+1])
-
-    high_pt = 800
-    high_pt_bin = np.where(pt_bins == high_pt)[0][0]
-    high_pt_str = "[%g, %g] GeV" % (high_pt, pt_bins[high_pt_bin+1])
+    high_pt = 614
+    # high_pt = 800
 
     ak4_str = "AK4"
     ak8_str = "AK8"
@@ -1344,6 +1340,13 @@ if __name__ == "__main__":
     if has_dijet:
         # plotter.plot_dijet_means_vs_pt_all()
         # plotter.plot_dijet_rms_vs_pt_all()
+
+        pt_bins = qgc.PT_UNFOLD_DICT['signal_gen']
+        low_pt_bin = np.where(pt_bins == low_pt)[0][0]
+        low_pt_str = "[%g, %g] GeV" % (low_pt, pt_bins[low_pt_bin+1])
+
+        high_pt_bin = np.where(pt_bins == high_pt)[0][0]
+        high_pt_str = "[%g, %g] GeV" % (high_pt, pt_bins[high_pt_bin+1])
 
         selections = []
         for angle in charged_and_neutral_angles:
@@ -1367,12 +1370,12 @@ if __name__ == "__main__":
                     # "#splitline{{#splitline{{{jet_str}}}{{{pt_str}}}}}{{Charged-only}}".format(jet_str=ak8_str, pt_str=low_pt_str)),
 
                 # FIXME need groomed ak4 instead
-                ('jet_algo=="ak8puppi" & pt_bin==%d & ~isgroomed & region=="Dijet_central" & angle=="%s_charged"' % (low_pt_bin, angle.var),
-                    "#splitline{{{jet_str}, {pt_str}}}{{Charged-only}}".format(jet_str=ak8_str, pt_str=low_pt_str)),
+                # ('jet_algo=="ak8puppi" & pt_bin==%d & ~isgroomed & region=="Dijet_central" & angle=="%s_charged"' % (low_pt_bin, angle.var),
+                    # "#splitline{{{jet_str}, {pt_str}}}{{Charged-only}}".format(jet_str=ak8_str, pt_str=low_pt_str)),
                     # "#splitline{{#splitline{{{jet_str}}}{{{pt_str}}}}}{{Charged-only}}".format(jet_str=ak8_str, pt_str=low_pt_str)),
 
-                # ('jet_algo=="ak4puppi" & pt_bin==%d & isgroomed  & region=="Dijet_central" & angle=="%s"' % (low_pt_bin, angle.var),
-                #     "{jet_str}, {pt_str}".format(jet_str=ak8_str, pt_str=low_pt_str)),
+                ('jet_algo=="ak4puppi" & pt_bin==%d & isgroomed  & region=="Dijet_central_groomed" & angle=="%s"' % (low_pt_bin, angle.var),
+                    "#splitline{{{jet_str}, {pt_str}}}{{Groomed}}".format(jet_str=ak4_str, pt_str=low_pt_str)),
             ]
             selections.append({'label': this_angle_str, 'selections': this_selection})
 
@@ -1381,9 +1384,53 @@ if __name__ == "__main__":
             output_file=os.path.join(args.outputDir, "dijet_mean_rms_summary.pdf")
         )
 
-    # if has_zpj:
-    #     plotter.plot_zpj_means_vs_pt_all()
+    if has_zpj:
+        # plotter.plot_zpj_means_vs_pt_all()
         # plotter.plot_zpj_rms_vs_pt_all()
+
+        pt_bins = qgc.PT_UNFOLD_DICT['signal_zpj_gen']
+        low_pt_bin = np.where(pt_bins == low_pt)[0][0]
+        low_pt_str = "[%g, %g] GeV" % (low_pt, pt_bins[low_pt_bin+1])
+
+        high_pt_bin = np.where(pt_bins == high_pt)[0][0]
+        high_pt_str = "[%g, %g] GeV" % (high_pt, pt_bins[high_pt_bin+1])
+
+        selections = []
+        for angle in charged_and_neutral_angles:
+            this_angle_str = "%s (%s)" % (angle.name, angle.lambda_str)
+            # this_angle_str = "%s" % (angle.lambda_str)
+            this_selection = [
+                ('jet_algo=="ak4puppi" & pt_bin==%d & ~isgroomed & region=="ZPlusJets" & angle=="%s"' % (low_pt_bin, angle.var),
+                    "{jet_str}, {pt_str}".format(jet_str=ak4_str, pt_str=low_pt_str)),
+                    # "#splitline{{{jet_str}}}{{{pt_str}}}".format(jet_str=ak4_str, pt_str=low_pt_str)),
+
+                ('jet_algo=="ak4puppi" & pt_bin==%d & ~isgroomed & region=="ZPlusJets" & angle=="%s"' % (high_pt_bin, angle.var),
+                    "{jet_str}, {pt_str}".format(jet_str=ak4_str, pt_str=high_pt_str)),
+                    # "#splitline{{{jet_str}}}{{{pt_str}}}".format(jet_str=ak4_str, pt_str=high_pt_str)),
+
+                ('jet_algo=="ak8puppi" & pt_bin==%d & ~isgroomed & region=="ZPlusJets" & angle=="%s"' % (low_pt_bin, angle.var),
+                    "{jet_str}, {pt_str}".format(jet_str=ak8_str, pt_str=low_pt_str)),
+                    # "#splitline{{{jet_str}}}{{{pt_str}}}".format(jet_str=ak8_str, pt_str=low_pt_str)),
+
+                ('jet_algo=="ak8puppi" & pt_bin==%d & ~isgroomed & region=="ZPlusJets" & angle=="%s_charged"' % (low_pt_bin, angle.var),
+                    "#splitline{{{jet_str}, {pt_str}}}{{Charged-only}}".format(jet_str=ak8_str, pt_str=low_pt_str)),
+                    # "#splitline{{#splitline{{{jet_str}}}{{{pt_str}}}}}{{Charged-only}}".format(jet_str=ak8_str, pt_str=low_pt_str)),
+
+                # FIXME need groomed ak4 instead
+                # ('jet_algo=="ak8puppi" & pt_bin==%d & ~isgroomed & region=="ZPlusJets" & angle=="%s_charged"' % (low_pt_bin, angle.var),
+                    # "#splitline{{{jet_str}, {pt_str}}}{{Charged-only}}".format(jet_str=ak8_str, pt_str=low_pt_str)),
+                    # "#splitline{{#splitline{{{jet_str}}}{{{pt_str}}}}}{{Charged-only}}".format(jet_str=ak8_str, pt_str=low_pt_str)),
+
+                ('jet_algo=="ak4puppi" & pt_bin==%d & isgroomed  & region=="ZPlusJets_groomed" & angle=="%s"' % (low_pt_bin, angle.var),
+                    "#splitline{{{jet_str}, {pt_str}}}{{Groomed}}".format(jet_str=ak4_str, pt_str=low_pt_str)),
+            ]
+            selections.append({'label': this_angle_str, 'selections': this_selection})
+
+        plotter.plot_mean_rms_bins_summary(
+            selections=selections,
+            output_file=os.path.join(args.outputDir, "zpj_mean_rms_summary.pdf")
+        )
+
 
     # if has_dijet and has_zpj:
     #     plotter.plot_dijet_zpj_means_vs_pt_all()
