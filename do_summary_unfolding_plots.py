@@ -19,6 +19,8 @@ from array import array
 from math import sqrt
 import lzma
 import pickle
+import jax.numpy as np
+from jax import grad
 
 import ROOT
 from MyStyle import My_Style
@@ -860,6 +862,16 @@ class SummaryPlotter(object):
         canvas.Update()
         canvas.SaveAs(output_file)
 
+# ------------------------------------------------------------------------------
+# VARIOUS CALCULATION METHODS
+# ------------------------------------------------------------------------------
+
+def hist_to_arrays(hist):
+    bin_areas = np.array([hist.GetBinContent(ibin)*hist.GetBinWidth(ibin) for ibin in range(1, hist.GetNbinsX()+1)])
+    bin_centers = np.array([hist.GetBinCenter(ibin) for ibin in range(1, hist.GetNbinsX()+1)])
+    bin_errors = np.array([hist.GetBinError(ibin)*hist.GetBinWidth(ibin) for ibin in range(1, hist.GetNbinsX()+1)])
+    return bin_areas, bin_centers, bin_errors
+
 
 def calc_hist_mean(hist):
     """Manual calculation of mean of normalised histogram, taking into account bin width
@@ -868,9 +880,78 @@ def calc_hist_mean(hist):
     (since already divided by bin width), and the bin centres are the "data"
     https://en.wikipedia.org/wiki/Weighted_arithmetic_mean
     """
-    numerator = sum([hist.GetBinContent(ibin)*hist.GetBinWidth(ibin)*hist.GetBinCenter(ibin) for ibin in range(1, hist.GetNbinsX()+1)])
-    denominator = sum([hist.GetBinContent(ibin)*hist.GetBinWidth(ibin) for ibin in range(1, hist.GetNbinsX()+1)])
-    return numerator / denominator
+    bin_areas = np.array([hist.GetBinContent(ibin)*hist.GetBinWidth(ibin) for ibin in range(1, hist.GetNbinsX()+1)])
+    bin_centers = np.array([hist.GetBinCenter(ibin) for ibin in range(1, hist.GetNbinsX()+1)])
+    return float(calc_hist_mean_from_values(bin_areas, bin_centers))
+
+
+def calc_hist_mean_from_values(bin_areas, bin_centers):
+    """Summary
+
+    Must use np.X functions for e.g. sum(), square(), to ensure jax can differentiate it
+
+    Parameters
+    ----------
+    bin_areas : TYPE
+        Description
+    bin_centers : TYPE
+        Description
+
+    Returns
+    -------
+    TYPE
+        Description
+    """
+    return np.sum(bin_areas * bin_centers) / np.sum(bin_areas)
+
+
+def calc_hist_mean_uncorrelated_error(hist):
+    """Get error on mean using error bars, assuming 0 correlation between errors
+    i.e. statistical only.
+
+    Assumes aready divided by bin width!
+
+    if mean = sum_{bins} (bin_center * bin_area) / N
+    where N = sum_{bins} (bin_area)
+    then err^2 = sum_{bins} [ ( (bin_center * bin_error / N) - (mean/N) ) * bin_error * bin_width ]^2
+
+    (if bin_error has already been divided by the bin width)
+
+    since our error is on both the numerator and denominator
+
+    Parameters
+    ----------
+    hist : ROOT.TH1
+        Histogram
+    """
+    mean = calc_hist_mean(hist)
+    N = sum([hist.GetBinContent(ibin)*hist.GetBinWidth(ibin) for ibin in range(1, hist.GetNbinsX()+1)])
+    err_sq = sum([pow( ((hist.GetBinCenter(ibin)/N) - (mean/N) )*hist.GetBinWidth(ibin)*hist.GetBinError(ibin), 2) for ibin in range(1, hist.GetNbinsX()+1) ])
+    return sqrt(err_sq)
+
+
+def calc_hist_mean_uncorrelated_error_from_values(bin_areas, bin_centers, bin_errors):
+    """Summary
+
+    Parameters
+    ----------
+    bin_areas : TYPE
+        Description
+    bin_centers : TYPE
+        Description
+    bin_errors : TYPE
+        Description
+
+    Returns
+    -------
+    TYPE
+        Description
+    """
+    # differential wrt bin_areas
+    mean_differential = grad(calc_hist_mean_from_values, argnums=0)
+    diffs = mean_differential(bin_areas, bin_centers)
+    err_sq = np.sum(np.square((diffs * bin_errors)))
+    return np.sqrt(err_sq)
 
 
 def calc_hist_mean_error(hist, covariance_matrix, scale_factor):
@@ -920,8 +1001,109 @@ def calc_hist_mean_error(hist, covariance_matrix, scale_factor):
 
     # scale for total entries
     # print('final', sum_sq, hist.Integral())
-    return sqrt(sum_sq) / hist.Integral()
+    return sqrt(sum_sq) / hist.Integral("width")
     # return sqrt(sum_sq) / sum_reduced
+
+
+def calc_hist_mean_and_uncorrelated_error(hist):
+    """Summary
+
+    Parameters
+    ----------
+    hist : TYPE
+        Description
+
+    Returns
+    -------
+    TYPE
+        Description
+    """
+    areas, centers, errors = hist_to_arrays(hist)
+    mean = calc_hist_mean_from_values(areas, centers)
+    err = calc_hist_mean_uncorrelated_error_from_values(areas, centers, errors)
+    return float(mean), float(err)
+
+
+def calc_hist_rms(hist):
+    """Calculate std deviation for hist
+
+    RMS^2 = (1/N) sum[ (bin_area - mean)^2 ]
+    """
+    areas, centers, errors = hist_to_arrays(hist)
+    return float(calc_hist_rms_from_values(areas, centers))
+    # mean = calc_hist_mean(hist)
+    # sum_sq = sum([pow((hist.GetBinWidth(ibin)*hist.GetBinContent(ibin)*hist.GetBinCenter(ibin) - mean), 2)
+    #               for ibin in range(1, hist.GetNbinsX()+1)])
+    # N = sum([hist.GetBinWidth(ibin)*hist.GetBinContent(ibin)
+    #          for ibin in range(1, hist.GetNbinsX()+1)])
+    # if N == 0:
+    #     raise ValueError("N == 0")
+    # return sqrt(sum_sq / N)
+
+
+def calc_hist_rms_from_values(bin_areas, bin_centers):
+    """Summary
+
+    Must use np.X functions for e.g. sum(), square(), to ensure jax can differentiate it
+
+    Parameters
+    ----------
+    bin_areas : TYPE
+        Description
+    bin_centers : TYPE
+        Description
+
+    Returns
+    -------
+    TYPE
+        Description
+    """
+    mean = calc_hist_mean_from_values(bin_areas, bin_centers)
+    sum_sq = np.sum(np.square((bin_areas * bin_centers) - mean))
+    return np.sqrt(sum_sq / np.sum(bin_areas))
+
+
+def calc_hist_rms_uncorrelated_error_from_values(bin_areas, bin_centers, bin_errors):
+    """Summary
+
+    Parameters
+    ----------
+    bin_areas : TYPE
+        Description
+    bin_centers : TYPE
+        Description
+    bin_errors : TYPE
+        Description
+
+    Returns
+    -------
+    TYPE
+        Description
+    """
+    # differential wrt bin_areas
+    rms_differential = grad(calc_hist_rms_from_values, argnums=0)
+    diffs = rms_differential(bin_areas, bin_centers)
+    err_sq = np.sum(np.square((diffs * bin_errors)))
+    return np.sqrt(err_sq)
+
+
+def calc_hist_rms_and_uncorrelated_error(hist):
+    """Summary
+
+    Parameters
+    ----------
+    hist : TYPE
+        Description
+
+    Returns
+    -------
+    TYPE
+        Description
+    """
+    areas, centers, errors = hist_to_arrays(hist)
+    rms = calc_hist_rms_from_values(areas, centers)
+    err = calc_hist_rms_uncorrelated_error_from_values(areas, centers, errors)
+    return float(rms), float(err)
 
 
 if __name__ == "__main__":
@@ -1010,90 +1192,72 @@ if __name__ == "__main__":
                     alt_hist_truth = region.get("alt_hist_mc_gen", None)
                     hbc.add_obj("alt_hist_truth", alt_hist_truth)
 
+                    # ----------------------------------------------------------
+                    # CALCULATE STATS FOR EACH PT BIN
+                    # ----------------------------------------------------------
                     # Iterate through pt bins, get lambda histogram for that bin,
                     # derive metrics from it, save
-                    key = 'signal_gen'
-                    if 'ZPlusJets' in region['name']:
-                        key = 'signal_zpj_gen'
-                    pt_bins = qgc.PT_UNFOLD_DICT[key]
-
                     for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(pt_bins[:-1], pt_bins[1:])):
-                        # print("pt bin", ibin, "=", bin_edge_low, bin_edge_high)
-                        # mc_gen_hist_bin_unnorm_div_bin_width = hbc.get_pt_bin_div_bin_width('hist_truth', ibin)
-                        mc_gen_hist_bin = hbc.get_pt_bin_normed_div_bin_width('hist_truth', ibin)
-                        # mc_gen_hist_bin_unnorm = hbc.get_pt_bin('hist_truth', ibin)
-                        # print('unnorm', mc_gen_hist_bin_unnorm.Integral())
-                        # print('unnorm_div_bin_width', mc_gen_hist_bin_unnorm_div_bin_width.Integral())
-                        # print('norm', mc_gen_hist_bin.Integral())
-                        # unfolded_hist_bin_stat_errors = hbc.get_pt_bin_normed_div_bin_width('unfolded_stat_err', ibin)
-                        unfolded_hist_bin_total_errors = hbc.get_pt_bin_normed_div_bin_width('unfolded', ibin)
-                        # unfolded_hist_bin_unnorm = hbc.get_pt_bin('unfolded', ibin)
+                        # print("   done pt bin", ibin)
 
-                        # for i in range(1, unfolded_hist_bin_total_errors.GetNbinsX()+1):
-                            # print(i, unfolded_hist_bin_total_errors.GetBinContent(i))
+                        # Handle nominal MC hist -> metrics
+                        # mc_gen_hist_bin = hbc.get_pt_bin_normed_div_bin_width('hist_truth', ibin)
+                        mc_gen_hist_bin = unfolding_dict['truth_hists'][ibin]
+                        mc_gen_hist_bin_mean, mc_gen_hist_bin_mean_err = calc_hist_mean_and_uncorrelated_error(mc_gen_hist_bin)
+                        mc_gen_hist_bin_rms, mc_gen_hist_bin_rms_err = calc_hist_rms_and_uncorrelated_error(mc_gen_hist_bin)
 
-                        alt_mc_gen_hist_bin = hbc.get_pt_bin_normed_div_bin_width('alt_hist_truth', ibin)
-                        # alt_mc_gen_hist_bin_unnorm = hbc.get_pt_bin('alt_hist_truth', ibin)
+                        # Handle alt MC hist -> metrics
+                        # alt_mc_gen_hist_bin = hbc.get_pt_bin_normed_div_bin_width('alt_hist_truth', ibin)
+                        alt_mc_gen_hist_bin = unfolding_dict['alt_truth_hists'][ibin]
+                        alt_mc_gen_hist_bin_mean, alt_mc_gen_hist_bin_mean_err = calc_hist_mean_and_uncorrelated_error(alt_mc_gen_hist_bin)
+                        alt_mc_gen_hist_bin_rms, alt_mc_gen_hist_bin_rms_err = calc_hist_rms_and_uncorrelated_error(alt_mc_gen_hist_bin)
 
-                        # GetMean() equivalent to
-                        # sum([hist.GetBinContent(ibin)*hist.GetBinCenter(ibin) for ibin in range(1, hist.GetNbinsX()+1)]) /
-                        #  sum([hist.GetBinContent(ibin) for ibin in range(1, hist.GetNbinsX()+1)])
-
-                        # print("ROOT mean:", mc_gen_hist_bin.GetMean())
-                        # print("my mean:", calc_hist_mean(mc_gen_hist_bin))
-                        start_lambda = unfolder.variable_bin_edges_gen[0]*1.0000001
-                        end_lambda = unfolder.variable_bin_edges_gen[-2]*1.0000001
-                        this_pt = bin_edge_low*1.0000001
-                        start_bin = unfolder.generator_distribution.GetGlobalBinNumber(start_lambda, this_pt)
-                        end_bin = unfolder.generator_distribution.GetGlobalBinNumber(end_lambda, this_pt)
-                        # -1 as ROOT bins start at 1, numpy starts at 0
-                        # this_cov_matrix = unfolder.ematrix_total_ndarray[start_bin-1:end_bin, start_bin-1:end_bin]
-
-                        mean, err = cu.th1_to_ndarray(unfolded_hist_bin_total_errors)
-                        # reshape so 2D thing, so .T works
-                        if len(err.shape) == 1:
-                            err = err.reshape(1, err.shape[0])
-                        this_cov_matrix = err.T.dot(err) # NB x^T * x, since x is a row vector instead of column
-
-                        # Create covariance matrix by using delta delta^T, where delta is the vector of error bars
-                        # This probably makes some assumptions about correlation though...
-
+                        # Handle unfolded data hist -> metrics
+                        # unfolded_hist_bin_total_errors = hbc.get_pt_bin_normed_div_bin_width('unfolded', ibin)
+                        unfolded_hist_bin_total_errors = unfolding_dict['unfolding_total_err_hists'][ibin]
+                        unfolded_hist_bin_total_errors_mean, unfolded_hist_bin_total_errors_mean_err = calc_hist_mean_and_uncorrelated_error(unfolded_hist_bin_total_errors)
+                        unfolded_hist_bin_total_errors_rms, unfolded_hist_bin_total_errors_rms_err = calc_hist_rms_and_uncorrelated_error(unfolded_hist_bin_total_errors)
 
                         # print("my mean error:", calc_hist_mean_error(mc_gen_hist_bin, this_cov_matrix, mc_gen_hist_bin_unnorm.Integral()))
                         # print("ROOT get mean error:", mc_gen_hist_bin.GetMeanError())
 
+                        # print("ROOT mean:", mc_gen_hist_bin.GetMean())
+                        # print("my mean:", calc_hist_mean(mc_gen_hist_bin))
+
+                        # areas, centers, errors = hist_to_arrays(mc_gen_hist_bin)
+                        # print("my mean:", calc_hist_mean_from_values(areas, centers))
+                        # print("my mean error:", calc_hist_mean_uncorrelated_error(mc_gen_hist_bin))
+                        # print("my mean error jax:", calc_hist_mean_uncorrelated_error_from_values(areas, centers, errors))
+
+                        # print("ROOT RMS:", mc_gen_hist_bin.GetRMS())
+                        # print("my RMS:", calc_hist_rms(mc_gen_hist_bin))
+                        # print("my RMS from value:", calc_hist_rms_from_values(areas, centers))
+                        # print("my RMS error jax:", calc_hist_rms_uncorrelated_error_from_values(areas, centers, errors))
 
                         result_dict = {
                             'jet_algo': jet_algo['name'],
-                            'region': region['name'],
+                            'region': region['name'], # TODO remove "_groomed"?
                             'isgroomed': 'groomed' in region['name'].lower(),
                             'pt_bin': ibin,
                             'angle': angle.var,
-                            'mean': calc_hist_mean(unfolded_hist_bin_total_errors),
-                            # 'mean': unfolded_hist_bin_unnorm.GetMean(),
-                            # 'mean_err': unfolded_hist_bin_total_errors.GetMeanError(),
-                            'mean_err': calc_hist_mean_error(unfolded_hist_bin_total_errors, this_cov_matrix, 1),
 
-                            # 'mean_truth': mc_gen_hist_bin_unnorm.GetMean(),
-                            'mean_truth': calc_hist_mean(mc_gen_hist_bin),
-                            # 'mean_err_truth': mc_gen_hist_bin.GetMeanError(),
-                            'mean_err_truth': 0,
+                            'mean': unfolded_hist_bin_total_errors_mean,
+                            'mean_err': unfolded_hist_bin_total_errors_mean_err, # FIXME
 
-                            # 'mean_alt_truth': alt_mc_gen_hist_bin_unnorm.GetMean(),
-                            'mean_alt_truth': calc_hist_mean(alt_mc_gen_hist_bin),
-                            'mean_err_alt_truth': 0,
+                            'mean_truth': mc_gen_hist_bin_mean,
+                            'mean_err_truth': mc_gen_hist_bin_mean_err,
 
-                            # 'rms': unfolded_hist_bin_unnorm.GetRMS(),
-                            # 'rms_err': unfolded_hist_bin_unnorm.GetRMSError(),  # FIXME
+                            'mean_alt_truth': alt_mc_gen_hist_bin_mean,
+                            'mean_err_alt_truth': alt_mc_gen_hist_bin_mean_err,
 
-                            'rms': unfolded_hist_bin_total_errors.GetRMS(),
-                            'rms_err': unfolded_hist_bin_total_errors.GetRMSError(),  # FIXME
+                            'rms': unfolded_hist_bin_total_errors_rms,
+                            'rms_err': unfolded_hist_bin_total_errors_rms_err, #FIXME
 
-                            'rms_truth': mc_gen_hist_bin.GetRMS(),
-                            'rms_err_truth': 0,
+                            'rms_truth': mc_gen_hist_bin_rms,
+                            'rms_err_truth': mc_gen_hist_bin_rms_err,
 
-                            'rms_alt_truth': alt_mc_gen_hist_bin.GetRMS(),
-                            'rms_err_alt_truth': 0,
+                            'rms_alt_truth': alt_mc_gen_hist_bin_rms,
+                            'rms_err_alt_truth': alt_mc_gen_hist_bin_rms_err,
                         }
                         results_dicts.append(result_dict)
 
