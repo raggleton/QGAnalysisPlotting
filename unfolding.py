@@ -1940,15 +1940,14 @@ if __name__ == "__main__":
 
                 # Add dummy object to hist_bin_chopper for later, so we can directly manipulate the cache
                 # this replaces the procedure in create_normalised_scale_syst_uncertainty()
-                uncert_name = "scale_uncert"  # this is used later in setup_normalised_results()
-                unfolder.hist_bin_chopper.add_obj(uncert_name, unfolder.get_unfolded_with_ematrix_stat())
+                unfolder.hist_bin_chopper.add_obj(unfolder.scale_uncert_name, unfolder.get_unfolded_with_ematrix_stat())
                 unfolder.hist_bin_chopper.add_obj("unfolded_stat_err", unfolder.get_unfolded_with_ematrix_stat())
 
                 for ibin_pt in range(len(unfolder.pt_bin_edges_gen[:-1])):
                     # Calculate scale uncertainty by taking relative uncertainty
                     # from reference file (which was already calculated in the 1st running),
                     # and applying to this result
-                    key = unfolder.hist_bin_chopper._generate_key(uncert_name,
+                    key = unfolder.hist_bin_chopper._generate_key(unfolder.scale_uncert_name,
                                                                   ind=ibin_pt,
                                                                   axis='pt',
                                                                   do_norm=True,
@@ -2230,15 +2229,14 @@ if __name__ == "__main__":
                 region['pdf_systematics'] = pdf_syst_region['pdf_systematics']
 
                 # Add dummy object to hist_bin_chopper for later, so we can directly manipulate the cache
-                uncert_name = "pdf_uncert"
-                unfolder.hist_bin_chopper.add_obj(uncert_name, unfolder.get_unfolded_with_ematrix_stat())
+                unfolder.hist_bin_chopper.add_obj(unfolder.pdf_uncert_name, unfolder.get_unfolded_with_ematrix_stat())
                 unfolder.hist_bin_chopper.add_obj("unfolded_stat_err", unfolder.get_unfolded_with_ematrix_stat())
 
                 for ibin_pt in range(len(unfolder.pt_bin_edges_gen[:-1])):
                     # Calculate PDF uncertainty by taking relative uncertainty
                     # from reference file (which has already been calculated in the 1st running),
                     # and applying to this result
-                    key = unfolder.hist_bin_chopper._generate_key(uncert_name,
+                    key = unfolder.hist_bin_chopper._generate_key(unfolder.pdf_uncert_name,
                                                                   ind=ibin_pt,
                                                                   axis='pt',
                                                                   do_norm=True,

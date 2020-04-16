@@ -900,8 +900,8 @@ class GenPtBinnedPlotter(object):
                 entries.append(c)
 
             # Add scale syst
-            if "scale_uncert"  in self.hist_bin_chopper.objects:
-                scale_hist = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('scale_uncert', ibin, binning_scheme='generator')
+            if unfolder.scale_uncert_name in self.hist_bin_chopper.objects:
+                scale_hist = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width(unfolder.scale_uncert_name, ibin, binning_scheme='generator')
                 scale_col = ROOT.kTeal-8
                 entries.extend([
                     Contribution(_convert_error_bars_to_error_ratio_hist(scale_hist),
@@ -917,8 +917,8 @@ class GenPtBinnedPlotter(object):
                 ])
 
             # Add pdf syst
-            if "pdf_uncert"  in self.hist_bin_chopper.objects:
-                pdf_hist = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('pdf_uncert', ibin, binning_scheme='generator')
+            if unfolder.pdf_uncert_name in self.hist_bin_chopper.objects:
+                pdf_hist = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width(unfolder.pdf_uncert_name, ibin, binning_scheme='generator')
                 pdf_col = ROOT.kOrange+4
                 entries.extend([
                     Contribution(_convert_error_bars_to_error_ratio_hist(pdf_hist),

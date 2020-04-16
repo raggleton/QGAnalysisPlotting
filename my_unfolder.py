@@ -252,6 +252,10 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         self.hist_bin_chopper = HistBinChopper(generator_binning=self.generator_binning.FindNode("generatordistribution"),
                                                detector_binning=self.detector_binning.FindNode("detectordistribution"))
 
+        # For setting/getting total scale & PDF uncerts from HistBinChopper
+        self.scale_uncert_name = "scale_uncert"
+        self.pdf_uncert_name = "pdf_uncert"
+
     def save_binning(self, print_xml=True, txt_filename=None):
         """Save binning scheme to txt and/or print XML to screen"""
         if txt_filename:
@@ -1253,8 +1257,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             self.hist_bin_chopper.add_obj(syst['hbc_key_truth'], syst['unfolder'].hist_truth)
 
         # Add dummy object to hist_bin_chopper for later, so we can directly manipulate the cache
-        uncert_name = "scale_uncert"
-        self.hist_bin_chopper.add_obj(uncert_name, self.get_unfolded_with_ematrix_stat())
+        self.hist_bin_chopper.add_obj(self.scale_uncert_name, self.get_unfolded_with_ematrix_stat())
 
         self.hist_bin_chopper.add_obj('unfolded_stat_err', self.get_unfolded_with_ematrix_stat())
 
@@ -1280,7 +1283,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
                 # print("bin", ix, "max ratio", max_ratio, "setting error", max_ratio*nominal.GetBinContent(ix))
 
             # Store in hist_bin_chopper for later
-            key = self.hist_bin_chopper._generate_key(uncert_name,
+            key = self.hist_bin_chopper._generate_key(self.scale_uncert_name,
                                                       ind=ibin_pt,
                                                       axis='pt',
                                                       do_norm=True,
@@ -1322,8 +1325,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             self.hist_bin_chopper.add_obj(syst['hbc_key_truth'], syst['unfolder'].hist_truth)
 
         # Add dummy object to hist_bin_chopper for later, so we can directly manipulate the cache
-        uncert_name = "pdf_uncert"
-        self.hist_bin_chopper.add_obj(uncert_name, self.get_unfolded_with_ematrix_stat())
+        self.hist_bin_chopper.add_obj(self.pdf_uncert_name, self.get_unfolded_with_ematrix_stat())
 
         self.hist_bin_chopper.add_obj('unfolded_stat_err', self.get_unfolded_with_ematrix_stat())
         # print("Doing pdf variation")
@@ -1350,7 +1352,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
                 # print("bin", ix, "max ratio", max_ratio, "setting error", max_ratio*nominal.GetBinContent(ix))
 
             # Store in hist_bin_chopper for later
-            key = self.hist_bin_chopper._generate_key(uncert_name,
+            key = self.hist_bin_chopper._generate_key(self.pdf_uncert_name,
                                                       ind=ibin_pt,
                                                       axis='pt',
                                                       do_norm=True,
@@ -1436,13 +1438,14 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
 
         # For each pt bin, recalculate total error in quadrature and store in unfolded hist
         for ibin_pt in range(len(self.pt_bin_edges_gen[:-1])):
+            first_bin = ibin_pt == 0
             unfolded_hist_bin_stat_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded_stat_err', ibin_pt, binning_scheme='generator')
             unfolded_hist_bin_rsp_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded_rsp_err', ibin_pt, binning_scheme='generator')
 
             error_bar_hists = [unfolded_hist_bin_stat_errors, unfolded_hist_bin_rsp_errors]
             # convert all shifts to error bars
             for syst_label in self.syst_maps.keys():
-                if ibin_pt ==0:
+                if first_bin:
                     print("Adding", syst_label, "uncertainty to normalised result...")
                 obj_name = 'syst_shift_%s' % cu.no_space_str(syst_label)
                 # Here we access the things we just manually put in the cache - must match up with key!
@@ -1452,16 +1455,16 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
                 error_bar_hists.append(self.convert_error_shift_to_error_bars(unfolded_hist_bin_stat_errors, syst_shift))
 
             # Add in scale syst
-            if "scale_uncert" in self.hist_bin_chopper.objects:
-                if ibin_pt ==0:
+            if self.scale_uncert_name in self.hist_bin_chopper.objects:
+                if first_bin:
                     print("Adding scale uncertainty to normalised result...")
-                error_bar_hists.append(self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('scale_uncert', ibin_pt, binning_scheme='generator'))
+                error_bar_hists.append(self.hist_bin_chopper.get_pt_bin_normed_div_bin_width(self.scale_uncert_name, ibin_pt, binning_scheme='generator'))
 
             # Add in PDF syst
-            if "pdf_uncert" in self.hist_bin_chopper.objects:
-                if ibin_pt ==0:
+            if self.pdf_uncert_name in self.hist_bin_chopper.objects:
+                if first_bin:
                     print("Adding PDF uncertainty to normalised result...")
-                error_bar_hists.append(self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('pdf_uncert', ibin_pt, binning_scheme='generator'))
+                error_bar_hists.append(self.hist_bin_chopper.get_pt_bin_normed_div_bin_width(self.pdf_uncert_name, ibin_pt, binning_scheme='generator'))
 
             # Get normalised hist with nominal unfolded value, and change error bars
             # to be quadrature sum of those we want (stat+rsp+systs)
