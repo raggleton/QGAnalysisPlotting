@@ -375,6 +375,9 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             tfile.WriteTObject(self.hist_bin_chopper.get_pt_bin_normed_div_bin_width("unfolded", ibin_pt, 'generator'), "unfolded_norm_divBinWidth_%d" % (ibin_pt))
             tfile.WriteTObject(self.hist_bin_chopper.get_pt_bin_normed_div_bin_width("hist_truth", ibin_pt, 'generator'), "hist_truth_norm_divBinWidth_%d" % (ibin_pt))
             tfile.WriteTObject(self.hist_bin_chopper.get_pt_bin_normed_div_bin_width("alt_hist_truth", ibin_pt, 'generator'), "alt_hist_truth_norm_divBinWidth_%d" % (ibin_pt))
+            tfile.WriteTObject(self.hist_bin_chopper.get_pt_bin_normed_div_bin_width(self.stat_ematrix_name, ibin_pt, 'generator'), 'unfolded_stat_ematrix_norm_divBinWidth_%d' % (ibin_pt))
+            tfile.WriteTObject(self.hist_bin_chopper.get_pt_bin_normed_div_bin_width(self.rsp_ematrix_name, ibin_pt, 'generator'), 'unfolded_rsp_ematrix_norm_divBinWidth_%d' % (ibin_pt))
+            tfile.WriteTObject(self.hist_bin_chopper.get_pt_bin_normed_div_bin_width(self.total_ematrix_name, ibin_pt, 'generator'), 'unfolded_total_ematrix_norm_divBinWidth_%d' % (ibin_pt))
 
     def __getstate__(self):
         # Copy the object's state from self.__dict__ which contains
