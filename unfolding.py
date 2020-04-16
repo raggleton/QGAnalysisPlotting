@@ -1865,7 +1865,7 @@ if __name__ == "__main__":
 
                 # Update main unfolder with these unfolded variations
                 # --------------------------------------------------------------
-                scale_model_systs = [r for r in region['model_systematics'] if 'scale' in r['label'].lower()]
+                scale_model_systs = [r for r in region['model_systematics'] if 'mu' in r['label'].lower()]
                 if len(scale_model_systs) > 0:
                     unfolder.create_normalised_scale_syst_uncertainty(scale_model_systs)
 
