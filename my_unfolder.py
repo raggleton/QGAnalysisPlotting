@@ -258,6 +258,10 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         self.pdf_uncert_name = "pdf_uncert"
         self.pdf_uncert_ematrix_name = "pdf_uncert_ematrix"
 
+        self.stat_ematrix_name = "stat_ematrix"
+        self.rsp_ematrix_name = "rsp_ematrix"
+        self.total_ematrix_name = "total_ematrix"
+
     def save_binning(self, print_xml=True, txt_filename=None):
         """Save binning scheme to txt and/or print XML to screen"""
         if txt_filename:
@@ -1493,10 +1497,48 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
                                                           binning_scheme='generator')
                 self.hist_bin_chopper._cache[key] = syst_ematrix
 
+
+    @staticmethod
+    def get_sub_th2(h2d, start_bin, end_bin):
+        """Create square TH2D from sub-matrix of h2d, from start_bin to end_bin (inclusive)"""
+        nbins = end_bin - start_bin + 1
+        h2d_new = ROOT.TH2D("h2d_"+cu.get_unique_str(), "", nbins, 0, nbins, nbins, 0, nbins)
+        for ix_new, ix in enumerate(range(start_bin, end_bin+1), 1):
+            for iy_new, iy in enumerate(range(start_bin, end_bin+1), 1):
+                value = h2d.GetBinContent(ix, iy)
+                err = h2d.GetBinError(ix, iy)
+                h2d_new.SetBinContent(ix_new, iy_new, value)
+                h2d_new.SetBinError(ix_new, iy_new, err)
+        return h2d_new
+
+    @staticmethod
+    def scale_th2_bin_widths(h2d, bins):
+        """Scale bins of a square TH2 by bin widths
+
+        bins is a list of bin edges, must have 1 more value than the number of bins in h2d
+        """
+        if len(bins) != h2d.GetNbinsX()+1:
+            print(bins)
+            print(h2d.GetNbinsX())
+            raise ValueError("Wrong number of bins to scale x axis")
+        if len(bins) != h2d.GetNbinsY()+1:
+            raise ValueError("Wrong number of bins to scale y axis")
+        for ix, (binx_low, binx_high) in enumerate(zip(bins[:-1], bins[1:]), 1):
+            for iy, (biny_low, biny_high) in enumerate(zip(bins[:-1], bins[1:]), 1):
+                width_x = binx_high - binx_low
+                width_y = biny_high - biny_low
+                scale = width_x * width_y
+                value = h2d.GetBinContent(ix, iy)
+                err = h2d.GetBinError(ix, iy)
+                h2d.SetBinContent(ix, iy, value / scale)
+                h2d.SetBinError(ix, iy, err / scale)
+
     def setup_normalised_results(self):
         """Setup final normalised results per pt bin with all uncertainties.
 
         Includes setting up normalised experimental systematics.
+
+        Model & PDF normalised systs shoudl have already been setup.
         """
         self.hist_bin_chopper.add_obj('hist_truth', self.hist_truth)
         self.hist_bin_chopper.add_obj('unfolded', self.get_output())
@@ -1505,13 +1547,80 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
 
         self.setup_normalised_experimental_systs()
 
+        # add dummy objects to fool check
+        self.hist_bin_chopper.add_obj(self.stat_ematrix_name, self.get_ematrix_stat())
+        self.hist_bin_chopper.add_obj(self.rsp_ematrix_name, self.get_ematrix_stat())
+
         # For each pt bin, recalculate total error in quadrature and store in unfolded hist
-        for ibin_pt in range(len(self.pt_bin_edges_gen[:-1])):
+        for ibin_pt, pt in enumerate(self.pt_bin_edges_gen[:-1]):
             first_bin = ibin_pt == 0
-            unfolded_hist_bin_stat_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded_stat_err', ibin_pt, binning_scheme='generator')
-            unfolded_hist_bin_rsp_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded_rsp_err', ibin_pt, binning_scheme='generator')
+            hbc_args = dict(ind=ibin_pt, binning_scheme='generator')
+
+            unfolded_hist_bin_stat_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded_stat_err', **hbc_args)
+            unfolded_hist_bin_rsp_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded_rsp_err', **hbc_args)
+
+            unfolded_hist_bin_abs = self.hist_bin_chopper.get_pt_bin_div_bin_width('unfolded_stat_err', **hbc_args)
+            norm = unfolded_hist_bin_abs.Integral("width") / unfolded_hist_bin_stat_errors.Integral("width")
+
+            # create stat & rsp err covariance matrices for this pt bin,
+            # scaling by overall normalisation and bin widths
+            binning = self.generator_binning.FindNode("generatordistribution")
+            var_bins = self.variable_bin_edges_gen
+            # FIXME what to do if non-sequential bin numbers?!
+            # the 1.0001 is to ensure we're def inside this bin
+            start_bin = binning.GetGlobalBinNumber(var_bins[0]*1.0001, pt*1.0001)
+            end_bin = binning.GetGlobalBinNumber(var_bins[-2]*1.0001, pt*1.0001)  # -2 since the last one is the upper edge of the last bin
+            stat_ematrix = self.get_sub_th2(self.get_ematrix_stat(), start_bin, end_bin)
+            stat_ematrix.Scale(1./(norm*norm))
+            self.scale_th2_bin_widths(stat_ematrix, var_bins)
+            key = self.hist_bin_chopper._generate_key(self.stat_ematrix_name,
+                                                      ind=ibin_pt,
+                                                      axis='pt',
+                                                      do_norm=True,
+                                                      do_div_bin_width=True,
+                                                      binning_scheme='generator')
+            self.hist_bin_chopper._cache[key] = stat_ematrix
+
+            rsp_ematrix = self.get_sub_th2(self.get_ematrix_stat_response(), start_bin, end_bin)
+            rsp_ematrix.Scale(1./(norm*norm))
+            self.scale_th2_bin_widths(rsp_ematrix, var_bins)
+
+            key = self.hist_bin_chopper._generate_key(self.rsp_ematrix_name,
+                                                      ind=ibin_pt,
+                                                      axis='pt',
+                                                      do_norm=True,
+                                                      do_div_bin_width=True,
+                                                      binning_scheme='generator')
+            self.hist_bin_chopper._cache[key] = rsp_ematrix
+
+            # Calculate total ematrix
+            total_ematrix = stat_ematrix.Clone()
+            total_ematrix.Add(rsp_ematrix)
+            for syst_label in self.syst_maps.keys():
+                if first_bin:
+                    print("Adding", syst_label, "ematrix to total normalised ematrix...")
+                total_ematrix.Add(self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('syst_ematrix_%s' % cu.no_space_str(syst_label), **hbc_args))
+
+            if self.scale_uncert_ematrix_name in self.hist_bin_chopper.objects:
+                if first_bin:
+                    print("Adding scale ematrix to total normalised ematrix")
+                total_ematrix.Add(self.hist_bin_chopper.get_pt_bin_normed_div_bin_width(self.scale_uncert_ematrix_name, **hbc_args))
+
+            if self.pdf_uncert_ematrix_name in self.hist_bin_chopper.objects:
+                if first_bin:
+                    print("Adding pdf ematrix to total normalised ematrix")
+                total_ematrix.Add(self.hist_bin_chopper.get_pt_bin_normed_div_bin_width(self.pdf_uncert_ematrix_name, **hbc_args))
+
+            key = self.hist_bin_chopper._generate_key(self.total_ematrix_name,
+                                                      ind=ibin_pt,
+                                                      axis='pt',
+                                                      do_norm=True,
+                                                      do_div_bin_width=True,
+                                                      binning_scheme='generator')
+            self.hist_bin_chopper._cache[key] = total_ematrix
 
             error_bar_hists = [unfolded_hist_bin_stat_errors, unfolded_hist_bin_rsp_errors]
+
             # convert all shifts to error bars
             for syst_label in self.syst_maps.keys():
                 if first_bin:
@@ -1520,27 +1629,28 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
                 # Here we access the things we just manually put in the cache - must match up with key!
                 # Don't worry about it being normed etc - that is just so keys agree, and it matches
                 # up with the nominal result (which we do want normed_div_bin_width)
-                syst_shift = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width(obj_name, ibin_pt, binning_scheme='generator')
+                syst_shift = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width(obj_name, **hbc_args)
                 error_bar_hists.append(self.convert_error_shift_to_error_bars(unfolded_hist_bin_stat_errors, syst_shift))
 
             # Add in scale syst
             if self.scale_uncert_name in self.hist_bin_chopper.objects:
                 if first_bin:
                     print("Adding scale uncertainty to normalised result...")
-                error_bar_hists.append(self.hist_bin_chopper.get_pt_bin_normed_div_bin_width(self.scale_uncert_name, ibin_pt, binning_scheme='generator'))
+                error_bar_hists.append(self.hist_bin_chopper.get_pt_bin_normed_div_bin_width(self.scale_uncert_name, **hbc_args))
 
             # Add in PDF syst
             if self.pdf_uncert_name in self.hist_bin_chopper.objects:
                 if first_bin:
                     print("Adding PDF uncertainty to normalised result...")
-                error_bar_hists.append(self.hist_bin_chopper.get_pt_bin_normed_div_bin_width(self.pdf_uncert_name, ibin_pt, binning_scheme='generator'))
+                error_bar_hists.append(self.hist_bin_chopper.get_pt_bin_normed_div_bin_width(self.pdf_uncert_name, **hbc_args))
 
             # Get normalised hist with nominal unfolded value, and change error bars
             # to be quadrature sum of those we want (stat+rsp+systs)
-            h_total = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded', ibin_pt, binning_scheme='generator')
-            for i in range(1, h_total.GetNbinsX()+1):
-                err2 = sum([pow(h.GetBinError(i), 2) for h in error_bar_hists])
-                h_total.SetBinError(i, math.sqrt(err2))
+            h_total = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded', **hbc_args)
+            # for i in range(1, h_total.GetNbinsX()+1):
+            #     err2 = sum([pow(h.GetBinError(i), 2) for h in error_bar_hists])
+            #     h_total.SetBinError(i, math.sqrt(err2))
+            #     print(i, "quadrature:", math.sqrt(err2))
 
             # Update cache
             key = self.hist_bin_chopper._generate_key('unfolded',
@@ -1844,7 +1954,6 @@ class HistBinChopper(object):
         var_bins = np.array(binning.GetDistributionBinning(0))
         pt_bins = np.array(binning.GetDistributionBinning(1))
 
-        # need the -1 on ibin_pt, as it references an array index, whereas ROOT bins start at 1
         h = ROOT.TH1D("h_%d_%s" % (ibin_pt, cu.get_unique_str()), "", len(var_bins)-1, var_bins)
         for var_ind, var_value in enumerate(var_bins[:-1], 1):
             this_val = var_value * 1.001  # ensure its inside
@@ -1860,7 +1969,6 @@ class HistBinChopper(object):
         var_bins = np.array(binning.GetDistributionBinning(0))
         pt_bins = np.array(binning.GetDistributionBinning(1))
 
-        # need the -1 on ibin_pt, as it references an array index, whereas ROOT bins start at 1
         h = ROOT.TH2D("h2d_%d_%s" % (ibin_pt, cu.get_unique_str()), "", len(var_bins)-1, var_bins, len(var_bins)-1, var_bins)
         for var_ind, var_value in enumerate(var_bins[:-1], 1):
             this_val = var_value * 1.001  # ensure its inside

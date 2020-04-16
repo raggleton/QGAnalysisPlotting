@@ -631,11 +631,11 @@ def normalise_ndarray(matrix, by):
 def shift_to_covariance(hist):
     """Convert 1D shift histogram to 2D covariance matrix, using V = x x^T"""
     xax = hist.GetXaxis()
-    bins = array('d', [xax.GetBinLowEdge(i) for i in range(hist.GetNbinsX()+1)])
+    bins = array('d', [xax.GetBinLowEdge(i) for i in range(1, hist.GetNbinsX()+2)])
     nbins = len(bins) - 1
-    h2d = ROOT.TH2D("covariance_" + hist.GetName(), "Covariance;%s;%s" % (xax.GetTitle(), xax.GetTitle()), nbins, bins, nbins, bins)
-    values = np.array([hist.GetBinContent(i) for i in range(hist.GetNbinsX()+1)])
-    values.reshape(len(values), 1)  # turn into column vector
+    h2d = ROOT.TH2D("covariance_" + hist.GetName(), "Covariance;%s;%s" % (xax.GetTitle(), xax.GetTitle()), nbins, 0, nbins, nbins, 0, nbins)
+    values = np.array([hist.GetBinContent(i) for i in range(1, hist.GetNbinsX()+1)])
+    values = values.reshape(len(values), 1)  # turn into column vector
     cov_values = values.dot(values.T)
     for ix in range(nbins):
         for iy in range(nbins):
