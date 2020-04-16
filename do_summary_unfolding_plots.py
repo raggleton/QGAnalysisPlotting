@@ -516,13 +516,12 @@ class SummaryPlotter(object):
             y_down = min(min([h.GetBinContent(i) - h.GetBinError(i) for i in range(1, h.GetNbinsX()+1)]), y_down)
         return y_up, y_down
 
-    def plot_mean_rms_bins_summary(self, selections, output_file):
+    def construct_mean_rms_hist_groups(self, selections):
+        """Construct mean & RMS hists for plots
 
-        # Construct data for plots
+        See plot_mean_rms_bins_summary() docstring about `selections` arg.
+        """
         mean_hists, rms_hists = [], []
-
-        gc_stash = [] # to stop stuff being deleted
-
         for selection_group in selections:
 
             mean_entries_data = []
@@ -533,30 +532,26 @@ class SummaryPlotter(object):
             rms_entries_mc = []
             rms_entries_alt_mc = []
 
-            labels = []
+            bin_names = []
 
             for query, label in selection_group['selections']:
-                print(query)
+                # print(query)
                 results = self.df.query(query)
                 if len(results.index) != 1:
                     print(query)
                     print(results)
                     raise ValueError("Got != 1 results, check query")
 
-                labels.append(label)
                 mean_entries_data.append([results['mean'], results['mean_err']])
-                mean_entries_mc.append([results['mean_truth'], results['mean_truth']*0.05]) # DUMMY
-                mean_entries_alt_mc.append([results['mean_alt_truth'], results['mean_alt_truth']*0.05]) # DUMMY
-                # mean_entries_mc.append([results['mean_truth'], results['mean_err_truth']])
-                # mean_entries_alt_mc.append([results['mean_alt_truth'], results['mean_err_alt_truth']])
+                mean_entries_mc.append([results['mean_truth'], results['mean_err_truth']])
+                mean_entries_alt_mc.append([results['mean_alt_truth'], results['mean_err_alt_truth']])
 
                 rms_entries_data.append([results['rms'], results['rms_err']])
-                rms_entries_mc.append([results['rms_truth'], results['rms_truth']*0.05]) # DUMMY
-                rms_entries_alt_mc.append([results['rms_alt_truth'], results['rms_alt_truth']*0.05]) # DUMMY
-                # rms_entries_mc.append([results['rms_truth'], results['rms_err_truth']])
-                # rms_entries_alt_mc.append([results['rms_alt_truth'], results['rms_err_alt_truth']])
+                rms_entries_mc.append([results['rms_truth'], results['rms_err_truth']])
+                rms_entries_alt_mc.append([results['rms_alt_truth'], results['rms_err_alt_truth']])
 
-            bin_names = labels
+                bin_names.append(label)
+
             hist_mean_data = self._make_hist_from_values(mean_entries_data, bin_names=bin_names)
             self._style_data_hist(hist_mean_data)
             hist_mean_mc = self._make_hist_from_values(mean_entries_mc, bin_names=bin_names)
@@ -574,6 +569,45 @@ class SummaryPlotter(object):
             self._style_alt_mc_hist(hist_rms_alt_mc)
 
             rms_hists.append([hist_rms_data, hist_rms_mc, hist_rms_alt_mc])
+
+        return mean_hists, rms_hists
+
+    def plot_mean_rms_bins_summary(self, selections, output_file):
+        """Make plot of mean & RMS for various selections, showing data, mc, alt mc
+
+        `selections` is a multi-level list
+        The first level is of dicts,
+            {'label': str, 'selections': list}
+        where each dict represents an angle (i.e. its own column).
+
+        The 'selections' key of that dict then provides a list of tuples,
+        where each is a bin in the histograms that make up each plot column.
+
+        Each tuple is of the form (query_str, bin_label_str),
+        where the query_str gets passed to the dataframe to retrieve a single entry.
+        If 0 or >1 entries are found, this raises a ValueError.
+        From that entry, we get mean ± error, and RMS ± error.
+        That bin in the histogram is then labelled with bin_label_str.
+
+        In this way, we build up the contents of the histograms for each angle.
+
+        The plotting part is complicated, since we need 2 pads (upper & lower)
+        for each column. These need to overlap, since otherwise it will chop
+        off the y axes labels. However, we want the top x axis of the lower pad,
+        and the lower x axis of the upper pad, to align vertically. So we have
+        to be careful with the exact pad & margin sizes.
+
+        Note that the margins basically determine where the axes go in the pad,
+        and are a fraction of the pad width/height. Axis labels must go in the
+        pad margin - nothing can be drawn outside the pad itself.
+
+        We also manually put in the y axis titles, and the angle names, as
+        individual text elements, just so we can control their position exactly.
+        """
+        # Get data for plots
+        mean_hists, rms_hists = self.construct_mean_rms_hist_groups(selections)
+
+        gc_stash = [] # to stop stuff being deleted
 
         # Setup canvas and pads
         canvas = ROOT.TCanvas("c_"+cu.get_unique_str(), "", 1200, 600)
