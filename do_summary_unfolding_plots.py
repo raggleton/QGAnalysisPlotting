@@ -1136,6 +1136,8 @@ if __name__ == "__main__":
         elif not args.outputDir and args.ak8source:
             args.outputDir = os.path.join(args.ak8source, 'SummaryPlots')
 
+        cu.check_dir_exists_create(args.outputDir)
+
         results_dicts = []
 
         jet_algos = []
