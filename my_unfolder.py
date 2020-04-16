@@ -359,7 +359,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         if "unfolded" not in self.hist_bin_chopper.objects:
             print("Cannot save unfolded binned as not in HistBinChopper")
             return
-        
+
         for ibin_pt in range(len(self.pt_bin_edges_gen[:-1])):
             tfile.WriteTObject(self.hist_bin_chopper.get_pt_bin_normed_div_bin_width("unfolded_stat_err", ibin_pt, 'generator'), "unfolded_stat_err_norm_divBinWidth_%d" % (ibin_pt))
             tfile.WriteTObject(self.hist_bin_chopper.get_pt_bin_normed_div_bin_width("unfolded", ibin_pt, 'generator'), "unfolded_norm_divBinWidth_%d" % (ibin_pt))
@@ -1378,6 +1378,9 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         In particular recalculates uncertainties, since the systematic one are non-trivial.
         We must re-calcualted the systematic shifts on the _normalised_ result,
         then add those in quadrature per bin of each histogram.
+
+        From the difference in normalised hists, we can then recalculate the
+        error (covariance) matrix, like as is done in TUnfold
         """
         self.hist_bin_chopper.add_obj('unfolded_stat_err', self.get_unfolded_with_ematrix_stat())
 
@@ -1387,10 +1390,14 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
 
             # add this to to HistBinChopper for later, but it isn't used
             # Just to bypass internal checks that it exists in its cached objects
+            # when e.g. get_pt_bin_normed_div_bin_width() called
             shift_name = 'syst_shift_%s' % cu.no_space_str(syst_label)
+            self.hist_bin_chopper.add_obj(shift_name, self.get_delta_sys_shift(syst_label))
+            shift_name = 'syst_ematrix_%s' % cu.no_space_str(syst_label)
             self.hist_bin_chopper.add_obj(shift_name, self.get_delta_sys_shift(syst_label))
 
             # Now manually recalculate the syst shifts and store them
+            # And from this calculate the error matrix for this pt bin and store
             for ibin_pt in range(len(self.pt_bin_edges_gen[:-1])):
                 syst_hist = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width(shifted_name, ibin_pt, binning_scheme='generator').Clone()
                 nominal_hist = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded_stat_err', ibin_pt, binning_scheme='generator')
@@ -1403,6 +1410,16 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
                                                           do_div_bin_width=True,
                                                           binning_scheme='generator')
                 self.hist_bin_chopper._cache[key] = syst_hist
+
+                syst_ematrix = cu.shift_to_covariance(syst_hist)
+                key = self.hist_bin_chopper._generate_key('syst_ematrix_%s' % cu.no_space_str(syst_label),
+                                                          ind=ibin_pt,
+                                                          axis='pt',
+                                                          do_norm=True,
+                                                          do_div_bin_width=True,
+                                                          binning_scheme='generator')
+                self.hist_bin_chopper._cache[key] = syst_ematrix
+
 
 
     def setup_normalised_results(self):

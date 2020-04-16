@@ -456,7 +456,7 @@ def print_dict_item_sizes(this_dict, descending=True, recursive=True):
     If recursive is True, then do dicts recursively.
     """
     size_dict = get_dict_item_sizes(this_dict, recursive)
-
+    # FIXME broken in python2?
     # print out, sorted by size
     sorted_dict = {k:v for k,v in sorted(size_dict.items(), key=lambda x: x[1], reverse=descending)}
     for k, v in sorted_dict.items():
@@ -634,5 +634,12 @@ def shift_to_covariance(hist):
     bins = array('d', [xax.GetBinLowEdge(i) for i in range(hist.GetNbinsX()+1)])
     nbins = len(bins) - 1
     h2d = ROOT.TH2D("covariance_" + hist.GetName(), "Covariance;%s;%s" % (xax.GetTitle(), xax.GetTitle()), nbins, bins, nbins, bins)
+    values = np.array([hist.GetBinContent(i) for i in range(hist.GetNbinsX()+1)])
+    values.reshape(len(values), 1)  # turn into column vector
+    cov_values = values.dot(values.T)
+    for ix in range(nbins):
+        for iy in range(nbins):
+            h2d.SetBinContent(ix+1, iy+1, cov_values[ix][iy])
+            h2d.SetBinError(ix+1, iy+1, 0)
     return h2d
 
