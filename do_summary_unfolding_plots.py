@@ -17,10 +17,10 @@ import numpy as np
 from itertools import product, chain
 from array import array
 from math import sqrt
-import lzma
-import pickle
+
 import jax.numpy as np
 from jax import grad
+
 
 import ROOT
 from MyStyle import My_Style
@@ -31,7 +31,7 @@ My_Style.cd()
 import common_utils as cu
 import qg_common as qgc
 import qg_general_plots as qgp
-from my_unfolder import MyUnfolder, HistBinChopper
+from my_unfolder import MyUnfolder, HistBinChopper, unpickle_region, unpack_slim_unfolding_root_file
 from my_unfolder_plotter import MyUnfolderPlotter
 from unfolding_config import get_dijet_config, get_zpj_config
 
@@ -486,6 +486,7 @@ class SummaryPlotter(object):
                 h.GetXaxis().SetBinLabel(i, bin_names[i-1])
             h.SetBinContent(i, v)
             h.SetBinError(i, e)
+        # h.SetDirectory(0)
         return h
 
     @staticmethod
@@ -1147,6 +1148,7 @@ if __name__ == "__main__":
             jet_algos.append({'src': args.ak8source, 'label': 'AK8 PUPPI', 'name': 'ak8puppi'})
 
         for jet_algo in jet_algos:
+            print("--- Jet algo ---:", jet_algo['label'])
             source_dir = jet_algo['src']
             regions = [
                 get_dijet_config(source_dir, central=True, groomed=False),
@@ -1170,29 +1172,29 @@ if __name__ == "__main__":
                         print("! Warning ! cannot find angle dir", angle_output_dir, '- skipping angle', angle.var)
                         continue
 
-                    # Get region dict from pickle file
-                    pickle_filename = os.path.join(angle_output_dir, "unfolding_result.pkl")
-                    if not os.path.isfile(pickle_filename):
-                        print("! Warning ! cannot fine unfolding pickle file", pickle_filename, ' - skipping angle')
-                    with lzma.open(pickle_filename, 'r') as f:
-                        unpickled_region = pickle.load(f)
+                    # # Get region dict from pickle file
+                    # pickle_filename = os.path.join(angle_output_dir, "unfolding_result.pkl")
+                    # unpickled_region = unpickle_region(pickle_filename)
 
-                    # check
-                    if region['name'] != unpickled_region['name']:
-                        raise RuntimeError("Mismatch region name")
+                    # # check
+                    # if region['name'] != unpickled_region['name']:
+                    #     raise RuntimeError("Mismatch region name")
 
-                    region.update(unpickled_region)
+                    # region.update(unpickled_region)
 
-                    append = "%s_%s" % (region['name'], angle.var)  # common str to put on filenames, etc. don't need angle_prepend as 'groomed' in region name
+                    # Get bare necessary hists from slim ROOT file
+                    # Using pickle one is much slower
+                    root_filename = os.path.join(angle_output_dir, "unfolding_result_slim.root")
+                    input_tfile = cu.TFileCacher(root_filename)
+                    pt_bins = qgc.PT_UNFOLD_DICT['signal_zpj_gen'] if 'ZPlusJets' in region['name'] else qgc.PT_UNFOLD_DICT['signal_gen']
+                    unfolding_dict = unpack_slim_unfolding_root_file(input_tfile, region['name'], angle.var, pt_bins)
+
+                    # common str to put on filenames, etc.
+                    # don't need angle_prepend as 'groomed' in region name
+                    append = "%s_%s" % (region['name'], angle.var)
                     print("*"*120)
                     print("Region/var: %s" % (append))
                     print("*"*120)
-
-                    unfolder = region['unfolder']
-                    hbc = unfolder.hist_bin_chopper
-                    hbc.add_obj("hist_truth", unfolder.hist_truth)
-                    alt_hist_truth = region.get("alt_hist_mc_gen", None)
-                    hbc.add_obj("alt_hist_truth", alt_hist_truth)
 
                     # ----------------------------------------------------------
                     # CALCULATE STATS FOR EACH PT BIN
