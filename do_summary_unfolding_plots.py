@@ -1268,11 +1268,13 @@ if __name__ == "__main__":
         df['region'] = df['region'].astype('category')
         df['angle'] = df['angle'].astype('category')
         print(df.head())
+        print(df.tail())
         print(len(df.index), 'entries in dataframe')
         print(df.dtypes)
 
         if args.h5output is None:
             args.h5output = os.path.join(args.outputDir, "store.h5")
+        print("Saving dataframe to", args.h5output)
         # need format='table' to store category dtype
         df.to_hdf(args.h5output, key='df', format='table')
 
