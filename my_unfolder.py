@@ -1313,7 +1313,6 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
                                                                                ibin_pt,
                                                                                binning_scheme='generator')
             scale_shift = self.convert_error_bars_to_error_shift(scale_hist)
-            scale_shift.Add(nominal, -1)
             scale_ematrix = cu.shift_to_covariance(scale_shift)
             key = self.hist_bin_chopper._generate_key(self.scale_uncert_ematrix_name,
                                                       ind=ibin_pt,
@@ -1412,7 +1411,6 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
                                                                                ibin_pt,
                                                                                binning_scheme='generator')
             pdf_shift = self.convert_error_bars_to_error_shift(pdf_hist)
-            pdf_shift.Add(nominal, -1)
             pdf_ematrix = cu.shift_to_covariance(pdf_shift)
             key = self.hist_bin_chopper._generate_key(self.pdf_uncert_ematrix_name,
                                                       ind=ibin_pt,
