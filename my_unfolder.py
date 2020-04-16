@@ -1520,6 +1520,33 @@ def unpickle_region(pickle_filename):
     return unpickled_region
 
 
+def unpack_slim_unfolding_root_file(input_tfile, region_name, angle_name, pt_bins):
+    tdir = "%s/%s" % (region_name, angle_name)
+    unfolding_stat_err_hists = []
+    unfolding_total_err_hists = []
+    truth_hists = []
+    alt_truth_hists = []
+    for ibin_pt, _ in enumerate(pt_bins[:-1]):
+        unfolding_stat_err_hist = input_tfile.Get("%s/unfolded_stat_err_norm_divBinWidth_%d" % (tdir, ibin_pt))
+        unfolding_stat_err_hist.SetDirectory(0)
+        unfolding_stat_err_hists.append(unfolding_stat_err_hist)
+        unfolding_total_err_hist = input_tfile.Get("%s/unfolded_norm_divBinWidth_%d" % (tdir, ibin_pt))
+        unfolding_total_err_hist.SetDirectory(0)
+        unfolding_total_err_hists.append(unfolding_total_err_hist)
+        truth_hist = input_tfile.Get("%s/hist_truth_norm_divBinWidth_%d" % (tdir, ibin_pt))
+        truth_hist.SetDirectory(0)
+        truth_hists.append(truth_hist)
+        alt_truth_hist = input_tfile.Get("%s/alt_hist_truth_norm_divBinWidth_%d" % (tdir, ibin_pt))
+        alt_truth_hist.SetDirectory(0)
+        alt_truth_hists.append(alt_truth_hist)
+    return dict(
+        unfolding_stat_err_hists=unfolding_stat_err_hists,
+        unfolding_total_err_hists=unfolding_total_err_hists,
+        truth_hists=truth_hists,
+        alt_truth_hists=alt_truth_hists,
+    )
+
+
 def unfolder_from_tdir(tdir):
     """Recover MyUnfolder from tdirectory
 
