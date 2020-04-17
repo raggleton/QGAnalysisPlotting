@@ -412,6 +412,34 @@ class Marker(object):
                     yield self.get(k, self.fill_state)
 
 
+def set_french_flag_palette():
+    """Custom colour scheme - french flag colouring"""
+    NRGBs = 5
+    ff_ncont = 256
+    # Set max & min such that 0 is in the middle
+    stops = [ 0.00, 0.49, 0.51, 0.52, 1.00 ]
+    red = [ 0.00, 1.00, 1.00, 1.00, 1.00]
+    green = [ 0.00, 1.00, 1.00, 1.00, 0.00 ]
+    blue = [ 1.00, 1.00, 1.00, 1.00, 0.00 ]
+    stopsArray = array('d', stops)
+    redArray = array('d', red)
+    greenArray = array('d', green)
+    blueArray = array('d', blue)
+    french_flag_cols = ROOT.TColor.CreateGradientColorTable(NRGBs, stopsArray, redArray, greenArray, blueArray, ff_ncont)
+    french_flag_palette = array('i', [french_flag_cols+i for i in range(ff_ncont)])
+    ROOT.gStyle.SetPalette(ff_ncont, french_flag_palette)
+
+
+def symmetrize_h2d_z_limits(h2d):
+    """Set TH2 z axis to have same + & - limits - good for use with French flag palette"""
+    max_z = max(h2d.GetMaximum(), abs(h2d.GetMinimum()))
+    h2d.SetMaximum(max_z)
+    h2d.SetMinimum(-max_z)
+
+
+# Various helper functions
+# ------------------------------------------------------------------------------
+
 SPACE_REPLACEMENT_CHAR = "-"
 
 

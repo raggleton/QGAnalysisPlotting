@@ -119,6 +119,7 @@ PLOT_COLOURS = dict(
     reco_unfolding_input_colour=ROOT.kRed,
     reco_folded_unfolded_colour=ROOT.kAzure+1,
     reco_folded_mc_truth_colour=ROOT.kGreen+2,
+    default_palette=ROOT.kBird,
 )
 
 
@@ -1042,6 +1043,41 @@ class GenPtBinnedPlotter(object):
             plot.plot("NOSTACK E1")
             plot.save("%s/detector_gen_binning_bg_subtracted_%s_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
 
+    def plot_ematrix(self, h2d, title, output_filename):
+        """Generic function to plot error matrix for a given pt bin"""
+        canv = ROOT.TCanvas(cu.get_unique_str(), "", 700, 600)
+        canv.SetTicks(1, 1)
+        canv.SetRightMargin(0.15)
+        canv.SetTopMargin(0.18)
+        h2d.SetTitle("%s;%s;%s" % (title, self.setup.particle_title, self.setup.particle_title))
+        h2d.SetTitleSize(0.015, "t")  # the "t" is anything that isn't x, y, z
+        # Setup bin labels
+        for i, (val_low, val_high) in enumerate(zip(self.unfolder.variable_bin_edges_gen[:-1], self.unfolder.variable_bin_edges_gen[1:]), 1):
+            h2d.GetXaxis().SetBinLabel(i, "%g-%g" % (val_low, val_high))
+            h2d.GetYaxis().SetBinLabel(i, "%g-%g" % (val_low, val_high))
+        h2d.SetContour(256)
+        # enforce scientific notation for now
+        default_paint_text_format = ROOT.gStyle.GetPaintTextFormat()
+        ROOT.gStyle.SetPaintTextFormat(".2e")
+        h2d.Draw("COLZ TEXT")
+        h2d.GetYaxis().SetTitleOffset(h2d.GetYaxis().GetTitleOffset()*1.1)
+        # Symmetrize z axis and use French flag colours
+        cu.symmetrize_h2d_z_limits(h2d)
+        cu.set_french_flag_palette()
+        canv.SaveAs(output_filename)
+        ROOT.gStyle.SetPalette(PLOT_COLOURS['default_palette'])
+        ROOT.gStyle.SetPaintTextFormat(default_paint_text_format)
+
+    def plot_total_ematrix(self):
+        """Plot total normalised error matrix for each gen pt bin"""
+        for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
+            ematrix = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width(self.unfolder.total_ematrix_name, ibin, binning_scheme='generator')
+            title = "#splitline{Total normalised error matrix for %g < %s < %g GeV}{%s region, %s}" % (bin_edge_low, self.setup.pt_var_str, bin_edge_high, self.region['label'], self.setup.jet_algo)
+            output_filename = os.path.join(self.setup.output_dir,
+                                           "unfolded_ematrix_total_%s_bin_%d_norm_divBinWidth.%s" % (self.setup.append, ibin, self.setup.output_fmt))
+            self.plot_ematrix(ematrix,
+                              title=title,
+                              output_filename=output_filename)
 
 # ================================================================================
 
@@ -1962,10 +1998,10 @@ def do_all_plots_per_region_angle(setup):
 
     hbc = HistBinChopper(generator_binning=unfolder.generator_binning.FindNode("generatordistribution"),
                          detector_binning=unfolder.detector_binning.FindNode("detectordistribution"))
-    hbc.add_obj("hist_truth", unfolder.hist_truth)
-    hbc.add_obj('unfolded', unfolder.get_output())
-    hbc.add_obj('unfolded_stat_err', unfolder.get_unfolded_with_ematrix_stat())
-    hbc.add_obj('unfolded_rsp_err', unfolder.get_unfolded_with_ematrix_rsp())
+    # hbc.add_obj("hist_truth", unfolder.hist_truth)
+    # hbc.add_obj('unfolded', unfolder.get_output())
+    # hbc.add_obj('unfolded_stat_err', unfolder.get_unfolded_with_ematrix_stat())
+    # hbc.add_obj('unfolded_rsp_err', unfolder.get_unfolded_with_ematrix_rsp())
     hbc.update(unfolder.hist_bin_chopper)   # update the HistBinChopper with the new normalised systematics already produced in unfolder
 
     # Iterate through pt bins - gen binning
@@ -1977,6 +2013,7 @@ def do_all_plots_per_region_angle(setup):
                                                unfolder=unfolder)
     gen_pt_binned_plotter.plot_unfolded_normalised()
     gen_pt_binned_plotter.plot_unfolded_unnormalised()
+    gen_pt_binned_plotter.plot_total_ematrix()
 
     if alt_hist_truth:
         gen_pt_binned_plotter.hist_bin_chopper.add_obj('alt_hist_truth', alt_hist_truth)
@@ -2916,4 +2953,3 @@ if __name__ == "__main__":
     df_stats['angle'] = df_stats['angle'].astype('category')
     print(df_stats.head())
     print_chi2_table(df_stats)
-
