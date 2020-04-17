@@ -1541,7 +1541,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
 
         Includes setting up normalised experimental systematics.
 
-        Model & PDF normalised systs shoudl have already been setup.
+        Model & PDF normalised systs should have already been setup.
         """
         self.hist_bin_chopper.add_obj('hist_truth', self.hist_truth)
         self.hist_bin_chopper.add_obj('unfolded', self.get_output())
@@ -1553,6 +1553,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         # add dummy objects to fool check
         self.hist_bin_chopper.add_obj(self.stat_ematrix_name, self.get_ematrix_stat())
         self.hist_bin_chopper.add_obj(self.rsp_ematrix_name, self.get_ematrix_stat())
+        self.hist_bin_chopper.add_obj(self.total_ematrix_name, self.get_ematrix_stat())
 
         # For each pt bin, recalculate total error in quadrature and store in unfolded hist
         for ibin_pt, pt in enumerate(self.pt_bin_edges_gen[:-1]):
