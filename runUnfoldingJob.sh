@@ -4,16 +4,23 @@
 # Script gets given the following parameters:
 # parameters   = CHANNEL ANGLE
 
+# Need this as not empty at logon
+export LD_LIBRARY_PATH=""
+
 # Setup CMSSW etc
 CMSSW_AREA=/nfs/dust/cms/user/aggleton/QG/102X/CMSSW_10_2_10/src
 # cmssw setup triggers this err so turn it off for now
-set +u
-source /cvmfs/cms.cern.ch/cmsset_default.sh
-cd ${CMSSW_AREA}
-eval `scramv1 runtime -sh`
-cd ${CMSSW_AREA}/UHH2/QGAnalysisPlotting/
-printenv | sort
-set -u
+#set +u
+#source /cvmfs/cms.cern.ch/cmsset_default.sh
+#cd ${CMSSW_AREA}
+#eval `scramv1 runtime -sh`
+#cd ${CMSSW_AREA}/UHH2/QGAnalysisPlotting/
+#printenv | sort
+#set -u
+# To get conda
+# Can't use $HOME because grid-control manges my env vars
+source /afs/desy.de/user/a/aggleton/.bashrc
+conda activate unfolding_py3
 
 # Actually run all the unfolding jobs
 set -x
