@@ -868,6 +868,14 @@ class SummaryPlotter(object):
 # ------------------------------------------------------------------------------
 
 def hist_to_arrays(hist):
+    """Convert histogram bins to arrays
+
+    Note that this returns bin *areas* and not heights: assume bin contents
+    already divided by bin width.
+
+    Note that errors here are multiplied by the bin width (since they are
+    assumed to have been created by originally dividing by the bin width)
+    """
     bin_areas = np.array([hist.GetBinContent(ibin)*hist.GetBinWidth(ibin) for ibin in range(1, hist.GetNbinsX()+1)])
     bin_centers = np.array([hist.GetBinCenter(ibin) for ibin in range(1, hist.GetNbinsX()+1)])
     bin_errors = np.array([hist.GetBinError(ibin)*hist.GetBinWidth(ibin) for ibin in range(1, hist.GetNbinsX()+1)])
@@ -886,26 +894,6 @@ def calc_hist_mean(hist):
     return float(calc_hist_mean_from_values(bin_areas, bin_centers))
 
 
-def calc_hist_mean_from_values(bin_areas, bin_centers):
-    """Summary
-
-    Must use np.X functions for e.g. sum(), square(), to ensure jax can differentiate it
-
-    Parameters
-    ----------
-    bin_areas : TYPE
-        Description
-    bin_centers : TYPE
-        Description
-
-    Returns
-    -------
-    TYPE
-        Description
-    """
-    return np.sum(bin_areas * bin_centers) / np.sum(bin_areas)
-
-
 def calc_hist_mean_uncorrelated_error(hist):
     """Get error on mean using error bars, assuming 0 correlation between errors
     i.e. statistical only.
@@ -920,6 +908,8 @@ def calc_hist_mean_uncorrelated_error(hist):
 
     since our error is on both the numerator and denominator
 
+    **RECOMMEND USING calc_hist_mean_uncorrelated_error_from_values() INSTEAD**
+
     Parameters
     ----------
     hist : ROOT.TH1
@@ -929,30 +919,6 @@ def calc_hist_mean_uncorrelated_error(hist):
     N = sum([hist.GetBinContent(ibin)*hist.GetBinWidth(ibin) for ibin in range(1, hist.GetNbinsX()+1)])
     err_sq = sum([pow( ((hist.GetBinCenter(ibin)/N) - (mean/N) )*hist.GetBinWidth(ibin)*hist.GetBinError(ibin), 2) for ibin in range(1, hist.GetNbinsX()+1) ])
     return sqrt(err_sq)
-
-
-def calc_hist_mean_uncorrelated_error_from_values(bin_areas, bin_centers, bin_errors):
-    """Summary
-
-    Parameters
-    ----------
-    bin_areas : TYPE
-        Description
-    bin_centers : TYPE
-        Description
-    bin_errors : TYPE
-        Description
-
-    Returns
-    -------
-    TYPE
-        Description
-    """
-    # differential wrt bin_areas
-    mean_differential = grad(calc_hist_mean_from_values, argnums=0)
-    diffs = mean_differential(bin_areas, bin_centers)
-    err_sq = np.sum(np.square((diffs * bin_errors)))
-    return np.sqrt(err_sq)
 
 
 def calc_hist_mean_error(hist, covariance_matrix, scale_factor):
@@ -1006,18 +972,64 @@ def calc_hist_mean_error(hist, covariance_matrix, scale_factor):
     # return sqrt(sum_sq) / sum_reduced
 
 
-def calc_hist_mean_and_uncorrelated_error(hist):
-    """Summary
+def calc_hist_mean_from_values(bin_areas, bin_centers):
+    """Calculate mean of hist from value arrays.
+
+    Must use np.X functions for e.g. sum(), square(), to ensure jax can differentiate it
 
     Parameters
     ----------
-    hist : TYPE
+    bin_areas : TYPE
+        Description
+    bin_centers : TYPE
         Description
 
     Returns
     -------
     TYPE
         Description
+    """
+    return np.sum(bin_areas * bin_centers) / np.sum(bin_areas)
+
+
+def calc_hist_mean_uncorrelated_error_from_values(bin_areas, bin_centers, bin_errors):
+    """Calculate error on mean, assuming uncorrelated errors.
+
+    Uses propagation of uncertainty bia partial differentials,
+    calculated automatically using jax.
+
+    Parameters
+    ----------
+    bin_areas : TYPE
+        Description
+    bin_centers : TYPE
+        Description
+    bin_errors : TYPE
+        Description
+
+    Returns
+    -------
+    TYPE
+        Description
+    """
+    # differential wrt bin_areas
+    mean_differential = grad(calc_hist_mean_from_values, argnums=0)
+    diffs = mean_differential(bin_areas, bin_centers)
+    err_sq = np.sum(np.square((diffs * bin_errors)))
+    return np.sqrt(err_sq)
+
+
+def calc_hist_mean_and_uncorrelated_error(hist):
+    """Calculate from hist both mean and its error,
+    assuming uncorrelated uncertainties
+
+    Parameters
+    ----------
+    hist : TH1
+
+    Returns
+    -------
+    float, float
     """
     areas, centers, errors = hist_to_arrays(hist)
     mean = calc_hist_mean_from_values(areas, centers)
@@ -1029,6 +1041,7 @@ def calc_hist_rms(hist):
     """Calculate std deviation for hist
 
     RMS^2 = (1/N) sum[ (bin_area - mean)^2 ]
+
     """
     areas, centers, errors = hist_to_arrays(hist)
     return float(calc_hist_rms_from_values(areas, centers))
@@ -1043,7 +1056,7 @@ def calc_hist_rms(hist):
 
 
 def calc_hist_rms_from_values(bin_areas, bin_centers):
-    """Summary
+    """Calculate RMS of hist from value arrays.
 
     Must use np.X functions for e.g. sum(), square(), to ensure jax can differentiate it
 
@@ -1065,7 +1078,10 @@ def calc_hist_rms_from_values(bin_areas, bin_centers):
 
 
 def calc_hist_rms_uncorrelated_error_from_values(bin_areas, bin_centers, bin_errors):
-    """Summary
+    """Calculate error on RMS, assuming uncorrelated errors.
+
+    Uses propagation of uncertainty bia partial differentials,
+    calculated automatically using jax.
 
     Parameters
     ----------
@@ -1089,17 +1105,16 @@ def calc_hist_rms_uncorrelated_error_from_values(bin_areas, bin_centers, bin_err
 
 
 def calc_hist_rms_and_uncorrelated_error(hist):
-    """Summary
+    """Calculate from hist both RMS and its error,
+    assuming uncorrelated uncertainties
 
     Parameters
     ----------
-    hist : TYPE
-        Description
+    hist : TH1
 
     Returns
     -------
-    TYPE
-        Description
+    float, float
     """
     areas, centers, errors = hist_to_arrays(hist)
     rms = calc_hist_rms_from_values(areas, centers)
