@@ -17,6 +17,7 @@ import numpy as np
 from itertools import product, chain
 from array import array
 from math import sqrt
+from copy import copy
 
 import jax.numpy as np
 from jax import grad
@@ -1187,26 +1188,27 @@ if __name__ == "__main__":
                         print("! Warning ! cannot find angle dir", angle_output_dir, '- skipping angle', angle.var)
                         continue
 
-                    # # Get region dict from pickle file
-                    # pickle_filename = os.path.join(angle_output_dir, "unfolding_result.pkl")
-                    # unpickled_region = unpickle_region(pickle_filename)
+                    this_region = copy(region)
+                    # Get region dict from pickle file
+                    pickle_filename = os.path.join(angle_output_dir, "unfolding_result.pkl")
+                    unpickled_region = unpickle_region(pickle_filename)
 
                     # # check
-                    # if region['name'] != unpickled_region['name']:
-                    #     raise RuntimeError("Mismatch region name")
+                    if this_region['name'] != unpickled_region['name']:
+                        raise RuntimeError("Mismatch region name")
 
-                    # region.update(unpickled_region)
+                    this_region.update(unpickled_region)
 
                     # Get bare necessary hists from slim ROOT file
                     # Using pickle one is much slower
                     root_filename = os.path.join(angle_output_dir, "unfolding_result_slim.root")
                     input_tfile = cu.TFileCacher(root_filename)
-                    pt_bins = qgc.PT_UNFOLD_DICT['signal_zpj_gen'] if 'ZPlusJets' in region['name'] else qgc.PT_UNFOLD_DICT['signal_gen']
-                    unfolding_dict = unpack_slim_unfolding_root_file(input_tfile, region['name'], angle.var, pt_bins)
+                    pt_bins = qgc.PT_UNFOLD_DICT['signal_zpj_gen'] if 'ZPlusJets' in this_region['name'] else qgc.PT_UNFOLD_DICT['signal_gen']
+                    unfolding_dict = unpack_slim_unfolding_root_file(input_tfile, this_region['name'], angle.var, pt_bins)
 
                     # common str to put on filenames, etc.
                     # don't need angle_prepend as 'groomed' in region name
-                    append = "%s_%s" % (region['name'], angle.var)
+                    append = "%s_%s" % (this_region['name'], angle.var)
                     print("*"*120)
                     print("Region/var: %s" % (append))
                     print("*"*120)
@@ -1255,8 +1257,8 @@ if __name__ == "__main__":
 
                         result_dict = {
                             'jet_algo': jet_algo['name'],
-                            'region': region['name'], # TODO remove "_groomed"?
-                            'isgroomed': 'groomed' in region['name'].lower(),
+                            'region': this_region['name'], # TODO remove "_groomed"?
+                            'isgroomed': 'groomed' in this_region['name'].lower(),
                             'pt_bin': ibin,
                             'angle': angle.var,
 
@@ -1279,6 +1281,10 @@ if __name__ == "__main__":
                             'rms_err_alt_truth': alt_mc_gen_hist_bin_rms_err,
                         }
                         results_dicts.append(result_dict)
+
+                    # important to keep memory footprint small
+                    del unpickled_region
+                    del this_region
 
         df = pd.DataFrame(results_dicts)
         df['jet_algo'] = df['jet_algo'].astype('category')
