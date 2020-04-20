@@ -82,12 +82,12 @@ def get_dijet_config(source_dir, central=True, groomed=False):
             {
                 "label": "JES up",
                 "tfile": os.path.join(source_dir_systs, 'jecsmear_directionUp', qgc.QCD_FILENAME),
-                "colour": ROOT.kGreen+2,
+                "colour": ROOT.kGreen+3,
             },
             {
                 "label": "JES down",
                 "tfile": os.path.join(source_dir_systs, 'jecsmear_directionDown', qgc.QCD_FILENAME),
-                "colour": ROOT.kGreen+2,
+                "colour": ROOT.kGreen+3,
                 "linestyle": 2,
             },
             {
@@ -126,7 +126,7 @@ def get_dijet_config(source_dir, central=True, groomed=False):
             {
                 "label": "Herwig++",
                 "tfile": input_mc_qcd_herwig_tfile,
-                "colour": ROOT.kOrange-3,
+                "colour": ROOT.kGreen-3,
             },
             # {
             #     "label": "Herwig++ (reweighted)",
@@ -325,12 +325,12 @@ def get_zpj_config(source_dir, groomed=False):
             {
                 "label": "JES up",
                 "tfile": os.path.join(source_dir_systs, 'jecsmear_directionUp', qgc.DY_FILENAME),
-                "colour": ROOT.kGreen+2,
+                "colour": ROOT.kGreen+3,
             },
             {
                 "label": "JES down",
                 "tfile": os.path.join(source_dir_systs, 'jecsmear_directionDown', qgc.DY_FILENAME),
-                "colour": ROOT.kGreen+2,
+                "colour": ROOT.kGreen+3,
                 "linestyle": 2,
             },
             {
@@ -374,8 +374,8 @@ def get_zpj_config(source_dir, groomed=False):
             {
                 "label": "Herwig++",
                 "tfile": input_mc_dy_herwig_tfile,
-                # "colour": ROOT.kBlue-3,
-                "colour": 797,
+                "colour": ROOT.kGreen-3,
+                # "colour": 797,
             },
         ],
         "model_systematics": [
