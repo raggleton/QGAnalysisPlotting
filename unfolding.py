@@ -32,7 +32,7 @@ from my_unfolder import MyUnfolder, pickle_region, unpickle_region
 from my_unfolder_plotter import MyUnfolderPlotter
 from unfolding_regularisation_classes import TauScanner, LCurveScanner
 from unfolding_config import get_dijet_config, get_zpj_config
-from do_unfolding_plots import Setup, do_all_plots_per_region_angle, do_all_big_1d_plots_per_region_angle
+from do_unfolding_plots import Setup, do_binned_plots_per_region_angle, do_all_big_1d_plots_per_region_angle
 from unfolding_logistics import get_unfolding_argparser, get_unfolding_output_dir, sanitise_args
 
 ROOT.PyConfig.IgnoreCommandLineOptions = True
@@ -2348,7 +2348,10 @@ if __name__ == "__main__":
                               angle=angle,
                               output_dir=this_output_dir,
                               has_data=not MC_INPUT)
-                hbc = do_all_plots_per_region_angle(setup)
+                hbc = do_binned_plots_per_region_angle(setup, 
+                                                       do_binned_gen_pt=True,
+                                                       do_binned_gen_lambda=True,
+                                                       do_binned_reco_pt=True)
 
                 do_all_big_1d_plots_per_region_angle(setup, hbc)
 

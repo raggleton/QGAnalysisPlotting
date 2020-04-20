@@ -1977,9 +1977,10 @@ class RecoPtBinnedPlotter(object):
             ROOT.gStyle.SetPalette(ROOT.kViridis)
 
 
-def do_all_plots_per_region_angle(setup):
-    # Note that experimental systs are only different response matrices, and are stored in the main unfolder
+def do_binned_plots_per_region_angle(setup, do_binned_gen_pt, do_binned_gen_lambda, do_binned_reco_pt):
+    """Do individual binned plots, can select which binning(s) to plot over"""
     region = setup.region
+    # Note that experimental systs are only different response matrices, and are stored in the main unfolder
     has_exp_systs = len(region['experimental_systematics']) > 0
     has_model_systs = len(region['model_systematics']) > 0
     has_pdf_systs = len(region['pdf_systematics']) > 0
@@ -1991,8 +1992,10 @@ def do_all_plots_per_region_angle(setup):
     unfolder = region['unfolder']
     unreg_unfolder = region.get('unreg_unfolder', None)
     alt_unfolder = region.get('alt_unfolder', None)
-    alt_hist_truth = region.get('alt_hist_truth', None)
-    alt_hist_reco = region.get('alt_hist_reco', None)
+    alt_hist_truth = region.get('alt_hist_mc_gen', None)
+    print("Alt_hist_truth", alt_hist_truth)
+    alt_hist_reco = region.get('alt_hist_mc_reco', None)
+    print("Alt_hist_reco", alt_hist_reco)
     alt_hist_reco_bg_subtracted = region.get('alt_hist_reco_bg_subtracted', None)
     alt_hist_reco_bg_subtracted_gen_binning = region.get('alt_hist_reco_bg_subtracted_gen_binning', None)
 
@@ -2004,101 +2007,104 @@ def do_all_plots_per_region_angle(setup):
     # hbc.add_obj('unfolded_rsp_err', unfolder.get_unfolded_with_ematrix_rsp())
     hbc.update(unfolder.hist_bin_chopper)   # update the HistBinChopper with the new normalised systematics already produced in unfolder
 
-    # Iterate through pt bins - gen binning
-    # ------------------------------------------------------------------
-    print("Doing GenPtBinnedPlotter...")
-    gen_pt_binned_plotter = GenPtBinnedPlotter(setup=setup,
-                                               bins=unfolder.pt_bin_edges_gen,
-                                               hist_bin_chopper=hbc,
-                                               unfolder=unfolder)
-    gen_pt_binned_plotter.plot_unfolded_normalised()
-    gen_pt_binned_plotter.plot_unfolded_unnormalised()
-    gen_pt_binned_plotter.plot_total_ematrix()
+    if do_binned_gen_pt:
+        # Iterate through pt bins - gen binning
+        # ------------------------------------------------------------------
+        print("Doing GenPtBinnedPlotter...")
+        gen_pt_binned_plotter = GenPtBinnedPlotter(setup=setup,
+                                                   bins=unfolder.pt_bin_edges_gen,
+                                                   hist_bin_chopper=hbc,
+                                                   unfolder=unfolder)
+        gen_pt_binned_plotter.plot_unfolded_normalised()
+        gen_pt_binned_plotter.plot_unfolded_unnormalised()
+        gen_pt_binned_plotter.plot_total_ematrix()
 
-    if alt_hist_truth:
-        gen_pt_binned_plotter.hist_bin_chopper.add_obj('alt_hist_truth', alt_hist_truth)
-        gen_pt_binned_plotter.plot_unfolded_with_alt_truth_normalised()
+        if alt_hist_truth:
+            gen_pt_binned_plotter.hist_bin_chopper.add_obj('alt_hist_truth', alt_hist_truth)
+            gen_pt_binned_plotter.plot_unfolded_with_alt_truth_normalised()
 
-    if unfolder.tau > 0 and unreg_unfolder:
-        gen_pt_binned_plotter.hist_bin_chopper.add_obj("unreg_unfolded", unreg_unfolder.unfolded)
-        gen_pt_binned_plotter.plot_unfolded_with_unreg_normalised()
+        if unfolder.tau > 0 and unreg_unfolder:
+            gen_pt_binned_plotter.hist_bin_chopper.add_obj("unreg_unfolded", unreg_unfolder.unfolded)
+            gen_pt_binned_plotter.plot_unfolded_with_unreg_normalised()
 
-    if alt_unfolder:
-        gen_pt_binned_plotter.plot_unfolded_with_alt_response_normalised(alt_unfolder=alt_unfolder)
-        gen_pt_binned_plotter.plot_unfolded_with_alt_response_truth_normalised(alt_unfolder=alt_unfolder)
+        if alt_unfolder:
+            gen_pt_binned_plotter.plot_unfolded_with_alt_response_normalised(alt_unfolder=alt_unfolder)
+            gen_pt_binned_plotter.plot_unfolded_with_alt_response_truth_normalised(alt_unfolder=alt_unfolder)
 
-    if has_exp_systs:
-        gen_pt_binned_plotter.plot_uncertainty_shifts_normalised()
-        gen_pt_binned_plotter.plot_unfolded_with_exp_systs_normalised()
-        gen_pt_binned_plotter.plot_unfolded_with_exp_systs_unnormalised()
+        if has_exp_systs:
+            gen_pt_binned_plotter.plot_uncertainty_shifts_normalised()
+            gen_pt_binned_plotter.plot_unfolded_with_exp_systs_normalised()
+            gen_pt_binned_plotter.plot_unfolded_with_exp_systs_unnormalised()
 
-    if has_model_systs:
-        gen_pt_binned_plotter.plot_unfolded_with_model_systs_normalised()
+        if has_model_systs:
+            gen_pt_binned_plotter.plot_unfolded_with_model_systs_normalised()
 
-    if has_pdf_systs:
-        gen_pt_binned_plotter.plot_unfolded_with_pdf_systs_normalised()
-        gen_pt_binned_plotter.plot_unfolded_with_pdf_systs_unnormalised()
+        if has_pdf_systs:
+            gen_pt_binned_plotter.plot_unfolded_with_pdf_systs_normalised()
+            gen_pt_binned_plotter.plot_unfolded_with_pdf_systs_unnormalised()
 
-    if has_exp_systs or has_model_systs or has_pdf_systs:
-        gen_pt_binned_plotter.plot_syst_variation_normalised()
+        if has_exp_systs or has_model_systs or has_pdf_systs:
+            gen_pt_binned_plotter.plot_syst_variation_normalised()
 
-    # if has_data:
-    gen_pt_binned_plotter.hist_bin_chopper.add_obj("input_hist_gen_binning_bg_subtracted", unfolder.input_hist_gen_binning_bg_subtracted)
-    gen_pt_binned_plotter.hist_bin_chopper.add_obj("hist_mc_reco_gen_binning_bg_subtracted", unfolder.hist_mc_reco_gen_binning_bg_subtracted)
-    gen_pt_binned_plotter.plot_detector_normalised(alt_detector=alt_hist_reco_bg_subtracted_gen_binning)
+        # if has_data:
+        gen_pt_binned_plotter.hist_bin_chopper.add_obj("input_hist_gen_binning_bg_subtracted", unfolder.input_hist_gen_binning_bg_subtracted)
+        gen_pt_binned_plotter.hist_bin_chopper.add_obj("hist_mc_reco_gen_binning_bg_subtracted", unfolder.hist_mc_reco_gen_binning_bg_subtracted)
+        gen_pt_binned_plotter.plot_detector_normalised(alt_detector=alt_hist_reco_bg_subtracted_gen_binning)
 
-    # Iterate through lambda bins - gen binning
-    # ------------------------------------------------------------------
-    print("Doing GenLambdaBinnedPlotter...")
-    lambda_pt_binned_plotter = GenLambdaBinnedPlotter(setup=setup,
-                                                      bins=unfolder.variable_bin_edges_gen,
-                                                      hist_bin_chopper=hbc,  # this is the same object as gen_pt_binned_plotter, so has all the objects already
-                                                      unfolder=unfolder)
+    if do_binned_gen_lambda:
+        # Iterate through lambda bins - gen binning
+        # ------------------------------------------------------------------
+        print("Doing GenLambdaBinnedPlotter...")
+        lambda_pt_binned_plotter = GenLambdaBinnedPlotter(setup=setup,
+                                                          bins=unfolder.variable_bin_edges_gen,
+                                                          hist_bin_chopper=hbc,  # this is the same object as gen_pt_binned_plotter, so has all the objects already
+                                                          unfolder=unfolder)
 
-    lambda_pt_binned_plotter.plot_unfolded_unnormalised()
+        lambda_pt_binned_plotter.plot_unfolded_unnormalised()
 
-    if unfolder.tau > 0 and unreg_unfolder:
-        lambda_pt_binned_plotter.plot_unfolded_with_unreg_unnormalised(unreg_unfolder)
+        if unfolder.tau > 0 and unreg_unfolder:
+            lambda_pt_binned_plotter.plot_unfolded_with_unreg_unnormalised(unreg_unfolder)
 
-    if alt_unfolder:
-        lambda_pt_binned_plotter.plot_unfolded_with_alt_response_unnormalised(alt_unfolder=alt_unfolder)
+        if alt_unfolder:
+            lambda_pt_binned_plotter.plot_unfolded_with_alt_response_unnormalised(alt_unfolder=alt_unfolder)
 
-    if has_exp_systs:
-        lambda_pt_binned_plotter.plot_uncertainty_shifts_unnormalised()
-        lambda_pt_binned_plotter.plot_unfolded_with_exp_systs_unnormalised()
+        if has_exp_systs:
+            lambda_pt_binned_plotter.plot_uncertainty_shifts_unnormalised()
+            lambda_pt_binned_plotter.plot_unfolded_with_exp_systs_unnormalised()
 
-    if has_model_systs:
-        lambda_pt_binned_plotter.plot_unfolded_with_model_systs_unnormalised()
+        if has_model_systs:
+            lambda_pt_binned_plotter.plot_unfolded_with_model_systs_unnormalised()
 
-    if has_pdf_systs:
-        lambda_pt_binned_plotter.plot_unfolded_with_pdf_systs_unnormalised()
+        if has_pdf_systs:
+            lambda_pt_binned_plotter.plot_unfolded_with_pdf_systs_unnormalised()
 
-    # if has_data:
-    lambda_pt_binned_plotter.plot_detector_unnormalised(alt_detector=alt_hist_reco_bg_subtracted_gen_binning)
+        # if has_data:
+        lambda_pt_binned_plotter.plot_detector_unnormalised(alt_detector=alt_hist_reco_bg_subtracted_gen_binning)
 
-    # Iterate through pt bins - reco binning
-    # ------------------------------------------------------------------
-    print("Doing RecoPtBinnedPlotter...")
-    hbc.add_obj("hist_mc_reco_bg_subtracted", unfolder.hist_mc_reco_bg_subtracted)
-    hbc.add_obj("input_hist_bg_subtracted", unfolder.input_hist_bg_subtracted)
-    hbc.add_obj("folded_unfolded", unfolder.folded_unfolded)
-    hbc.add_obj("folded_mc_truth", unfolder.folded_mc_truth)
-    reco_pt_binned_plotter = RecoPtBinnedPlotter(setup=setup,
-                                                 bins=unfolder.pt_bin_edges_reco,
-                                                 hist_bin_chopper=hbc,
-                                                 unfolder=unfolder)
-    reco_pt_binned_plotter.plot_detector_normalised(alt_detector=alt_hist_reco_bg_subtracted)
-    reco_pt_binned_plotter.plot_folded_unfolded_normalised()
-    reco_pt_binned_plotter.plot_folded_unfolded_with_mc_normalised()
-    reco_pt_binned_plotter.plot_folded_gen_normalised()
+    if do_binned_reco_pt:
+        # Iterate through pt bins - reco binning
+        # ------------------------------------------------------------------
+        print("Doing RecoPtBinnedPlotter...")
+        hbc.add_obj("hist_mc_reco_bg_subtracted", unfolder.hist_mc_reco_bg_subtracted)
+        hbc.add_obj("input_hist_bg_subtracted", unfolder.input_hist_bg_subtracted)
+        hbc.add_obj("folded_unfolded", unfolder.folded_unfolded)
+        hbc.add_obj("folded_mc_truth", unfolder.folded_mc_truth)
+        reco_pt_binned_plotter = RecoPtBinnedPlotter(setup=setup,
+                                                     bins=unfolder.pt_bin_edges_reco,
+                                                     hist_bin_chopper=hbc,
+                                                     unfolder=unfolder)
+        reco_pt_binned_plotter.plot_detector_normalised(alt_detector=alt_hist_reco_bg_subtracted)
+        reco_pt_binned_plotter.plot_folded_unfolded_normalised()
+        reco_pt_binned_plotter.plot_folded_unfolded_with_mc_normalised()
+        reco_pt_binned_plotter.plot_folded_gen_normalised()
 
-    if has_model_systs:
-        reco_pt_binned_plotter.plot_detector_with_model_systs_normalised()
-        reco_pt_binned_plotter.plot_detector_with_model_systs_unnormalised()
+        if has_model_systs:
+            reco_pt_binned_plotter.plot_detector_with_model_systs_normalised()
+            reco_pt_binned_plotter.plot_detector_with_model_systs_unnormalised()
 
-    if has_pdf_systs:
-        reco_pt_binned_plotter.plot_detector_with_pdf_systs_normalised()
-        reco_pt_binned_plotter.plot_detector_with_pdf_systs_unnormalised()
+        if has_pdf_systs:
+            reco_pt_binned_plotter.plot_detector_with_pdf_systs_normalised()
+            reco_pt_binned_plotter.plot_detector_with_pdf_systs_unnormalised()
 
     return hbc
 
@@ -2837,6 +2843,7 @@ def print_chi2_table(df):
                                                                                      "V" if row.unfolded_p > row.smeared_p else "X"))
     print(r'\end{tabular}')
 
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("source",
@@ -2852,6 +2859,15 @@ if __name__ == "__main__":
     parser.add_argument("--doBinnedPlots",
                         action='store_true',
                         help='Do all lambda/pt binned plots')
+    parser.add_argument("--doBinnedPlotsGenPt",
+                        action='store_true',
+                        help='Do lambda plots, binned by gen pT')
+    parser.add_argument("--doBinnedPlotsGenLambda",
+                        action='store_true',
+                        help='Do pT plots, binned by gen lambda')
+    parser.add_argument("--doBinnedPlotsRecoPt",
+                        action='store_true',
+                        help='Do lambda plots, binned by reco pT')
 
     region_group = parser.add_argument_group('Region selection')
     region_group.add_argument("--doAllRegions",
@@ -2893,6 +2909,10 @@ if __name__ == "__main__":
 
     if len(angles) == 0:
         raise RuntimeError("Need at least 1 angle")
+
+    if args.doBinnedPlots:
+        for x in ['doBinnedPlotsRecoPt', 'doBinnedPlotsGenLambda', 'doBinnedPlotsGenPt']:
+            setattr(args, x, True)
 
     jet_algo = "AK4 PF PUPPI"
     if "ak8puppi" in args.source:
@@ -2938,9 +2958,10 @@ if __name__ == "__main__":
                           output_dir=angle_output_dir,
                           has_data=has_data)
 
-            hist_bin_chopper = None
-            if args.doBinnedPlots:
-                hist_bin_chopper = do_all_plots_per_region_angle(setup)
+            hist_bin_chopper = do_binned_plots_per_region_angle(setup,
+                                                                do_binned_gen_pt=args.doBinnedPlotsGenPt,
+                                                                do_binned_gen_lambda=args.doBinnedPlotsGenLambda,
+                                                                do_binned_reco_pt=args.doBinnedPlotsRecoPt)
 
             # Do a 1D summary plot, with all the normalised plots with bins divided by their width
             # (unlike the standard plot from MyUnfolderPlotter, which is absolute)
