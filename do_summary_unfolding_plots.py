@@ -496,7 +496,7 @@ class SummaryPlotter(object):
 
     @staticmethod
     def _style_mc_hist(hist):
-        # hist.SetLineStyle(COMMON_STYLE_DICT['mc_line_style'])
+        hist.SetLineStyle(COMMON_STYLE_DICT['mc_line_style'])
         hist.SetLineColor(COMMON_STYLE_DICT['mc_color'])
         hist.SetFillStyle(COMMON_STYLE_DICT['mc_fill_style'])
         hist.SetFillColor(COMMON_STYLE_DICT['mc_color'])
@@ -505,7 +505,7 @@ class SummaryPlotter(object):
 
     @staticmethod
     def _style_alt_mc_hist(hist):
-        # hist.SetLineStyle(COMMON_STYLE_DICT['mc_alt_line_style'])
+        hist.SetLineStyle(COMMON_STYLE_DICT['mc_alt_line_style'])
         hist.SetLineColor(COMMON_STYLE_DICT['mc_alt_color'])
         hist.SetFillStyle(COMMON_STYLE_DICT['mc_alt_fill_style'])
         hist.SetFillColor(COMMON_STYLE_DICT['mc_alt_color'])
@@ -699,8 +699,8 @@ class SummaryPlotter(object):
             in enumerate(zip(selections, mean_pads, mean_hists,  rms_pads, rms_hists)):
             mean_pad.cd()  # this causes a segfault for no reason?
 
-            mean_hist_group[2].Draw("E2")
-            mean_hist_group[1].Draw("E2 L SAME")
+            mean_hist_group[2].Draw("E1")
+            mean_hist_group[1].Draw("E1 SAME")
             mean_hist_group[0].Draw("E1 SAME")
 
             mean_draw_hist = mean_hist_group[2]
@@ -732,8 +732,8 @@ class SummaryPlotter(object):
             mean_draw_hist.SetMaximum(y_up + up_padding)
 
             rms_pad.cd()
-            rms_hist_group[2].Draw("E2 L")
-            rms_hist_group[1].Draw("E2 L SAME")
+            rms_hist_group[2].Draw("E1")
+            rms_hist_group[1].Draw("E1 SAME")
             rms_hist_group[0].Draw("E1 SAME")
 
             rms_draw_hist = rms_hist_group[2]
@@ -795,8 +795,8 @@ class SummaryPlotter(object):
         gc_stash.append(leg_pad)
         leg = ROOT.TLegend(0.28, mean_pads[0].GetBottomMargin(), 1, 1)
         leg.AddEntry(mean_hists[0][0], "Data" ,"EL")
-        le_mc = leg.AddEntry(mean_hists[0][1], self.mc_label ,"F")
-        le_mc_alt = leg.AddEntry(mean_hists[0][2], self.alt_mc_label ,"F")
+        le_mc = leg.AddEntry(mean_hists[0][1], self.mc_label ,"L")
+        le_mc_alt = leg.AddEntry(mean_hists[0][2], self.alt_mc_label ,"L")
         leg.SetTextSize(0.08)
         leg.Draw()
 
