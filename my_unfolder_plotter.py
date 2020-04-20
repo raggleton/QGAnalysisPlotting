@@ -113,9 +113,7 @@ class MyUnfolderPlotter(object):
             h2d.SetMinimum(h2d.GetMinimum(1E-40) / 10.)
 
         if equal_pos_neg_z:
-            max_z = max(h2d.GetMaximum(), abs(h2d.GetMinimum()))
-            h2d.SetMaximum(max_z)
-            h2d.SetMinimum(-max_z)
+            cu.symmetrize_h2d_z_limits(h2d)
             self.set_french_flag_colours()
 
         if draw_bin_lines_x:
