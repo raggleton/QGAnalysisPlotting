@@ -20,7 +20,7 @@ from math import sqrt
 from copy import copy
 
 import jax.numpy as np
-from jax import grad
+from jax import grad, jit
 
 
 import ROOT
@@ -1014,7 +1014,7 @@ def calc_hist_mean_uncorrelated_error_from_values(bin_areas, bin_centers, bin_er
         Description
     """
     # differential wrt bin_areas
-    mean_differential = grad(calc_hist_mean_from_values, argnums=0)
+    mean_differential = jit(grad(calc_hist_mean_from_values, argnums=0))
     diffs = mean_differential(bin_areas, bin_centers)
     err_sq = np.sum(np.square((diffs * bin_errors)))
     return np.sqrt(err_sq)
@@ -1099,7 +1099,7 @@ def calc_hist_rms_uncorrelated_error_from_values(bin_areas, bin_centers, bin_err
         Description
     """
     # differential wrt bin_areas
-    rms_differential = grad(calc_hist_rms_from_values, argnums=0)
+    rms_differential = jit(grad(calc_hist_rms_from_values, argnums=0))
     diffs = rms_differential(bin_areas, bin_centers)
     err_sq = np.sum(np.square((diffs * bin_errors)))
     return np.sqrt(err_sq)
