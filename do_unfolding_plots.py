@@ -2967,10 +2967,10 @@ if __name__ == "__main__":
             # (unlike the standard plot from MyUnfolderPlotter, which is absolute)
             do_all_big_1d_plots_per_region_angle(setup, hist_bin_chopper)
 
-            all_chi2_stats.append(get_bottom_line_stats(setup))
+            # all_chi2_stats.append(get_bottom_line_stats(setup))
 
-    df_stats = pd.DataFrame(all_chi2_stats)
-    df_stats['region'] = df_stats['region'].astype('category')
-    df_stats['angle'] = df_stats['angle'].astype('category')
-    print(df_stats.head())
-    print_chi2_table(df_stats)
+    # df_stats = pd.DataFrame(all_chi2_stats)
+    # df_stats['region'] = df_stats['region'].astype('category')
+    # df_stats['angle'] = df_stats['angle'].astype('category')
+    # print(df_stats.head())
+    # print_chi2_table(df_stats)
