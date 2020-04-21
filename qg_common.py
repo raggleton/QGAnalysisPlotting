@@ -495,6 +495,7 @@ DJ_GENJET_RDIR = "Dijet_genjet"
 
 # Common filenames
 DY_FILENAME = "uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL.root"
+DY_INCL_FILENAME = "uhh2.AnalysisModuleRunner.MC.MC_MGPYTHIA_DYJetsToLL_HT-INCL.root"
 QCD_FILENAME = "uhh2.AnalysisModuleRunner.MC.MC_QCD.root"
 QCD_PYTHIA_ONLY_FILENAME = "uhh2.AnalysisModuleRunner.MC.MC_PYTHIA-QCD.root"
 QCD_FLAT_PYTHIA_ONLY_FILENAME = "uhh2.AnalysisModuleRunner.MC.MC_QCD_PYTHIA_FLAT.root"
