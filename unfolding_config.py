@@ -178,7 +178,7 @@ def get_dijet_config(source_dir, central=True, groomed=False):
             {
                 "label": "Herwig++",
                 "tfile": input_mc_qcd_herwig_tfile,
-                "colour": ROOT.kBlue-3,
+                "colour": ROOT.kGreen-3,
                 "unfolder": None,
             },
             # {
@@ -435,7 +435,7 @@ def get_zpj_config(source_dir, groomed=False):
             {
                 "label": "Herwig++",
                 "tfile": input_mc_dy_herwig_tfile,
-                "colour": ROOT.kBlue-3,
+                "colour": ROOT.kGreen-3,
                 "unfolder": None,
             },
         ],
