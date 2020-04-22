@@ -1229,14 +1229,14 @@ if __name__ == "__main__":
 
                     this_region = copy(region)
                     # Get region dict from pickle file
-                    pickle_filename = os.path.join(angle_output_dir, "unfolding_result.pkl")
-                    unpickled_region = unpickle_region(pickle_filename)
+                    # pickle_filename = os.path.join(angle_output_dir, "unfolding_result.pkl")
+                    # unpickled_region = unpickle_region(pickle_filename)
 
-                    # # check
-                    if this_region['name'] != unpickled_region['name']:
-                        raise RuntimeError("Mismatch region name")
+                    # # # check
+                    # if this_region['name'] != unpickled_region['name']:
+                    #     raise RuntimeError("Mismatch region name")
 
-                    this_region.update(unpickled_region)
+                    # this_region.update(unpickled_region)
 
                     # Get bare necessary hists from slim ROOT file
                     # Using pickle one is much slower
@@ -1327,7 +1327,7 @@ if __name__ == "__main__":
                         results_dicts.append(result_dict)
 
                     # important to keep memory footprint small
-                    del unpickled_region
+                    # del unpickled_region
                     del this_region
 
         df = pd.DataFrame(results_dicts)
