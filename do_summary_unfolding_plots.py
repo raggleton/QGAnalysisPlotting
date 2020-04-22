@@ -22,6 +22,8 @@ from copy import copy
 import jax.numpy as np
 from jax import grad, jit
 
+# make things blazingly fast
+import uproot
 
 import ROOT
 from MyStyle import My_Style
@@ -871,16 +873,23 @@ class SummaryPlotter(object):
 def hist_to_arrays(hist):
     """Convert histogram bins to arrays
 
+    Assumes `hist` is an uproot.TH1 object, not a ROOT.TH1
+
     Note that this returns bin *areas* and not heights: assume bin contents
     already divided by bin width.
 
     Note that errors here are multiplied by the bin width (since they are
     assumed to have been created by originally dividing by the bin width)
     """
-    bin_areas = np.array([hist.GetBinContent(ibin)*hist.GetBinWidth(ibin) for ibin in range(1, hist.GetNbinsX()+1)])
-    bin_centers = np.array([hist.GetBinCenter(ibin) for ibin in range(1, hist.GetNbinsX()+1)])
-    bin_widths = np.array([hist.GetBinWidth(ibin) for ibin in range(1, hist.GetNbinsX()+1)])
-    bin_errors = np.array([hist.GetBinError(ibin)*hist.GetBinWidth(ibin) for ibin in range(1, hist.GetNbinsX()+1)])
+    # bin_areas = np.array([hist.GetBinContent(ibin)*hist.GetBinWidth(ibin) for ibin in range(1, hist.GetNbinsX()+1)])
+    # bin_centers = np.array([hist.GetBinCenter(ibin) for ibin in range(1, hist.GetNbinsX()+1)])
+    # bin_widths = np.array([hist.GetBinWidth(ibin) for ibin in range(1, hist.GetNbinsX()+1)])
+    # bin_errors = np.array([hist.GetBinError(ibin)*hist.GetBinWidth(ibin) for ibin in range(1, hist.GetNbinsX()+1)])
+
+    bin_widths = hist.edges[1:] - hist.edges[:-1]
+    bin_areas = hist.values * bin_widths
+    bin_centers = hist.edges[:-1] + (0.5*bin_widths)
+    bin_errors = np.sqrt(hist.variances) * bin_widths
     return bin_areas, bin_widths, bin_centers, bin_errors
 
 
@@ -1162,6 +1171,40 @@ def calc_hist_rms_and_uncorrelated_error(hist):
     return float(rms), float(err)
 
 
+def unpack_slim_unfolding_root_file_uproot(input_tfile, region_name, angle_name, pt_bins):
+    tdir = "%s/%s" % (region_name, angle_name)
+    indices = range(len(pt_bins)-1)
+
+    unfolding_stat_err_hists = [
+        input_tfile["%s/unfolded_stat_err_norm_divBinWidth_%d" % (tdir, ibin)]
+        for ibin in indices
+    ]
+    unfolding_total_err_hists = [
+        input_tfile["%s/unfolded_norm_divBinWidth_%d" % (tdir, ibin)]
+        for ibin in indices
+    ]
+    unfolding_total_err_ematrices = [
+        input_tfile["%s/unfolded_total_ematrix_norm_divBinWidth_%d" % (tdir, ibin)]
+        for ibin in indices
+    ]
+    truth_hists = [
+        input_tfile["%s/hist_truth_norm_divBinWidth_%d" % (tdir, ibin)]
+        for ibin in indices
+    ]
+    alt_truth_hists = [
+        input_tfile["%s/alt_hist_truth_norm_divBinWidth_%d" % (tdir, ibin)]
+        for ibin in indices
+    ]
+
+    return dict(
+        unfolding_stat_err_hists=unfolding_stat_err_hists,
+        unfolding_total_err_hists=unfolding_total_err_hists,
+        unfolding_total_ematrices=unfolding_total_err_ematrices,
+        truth_hists=truth_hists,
+        alt_truth_hists=alt_truth_hists,
+    )
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--ak4source",
@@ -1241,9 +1284,10 @@ if __name__ == "__main__":
                     # Get bare necessary hists from slim ROOT file
                     # Using pickle one is much slower
                     root_filename = os.path.join(angle_output_dir, "unfolding_result_slim.root")
-                    input_tfile = cu.TFileCacher(root_filename)
+                    # input_tfile = cu.TFileCacher(root_filename)
                     pt_bins = qgc.PT_UNFOLD_DICT['signal_zpj_gen'] if 'ZPlusJets' in this_region['name'] else qgc.PT_UNFOLD_DICT['signal_gen']
-                    unfolding_dict = unpack_slim_unfolding_root_file(input_tfile, this_region['name'], angle.var, pt_bins)
+                    uproot_file = uproot.open(root_filename)
+                    unfolding_dict = unpack_slim_unfolding_root_file_uproot(uproot_file, this_region['name'], angle.var, pt_bins)
 
                     # common str to put on filenames, etc.
                     # don't need angle_prepend as 'groomed' in region name
@@ -1277,8 +1321,8 @@ if __name__ == "__main__":
                         unfolded_hist_bin_total_errors = unfolding_dict['unfolding_total_err_hists'][ibin]
                         # unfolded_hist_bin_total_errors_mean, unfolded_hist_bin_total_errors_mean_err = calc_hist_mean_and_uncorrelated_error(unfolded_hist_bin_total_errors)
                         unfolded_hist_bin_total_errors_rms, unfolded_hist_bin_total_errors_rms_err = calc_hist_rms_and_uncorrelated_error(unfolded_hist_bin_total_errors)
-                        unfolded_total_ematrix, _ = cu.th2_to_ndarray(unfolding_dict['unfolding_total_ematrices'][ibin])
-                        unfolded_hist_bin_total_errors_mean, unfolded_hist_bin_total_errors_mean_err = calc_hist_mean_and_correlated_error(unfolded_hist_bin_total_errors, unfolded_total_ematrix)
+                        ematrix = unfolding_dict['unfolding_total_ematrices'][ibin].values
+                        unfolded_hist_bin_total_errors_mean, unfolded_hist_bin_total_errors_mean_err = calc_hist_mean_and_correlated_error(unfolded_hist_bin_total_errors, ematrix)
 
                         print("uncorrelated value: ", calc_hist_mean_and_uncorrelated_error(unfolded_hist_bin_total_errors))
                         print("correlated value: ", calc_hist_mean_and_correlated_error(unfolded_hist_bin_total_errors, unfolded_total_ematrix))
