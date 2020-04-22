@@ -749,8 +749,8 @@ class GenPtBinnedPlotter(object):
 
             entries = []
             for syst_dict in self.region['experimental_systematics']:
-                syst_label_no_spaces = cu.no_space_str(syst_dict['label'])
-                syst_unfolded_hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('syst_shifted_%s_unfolded' % (syst_label_no_spaces), ibin, binning_scheme='generator')
+                this_syst = self.unfolder.get_exp_syst(syst_dict['label'])
+                syst_unfolded_hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width(this_syst.syst_shifted_label, ibin, binning_scheme='generator')
                 _remove_error_bars(syst_unfolded_hist_bin)
                 c = Contribution(syst_unfolded_hist_bin,
                                  label=syst_dict['label'],
@@ -809,7 +809,8 @@ class GenPtBinnedPlotter(object):
 
             entries = []
             for syst_dict in self.region['experimental_systematics']:
-                syst_unfolded_hist_bin = self.hist_bin_chopper.get_pt_bin_div_bin_width('syst_shifted_%s_unfolded' % cu.no_space_str(syst_dict['label']), ibin, binning_scheme='generator')
+                this_syst = self.unfolder.get_exp_syst(syst_dict['label'])
+                syst_unfolded_hist_bin = self.hist_bin_chopper.get_pt_bin_div_bin_width(this_syst.syst_shifted_label, ibin, binning_scheme='generator')
                 _remove_error_bars(syst_unfolded_hist_bin)
                 c = Contribution(syst_unfolded_hist_bin,
                                  label=syst_dict['label'],
@@ -885,11 +886,16 @@ class GenPtBinnedPlotter(object):
             unfolded_hist_bin_rsp_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded_rsp_err', ibin, binning_scheme='generator')
 
             entries = []
+            check_bin = 6
+            checks = []
             # Add experimental systs
             for syst_dict, mark in zip(self.region['experimental_systematics'], cu.Marker().cycle(cycle_filling=True)):
-                syst_label_no_spaces = cu.no_space_str(syst_dict['label'])
-                syst_unfolded_hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('syst_shifted_%s_unfolded' % (syst_label_no_spaces), ibin, binning_scheme='generator')
+                this_syst = self.unfolder.get_exp_syst(syst_dict['label'])
+                syst_unfolded_hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width(this_syst.syst_shifted_label, ibin, binning_scheme='generator')
                 this_syst_hist = _convert_syst_shift_to_error_ratio_hist(syst_unfolded_hist_bin, unfolded_hist_bin_total_errors)
+                if ibin == 0:
+                    print("check:", syst_dict['label'], "=", this_syst_hist.GetBinContent(check_bin))
+                    checks.append(abs(1 - this_syst_hist.GetBinContent(check_bin)))
                 c = Contribution(this_syst_hist,
                                  label=syst_dict['label'],
                                  line_color=syst_dict['colour'],
@@ -904,6 +910,10 @@ class GenPtBinnedPlotter(object):
             if self.unfolder.scale_uncert_name in self.hist_bin_chopper.objects:
                 scale_hist = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width(self.unfolder.scale_uncert_name, ibin, binning_scheme='generator')
                 scale_col = ROOT.kTeal-8
+                if ibin == 0:
+                    val = _convert_error_bars_to_error_ratio_hist(scale_hist).GetBinContent(check_bin)
+                    print("check: scale =", val)
+                    checks.append(abs(1 - val))
                 entries.extend([
                     Contribution(_convert_error_bars_to_error_ratio_hist(scale_hist),
                                 label='Scale uncertainty',
@@ -921,6 +931,11 @@ class GenPtBinnedPlotter(object):
             if self.unfolder.pdf_uncert_name in self.hist_bin_chopper.objects:
                 pdf_hist = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width(self.unfolder.pdf_uncert_name, ibin, binning_scheme='generator')
                 pdf_col = ROOT.kOrange+4
+                if ibin == 0:
+                    val = _convert_error_bars_to_error_ratio_hist(pdf_hist).GetBinContent(check_bin)
+                    print("check: pdf =", val)
+                    checks.append(abs(1 - val))
+
                 entries.extend([
                     Contribution(_convert_error_bars_to_error_ratio_hist(pdf_hist),
                                 label='PDF uncertainty',
@@ -933,6 +948,18 @@ class GenPtBinnedPlotter(object):
                                 marker_color=pdf_col, marker_style=20, marker_size=0,
                                 fill_style=0, fill_color=15)
                 ])
+
+            if ibin == 0:
+                    val = _convert_error_bars_to_error_ratio_hist(unfolded_hist_bin_stat_errors).GetBinContent(check_bin)
+                    print("check: stat =", val)
+                    checks.append(abs(1 - val))
+
+                    val = _convert_error_bars_to_error_ratio_hist(unfolded_hist_bin_rsp_errors).GetBinContent(check_bin)
+                    print("check: rsp =", val)
+                    checks.append(abs(1 - val))
+                    print(checks)
+                    print("my total:", sum([x**2 for x in checks]))
+                    print("check: total =", abs(1-_convert_error_bars_to_error_ratio_hist(unfolded_hist_bin_total_errors).GetBinContent(check_bin)))
 
             entries.extend([
                 Contribution(_convert_error_bars_to_error_ratio_hist(unfolded_hist_bin_total_errors),
@@ -1396,9 +1423,10 @@ class GenLambdaBinnedPlotter(object):
                 # For each systematic, get the normalised shifted distribution for this bin
                 # Then calculate the shift wrt nominal result, and hence fraction,
                 # then save and plot that
-                syst_label_no_spaces = cu.no_space_str(syst_dict['label'])
-                self.hist_bin_chopper.add_obj('syst_shifted_%s_unfolded' % syst_label_no_spaces, self.unfolder.systs_shifted[syst_dict['label']])
-                syst_unfolded_hist_bin = self.hist_bin_chopper.get_lambda_bin_div_bin_width('syst_shifted_%s_unfolded' % (syst_label_no_spaces), ibin, binning_scheme='generator')
+
+                this_syst = self.unfolder.get_exp_syst(syst_dict['label'])
+                self.hist_bin_chopper.add_obj(this_syst.syst_shifted_label, this_syst.syst_shifted)
+                syst_unfolded_hist_bin = self.hist_bin_chopper.get_lambda_bin_div_bin_width(this_syst.syst_shifted_label, ibin, binning_scheme='generator')
                 syst_unfolded_fraction = syst_unfolded_hist_bin.Clone()
                 syst_unfolded_fraction.Add(unfolded_hist_bin_total_errors, -1)
                 syst_unfolded_fraction.Divide(unfolded_hist_bin_total_errors)
@@ -1491,9 +1519,10 @@ class GenLambdaBinnedPlotter(object):
 
             entries = []
             for syst_dict in self.region['experimental_systematics']:
-                syst_label_no_spaces = cu.no_space_str(syst_dict['label'])
-                self.hist_bin_chopper.add_obj('syst_shifted_%s_unfolded' % syst_label_no_spaces, self.unfolder.systs_shifted[syst_dict['label']])
-                syst_unfolded_hist_bin = self.hist_bin_chopper.get_lambda_bin_div_bin_width('syst_shifted_%s_unfolded' % (syst_label_no_spaces), ibin, binning_scheme='generator')
+                this_syst = self.unfolder.get_exp_syst(syst_dict['label'])
+
+                self.hist_bin_chopper.add_obj(this_syst.syst_shifted_label, this_syst.syst_shifted)
+                syst_unfolded_hist_bin = self.hist_bin_chopper.get_lambda_bin_div_bin_width(this_syst.syst_shifted_label, ibin, binning_scheme='generator')
                 c = Contribution(syst_unfolded_hist_bin,
                                  label=syst_dict['label'],
                                  line_color=syst_dict['colour'], line_width=self.line_width,
@@ -2522,10 +2551,13 @@ class BigNormalised1DPlotter(object):
                                      **dict(self.get_unfolded_stat_err_kwargs(),
                                             line_color=ROOT.kGray+2))
             ]
-            syst_label_no_spaces = cu.no_space_str(syst_dict['label'])
-            hbc_name = 'syst_shifted_%s_unfolded' % syst_label_no_spaces
-            self.hist_bin_chopper.add_obj(hbc_name, self.unfolder.systs_shifted[syst_dict['label']])
-            entries.append(Contribution(self.get_big_1d(hbc_name, 'generator'),
+
+            this_syst = self.unfolder.get_exp_syst(syst_dict['label'])
+
+            # syst_label_no_spaces = cu.no_space_str()
+            # hbc_name = 'syst_shifted_%s_unfolded' % syst_label_no_spaces
+            self.hist_bin_chopper.add_obj(this_syst.syst_shifted_label, this_syst.syst_shifted)
+            entries.append(Contribution(self.get_big_1d(this_syst.syst_shifted_label, 'generator'),
                                         label=syst_dict['label'],
                                         line_color=syst_dict['colour'], line_width=self.line_width,
                                         line_style=2 if 'down' in syst_dict['label'].lower() else 1,
@@ -2544,7 +2576,7 @@ class BigNormalised1DPlotter(object):
             self._modify_plot(plot)
             plot.plot("NOSTACK E")
             l, t = self._plot_pt_bins(plot)
-            plot.save("%s/unfolded_1d_normalised_exp_syst_%s_%s_divBinWidth.%s" % (self.setup.output_dir, syst_label_no_spaces, self.setup.append, self.setup.output_fmt))
+            plot.save("%s/unfolded_1d_normalised_exp_syst_%s_%s_divBinWidth.%s" % (self.setup.output_dir, this_syst.label_no_spaces, self.setup.append, self.setup.output_fmt))
 
     def plot_unfolded_model_systs(self):
         all_entries = [Contribution(self.get_big_1d('hist_truth', 'generator'),

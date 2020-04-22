@@ -235,10 +235,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         self.unfolded_stat_err = None  # set in get_unfolded_with_ematrix_stat()
         self.unfolded_rsp_err = None  # set in get_unfolded_with_ematrix_rsp()
 
-        self.syst_maps = {}  # gets filled with add_sys_error()
-        self.syst_shifts = {}  # gets filled with get_delta_sys_shift(), just shift in unfolded value from specific syst
-        self.systs_shifted = {}  # gets filled with get_syst_shifted_hist(), holds total unfolded with syst shift
-        self.syst_ematrices = {}  # gets filled with get_ematrix_syst(), holds ematrix for each systeamtic
+        self.exp_systs = []  # list of ExpSystematic objects to hodl experimental systematics
 
         # use "generator" for signal + underflow region
         # "generatordistribution" only for ???
@@ -570,44 +567,52 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
 
     # HANDLE SYSTEMATIC UNCERTAINTIES
     # --------------------------------------------------------------------------
-    def add_sys_error(self, map_syst, name, mode):
+    def get_all_exp_syst_labels(self):
+        return [x.label for x in self.exp_systs]
+
+    def get_exp_syst(self, label):
+        items = [x for x in self.exp_systs if x.label == label]
+        if len(items) == 0:
+            raise ValueError("Found no exp systematic with label '%s', only have: %s" % (label, [x.label for x in self.exp_systs]))
+        if len(items) > 1:
+            raise ValueError("Found >1 exp systematic with label '%s': %s" % (label, [x.label for x in items]))
+        return items[0]
+
+    def add_sys_error(self, map_syst, label, mode):
         """Add systematic error via response map, arguments as per AddSysError()"""
-        self.syst_maps[name] = map_syst
-        self.AddSysError(map_syst, name, self.orientation, ROOT.TUnfoldDensity.kSysErrModeMatrix)
-        self.syst_shifts[name] = None  # setup for get_delta_sys_shift
-        self.systs_shifted[name] = None  # setup for get_syst_shifted_hist
-        self.syst_ematrices[name] = None  # setup for get_ematrix_syst
+        this_syst = ExpSystematic(label=label, syst_map=map_syst)
+        self.AddSysError(map_syst, label, self.orientation, ROOT.TUnfoldDensity.kSysErrModeMatrix)
+        self.exp_systs.append(this_syst)
 
     def get_delta_sys_shift(self, syst_label):
         """Get shift in result due to a particular systeamtic
 
         Label must be same as used to add it in add_sys_error()
         """
-        if syst_label not in self.syst_shifts:
-            raise KeyError("No systematic %s, only have: %s" % (syst_label, ", ".join(self.syst_shifts.keys())))
-        if self.syst_shifts[syst_label] is None:
-            hist = self.GetDeltaSysSource(syst_label,
-                                          "syst_shift_%s" % (cu.no_space_str(syst_label)),
+        # TODO: syst_label -> ExpSystematic obj
+        this_syst = self.get_exp_syst(syst_label)
+        if this_syst.syst_shift is None:
+            hist = self.GetDeltaSysSource(this_syst.label,
+                                          this_syst.syst_shift_label,  # name given to hist obj
                                           "",
                                           self.output_distribution_name, # must be the same as what's used in get_output
                                           self.axisSteering,
                                           self.use_axis_binning)
-            self.syst_shifts[syst_label] = hist  # cache shifts
-        return self.syst_shifts[syst_label]
+            this_syst.syst_shift = hist  # cache shifts
+        return this_syst.syst_shift
 
     def get_syst_shifted_hist(self, syst_label, unfolded=None):
-        """Get unfolded hist, shifted by a given systematic source
-
+        """
         Can specify unfolded hist, default is the one with all errors
         """
-        if syst_label not in self.syst_shifts:
-            raise KeyError("No systematic %s, only have: %s" % (syst_label, ", ".join(self.syst_shifts.keys())))
-        if self.systs_shifted[syst_label] is None:
-            hist_shift = self.get_delta_sys_shift(syst_label).Clone('syst_shifted_unfolded_%s' % cu.no_space_str(syst_label))
+        # TODO: syst_label -> ExpSystematic obj
+        this_syst = self.get_exp_syst(syst_label)
+        if this_syst.syst_shifted is None:
+            hist_shift = self.get_delta_sys_shift(syst_label).Clone(this_syst.syst_shifted_label)
             unfolded = unfolded or self.get_unfolded_with_ematrix_stat()
             hist_shift.Add(unfolded)  # TODO what about errors?
-            self.systs_shifted[syst_label] = hist_shift
-        return self.systs_shifted[syst_label]
+            this_syst.syst_shifted = hist_shift
+        return this_syst.syst_shifted
 
     # POST-UNFOLDING FUNCTIONS
     # --------------------------------------------------------------------------
@@ -643,12 +648,11 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         self.get_unfolded_with_ematrix_rsp()
         self.get_folded_unfolded()
         self.get_folded_mc_truth()
-        for syst_label in self.syst_shifts.keys():
+        for exp_syst in self.exp_systs:
             # setup all the internal maps
-            self.get_delta_sys_shift(syst_label)
-            self.get_ematrix_syst(syst_label)
-            self.get_syst_shifted_hist(syst_label)
-        # self.setup_normalised_results()
+            self.get_delta_sys_shift(exp_syst.label)
+            self.get_ematrix_syst(exp_syst.label)
+            self.get_syst_shifted_hist(exp_syst.label)
 
     @staticmethod
     def make_hist_from_diagonal_errors(h2d, do_sqrt=True):
@@ -810,9 +814,12 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
 
     def get_ematrix_syst(self, syst_label):
         """Get error matrix from a systematic source"""
-        if syst_label not in self.syst_shifts:
-            raise KeyError("No systematic %s, only have: %s" % (syst_label, ", ".join(self.syst_shifts.keys())))
-        if self.syst_ematrices[syst_label] is None:
+
+        # TODO: syst_label -> ExpSystematic obj
+
+        this_syst = self.get_exp_syst(syst_label)
+
+        if this_syst.syst_ematrix is None:
             # query the variables inside TUnfolder itself
             syst_source_names = [x.GetName() for x in self.GetSysSources()]
             if syst_label in syst_source_names:
@@ -821,14 +828,13 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
                 # I cannot figure out how to make the int** object for bin_map
                 # So we are trusting that the default args for title and axisSteering are correct
                 # Gnahhhhhhh
-                syst_label_no_spaces = cu.no_space_str(syst_label)
-                hist = this_binning.CreateErrorMatrixHistogram("ematrix_syst_%s_%s" % (syst_label_no_spaces, cu.get_unique_str()), self.use_axis_binning) #, bin_map, "", "*[]")
+                hist = this_binning.CreateErrorMatrixHistogram(this_syst.syst_ematrix_label, self.use_axis_binning) #, bin_map, "", "*[]")
                 self.GetEmatrixSysSource(hist, syst_label)
-                self.syst_ematrices[syst_label] = hist
+                this_syst.syst_ematrix = hist
             else:
                 # TODO: make it ourself from deltaX
                 pass
-        return self.syst_ematrices[syst_label]
+        return this_syst.syst_ematrix
 
     # property or getter?
     @property
@@ -1456,7 +1462,8 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         """Setup normalised experimental uncertainties
 
         In particular recalculates uncertainties, since the systematic one are non-trivial.
-        We must re-calcualted the systematic shifts on the _normalised_ result,
+        We must re-calcualte the systematic shifts on the _normalised_ result,
+        by comparing the normalised nominal and shifted hists for each pt bin,
         then add those in quadrature per bin of each histogram.
 
         From the difference in normalised hists, we can then recalculate the
@@ -1464,26 +1471,25 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         """
         self.hist_bin_chopper.add_obj('unfolded_stat_err', self.get_unfolded_with_ematrix_stat())
 
-        for syst_label in self.syst_maps.keys():
-            shifted_name = 'syst_shifted_%s_unfolded' % cu.no_space_str(syst_label)
-            self.hist_bin_chopper.add_obj(shifted_name, self.get_syst_shifted_hist(syst_label, unfolded=self.get_unfolded_with_ematrix_stat()))
+        for exp_syst in self.exp_systs:
+            if exp_syst.syst_shifted is None:
+                raise ValueError("Need to run _post_process() or get_syst_shifted_hist() first to fill this")
+            self.hist_bin_chopper.add_obj(exp_syst.syst_shifted_label, exp_syst.syst_shifted)
 
-            # add this to to HistBinChopper for later, but it isn't used
+            # add these dummy obj to to HistBinChopper for later, but it isn't used
             # Just to bypass internal checks that it exists in its cached objects
             # when e.g. get_pt_bin_normed_div_bin_width() called
-            shift_name = 'syst_shift_%s' % cu.no_space_str(syst_label)
-            self.hist_bin_chopper.add_obj(shift_name, self.get_delta_sys_shift(syst_label))
-            shift_name = 'syst_ematrix_%s' % cu.no_space_str(syst_label)
-            self.hist_bin_chopper.add_obj(shift_name, self.get_delta_sys_shift(syst_label))
+            self.hist_bin_chopper.add_obj(exp_syst.syst_shift_label, exp_syst.syst_shifted)
+            self.hist_bin_chopper.add_obj(exp_syst.syst_ematrix_label, exp_syst.syst_shifted)
 
             # Now manually recalculate the syst shifts and store them
             # And from this calculate the error matrix for this pt bin and store
             for ibin_pt in range(len(self.pt_bin_edges_gen[:-1])):
-                syst_hist = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width(shifted_name, ibin_pt, binning_scheme='generator').Clone()
+                syst_hist = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width(exp_syst.syst_shifted_label, ibin_pt, binning_scheme='generator').Clone()
                 nominal_hist = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded_stat_err', ibin_pt, binning_scheme='generator')
                 syst_hist.Add(nominal_hist, -1)
                 self.remove_error_bars(syst_hist)
-                key = self.hist_bin_chopper._generate_key('syst_shift_%s' % cu.no_space_str(syst_label),
+                key = self.hist_bin_chopper._generate_key(exp_syst.syst_shift_label,
                                                           ind=ibin_pt,
                                                           axis='pt',
                                                           do_norm=True,
@@ -1492,7 +1498,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
                 self.hist_bin_chopper._cache[key] = syst_hist
 
                 syst_ematrix = cu.shift_to_covariance(syst_hist)
-                key = self.hist_bin_chopper._generate_key('syst_ematrix_%s' % cu.no_space_str(syst_label),
+                key = self.hist_bin_chopper._generate_key(exp_syst.syst_ematrix_label,
                                                           ind=ibin_pt,
                                                           axis='pt',
                                                           do_norm=True,
@@ -1600,10 +1606,10 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             # Calculate total ematrix
             total_ematrix = stat_ematrix.Clone()
             total_ematrix.Add(rsp_ematrix)
-            for syst_label in self.syst_maps.keys():
+            for exp_syst in self.exp_systs:
                 if first_bin:
-                    print("Adding", syst_label, "ematrix to total normalised ematrix...")
-                total_ematrix.Add(self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('syst_ematrix_%s' % cu.no_space_str(syst_label), **hbc_args))
+                    print("Adding", exp_syst.label, "ematrix to total normalised ematrix...")
+                total_ematrix.Add(self.hist_bin_chopper.get_pt_bin_normed_div_bin_width(exp_syst.syst_ematrix_label, **hbc_args))
 
             if self.scale_uncert_ematrix_name in self.hist_bin_chopper.objects:
                 if first_bin:
@@ -1626,14 +1632,13 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             error_bar_hists = [unfolded_hist_bin_stat_errors, unfolded_hist_bin_rsp_errors]
 
             # convert all shifts to error bars
-            for syst_label in self.syst_maps.keys():
+            for exp_syst in self.exp_systs:
                 if first_bin:
-                    print("Adding", syst_label, "uncertainty to normalised result...")
-                obj_name = 'syst_shift_%s' % cu.no_space_str(syst_label)
+                    print("Adding", exp_syst.label, "uncertainty to normalised result...")
                 # Here we access the things we just manually put in the cache - must match up with key!
                 # Don't worry about it being normed etc - that is just so keys agree, and it matches
                 # up with the nominal result (which we do want normed_div_bin_width)
-                syst_shift = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width(obj_name, **hbc_args)
+                syst_shift = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width(exp_syst.syst_shift_label, **hbc_args)
                 error_bar_hists.append(self.convert_error_shift_to_error_bars(unfolded_hist_bin_stat_errors, syst_shift))
 
             # Add in scale syst
@@ -2050,7 +2055,7 @@ class HistBinChopper(object):
             Description
         """
         if name not in self.objects:
-            raise KeyError("No %s in HistBinChopper.objects" % name)
+            raise KeyError("No '%s' in HistBinChopper.objects, only: %s" % (name, list(self.objects.keys())))
         if self.objects[name] is None:
             raise RuntimeError("HistBinChopper.objects[%s] is None" % name)
 
@@ -2076,7 +2081,7 @@ class HistBinChopper(object):
     def get_bin_integral(self, name, ind, axis, binning_scheme='generator'):
         """Get integral for bin `ind` of object `name`"""
         if name not in self.objects:
-            raise KeyError("No %s in HistBinChopper.objects" % name)
+            raise KeyError("No '%s' in HistBinChopper.objects, only: %s" % (name, list(self.objects.keys())))
         key = self._generate_key(name, ind, axis, False, False, binning_scheme)
         if key not in self._cache_integral:
             self.get_bin_plot(name, ind, axis, False, False, binning_scheme)
@@ -2112,3 +2117,26 @@ class HistBinChopper(object):
 
     def get_lambda_bin_normed_div_bin_width(self, name, ind, binning_scheme='generator'):
         return self.get_bin_plot(name, ind, axis='lambda', do_norm=True, do_div_bin_width=True, binning_scheme=binning_scheme)
+
+
+class ExpSystematic(object):
+    """Class to hold info about an experimental systematic"""
+
+    def __init__(self, label, syst_map=None, syst_shift=None, syst_shifted=None, syst_ematrix=None):
+        self.label = label
+        self.label_no_spaces = cu.no_space_str(label)
+        self.syst_map = syst_map
+
+        # shift to norminal unfolded result(from TnNfold)
+        self.syst_shift = syst_shift
+        # these labels are for HistBinChopper
+        self.syst_shift_label = 'syst_shift_%s' % (self.label_no_spaces)
+
+        # norminal + shift
+        self.syst_shifted = syst_shifted
+        self.syst_shifted_label = 'syst_shifted_%s' % (self.label_no_spaces)
+
+        # error matrix (= shift * shift^T)
+        self.syst_ematrix = syst_ematrix
+        self.syst_ematrix_label = 'syst_ematrix_%s' % (self.label_no_spaces)
+
