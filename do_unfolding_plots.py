@@ -853,7 +853,7 @@ class GenPtBinnedPlotter(object):
             plot.plot("NOSTACK E1")
             plot.save("%s/unfolded_syst_variations_unnormalised_%s_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
 
-    def plot_syst_variation_normalised(self):
+    def plot_syst_fraction_normalised(self):
         """Plot varation / central value on normalised hists
         (basically the subplot from plot_unfolded_with_exp_systs_normalised)
         """
@@ -994,17 +994,24 @@ class GenPtBinnedPlotter(object):
                              fill_style=0, fill_color=13),
             ])
 
-            if not self.check_entries(entries, "plot_syst_variation_normalised %d" % ibin):
+            if not self.check_entries(entries, "plot_syst_fraction_normalised %d" % ibin):
                 return
             xlim = calc_auto_xlim(entries)
+            ylim = [0.7, 1.5] if "Dijet" in self.setup.region['name'] else [0.3, 1.9]
+            min_total = _convert_error_bars_to_error_ratio_hist(unfolded_hist_bin_total_errors, -1).GetMinimum()
+            max_total = _convert_error_bars_to_error_ratio_hist(unfolded_hist_bin_total_errors).GetMaximum()
+            if max_total > ylim[1]:
+                ylim[1] = max_total*1.1
+            if min_total < ylim[0]:
+                ylim[0] = min_total*0.9
             plot = Plot(entries,
                         xtitle=self.setup.particle_title,
                         ytitle='Variation / nominal (on normalised distribution)',
                         what="hist",
                         title=self.get_pt_bin_title(bin_edge_low, bin_edge_high),
                         has_data=self.setup.has_data,
-                        ylim=(0.7, 1.5) if "Dijet" in self.setup.region['name'] else (0.3, 1.9),
                         xlim=xlim,
+                        ylim=ylim,
                         subplot_type=None)
             self._modify_plot(plot)
             plot.default_canvas_size = (800, 700)
@@ -2073,7 +2080,7 @@ def do_binned_plots_per_region_angle(setup, do_binned_gen_pt, do_binned_gen_lamb
             gen_pt_binned_plotter.plot_unfolded_with_pdf_systs_unnormalised()
 
         if has_exp_systs or has_model_systs or has_pdf_systs:
-            gen_pt_binned_plotter.plot_syst_variation_normalised()
+            gen_pt_binned_plotter.plot_syst_fraction_normalised()
 
         # if has_data:
         gen_pt_binned_plotter.hist_bin_chopper.add_obj("input_hist_gen_binning_bg_subtracted", unfolder.input_hist_gen_binning_bg_subtracted)
