@@ -994,6 +994,9 @@ def calc_hist_mean_from_values(bin_areas, bin_centers):
     return np.sum(bin_areas * bin_centers) / np.sum(bin_areas)
 
 
+mean_differential = jit(grad(calc_hist_mean_from_values, argnums=0))
+
+
 def calc_hist_mean_uncorrelated_error_from_values(bin_areas, bin_centers, bin_errors):
     """Calculate error on mean, assuming uncorrelated errors.
 
@@ -1015,7 +1018,6 @@ def calc_hist_mean_uncorrelated_error_from_values(bin_areas, bin_centers, bin_er
         Description
     """
     # differential wrt bin_areas
-    mean_differential = jit(grad(calc_hist_mean_from_values, argnums=0))
     diffs = mean_differential(bin_areas, bin_centers)
     err_sq = np.sum(np.square((diffs * bin_errors)))
     return np.sqrt(err_sq)
@@ -1113,6 +1115,9 @@ def calc_hist_rms_from_values(bin_areas, bin_centers):
     return np.sqrt(sum_sq / np.sum(bin_areas))
 
 
+rms_differential = jit(grad(calc_hist_rms_from_values, argnums=0))
+
+
 def calc_hist_rms_uncorrelated_error_from_values(bin_areas, bin_centers, bin_errors):
     """Calculate error on RMS, assuming uncorrelated errors.
 
@@ -1134,7 +1139,6 @@ def calc_hist_rms_uncorrelated_error_from_values(bin_areas, bin_centers, bin_err
         Description
     """
     # differential wrt bin_areas
-    rms_differential = jit(grad(calc_hist_rms_from_values, argnums=0))
     diffs = rms_differential(bin_areas, bin_centers)
     err_sq = np.sum(np.square((diffs * bin_errors)))
     return np.sqrt(err_sq)
