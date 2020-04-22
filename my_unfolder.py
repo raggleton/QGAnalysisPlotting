@@ -654,6 +654,11 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             self.get_ematrix_syst(exp_syst.label)
             self.get_syst_shifted_hist(exp_syst.label)
 
+        self.hist_bin_chopper.add_obj('hist_truth', self.hist_truth)
+        self.hist_bin_chopper.add_obj('unfolded', self.get_output())
+        self.hist_bin_chopper.add_obj('unfolded_stat_err', self.get_unfolded_with_ematrix_stat())
+        self.hist_bin_chopper.add_obj('unfolded_rsp_err', self.get_unfolded_with_ematrix_rsp())
+
     @staticmethod
     def make_hist_from_diagonal_errors(h2d, do_sqrt=True):
         """Make 1D hist, with errors set to diagonal elements from h2d
@@ -1545,16 +1550,12 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
     def setup_normalised_results(self):
         """Setup final normalised results per pt bin with all uncertainties.
 
-        Includes setting up normalised experimental systematics.
-
-        Model & PDF normalised systs should have already been setup.
+        Experimental, model & PDF normalised systs should have already been setup.
         """
         self.hist_bin_chopper.add_obj('hist_truth', self.hist_truth)
         self.hist_bin_chopper.add_obj('unfolded', self.get_output())
         self.hist_bin_chopper.add_obj('unfolded_stat_err', self.get_unfolded_with_ematrix_stat())
         self.hist_bin_chopper.add_obj('unfolded_rsp_err', self.get_unfolded_with_ematrix_rsp())
-
-        self.setup_normalised_experimental_systs()
 
         # add dummy objects to fool check
         self.hist_bin_chopper.add_obj(self.stat_ematrix_name, self.get_ematrix_stat())

@@ -1130,6 +1130,12 @@ if __name__ == "__main__":
             print("Bin %d:" % chosen_bin, unfolded_1d.GetBinContent(chosen_bin))
             print("original uncert:", unfolded_1d.GetBinError(chosen_bin))
 
+            # Do lots of extra gubbins, like caching matrices,
+            # creating unfolded hists with different levels of uncertianties,
+            # ------------------------------------------------------------------
+            unfolder._post_process()
+            unfolder.setup_normalised_experimental_systs()
+
             # Calculate experimental uncertainty shifts using results from another unfolding
             # ------------------------------------------------------------------
             ref_tfile_exp = None
