@@ -28,7 +28,7 @@ ROOT.gErrorIgnoreLevel = ROOT.kWarning
 import common_utils as cu
 import qg_common as qgc
 import qg_general_plots as qgp
-from my_unfolder import MyUnfolder, pickle_region, unpickle_region
+from my_unfolder import MyUnfolder, pickle_region, unpickle_region, ExpSystematic
 from my_unfolder_plotter import MyUnfolderPlotter
 from unfolding_regularisation_classes import TauScanner, LCurveScanner
 from unfolding_config import get_dijet_config, get_zpj_config
@@ -1150,8 +1150,8 @@ if __name__ == "__main__":
 
                 reference_unfolder = exp_syst_region['unfolder']
                 ref_unfolded = reference_unfolder.unfolded
-                # for syst_label in reference_unfolder.syst_maps.keys():
-                # for exp_syst in reference_unfolder.exp_systs:
+
+                for exp_syst in reference_unfolder.exp_systs:
                 #     # # Note that this is potentially a bit dodgy - the
                 #     # # underlying TUnfoldensity object has no knowledge of this syst
                 #     # # Get shift on absolute result
@@ -1167,82 +1167,80 @@ if __name__ == "__main__":
                 #     # unfolder.systs_shifted[syst_label] = None  # gets calculated in get_syst_shifted_hist()
                 #     # unfolder.syst_ematrices[syst_label] = None
 
-                #     # For each systematic source, we figure out the 
-                #     # relative shift compared to the original nominal result, 
-                #     # for each normalised distribution (i.e. per pt bin).
-                #     # We then apply it to our new nominal result, and store it
-                #     # Note that this is different to taking the total shift, 
-                #     # calculating its fractional diff, and then then applying it
-                #     # to the new nominal result?
-                #     syst_label_no_spaces = cu.no_space_str(syst_label)
-                #     bins = unfolder.pt_bin_edges_gen
+                    # For each systematic source, we figure out the
+                    # relative shift compared to the original nominal result,
+                    # for each normalised distribution (i.e. per pt bin).
+                    # We then apply it to our new nominal result, and store it
+                    # Note that this is different to taking the total shift,
+                    # calculating its fractional diff, and then then applying it
+                    # to the new nominal result?
+
+                    this_exp_syst = ExpSystematic(label=exp_syst.label,
+                                                  syst_map=exp_syst.syst_map,
+                                                  # copy the old shift/shifted, although no longer relevant here
+                                                  syst_shift=exp_syst.syst_shift,
+                                                  syst_shifted=exp_syst.syst_shifted)
+                    unfolder.exp_systs.append(this_exp_syst)
+
+                    # Add these to to HistBinChopper for later, but it isn't used
+                    # Just to bypass internal checks that it exists in its cached objects
+                    # when e.g. get_pt_bin_normed_div_bin_width() called
+                    unfolder.hist_bin_chopper.add_obj(exp_syst.syst_shifted_label, unfolder.unfolded)
+                    unfolder.hist_bin_chopper.add_obj(exp_syst.syst_shift_label, unfolder.unfolded)
+                    unfolder.hist_bin_chopper.add_obj(exp_syst.syst_ematrix_label, unfolder.unfolded)
+
+                    bins = unfolder.pt_bin_edges_gen
+                    for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(bins[:-1], bins[1:])):
+                        # get old nominal shape
+                        hbc_args = dict(ind=ibin, binning_scheme='generator')
+                        ref_nominal_hist = reference_unfolder.hist_bin_chopper.get_pt_bin_normed_div_bin_width("unfolded", **hbc_args)
+
+                        # calc rel shift
+                        rel_syst_shift_hist = reference_unfolder.hist_bin_chopper.get_pt_bin_normed_div_bin_width(exp_syst.syst_shift_label, **hbc_args).Clone()
+                        rel_syst_shift_hist.Divide(ref_nominal_hist)
+
+                        # get new nominal shape
+                        new_syst_shift = unfolder.hist_bin_chopper.get_pt_bin_normed_div_bin_width("unfolded", **hbc_args).Clone()
+
+                        # apply rel shift to that to get shifted normalised hists
+                        new_syst_shift.Multiply(rel_syst_shift_hist)
+                        new_hist = unfolder.hist_bin_chopper.get_pt_bin_normed_div_bin_width("unfolded", **hbc_args).Clone()
+                        new_hist.Add(new_syst_shift)
+
+                        # store shifted and shift hists
+                        unfolder.remove_error_bars(new_hist)
+                        key = unfolder.hist_bin_chopper._generate_key(exp_syst.syst_shifted_label,
+                                                                      ind=ibin,
+                                                                      axis='pt',
+                                                                      do_norm=True,
+                                                                      do_div_bin_width=True,
+                                                                      binning_scheme='generator')
+                        unfolder.hist_bin_chopper._cache[key] = new_hist
+
+                        unfolder.remove_error_bars(new_syst_shift)
+                        key = unfolder.hist_bin_chopper._generate_key(exp_syst.syst_shift_label,
+                                                                      ind=ibin,
+                                                                      axis='pt',
+                                                                      do_norm=True,
+                                                                      do_div_bin_width=True,
+                                                                      binning_scheme='generator')
+                        unfolder.hist_bin_chopper._cache[key] = new_syst_shift
+
+                        # calculate erro matrix
+                        syst_ematrix = cu.shift_to_covariance(new_syst_shift)
+                        key = unfolder.hist_bin_chopper._generate_key(exp_syst.syst_ematrix_label,
+                                                                      ind=ibin,
+                                                                      axis='pt',
+                                                                      do_norm=True,
+                                                                      do_div_bin_width=True,
+                                                                      binning_scheme='generator')
+                        unfolder.hist_bin_chopper._cache[key] = syst_ematrix
 
 
-                #     # add this to to HistBinChopper for later, but it isn't used
-                #     # Just to bypass internal checks that it exists in its cached objects
-                #     # when e.g. get_pt_bin_normed_div_bin_width() called
-                #     shifted_name = 'syst_shifted_%s_unfolded' % syst_label_no_spaces
-                #     unfolder.hist_bin_chopper.add_obj(shifted_name, unfolder.unfolded)
-                    
-                #     shift_name = 'syst_shift_%s' % syst_label_no_spaces
-                #     unfolder.hist_bin_chopper.add_obj(shift_name, unfolder.unfolded)
-                    
-                #     ematrix_name = 'syst_ematrix_%s' % syst_label_no_spaces
-                #     unfolder.hist_bin_chopper.add_obj(ematrix_name, unfolder.unfolded)
-
-                #     for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(bins[:-1], bins[1:])):
-                #         # get old nominal shape
-                #         hbc_args = dict(ind=ibin, binning_scheme='generator')
-                #         ref_nominal_hist = reference_unfolder.hist_bin_chopper.get_pt_bin_normed_div_bin_width("unfolded", **hbc_args)
-                        
-                #         # get systematic-shifted shape
-                #         syst_shifted_hist = reference_unfolder.hist_bin_chopper.get_pt_bin_normed_div_bin_width('syst_shifted_%s_unfolded' % (syst_label_no_spaces), **hbc_args).Clone()
-                        
-                #         # calc rel diff from those
-                #         syst_shifted_hist.Add(ref_nominal_hist, -1)
-                        
-                #         syst_shift_hist = reference_unfolder.hist_bin_chopper.get_pt_bin_normed_div_bin_width('syst_shift_%s_unfolded' % (syst_label_no_spaces), **hbc_args).Clone()
-                #         if syst_shift_hist.GetBinContent(2) != syst_shifted_hist.GetBinContent(2):
-                #             raise RuntimeError("difference in systs:", syst_shift_hist.GetBinContent(2), syst_shifted_hist.GetBinContent(2))
-                        
-                #         # get new nominal shape
-                #         new_syst_shift = unfolder.hist_bin_chopper.get_pt_bin_normed_div_bin_width("unfolded", **hbc_args).Clone()
-
-                #         # apply to that
-                #         new_syst_shift.Multiply(syst_shift_hist)
-                #         new_hist = unfolder.hist_bin_chopper.get_pt_bin_normed_div_bin_width("unfolded", **hbc_args).Clone()
-                #         new_hist.Add(new_syst_shift)
-
-                #         # store
-                #         unfolder.remove_error_bars(new_syst_shift)
-                #         key = unfolder.hist_bin_chopper._generate_key(shift_name,
-                #                                                       ind=ibin,
-                #                                                       axis='pt',
-                #                                                       do_norm=True,
-                #                                                       do_div_bin_width=True,
-                #                                                       binning_scheme='generator')
-                #         unfolder.hist_bin_chopper._cache[key] = new_syst_shift
- 
-                #         # calculate erro matrix
-                #         syst_ematrix = cu.shift_to_covariance(new_syst_shift)
-                #         key = unfolder.hist_bin_chopper._generate_key(ematrix_name,
-                #                                                       ind=ibin,
-                #                                                       axis='pt',
-                #                                                       do_norm=True,
-                #                                                       do_div_bin_width=True,
-                #                                                       binning_scheme='generator')
-                #         unfolder.hist_bin_chopper._cache[key] = syst_ematrix
-
-
-                # # update region info
+                # update region info
                 # # TODO what if the config has fewer than in the reference unfolder?
-                # region['experimental_systematics'] = [syst_dict for syst_dict in exp_syst_region['experimental_systematics']]
-                                                      # if syst_dict['label'] in reference_unfolder.syst_maps.keys()]
-
-            # Do lots of extra gubbins, like caching matrices,
-            # creating unfolded hists with different levels of uncertianties,
-            # ------------------------------------------------------------------
-            unfolder._post_process()
+                region['experimental_systematics'] = [syst_dict for syst_dict in exp_syst_region['experimental_systematics']
+                                                      if syst_dict['label'] in reference_unfolder.get_all_exp_syst_labels()]
 
             # Get various error matrices
             # ------------------------------------------------------------------
