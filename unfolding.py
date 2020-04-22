@@ -1706,10 +1706,10 @@ if __name__ == "__main__":
                                                distribution=unfolder.distribution,
                                                axisSteering=unfolder.axisSteering)
 
-                    this_tdir.cd()
-                    syst_tdir_name = "modelSyst_"+syst_label_no_spaces
-                    syst_tdir = this_tdir.mkdir(syst_tdir_name)
-                    syst_tdir.cd()
+                    # this_tdir.cd()
+                    # syst_tdir_name = "modelSyst_"+syst_label_no_spaces
+                    # syst_tdir = this_tdir.mkdir(syst_tdir_name)
+                    # syst_tdir.cd()
 
                     syst_output_dir = this_output_dir+"/modelSyst_"+syst_label_no_spaces
                     syst_unfolder_plotter = MyUnfolderPlotter(syst_unfolder, is_data=False)
@@ -1864,7 +1864,7 @@ if __name__ == "__main__":
 
                     # Save important stuff to TFile
                     # --------------------------------------------------------------
-                    syst_unfolder.save_to_tfile(syst_tdir)
+                    # syst_unfolder.save_to_tfile(syst_tdir)
 
                     # Do 1D plot of nominal vs syst unfolded
                     # --------------------------------------------------------------
@@ -2420,7 +2420,7 @@ if __name__ == "__main__":
                               angle=angle,
                               output_dir=this_output_dir,
                               has_data=not MC_INPUT)
-                hbc = do_binned_plots_per_region_angle(setup, 
+                hbc = do_binned_plots_per_region_angle(setup,
                                                        do_binned_gen_pt=True,
                                                        do_binned_gen_lambda=True,
                                                        do_binned_reco_pt=True)
