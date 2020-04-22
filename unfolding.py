@@ -646,12 +646,12 @@ if __name__ == "__main__":
             cu.check_dir_exists_create(this_output_dir)
 
             # Save hists etc to ROOT file for access later
-            output_tfile = ROOT.TFile("%s/unfolding_result.root" % (this_output_dir), "RECREATE")
+            # output_tfile = ROOT.TFile("%s/unfolding_result.root" % (this_output_dir), "RECREATE")
 
             new_tdir = "%s/%s" % (region['name'], angle.var)
-            output_tfile.mkdir(new_tdir)
-            this_tdir = output_tfile.Get(new_tdir)
-            this_tdir.cd()
+            # output_tfile.mkdir(new_tdir)
+            # this_tdir = output_tfile.Get(new_tdir)
+            # this_tdir.cd()
             # this_tdir.WriteTObject(hist_mc_gen_pt_physical, "mc_gen_pt")
 
             output_tfile_slim = ROOT.TFile("%s/unfolding_result_slim.root" % (this_output_dir), "RECREATE")
@@ -1098,7 +1098,7 @@ if __name__ == "__main__":
                 print("Found tau:", tau)
                 l_scanner.plot_scan_L_curve(output_filename="%s/scanL_%s.%s" % (this_output_dir, append, OUTPUT_FMT))
                 l_scanner.plot_scan_L_curvature(output_filename="%s/scanLcurvature_%s.%s" % (this_output_dir, append, OUTPUT_FMT))
-                l_scanner.save_to_tfile(this_tdir)
+                # l_scanner.save_to_tfile(this_tdir)
 
             elif REGULARIZE == "tau":
                 print("Regularizing with ScanTau, please be patient...")
@@ -1112,7 +1112,7 @@ if __name__ == "__main__":
                                            axis_steering=unfolder.axisSteering)
                 print("Found tau:", tau)
                 tau_scanner.plot_scan_tau(output_filename="%s/scantau_%s.%s" % (this_output_dir, append, OUTPUT_FMT))
-                tau_scanner.save_to_tfile(this_tdir)
+                # tau_scanner.save_to_tfile(this_tdir)
 
             if REGULARIZE != "None":
                 title = "L matrix %s %s region %s" % (jet_algo, region['label'], angle_str)
@@ -1382,9 +1382,9 @@ if __name__ == "__main__":
 
                 unfolder.hist_bin_chopper.add_obj('alt_hist_truth', alt_hist_mc_gen)
 
-            this_tdir.cd()
-            alt_tdir = this_tdir.mkdir("alt_response_%s" % cu.no_space_str(region['alt_mc_label']))
-            alt_tdir.cd()
+            # this_tdir.cd()
+            # alt_tdir = this_tdir.mkdir("alt_response_%s" % cu.no_space_str(region['alt_mc_label']))
+            # alt_tdir.cd()
 
             if args.useAltResponse:
                 print("*" * 80)
@@ -1581,17 +1581,17 @@ if __name__ == "__main__":
 
                 # Save important stuff to TFile
                 # --------------------------------------------------------------
-                alt_unfolder.save_to_tfile(alt_tdir)
+                # alt_unfolder.save_to_tfile(alt_tdir)
 
             # Bit gnarly - have to save this stuff manually
             region["alt_hist_mc_gen"] = alt_hist_mc_gen
             region["alt_hist_mc_reco"] = alt_hist_mc_reco
             region["alt_hist_mc_reco_bg_subtracted"] = alt_hist_mc_reco_bg_subtracted
             region["alt_hist_mc_reco_bg_subtracted_gen_binning"] = alt_hist_mc_reco_bg_subtracted_gen_binning
-            alt_tdir.WriteTObject(alt_hist_mc_gen, "alt_hist_mc_gen")
-            alt_tdir.WriteTObject(alt_hist_mc_reco, "alt_hist_mc_reco")
-            alt_tdir.WriteTObject(alt_hist_mc_reco_bg_subtracted, "alt_hist_mc_reco_bg_subtracted")
-            alt_tdir.WriteTObject(alt_hist_mc_reco_bg_subtracted_gen_binning, "alt_hist_mc_reco_bg_subtracted_gen_binning")
+            # alt_tdir.WriteTObject(alt_hist_mc_gen, "alt_hist_mc_gen")
+            # alt_tdir.WriteTObject(alt_hist_mc_reco, "alt_hist_mc_reco")
+            # alt_tdir.WriteTObject(alt_hist_mc_reco_bg_subtracted, "alt_hist_mc_reco_bg_subtracted")
+            # alt_tdir.WriteTObject(alt_hist_mc_reco_bg_subtracted_gen_binning, "alt_hist_mc_reco_bg_subtracted_gen_binning")
 
             # ------------------------------------------------------------------
             # MODEL INPUT VARIATIONS
@@ -1968,15 +1968,15 @@ if __name__ == "__main__":
 
                 # Save copies of Unfolders to TFile
                 # ----------------------------------------------------------
-                for ind, syst_dict in enumerate(region['model_systematics']):
-                    syst_label = syst_dict['label']
-                    syst_label_no_spaces = cu.no_space_str(syst_dict['label'])
-                    this_tdir.cd()
-                    syst_tdir_name = "modelSyst_"+syst_label_no_spaces
-                    syst_tdir = this_tdir.mkdir(syst_tdir_name)
-                    syst_tdir.cd()
-                    model_unfolder = syst_dict['unfolder']
-                    model_unfolder.save_to_tfile(syst_tdir)
+                # for ind, syst_dict in enumerate(region['model_systematics']):
+                #     syst_label = syst_dict['label']
+                #     syst_label_no_spaces = cu.no_space_str(syst_dict['label'])
+                #     this_tdir.cd()
+                #     syst_tdir_name = "modelSyst_"+syst_label_no_spaces
+                #     syst_tdir = this_tdir.mkdir(syst_tdir_name)
+                #     syst_tdir.cd()
+                #     model_unfolder = syst_dict['unfolder']
+                #     model_unfolder.save_to_tfile(syst_tdir)
 
 
             if len(region['model_systematics']) > 0 and MC_INPUT:
@@ -2071,8 +2071,8 @@ if __name__ == "__main__":
 
                     this_tdir.cd()
                     pdf_tdir_name = "pdfSyst_"+pdf_label_no_spaces
-                    pdf_tdir = this_tdir.mkdir(pdf_tdir_name)
-                    pdf_tdir.cd()
+                    # pdf_tdir = this_tdir.mkdir(pdf_tdir_name)
+                    # pdf_tdir.cd()
 
                     pdf_unfolder_plotter = MyUnfolderPlotter(pdf_unfolder, is_data=False)
                     pdf_output_dir = this_output_dir+"/pdfSyst/"+pdf_label_no_spaces
@@ -2178,7 +2178,7 @@ if __name__ == "__main__":
                         print("Found tau:", pdf_tau)
                         pdf_l_scanner.plot_scan_L_curve(output_filename="%s/scanL_syst_%s_%s.%s" % (pdf_output_dir, pdf_label_no_spaces, unfolder.variable_name, OUTPUT_FMT))
                         pdf_l_scanner.plot_scan_L_curvature(output_filename="%s/scanLcurvature_syst_%s_%s.%s" % (pdf_output_dir, pdf_label_no_spaces, unfolder.variable_name, OUTPUT_FMT))
-                        pdf_l_scanner.save_to_tfile(pdf_tdir)
+                        # pdf_l_scanner.save_to_tfile(pdf_tdir)
 
                     elif REGULARIZE == "tau":
                         print("Regularizing PDF systematic with ScanTau, please be patient...")
@@ -2192,7 +2192,7 @@ if __name__ == "__main__":
                                                              axis_steering=pdf_unfolder.axisSteering)
                         print("Found tau for syst matrix:", pdf_tau)
                         pdf_tau_scanner.plot_scan_tau(output_filename="%s/scantau_syst_%s_%s.%s" % (pdf_output_dir, pdf_label_no_spaces, pdf_unfolder.variable_name, OUTPUT_FMT))
-                        pdf_tau_scanner.save_to_tfile(pdf_tdir)
+                        # pdf_tau_scanner.save_to_tfile(pdf_tdir)
 
                     region['pdf_systematics'][ind]['tau'] = pdf_tau
 
@@ -2213,7 +2213,7 @@ if __name__ == "__main__":
 
                     # Save important stuff to TFile
                     # ----------------------------------------------------------
-                    pdf_unfolder.save_to_tfile(pdf_tdir)
+                    # pdf_unfolder.save_to_tfile(pdf_tdir)
 
                 unfolder.create_normalised_pdf_syst_uncertainty(region['pdf_systematics'])
                 unfolder.create_normalised_pdf_syst_ematrices()
@@ -2260,15 +2260,15 @@ if __name__ == "__main__":
 
                 # Save copies of Unfolders to TFile
                 # ----------------------------------------------------------
-                for ind, pdf_dict in enumerate(pdf_syst_region['pdf_systematics']):
-                    pdf_label = pdf_dict['label']
-                    pdf_label_no_spaces = cu.no_space_str(pdf_label)
-                    this_tdir.cd()
-                    pdf_tdir_name = "pdfSyst_"+pdf_label_no_spaces
-                    pdf_tdir = this_tdir.mkdir(pdf_tdir_name)
-                    pdf_tdir.cd()
-                    pdf_unfolder = pdf_dict['unfolder']
-                    pdf_unfolder.save_to_tfile(pdf_tdir)
+                # for ind, pdf_dict in enumerate(pdf_syst_region['pdf_systematics']):
+                #     pdf_label = pdf_dict['label']
+                #     pdf_label_no_spaces = cu.no_space_str(pdf_label)
+                #     this_tdir.cd()
+                #     pdf_tdir_name = "pdfSyst_"+pdf_label_no_spaces
+                #     pdf_tdir = this_tdir.mkdir(pdf_tdir_name)
+                #     pdf_tdir.cd()
+                #     pdf_unfolder = pdf_dict['unfolder']
+                #     pdf_unfolder.save_to_tfile(pdf_tdir)
 
 
             if len(region['pdf_systematics']) > 0 and MC_INPUT:
@@ -2326,7 +2326,7 @@ if __name__ == "__main__":
             print(">> Saving unfolder to ROOT file")
             print(unfolder.hist_bin_chopper.objects)
             print(unfolder.hist_bin_chopper._cache)
-            unfolder.save_to_tfile(this_tdir)
+            # unfolder.save_to_tfile(this_tdir)
             unfolder.save_unfolded_binned_hists_to_tfile(this_slim_tdir)
 
             # test the pickle file by un-pickling it
@@ -2373,7 +2373,7 @@ if __name__ == "__main__":
             #                                  xlim=xlim,
             #                                  region_title=region_label)
 
-    print("Saved hists to", output_tfile.GetName())
+    # print("Saved hists to", output_tfile.GetName())
     print("Saved minimal hists to", output_tfile_slim.GetName())
-    output_tfile.Close()
+    # output_tfile.Close()
     output_tfile_slim.Close()
