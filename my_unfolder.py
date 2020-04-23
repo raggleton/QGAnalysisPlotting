@@ -1657,9 +1657,10 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             # Get normalised hist with nominal unfolded value, and change error bars
             # to be quadrature sum of those we want (stat+rsp+systs)
             h_total = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded', **hbc_args)
-            # for i in range(1, h_total.GetNbinsX()+1):
-            #     err2 = sum([pow(h.GetBinError(i), 2) for h in error_bar_hists])
-            #     h_total.SetBinError(i, math.sqrt(err2))
+            for i in range(1, h_total.GetNbinsX()+1):
+            #     print([pow(h.GetBinError(i), 2) for h in error_bar_hists])
+                err2 = sum([pow(h.GetBinError(i), 2) for h in error_bar_hists])
+                h_total.SetBinError(i, math.sqrt(err2))
             #     print(i, "quadrature:", math.sqrt(err2))
 
             # Update cache
