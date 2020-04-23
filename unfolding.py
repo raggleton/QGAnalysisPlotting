@@ -1134,7 +1134,6 @@ if __name__ == "__main__":
             # creating unfolded hists with different levels of uncertianties,
             # ------------------------------------------------------------------
             unfolder._post_process()
-            unfolder.setup_normalised_experimental_systs()
 
             # Calculate experimental uncertainty shifts using results from another unfolding
             # ------------------------------------------------------------------
@@ -1152,21 +1151,6 @@ if __name__ == "__main__":
                 ref_unfolded = reference_unfolder.unfolded
 
                 for exp_syst in reference_unfolder.exp_systs:
-                #     # # Note that this is potentially a bit dodgy - the
-                #     # # underlying TUnfoldensity object has no knowledge of this syst
-                #     # # Get shift on absolute result
-                #     # new_delta_shift = reference_unfolder.get_delta_sys_shift(syst_label).Clone()
-                #     # # Calc relative difference
-                #     # new_delta_shift.Divide(ref_unfolded)
-                #     # # Apply to our nominal unfolded result & store
-                #     # # We only need the delta shift (like normal),
-                #     # # since _post_process() calcualte everything from that
-                #     # new_delta_shift.Multiply(unfolder.unfolded)
-                #     # unfolder.syst_shifts[syst_label] = new_delta_shift
-                #     # unfolder.syst_maps[syst_label] = reference_unfolder.syst_maps[syst_label]
-                #     # unfolder.systs_shifted[syst_label] = None  # gets calculated in get_syst_shifted_hist()
-                #     # unfolder.syst_ematrices[syst_label] = None
-
                     # For each systematic source, we figure out the
                     # relative shift compared to the original nominal result,
                     # for each normalised distribution (i.e. per pt bin).
@@ -1238,9 +1222,11 @@ if __name__ == "__main__":
 
 
                 # update region info
-                # # TODO what if the config has fewer than in the reference unfolder?
                 region['experimental_systematics'] = [syst_dict for syst_dict in exp_syst_region['experimental_systematics']
                                                       if syst_dict['label'] in reference_unfolder.get_all_exp_syst_labels()]
+
+            else:
+                unfolder.setup_normalised_experimental_systs()
 
             # Get various error matrices
             # ------------------------------------------------------------------
