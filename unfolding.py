@@ -543,7 +543,6 @@ if __name__ == "__main__":
         angles = qgc.COMMON_VARS
     else:
         angles = [a for a in qgc.COMMON_VARS if a.var in args.angles]
-    # print(angles)
 
     print("Running TUnfold version", ROOT.TUnfold.GetTUnfoldVersion())
 
@@ -645,16 +644,10 @@ if __name__ == "__main__":
             this_output_dir = "%s/%s/%s" % (output_dir, region['name'], angle.var)
             cu.check_dir_exists_create(this_output_dir)
 
-            # Save hists etc to ROOT file for access later
-            # output_tfile = ROOT.TFile("%s/unfolding_result.root" % (this_output_dir), "RECREATE")
-
-            new_tdir = "%s/%s" % (region['name'], angle.var)
-            # output_tfile.mkdir(new_tdir)
-            # this_tdir = output_tfile.Get(new_tdir)
-            # this_tdir.cd()
-            # this_tdir.WriteTObject(hist_mc_gen_pt_physical, "mc_gen_pt")
-
+            # Save minimal set of hists etc to ROOT file for access later
+            # For everything, we pickle it
             output_tfile_slim = ROOT.TFile("%s/unfolding_result_slim.root" % (this_output_dir), "RECREATE")
+            new_tdir = "%s/%s" % (region['name'], angle.var)
             output_tfile_slim.mkdir(new_tdir)
             this_slim_tdir = output_tfile_slim.Get(new_tdir)
             this_slim_tdir.cd()
@@ -1098,7 +1091,6 @@ if __name__ == "__main__":
                 print("Found tau:", tau)
                 l_scanner.plot_scan_L_curve(output_filename="%s/scanL_%s.%s" % (this_output_dir, append, OUTPUT_FMT))
                 l_scanner.plot_scan_L_curvature(output_filename="%s/scanLcurvature_%s.%s" % (this_output_dir, append, OUTPUT_FMT))
-                # l_scanner.save_to_tfile(this_tdir)
 
             elif REGULARIZE == "tau":
                 print("Regularizing with ScanTau, please be patient...")
@@ -1112,7 +1104,6 @@ if __name__ == "__main__":
                                            axis_steering=unfolder.axisSteering)
                 print("Found tau:", tau)
                 tau_scanner.plot_scan_tau(output_filename="%s/scantau_%s.%s" % (this_output_dir, append, OUTPUT_FMT))
-                # tau_scanner.save_to_tfile(this_tdir)
 
             if REGULARIZE != "None":
                 title = "L matrix %s %s region %s" % (jet_algo, region['label'], angle_str)
@@ -1125,10 +1116,7 @@ if __name__ == "__main__":
             # Do unfolding!
             # ------------------------------------------------------------------
             unfolder.do_unfolding(tau)
-            unfolded_1d = unfolder.get_output(hist_name="unfolded_1d")
-            chosen_bin = 18
-            print("Bin %d:" % chosen_bin, unfolded_1d.GetBinContent(chosen_bin))
-            print("original uncert:", unfolded_1d.GetBinError(chosen_bin))
+            unfolder.get_output(hist_name="unfolded_1d")
 
             # Do lots of extra gubbins, like caching matrices,
             # creating unfolded hists with different levels of uncertianties,
@@ -1230,9 +1218,6 @@ if __name__ == "__main__":
 
             # Get various error matrices
             # ------------------------------------------------------------------
-            # stat errors only - do before or after systematics?
-            print("stat uncert:", unfolder.get_unfolded_with_ematrix_stat().GetBinError(chosen_bin))
-            print("new uncert:", unfolder.get_output().GetBinError(chosen_bin))
 
             # hist1, err1 = cu.th1_to_arr(unfolded_1d)
             # hist2, err2 = cu.th1_to_arr(hist_mc_gen)
@@ -1440,10 +1425,6 @@ if __name__ == "__main__":
 
                 unfolder.hist_bin_chopper.add_obj('alt_hist_truth', alt_hist_mc_gen)
 
-            # this_tdir.cd()
-            # alt_tdir = this_tdir.mkdir("alt_response_%s" % cu.no_space_str(region['alt_mc_label']))
-            # alt_tdir.cd()
-
             if args.useAltResponse:
                 print("*" * 80)
                 print("*** Unfolding with alternate response matrix ***")
@@ -1466,10 +1447,6 @@ if __name__ == "__main__":
                                           densityFlags=unfolder.densityFlags,
                                           distribution=unfolder.distribution,
                                           axisSteering=unfolder.axisSteering)
-
-                # this_tdir.cd()
-                # alt_tdir = this_tdir.mkdir("alt_response_%s" % cu.no_space_str(region['alt_mc_label']))
-                # alt_tdir.cd()
 
                 is_herwig = "Herwig" in region['alt_mc_label']
                 is_pythia8 = region['alt_mc_label'] == "Pythia8"  # not MG+Pythia9
@@ -1545,7 +1522,6 @@ if __name__ == "__main__":
                     print("Found tau:", alt_tau)
                     alt_l_scanner.plot_scan_L_curve(output_filename="%s/scanL_alt_%s.%s" % (alt_output_dir, unfolder.variable_name, OUTPUT_FMT))
                     alt_l_scanner.plot_scan_L_curvature(output_filename="%s/scanLcurvature_alt_%s.%s" % (alt_output_dir, unfolder.variable_name, OUTPUT_FMT))
-                    alt_l_scanner.save_to_tfile(alt_tdir)
 
                 elif REGULARIZE == "tau":
                     print("Regularizing alternative with ScanTau, please be patient...")
@@ -1559,7 +1535,6 @@ if __name__ == "__main__":
                                                        axis_steering=alt_unfolder.axisSteering)
                     print("Found tau for alt matrix:", alt_tau)
                     alt_tau_scanner.plot_scan_tau(output_filename="%s/scantau_alt_%s.%s" % (alt_output_dir, alt_unfolder.variable_name, OUTPUT_FMT))
-                    alt_tau_scanner.save_to_tfile(alt_tdir)
 
                 if REGULARIZE != "None":
                     title = "L matrix, %s region, %s, alt. response (%s)" % (region['label'], angle_str, region['alt_mc_label'])
@@ -1572,9 +1547,7 @@ if __name__ == "__main__":
                 # Do unfolding!
                 # --------------------------------------------------------------
                 alt_unfolder.do_unfolding(alt_tau)
-                alt_unfolded_1d = alt_unfolder.get_output(hist_name="alt_unfolded_1d")
-                print("Bin %d:" % chosen_bin, alt_unfolded_1d.GetBinContent(chosen_bin))
-                print("original uncert:", alt_unfolded_1d.GetBinError(chosen_bin))
+                alt_unfolder.get_output(hist_name="alt_unfolded_1d")
                 alt_unfolder._post_process()
 
                 if SUBTRACT_FAKES:
@@ -1637,19 +1610,11 @@ if __name__ == "__main__":
 
                 region['alt_unfolder'] = alt_unfolder
 
-                # Save important stuff to TFile
-                # --------------------------------------------------------------
-                # alt_unfolder.save_to_tfile(alt_tdir)
-
             # Bit gnarly - have to save this stuff manually
             region["alt_hist_mc_gen"] = alt_hist_mc_gen
             region["alt_hist_mc_reco"] = alt_hist_mc_reco
             region["alt_hist_mc_reco_bg_subtracted"] = alt_hist_mc_reco_bg_subtracted
             region["alt_hist_mc_reco_bg_subtracted_gen_binning"] = alt_hist_mc_reco_bg_subtracted_gen_binning
-            # alt_tdir.WriteTObject(alt_hist_mc_gen, "alt_hist_mc_gen")
-            # alt_tdir.WriteTObject(alt_hist_mc_reco, "alt_hist_mc_reco")
-            # alt_tdir.WriteTObject(alt_hist_mc_reco_bg_subtracted, "alt_hist_mc_reco_bg_subtracted")
-            # alt_tdir.WriteTObject(alt_hist_mc_reco_bg_subtracted_gen_binning, "alt_hist_mc_reco_bg_subtracted_gen_binning")
 
             # ------------------------------------------------------------------
             # MODEL INPUT VARIATIONS
@@ -1691,11 +1656,6 @@ if __name__ == "__main__":
                                                densityFlags=unfolder.densityFlags,
                                                distribution=unfolder.distribution,
                                                axisSteering=unfolder.axisSteering)
-
-                    # this_tdir.cd()
-                    # syst_tdir_name = "modelSyst_"+syst_label_no_spaces
-                    # syst_tdir = this_tdir.mkdir(syst_tdir_name)
-                    # syst_tdir.cd()
 
                     syst_output_dir = this_output_dir+"/modelSyst_"+syst_label_no_spaces
                     syst_unfolder_plotter = MyUnfolderPlotter(syst_unfolder, is_data=False)
@@ -1809,7 +1769,6 @@ if __name__ == "__main__":
                         print("Found tau:", syst_tau)
                         syst_l_scanner.plot_scan_L_curve(output_filename="%s/scanL_syst_%s_%s.%s" % (syst_output_dir, syst_label_no_spaces, unfolder.variable_name, OUTPUT_FMT))
                         syst_l_scanner.plot_scan_L_curvature(output_filename="%s/scanLcurvature_syst_%s_%s.%s" % (syst_output_dir, syst_label_no_spaces, unfolder.variable_name, OUTPUT_FMT))
-                        syst_l_scanner.save_to_tfile(syst_tdir)
 
                     elif REGULARIZE == "tau":
                         print("Regularizing systematic model with ScanTau, please be patient...")
@@ -1823,7 +1782,6 @@ if __name__ == "__main__":
                                                              axis_steering=syst_unfolder.axisSteering)
                         print("Found tau for syst matrix:", syst_tau)
                         syst_tau_scanner.plot_scan_tau(output_filename="%s/scantau_syst_%s_%s.%s" % (syst_output_dir, syst_label_no_spaces, syst_unfolder.variable_name, OUTPUT_FMT))
-                        syst_tau_scanner.save_to_tfile(syst_tdir)
 
                     region['model_systematics'][ind]['tau'] = syst_tau
 
@@ -1838,19 +1796,13 @@ if __name__ == "__main__":
                     # Do unfolding!
                     # --------------------------------------------------------------
                     syst_unfolder.do_unfolding(syst_tau)
-                    syst_unfolded_1d = syst_unfolder.get_output(hist_name="syst_%s_unfolded_1d" % (syst_label_no_spaces))
-                    print("Bin %d:" % (chosen_bin), syst_unfolded_1d.GetBinContent(chosen_bin))
-                    print("original uncert:", syst_unfolded_1d.GetBinError(chosen_bin))
+                    syst_unfolder.get_output(hist_name="syst_%s_unfolded_1d" % (syst_label_no_spaces))
                     syst_unfolder._post_process()
                     syst_unfolder.setup_normalised_results()
 
                     syst_title = "%s\n%s region, %s, %s input" % (jet_algo, region['label'], angle_str, syst_label)
                     syst_unfolder_plotter.draw_unfolded_1d(title=syst_title, **syst_plot_args)
                     region['model_systematics'][ind]['unfolder'] = syst_unfolder
-
-                    # Save important stuff to TFile
-                    # --------------------------------------------------------------
-                    # syst_unfolder.save_to_tfile(syst_tdir)
 
                     # Do 1D plot of nominal vs syst unfolded
                     # --------------------------------------------------------------
@@ -2024,19 +1976,6 @@ if __name__ == "__main__":
 
                 unfolder.create_normalised_scale_syst_ematrices()
 
-                # Save copies of Unfolders to TFile
-                # ----------------------------------------------------------
-                # for ind, syst_dict in enumerate(region['model_systematics']):
-                #     syst_label = syst_dict['label']
-                #     syst_label_no_spaces = cu.no_space_str(syst_dict['label'])
-                #     this_tdir.cd()
-                #     syst_tdir_name = "modelSyst_"+syst_label_no_spaces
-                #     syst_tdir = this_tdir.mkdir(syst_tdir_name)
-                #     syst_tdir.cd()
-                #     model_unfolder = syst_dict['unfolder']
-                #     model_unfolder.save_to_tfile(syst_tdir)
-
-
             if len(region['model_systematics']) > 0 and MC_INPUT:
                 # Do a big absolute 1D plots for sanity
                 model_contributions = [
@@ -2126,11 +2065,6 @@ if __name__ == "__main__":
                                               densityFlags=unfolder.densityFlags,
                                               distribution=unfolder.distribution,
                                               axisSteering=unfolder.axisSteering)
-
-                    # this_tdir.cd()
-                    # pdf_tdir_name = "pdfSyst_"+pdf_label_no_spaces
-                    # pdf_tdir = this_tdir.mkdir(pdf_tdir_name)
-                    # pdf_tdir.cd()
 
                     pdf_unfolder_plotter = MyUnfolderPlotter(pdf_unfolder, is_data=False)
                     pdf_output_dir = this_output_dir+"/pdfSyst/"+pdf_label_no_spaces
@@ -2236,7 +2170,6 @@ if __name__ == "__main__":
                         print("Found tau:", pdf_tau)
                         pdf_l_scanner.plot_scan_L_curve(output_filename="%s/scanL_syst_%s_%s.%s" % (pdf_output_dir, pdf_label_no_spaces, unfolder.variable_name, OUTPUT_FMT))
                         pdf_l_scanner.plot_scan_L_curvature(output_filename="%s/scanLcurvature_syst_%s_%s.%s" % (pdf_output_dir, pdf_label_no_spaces, unfolder.variable_name, OUTPUT_FMT))
-                        # pdf_l_scanner.save_to_tfile(pdf_tdir)
 
                     elif REGULARIZE == "tau":
                         print("Regularizing PDF systematic with ScanTau, please be patient...")
@@ -2250,16 +2183,13 @@ if __name__ == "__main__":
                                                              axis_steering=pdf_unfolder.axisSteering)
                         print("Found tau for syst matrix:", pdf_tau)
                         pdf_tau_scanner.plot_scan_tau(output_filename="%s/scantau_syst_%s_%s.%s" % (pdf_output_dir, pdf_label_no_spaces, pdf_unfolder.variable_name, OUTPUT_FMT))
-                        # pdf_tau_scanner.save_to_tfile(pdf_tdir)
 
                     region['pdf_systematics'][ind]['tau'] = pdf_tau
 
                     # Do unfolding!
                     # --------------------------------------------------------------
                     pdf_unfolder.do_unfolding(pdf_tau)
-                    pdf_unfolded_1d = pdf_unfolder.get_output(hist_name="syst_%s_unfolded_1d" % (pdf_label_no_spaces))
-                    print("Bin %d:" % (chosen_bin), pdf_unfolded_1d.GetBinContent(chosen_bin))
-                    print("original uncert:", pdf_unfolded_1d.GetBinError(chosen_bin))
+                    pdf_unfolder.get_output(hist_name="syst_%s_unfolded_1d" % (pdf_label_no_spaces))
                     pdf_unfolder._post_process()
 
                     pdf_unfolder.setup_normalised_results()
@@ -2268,10 +2198,6 @@ if __name__ == "__main__":
                     pdf_unfolder_plotter.draw_unfolded_1d(title=pdf_title, **pdf_plot_args)
 
                     region['pdf_systematics'][ind]['unfolder'] = pdf_unfolder
-
-                    # Save important stuff to TFile
-                    # ----------------------------------------------------------
-                    # pdf_unfolder.save_to_tfile(pdf_tdir)
 
                 unfolder.create_normalised_pdf_syst_uncertainty(region['pdf_systematics'])
                 unfolder.create_normalised_pdf_syst_ematrices()
@@ -2315,18 +2241,6 @@ if __name__ == "__main__":
                     unfolder.hist_bin_chopper._cache[key] = pdf_syst
 
                 unfolder.create_normalised_pdf_syst_ematrices()
-
-                # Save copies of Unfolders to TFile
-                # ----------------------------------------------------------
-                # for ind, pdf_dict in enumerate(pdf_syst_region['pdf_systematics']):
-                #     pdf_label = pdf_dict['label']
-                #     pdf_label_no_spaces = cu.no_space_str(pdf_label)
-                #     this_tdir.cd()
-                #     pdf_tdir_name = "pdfSyst_"+pdf_label_no_spaces
-                #     pdf_tdir = this_tdir.mkdir(pdf_tdir_name)
-                #     pdf_tdir.cd()
-                #     pdf_unfolder = pdf_dict['unfolder']
-                #     pdf_unfolder.save_to_tfile(pdf_tdir)
 
 
             if len(region['pdf_systematics']) > 0 and MC_INPUT:
@@ -2384,7 +2298,6 @@ if __name__ == "__main__":
             print(">> Saving unfolder to ROOT file")
             print(unfolder.hist_bin_chopper.objects)
             print(unfolder.hist_bin_chopper._cache)
-            # unfolder.save_to_tfile(this_tdir)
             unfolder.save_unfolded_binned_hists_to_tfile(this_slim_tdir)
 
             # test the pickle file by un-pickling it
@@ -2413,25 +2326,5 @@ if __name__ == "__main__":
 
                 do_all_big_1d_plots_per_region_angle(setup, hbc)
 
-            # DO SUMMARY PLOT
-            # ------------------------------------------------------------------
-            # if args.doSummaryPlot:
-            #     marker = ""
-            #     if "_" in angle.name or "^" in angle.name:
-            #         marker = "$"
-            #     var_label = "Particle-level " + marker + angle.name + marker + " ($%s$)" % angle.lambda_str
-            #     v = "%s_vs_pt" % (angle.var)
-            #     bins = [(pt_bin_edges_gen[i], pt_bin_edges_gen[i+1]) for i in range(len(pt_bin_edges_gen)-1)]
-            #     print("Making summary plot from pt bins:", bins)
-            #     xlim = (50, 614) if "ZPlusJets" in region['name'] else (50, 2000)
-            #     region_label = region['label'].replace("Dijet", "dijet")  # to ensure correct capitalisation
-            #     qgp.do_mean_rms_summary_plot(summary_1d_entries, bins,
-            #                                  "%s/%s_box_dijet_mpl.%s" % (this_output_dir, v, OUTPUT_FMT),
-            #                                  var_label=var_label,
-            #                                  xlim=xlim,
-            #                                  region_title=region_label)
-
-    # print("Saved hists to", output_tfile.GetName())
     print("Saved minimal hists to", output_tfile_slim.GetName())
-    # output_tfile.Close()
     output_tfile_slim.Close()

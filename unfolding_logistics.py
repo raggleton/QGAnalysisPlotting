@@ -47,12 +47,6 @@ def get_unfolding_argparser(description='', parser=None):
     standard_bool_description = (" True values are 'y', 'yes', 't', 'true', 'on' and '1'."
                                  " False values are 'n', 'no', 'f', 'false', 'off' and '0'.")
 
-    parser.add_argument("--doSummaryPlot",
-                        type=lambda x:bool(distutils.util.strtobool(x)),
-                        default=False,
-                        help=('Do summary plot.'
-                              + standard_bool_description))
-
     parser.add_argument("--noBinnedPlots",
                         action='store_true',
                         default=False,
@@ -366,7 +360,6 @@ if __name__ == "__main__":
     get_unfolding_argparser(description='', parser=unfolding_parser)
     args = parser.parse_args()
     sanitise_args(args)
-    # print(args)
     if args.out:
         print(get_unfolding_output_dir(args))
 

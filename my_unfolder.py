@@ -631,7 +631,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             self.chi2L = self.GetChi2L()
 
             self.unfolded = self.GetOutput(hist_name, "", self.output_distribution_name, "*[]", self.use_axis_binning)
-            print("self.unfolded is a", type(self.unfolded), "and has", self.unfolded.GetNbinsX())
+            print("self.unfolded is a", type(self.unfolded), "and has", self.unfolded.GetNbinsX(), "x bins")
         return self.unfolded
 
     def _post_process(self):
