@@ -1581,6 +1581,8 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             # the 1.0001 is to ensure we're def inside this bin
             start_bin = binning.GetGlobalBinNumber(var_bins[0]*1.0001, pt*1.0001)
             end_bin = binning.GetGlobalBinNumber(var_bins[-2]*1.0001, pt*1.0001)  # -2 since the last one is the upper edge of the last bin
+            # Get the full error matrix from TUnfold, then select the sub-matrix
+            # for this pt bin, then scale by normalisation and bin widths
             stat_ematrix = self.get_sub_th2(self.get_ematrix_stat(), start_bin, end_bin)
             stat_ematrix.Scale(1./(norm*norm))
             self.scale_th2_bin_widths(stat_ematrix, var_bins)
@@ -1607,6 +1609,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             # Calculate total ematrix
             total_ematrix = stat_ematrix.Clone()
             total_ematrix.Add(rsp_ematrix)
+
             for exp_syst in self.exp_systs:
                 if first_bin:
                     print("Adding", exp_syst.label, "ematrix to total normalised ematrix...")
@@ -1658,10 +1661,14 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             # to be quadrature sum of those we want (stat+rsp+systs)
             h_total = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded', **hbc_args)
             for i in range(1, h_total.GetNbinsX()+1):
-            #     print([pow(h.GetBinError(i), 2) for h in error_bar_hists])
                 err2 = sum([pow(h.GetBinError(i), 2) for h in error_bar_hists])
                 h_total.SetBinError(i, math.sqrt(err2))
-            #     print(i, "quadrature:", math.sqrt(err2))
+            # if first_bin:
+                # print("total ematrix diags:", [h_total.GetBinError(i) for i in range(1, nbins+1)])
+
+            # Sanity check
+            if h_total.GetBinError(3)**2 != ematrix_total.GetBinContent(3):
+                raise ValueError("Disagreement between h_total and ematrix_total: you screwed it up somewhere")
 
             # Update cache
             key = self.hist_bin_chopper._generate_key('unfolded',
