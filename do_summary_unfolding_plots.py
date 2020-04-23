@@ -870,6 +870,10 @@ class SummaryPlotter(object):
 # VARIOUS CALCULATION METHODS
 # ------------------------------------------------------------------------------
 
+def get_bin_widths(hist):
+    return hist.edges[1:] - hist.edges[:-1]
+
+
 def hist_to_arrays(hist):
     """Convert histogram bins to arrays
 
@@ -881,150 +885,37 @@ def hist_to_arrays(hist):
     Note that errors here are multiplied by the bin width (since they are
     assumed to have been created by originally dividing by the bin width)
     """
-    # bin_areas = np.array([hist.GetBinContent(ibin)*hist.GetBinWidth(ibin) for ibin in range(1, hist.GetNbinsX()+1)])
-    # bin_centers = np.array([hist.GetBinCenter(ibin) for ibin in range(1, hist.GetNbinsX()+1)])
-    # bin_widths = np.array([hist.GetBinWidth(ibin) for ibin in range(1, hist.GetNbinsX()+1)])
-    # bin_errors = np.array([hist.GetBinError(ibin)*hist.GetBinWidth(ibin) for ibin in range(1, hist.GetNbinsX()+1)])
-
-    bin_widths = hist.edges[1:] - hist.edges[:-1]
+    bin_widths = get_bin_widths(hist)
     bin_areas = hist.values * bin_widths
     bin_centers = hist.edges[:-1] + (0.5*bin_widths)
     bin_errors = np.sqrt(hist.variances) * bin_widths
     return bin_areas, bin_widths, bin_centers, bin_errors
 
 
-def calc_hist_mean(hist):
-    """Manual calculation of mean of normalised histogram, taking into account bin width
+def scale_ematrix_by_bin_widths(ematrix, widths):
+    this_widths = widths.reshape(len(widths), 1)
+    return ematrix * this_widths * this_widths.T
 
-    Note that this is exactly the formula for a weighted mean, where the bin areas are the weights
-    (since already divided by bin width), and the bin centres are the "data"
-    https://en.wikipedia.org/wiki/Weighted_arithmetic_mean
-    """
-    bin_areas = np.array([hist.GetBinContent(ibin)*hist.GetBinWidth(ibin) for ibin in range(1, hist.GetNbinsX()+1)])
-    bin_centers = np.array([hist.GetBinCenter(ibin) for ibin in range(1, hist.GetNbinsX()+1)])
-    return float(calc_hist_mean_from_values(bin_areas, bin_centers))
+# --------------------------------
+# Functions to calculate mean
+# --------------------------------
 
-
-def calc_hist_mean_uncorrelated_error(hist):
-    """Get error on mean using error bars, assuming 0 correlation between errors
-    i.e. statistical only.
-
-    Assumes aready divided by bin width!
-
-    if mean = sum_{bins} (bin_center * bin_area) / N
-    where N = sum_{bins} (bin_area)
-    then err^2 = sum_{bins} [ ( (bin_center * bin_error / N) - (mean/N) ) * bin_error * bin_width ]^2
-
-    (if bin_error has already been divided by the bin width)
-
-    since our error is on both the numerator and denominator
-
-    **RECOMMEND USING calc_hist_mean_uncorrelated_error_from_values() INSTEAD**
-
-    Parameters
-    ----------
-    hist : ROOT.TH1
-        Histogram
-    """
-    mean = calc_hist_mean(hist)
-    N = sum([hist.GetBinContent(ibin)*hist.GetBinWidth(ibin) for ibin in range(1, hist.GetNbinsX()+1)])
-    err_sq = sum([pow( ((hist.GetBinCenter(ibin)/N) - (mean/N) )*hist.GetBinWidth(ibin)*hist.GetBinError(ibin), 2) for ibin in range(1, hist.GetNbinsX()+1) ])
-    return sqrt(err_sq)
-
-
-def calc_hist_mean_error(hist, covariance_matrix, scale_factor):
-    """Get error on the mean using covariance matrix
-
-    hist is a TH1
-    covariance_matrix should be a 2D numpy array for this bin
-
-    Uses the fact that if f = A+B,
-    then sigma^2_f = sigma^2_A + sigma^2_B + 2*sigma_A*sigma_B
-
-    And also if f = aA, where a const, then sigma^2_f = a^2 sigma^2_A
-    Used for bin width scaling, and the fact that mean = sum (bin_i / Nbins)
-
-    And if f = A / B, then
-    sigma^2_f = f^2 ( (sigma_A / A)^2 + (sigma_B / B)^2 - 2 sigma_AB / (A*B) )
-
-
-    """
-    # f = hist.GetMean()
-    # f2 = f**2
-
-    sum_sq = 0
-    sum_reduced = 0
-    # print("Doing mean error")
-    for ibin in range(1, hist.GetNbinsX()+1):
-        # bin_h_i = hist.GetBinContent(ibin)
-        bin_x_i = hist.GetBinCenter(ibin)
-
-        # sum_reduced += (bin_h_i) # / hist.GetBinWidth(ibin))
-        for jbin in range(ibin, hist.GetNbinsX()+1):
-            # bin_h_j = hist.GetBinContent(jbin)
-            bin_x_j = hist.GetBinCenter(jbin)
-            # Account for bin width scaling, and normalisation factor
-            # total_bin_width = hist.GetBinWidth(ibin) * hist.GetBinWidth(jbin) * scale_factor * scale_factor
-            this_err2 = 0
-            if ibin == jbin:
-                this_err2 = bin_x_i*bin_x_j*covariance_matrix[ibin-1, ibin-1]
-                # this_err2 = covariance_matrix[ibin-1, ibin-1]
-            else:
-                # pass
-                this_err2 = 2*bin_x_i*bin_x_j*covariance_matrix[ibin-1, jbin-1]  # should this be sqrt?
-                # this_err2 = 2*covariance_matrix[ibin-1, jbin-1]  # should this be sqrt?
-
-            sum_sq += this_err2
-
-
-    # scale for total entries
-    # print('final', sum_sq, hist.Integral())
-    return sqrt(sum_sq) / hist.Integral("width")
-    # return sqrt(sum_sq) / sum_reduced
-
-
-def calc_hist_mean_from_values(bin_areas, bin_centers):
+def calc_hist_mean(bin_areas, bin_centers):
     """Calculate mean of hist from value arrays.
 
     Must use np.X functions for e.g. sum(), square(), to ensure jax can differentiate it
-
-    Parameters
-    ----------
-    bin_areas : TYPE
-        Description
-    bin_centers : TYPE
-        Description
-
-    Returns
-    -------
-    TYPE
-        Description
     """
     return np.sum(bin_areas * bin_centers) / np.sum(bin_areas)
 
 
-mean_differential = jit(grad(calc_hist_mean_from_values, argnums=0))
+mean_differential = jit(grad(calc_hist_mean, argnums=0))
 
 
-def calc_hist_mean_uncorrelated_error_from_values(bin_areas, bin_centers, bin_errors):
+def calc_hist_mean_uncorrelated_error(bin_areas, bin_centers, bin_errors):
     """Calculate error on mean, assuming uncorrelated errors.
 
     Uses propagation of uncertainty bia partial differentials,
     calculated automatically using jax.
-
-    Parameters
-    ----------
-    bin_areas : TYPE
-        Description
-    bin_centers : TYPE
-        Description
-    bin_errors : TYPE
-        Description
-
-    Returns
-    -------
-    TYPE
-        Description
     """
     # differential wrt bin_areas
     diffs = mean_differential(bin_areas, bin_centers)
@@ -1032,30 +923,10 @@ def calc_hist_mean_uncorrelated_error_from_values(bin_areas, bin_centers, bin_er
     return np.sqrt(err_sq)
 
 
-def calc_hist_mean_correlated_error_from_values(bin_areas, bin_widths, bin_centers, error_matrix):
-    """Get error on mean, assuming covariance matrix error_matrix
-
-    Note that we scale the error matrix by the bin width (since we also convert
-    from bin height to bin area)
-
-    Parameters
-    ----------
-    bin_areas : TYPE
-        Description
-    bin_widths : TYPE
-        Description
-    bin_centers : TYPE
-        Description
-    error_matrix : TYPE
-        Description
-
-    Returns
-    -------
-    TYPE
-        Description
-    """
+def calc_hist_mean_correlated_error(bin_areas, bin_centers, error_matrix):
+    """Get error on mean, assuming covariance matrix error_matrix"""
     diffs = mean_differential(bin_areas, bin_centers)
-    sum_sq = (diffs*bin_widths) @ error_matrix @ (diffs*bin_widths)
+    sum_sq = diffs @ error_matrix @ diffs
     return np.sqrt(sum_sq)
 
 
@@ -1072,85 +943,51 @@ def calc_hist_mean_and_uncorrelated_error(hist):
     float, float
     """
     areas, widths, centers, errors = hist_to_arrays(hist)
-    mean = calc_hist_mean_from_values(areas, centers)
-    err = calc_hist_mean_uncorrelated_error_from_values(areas, centers, errors)
+    mean = calc_hist_mean(areas, centers)
+    err = calc_hist_mean_uncorrelated_error(areas, centers, errors)
     return float(mean), float(err)
 
 
 def calc_hist_mean_and_correlated_error(hist, ematrix):
     areas, widths, centers, errors = hist_to_arrays(hist)
-    mean = calc_hist_mean_from_values(areas, centers)
-    err = calc_hist_mean_correlated_error_from_values(areas, widths, centers, ematrix)
+    mean = calc_hist_mean(areas, centers)
+    err = calc_hist_mean_correlated_error(areas, centers, ematrix)
     return float(mean), float(err)
 
+# --------------------------------
+# Functions to calculate RMS
+# --------------------------------
 
-def calc_hist_rms(hist):
-    """Calculate std deviation for hist
-
-    RMS^2 = (1/N) sum[ (bin_area - mean)^2 ]
-
-    """
-    areas, widths, centers, errors = hist_to_arrays(hist)
-    return float(calc_hist_rms_from_values(areas, centers))
-    # mean = calc_hist_mean(hist)
-    # sum_sq = sum([pow((hist.GetBinWidth(ibin)*hist.GetBinContent(ibin)*hist.GetBinCenter(ibin) - mean), 2)
-    #               for ibin in range(1, hist.GetNbinsX()+1)])
-    # N = sum([hist.GetBinWidth(ibin)*hist.GetBinContent(ibin)
-    #          for ibin in range(1, hist.GetNbinsX()+1)])
-    # if N == 0:
-    #     raise ValueError("N == 0")
-    # return sqrt(sum_sq / N)
-
-
-def calc_hist_rms_from_values(bin_areas, bin_centers):
+def calc_hist_rms(bin_areas, bin_centers):
     """Calculate RMS of hist from value arrays.
 
     Must use np.X functions for e.g. sum(), square(), to ensure jax can differentiate it
-
-    Parameters
-    ----------
-    bin_areas : TYPE
-        Description
-    bin_centers : TYPE
-        Description
-
-    Returns
-    -------
-    TYPE
-        Description
     """
-    mean = calc_hist_mean_from_values(bin_areas, bin_centers)
+    mean = calc_hist_mean(bin_areas, bin_centers)
     sum_sq = np.sum(np.square((bin_areas * bin_centers) - mean))
     return np.sqrt(sum_sq / np.sum(bin_areas))
 
 
-rms_differential = jit(grad(calc_hist_rms_from_values, argnums=0))
+rms_differential = jit(grad(calc_hist_rms, argnums=0))
 
 
-def calc_hist_rms_uncorrelated_error_from_values(bin_areas, bin_centers, bin_errors):
+def calc_hist_rms_uncorrelated_error(bin_areas, bin_centers, bin_errors):
     """Calculate error on RMS, assuming uncorrelated errors.
 
     Uses propagation of uncertainty bia partial differentials,
     calculated automatically using jax.
-
-    Parameters
-    ----------
-    bin_areas : TYPE
-        Description
-    bin_centers : TYPE
-        Description
-    bin_errors : TYPE
-        Description
-
-    Returns
-    -------
-    TYPE
-        Description
     """
     # differential wrt bin_areas
     diffs = rms_differential(bin_areas, bin_centers)
     err_sq = np.sum(np.square((diffs * bin_errors)))
     return np.sqrt(err_sq)
+
+
+def calc_hist_rms_correlated_error(bin_areas, bin_centers, error_matrix):
+    """Get error on rms, assuming covariance matrix error_matrix"""
+    diffs = rms_differential(bin_areas, bin_centers)
+    sum_sq = diffs @ error_matrix @ diffs
+    return np.sqrt(sum_sq)
 
 
 def calc_hist_rms_and_uncorrelated_error(hist):
@@ -1166,11 +1003,16 @@ def calc_hist_rms_and_uncorrelated_error(hist):
     float, float
     """
     areas, widths, centers, errors = hist_to_arrays(hist)
-    rms = calc_hist_rms_from_values(areas, centers)
-    err = calc_hist_rms_uncorrelated_error_from_values(areas, centers, errors)
+    rms = calc_hist_rms(areas, centers)
+    err = calc_hist_rms_uncorrelated_error(areas, centers, errors)
     return float(rms), float(err)
 
 
+def calc_hist_rms_and_correlated_error(hist, ematrix):
+    areas, widths, centers, errors = hist_to_arrays(hist)
+    rms = calc_hist_rms(areas, centers)
+    err = calc_hist_rms_correlated_error(areas, centers, ematrix)
+    return float(rms), float(err)
 def unpack_slim_unfolding_root_file_uproot(input_tfile, region_name, angle_name, pt_bins):
     tdir = "%s/%s" % (region_name, angle_name)
     indices = range(len(pt_bins)-1)
@@ -1284,7 +1126,6 @@ if __name__ == "__main__":
                     # Get bare necessary hists from slim ROOT file
                     # Using pickle one is much slower
                     root_filename = os.path.join(angle_output_dir, "unfolding_result_slim.root")
-                    # input_tfile = cu.TFileCacher(root_filename)
                     pt_bins = qgc.PT_UNFOLD_DICT['signal_zpj_gen'] if 'ZPlusJets' in this_region['name'] else qgc.PT_UNFOLD_DICT['signal_gen']
                     uproot_file = uproot.open(root_filename)
                     unfolding_dict = unpack_slim_unfolding_root_file_uproot(uproot_file, this_region['name'], angle.var, pt_bins)
@@ -1305,43 +1146,20 @@ if __name__ == "__main__":
                         # print("   done pt bin", ibin)
 
                         # Handle nominal MC hist -> metrics
-                        # mc_gen_hist_bin = hbc.get_pt_bin_normed_div_bin_width('hist_truth', ibin)
                         mc_gen_hist_bin = unfolding_dict['truth_hists'][ibin]
                         mc_gen_hist_bin_mean, mc_gen_hist_bin_mean_err = calc_hist_mean_and_uncorrelated_error(mc_gen_hist_bin)
                         mc_gen_hist_bin_rms, mc_gen_hist_bin_rms_err = calc_hist_rms_and_uncorrelated_error(mc_gen_hist_bin)
 
                         # Handle alt MC hist -> metrics
-                        # alt_mc_gen_hist_bin = hbc.get_pt_bin_normed_div_bin_width('alt_hist_truth', ibin)
                         alt_mc_gen_hist_bin = unfolding_dict['alt_truth_hists'][ibin]
                         alt_mc_gen_hist_bin_mean, alt_mc_gen_hist_bin_mean_err = calc_hist_mean_and_uncorrelated_error(alt_mc_gen_hist_bin)
                         alt_mc_gen_hist_bin_rms, alt_mc_gen_hist_bin_rms_err = calc_hist_rms_and_uncorrelated_error(alt_mc_gen_hist_bin)
 
                         # Handle unfolded data hist -> metrics
-                        # unfolded_hist_bin_total_errors = hbc.get_pt_bin_normed_div_bin_width('unfolded', ibin)
                         unfolded_hist_bin_total_errors = unfolding_dict['unfolding_total_err_hists'][ibin]
-                        # unfolded_hist_bin_total_errors_mean, unfolded_hist_bin_total_errors_mean_err = calc_hist_mean_and_uncorrelated_error(unfolded_hist_bin_total_errors)
-                        ematrix = unfolding_dict['unfolding_total_ematrices'][ibin].values
+                        ematrix = scale_ematrix_by_bin_widths(unfolding_dict['unfolding_total_ematrices'][ibin].values, get_bin_widths(unfolded_hist_bin_total_errors))
                         unfolded_hist_bin_total_errors_rms, unfolded_hist_bin_total_errors_rms_err = calc_hist_rms_and_correlated_error(unfolded_hist_bin_total_errors, ematrix)
                         unfolded_hist_bin_total_errors_mean, unfolded_hist_bin_total_errors_mean_err = calc_hist_mean_and_correlated_error(unfolded_hist_bin_total_errors, ematrix)
-
-                        # print("uncorrelated value: ", calc_hist_mean_and_uncorrelated_error(unfolded_hist_bin_total_errors))
-                        # print("correlated value: ", calc_hist_mean_and_correlated_error(unfolded_hist_bin_total_errors, unfolded_total_ematrix))
-
-                        # print("my mean error:", calc_hist_mean_error(mc_gen_hist_bin, this_cov_matrix, mc_gen_hist_bin_unnorm.Integral()))
-                        # print("ROOT get mean error:", mc_gen_hist_bin.GetMeanError())
-
-                        # print("ROOT mean:", mc_gen_hist_bin.GetMean())
-                        # print("my mean:", calc_hist_mean(mc_gen_hist_bin))
-
-                        # areas, centers, errors = hist_to_arrays(mc_gen_hist_bin)
-                        # print("my mean:", calc_hist_mean_from_values(areas, centers))
-                        # print("my mean error:", calc_hist_mean_uncorrelated_error(mc_gen_hist_bin))
-                        # print("my mean error jax:", calc_hist_mean_uncorrelated_error_from_values(areas, centers, errors))
-
-                        # print("ROOT RMS:", mc_gen_hist_bin.GetRMS())
-                        # print("my RMS:", calc_hist_rms(mc_gen_hist_bin))
-                        # print("my RMS from value:", calc_hist_rms_from_values(areas, centers))
-                        # print("my RMS error jax:", calc_hist_rms_uncorrelated_error_from_values(areas, centers, errors))
 
                         result_dict = {
                             'jet_algo': jet_algo['name'],
