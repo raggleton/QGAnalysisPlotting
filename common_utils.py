@@ -671,3 +671,8 @@ def shift_to_covariance(hist):
             h2d.SetBinError(ix+1, iy+1, 0)
     return h2d
 
+
+def same_floats(a, b, rel_tolerance=1E-5):
+    diff = abs(a-b)
+    return diff/max(abs(a), abs(b)) < rel_tolerance
+

@@ -1667,8 +1667,10 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
                 # print("total ematrix diags:", [h_total.GetBinError(i) for i in range(1, nbins+1)])
 
             # Sanity check
-            if h_total.GetBinError(3)**2 != ematrix_total.GetBinContent(3):
-                raise ValueError("Disagreement between h_total and ematrix_total: you screwed it up somewhere")
+            if not cu.same_floats(h_total.GetBinError(3)**2, total_ematrix.GetBinContent(3, 3)):
+                print("h_total:", h_total.GetBinError(3)**2)
+                print("total_ematrix:", total_ematrix.GetBinContent(3, 3))
+                raise ValueError("Disagreement between h_total and total_ematrix: you screwed it up somewhere")
 
             # Update cache
             key = self.hist_bin_chopper._generate_key('unfolded',
