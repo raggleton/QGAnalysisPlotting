@@ -1933,18 +1933,30 @@ class HistBinChopper(object):
 
     def __init__(self, generator_binning, detector_binning):
         self.generator_binning = generator_binning
+        if self.generator_binning is not None:
+            # do this once as expensive
+            self.generator_binning_var_bins = np.array(self.generator_binning.GetDistributionBinning(0))
+            self.generator_binning_pt_bins = np.array(self.generator_binning.GetDistributionBinning(1))
+
         self.detector_binning = detector_binning
+        if self.detector_binning is not None:
+            self.detector_binning_var_bins = np.array(self.detector_binning.GetDistributionBinning(0))
+            self.detector_binning_pt_bins = np.array(self.detector_binning.GetDistributionBinning(1))
+
         self.objects = {}
         self._cache = {}
         self._cache_integral = {}
 
     def get_binning(self, binning_scheme):
+        """Get TUnfoldBinning, lambda var bins, pt bins for binning_scheme = 'generator' or 'detector'"""
         if binning_scheme not in ['generator', 'detector']:
             raise ArgumentError('binning_scheme must be "generator" or "detector"')
         thing = self.generator_binning if binning_scheme == "generator" else self.detector_binning
         if thing is None:
             raise RuntimeError("No valid TUnfoldBinning object for binning scheme '%s'" % binning_scheme)
-        return thing
+        var_bins = self.generator_binning_var_bins if binning_scheme == 'generator' else self.detector_binning_var_bins
+        pt_bins = self.generator_binning_pt_bins if binning_scheme == 'generator' else self.detector_binning_pt_bins
+        return thing, var_bins, pt_bins
 
     def add_obj(self, name, obj):
         # TODO: allow overwrite?
@@ -1960,10 +1972,7 @@ class HistBinChopper(object):
     def get_var_hist_pt_binned(self, hist1d, ibin_pt, binning_scheme='generator'):
         """Get hist of variable for given pt bin from massive 1D hist that TUnfold makes"""
         # FIXME: assume no underflow?!
-        binning = self.get_binning(binning_scheme)
-        var_bins = np.array(binning.GetDistributionBinning(0))
-        pt_bins = np.array(binning.GetDistributionBinning(1))
-
+        binning, var_bins, pt_bins = self.get_binning(binning_scheme)
         h = ROOT.TH1D("h_%d_%s" % (ibin_pt, cu.get_unique_str()), "", len(var_bins)-1, var_bins)
         for var_ind, var_value in enumerate(var_bins[:-1], 1):
             this_val = var_value * 1.001  # ensure its inside
@@ -1975,10 +1984,7 @@ class HistBinChopper(object):
     def get_var_2d_hist_pt_binned(self, hist2d, ibin_pt, binning_scheme='generator'):
         """Get 2d hist for given pt bin from massive 2D hist"""
         # FIXME: assume no underflow?!
-        binning = self.get_binning(binning_scheme)
-        var_bins = np.array(binning.GetDistributionBinning(0))
-        pt_bins = np.array(binning.GetDistributionBinning(1))
-
+        binning, var_bins, pt_bins = self.get_binning(binning_scheme)
         h = ROOT.TH2D("h2d_%d_%s" % (ibin_pt, cu.get_unique_str()), "", len(var_bins)-1, var_bins, len(var_bins)-1, var_bins)
         for var_ind, var_value in enumerate(var_bins[:-1], 1):
             this_val = var_value * 1.001  # ensure its inside
@@ -1993,10 +1999,7 @@ class HistBinChopper(object):
     def get_pt_hist_var_binned(self, hist1d, ibin_var, binning_scheme='generator'):
         """Get hist of pt for given variable bin from massive 1D hist that TUnfold makes"""
         # FIXME: assume no underflow?!
-        binning = self.get_binning(binning_scheme)
-        var_bins = np.array(binning.GetDistributionBinning(0))
-        pt_bins = np.array(binning.GetDistributionBinning(1))
-
+        binning, var_bins, pt_bins = self.get_binning(binning_scheme)
         # need the -1 on ibin_var, as it references an array index, whereas ROOT bins start at 1
         h = ROOT.TH1D("h_%d_%s" % (ibin_var, cu.get_unique_str()), "", len(pt_bins)-1, pt_bins)
         for pt_ind, pt_value in enumerate(pt_bins[:-1], 1):
@@ -2009,10 +2012,7 @@ class HistBinChopper(object):
     def get_pt_2d_hist_var_binned(self, hist2d, ibin_var, binning_scheme='generator'):
         """Get 2d hist for given variable bin from massive 2D hist"""
         # FIXME: assume no underflow?!
-        binning = self.get_binning(binning_scheme)
-        var_bins = np.array(binning.GetDistributionBinning(0))
-        pt_bins = np.array(binning.GetDistributionBinning(1))
-
+        binning, var_bins, pt_bins = self.get_binning(binning_scheme)
         # need the -1 on ibin_var, as it references an array index, whereas ROOT bins start at 1
         h = ROOT.TH1D("h2d_%d_%s" % (ibin_var, cu.get_unique_str()), "", len(pt_bins)-1, pt_bins)
         for pt_ind, pt_value in enumerate(pt_bins[:-1], 1):
