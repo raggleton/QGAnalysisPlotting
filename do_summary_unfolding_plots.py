@@ -1320,12 +1320,12 @@ if __name__ == "__main__":
                         # unfolded_hist_bin_total_errors = hbc.get_pt_bin_normed_div_bin_width('unfolded', ibin)
                         unfolded_hist_bin_total_errors = unfolding_dict['unfolding_total_err_hists'][ibin]
                         # unfolded_hist_bin_total_errors_mean, unfolded_hist_bin_total_errors_mean_err = calc_hist_mean_and_uncorrelated_error(unfolded_hist_bin_total_errors)
-                        unfolded_hist_bin_total_errors_rms, unfolded_hist_bin_total_errors_rms_err = calc_hist_rms_and_uncorrelated_error(unfolded_hist_bin_total_errors)
                         ematrix = unfolding_dict['unfolding_total_ematrices'][ibin].values
+                        unfolded_hist_bin_total_errors_rms, unfolded_hist_bin_total_errors_rms_err = calc_hist_rms_and_correlated_error(unfolded_hist_bin_total_errors, ematrix)
                         unfolded_hist_bin_total_errors_mean, unfolded_hist_bin_total_errors_mean_err = calc_hist_mean_and_correlated_error(unfolded_hist_bin_total_errors, ematrix)
 
-                        print("uncorrelated value: ", calc_hist_mean_and_uncorrelated_error(unfolded_hist_bin_total_errors))
-                        print("correlated value: ", calc_hist_mean_and_correlated_error(unfolded_hist_bin_total_errors, unfolded_total_ematrix))
+                        # print("uncorrelated value: ", calc_hist_mean_and_uncorrelated_error(unfolded_hist_bin_total_errors))
+                        # print("correlated value: ", calc_hist_mean_and_correlated_error(unfolded_hist_bin_total_errors, unfolded_total_ematrix))
 
                         # print("my mean error:", calc_hist_mean_error(mc_gen_hist_bin, this_cov_matrix, mc_gen_hist_bin_unnorm.Integral()))
                         # print("ROOT get mean error:", mc_gen_hist_bin.GetMeanError())
