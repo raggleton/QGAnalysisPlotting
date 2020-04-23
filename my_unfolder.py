@@ -2016,7 +2016,6 @@ class HistBinChopper(object):
         """Get hist of pt for given variable bin from massive 1D hist that TUnfold makes"""
         # FIXME: assume no underflow?!
         binning, var_bins, pt_bins = self.get_binning(binning_scheme)
-        # need the -1 on ibin_var, as it references an array index, whereas ROOT bins start at 1
         h = ROOT.TH1D("h_%d_%s" % (ibin_var, cu.get_unique_str()), "", len(pt_bins)-1, pt_bins)
         for pt_ind, pt_value in enumerate(pt_bins[:-1], 1):
             this_val = pt_value * 1.001  # ensure its inside
@@ -2029,7 +2028,6 @@ class HistBinChopper(object):
         """Get 2d hist for given variable bin from massive 2D hist"""
         # FIXME: assume no underflow?!
         binning, var_bins, pt_bins = self.get_binning(binning_scheme)
-        # need the -1 on ibin_var, as it references an array index, whereas ROOT bins start at 1
         h = ROOT.TH1D("h2d_%d_%s" % (ibin_var, cu.get_unique_str()), "", len(pt_bins)-1, pt_bins)
         for pt_ind, pt_value in enumerate(pt_bins[:-1], 1):
             this_val = pt_value * 1.001  # ensure its inside

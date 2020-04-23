@@ -893,9 +893,9 @@ class GenPtBinnedPlotter(object):
                 this_syst = self.unfolder.get_exp_syst(syst_dict['label'])
                 syst_unfolded_hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width(this_syst.syst_shifted_label, ibin, binning_scheme='generator')
                 this_syst_hist = _convert_syst_shift_to_error_ratio_hist(syst_unfolded_hist_bin, unfolded_hist_bin_total_errors)
-                if ibin == 0:
-                    print("check:", syst_dict['label'], "=", this_syst_hist.GetBinContent(check_bin))
-                    checks.append(abs(1 - this_syst_hist.GetBinContent(check_bin)))
+                # if ibin == 0:
+                #     print("check:", syst_dict['label'], "=", this_syst_hist.GetBinContent(check_bin))
+                #     checks.append(abs(1 - this_syst_hist.GetBinContent(check_bin)))
                 c = Contribution(this_syst_hist,
                                  label=syst_dict['label'],
                                  line_color=syst_dict['colour'],
@@ -910,10 +910,10 @@ class GenPtBinnedPlotter(object):
             if self.unfolder.scale_uncert_name in self.hist_bin_chopper.objects:
                 scale_hist = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width(self.unfolder.scale_uncert_name, ibin, binning_scheme='generator')
                 scale_col = ROOT.kTeal-8
-                if ibin == 0:
-                    val = _convert_error_bars_to_error_ratio_hist(scale_hist).GetBinContent(check_bin)
-                    print("check: scale =", val)
-                    checks.append(abs(1 - val))
+                # if ibin == 0:
+                #     val = _convert_error_bars_to_error_ratio_hist(scale_hist).GetBinContent(check_bin)
+                #     print("check: scale =", val)
+                #     checks.append(abs(1 - val))
                 entries.extend([
                     Contribution(_convert_error_bars_to_error_ratio_hist(scale_hist),
                                 label='Scale uncertainty',
@@ -931,10 +931,10 @@ class GenPtBinnedPlotter(object):
             if self.unfolder.pdf_uncert_name in self.hist_bin_chopper.objects:
                 pdf_hist = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width(self.unfolder.pdf_uncert_name, ibin, binning_scheme='generator')
                 pdf_col = ROOT.kOrange+4
-                if ibin == 0:
-                    val = _convert_error_bars_to_error_ratio_hist(pdf_hist).GetBinContent(check_bin)
-                    print("check: pdf =", val)
-                    checks.append(abs(1 - val))
+                # if ibin == 0:
+                #     val = _convert_error_bars_to_error_ratio_hist(pdf_hist).GetBinContent(check_bin)
+                #     print("check: pdf =", val)
+                #     checks.append(abs(1 - val))
 
                 entries.extend([
                     Contribution(_convert_error_bars_to_error_ratio_hist(pdf_hist),
@@ -949,17 +949,17 @@ class GenPtBinnedPlotter(object):
                                 fill_style=0, fill_color=15)
                 ])
 
-            if ibin == 0:
-                    val = _convert_error_bars_to_error_ratio_hist(unfolded_hist_bin_stat_errors).GetBinContent(check_bin)
-                    print("check: stat =", val)
-                    checks.append(abs(1 - val))
+            # if ibin == 0:
+            #         val = _convert_error_bars_to_error_ratio_hist(unfolded_hist_bin_stat_errors).GetBinContent(check_bin)
+            #         print("check: stat =", val)
+            #         checks.append(abs(1 - val))
 
-                    val = _convert_error_bars_to_error_ratio_hist(unfolded_hist_bin_rsp_errors).GetBinContent(check_bin)
-                    print("check: rsp =", val)
-                    checks.append(abs(1 - val))
-                    print(checks)
-                    print("my total:", sum([x**2 for x in checks]))
-                    print("check: total =", abs(1-_convert_error_bars_to_error_ratio_hist(unfolded_hist_bin_total_errors).GetBinContent(check_bin)))
+            #         val = _convert_error_bars_to_error_ratio_hist(unfolded_hist_bin_rsp_errors).GetBinContent(check_bin)
+            #         print("check: rsp =", val)
+            #         checks.append(abs(1 - val))
+            #         print(checks)
+            #         print("my total:", sum([x**2 for x in checks]))
+            #         print("check: total =", abs(1-_convert_error_bars_to_error_ratio_hist(unfolded_hist_bin_total_errors).GetBinContent(check_bin)))
 
             entries.extend([
                 Contribution(_convert_error_bars_to_error_ratio_hist(unfolded_hist_bin_total_errors),
@@ -2806,6 +2806,7 @@ def do_all_big_1d_plots_per_region_angle(setup, hist_bin_chopper=None):
     big_plotter = BigNormalised1DPlotter(setup, hist_bin_chopper)
     big_plotter.plot_with_bin_widths = True
 
+    print("Doing standard big 1D plots...")
     big_plotter.plot_unfolded_truth()
     big_plotter.plot_reco_input()
 
@@ -2816,6 +2817,7 @@ def do_all_big_1d_plots_per_region_angle(setup, hist_bin_chopper=None):
         big_plotter.plot_unfolded_truth_alt_response(alt_unfolder)
         big_plotter.plot_unfolded_truth_alt_response_truth(alt_unfolder)
 
+    print("Doing big 1D plots with systematics...")
     if has_exp_systs:
         big_plotter.plot_unfolded_exp_systs()
 
@@ -2969,6 +2971,11 @@ if __name__ == "__main__":
             continue
 
         for angle in angles:
+            append = "%s_%s" % (region['name'], angle.var)  # common str to put on filenames, etc. don't need angle_prepend as 'groomed' in region name
+            print("*"*120)
+            print("Region/var: %s" % (append))
+            print("*"*120)
+
             angle_output_dir = "%s/%s/%s" % (args.source, region['name'], angle.var)
             if not os.path.isdir(angle_output_dir):
                 print("! Warning ! cannot find angle dir", angle_output_dir, '- skipping angle', angle.var)
@@ -2984,11 +2991,6 @@ if __name__ == "__main__":
 
             region.update(unpickled_region)
 
-            append = "%s_%s" % (region['name'], angle.var)  # common str to put on filenames, etc. don't need angle_prepend as 'groomed' in region name
-            print("*"*120)
-            print("Region/var: %s" % (append))
-            print("*"*120)
-
             # MAKE ALL THE PLOTS
             # ------------------------------------------------------------------
             setup = Setup(jet_algo=jet_algo,
@@ -2996,12 +2998,17 @@ if __name__ == "__main__":
                           angle=angle,
                           output_dir=angle_output_dir,
                           has_data=has_data)
-
+            print("===========================================================")
+            print(" Doing lots of plots per pt/lambda bin...")
+            print("===========================================================")
             hist_bin_chopper = do_binned_plots_per_region_angle(setup,
                                                                 do_binned_gen_pt=args.doBinnedPlotsGenPt,
                                                                 do_binned_gen_lambda=args.doBinnedPlotsGenLambda,
                                                                 do_binned_reco_pt=args.doBinnedPlotsRecoPt)
 
+            print("===========================================================")
+            print(" Doing big 1D plots...")
+            print("===========================================================")
             # Do a 1D summary plot, with all the normalised plots with bins divided by their width
             # (unlike the standard plot from MyUnfolderPlotter, which is absolute)
             do_all_big_1d_plots_per_region_angle(setup, hist_bin_chopper)
