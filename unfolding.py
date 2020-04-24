@@ -1285,7 +1285,6 @@ if __name__ == "__main__":
                 print("response map # bins y:", unfolder.response_map.GetNbinsY())
                 if SUBTRACT_FAKES:
                     print("reco bg subtracted #bins:", hist_mc_reco_bg_subtracted.GetNbinsX())
-                    print(proj_reco.GetNbinsX())
                     # Do the same but with backgrounds subtracted from the 1D
                     draw_projection_comparison(hist_mc_reco_bg_subtracted, proj_reco,
                                                title="%s\n%s region" % (jet_algo, region['label']),

@@ -1049,7 +1049,6 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             folded_covariance = result.dot(self.probability_ndarray.T)
             folded_errors = self.make_hist_from_diagonal_errors(folded_covariance)
             self.update_hist_bin_error(h_orig=folded_errors, h_to_be_updated=self.folded_unfolded)
-            print('folded_unfolded 105:', self.folded_unfolded.GetBinContent(105), '+-', self.folded_unfolded.GetBinError(105))
 
         return self.folded_unfolded
 
