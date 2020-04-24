@@ -2739,10 +2739,10 @@ class BigNormalised1DPlotter(object):
             syst_label = syst_dict['label']
             syst_label_no_spaces = cu.no_space_str(syst_dict['label'])
 
-            hbc_name_gen = 'model_syst_%s_hist_truth' % (syst_label_no_spaces)
+            hbc_name_gen = 'pdf_syst_%s_hist_truth' % (syst_label_no_spaces)
             self.hist_bin_chopper.add_obj(hbc_name_gen, syst_unfolder.hist_truth)
 
-            hbc_name = 'model_syst_%s_unfolded' % (syst_label_no_spaces)
+            hbc_name = 'pdf_syst_%s_unfolded' % (syst_label_no_spaces)
             self.hist_bin_chopper.add_obj(hbc_name, syst_unfolder.unfolded)
 
             entries.extend([
