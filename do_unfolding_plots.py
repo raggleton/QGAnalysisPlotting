@@ -2042,19 +2042,18 @@ def do_binned_plots_per_region_angle(setup, do_binned_gen_pt, do_binned_gen_lamb
     unreg_unfolder = region.get('unreg_unfolder', None)
     alt_unfolder = region.get('alt_unfolder', None)
     alt_hist_truth = region.get('alt_hist_mc_gen', None)
-    print("Alt_hist_truth", alt_hist_truth)
     alt_hist_reco = region.get('alt_hist_mc_reco', None)
-    print("Alt_hist_reco", alt_hist_reco)
     alt_hist_reco_bg_subtracted = region.get('alt_hist_reco_bg_subtracted', None)
     alt_hist_reco_bg_subtracted_gen_binning = region.get('alt_hist_reco_bg_subtracted_gen_binning', None)
 
-    hbc = HistBinChopper(generator_binning=unfolder.generator_binning.FindNode("generatordistribution"),
-                         detector_binning=unfolder.detector_binning.FindNode("detectordistribution"))
+    # hbc = HistBinChopper(generator_binning=unfolder.generator_binning.FindNode("generatordistribution"),
+    #                      detector_binning=unfolder.detector_binning.FindNode("detectordistribution"))
     # hbc.add_obj("hist_truth", unfolder.hist_truth)
     # hbc.add_obj('unfolded', unfolder.get_output())
     # hbc.add_obj('unfolded_stat_err', unfolder.get_unfolded_with_ematrix_stat())
     # hbc.add_obj('unfolded_rsp_err', unfolder.get_unfolded_with_ematrix_rsp())
-    hbc.update(unfolder.hist_bin_chopper)   # update the HistBinChopper with the new normalised systematics already produced in unfolder
+    # hbc.update(unfolder.hist_bin_chopper)   # update the HistBinChopper with the new normalised systematics already produced in unfolder
+    hbc = unfolder.hist_bin_chopper
 
     if do_binned_gen_pt:
         # Iterate through pt bins - gen binning
@@ -2069,33 +2068,41 @@ def do_binned_plots_per_region_angle(setup, do_binned_gen_pt, do_binned_gen_lamb
         gen_pt_binned_plotter.plot_total_ematrix()
 
         if alt_hist_truth:
+            print("...doing alt truth")
             gen_pt_binned_plotter.hist_bin_chopper.add_obj('alt_hist_truth', alt_hist_truth)
             gen_pt_binned_plotter.plot_unfolded_with_alt_truth_normalised()
 
         if unfolder.tau > 0 and unreg_unfolder:
+            print("...doing unregularised vs regularised")
             gen_pt_binned_plotter.hist_bin_chopper.add_obj("unreg_unfolded", unreg_unfolder.unfolded)
             gen_pt_binned_plotter.plot_unfolded_with_unreg_normalised()
 
         if alt_unfolder:
+            print("...doing alt unfolder")
             gen_pt_binned_plotter.plot_unfolded_with_alt_response_normalised(alt_unfolder=alt_unfolder)
             gen_pt_binned_plotter.plot_unfolded_with_alt_response_truth_normalised(alt_unfolder=alt_unfolder)
 
         if has_exp_systs:
+            print("...doing exp systs")
             gen_pt_binned_plotter.plot_uncertainty_shifts_normalised()
             gen_pt_binned_plotter.plot_unfolded_with_exp_systs_normalised()
             gen_pt_binned_plotter.plot_unfolded_with_exp_systs_unnormalised()
 
         if has_model_systs:
+            print("...doing model systs")
             gen_pt_binned_plotter.plot_unfolded_with_model_systs_normalised()
 
         if has_pdf_systs:
+            print("...doing pdf systs")
             gen_pt_binned_plotter.plot_unfolded_with_pdf_systs_normalised()
             gen_pt_binned_plotter.plot_unfolded_with_pdf_systs_unnormalised()
 
         if has_exp_systs or has_model_systs or has_pdf_systs:
+            print("...doing syst fraction")
             gen_pt_binned_plotter.plot_syst_fraction_normalised()
 
         # if has_data:
+        print("...doing detector-level")
         gen_pt_binned_plotter.hist_bin_chopper.add_obj("input_hist_gen_binning_bg_subtracted", unfolder.input_hist_gen_binning_bg_subtracted)
         gen_pt_binned_plotter.hist_bin_chopper.add_obj("hist_mc_reco_gen_binning_bg_subtracted", unfolder.hist_mc_reco_gen_binning_bg_subtracted)
         gen_pt_binned_plotter.plot_detector_normalised(alt_detector=alt_hist_reco_bg_subtracted_gen_binning)
@@ -2803,10 +2810,10 @@ def do_all_big_1d_plots_per_region_angle(setup, hist_bin_chopper=None):
 
     if not hist_bin_chopper:
         # unreg_unfolder = unpack_dict['unreg_unfolder']
-        hist_bin_chopper = HistBinChopper(generator_binning=unfolder.generator_binning.FindNode("generatordistribution"),
-                                          detector_binning=unfolder.detector_binning.FindNode("detectordistribution"))
-        hist_bin_chopper.add_obj("hist_truth", unfolder.hist_truth)
-        hist_bin_chopper.update(unfolder.hist_bin_chopper)
+        # hist_bin_chopper = HistBinChopper(generator_binning=unfolder.generator_binning.FindNode("generatordistribution"),
+        #                                   detector_binning=unfolder.detector_binning.FindNode("detectordistribution"))
+        # hist_bin_chopper.add_obj("hist_truth", unfolder.hist_truth)
+        hist_bin_chopper = unfolder.hist_bin_chopper
         if alt_unfolder:
             hist_bin_chopper.add_obj("alt_unfolded_stat_err", alt_unfolder.unfolded_stat_err)
         if alt_hist_truth:
@@ -2819,26 +2826,30 @@ def do_all_big_1d_plots_per_region_angle(setup, hist_bin_chopper=None):
     big_plotter = BigNormalised1DPlotter(setup, hist_bin_chopper)
     big_plotter.plot_with_bin_widths = True
 
-    print("Doing standard big 1D plots...")
+    print("...doing standard big 1D plots")
     big_plotter.plot_unfolded_truth()
     big_plotter.plot_reco_input()
 
     if alt_hist_truth:
+        print("...doing alt truth big 1D plots")
         big_plotter.plot_unfolded_truth_alt_truth()
 
     if alt_unfolder:
+        print("...doing alt unfolder big 1D plots")
         big_plotter.plot_unfolded_truth_alt_response(alt_unfolder)
         big_plotter.plot_unfolded_truth_alt_response_truth(alt_unfolder)
 
-    print("Doing big 1D plots with systematics...")
     if has_exp_systs:
+        print("...doing exp systs big 1D plots")
         big_plotter.plot_unfolded_exp_systs()
 
     if has_model_systs:
+        print("...doing model systs big 1D plots")
         big_plotter.plot_unfolded_model_systs()
         big_plotter.plot_unfolded_model_systs_only_scale()
 
     if has_pdf_systs:
+        print("...doing pdf systs big 1D plots")
         big_plotter.plot_unfolded_pdf_systs()
 
 
@@ -2986,7 +2997,7 @@ if __name__ == "__main__":
         for angle in angles:
             append = "%s_%s" % (region['name'], angle.var)  # common str to put on filenames, etc. don't need angle_prepend as 'groomed' in region name
             print("*"*120)
-            print("Region/var: %s" % (append))
+            print("Algo/Region/Var: %s %s %s" % (jet_algo, region['name'], angle.var))
             print("*"*120)
 
             angle_output_dir = "%s/%s/%s" % (args.source, region['name'], angle.var)
@@ -3002,31 +3013,36 @@ if __name__ == "__main__":
             if region['name'] != unpickled_region['name']:
                 raise RuntimeError("Mismatch region name")
 
-            region.update(unpickled_region)
+            # use region dict from unpickling
+            # don't use update(), mega slow
+            this_region = unpickled_region
 
             # MAKE ALL THE PLOTS
             # ------------------------------------------------------------------
             setup = Setup(jet_algo=jet_algo,
-                          region=region,
+                          region=this_region,
                           angle=angle,
                           output_dir=angle_output_dir,
                           has_data=has_data)
-            print("===========================================================")
+            print("...........................................................")
             print(" Doing lots of plots per pt/lambda bin...")
-            print("===========================================================")
+            print("...........................................................")
             hist_bin_chopper = do_binned_plots_per_region_angle(setup,
                                                                 do_binned_gen_pt=args.doBinnedPlotsGenPt,
                                                                 do_binned_gen_lambda=args.doBinnedPlotsGenLambda,
                                                                 do_binned_reco_pt=args.doBinnedPlotsRecoPt)
 
-            print("===========================================================")
+            print("...........................................................")
             print(" Doing big 1D plots...")
-            print("===========================================================")
+            print("...........................................................")
             # Do a 1D summary plot, with all the normalised plots with bins divided by their width
             # (unlike the standard plot from MyUnfolderPlotter, which is absolute)
             do_all_big_1d_plots_per_region_angle(setup, hist_bin_chopper)
 
             # all_chi2_stats.append(get_bottom_line_stats(setup))
+
+            # cleanup object, as it uses loads of memory
+            del unpickled_region
 
     # df_stats = pd.DataFrame(all_chi2_stats)
     # df_stats['region'] = df_stats['region'].astype('category')
