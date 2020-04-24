@@ -636,7 +636,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             # Sanity check incase unfolding went really wrong - e.g. if rank
             # of matrix E is way smaller than what is expected
             # May mean SetEpsMatrix() is needed to help inversion
-            limit = 10
+            limit = 100
             if self.chi2sys / self.Ndf > limit:
                 raise RuntimeError("chi2sys / Ndf > %d - unfolding is rubbish! Maybe SetEpsMatrix()? if you get 'rank of matrix E X expect Y' warning" % (limit))
 
