@@ -632,6 +632,14 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
 
             self.unfolded = self.GetOutput(hist_name, "", self.output_distribution_name, "*[]", self.use_axis_binning)
             print("self.unfolded is a", type(self.unfolded), "and has", self.unfolded.GetNbinsX(), "x bins")
+
+            # Sanity check incase unfolding went really wrong - e.g. if rank
+            # of matrix E is way smaller than what is expected
+            # May mean SetEpsMatrix() is needed to help inversion
+            limit = 10
+            if self.chi2sys / self.Ndf > limit:
+                raise RuntimeError("chi2sys / Ndf > %d - unfolding is rubbish! Maybe SetEpsMatrix()? if you get 'rank of matrix E X expect Y' warning" % (limit))
+
         return self.unfolded
 
     def _post_process(self):
