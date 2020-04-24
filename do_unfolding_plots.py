@@ -2933,6 +2933,9 @@ if __name__ == "__main__":
     parser.add_argument("--doBinnedPlotsRecoPt",
                         action='store_true',
                         help='Do lambda plots, binned by reco pT')
+    parser.add_argument("--doBig1DPlots",
+                        action='store_true',
+                        help='Do big 1D plots (all normalised hists on one big axis)')
 
     region_group = parser.add_argument_group('Region selection')
     region_group.add_argument("--doAllRegions",
@@ -3024,20 +3027,23 @@ if __name__ == "__main__":
                           angle=angle,
                           output_dir=angle_output_dir,
                           has_data=has_data)
-            print("...........................................................")
-            print(" Doing lots of plots per pt/lambda bin...")
-            print("...........................................................")
-            hist_bin_chopper = do_binned_plots_per_region_angle(setup,
-                                                                do_binned_gen_pt=args.doBinnedPlotsGenPt,
-                                                                do_binned_gen_lambda=args.doBinnedPlotsGenLambda,
-                                                                do_binned_reco_pt=args.doBinnedPlotsRecoPt)
 
-            print("...........................................................")
-            print(" Doing big 1D plots...")
-            print("...........................................................")
-            # Do a 1D summary plot, with all the normalised plots with bins divided by their width
-            # (unlike the standard plot from MyUnfolderPlotter, which is absolute)
-            do_all_big_1d_plots_per_region_angle(setup, hist_bin_chopper)
+            if any([args.doBinnedPlotsGenPt, args.doBinnedPlotsGenLambda, args.doBinnedPlotsRecoPt]):
+                print("...........................................................")
+                print(" Doing lots of plots per pt/lambda bin...")
+                print("...........................................................")
+                hist_bin_chopper = do_binned_plots_per_region_angle(setup,
+                                                                    do_binned_gen_pt=args.doBinnedPlotsGenPt,
+                                                                    do_binned_gen_lambda=args.doBinnedPlotsGenLambda,
+                                                                    do_binned_reco_pt=args.doBinnedPlotsRecoPt)
+
+            if args.doBig1DPlots:
+                print("...........................................................")
+                print(" Doing big 1D plots...")
+                print("...........................................................")
+                # Do a 1D summary plot, with all the normalised plots with bins divided by their width
+                # (unlike the standard plot from MyUnfolderPlotter, which is absolute)
+                do_all_big_1d_plots_per_region_angle(setup, hist_bin_chopper)
 
             # all_chi2_stats.append(get_bottom_line_stats(setup))
 
