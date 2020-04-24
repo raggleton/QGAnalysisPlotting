@@ -2066,6 +2066,10 @@ if __name__ == "__main__":
                                               distribution=unfolder.distribution,
                                               axisSteering=unfolder.axisSteering)
 
+                    # Needed beacuse some fo the PDF variations struggle to unfold
+                    # Even 1E-18 wouldn't work - needs to be v.small
+                    pdf_unfolder.SetEpsMatrix(1E-20)
+
                     pdf_unfolder_plotter = MyUnfolderPlotter(pdf_unfolder, is_data=False)
                     pdf_output_dir = this_output_dir+"/pdfSyst/"+pdf_label_no_spaces
                     pdf_plot_args = dict(output_dir=pdf_output_dir,
