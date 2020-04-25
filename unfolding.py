@@ -780,7 +780,8 @@ if __name__ == "__main__":
                 # Needed if you get message "rank of matrix E 55 expect 170"
                 # And unfolded looks wacko
                 unfolder.SetEpsMatrix(1E-18)
-            # unfolder.SetEpsMatrix(1E-10)
+            eps_matrix = 1E-18
+            unfolder.SetEpsMatrix(eps_matrix)
 
             # Set what is to be unfolded
             # ------------------------------------------------------------------
@@ -913,6 +914,8 @@ if __name__ == "__main__":
                     # Needed if you get message "rank of matrix E 55 expect 170"
                     # And unfolded looks wacko
                     unreg_unfolder.SetEpsMatrix(1E-18)
+
+                unreg_unfolder.SetEpsMatrix(eps_matrix)
 
                 # Do the unregularised unfolding to get an idea of bin contents
                 # and uncertainties
@@ -1455,6 +1458,8 @@ if __name__ == "__main__":
                     # And unfolded looks wacko
                     alt_unfolder.SetEpsMatrix(1E-18)
 
+                alt_unfolder.SetEpsMatrix(eps_matrix)
+
                 alt_unfolder_plotter = MyUnfolderPlotter(alt_unfolder, is_data=not MC_INPUT)
                 alt_output_dir = this_output_dir+"/altResponse"
                 alt_plot_args = dict(output_dir=alt_output_dir,
@@ -1666,6 +1671,8 @@ if __name__ == "__main__":
                         # Needed if you get message "rank of matrix E 55 expect 170"
                         # And unfolded looks wacko
                         syst_unfolder.SetEpsMatrix(1E-18)
+
+                    syst_unfolder.SetEpsMatrix(eps_matrix)
 
                     # because we only care about shape, not overall normalisation
                     # (which can artificially increase/decrease errors)
@@ -2067,7 +2074,7 @@ if __name__ == "__main__":
 
                     # Needed beacuse some fo the PDF variations struggle to unfold
                     # Even 1E-18 wouldn't work - needs to be v.small
-                    pdf_unfolder.SetEpsMatrix(1E-20)
+                    pdf_unfolder.SetEpsMatrix(eps_matrix)
 
                     pdf_unfolder_plotter = MyUnfolderPlotter(pdf_unfolder, is_data=False)
                     pdf_output_dir = this_output_dir+"/pdfSyst/"+pdf_label_no_spaces
