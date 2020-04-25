@@ -616,7 +616,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
 
     # POST-UNFOLDING FUNCTIONS
     # --------------------------------------------------------------------------
-    def get_output(self, hist_name='unfolded'):
+    def get_output(self, hist_name='unfolded', max_chi2_ndf=1000):
         """Get 1D unfolded histogram covering all bins"""
         if getattr(self, 'unfolded', None) is None:
             print("Ndf:", self.GetNdf())
@@ -636,9 +636,8 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             # Sanity check incase unfolding went really wrong - e.g. if rank
             # of matrix E is way smaller than what is expected
             # May mean SetEpsMatrix() is needed to help inversion
-            limit = 1000
-            if self.chi2sys / self.Ndf > limit:
-                raise RuntimeError("chi2sys / Ndf > %d - unfolding is rubbish! Maybe SetEpsMatrix()? if you get 'rank of matrix E X expect Y' warning" % (limit))
+            if max_chi2_ndf > 0 and self.chi2sys / self.Ndf > max_chi2_ndf:
+                raise RuntimeError("chi2sys / Ndf > %d - unfolding is rubbish! Maybe SetEpsMatrix()? if you get 'rank of matrix E X expect Y' warning" % (max_chi2_ndf))
 
         return self.unfolded
 
