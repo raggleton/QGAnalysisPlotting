@@ -627,7 +627,7 @@ class GenPtBinnedPlotter(object):
                              marker_color=self.plot_colours['unfolded_total_colour'], #marker_style=20, marker_size=0.75,
                              subplot=mc_gen_hist_bin),
             ])
-            if not self.check_entries(pdf_entries, "plot_unfolded_with_model_systs_unnormalised_pt_bin %d" % (ibin)):
+            if not self.check_entries(pdf_entries, "plot_unfolded_with_mpdf_systs_unnormalised_pt_bin %d" % (ibin)):
                 return
             plot = Plot(pdf_entries,
                         ytitle=self.setup.pt_bin_unnormalised_differential_label,
@@ -876,7 +876,11 @@ class GenPtBinnedPlotter(object):
                 if h.GetBinContent(ibin) > 0:
                     h_new.SetBinContent(ibin, 1+(direction*(h.GetBinError(ibin) / h.GetBinContent(ibin))))
                 else:
-                    h_new.SetBinContent(ibin, 99999 if direction > 0 else -99999)
+                    if h.GetBinContent(ibin) < 0:
+                        h_new.SetBinContent(ibin, 1+(direction*(h.GetBinError(ibin) / h.GetBinContent(ibin))))
+                        print("_convert_error_bars_to_error_ratio_hist() warning: bin %d content < 0!" % (ibin))
+                    else:
+                        h_new.SetBinContent(ibin, 1)
                 h_new.SetBinError(ibin, 0)
             return h_new
 
