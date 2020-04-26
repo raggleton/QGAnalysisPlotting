@@ -780,6 +780,7 @@ if __name__ == "__main__":
                 # Needed if you get message "rank of matrix E 55 expect 170"
                 # And unfolded looks wacko
                 unfolder.SetEpsMatrix(1E-18)
+
             eps_matrix = 1E-18
             unfolder.SetEpsMatrix(eps_matrix)
 
@@ -1201,7 +1202,7 @@ if __name__ == "__main__":
                                                                       binning_scheme='generator')
                         unfolder.hist_bin_chopper._cache[key] = new_syst_shift
 
-                        # calculate erro matrix
+                        # calculate error matrix
                         syst_ematrix = cu.shift_to_covariance(new_syst_shift)
                         key = unfolder.hist_bin_chopper._generate_key(exp_syst.syst_ematrix_label,
                                                                       ind=ibin,
@@ -2017,7 +2018,7 @@ if __name__ == "__main__":
             # DO PDF VARIATIONS
             # ------------------------------------------------------------------
             if args.doPDFSysts:
-                # first construct all new systematic variations
+                # first construct all new systematic variations dicts
                 original_pdf_dict = region['pdf_systematics'][0]
                 original_pdf_dict['label'] = '_PDF_template'  # initial _ to ignore it later on
                 tfile = original_pdf_dict['tfile']
@@ -2026,38 +2027,24 @@ if __name__ == "__main__":
 
                 region['pdf_systematics']  = []
                 for pdf_ind in original_pdf_dict['variations']:
-                    mc_hname_append = "split" if MC_SPLIT else "all"
-                    mc_hname_append = "all"  # want all stats since we are already independent of the response matrix
                     region['pdf_systematics'].append(
                         {
                             "label": "PDF_%d" % (pdf_ind),
-                            "hist_reco": cu.get_from_tfile(tfile, "%s/hist_%s_reco_%s_PDF_%d" % (region['dirname'], angle_shortname, mc_hname_append, pdf_ind)),
-                            "hist_gen": cu.get_from_tfile(tfile, "%s/hist_%s_gen_%s_PDF_%d" % (region['dirname'], angle_shortname, mc_hname_append, pdf_ind)),
+                            "response_map": cu.get_from_tfile(tfile, "%s/tu_%s_GenReco_all_PDF_%d" % (region['dirname'], angle_shortname, pdf_ind)),
                             "colour": ROOT.kCyan+2,
                         })
 
-                    if mc_hname_append == 'all' and MC_SPLIT:
-                        # Since the nominal MC only has 20% of the stats,
-                        # need to scale this as well otherwise it will look weird
-                        region['pdf_systematics'][-1]['hist_reco'].Scale(0.2)
-                        region['pdf_systematics'][-1]['hist_gen'].Scale(0.2)
-
-                # Now run over all variations like for model systs
+                # Now run over all variations, unfolding the nominal inputs
+                # but with the various response matrices
                 for ind, pdf_dict in enumerate(region['pdf_systematics']):
                     pdf_label = pdf_dict['label']
                     pdf_label_no_spaces = cu.no_space_str(pdf_label)
-
-                    if pdf_label.startswith("_"):
-                        continue
 
                     print("*" * 80)
                     print("*** Unfolding with alternate input:", pdf_label, "(%d/%d) ***" % (ind+1, len(region['pdf_systematics'])))
                     print("*" * 80)
 
-                    hist_pdf_reco = pdf_dict['hist_reco']
-                    hist_pdf_gen = pdf_dict['hist_gen']
-
-                    pdf_unfolder = MyUnfolder(response_map=unfolder.response_map,
+                    pdf_unfolder = MyUnfolder(response_map=pdf_dict['response_map'],
                                               variable_bin_edges_reco=unfolder.variable_bin_edges_reco,
                                               variable_bin_edges_gen=unfolder.variable_bin_edges_gen,
                                               variable_name=unfolder.variable_name,
@@ -2081,65 +2068,23 @@ if __name__ == "__main__":
                     pdf_plot_args = dict(output_dir=pdf_output_dir,
                                          append=append)
 
-                    if SUBTRACT_FAKES:
-                        # Use the background template from the nominal MC
-                        # (since we're only testing different input shapes,
-                        # and our bkg estimate is always from MC)
-                        hist_fakes_pdf = hist_fakes_reco_fraction.Clone("hist_fakes_pdf_%s" % pdf_label_no_spaces)
-                        hist_fakes_pdf.Multiply(hist_pdf_reco)
-
-                    hist_pdf_reco_bg_subtracted = hist_pdf_reco.Clone()
-                    hist_pdf_reco_bg_subtracted.Add(hist_fakes_pdf, -1)
-
                     # Set what is to be unfolded
                     # --------------------------------------------------------------
-                    pdf_unfolder.set_input(input_hist=hist_pdf_reco,
-                                           hist_truth=hist_pdf_gen,
-                                           hist_mc_reco=hist_pdf_reco,
-                                           hist_mc_reco_bg_subtracted=hist_pdf_reco_bg_subtracted,
+                    # Same input as nominal unfolder, since we only change responsematrix
+                    pdf_unfolder.set_input(input_hist=reco_1d,
+                                           input_hist_gen_binning=reco_1d_gen_binning,
+                                           hist_truth=hist_mc_gen,
+                                           hist_mc_reco=hist_mc_reco,
+                                           hist_mc_reco_bg_subtracted=hist_mc_reco_bg_subtracted,
+                                           hist_mc_reco_gen_binning=hist_mc_reco_gen_binning,
+                                           hist_mc_reco_gen_binning_bg_subtracted=hist_mc_reco_gen_binning_bg_subtracted,
                                            bias_factor=args.biasFactor)
 
                     # Subtract fakes (treat as background)
                     # --------------------------------------------------------------
                     if SUBTRACT_FAKES:
-                        pdf_unfolder.subtract_background(hist_fakes_pdf, "fakes")
-
-                    # also show nominal bg-subtracted input for comparison
-                    ocs = [
-                        Contribution(unfolder.input_hist_bg_subtracted,
-                                     label='Nominal unfolding input (bg-subtracted)',
-                                     line_color=ROOT.kRed, line_width=1)
-                    ]
-                    pdf_unfolder_plotter.draw_detector_1d(do_reco_data=False,
-                                                          do_reco_data_bg_sub=False,
-                                                          do_reco_bg=True,
-                                                          do_reco_mc=False,
-                                                          do_reco_mc_bg_sub=True,
-                                                          other_contributions=ocs,
-                                                          output_dir=pdf_plot_args['output_dir'],
-                                                          append='bg_fakes_subtracted_%s' % append,
-                                                          title="%s region, %s, %s" % (region['label'], angle_str, pdf_label))
-
-                    # Add systematic errors as different response matrices
-                    # ----------------------------------------------------
-                    # if args.doExperimentalSysts:
-                    #     chosen_rsp_bin = (18, 18)
-                    #     print("nominal response bin content for", chosen_rsp_bin, pdf_unfolder.response_map.GetBinContent(*chosen_rsp_bin))
-                    #     for exp_dict in region['experimental_systematics']:
-                    #         print("Adding systematic:", exp_dict['label'])
-                    #         if 'factor' in exp_dict:
-                    #             # special case for e.g. lumi - we construct a reponse hist, and add it using relative mode
-                    #             rel_map = pdf_unfolder.response_map.Clone(exp_dict['label']+"MapPDF")
-                    #             for xbin, ybin in product(range(1, rel_map.GetNbinsX()+1), range(1, rel_map.GetNbinsY()+1)):
-                    #                 rel_map.SetBinContent(xbin, ybin, exp_dict['factor'])
-                    #                 rel_map.SetBinError(xbin, ybin, 0)
-                    #             pdf_unfolder.add_sys_error(rel_map, exp_dict['label'], ROOT.TUnfoldDensity.kSysErrModeRelative)
-                    #         else:
-                    #             if not isinstance(exp_dict['tfile'], ROOT.TFile):
-                    #                 exp_dict['tfile'] = cu.open_root_file(exp_dict['tfile'])
-                    #             map_syst = cu.get_from_tfile(exp_dict['tfile'], "%s/tu_%s_GenReco_all" % (region['dirname'], angle_shortname))
-                    #             print("    syst bin", chosen_rsp_bin, map_syst.GetBinContent(*chosen_rsp_bin))
-                    #             pdf_unfolder.add_sys_error(map_syst, exp_dict['label'], ROOT.TUnfoldDensity.kSysErrModeMatrix)
+                        pdf_unfolder.subtract_background(hist_fakes_reco, "Signal fakes", scale=1., scale_err=0.0)
+                        pdf_unfolder.subtract_background_gen_binning(hist_fakes_reco_gen_binning, "Signal fakes", scale=1., scale_err=0.0)
 
                     # Do any regularization
                     # --------------------------------------------------------------
@@ -2204,7 +2149,7 @@ if __name__ == "__main__":
 
                     pdf_unfolder.setup_normalised_results()
 
-                    pdf_title = "%s\n%s region, %s, %s input" % (jet_algo, region['label'], angle_str, pdf_label)
+                    pdf_title = "%s\n%s region, %s\n%s response matrix" % (jet_algo, region['label'], angle_str, pdf_label)
                     pdf_unfolder_plotter.draw_unfolded_1d(title=pdf_title, **pdf_plot_args)
 
                     region['pdf_systematics'][ind]['unfolder'] = pdf_unfolder

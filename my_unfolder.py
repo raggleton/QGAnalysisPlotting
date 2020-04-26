@@ -1348,64 +1348,37 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
 
 
     def create_normalised_pdf_syst_uncertainty(self, pdf_systs):
-        """Create PDF uncertainty from unfolded PDF variation inputs
+        """Create PDF uncertainty from unfolded PDF variations
 
         This is done by taking in all the unfolded pdf systematics results,
-        then getting the normalised result for each pT bin.
-        Then do same for truth hists.
-        We can then figure out the envelope of (unfolded/truth) from the pdf variations.
+        then getting the normalised result for each pT bin. 
+        Then we figure out the RMS of these variations.
         We can then store this as an extra uncertianty, to be added in quadrature later.
-
-        This is done because we are adding an uncertainty that corresponds to a
-        change in the input being unfolded, and how well we handle that.
-        As opposed to just comparing the unfolded results, which only tells
-        about theoretical uncertainties in your MC.
-
-        This is probably the same size as putting it in as an "experimental" syst,
-        instead varying the response matrix.
 
         pdf_systs is a list of dicts, the ones produced in unfolding.py
         Each has the form:
         {
-            "label": "PDF",  # this is a tempalte entry, used for future
+            "label": "PDF",  # this is a template entry, used for future
             "tfile": os.path.join(source_dir_systs, 'PDFvariationsTrue', qgc.QCD_FILENAME),
             "colour": ROOT.kCyan+2,
             "unfolder": None,
         }
         """
-        for syst in pdf_systs:
-            syst['hbc_key_unfolded'] = 'pdf_syst_%s_unfolded' % cu.no_space_str(syst['label'])
-            self.hist_bin_chopper.add_obj(syst['hbc_key_unfolded'], syst['unfolder'].get_unfolded_with_ematrix_stat())
-
-            syst['hbc_key_truth'] = 'pdf_syst_%s_hist_truth' % cu.no_space_str(syst['label'])
-            self.hist_bin_chopper.add_obj(syst['hbc_key_truth'], syst['unfolder'].hist_truth)
-
         # Add dummy object to hist_bin_chopper for later, so we can directly manipulate the cache
         self.hist_bin_chopper.add_obj(self.pdf_uncert_name, self.get_unfolded_with_ematrix_stat())
 
-        self.hist_bin_chopper.add_obj('unfolded_stat_err', self.get_unfolded_with_ematrix_stat())
-        # print("Doing pdf variation")
         for ibin_pt in range(len(self.pt_bin_edges_gen[:-1])):
-            variations_ratio = []
-            for syst in pdf_systs:
-                # Get normalised results for each variation, calulate ratio
-                vr = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width(syst['hbc_key_unfolded'], ibin_pt, binning_scheme='generator').Clone(cu.get_unique_str())
-                vt = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width(syst['hbc_key_truth'], ibin_pt, binning_scheme='generator')
-                vr.Divide(vt)
-                variations_ratio.append(vr)
+            # Calculate error by using RMS of variations in each bin of the histogram
+            variations = [syst['unfolder'].hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded', ibin_pt, binning_scheme='generator')
+                          for syst in pdf_systs]
 
-            # Calculate envelope error bar from RMS of ratio in each bin
-            # pdf error bar is then ratio * nominal result
-            nominal = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded_stat_err', ibin_pt, binning_scheme='generator')
-            variations_envelope = nominal.Clone("pdf_envelope_pt_bin%d" % ibin_pt)
-            # print("pt bin", ibin_pt)
+            variations_envelope = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded_stat_err', ibin_pt, binning_scheme='generator').Clone("pdf_%d" % (ibin_pt))
+
             for ix in range(1, variations_envelope.GetNbinsX()+1):
                 # np.std does sqrt((abs(x - x.mean())**2) / (len(x) - ddof)),
                 # and the PDF4LHC recommendation is N-1 in the denominator
-                rms_ratio = np.std([abs(v.GetBinContent(ix) - 1)
-                                    for v in variations_ratio], ddof=1)
-                variations_envelope.SetBinError(ix, rms_ratio*nominal.GetBinContent(ix))
-                # print("bin", ix, "max ratio", max_ratio, "setting error", max_ratio*nominal.GetBinContent(ix))
+                rms_ratio = np.std([v.GetBinContent(ix) for v in variations], ddof=1)
+                variations_envelope.SetBinError(ix, rms_ratio)
 
             # Store in hist_bin_chopper for later
             key = self.hist_bin_chopper._generate_key(self.pdf_uncert_name,
