@@ -170,10 +170,11 @@ class SummaryPlotter(object):
         dijet_central_hist_truth = self.data_to_hist(dijet_central_data['mean_truth'], dijet_central_data['mean_err_truth'], self.pt_bins_dijet)
         dijet_central_hist_alt_truth = self.data_to_hist(dijet_central_data['mean_alt_truth'], dijet_central_data['mean_err_alt_truth'], self.pt_bins_dijet)
 
-        if "LHA" in angle.var:
-            print(dijet_central_data)
-            for i in range(1, dijet_central_hist.GetNbinsX()+1):
-                print(i, dijet_central_hist.GetBinContent(i), dijet_central_hist.GetBinError(i))
+        # if "LHA" in angle.var:
+        #     print(dijet_central_data)
+        #     for i in range(1, dijet_central_hist.GetNbinsX()+1):
+        #         print(i, dijet_central_hist.GetBinContent(i), dijet_central_hist.GetBinError(i))
+
 
         region_name = 'Dijet_forward'
         if do_groomed:
@@ -182,6 +183,35 @@ class SummaryPlotter(object):
         dijet_forward_hist = self.data_to_hist(dijet_forward_data['mean'], dijet_forward_data['mean_err'], self.pt_bins_dijet)
         dijet_forward_hist_truth = self.data_to_hist(dijet_forward_data['mean_truth'], dijet_forward_data['mean_err_truth'], self.pt_bins_dijet)
         dijet_forward_hist_alt_truth = self.data_to_hist(dijet_forward_data['mean_alt_truth'], dijet_forward_data['mean_err_alt_truth'], self.pt_bins_dijet)
+
+        dijet_cen_col = COMMON_STYLE_DICT['dijet_cen_color']
+        dijet_fwd_col = COMMON_STYLE_DICT['dijet_fwd_color']
+        zpj_col = COMMON_STYLE_DICT['zpj_color']
+
+        # Create copy with 0 error bars, for the ratio subplot
+        # The data will have its own error region
+        dijet_central_hist_no_errors = dijet_central_hist.Clone()
+        dijet_forward_hist_no_errors = dijet_forward_hist.Clone()
+        for h in [dijet_central_hist_no_errors, dijet_forward_hist_no_errors]:
+            for i in range(1, h.GetNbinsX()+1):
+                h.SetBinError(i, 0)
+
+        # Create hists for data with error reigon for ratio
+        # Easiest way to get errors right is to do data (with 0 errors)
+        # and divide by data (with errors), as if you had MC = data with 0 error
+        dijet_central_hist_ratio_error = dijet_central_hist_no_errors.Clone()
+        dijet_central_hist_ratio_error.Divide(dijet_central_hist)
+        dijet_central_hist_ratio_error.SetFillStyle(3245)
+        dijet_central_hist_ratio_error.SetFillColor(dijet_cen_col)
+        dijet_central_hist_ratio_error.SetLineWidth(0)
+        dijet_central_hist_ratio_error.SetMarkerSize(0)
+
+        dijet_forward_hist_ratio_error = dijet_forward_hist_no_errors.Clone()
+        dijet_forward_hist_ratio_error.Divide(dijet_forward_hist)
+        dijet_forward_hist_ratio_error.SetFillStyle(3254)
+        dijet_forward_hist_ratio_error.SetFillColor(dijet_fwd_col)
+        dijet_forward_hist_ratio_error.SetLineWidth(0)
+        dijet_forward_hist_ratio_error.SetMarkerSize(0)
 
         if do_zpj:
             region_name = 'ZPlusJets'
@@ -192,10 +222,17 @@ class SummaryPlotter(object):
             zpj_hist = self.data_to_hist(zpj_data['mean'], zpj_data['mean_err'], self.pt_bins_zpj[:-2])
             zpj_hist_truth = self.data_to_hist(zpj_data['mean_truth'], zpj_data['mean_err_truth'], self.pt_bins_zpj[:-2])
             zpj_hist_alt_truth = self.data_to_hist(zpj_data['mean_alt_truth'], zpj_data['mean_err_alt_truth'], self.pt_bins_zpj[:-2])
+            # 0 error bar hists & ratio = 1 hists for subplot
+            zpj_hist_no_errors = zpj_hist.Clone()
+            for i in range(1, zpj_hist_no_errors.GetNbinsX()+1):
+                zpj_hist_no_errors.SetBinError(i, 0)
+            zpj_hist_ratio_error = zpj_hist_no_errors.Clone()
+            zpj_hist_ratio_error.Divide(zpj_hist)
+            zpj_hist_ratio_error.SetFillStyle(3003)
+            zpj_hist_ratio_error.SetFillColor(zpj_col)
+            zpj_hist_ratio_error.SetLineWidth(0)
+            zpj_hist_ratio_error.SetMarkerSize(0)
 
-        dijet_cen_col = COMMON_STYLE_DICT['dijet_cen_color']
-        dijet_fwd_col = COMMON_STYLE_DICT['dijet_fwd_color']
-        zpj_col = COMMON_STYLE_DICT['zpj_color']
         m_size = 1
         lw = COMMON_STYLE_DICT['line_width']
         entries = []
@@ -223,18 +260,18 @@ class SummaryPlotter(object):
                 Contribution(dijet_central_hist_truth, label='#splitline{ Dijet (central)  }{ [%s]}' % (self.mc_label),
                              line_color=dijet_cen_col, line_width=lw, line_style=COMMON_STYLE_DICT['mc_line_style'],
                              marker_color=dijet_cen_col, marker_style=cu.Marker.get('circle', False), marker_size=0,
-                             subplot=dijet_central_hist),
+                             subplot=dijet_central_hist_no_errors),
                 Contribution(dijet_forward_hist_truth, label='#splitline{ Dijet (forward)  }{ [%s]}' % (self.mc_label),
                              line_color=dijet_fwd_col, line_width=lw, line_style=COMMON_STYLE_DICT['mc_line_style'],
                              marker_color=dijet_fwd_col, marker_style=cu.Marker.get('square', False), marker_size=0,
-                             subplot=dijet_forward_hist),
+                             subplot=dijet_forward_hist_no_errors),
             ])
         if do_zpj:
             entries.extend([
                 Contribution(zpj_hist_truth, label='#splitline{ Z+jet  }{ [%s]}' % (self.mc_label),
                              line_color=zpj_col, line_width=lw, line_style=COMMON_STYLE_DICT['mc_line_style'],
                              marker_color=zpj_col, marker_style=cu.Marker.get('triangleUp', False), marker_size=0,
-                             subplot=zpj_hist),
+                             subplot=zpj_hist_no_errors),
             ])
         # add alt MC
         if do_dijet:
@@ -242,18 +279,18 @@ class SummaryPlotter(object):
                 Contribution(dijet_central_hist_alt_truth, label='#splitline{ Dijet (central)  }{ [%s]}' % (self.alt_mc_label),
                              line_color=dijet_cen_col, line_width=lw, line_style=COMMON_STYLE_DICT['mc_alt_line_style'],
                              marker_color=dijet_cen_col, marker_style=cu.Marker.get('circle', False), marker_size=0,
-                             subplot=dijet_central_hist),
+                             subplot=dijet_central_hist_no_errors),
                 Contribution(dijet_forward_hist_alt_truth, label='#splitline{ Dijet (forward)  }{ [%s]}' % (self.alt_mc_label),
                              line_color=dijet_fwd_col, line_width=lw, line_style=COMMON_STYLE_DICT['mc_alt_line_style'],
                              marker_color=dijet_fwd_col, marker_style=cu.Marker.get('square', False), marker_size=0,
-                             subplot=dijet_forward_hist),
+                             subplot=dijet_forward_hist_no_errors),
             ])
         if do_zpj:
             entries.extend([
                 Contribution(zpj_hist_alt_truth, label='#splitline{ Z+jet}{ [%s]}' % (self.alt_mc_label),
                              line_color=zpj_col, line_width=2, line_style=COMMON_STYLE_DICT['mc_alt_line_style'],
                              marker_color=zpj_col, marker_style=cu.Marker.get('triangleUp', False), marker_size=0,
-                             subplot=zpj_hist),
+                             subplot=zpj_hist_no_errors),
             ])
 
         # for plot axis titles
@@ -300,9 +337,27 @@ class SummaryPlotter(object):
         plot.left_margin = 0.16
         plot.subplot_line_style = 1
         plot.y_padding_max_linear = 1.9
-        plot.plot("NOSTACK E1 X0", "NOSTACK E1")
+        subplot_draw_opts = "NOSTACK E1"
+        plot.plot("NOSTACK E1", subplot_draw_opts)
         # plot.get_modifier().GetYaxis().SetTitleOffset(plot.get_modifier().GetYaxis().GetTitleOffset()*1.1)
         plot.set_logx(do_more_labels=False)
+
+        # now draw the data error shaded area
+        # this is a bit hacky - basically draw them on the ratio pad,
+        # then redraw the existing hists & line to get them ontop
+        # note that we use "same" for all - this is to keep the original axes
+        # (we may want to rethink this later?)
+        plot.subplot_pad.cd()
+        draw_opt = "E2 SAME"
+        if do_dijet:
+            dijet_central_hist_ratio_error.Draw(draw_opt)
+            dijet_forward_hist_ratio_error.Draw(draw_opt)
+        if do_zpj:
+            zpj_hist_ratio_error.Draw(draw_opt)
+        plot.subplot_container.Draw("SAME" + subplot_draw_opts)
+        plot.subplot_line.Draw()
+        plot.canvas.cd()
+
         groomed_str = '_groomed' if do_groomed else ''
         plot.save("%s/dijet_zpj_means_vs_pt_%s%s_%s.%s" % (output_dir, angle.var, groomed_str, jet_algo['name'], self.output_fmt))
 
@@ -353,6 +408,35 @@ class SummaryPlotter(object):
         dijet_forward_hist_truth = self.data_to_hist(dijet_forward_data['rms_truth'], dijet_forward_data['rms_err_truth'], self.pt_bins_dijet)
         dijet_forward_hist_alt_truth = self.data_to_hist(dijet_forward_data['rms_alt_truth'], dijet_forward_data['rms_err_alt_truth'], self.pt_bins_dijet)
 
+        dijet_cen_col = COMMON_STYLE_DICT['dijet_cen_color']
+        dijet_fwd_col = COMMON_STYLE_DICT['dijet_fwd_color']
+        zpj_col = COMMON_STYLE_DICT['zpj_color']
+
+        # Create copy with 0 error bars, for the ratio subplot
+        # The data will have its own error region
+        dijet_central_hist_no_errors = dijet_central_hist.Clone()
+        dijet_forward_hist_no_errors = dijet_forward_hist.Clone()
+        for h in [dijet_central_hist_no_errors, dijet_forward_hist_no_errors]:
+            for i in range(1, h.GetNbinsX()+1):
+                h.SetBinError(i, 0)
+
+        # Create hists for data with error reigon for ratio
+        # Easiest way to get errors right is to do data (with 0 errors)
+        # and divide by data (with errors), as if you had MC = data with 0 error
+        dijet_central_hist_ratio_error = dijet_central_hist_no_errors.Clone()
+        dijet_central_hist_ratio_error.Divide(dijet_central_hist)
+        dijet_central_hist_ratio_error.SetFillStyle(3245)
+        dijet_central_hist_ratio_error.SetFillColor(dijet_cen_col)
+        dijet_central_hist_ratio_error.SetLineWidth(0)
+        dijet_central_hist_ratio_error.SetMarkerSize(0)
+
+        dijet_forward_hist_ratio_error = dijet_forward_hist_no_errors.Clone()
+        dijet_forward_hist_ratio_error.Divide(dijet_forward_hist)
+        dijet_forward_hist_ratio_error.SetFillStyle(3254)
+        dijet_forward_hist_ratio_error.SetFillColor(dijet_fwd_col)
+        dijet_forward_hist_ratio_error.SetLineWidth(0)
+        dijet_forward_hist_ratio_error.SetMarkerSize(0)
+
         if do_zpj:
             region_name = 'ZPlusJets'
             if do_groomed:
@@ -361,11 +445,17 @@ class SummaryPlotter(object):
             zpj_hist = self.data_to_hist(zpj_data['rms'], zpj_data['rms_err'], self.pt_bins_zpj[:-2])
             zpj_hist_truth = self.data_to_hist(zpj_data['rms_truth'], zpj_data['rms_err_truth'], self.pt_bins_zpj[:-2])
             zpj_hist_alt_truth = self.data_to_hist(zpj_data['rms_alt_truth'], zpj_data['rms_err_alt_truth'], self.pt_bins_zpj[:-2])
+            # 0 error bar hists & ratio = 1 hists for subplot
+            zpj_hist_no_errors = zpj_hist.Clone()
+            for i in range(1, zpj_hist_no_errors.GetNbinsX()+1):
+                zpj_hist_no_errors.SetBinError(i, 0)
+            zpj_hist_ratio_error = zpj_hist_no_errors.Clone()
+            zpj_hist_ratio_error.Divide(zpj_hist)
+            zpj_hist_ratio_error.SetFillStyle(3003)
+            zpj_hist_ratio_error.SetFillColor(zpj_col)
+            zpj_hist_ratio_error.SetLineWidth(0)
+            zpj_hist_ratio_error.SetMarkerSize(0)
 
-        # unify this?
-        dijet_cen_col = COMMON_STYLE_DICT['dijet_cen_color']
-        dijet_fwd_col = COMMON_STYLE_DICT['dijet_fwd_color']
-        zpj_col = COMMON_STYLE_DICT['zpj_color']
         m_size = 1
         lw = COMMON_STYLE_DICT['line_width']
         entries = []
@@ -393,18 +483,18 @@ class SummaryPlotter(object):
                 Contribution(dijet_central_hist_truth, label='#splitline{ Dijet (central)  }{ [%s]}' % (self.mc_label),
                              line_color=dijet_cen_col, line_width=lw, line_style=COMMON_STYLE_DICT['mc_line_style'],
                              marker_color=dijet_cen_col, marker_style=cu.Marker.get('circle', False), marker_size=0,
-                             subplot=dijet_central_hist),
+                             subplot=dijet_central_hist_no_errors),
                 Contribution(dijet_forward_hist_truth, label='#splitline{ Dijet (forward)  }{ [%s]}' % (self.mc_label),
                              line_color=dijet_fwd_col, line_width=lw, line_style=COMMON_STYLE_DICT['mc_line_style'],
                              marker_color=dijet_fwd_col, marker_style=cu.Marker.get('square', False), marker_size=0,
-                             subplot=dijet_forward_hist),
+                             subplot=dijet_forward_hist_no_errors),
             ])
         if do_zpj:
             entries.extend([
                 Contribution(zpj_hist_truth, label='#splitline{ Z+jet  }{ [%s]}' % (self.mc_label),
                              line_color=zpj_col, line_width=lw, line_style=COMMON_STYLE_DICT['mc_line_style'],
                              marker_color=zpj_col, marker_style=cu.Marker.get('triangleUp', False), marker_size=0,
-                             subplot=zpj_hist),
+                             subplot=zpj_hist_no_errors),
             ])
         # add alt MC
         if do_dijet:
@@ -412,18 +502,18 @@ class SummaryPlotter(object):
                 Contribution(dijet_central_hist_alt_truth, label='#splitline{ Dijet (central)  }{ [%s]}' % (self.alt_mc_label),
                              line_color=dijet_cen_col, line_width=lw, line_style=COMMON_STYLE_DICT['mc_alt_line_style'],
                              marker_color=dijet_cen_col, marker_style=cu.Marker.get('circle', False), marker_size=0,
-                             subplot=dijet_central_hist),
+                             subplot=dijet_central_hist_no_errors),
                 Contribution(dijet_forward_hist_alt_truth, label='#splitline{ Dijet (forward)  }{ [%s]}' % (self.alt_mc_label),
                              line_color=dijet_fwd_col, line_width=lw, line_style=COMMON_STYLE_DICT['mc_alt_line_style'],
                              marker_color=dijet_fwd_col, marker_style=cu.Marker.get('square', False), marker_size=0,
-                             subplot=dijet_forward_hist),
+                             subplot=dijet_forward_hist_no_errors),
             ])
         if do_zpj:
             entries.extend([
                 Contribution(zpj_hist_alt_truth, label='#splitline{ Z+jet}{ [%s]}' % (self.alt_mc_label),
                              line_color=zpj_col, line_width=lw, line_style=COMMON_STYLE_DICT['mc_alt_line_style'],
                              marker_color=zpj_col, marker_style=cu.Marker.get('triangleUp', False), marker_size=0,
-                             subplot=zpj_hist),
+                             subplot=zpj_hist_no_errors),
             ])
 
         angle_str = "RMS %s" % create_angle_label(angle, do_groomed)
@@ -464,9 +554,27 @@ class SummaryPlotter(object):
         plot.subplot_line_style = 1
         plot.y_padding_max_linear = 1.9
         # plot.default_canvas_size = (600, 800)
-        plot.plot("NOSTACK E1 X0", "NOSTACK E1")
+        subplot_draw_opts = "NOSTACK E1"
+        plot.plot("NOSTACK E1", subplot_draw_opts)
         # plot.get_modifier().GetYaxis().SetTitleOffset(plot.get_modifier().GetYaxis().GetTitleOffset()*1.1)
         plot.set_logx(do_more_labels=False)
+
+         # now draw the data error shaded area
+        # this is a bit hacky - basically draw them on the ratio pad,
+        # then redraw the existing hists & line to get them ontop
+        # note that we use "same" for all - this is to keep the original axes
+        # (we may want to rethink this later?)
+        plot.subplot_pad.cd()
+        draw_opt = "E2 SAME"
+        if do_dijet:
+            dijet_central_hist_ratio_error.Draw(draw_opt)
+            dijet_forward_hist_ratio_error.Draw(draw_opt)
+        if do_zpj:
+            zpj_hist_ratio_error.Draw(draw_opt)
+        plot.subplot_container.Draw("SAME" + subplot_draw_opts)
+        plot.subplot_line.Draw()
+        plot.canvas.cd()
+
         groomed_str = '_groomed' if do_groomed else ''
         plot.save("%s/dijet_zpj_rms_vs_pt_%s%s_%s.%s" % (output_dir, angle.var, groomed_str, jet_algo['name'], self.output_fmt))
 
