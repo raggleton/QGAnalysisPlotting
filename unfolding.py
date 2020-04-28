@@ -44,80 +44,6 @@ ROOT.TH1.AddDirectory(False)  # VERY IMPORTANT - somewhere, closing a TFile for 
 OUTPUT_FMT = "pdf"
 
 
-def calculate_chi2(hist_test, hist_truth, hist_covariance=None):
-    """Calculate the chi2 between 2 histograms, given a covariance matrix
-
-    = (hist1 - hist2)T * cov^-1 * (hist1 - hist2)
-
-    Parameters
-    ----------
-    hist1 : list, np.array
-        List of bin values for one histogram
-    hist2 : list, np.array
-        List of bin values for other histogram
-    cov : np.array
-        Covariance matrix
-
-    Returns
-    -------
-    float
-    """
-    diff = hist1 - hist2
-    diff = diff.reshape(len(diff), 1)
-    # for now, hack the inversion, since we know it's diagonal
-    inv_cov = np.zeros_like(cov)
-    # if True:
-    #     for i, e in enumerate(range(cov.shape[0])):
-    #         cov_entry = cov[i][i]
-    #         if cov_entry != 0:
-    #             inv_cov[i][i] = 1./cov_entry
-    #         else:
-    #             inv_cov[i][i] = 0
-    # else:
-    inv_cov = np.linalg.inv(cov)
-    # print('inv_cov', inv_cov)
-    part = np.dot(inv_cov, diff)
-    # print('part', part)
-    result = np.dot(diff.T, part)
-    # print('result', result)
-    return result[0][0]
-
-
-def create_hist_with_errors(hist, err_matrix):
-    hnew = hist.Clone(cu.get_unique_str())
-    nbins = hist.GetNbinsX()
-    for i in range(1, nbins+1):
-        err = math.sqrt(err_matrix.GetBinContent(i, i))
-        hnew.SetBinError(i, err)
-    return hnew
-
-
-def make_hist_from_diagonal_errors(h2d, do_sqrt=True):
-    nbins = h2d.GetNbinsX()
-    hnew = ROOT.TH1D("h_diag" + cu.get_unique_str(), "", nbins, 0, nbins)
-    for i in range(1, nbins+1):
-        err = h2d.GetBinContent(i, i)
-        if do_sqrt and err > 0:
-            err = math.sqrt(err)
-        hnew.SetBinError(i, err)
-    return hnew
-
-
-def update_hist_bin_content(h_orig, h_to_be_updated):
-    if h_orig.GetNbinsX() != h_to_be_updated.GetNbinsX():
-        raise RuntimeError("Need same # x bins, %d vs %s" % (h_orig.GetNbinsX(), h_to_be_updated.GetNbinsX()))
-    for i in range(0, h_orig.GetNbinsX()+2):
-        h_to_be_updated.SetBinContent(i, h_orig.GetBinContent(i))
-        # h_to_be_updated.SetBinError(i, h_orig.GetBinError(i))
-
-
-def update_hist_bin_error(h_orig, h_to_be_updated):
-    if h_orig.GetNbinsX() != h_to_be_updated.GetNbinsX():
-        raise RuntimeError("Need same # x bins, %d vs %s" % (h_orig.GetNbinsX(), h_to_be_updated.GetNbinsX()))
-    for i in range(0, h_orig.GetNbinsX()+2):
-        h_to_be_updated.SetBinError(i, h_orig.GetBinError(i))
-
-
 def rm_large_rel_error_bins(hist, relative_err_threshold=-1):
     """Reset bins in 2D hist to 0 if error/contents exceeds a certain value"""
     if relative_err_threshold < 0:
@@ -185,180 +111,6 @@ def draw_projection_comparison(h_orig, h_projection, title, xtitle, output_filen
     plot.legend.SetX2NDC(0.85)
     plot.save(output_filename)
 
-
-def check_entries(entries, message=""):
-    """Check that at least 1 Contribution has something in it"""
-    has_entries = [c.obj.GetEntries() > 0 for c in entries]
-    if not any(has_entries):
-        if message:
-            print("Skipping 0 entries (%s)" % (message))
-        else:
-            print("Skipping 0 entries")
-        return False
-    return True
-
-
-def calc_auto_xlim(entries):
-    """Figure out x axis range that includes all non-0 bins from all Contributions"""
-    if len(entries) == 0:
-        return None
-    if not isinstance(entries[0], Contribution):
-        raise TypeError("calc_auto_xlim: `entries` should be a list of Contributions")
-
-    x_min = 9999999999
-    x_max = -9999999999
-    for ent in entries:
-        obj = ent.obj
-        if not isinstance(obj, ROOT.TH1):
-            raise TypeError("Cannot handle obj in calc_auto_xlim")
-        xax = obj.GetXaxis()
-        nbins = obj.GetNbinsX()
-        found_min = False
-        for i in range(1, nbins+1):
-            val = obj.GetBinContent(i)
-            if not found_min:
-                # find the first non-empty bin
-                if val != 0:
-                    x_min = min(xax.GetBinLowEdge(i), x_min)
-                    found_min = True
-            else:
-                # find the first empty bin
-                if val == 0:
-                    x_max = max(xax.GetBinLowEdge(i+1), x_max)
-                    break
-    if x_max > x_min:
-        return (x_min, x_max)
-    else:
-        # default x max
-        return None
-        # return (x_min, xax.GetBinLowEdge(nbins+1))
-
-
-def plot_uncertainty_shifts(total_hist, stat_hist, syst_unfold_hist, systs_shifted, systs, output_filename, title, angle_str):
-    """Plot fractional uncertainty shift for a given pt bin
-
-    Systs shifted should be the shifted distributions, not the shifts themselves.
-    They are normalised to unity, as are total_hist and stat_hist.
-    After this, the fractional diff is calculated, i.e. for *normalised*
-    cross sections.
-
-    Parameters
-    ----------
-    total_hist : TH1
-        Distribution with total uncertainty.
-    stat_hist : TH1
-        Distribution with stat-only uncertainties.
-    syst_unfold_hist : TH1
-        Distribution with uncertainties = systematics from unfolding (not other systeamtics sources)
-    systs_shifted : list[TH1]
-        Unfolded distributions with 1-sigma shift from systematics.
-    systs : list[dict]
-        Dicts describing each syst
-    output_filename : str
-        Output plot filename
-    title : str
-        Title to put on plot
-    angle_str : str
-        Angle name for x axis
-
-    Returns
-    -------
-    None
-        If all hists are empty
-    """
-    entries = []
-    hists = []
-    total_hist_div_bin_width = qgp.normalise_hist_divide_bin_width(total_hist)
-    stat_hist_div_bin_width = qgp.normalise_hist_divide_bin_width(stat_hist)
-    syst_unfold_hist_div_bin_width = qgp.normalise_hist_divide_bin_width(syst_unfold_hist)
-    for h, syst_dict in zip(systs_shifted, systs):
-        # for each syst, normalise and divide by bin width,
-        # then subtract total hist, and divide by it
-        h_fraction = h.Clone()
-        h_fraction = qgp.normalise_hist_divide_bin_width(h_fraction)
-        h_fraction.Add(total_hist_div_bin_width, -1)
-        h_fraction.Divide(total_hist_div_bin_width)
-        hists.append(h_fraction)
-        # set to abs values
-        for i in range(1, h_fraction.GetNbinsX()+1):
-            h_fraction.SetBinContent(i, abs(h_fraction.GetBinContent(i)))
-        c = Contribution(h_fraction,
-                         label=syst_dict['label'],
-                         line_color=syst_dict['colour'],
-                         line_style=syst_dict.get('linestyle', 1),
-                         line_width=2,
-                         marker_size=0,
-                         marker_color=syst_dict['colour'],
-                         )
-        entries.append(c)
-
-    # Create total and stat error hists
-    h_stat = stat_hist_div_bin_width.Clone()
-    h_syst = syst_unfold_hist_div_bin_width.Clone()
-    h_total = total_hist_div_bin_width.Clone()
-    for i in range(1, h_stat.GetNbinsX()+1):
-        if total_hist_div_bin_width.GetBinContent(i) > 0:
-            h_stat.SetBinContent(i, stat_hist_div_bin_width.GetBinError(i) / total_hist_div_bin_width.GetBinContent(i))
-            h_syst.SetBinContent(i, syst_unfold_hist_div_bin_width.GetBinError(i) / total_hist_div_bin_width.GetBinContent(i))
-            h_total.SetBinContent(i, total_hist_div_bin_width.GetBinError(i) / total_hist_div_bin_width.GetBinContent(i))
-        else:
-            h_stat.SetBinContent(i, 0)
-            h_syst.SetBinContent(i, 0)
-            h_total.SetBinContent(i, 0)
-        h_stat.SetBinError(i, 0)
-        h_syst.SetBinError(i, 0)
-        h_total.SetBinError(i, 0)
-    c_stat = Contribution(h_stat,
-                         label="Input stats",
-                         line_color=ROOT.kRed,
-                         line_style=3,
-                         line_width=3,
-                         marker_size=0,
-                         marker_color=ROOT.kRed,
-                         )
-    entries.append(c_stat)
-    c_syst = Contribution(h_syst,
-                         label="Response matrix stats",
-                         line_color=ROOT.kGray+2,
-                         line_style=3,
-                         line_width=3,
-                         marker_size=0,
-                         marker_color=ROOT.kGray+2,
-                         )
-    entries.append(c_syst)
-    c_tot = Contribution(h_total,
-                         label="Total",
-                         line_color=ROOT.kBlack,
-                         line_style=1,
-                         line_width=3,
-                         marker_size=0,
-                         marker_color=ROOT.kBlack,
-                         )
-    entries.append(c_tot)
-
-    if not check_entries(entries, "systematic shifts"):
-        return
-    plot = Plot(entries,
-                what="hist",
-                title=title,
-                xlim=calc_auto_xlim(entries),
-                xtitle="Particle-level "+angle_str,
-                ytitle="| Fractional shift |")
-    plot.legend.SetX1(0.55)
-    plot.legend.SetY1(0.68)
-    plot.legend.SetX2(0.98)
-    plot.legend.SetY2(0.88)
-    plot.legend.SetNColumns(2)
-    plot.left_margin = 0.18
-    plot.y_padding_max_linear = 1.4
-    plot.plot("NOSTACK HIST")
-    plot.save(output_filename)
-
-    plot.y_padding_max_log = 50
-    plot.set_logy()
-    plot.get_modifier().SetMinimum(1E-4)
-    log_filename, ext = os.path.splitext(output_filename)
-    plot.save(log_filename+"_log"+ext)
 
 # To be able to export to XML, since getting std::ostream from python is impossible?
 my_binning_xml_code = """
@@ -614,12 +366,6 @@ if __name__ == "__main__":
         hist_mc_gen_pt = cu.get_from_tfile(orig_region['mc_tfile'], "%s/hist_pt_truth_%s" % (orig_region['dirname'], mc_hname_append))
         # hist_mc_gen_reco_map = cu.get_from_tfile(orig_region['mc_tfile'], "%s/tu_pt_GenReco_%s" % (orig_region['dirname'], mc_hname_append))
 
-        # Remake gen hist with physical bins & save to file
-        # all_pt_bins_gen = np.concatenate((pt_bin_edges_underflow_gen[:-1], pt_bin_edges_gen))
-        # hist_mc_gen_pt_physical = ROOT.TH1F("mc_gen_pt", ";p_{T}^{jet} [GeV];N", len(all_pt_bins_gen)-1, array('d', all_pt_bins_gen))
-        # update_hist_bin_content(h_orig=hist_mc_gen_pt, h_to_be_updated=hist_mc_gen_pt_physical)
-        # update_hist_bin_error(h_orig=hist_mc_gen_pt, h_to_be_updated=hist_mc_gen_pt_physical)
-
         # Do unfolding for each angle
         # ----------------------------------------------------------------------
         for angle in angles:
@@ -781,8 +527,9 @@ if __name__ == "__main__":
                 # And unfolded looks wacko
                 unfolder.SetEpsMatrix(1E-18)
 
-            eps_matrix = 1E-18
+            eps_matrix = 1E-45
             unfolder.SetEpsMatrix(eps_matrix)
+            print("Running with eps =", unfolder.GetEpsMatrix())
 
             # Set what is to be unfolded
             # ------------------------------------------------------------------
@@ -1219,15 +966,6 @@ if __name__ == "__main__":
 
             else:
                 unfolder.setup_normalised_experimental_systs()
-
-            # Get various error matrices
-            # ------------------------------------------------------------------
-
-            # hist1, err1 = cu.th1_to_arr(unfolded_1d)
-            # hist2, err2 = cu.th1_to_arr(hist_mc_gen)
-            # cov, cov_err = cu.th2_to_arr(ematrix_total)
-            # chi2 = calculate_chi2(hist1, hist2, cov)
-            # print("my chi2 =", chi2)
 
             # Draw big 1D distributions
             # ------------------------------------------------------------------
