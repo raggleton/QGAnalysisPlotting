@@ -2807,7 +2807,8 @@ class BigNormalised1DPlotter(object):
     #     plot.save("%s/folded_gen_1d_normalised_%s_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, self.setup.output_fmt))
 
 
-def do_all_big_1d_plots_per_region_angle(setup, hist_bin_chopper=None):
+def do_all_big_normalised_1d_plots_per_region_angle(setup, hist_bin_chopper=None):
+    """Do various big 1D plots collating all normalised distributions"""
     region = setup.region
     unfolder = region['unfolder']
     alt_unfolder = region.get('alt_unfolder', None)
@@ -2856,6 +2857,27 @@ def do_all_big_1d_plots_per_region_angle(setup, hist_bin_chopper=None):
     if has_pdf_systs:
         print("...doing pdf systs big 1D plots")
         big_plotter.plot_unfolded_pdf_systs()
+
+
+def do_all_big_absolute_1d_plots_per_region_angle(setup):
+    """Do various big absolute 1d plots"""
+    region = setup.region
+    unfolder = region['unfolder']
+    alt_unfolder = region.get('alt_unfolder', None)
+    alt_hist_truth = region.get('alt_hist_truth', None)
+    
+    has_exp_systs = len(region['experimental_systematics']) > 0
+    has_model_systs = len(region['model_systematics']) > 0
+    has_pdf_systs = len(region['pdf_systematics']) > 0
+
+    unfolder_plotter = MyUnfolderPlotter(unfolder, is_data=setup.has_data)
+
+    print("...doing standard big absolute1D plots")
+
+    title = "%s\n%s region, %s" % (setup.jet_algo, region['label'], setup.angle_str)
+    unfolder_plotter.draw_unfolded_1d(output_dir=setup.output_dir, 
+                                      append=setup.append, 
+                                      title=title)
 
 
 def get_bottom_line_stats(setup):
@@ -3033,6 +3055,8 @@ if __name__ == "__main__":
                           output_dir=angle_output_dir,
                           has_data=has_data)
 
+            hist_bin_chopper = this_region['unfolder'].hist_bin_chopper
+
             if any([args.doBinnedPlotsGenPt, args.doBinnedPlotsGenLambda, args.doBinnedPlotsRecoPt]):
                 print("...........................................................")
                 print(" Doing lots of plots per pt/lambda bin...")
@@ -3048,7 +3072,10 @@ if __name__ == "__main__":
                 print("...........................................................")
                 # Do a 1D summary plot, with all the normalised plots with bins divided by their width
                 # (unlike the standard plot from MyUnfolderPlotter, which is absolute)
-                do_all_big_1d_plots_per_region_angle(setup, hist_bin_chopper)
+                # do_all_big_normalised_1d_plots_per_region_angle(setup, hist_bin_chopper)
+
+                # Do standard 1D absolute plots
+                do_all_big_absolute_1d_plots_per_region_angle(setup)
 
             # all_chi2_stats.append(get_bottom_line_stats(setup))
 
