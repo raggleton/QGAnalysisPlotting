@@ -131,6 +131,15 @@ class SummaryPlotter(object):
             h.SetBinError(ind, err)
         return h
 
+    @staticmethod
+    def _generate_filename_prefix(do_dijet, do_zpj):
+        this_str = ""
+        if do_dijet:
+            this_str += "dijet_"
+        if do_zpj:
+            this_str += "zpj_"
+        return this_str
+
     def plot_dijet_zpj_means_vs_pt_all(self):
         """Plot mean vs pt for dijet (cen+fwd) & Z+jet on one plot,
         per angle, per jet algo, per groomed/ungroomed"""
@@ -358,11 +367,12 @@ class SummaryPlotter(object):
         plot.subplot_line.Draw()
         plot.canvas.cd()
 
+        prefix = self._generate_filename_prefix(do_dijet, do_zpj)
         groomed_str = '_groomed' if do_groomed else ''
-        plot.save("%s/dijet_zpj_means_vs_pt_%s%s_%s.%s" % (output_dir, angle.var, groomed_str, jet_algo['name'], self.output_fmt))
+        plot.save("%s/%smeans_vs_pt_%s%s_%s.%s" % (output_dir, prefix, angle.var, groomed_str, jet_algo['name'], self.output_fmt))
 
     def plot_dijet_zpj_rms_vs_pt_all(self):
-        """Plot mean vs pt for dijet (cen+fwd) & Z+jet on one plot,
+        """Plot RMS vs pt for dijet (cen+fwd) & Z+jet on one plot,
         per angle, per jet algo, per groomed/ungroomed"""
         print('plot_dijet_zpj_rms_vs_pt_all...')
         for jet_algo, angle, groomed in product(self.jet_algos, self.angles, [False, True]):
@@ -370,7 +380,7 @@ class SummaryPlotter(object):
             self.plot_dijet_zpj_rms_vs_pt_one_angle_one_jet(angle, jet_algo, do_groomed=groomed, output_dir='%s/plot_dijet_zpj_rms_vs_pt_all' % self.output_dir)
 
     def plot_dijet_rms_vs_pt_all(self):
-        """Plot mean vs pt for dijet (cen+fwd) on one plot,
+        """Plot RMS vs pt for dijet (cen+fwd) on one plot,
         per angle, per jet algo, per groomed/ungroomed"""
         print('plot_dijet_rms_vs_pt_all...')
         for jet_algo, angle, groomed in product(self.jet_algos, self.angles, [False, True]):
@@ -378,7 +388,7 @@ class SummaryPlotter(object):
             self.plot_dijet_zpj_rms_vs_pt_one_angle_one_jet(angle, jet_algo, do_groomed=groomed, output_dir='%s/plot_dijet_rms_vs_pt_all' % self.output_dir, do_zpj=False)
 
     def plot_zpj_rms_vs_pt_all(self):
-        """Plot mean vs pt for zpj on one plot,
+        """Plot RMS vs pt for zpj on one plot,
         per angle, per jet algo, per groomed/ungroomed"""
         print('plot_zpj_rms_vs_pt_all...')
         for jet_algo, angle, groomed in product(self.jet_algos, self.angles, [False, True]):
@@ -575,8 +585,153 @@ class SummaryPlotter(object):
         plot.subplot_line.Draw()
         plot.canvas.cd()
 
+        prefix = self._generate_filename_prefix(do_dijet, do_zpj)
         groomed_str = '_groomed' if do_groomed else ''
-        plot.save("%s/dijet_zpj_rms_vs_pt_%s%s_%s.%s" % (output_dir, angle.var, groomed_str, jet_algo['name'], self.output_fmt))
+        plot.save("%s/%srms_vs_pt_%s%s_%s.%s" % (output_dir, prefix, angle.var, groomed_str, jet_algo['name'], self.output_fmt))
+
+    def plot_dijet_zpj_delta_vs_pt_all(self):
+        """Plot delta vs pt for dijet (cen+fwd) & Z+jet on one plot,
+        per angle, per jet algo, per groomed/ungroomed"""
+        print('plot_dijet_zpj_delta_vs_pt_all...')
+        for jet_algo, angle, groomed in product(self.jet_algos, self.angles, [False, True]):
+            print("  ...doing", jet_algo['label'], angle.name, 'groomed' if groomed else 'ungroomed')
+            self.plot_dijet_zpj_delta_vs_pt_one_angle_one_jet(angle, jet_algo, do_groomed=groomed, output_dir='%s/plot_dijet_zpj_delta_vs_pt_all' % self.output_dir)
+
+    def plot_dijet_delta_vs_pt_all(self):
+        """Plot mean vs pt for dijet (cen+fwd) on one plot,
+        per angle, per jet algo, per groomed/ungroomed"""
+        print('plot_dijet_delta_vs_pt_all...')
+        for jet_algo, angle, groomed in product(self.jet_algos, self.angles, [False, True]):
+            print("  ...doing", jet_algo['label'], angle.name, 'groomed' if groomed else 'ungroomed')
+            self.plot_dijet_zpj_delta_vs_pt_one_angle_one_jet(angle, jet_algo, do_groomed=groomed, output_dir='%s/plot_dijet_delta_vs_pt_all' % self.output_dir, do_zpj=False)
+
+    def plot_zpj_delta_vs_pt_all(self):
+        """Plot mean vs pt for zpj on one plot,
+        per angle, per jet algo, per groomed/ungroomed"""
+        print('plot_zpj_delta_vs_pt_all...')
+        for jet_algo, angle, groomed in product(self.jet_algos, self.angles, [False, True]):
+            print("  ...doing", jet_algo['label'], angle.name, 'groomed' if groomed else 'ungroomed')
+            self.plot_dijet_zpj_delta_vs_pt_one_angle_one_jet(angle, jet_algo, do_groomed=groomed, output_dir='%s/plot_zpj_delta_vs_pt_all' % self.output_dir, do_dijet=False)
+
+    def plot_dijet_zpj_delta_vs_pt_one_angle_one_jet(self, angle, jet_algo, do_groomed, output_dir, do_zpj=True, do_dijet=True):
+        """Do plot of delta lambda vs pt, for the dijet cen+fwd and zpj regions, for a given angle/jet algo/grooming"""
+        df = self.df
+        mask = ((df['angle'] == angle.var) & (df['jet_algo'] == jet_algo['name']) & (df['isgroomed'] == do_groomed))
+        if not mask.any():
+            return
+
+        region_name = 'Dijet_central'
+        if do_groomed:
+            region_name += "_groomed"
+        dijet_central_data = df[mask & (df['region'] == region_name)]
+        dijet_central_hist_truth = self.data_to_hist(dijet_central_data['delta_truth'], dijet_central_data['delta_err_truth'], self.pt_bins_dijet)
+        dijet_central_hist_alt_truth = self.data_to_hist(dijet_central_data['delta_alt_truth'], dijet_central_data['delta_err_alt_truth'], self.pt_bins_dijet)
+
+        region_name = 'Dijet_forward'
+        if do_groomed:
+            region_name += "_groomed"
+        dijet_forward_data = df[mask & (df['region'] == region_name)]
+        dijet_forward_hist_truth = self.data_to_hist(dijet_forward_data['delta_truth'], dijet_forward_data['delta_err_truth'], self.pt_bins_dijet)
+        dijet_forward_hist_alt_truth = self.data_to_hist(dijet_forward_data['delta_alt_truth'], dijet_forward_data['delta_err_alt_truth'], self.pt_bins_dijet)
+
+        dijet_cen_col = COMMON_STYLE_DICT['dijet_cen_color']
+        dijet_fwd_col = COMMON_STYLE_DICT['dijet_fwd_color']
+        zpj_col = COMMON_STYLE_DICT['zpj_color']
+
+        if do_zpj:
+            region_name = 'ZPlusJets'
+            if do_groomed:
+                region_name += "_groomed"
+            zpj_data = df[mask & (df['region'] == region_name) & (df['pt_bin'] < (len(self.pt_bins_zpj)-3))]
+            zpj_hist_truth = self.data_to_hist(zpj_data['delta_truth'], zpj_data['delta_err_truth'], self.pt_bins_zpj[:-2])
+            zpj_hist_alt_truth = self.data_to_hist(zpj_data['delta_alt_truth'], zpj_data['delta_err_alt_truth'], self.pt_bins_zpj[:-2])
+
+        m_size = 1
+        lw = COMMON_STYLE_DICT['line_width']
+        entries = []
+        # Spaces in legend labels are important for padding
+        # Add nominal MC
+        if do_dijet:
+            entries.extend([
+                # TODO: make truth plotting optional, also plot alternate generators
+                Contribution(dijet_central_hist_truth, label='#splitline{ Dijet (central)  }{ [%s]}' % (self.mc_label),
+                             line_color=dijet_cen_col, line_width=lw, line_style=COMMON_STYLE_DICT['mc_line_style'],
+                             marker_color=dijet_cen_col, marker_style=cu.Marker.get('circle', False), marker_size=0,
+                             ),
+                Contribution(dijet_forward_hist_truth, label='#splitline{ Dijet (forward)  }{ [%s]}' % (self.mc_label),
+                             line_color=dijet_fwd_col, line_width=lw, line_style=COMMON_STYLE_DICT['mc_line_style'],
+                             marker_color=dijet_fwd_col, marker_style=cu.Marker.get('square', False), marker_size=0,
+                             ),
+            ])
+        if do_zpj:
+            entries.extend([
+                Contribution(zpj_hist_truth, label='#splitline{ Z+jet  }{ [%s]}' % (self.mc_label),
+                             line_color=zpj_col, line_width=lw, line_style=COMMON_STYLE_DICT['mc_line_style'],
+                             marker_color=zpj_col, marker_style=cu.Marker.get('triangleUp', False), marker_size=0,
+                             ),
+            ])
+        # add alt MC
+        if do_dijet:
+            entries.extend([
+                Contribution(dijet_central_hist_alt_truth, label='#splitline{ Dijet (central)  }{ [%s]}' % (self.alt_mc_label),
+                             line_color=dijet_cen_col, line_width=lw, line_style=COMMON_STYLE_DICT['mc_alt_line_style'],
+                             marker_color=dijet_cen_col, marker_style=cu.Marker.get('circle', False), marker_size=0,
+                             ),
+                Contribution(dijet_forward_hist_alt_truth, label='#splitline{ Dijet (forward)  }{ [%s]}' % (self.alt_mc_label),
+                             line_color=dijet_fwd_col, line_width=lw, line_style=COMMON_STYLE_DICT['mc_alt_line_style'],
+                             marker_color=dijet_fwd_col, marker_style=cu.Marker.get('square', False), marker_size=0,
+                             ),
+            ])
+        if do_zpj:
+            entries.extend([
+                Contribution(zpj_hist_alt_truth, label='#splitline{ Z+jet}{ [%s]}' % (self.alt_mc_label),
+                             line_color=zpj_col, line_width=lw, line_style=COMMON_STYLE_DICT['mc_alt_line_style'],
+                             marker_color=zpj_col, marker_style=cu.Marker.get('triangleUp', False), marker_size=0,
+                             ),
+            ])
+
+        angle_str = "#Delta, %s" % create_angle_label(angle, do_groomed)
+
+        h_max = max([c.obj.GetMaximum() for c in entries])
+        plot = Plot(entries,
+                    what='hist',
+                    xtitle=COMMON_STYLE_DICT['jet_pt_units_str'],
+                    ytitle=angle_str,
+                    title="%s jets" % (jet_algo['label']),
+                    # ylim=(0, h_max*1.75),
+                    has_data=self.has_data,
+                    is_preliminary=self.is_preliminary)
+        # plot.default_canvas_size = (700, 600)
+        plot.title_start_y = 0.85
+        plot.title_left_offset = 0.05
+        plot.title_font_size = 0.035
+        plot.legend.SetX1(0.55)
+        plot.legend.SetX2(0.78)
+        plot.legend.SetY1(0.68)
+        plot.legend.SetY2(0.92)
+        if len(entries) > 3:
+            plot.legend.SetNColumns(2)
+            plot.legend.SetX1(0.50)
+            plot.legend.SetY1(0.68)
+            plot.legend.SetX2(0.92)
+            plot.legend.SetY2(0.92)
+            # plot.legend.SetBorderSize(1)
+            # plot.legend.SetLineColor(ROOT.kBlack)
+            plot.title_left_offset = 0.02
+        if len(entries) > 6:
+            plot.legend.SetNColumns(3)
+        plot.legend.SetY2(0.87)
+        plot.left_margin = 0.16
+        plot.subplot_line_style = 1
+        plot.y_padding_max_linear = 1.9
+        # plot.default_canvas_size = (600, 800)
+        plot.plot("NOSTACK HIST E1")
+        # plot.get_modifier().GetYaxis().SetTitleOffset(plot.get_modifier().GetYaxis().GetTitleOffset()*1.1)
+        plot.set_logx(do_more_labels=False)
+
+        prefix = self._generate_filename_prefix(do_dijet, do_zpj)
+        groomed_str = '_groomed' if do_groomed else ''
+        plot.save("%s/%sdelta_vs_pt_%s%s_%s.%s" % (output_dir, prefix, angle.var, groomed_str, jet_algo['name'], self.output_fmt))
 
     @staticmethod
     def _make_hist_from_values(value_error_pairs, bins=None, title="", name="", bin_names=None):
@@ -1703,8 +1858,9 @@ if __name__ == "__main__":
     ak8_str = "AK8"
 
     if has_dijet:
-        # plotter.plot_dijet_means_vs_pt_all()
-        # plotter.plot_dijet_rms_vs_pt_all()
+        plotter.plot_dijet_means_vs_pt_all()
+        plotter.plot_dijet_rms_vs_pt_all()
+        plotter.plot_dijet_delta_vs_pt_all()
 
         pt_bins = qgc.PT_UNFOLD_DICT['signal_gen']
         low_pt_bin = np.where(pt_bins == low_pt)[0][0]
@@ -1753,6 +1909,7 @@ if __name__ == "__main__":
     if has_zpj:
         plotter.plot_zpj_means_vs_pt_all()
         plotter.plot_zpj_rms_vs_pt_all()
+        plotter.plot_zpj_delta_vs_pt_all()
 
         pt_bins = qgc.PT_UNFOLD_DICT['signal_zpj_gen']
         low_pt_bin = np.where(pt_bins == low_pt)[0][0]
