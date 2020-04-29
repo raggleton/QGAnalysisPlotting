@@ -767,6 +767,26 @@ class MyUnfolderPlotter(object):
         # draw pt bin lines
         plot.main_pad.cd()
         lines, text = self.draw_pt_binning_lines(plot, which='gen', axis='x', do_underflow=True)
+
+        # mark -ve bins - these shouldn't occur!
+        arrows = []
+        if do_unfolded:
+            plot.main_pad.cd()
+            for i in range(1, self.unfolder.unfolded.GetNbinsX()+1):
+                val = self.unfolder.unfolded.GetBinContent(i)
+                if val >= 0:
+                    continue
+                # arrow coords are in terms of axis values, not NDC
+                x_pos = self.unfolder.unfolded.GetXaxis().GetBinCenter(i)
+                y_low = ymin * 0.01  # for some reason plot.container.GetMinimum() doesn't work...
+                y_high = y_low * 50
+                arrow = ROOT.TArrow(x_pos, y_high, x_pos, y_low, 0.02)
+                arrow.SetLineColor(ROOT.kOrange-3)
+                arrow.SetLineColor(ROOT.kGreen+1)
+                arrow.SetLineWidth(2)
+                arrow.Draw()
+                arrows.append(arrow)  # to keep them plotted
+
         output_filename = "%s/unfolded_%s.%s" % (output_dir, append, self.output_fmt)
         plot.save(output_filename)
 
