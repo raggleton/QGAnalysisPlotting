@@ -2048,8 +2048,8 @@ def do_binned_plots_per_region_angle(setup, do_binned_gen_pt, do_binned_gen_lamb
     alt_unfolder = region.get('alt_unfolder', None)
     alt_hist_truth = region.get('alt_hist_mc_gen', None)
     alt_hist_reco = region.get('alt_hist_mc_reco', None)
-    alt_hist_reco_bg_subtracted = region.get('alt_hist_reco_bg_subtracted', None)
-    alt_hist_reco_bg_subtracted_gen_binning = region.get('alt_hist_reco_bg_subtracted_gen_binning', None)
+    alt_hist_reco_bg_subtracted = region.get('alt_hist_mc_reco_bg_subtracted', None)
+    alt_hist_reco_bg_subtracted_gen_binning = region.get('alt_hist_mc_reco_bg_subtracted_gen_binning', None)
 
     # hbc = HistBinChopper(generator_binning=unfolder.generator_binning.FindNode("generatordistribution"),
     #                      detector_binning=unfolder.detector_binning.FindNode("detectordistribution"))
