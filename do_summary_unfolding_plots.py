@@ -634,6 +634,14 @@ class SummaryPlotter(object):
         """Construct mean & RMS hists for plots
 
         See plot_mean_rms_bins_summary() docstring about `selections` arg.
+
+        Each of the mean/RMS returns are lists. Each item corresponds to the
+        respective item in the outer level of the `selections` arg.
+        (e.g. each angle).
+        Each of the hist list items is itself a list, corresponding to the hists
+        for [data, nominal MC, alt MC].
+
+        Also does styling of hists (as easier here)
         """
         mean_hists, rms_hists = [], []
         for selection_group in selections:
@@ -807,7 +815,7 @@ class SummaryPlotter(object):
         # Now draw the histograms
         for isel, (selection_group, mean_pad, mean_hist_group, rms_pad, rms_hist_group) \
             in enumerate(zip(selections, mean_pads, mean_hists,  rms_pads, rms_hists)):
-            mean_pad.cd()  # this causes a segfault for no reason?
+            mean_pad.cd()
 
             mean_hist_group[2].Draw("E1")
             mean_hist_group[1].Draw("E1 SAME")
@@ -1007,6 +1015,14 @@ def scale_ematrix_by_bin_widths(ematrix, widths):
 # --------------------------------
 # Functions to calculate mean
 # --------------------------------
+
+
+def check_hist_for_negatives(hist):
+    areas, widths, centers, errors = hist_to_arrays(hist)
+    for i, x in enumerate(areas, 1):
+        if x < 0:
+            raise ValueError("Area of bin %d = %f" % (i, x))
+
 
 def calc_hist_mean(bin_areas, bin_centers):
     """Calculate mean of hist from value arrays.
@@ -1255,16 +1271,31 @@ if __name__ == "__main__":
 
                         # Handle nominal MC hist -> metrics
                         mc_gen_hist_bin = unfolding_dict['truth_hists'][ibin]
+                        try:
+                            check_hist_for_negatives(mc_gen_hist_bin)
+                        except ValueError as e:
+                            print("-ve value for MC hist in pt bin", ibin, ":", bin_edge_low, "-", bin_edge_high)
+                            raise e
                         mc_gen_hist_bin_mean, mc_gen_hist_bin_mean_err = calc_hist_mean_and_uncorrelated_error(mc_gen_hist_bin)
                         mc_gen_hist_bin_rms, mc_gen_hist_bin_rms_err = calc_hist_rms_and_uncorrelated_error(mc_gen_hist_bin)
 
                         # Handle alt MC hist -> metrics
                         alt_mc_gen_hist_bin = unfolding_dict['alt_truth_hists'][ibin]
+                        try:
+                            check_hist_for_negatives(alt_mc_gen_hist_bin)
+                        except ValueError as e:
+                            print("-ve value for alt MC hist in pt bin", ibin, ":", bin_edge_low, "-", bin_edge_high)
+                            raise e
                         alt_mc_gen_hist_bin_mean, alt_mc_gen_hist_bin_mean_err = calc_hist_mean_and_uncorrelated_error(alt_mc_gen_hist_bin)
                         alt_mc_gen_hist_bin_rms, alt_mc_gen_hist_bin_rms_err = calc_hist_rms_and_uncorrelated_error(alt_mc_gen_hist_bin)
 
                         # Handle unfolded data hist -> metrics
                         unfolded_hist_bin_total_errors = unfolding_dict['unfolding_total_err_hists'][ibin]
+                        try:
+                            check_hist_for_negatives(unfolded_hist_bin_total_errors)
+                        except ValueError as e:
+                            print("-ve value for data hist in pt bin", ibin, ":", bin_edge_low, "-", bin_edge_high)
+                            raise e
                         ematrix = scale_ematrix_by_bin_widths(unfolding_dict['unfolding_total_ematrices'][ibin].values, get_bin_widths(unfolded_hist_bin_total_errors))
                         unfolded_hist_bin_total_errors_rms, unfolded_hist_bin_total_errors_rms_err = calc_hist_rms_and_correlated_error(unfolded_hist_bin_total_errors, ematrix)
                         unfolded_hist_bin_total_errors_mean, unfolded_hist_bin_total_errors_mean_err = calc_hist_mean_and_correlated_error(unfolded_hist_bin_total_errors, ematrix)
@@ -1325,8 +1356,8 @@ if __name__ == "__main__":
 
         with pd.HDFStore(args.h5input) as store:
             df = store['df']
-
         print(df.head())
+        print("# entries:", len(df.index))
 
     # Filter only regions/algos/angles in the dataframe, since it could have
     # been modified earlier
@@ -1356,6 +1387,9 @@ if __name__ == "__main__":
     # --------------------------------------------------------------------------
     # Do all the plotting
     # --------------------------------------------------------------------------
+    print("*"*120)
+    print("* Plotting time!")
+    print("*"*120)
     plotter = SummaryPlotter(jet_algos,
                              regions,
                              angles,
@@ -1408,11 +1442,6 @@ if __name__ == "__main__":
                     "#splitline{{{jet_str}, {pt_str}}}{{Charged-only}}".format(jet_str=ak8_str, pt_str=low_pt_str)),
                     # "#splitline{{#splitline{{{jet_str}}}{{{pt_str}}}}}{{Charged-only}}".format(jet_str=ak8_str, pt_str=low_pt_str)),
 
-                # FIXME need groomed ak4 instead
-                # ('jet_algo=="ak8puppi" & pt_bin==%d & ~isgroomed & region=="Dijet_central" & angle=="%s_charged"' % (low_pt_bin, angle.var),
-                    # "#splitline{{{jet_str}, {pt_str}}}{{Charged-only}}".format(jet_str=ak8_str, pt_str=low_pt_str)),
-                    # "#splitline{{#splitline{{{jet_str}}}{{{pt_str}}}}}{{Charged-only}}".format(jet_str=ak8_str, pt_str=low_pt_str)),
-
                 ('jet_algo=="ak4puppi" & pt_bin==%d & isgroomed  & region=="Dijet_central_groomed" & angle=="%s"' % (low_pt_bin, angle.var),
                     "#splitline{{{jet_str}, {pt_str}}}{{Groomed}}".format(jet_str=ak4_str, pt_str=low_pt_str)),
             ]
@@ -1453,11 +1482,6 @@ if __name__ == "__main__":
 
                 ('jet_algo=="ak8puppi" & pt_bin==%d & ~isgroomed & region=="ZPlusJets" & angle=="%s_charged"' % (low_pt_bin, angle.var),
                     "#splitline{{{jet_str}, {pt_str}}}{{Charged-only}}".format(jet_str=ak8_str, pt_str=low_pt_str)),
-                    # "#splitline{{#splitline{{{jet_str}}}{{{pt_str}}}}}{{Charged-only}}".format(jet_str=ak8_str, pt_str=low_pt_str)),
-
-                # FIXME need groomed ak4 instead
-                # ('jet_algo=="ak8puppi" & pt_bin==%d & ~isgroomed & region=="ZPlusJets" & angle=="%s_charged"' % (low_pt_bin, angle.var),
-                    # "#splitline{{{jet_str}, {pt_str}}}{{Charged-only}}".format(jet_str=ak8_str, pt_str=low_pt_str)),
                     # "#splitline{{#splitline{{{jet_str}}}{{{pt_str}}}}}{{Charged-only}}".format(jet_str=ak8_str, pt_str=low_pt_str)),
 
                 ('jet_algo=="ak4puppi" & pt_bin==%d & isgroomed  & region=="ZPlusJets_groomed" & angle=="%s"' % (low_pt_bin, angle.var),
