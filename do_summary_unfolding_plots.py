@@ -982,6 +982,246 @@ class SummaryPlotter(object):
         canvas.Update()
         canvas.SaveAs(output_file)
 
+
+    def construct_delta_hist_groups(self, selections):
+        """Construct delta hists for plots (nominal MC, & alt MC)
+
+        See plot_delta_bins_summary() docstring about `selections` arg.
+
+        Returns a list. Each item corresponds to the respective item in the
+        outer level of the `selections` arg. (e.g. each angle).
+
+        Each of the hist list items is itself a list, corresponding to the hists
+        for [nominal MC, alt MC].
+
+        Also does styling of hists (as easier here)
+        """
+        delta_hists = []
+        for selection_group in selections:
+
+            entries_nominal = []
+            entries_alt = []
+
+            bin_names = []
+
+            for query, label in selection_group['selections']:
+                # print(query)
+                results = self.df.query(query)
+                if len(results.index) != 1:
+                    print(query)
+                    print(results)
+                    raise ValueError("Got != 1 results, check query")
+
+                # if any([np.isnan(v) for v in [results['delta_truth'], results['delta_err_truth']]]):
+                #     raise ValueError("Got a nan in delta_truth, delta_err_truth")
+                # if any([np.isnan(v) for v in [results['delta_alt_truth'], results['delta_err_alt_truth']]]):
+                #     raise ValueError("Got a nan in delta_truth, delta_err_truth")
+                entries_nominal.append([results['delta_truth'], results['delta_err_truth']])
+                entries_alt.append([results['delta_alt_truth'], results['delta_err_alt_truth']])
+
+                bin_names.append(label)
+
+            hist_delta_nominal = self._make_hist_from_values(entries_nominal, bin_names=bin_names)
+            self._style_mc_hist(hist_delta_nominal)
+
+            hist_delta_alt = self._make_hist_from_values(entries_alt, bin_names=bin_names)
+            self._style_alt_mc_hist(hist_delta_alt)
+
+            delta_hists.append([hist_delta_nominal, hist_delta_alt])
+
+        return delta_hists
+
+
+    def plot_delta_bins_summary(self, selections, output_file):
+        """"""
+        # Get data for plots
+        delta_hists = self.construct_delta_hist_groups(selections)
+
+        gc_stash = [] # to stop stuff being deleted
+
+        # Setup canvas and pads
+        # Setup same dimension etc as mean & RMS plot?
+        canvas = ROOT.TCanvas("c_"+cu.get_unique_str(), "", 1200, 400)
+        canvas.SetBottomMargin(0.0)
+        canvas.SetTopMargin(0.0)
+        canvas.SetLeftMargin(0.0)
+        canvas.SetRightMargin(0.0)
+        canvas.cd()
+
+        # For each selection group, create a pad
+        pads = []
+        n_pads = len(selections)
+
+        # gap between right end of plots and edge of canvas, used for legend
+        right_margin = 0.12
+        # pad_left_titles_gap = 0.01 # gap between pad_left_titles and all plots
+        pad_to_pad_gap = 0.005  # gap between plot pad columns
+        # how far in from the left the first plotting pad starts. used for y axis title
+        left_margin = 0.04
+        # figure out width per pad - get total width available, then divide by number of pads
+        pad_width = (1 - left_margin - right_margin - (pad_to_pad_gap*(n_pads - 1))) / n_pads
+
+        pad_offset_bottom = 0.01 # spacing between bottom of RMS pad and canvas edge
+        pad_offset_top = 0.08  # spacing between top of mean pad and canvas edge - for CMS and lumi text
+
+        # per-pad margins: these determine where the hist axes lie,
+        # and are fractions of the **pad** width/height, not the global canvas
+        pad_right_margin = 0.02
+        pad_left_margin = 0.25
+
+        # bottom margin includes space for x axis labels
+        pad_bottom_margin = 0.49
+
+        # extra bit to add to the top margins of lower and upper pads
+        # to ensure y axis numbers don't get cut off
+        pad_top_margin = 0.012
+
+        for isel, selection_group in enumerate(selections):
+            canvas.cd()
+            pad_start_x = left_margin + (isel*pad_to_pad_gap) + (isel*pad_width)
+            pad_end_x = pad_start_x + pad_width
+            # Create pad
+            pad = ROOT.TPad(cu.get_unique_str(), "", pad_start_x, pad_offset_bottom, pad_end_x, 1-pad_offset_top)
+            ROOT.SetOwnership(pad, False)
+            pad.SetFillColor(isel+2)
+            pad.SetFillStyle(3004)
+            pad.SetFillStyle(4000)
+            pad.SetTopMargin(pad_top_margin)
+            pad.SetBottomMargin(pad_bottom_margin)
+            pad.SetRightMargin(pad_right_margin)
+            pad.SetLeftMargin(pad_left_margin)
+            pad.SetTicks(1, 1)
+            pad.Draw()
+            pads.append(pad)
+
+        # Now draw the histograms
+        for isel, (selection_group, pad, hist_group) in enumerate(zip(selections, pads, delta_hists)):
+            pad.cd()
+            hist_group[0].Draw("E1")
+            hist_group[1].Draw("E1 SAME")
+
+            draw_hist = hist_group[0]
+
+            xax = draw_hist.GetXaxis()
+            xax.CenterLabels()
+            xax.LabelsOption("v")
+
+            factor = 1.5
+            label_size_fudge = 1.6
+            label_offset_fudge = 4
+            tick_fudge = 4
+
+            xax.SetTickLength(xax.GetTickLength()*factor)
+            xax.SetLabelSize(xax.GetLabelSize()*factor*2)
+            xax.SetLabelOffset(xax.GetLabelOffset()*factor)
+
+            yax = draw_hist.GetYaxis()
+            yax.SetLabelSize(yax.GetLabelSize()*factor*label_size_fudge)
+            yax.SetLabelOffset(yax.GetLabelOffset()*factor*label_offset_fudge)
+            yax.SetTickLength(yax.GetTickLength()*factor*tick_fudge)  # extra bit of fudging, probably becasue pads are sligthly different sizes
+            n_divisions = 1005  # fewer big ticks so less chance of overlapping with lower plot
+            n_divisions = 510
+            yax.SetNdivisions(n_divisions)
+
+            # Set range using bin contents + error bars
+            y_up, y_down = self.calc_hists_max_min(hist_group)
+            y_range = y_up - y_down
+            down_padding = 0.2 * y_range
+            up_padding = 0.22 * y_range
+            draw_hist.SetMinimum(y_down - down_padding)
+            draw_hist.SetMaximum(y_up + up_padding)
+
+            # Draw variable name
+            var_latex = ROOT.TLatex()
+            var_latex.SetTextAlign(ROOT.kHAlignCenter + ROOT.kVAlignBottom)
+            var_latex.SetTextSize(0.1)
+            # var_latex.SetTextFont(42)
+            # these are relative to the RMS pad! not the canvas
+            # put in middle of the plot (if 0.5, woud look off-centre)
+            var_x = 0.5*(1-pad_right_margin-pad_left_margin) + pad_left_margin
+            var_y = 0.03  # do by eye
+            var_latex.DrawLatexNDC(var_x, var_y, selection_group['label'])
+            gc_stash.append(var_latex)
+
+        canvas.cd()
+
+        # Add legend
+        # Bit of a hack here - to get the fill hashing style the same as in the plots,
+        # we have to put it in a pad of the same size as a plotting pad
+        # This is because the hashing separation is scaled by the pad size
+        # So we can't just put the legend in the global canvas.
+        # We also can't modify the fill style of the legend entries (I tried, it does nothing)
+        leg_y_top = 0.93
+        leg_x_right = 1-0.0
+        leg_pad = ROOT.TPad("leg_pad_"+cu.get_unique_str(), "", leg_x_right-pads[0].GetAbsWNDC(), leg_y_top-pads[0].GetAbsHNDC(), leg_x_right, leg_y_top)
+        ROOT.SetOwnership(leg_pad, False)  # important! otherwise seg fault
+        # leg_pad.SetFillColor(ROOT.kYellow)
+        # leg_pad.SetFillStyle(3004)
+        leg_pad.SetFillStyle(4000)
+        leg_pad.SetLeftMargin(0)
+        leg_pad.SetRightMargin(0)
+        leg_pad.SetTopMargin(0)
+        leg_pad.SetBottomMargin(0)
+        leg_pad.Draw()
+        leg_pad.cd()
+        gc_stash.append(leg_pad)
+        leg = ROOT.TLegend(0.28, pads[0].GetBottomMargin(), 1, 1)
+        le_mc = leg.AddEntry(delta_hists[0][0], self.mc_label ,"L")
+        le_mc_alt = leg.AddEntry(delta_hists[0][1], self.alt_mc_label ,"L")
+        leg.SetTextSize(0.08)
+        leg.Draw()
+        canvas.cd()
+
+        # Add delta text
+        text_width = left_margin
+        text_x = (0.5 * left_margin) - (0.5*text_width)
+        # let ROOT center it, just make the box the height of the axis
+        text_y_end = 1 - pad_offset_top - (pad_top_margin*pads[0].GetAbsHNDC())
+        text_y = 1 - pad_offset_top - pads[0].GetAbsHNDC() + (pads[0].GetAbsHNDC()*pad_bottom_margin)
+        delta_text = ROOT.TPaveText(text_x, text_y, text_x+text_width, text_y_end, "NDC NB")
+        delta_text.SetFillStyle(0)
+        delta_text.SetBorderSize(0)
+        t_delta = delta_text.AddText("#Delta")
+        t_delta.SetTextAngle(90)
+        text_size = 0.06
+        t_delta.SetTextSize(text_size)
+        delta_text.Draw()
+
+        # Add CMS text
+        cms_latex = ROOT.TLatex()
+        cms_latex.SetTextAlign(ROOT.kHAlignLeft + ROOT.kVAlignBottom)
+        cms_latex.SetTextFont(42)
+        cms_latex.SetTextSize(0.05)
+        # Get the text sitting just above the axes of the mean plot
+        # Axes end inside the mean pad at (1-top_margin), but this has
+        # to be scaled to canvas NDC
+        # Then add a little extra spacing ontop to separate text from axes line
+        latex_height = 1 - pad_offset_top - (pads[0].GetAbsHNDC() * pads[0].GetTopMargin()) + 0.02
+
+        # Want it to start at the left edge of the first plot
+        start_x = left_margin + (pad_width*pad_left_margin)
+        # # start_x = 100
+        if self.is_preliminary:
+            if self.has_data:
+                cms_latex.DrawLatexNDC(start_x, latex_height, "#font[62]{CMS}#font[52]{ Preliminary}")
+            else:
+                cms_latex.DrawLatexNDC(start_x, latex_height, "#font[62]{CMS}#font[52]{ Preliminary Simulation}")
+        else:
+            if self.has_data:
+                cms_latex.DrawLatexNDC(start_x, latex_height, "#font[62]{CMS}")
+            else:
+                cms_latex.DrawLatexNDC(start_x, latex_height, "#font[62]{CMS}#font[52]{ Simulation}")
+        cms_latex.SetTextAlign(ROOT.kHAlignRight + ROOT.kVAlignBottom)
+        # Get the lumi text aligned to right edge of axes
+        # i.e. 1-pad_right_margin, but remember to scale by pad width
+        end_x = 1 - right_margin - (pads[0].GetAbsWNDC() * pad_right_margin)
+        end_x = 0.985  # to match legend
+        cms_latex.DrawLatexNDC(end_x, latex_height, " 35.9 fb^{-1} (13 TeV)")
+        gc_stash.append(cms_latex)
+
+        canvas.Update()
+        canvas.SaveAs(output_file)
+
 # ------------------------------------------------------------------------------
 # VARIOUS CALCULATION METHODS
 # ------------------------------------------------------------------------------
@@ -1137,6 +1377,48 @@ def calc_hist_rms_and_correlated_error(hist, ematrix):
     rms = calc_hist_rms(areas, centers)
     err = calc_hist_rms_correlated_error(areas, centers, ematrix)
     return float(rms), float(err)
+
+# --------------------------------
+# Functions to calculate delta
+# --------------------------------
+
+def calc_hist_delta_and_error(hist_a, ematrix_a, hist_b):
+    """Calculate delta between hists, along with its error
+
+    Defined as 0.5 * integral[ (a - b)^2 / (a+b) ]
+    """
+    areas_a, widths_a, centers_a, errors_a = hist_to_arrays(hist_a)
+    areas_b, widths_b, centers_b, errors_b = hist_to_arrays(hist_b)
+    delta = calc_hist_delta(areas_a, areas_b)
+    print("Delta", delta, areas_a, areas_b)
+    err = calc_hist_delta_correlated_error(areas_a, ematrix_a, areas_b, errors_b)
+    return float(delta), float(err)
+
+
+def calc_hist_delta(areas_a, areas_b):
+    # do I need bin areas or densities?
+    # I guess since by definition sum(area_a) = 1, areas are needed?!
+    integrand = np.divide(np.square(areas_a - areas_b), areas_a + areas_b)
+    delta = 0.5 * np.sum(integrand)
+    return delta
+
+
+delta_diff = jit(grad(calc_hist_delta, argnums=[0, 1]))
+
+def calc_hist_delta_uncorrelated_error(areas_a, errors_a, areas_b, errors_b):
+    pass
+
+
+def calc_hist_delta_correlated_error(areas_a, ematrix_a, areas_b, errors_b):
+    diffs_a, diffs_b = delta_diff(areas_a, areas_b)
+    # for the total, we need to do
+    # diffs_a * ematrix_a * diffs_a + diffs_b*errors_b*diffs_b,
+    # since the errors on a and b have no connections, we can get away with this.
+    err_a_sq = diffs_a.T @ ematrix_a @ diffs_a
+    err_b_sq = np.sum(np.square((diffs_a * errors_b)))
+    return np.sqrt(err_a_sq + err_b_sq)
+
+
 def unpack_slim_unfolding_root_file_uproot(input_tfile, region_name, angle_name, pt_bins):
     tdir = "%s/%s" % (region_name, angle_name)
     indices = range(len(pt_bins)-1)
@@ -1300,6 +1582,9 @@ if __name__ == "__main__":
                         unfolded_hist_bin_total_errors_rms, unfolded_hist_bin_total_errors_rms_err = calc_hist_rms_and_correlated_error(unfolded_hist_bin_total_errors, ematrix)
                         unfolded_hist_bin_total_errors_mean, unfolded_hist_bin_total_errors_mean_err = calc_hist_mean_and_correlated_error(unfolded_hist_bin_total_errors, ematrix)
 
+                        delta_nominal, delta_nominal_err = calc_hist_delta_and_error(unfolded_hist_bin_total_errors, ematrix, mc_gen_hist_bin)
+                        delta_alt, delta_alt_err = calc_hist_delta_and_error(unfolded_hist_bin_total_errors, ematrix, alt_mc_gen_hist_bin)
+
                         result_dict = {
                             'jet_algo': jet_algo['name'],
                             'region': this_region['name'], # TODO remove "_groomed"?
@@ -1324,6 +1609,12 @@ if __name__ == "__main__":
 
                             'rms_alt_truth': alt_mc_gen_hist_bin_rms,
                             'rms_err_alt_truth': alt_mc_gen_hist_bin_rms_err,
+
+                            'delta_truth': delta_nominal,
+                            'delta_err_truth': delta_nominal_err,
+
+                            'delta_alt_truth': delta_alt,
+                            'delta_err_alt_truth': delta_alt_err,
                         }
                         results_dicts.append(result_dict)
 
@@ -1383,6 +1674,7 @@ if __name__ == "__main__":
     # print("Plotting angles:", angles)
     charged_only_angles = [a for a in angles if "charged" in a.var]
     charged_and_neutral_angles = [a for a in angles if "charged" not in a.var]
+    charged_and_neutral_angles[0] = charged_and_neutral_angles[1]
 
     # --------------------------------------------------------------------------
     # Do all the plotting
@@ -1421,6 +1713,7 @@ if __name__ == "__main__":
         high_pt_bin = np.where(pt_bins == high_pt)[0][0]
         high_pt_str = "[%g, %g] GeV" % (high_pt, pt_bins[high_pt_bin+1])
 
+        # Create selection queries for mean/RMS/delta summary plots
         selections = []
         for angle in charged_and_neutral_angles:
             this_angle_str = "%s (%s)" % (angle.name, angle.lambda_str)
@@ -1452,9 +1745,14 @@ if __name__ == "__main__":
             output_file=os.path.join(args.outputDir, "dijet_mean_rms_summary.pdf")
         )
 
+        plotter.plot_delta_bins_summary(
+            selections=selections,
+            output_file=os.path.join(args.outputDir, "dijet_delta_summary.pdf")
+        )
+
     if has_zpj:
-        # plotter.plot_zpj_means_vs_pt_all()
-        # plotter.plot_zpj_rms_vs_pt_all()
+        plotter.plot_zpj_means_vs_pt_all()
+        plotter.plot_zpj_rms_vs_pt_all()
 
         pt_bins = qgc.PT_UNFOLD_DICT['signal_zpj_gen']
         low_pt_bin = np.where(pt_bins == low_pt)[0][0]
@@ -1494,6 +1792,10 @@ if __name__ == "__main__":
             output_file=os.path.join(args.outputDir, "zpj_mean_rms_summary.pdf")
         )
 
+        plotter.plot_delta_bins_summary(
+            selections=selections,
+            output_file=os.path.join(args.outputDir, "zpj_delta_summary.pdf")
+        )
 
     # if has_dijet and has_zpj:
     #     plotter.plot_dijet_zpj_means_vs_pt_all()
