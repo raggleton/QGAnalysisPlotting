@@ -698,7 +698,7 @@ class SummaryPlotter(object):
                     xtitle=COMMON_STYLE_DICT['jet_pt_units_str'],
                     ytitle=angle_str,
                     title="%s jets" % (jet_algo['label']),
-                    # ylim=(0, h_max*1.75),
+                    ylim=(0, h_max*1.75),
                     has_data=self.has_data,
                     is_preliminary=self.is_preliminary)
         # plot.default_canvas_size = (700, 600)
@@ -723,7 +723,8 @@ class SummaryPlotter(object):
         plot.legend.SetY2(0.87)
         plot.left_margin = 0.16
         plot.subplot_line_style = 1
-        plot.y_padding_max_linear = 1.9
+        # plot.y_padding_max_linear = 1.9
+        # plot.y_padding_min_linear = 20
         # plot.default_canvas_size = (600, 800)
         plot.plot("NOSTACK HIST E1")
         # plot.get_modifier().GetYaxis().SetTitleOffset(plot.get_modifier().GetYaxis().GetTitleOffset()*1.1)
@@ -976,7 +977,7 @@ class SummaryPlotter(object):
             mean_hist_group[1].Draw("E1 SAME")
             mean_hist_group[0].Draw("E1 SAME")
 
-            mean_draw_hist = mean_hist_group[2]
+            mean_draw_hist = mean_hist_group[-1]
             # remove x axis label
             xax = mean_draw_hist.GetXaxis()
             xax.SetLabelSize(0)
@@ -1009,7 +1010,7 @@ class SummaryPlotter(object):
             rms_hist_group[1].Draw("E1 SAME")
             rms_hist_group[0].Draw("E1 SAME")
 
-            rms_draw_hist = rms_hist_group[2]
+            rms_draw_hist = rms_hist_group[-1]
             xax = rms_draw_hist.GetXaxis()
             xax.CenterLabels()
             xax.LabelsOption("v")
@@ -1829,7 +1830,7 @@ if __name__ == "__main__":
     # print("Plotting angles:", angles)
     charged_only_angles = [a for a in angles if "charged" in a.var]
     charged_and_neutral_angles = [a for a in angles if "charged" not in a.var]
-    charged_and_neutral_angles[0] = charged_and_neutral_angles[1]
+    # charged_and_neutral_angles[0] = charged_and_neutral_angles[1]
 
     # --------------------------------------------------------------------------
     # Do all the plotting
