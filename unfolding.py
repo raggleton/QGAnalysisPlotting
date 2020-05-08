@@ -22,7 +22,6 @@ import ROOT
 from MyStyle import My_Style
 from comparator import Contribution, Plot
 My_Style.cd()
-ROOT.gErrorIgnoreLevel = ROOT.kWarning
 
 # my packages
 import common_utils as cu
@@ -35,6 +34,8 @@ from unfolding_config import get_dijet_config, get_zpj_config
 from do_unfolding_plots import Setup, do_binned_plots_per_region_angle, do_all_big_normalised_1d_plots_per_region_angle
 from unfolding_logistics import get_unfolding_argparser, get_unfolding_output_dir, sanitise_args
 
+ROOT.gErrorIgnoreLevel = ROOT.kWarning
+# ROOT.gErrorIgnoreLevel = ROOT.kInfo
 ROOT.PyConfig.IgnoreCommandLineOptions = True
 ROOT.gROOT.SetBatch(1)
 ROOT.TH1.SetDefaultSumw2()

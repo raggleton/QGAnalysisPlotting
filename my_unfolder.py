@@ -515,6 +515,11 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         self.backgrounds[name].Scale(scale)
         # Also save total input subtracted
         self.input_hist_bg_subtracted.Add(hist, -1*scale)
+        # sanity check that none end up < 0
+        for ix in range(1, self.input_hist_bg_subtracted.GetNbinsX()+1):
+            val = self.input_hist_bg_subtracted.GetBinContent(ix)
+            if val < 0:
+                raise ValueError("self.input_hist_bg_subtracted bin %d has contents <0: %g" % (ix, val))
         self.SubtractBackground(hist.Clone(), name, scale, scale_err)
 
     def subtract_background_gen_binning(self, hist, name, scale=1.0, scale_err=0.0):

@@ -20,7 +20,7 @@ import ROOT
 from MyStyle import My_Style
 from comparator import Contribution, Plot
 My_Style.cd()
-ROOT.gErrorIgnoreLevel = ROOT.kWarning
+ROOT.gErrorIgnoreLevel = ROOT.kError
 
 # my packages
 import common_utils as cu
@@ -89,7 +89,7 @@ class Setup(object):
         # self.particle_title = "Particle-level " + self.angle_str
         self.particle_title = self.angle_str
         self.detector_title = "Detector-level " + self.angle_str
-        self.pt_bin_normalised_differential_label = "#frac{1}{d#sigma/dp_{T}} #frac{d^{2}#sigma}{dp_{T} d%s}" % (angle.lambda_str)
+        self.pt_bin_normalised_differential_label = "#frac{1}{dN/dp_{T}} #frac{d^{2}N}{dp_{T} d%s}" % (angle.lambda_str)
         self.pt_bin_unnormalised_differential_label = "#frac{1}{dN/dp_{T}} #frac{d^{2}N}{dp_{T} d%s}" % (angle.lambda_str)  # FIXME
         self.pt_bin_unnormalised_differential_label = "N"
         self.lambda_bin_normalised_differential_label = "#frac{1}{d#sigma/d%s} #frac{d^{2}#sigma}{dp_{T} d%s}" % (angle.lambda_str, angle.lambda_str)
@@ -175,7 +175,7 @@ class GenPtBinnedPlotter(object):
             xtitle=self.setup.particle_title,
             has_data=self.setup.has_data,
             subplot_type='ratio',
-            subplot_title="Unfolded / Gen",
+            subplot_title="* / Gen",
             subplot_limits=(0, 2) if self.setup.has_data else (0.75, 1.25),
         )
         self.unfolder = unfolder
@@ -3080,7 +3080,9 @@ if __name__ == "__main__":
             # all_chi2_stats.append(get_bottom_line_stats(setup))
 
             # cleanup object, as it uses loads of memory
-            del unpickled_region
+            if (len(regions)*len(angles)) > 1:
+                print("...tidying up...")
+                del unpickled_region
 
     # df_stats = pd.DataFrame(all_chi2_stats)
     # df_stats['region'] = df_stats['region'].astype('category')
