@@ -430,15 +430,17 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         if "unfolded" not in self.hist_bin_chopper.objects:
             print("Cannot save unfolded binned as not in HistBinChopper")
             return
-
-        for ibin_pt in range(len(self.pt_bin_edges_gen[:-1])):
-            tfile.WriteTObject(self.hist_bin_chopper.get_pt_bin_normed_div_bin_width("unfolded_stat_err", ibin_pt, 'generator'), "unfolded_stat_err_norm_divBinWidth_%d" % (ibin_pt))
-            tfile.WriteTObject(self.hist_bin_chopper.get_pt_bin_normed_div_bin_width("unfolded", ibin_pt, 'generator'), "unfolded_norm_divBinWidth_%d" % (ibin_pt))
-            tfile.WriteTObject(self.hist_bin_chopper.get_pt_bin_normed_div_bin_width("hist_truth", ibin_pt, 'generator'), "hist_truth_norm_divBinWidth_%d" % (ibin_pt))
-            tfile.WriteTObject(self.hist_bin_chopper.get_pt_bin_normed_div_bin_width("alt_hist_truth", ibin_pt, 'generator'), "alt_hist_truth_norm_divBinWidth_%d" % (ibin_pt))
-            tfile.WriteTObject(self.hist_bin_chopper.get_pt_bin_normed_div_bin_width(self.stat_ematrix_name, ibin_pt, 'generator'), 'unfolded_stat_ematrix_norm_divBinWidth_%d' % (ibin_pt))
-            tfile.WriteTObject(self.hist_bin_chopper.get_pt_bin_normed_div_bin_width(self.rsp_ematrix_name, ibin_pt, 'generator'), 'unfolded_rsp_ematrix_norm_divBinWidth_%d' % (ibin_pt))
-            tfile.WriteTObject(self.hist_bin_chopper.get_pt_bin_normed_div_bin_width(self.total_ematrix_name, ibin_pt, 'generator'), 'unfolded_total_ematrix_norm_divBinWidth_%d' % (ibin_pt))
+        try:
+            for ibin_pt in range(len(self.pt_bin_edges_gen[:-1])):
+                tfile.WriteTObject(self.hist_bin_chopper.get_pt_bin_normed_div_bin_width("unfolded_stat_err", ibin_pt, 'generator'), "unfolded_stat_err_norm_divBinWidth_%d" % (ibin_pt))
+                tfile.WriteTObject(self.hist_bin_chopper.get_pt_bin_normed_div_bin_width("unfolded", ibin_pt, 'generator'), "unfolded_norm_divBinWidth_%d" % (ibin_pt))
+                tfile.WriteTObject(self.hist_bin_chopper.get_pt_bin_normed_div_bin_width("hist_truth", ibin_pt, 'generator'), "hist_truth_norm_divBinWidth_%d" % (ibin_pt))
+                tfile.WriteTObject(self.hist_bin_chopper.get_pt_bin_normed_div_bin_width("alt_hist_truth", ibin_pt, 'generator'), "alt_hist_truth_norm_divBinWidth_%d" % (ibin_pt))
+                tfile.WriteTObject(self.hist_bin_chopper.get_pt_bin_normed_div_bin_width(self.stat_ematrix_name, ibin_pt, 'generator'), 'unfolded_stat_ematrix_norm_divBinWidth_%d' % (ibin_pt))
+                tfile.WriteTObject(self.hist_bin_chopper.get_pt_bin_normed_div_bin_width(self.rsp_ematrix_name, ibin_pt, 'generator'), 'unfolded_rsp_ematrix_norm_divBinWidth_%d' % (ibin_pt))
+                tfile.WriteTObject(self.hist_bin_chopper.get_pt_bin_normed_div_bin_width(self.total_ematrix_name, ibin_pt, 'generator'), 'unfolded_total_ematrix_norm_divBinWidth_%d' % (ibin_pt))
+        except KeyError:
+            pass
 
     def __getstate__(self):
         # Copy the object's state from self.__dict__ which contains
