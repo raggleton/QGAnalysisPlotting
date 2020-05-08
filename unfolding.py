@@ -759,12 +759,6 @@ if __name__ == "__main__":
                                             distribution=unfolder.distribution,
                                             axisSteering=unfolder.axisSteering)
 
-                if is_herwig or is_pythia8:
-                    # SetEpsMatrix ensures rank properly calculated when inverting
-                    # Needed if you get message "rank of matrix E 55 expect 170"
-                    # And unfolded looks wacko
-                    unreg_unfolder.SetEpsMatrix(1E-18)
-
                 unreg_unfolder.SetEpsMatrix(eps_matrix)
 
                 # Do the unregularised unfolding to get an idea of bin contents

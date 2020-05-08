@@ -2124,7 +2124,7 @@ def do_binned_plots_per_region_angle(setup, do_binned_gen_pt, do_binned_gen_lamb
         lambda_pt_binned_plotter.plot_unfolded_unnormalised()
 
         if unfolder.tau > 0 and unreg_unfolder:
-            lambda_pt_binned_plotter.plot_unfolded_with_unreg_unnormalised(unreg_unfolder)
+            lambda_pt_binned_plotter.plot_unfolded_with_unreg_unnormalised()
 
         if alt_unfolder:
             lambda_pt_binned_plotter.plot_unfolded_with_alt_response_unnormalised(alt_unfolder=alt_unfolder)

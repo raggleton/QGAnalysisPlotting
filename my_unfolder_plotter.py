@@ -425,7 +425,7 @@ class MyUnfolderPlotter(object):
     def draw_L_matrix(self, output_dir='.', append="", title=""):
         """Draw L matrix used for regularisation"""
         Lmatrix = self.unfolder.GetL("hist_Lmatrix_%s" % (append), title)
-        self.set_french_flag_colour()
+        cu.set_french_flag_palette()
         # # Custom colour scheme - french flag colouring
         # NRGBs = 5
         # NCont = 256
@@ -473,7 +473,7 @@ class MyUnfolderPlotter(object):
         print("Lmatrix squared:", Lmatrix.GetNbinsX())
         print("Lmatrix squared:", Lmatrix.GetNbinsY())
         self.draw_2d_hist(Lmatrix, title=title, output_filename=output_filename,
-                          draw_values=False,
+                          draw_values=False, draw_bin_lines_x=True, draw_bin_lines_y=True,
                           xtitle="Generator bin", ytitle="Generator bin")
 
     def draw_Lx_minus_bias(self, output_dir='.', append="", title=""):
