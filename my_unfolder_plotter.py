@@ -1044,7 +1044,7 @@ class MyUnfolderPlotter(object):
                     subplot_limits=(0.75, 1.25),
                     has_data=self.is_data)
         plot.default_canvas_size = (800, 600)
-        print("Doing folded unfolded")
+        # print("Doing folded unfolded")
         plot.plot("NOSTACK HIST")
         plot.main_pad.SetLogy(1)
         # plot.set_logy(do_more_labels=False, override_check=True)

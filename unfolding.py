@@ -427,18 +427,21 @@ if __name__ == "__main__":
         # TODO!
         # ----------------------------------------------------------------------
         # hist_data_reco = cu.get_from_tfile(orig_region['data_tfile'], "%s/hist_pt_reco_all" % (orig_region['dirname']))
-        mc_hname_append = "split" if MC_SPLIT else "all"
-        if isinstance(orig_region['mc_tfile'], str):
-            orig_region['mc_tfile'] = cu.open_root_file(orig_region['mc_tfile'])
+        # mc_hname_append = "split" if MC_SPLIT else "all"
+        # if isinstance(orig_region['mc_tfile'], str):
+        #     orig_region['mc_tfile'] = cu.open_root_file(orig_region['mc_tfile'])
         # hist_mc_reco = cu.get_from_tfile(orig_region['mc_tfile'], "%s/hist_pt_reco_%s" % (orig_region['dirname'], mc_hname_append))
         # hist_mc_gen = cu.get_from_tfile(orig_region['mc_tfile'], "%s/hist_pt_truth_%s" % (orig_region['dirname'], mc_hname_append))
-        hist_mc_gen_pt = cu.get_from_tfile(orig_region['mc_tfile'], "%s/hist_pt_truth_%s" % (orig_region['dirname'], mc_hname_append))
+        # hist_mc_gen_pt = cu.get_from_tfile(orig_region['mc_tfile'], "%s/hist_pt_truth_%s" % (orig_region['dirname'], mc_hname_append))
         # hist_mc_gen_reco_map = cu.get_from_tfile(orig_region['mc_tfile'], "%s/tu_pt_GenReco_%s" % (orig_region['dirname'], mc_hname_append))
 
         # Do unfolding for each angle
         # ----------------------------------------------------------------------
         for angle in angles:
             region = copy(orig_region)  # make copy since we might modify it later, e.g. PDF, and want same start for each angle
+
+            if isinstance(region['mc_tfile'], str):
+                region['mc_tfile'] = cu.open_root_file(region['mc_tfile'])
 
             angle_prepend = "groomed " if "groomed" in region['name'] else ""
             append = "%s_%s" % (region['name'], angle.var)  # common str to put on filenames, etc. don't need angle_prepend as 'groomed' in region name
@@ -510,10 +513,10 @@ if __name__ == "__main__":
                 reco_1d_bg_subtracted = reco_1d.Clone()
                 reco_1d_bg_subtracted.Add(hist_fakes_reco, -1)
 
-                chosen_bin = 15
-                print("1D reco input without background subtraction:", reco_1d.GetBinContent(chosen_bin))
-                print("1D reco input with background subtraction:", reco_1d_bg_subtracted.GetBinContent(chosen_bin))
-                print("1D reco input fakes:", hist_fakes_reco.GetBinContent(chosen_bin))
+                # chosen_bin = 15
+                # print("1D reco input without background subtraction:", reco_1d.GetBinContent(chosen_bin))
+                # print("1D reco input with background subtraction:", reco_1d_bg_subtracted.GetBinContent(chosen_bin))
+                # print("1D reco input fakes:", hist_fakes_reco.GetBinContent(chosen_bin))
 
                 if not MC_INPUT:
                     hist_data_reco_bg_subtracted = hist_data_reco.Clone(hist_data_reco.GetName() + "_bgrSubtracted")
@@ -1121,11 +1124,11 @@ if __name__ == "__main__":
                                            xtitle="%s, Generator binning" % (angle_str),
                                            output_filename="%s/projection_gen_%s.%s" % (this_output_dir, append, OUTPUT_FMT))
 
-                print("projection reco #bins:", proj_reco.GetNbinsX())
-                print("response map # bins x:", unfolder.response_map.GetNbinsX())
-                print("response map # bins y:", unfolder.response_map.GetNbinsY())
+                # print("projection reco #bins:", proj_reco.GetNbinsX())
+                # print("response map # bins x:", unfolder.response_map.GetNbinsX())
+                # print("response map # bins y:", unfolder.response_map.GetNbinsY())
                 if SUBTRACT_FAKES:
-                    print("reco bg subtracted #bins:", hist_mc_reco_bg_subtracted.GetNbinsX())
+                    # print("reco bg subtracted #bins:", hist_mc_reco_bg_subtracted.GetNbinsX())
                     # Do the same but with backgrounds subtracted from the 1D
                     draw_projection_comparison(hist_mc_reco_bg_subtracted, proj_reco,
                                                title="%s\n%s region" % (jet_algo, region['label']),
@@ -2089,8 +2092,8 @@ if __name__ == "__main__":
             print("")
 
             print(">> Saving unfolder to ROOT file")
-            print(unfolder.hist_bin_chopper.objects)
-            print(unfolder.hist_bin_chopper._cache)
+            # print(unfolder.hist_bin_chopper.objects)
+            # print(unfolder.hist_bin_chopper._cache)
             unfolder.save_unfolded_binned_hists_to_tfile(this_slim_tdir)
 
             # test the pickle file by un-pickling it
@@ -2101,7 +2104,7 @@ if __name__ == "__main__":
             print("    ", data)
             print("")
             print("...data['unfolder'].hist_bin_chopper.objects:")
-            print("    ", data['unfolder'].hist_bin_chopper.objects)
+            # print("    ", data['unfolder'].hist_bin_chopper.objects)
 
             # ------------------------------------------------------------------
             # PLOT LOTS OF THINGS
