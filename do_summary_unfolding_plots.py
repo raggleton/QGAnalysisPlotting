@@ -1546,7 +1546,6 @@ def calc_hist_delta_and_error(hist_a, ematrix_a, hist_b):
     areas_a, widths_a, centers_a, errors_a = hist_to_arrays(hist_a)
     areas_b, widths_b, centers_b, errors_b = hist_to_arrays(hist_b)
     delta = calc_hist_delta(areas_a, areas_b)
-    print("Delta", delta, areas_a, areas_b)
     err = calc_hist_delta_correlated_error(areas_a, ematrix_a, areas_b, errors_b)
     return float(delta), float(err)
 
@@ -1554,8 +1553,9 @@ def calc_hist_delta_and_error(hist_a, ematrix_a, hist_b):
 def calc_hist_delta(areas_a, areas_b):
     # do I need bin areas or densities?
     # I guess since by definition sum(area_a) = 1, areas are needed?!
-    integrand = np.divide(np.square(areas_a - areas_b), areas_a + areas_b)
-    delta = 0.5 * np.sum(integrand)
+    integrand = np.true_divide(np.square(areas_a - areas_b), areas_a + areas_b)
+    # nan_to_num important as divide gives nans if both 0
+    delta = 0.5 * np.sum(np.nan_to_num(integrand))
     return delta
 
 
@@ -1567,11 +1567,15 @@ def calc_hist_delta_uncorrelated_error(areas_a, errors_a, areas_b, errors_b):
 
 def calc_hist_delta_correlated_error(areas_a, ematrix_a, areas_b, errors_b):
     diffs_a, diffs_b = delta_diff(areas_a, areas_b)
+    # need to do nan_to_num since the differential can return nan...
+    # not sure how to fix "properly" though
+    diffs_a = np.nan_to_num(diffs_a)
+    diffs_b = np.nan_to_num(diffs_b)
     # for the total, we need to do
     # diffs_a * ematrix_a * diffs_a + diffs_b*errors_b*diffs_b,
     # since the errors on a and b have no connections, we can get away with this.
     err_a_sq = diffs_a.T @ ematrix_a @ diffs_a
-    err_b_sq = np.sum(np.square((diffs_a * errors_b)))
+    err_b_sq = np.sum(np.square((diffs_b * errors_b)))
     return np.sqrt(err_a_sq + err_b_sq)
 
 
