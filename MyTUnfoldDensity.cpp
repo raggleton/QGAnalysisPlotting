@@ -140,8 +140,10 @@ public:
     inline const TMatrixDSparse *GetEinv(void) const { return TUnfoldDensity::GetEinv(); }
     /// matrix E, using internal bin counting
     inline const TMatrixDSparse *GetE(void) const { return TUnfoldDensity::GetE(); }
-    /// vector of the input data y
+    /// vector of the input data y (background-subtracted)
     inline const TMatrixD *GetY(void) const { return fY; }
+    /// returns the number of measurement bins
+    inline const Int_t GetNy(void) const { return TUnfoldDensity::GetNy(); }
     /// covariance matrix of the data y
     inline const TMatrixDSparse *GetVyy(void) const { return fVyy; }
     /// inverse of covariance matrix of the data y

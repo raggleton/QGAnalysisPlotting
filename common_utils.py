@@ -676,3 +676,23 @@ def same_floats(a, b, rel_tolerance=1E-5):
     diff = abs(a-b)
     return diff/max(abs(a), abs(b)) < rel_tolerance
 
+
+def print_tmatrixsparse(matrix, name="matrix"):
+    rows = matrix.GetRowIndexArray()
+    nrows = matrix.GetNrows()
+    cols = matrix.GetColIndexArray()
+    ncols = matrix.GetNcols()
+    data = matrix.GetMatrixArray()
+    for irow in range(nrows):
+        sIndex = rows[irow]
+        eIndex = rows[irow+1]
+        for index in range(sIndex, eIndex):
+            icol = cols[index]
+            val = data[index]
+            print("%s(%d,%d) = %.4e" % (name, irow+matrix.GetRowLwb(), icol+matrix.GetColLwb(), val))
+
+
+def remove_th1_errors(h):
+    for i in range(1, h.GetNbinsX()+1):
+        h.SetBinError(i, 0)
+

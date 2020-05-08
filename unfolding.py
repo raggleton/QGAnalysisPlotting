@@ -970,6 +970,95 @@ if __name__ == "__main__":
             # ------------------------------------------------------------------
             unfolder._post_process()
 
+            # Check things
+            # vyyinv_matrix = unfolder.GetVyyInv()
+            # cu.print_tmatrixsparse(vyyinv_matrix, "VyyInv")
+            # cu.print_tmatrixsparse(unfolder.GetVyy(), "Vyy")
+            vyyinv_ndarray = unfolder.get_vyy_inv_ndarray()
+            # vyy_ndarray = unfolder.get_vyy_ndarray()
+            # for i in range(vyyinv_ndarray.shape[0]):
+            #     if (vyy_ndarray[i,i] == 0): continue
+            #     if (vyyinv_ndarray[i, i] != 1./ vyy_ndarray[i, i]):
+            #         print ("BAD INVERSE: ", vyyinv_ndarray[i, i], 1./ vyy_ndarray[i,i ])
+
+            rsp_inv_ndarray = np.linalg.pinv(unfolder.probability_ndarray)
+            
+            y_ndarray = np.zeros(shape=(unfolder.GetNy(),1))           
+            y = unfolder.GetY()
+            for i in range(unfolder.GetNy()):
+                y_ndarray[i,0] = y(i, 0)
+            
+            # calculate my own result simple inversion
+            # nb this is really dodgy as non-square matrices don't have an inverse technically...
+            result = rsp_inv_ndarray @ y_ndarray
+            # print(result.shape)
+            result_hist = cu.ndarray_to_th1(result.T)
+
+            # calculate full non-regularised result
+            Einv = unfolder.probability_ndarray.T @ vyyinv_ndarray @ unfolder.probability_ndarray
+            E = np.linalg.pinv(Einv, rcond=1E-160)  # can't use .inv as singular matrix
+            rhs = unfolder.probability_ndarray.T @ vyyinv_ndarray @ y_ndarray
+            proper_x = E @ rhs
+            
+            E_hist = cu.ndarray_to_th2(E)
+            E_hist.SetTitle("E = (A^{T}V^{-1}_{yy}A)^{-1}")
+            canv = ROOT.TCanvas(cu.get_unique_str(), "", 800, 600)
+            E_hist.Draw("COLZ")
+            cu.set_french_flag_palette()
+            canv.SetRightMargin(0.2)
+            canv.SaveAs(os.path.join(this_output_dir, "E.pdf"))
+            canv.Clear()
+
+            E_inv_hist = cu.ndarray_to_th2(Einv)
+            E_inv_hist.SetTitle("E^{-1} = A^{T}V^{-1}_{yy}A")
+            E_inv_hist.Draw("COLZ")
+            ROOT.gStyle.SetPalette(ROOT.kBird)
+            canv.SetRightMargin(0.2)
+            canv.SetLogz()
+            E_inv_hist.SetMinimum(1E-10)
+            canv.SaveAs(os.path.join(this_output_dir, "E_inv.pdf"))
+            canv.Clear()
+
+            rhs_hist = cu.ndarray_to_th1(rhs.T)
+            canv.SetRightMargin(0.12)
+            rhs_hist.SetTitle("A^{T}V^{-1}_{yy}y;Generator bin;N")
+            rhs_hist.Draw("HIST")
+
+            canv.SaveAs(os.path.join(this_output_dir, "rhs.pdf"))
+
+            proper_x_hist = cu.ndarray_to_th1(proper_x.T)
+            
+            unfolded_hist = unfolder.get_output().Clone("bah")
+            cu.remove_th1_errors(unfolded_hist)
+            cu.remove_th1_errors(result_hist)
+            cu.remove_th1_errors(proper_x_hist)
+            print(proper_x.shape)
+
+            for i, x in enumerate(result[:,0]):
+                print(x, proper_x[i,0], unfolded_hist.GetBinContent(i+1), proper_x[i,0] / unfolded_hist.GetBinContent(i+1))
+
+            conts = [
+                Contribution(unfolded_hist, line_color=ROOT.kBlue, marker_color=ROOT.kBlue, label='TUnfold'),
+                # Contribution(result_hist, line_color=ROOT.kGreen, marker_color=ROOT.kGreen, label='Simple numpy inversion', subplot=unfolded_hist),
+                Contribution(proper_x_hist, line_color=ROOT.kRed, marker_color=ROOT.kRed, label='Full numpy inversion', subplot=unfolded_hist, line_style=2),
+            ]
+            title = "%s\n%s region, %s" % (jet_algo, region['label'], angle_str)
+            plot = Plot(conts, what='hist', 
+                        xtitle='Generator bin', 
+                        ytitle='N', 
+                        title=title,
+                        # ylim=(1E-3, 1E8),
+                        ylim=(-1E3, 1E4),
+                        subplot_type='ratio',
+                        subplot_limits=(0.5, 1.5),
+                        subplot_title="* / TUnfold")
+            plot.default_canvas_size = (800, 600)
+            plot.plot("HISTE NOSTACK")
+            plot.legend.SetY1NDC(0.8)
+            plot.legend.SetX1NDC(0.65)
+            plot.legend.SetX2NDC(0.9)
+            # plot.set_logy(do_more_labels=False)
+            plot.save(os.path.join(this_output_dir, 'tunfold_vs_numpy.pdf'))
             # Calculate experimental uncertainty shifts using results from another unfolding
             # ------------------------------------------------------------------
             ref_tfile_exp = None

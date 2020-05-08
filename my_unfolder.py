@@ -988,6 +988,14 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             self.vxx_inv_ndarray, _ = cu.th2_to_ndarray(self.get_vxx_inv_th2())
         return self.vxx_inv_ndarray
 
+    def get_vyy_ndarray(self):
+        """Get V_yy (ie input). Note done after BG-subtraction"""
+        if getattr(self, 'vyy_ndarray', None) is None:
+            if getattr(self, 'vyy_tmatrix', None) is None:
+                self.vyy_tmatrix = self.GetVyy()
+            self.vyy_ndarray = cu.tmatrixdsparse_to_ndarray(self.vyy_tmatrix)
+        return self.vyy_ndarray
+
     @staticmethod
     def calculate_singular_max_min(matrix):
         """Calculate max & min singular values condition number as per StatsComm guidelines
