@@ -1411,13 +1411,12 @@ def scale_ematrix_by_bin_widths(ematrix, widths):
 # --------------------------------
 # Functions to calculate mean
 # --------------------------------
-
-
 def check_hist_for_negatives(hist):
     areas, widths, centers, errors = hist_to_arrays(hist)
     for i, x in enumerate(areas, 1):
         if x < 0:
-            raise ValueError("Area of bin %d = %f" % (i, x))
+            print("WARNING:", hist.name, " has area of bin %d = %f" % (i, x))
+            # raise ValueError("Area of bin %d = %f" % (i, x))
 
 
 def calc_hist_mean(bin_areas, bin_centers):
@@ -1781,6 +1780,9 @@ if __name__ == "__main__":
                     # important to keep memory footprint small
                     # del unpickled_region
                     del this_region
+
+        if len(results_dicts) == 0:
+            raise ValueError("No entries to go into dataframe!")
 
         df = pd.DataFrame(results_dicts)
         df['jet_algo'] = df['jet_algo'].astype('category')
