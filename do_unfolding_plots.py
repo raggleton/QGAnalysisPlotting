@@ -2875,10 +2875,47 @@ def do_all_big_absolute_1d_plots_per_region_angle(setup):
     print("...doing standard big absolute1D plots")
 
     title = "%s\n%s region, %s" % (setup.jet_algo, region['label'], setup.angle_str)
-    unfolder_plotter.draw_unfolded_1d(output_dir=setup.output_dir, 
+    # put it in the over-arching directory as a quick check
+    unfolder_plotter.draw_unfolded_1d(output_dir=os.path.dirname(os.path.dirname(setup.output_dir)),
                                       append=setup.append, 
                                       title=title)
 
+    # reco using detector binning
+    unfolder_plotter.draw_detector_1d(do_reco_mc=True,
+                                      do_reco_data=setup.has_data,
+                                      output_dir=setup.output_dir,
+                                      append=setup.append,
+                                      title=title)
+
+    # same plot but with bg-subtracted reco (incl fakes)
+    unfolder_plotter.draw_detector_1d(do_reco_data_bg_sub=setup.has_data,
+                                      do_reco_bg=True,
+                                      do_reco_mc_bg_sub=True,
+                                      output_dir=setup.output_dir,
+                                      append='bg_fakes_subtracted_%s' % setup.append,
+                                      title=title)
+
+    # reco using gen binning
+    unfolder_plotter.draw_generator_1d(do_reco_data=setup.has_data,
+                                       do_reco_data_bg_sub=False,
+                                       do_reco_bg=False,
+                                       do_reco_mc=True,
+                                       do_reco_mc_bg_sub=False,
+                                       do_truth_mc=True,
+                                       output_dir=setup.output_dir,
+                                       append=setup.append,
+                                       title=title)
+
+    # same but with generator-binning
+    unfolder_plotter.draw_generator_1d(do_reco_data=False,
+                                       do_reco_data_bg_sub=setup.has_data,
+                                       do_reco_bg=True,
+                                       do_reco_mc=False,
+                                       do_reco_mc_bg_sub=True,
+                                       do_truth_mc=True,
+                                       output_dir=setup.output_dir,
+                                       append='bg_fakes_subtracted_%s' % setup.append,
+                                       title=title)
 
 def get_bottom_line_stats(setup):
     """Construct dict of bottom-line (i.e. chi2) stats for this region/angle combo"""
