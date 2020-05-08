@@ -140,6 +140,21 @@ class MyUnfolderPlotter(object):
         if equal_pos_neg_z:
             ROOT.gStyle.SetPalette(self.default_palette)
 
+    @staticmethod
+    def mark_zeros(hist, y_low, y_high, colour=ROOT.kGreen+1):
+        arrows = []
+        for i in range(1, hist.GetNbinsX()+1):
+            val = hist.GetBinContent(i)
+            if val >= 0:
+                continue
+            # arrow coords are in terms of axis values, not NDC
+            x_pos = hist.GetXaxis().GetBinCenter(i)
+            arrow = ROOT.TArrow(x_pos, y_high, x_pos, y_low, 0.02)
+            arrow.SetLineColor(colour)
+            arrow.SetLineWidth(2)
+            arrow.Draw()
+            arrows.append(arrow)  # to keep them plotted
+        return arrows
 
 
     def plot_bias_vector(self, output_dir='.', append="", title=""):
@@ -772,20 +787,7 @@ class MyUnfolderPlotter(object):
         arrows = []
         if do_unfolded:
             plot.main_pad.cd()
-            for i in range(1, self.unfolder.unfolded.GetNbinsX()+1):
-                val = self.unfolder.unfolded.GetBinContent(i)
-                if val >= 0:
-                    continue
-                # arrow coords are in terms of axis values, not NDC
-                x_pos = self.unfolder.unfolded.GetXaxis().GetBinCenter(i)
-                y_low = ymin * 0.01  # for some reason plot.container.GetMinimum() doesn't work...
-                y_high = y_low * 50
-                arrow = ROOT.TArrow(x_pos, y_high, x_pos, y_low, 0.02)
-                arrow.SetLineColor(ROOT.kOrange-3)
-                arrow.SetLineColor(ROOT.kGreen+1)
-                arrow.SetLineWidth(2)
-                arrow.Draw()
-                arrows.append(arrow)  # to keep them plotted
+            arrows = self.mark_zeros(self.unfolder.unfolded, ymin*0.01, ymin*50)
 
         output_filename = "%s/unfolded_%s.%s" % (output_dir, append, self.output_fmt)
         plot.save(output_filename)
@@ -890,6 +892,18 @@ class MyUnfolderPlotter(object):
           plot.legend.SetNColumns(2)
         if len(entries) > 50:
           plot.legend.SetNColumns(3)
+
+        arrows = []
+        plot.main_pad.cd()
+        if do_reco_data_bg_sub:
+            arrows.append(self.mark_zeros(reco_data_bg_sub, ymin*0.01, ymin*50))
+        if do_reco_mc_bg_sub:
+            arrows.append(self.mark_zeros(reco_mc_bg_sub, ymin*0.01, ymin*50))
+        if do_reco_data:
+            arrows.append(self.mark_zeros(reco_data, ymin*0.01, ymin*50))
+        if do_reco_mc:
+            arrows.append(self.mark_zeros(reco_mc, ymin*0.01, ymin*50))
+
         if append != "":
             append = "_" + append
         output_filename = "%s/detector_reco_binning%s.%s" % (output_dir, append, self.output_fmt)
@@ -992,6 +1006,18 @@ class MyUnfolderPlotter(object):
         plot.legend.SetY1NDC(0.77)
         plot.legend.SetX1NDC(0.65)
         plot.legend.SetX2NDC(0.88)
+
+        arrows = []
+        plot.main_pad.cd()
+        if do_reco_data_bg_sub:
+            arrows.append(self.mark_zeros(reco_data_bg_sub, ymin*0.01, ymin*50))
+        if do_reco_mc_bg_sub:
+            arrows.append(self.mark_zeros(reco_mc_bg_sub, ymin*0.01, ymin*50))
+        if do_reco_data:
+            arrows.append(self.mark_zeros(reco_data, ymin*0.01, ymin*50))
+        if do_reco_mc:
+            arrows.append(self.mark_zeros(reco_mc, ymin*0.01, ymin*50))
+        
         output_filename = "%s/detector_gen_binning_%s.%s" % (output_dir, append, self.output_fmt)
         plot.save(output_filename)
 
