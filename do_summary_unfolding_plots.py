@@ -1921,7 +1921,8 @@ if __name__ == "__main__":
         pt_bins = qgc.PT_UNFOLD_DICT['signal_zpj_gen']
         low_pt_bin = np.where(pt_bins == low_pt)[0][0]
         low_pt_str = "[%g, %g] GeV" % (low_pt, pt_bins[low_pt_bin+1])
-
+    
+        high_pt = 481
         high_pt_bin = np.where(pt_bins == high_pt)[0][0]
         high_pt_str = "[%g, %g] GeV" % (high_pt, pt_bins[high_pt_bin+1])
 
