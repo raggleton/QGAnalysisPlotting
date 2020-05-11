@@ -3054,6 +3054,9 @@ if __name__ == "__main__":
 
     all_chi2_stats = []
 
+    num_all_iterations = len(regions) * len(angles)
+    counter = 1
+    
     # Iterate through regions & variables
     for region in regions:
         region_dir = os.path.join(args.source, region['name'])
@@ -3064,8 +3067,9 @@ if __name__ == "__main__":
         for angle in angles:
             append = "%s_%s" % (region['name'], angle.var)  # common str to put on filenames, etc. don't need angle_prepend as 'groomed' in region name
             print("*"*120)
-            print("Algo/Region/Var: %s %s %s" % (jet_algo, region['name'], angle.var))
+            print("Algo/Region/Var: %s %s %s (%d/%d)" % (jet_algo, region['name'], angle.var, counter, num_all_iterations))
             print("*"*120)
+            counter += 1
 
             angle_output_dir = "%s/%s/%s" % (args.source, region['name'], angle.var)
             if not os.path.isdir(angle_output_dir):
