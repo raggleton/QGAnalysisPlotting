@@ -850,7 +850,7 @@ class SummaryPlotter(object):
 
         return mean_hists, rms_hists
 
-    def plot_mean_rms_bins_summary(self, selections, output_file):
+    def plot_mean_rms_bins_summary(self, selections, output_file, legend_header=None):
         """Make plot of mean & RMS for various selections, showing data, mc, alt mc
 
         `selections` is a multi-level list
@@ -1068,9 +1068,11 @@ class SummaryPlotter(object):
         leg_pad.cd()
         gc_stash.append(leg_pad)
         leg = ROOT.TLegend(0.28, mean_pads[0].GetBottomMargin(), 1, 1)
+        if legend_header:
+            leg.SetHeader(legend_header)
         leg.AddEntry(mean_hists[0][0], "Data" ,"EL")
-        le_mc = leg.AddEntry(mean_hists[0][1], self.mc_label ,"L")
-        le_mc_alt = leg.AddEntry(mean_hists[0][2], self.alt_mc_label ,"L")
+        leg.AddEntry(mean_hists[0][1], self.mc_label ,"L")
+        leg.AddEntry(mean_hists[0][2], self.alt_mc_label ,"L")
         leg.SetTextSize(0.08)
         leg.Draw()
 
@@ -1188,7 +1190,7 @@ class SummaryPlotter(object):
         return delta_hists
 
 
-    def plot_delta_bins_summary(self, selections, output_file):
+    def plot_delta_bins_summary(self, selections, output_file, legend_header=None):
         """"""
         # Get data for plots
         delta_hists = self.construct_delta_hist_groups(selections)
@@ -1322,8 +1324,10 @@ class SummaryPlotter(object):
         leg_pad.cd()
         gc_stash.append(leg_pad)
         leg = ROOT.TLegend(0.28, pads[0].GetBottomMargin(), 1, 1)
-        le_mc = leg.AddEntry(delta_hists[0][0], self.mc_label ,"L")
-        le_mc_alt = leg.AddEntry(delta_hists[0][1], self.alt_mc_label ,"L")
+        if legend_header:
+            leg.SetHeader(legend_header)
+        leg.AddEntry(delta_hists[0][0], self.mc_label ,"L")
+        leg.AddEntry(delta_hists[0][1], self.alt_mc_label ,"L")
         leg.SetTextSize(0.08)
         leg.Draw()
         canvas.cd()
@@ -1903,13 +1907,16 @@ if __name__ == "__main__":
             ]
             selections.append({'label': this_angle_str, 'selections': this_selection})
 
+        legend_header = "#splitline{Dijet (central)}{region}"
         plotter.plot_mean_rms_bins_summary(
             selections=selections,
+            legend_header=legend_header,
             output_file=os.path.join(args.outputDir, "dijet_mean_rms_summary.pdf")
         )
 
         plotter.plot_delta_bins_summary(
             selections=selections,
+            legend_header=legend_header,
             output_file=os.path.join(args.outputDir, "dijet_delta_summary.pdf")
         )
 
@@ -1952,13 +1959,17 @@ if __name__ == "__main__":
             ]
             selections.append({'label': this_angle_str, 'selections': this_selection})
 
+        legend_header = "Z+jet region"
+
         plotter.plot_mean_rms_bins_summary(
             selections=selections,
+            legend_header=legend_header,
             output_file=os.path.join(args.outputDir, "zpj_mean_rms_summary.pdf")
         )
 
         plotter.plot_delta_bins_summary(
             selections=selections,
+            legend_header=legend_header,
             output_file=os.path.join(args.outputDir, "zpj_delta_summary.pdf")
         )
 
