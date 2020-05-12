@@ -2814,7 +2814,7 @@ def do_all_big_normalised_1d_plots_per_region_angle(setup, hist_bin_chopper=None
     region = setup.region
     unfolder = region['unfolder']
     alt_unfolder = region.get('alt_unfolder', None)
-    alt_hist_truth = region.get('alt_hist_truth', None)
+    alt_hist_truth = region.get('alt_hist_mc_gen', None)
 
     if not hist_bin_chopper:
         # unreg_unfolder = unpack_dict['unreg_unfolder']
@@ -2865,8 +2865,8 @@ def do_all_big_absolute_1d_plots_per_region_angle(setup):
     region = setup.region
     unfolder = region['unfolder']
     alt_unfolder = region.get('alt_unfolder', None)
-    alt_hist_truth = region.get('alt_hist_truth', None)
-    
+    alt_hist_truth = region.get('alt_hist_mc_gen', None)
+
     has_exp_systs = len(region['experimental_systematics']) > 0
     has_model_systs = len(region['model_systematics']) > 0
     has_pdf_systs = len(region['pdf_systematics']) > 0
