@@ -20,7 +20,6 @@ import ROOT
 from MyStyle import My_Style
 from comparator import Contribution, Plot
 My_Style.cd()
-ROOT.gErrorIgnoreLevel = ROOT.kError
 
 # my packages
 import common_utils as cu
@@ -31,6 +30,7 @@ from my_unfolder_plotter import MyUnfolderPlotter
 from unfolding_config import get_dijet_config, get_zpj_config
 
 
+ROOT.gErrorIgnoreLevel = ROOT.kError
 ROOT.PyConfig.IgnoreCommandLineOptions = True
 ROOT.gROOT.SetBatch(1)
 ROOT.TH1.SetDefaultSumw2()
@@ -90,6 +90,7 @@ class Setup(object):
         self.particle_title = self.angle_str
         self.detector_title = "Detector-level " + self.angle_str
         self.pt_bin_normalised_differential_label = "#frac{1}{dN/dp_{T}} #frac{d^{2}N}{dp_{T} d%s}" % (angle.lambda_str)
+        self.pt_bin_normalised_differential_times_width_label = "#frac{d%s}{dN/dp_{T}} #frac{d^{2}N}{dp_{T} d%s}" % (angle.lambda_str, angle.lambda_str)
         self.pt_bin_unnormalised_differential_label = "#frac{1}{dN/dp_{T}} #frac{d^{2}N}{dp_{T} d%s}" % (angle.lambda_str)  # FIXME
         self.pt_bin_unnormalised_differential_label = "N"
         self.lambda_bin_normalised_differential_label = "#frac{1}{d#sigma/d%s} #frac{d^{2}#sigma}{dp_{T} d%s}" % (angle.lambda_str, angle.lambda_str)
@@ -2411,6 +2412,9 @@ class BigNormalised1DPlotter(object):
                         pt_str=self.setup.pt_var_str)
                )
 
+    def get_ytitle(self):
+        return self.setup.pt_bin_normalised_differential_label if self.plot_with_bin_widths else self.setup.pt_bin_normalised_differential_times_width_label
+
     def get_subplot_ylim(self):
         return (0, 2) if self.setup.has_data else (0.7, 1.3)
 
@@ -2441,7 +2445,7 @@ class BigNormalised1DPlotter(object):
                          **self.get_unfolded_stat_err_kwargs()),
         ]
         plot = Plot(entries, 'hist',
-                    ytitle=self.setup.pt_bin_normalised_differential_label,
+                    ytitle=self.get_ytitle(),
                     title=self.get_title(),
                     xtitle=self.setup.angle_str + ', per %s bin' % (self.setup.pt_var_str),
                     has_data=self.setup.has_data,
@@ -2477,7 +2481,7 @@ class BigNormalised1DPlotter(object):
         )
 
         plot = Plot(entries, 'hist',
-                    ytitle=self.setup.pt_bin_normalised_differential_label,
+                    ytitle=self.get_ytitle(),
                     title=self.get_title(),
                     xtitle=self.setup.angle_str + ', per %s bin' % (self.setup.pt_var_str),
                     has_data=self.setup.has_data,
@@ -2503,7 +2507,7 @@ class BigNormalised1DPlotter(object):
                          **self.get_unfolded_total_err_kwargs()),
         ]
         plot = Plot(entries, 'hist',
-                    ytitle=self.setup.pt_bin_normalised_differential_label,
+                    ytitle=self.get_ytitle(),
                     title=self.get_title(),
                     xtitle=self.setup.angle_str + ', per %s bin' % (self.setup.pt_var_str),
                     has_data=self.setup.has_data,
@@ -2531,7 +2535,7 @@ class BigNormalised1DPlotter(object):
                          **self.get_alt_unfolded_stat_err_kwargs(alt_unfolder)),
         ]
         plot = Plot(entries, 'hist',
-                    ytitle=self.setup.pt_bin_normalised_differential_label,
+                    ytitle=self.get_ytitle(),
                     title=self.get_title(),
                     xtitle=self.setup.angle_str + ', per %s bin' % (self.setup.pt_var_str),
                     has_data=self.setup.has_data,
@@ -2562,7 +2566,7 @@ class BigNormalised1DPlotter(object):
                          **self.get_alt_unfolded_stat_err_kwargs(alt_unfolder)),
         ]
         plot = Plot(entries, 'hist',
-                    ytitle=self.setup.pt_bin_normalised_differential_label,
+                    ytitle=self.get_ytitle(),
                     title=self.get_title(),
                     xtitle=self.setup.angle_str + ', per %s bin' % (self.setup.pt_var_str),
                     has_data=self.setup.has_data,
@@ -2598,7 +2602,7 @@ class BigNormalised1DPlotter(object):
                                         marker_color=syst_dict['colour'], marker_size=0,
                                         subplot=self.get_big_1d('unfolded_stat_err', 'generator')))
             plot = Plot(entries, 'hist',
-                        ytitle=self.setup.pt_bin_normalised_differential_label,
+                        ytitle=self.get_ytitle(),
                         title=self.get_title(),
                         xtitle=self.setup.angle_str + ', per %s bin' % (self.setup.pt_var_str),
                         has_data=self.setup.has_data,
@@ -2653,7 +2657,7 @@ class BigNormalised1DPlotter(object):
             ])
             all_entries.extend(entries[-2:])
             plot = Plot(entries, 'hist',
-                        ytitle=self.setup.pt_bin_normalised_differential_label,
+                        ytitle=self.get_ytitle(),
                         title=self.get_title(),
                         xtitle=self.setup.angle_str + ', per %s bin' % (self.setup.pt_var_str),
                         has_data=self.setup.has_data,
@@ -2668,7 +2672,7 @@ class BigNormalised1DPlotter(object):
             plot.save("%s/unfolded_1d_normalised_model_syst_%s_%s_divBinWidth.%s" % (self.setup.output_dir, syst_label_no_spaces, self.setup.append, self.setup.output_fmt))
 
         plot = Plot(all_entries, 'hist',
-                    ytitle=self.setup.pt_bin_normalised_differential_label,
+                    ytitle=self.get_ytitle(),
                     title=self.get_title(),
                     xtitle=self.setup.angle_str + ', per %s bin' % (self.setup.pt_var_str),
                     has_data=self.setup.has_data,
@@ -2718,7 +2722,7 @@ class BigNormalised1DPlotter(object):
             ])
 
         plot = Plot(all_entries, 'hist',
-                    ytitle=self.setup.pt_bin_normalised_differential_label,
+                    ytitle=self.get_ytitle(),
                     title=self.get_title(),
                     xtitle=self.setup.angle_str + ', per %s bin' % (self.setup.pt_var_str),
                     has_data=self.setup.has_data,
@@ -2764,7 +2768,7 @@ class BigNormalised1DPlotter(object):
                              subplot=self.get_big_1d(hbc_name_gen, 'generator')),
             ])
         plot = Plot(entries, 'hist',
-                    ytitle=self.setup.pt_bin_normalised_differential_label,
+                    ytitle=self.get_ytitle(),
                     title=self.get_title(),
                     xtitle=self.setup.angle_str + ', per %s bin' % (self.setup.pt_var_str),
                     has_data=self.setup.has_data,
@@ -2794,7 +2798,7 @@ class BigNormalised1DPlotter(object):
     #                      label="")
     #     ]
     #     plot = Plot(entries, 'hist',
-    #                 ytitle=self.setup.pt_bin_normalised_differential_label,
+    #                 ytitle=self.get_ytitle(),
     #                 title=self.get_title(),
     #                 xtitle=self.setup.angle_str + ', per %s bin' % (self.setup.pt_var_str),
     #                 has_data=self.setup.has_data,
