@@ -2255,7 +2255,7 @@ class BigNormalised1DPlotter(object):
             this_plot.legend.SetNColumns(2)
         # this_plot.left_margin = 0.16
         this_plot.left_margin = 0.1
-        this_plot.default_canvas_size = (900, 700)
+        this_plot.default_canvas_size = (1200, 700)
         this_plot.y_padding_max_linear = 2
         this_plot.subplot_pad_height = 0.4
         this_plot.subplot_line_style = 3
