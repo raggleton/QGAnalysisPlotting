@@ -545,10 +545,12 @@ class GenPtBinnedPlotter(object):
                                  line_color=pdf_dict['colour'], line_width=1, line_style=1,
                                  marker_color=pdf_dict['colour'], marker_size=0,
                                  subplot=pdf_gen_hist_bin),
-                    Contribution(pdf_gen_hist_bin,
-                                 label="Generator (%s)" % (pdf_label),
-                                 line_color=pdf_dict['colour'], line_width=1, line_style=2,
-                                 marker_color=pdf_dict['colour'], marker_size=0),
+                    # Disable this as the PDF variations are in the response matrix, not input being unfolded
+                    # so gen wiill always be the same!
+                    # Contribution(pdf_gen_hist_bin,
+                    #              label="Generator (%s)" % (pdf_label),
+                    #              line_color=pdf_dict['colour'], line_width=1, line_style=2,
+                    #              marker_color=pdf_dict['colour'], marker_size=0),
                 ])
 
             # add nominal ones last
@@ -2174,11 +2176,11 @@ class BigNormalised1DPlotter(object):
 
     # TODO: Some of this seems very overlapped with MyUnfolderPlotter...
 
-    def __init__(self, setup, hist_bin_chopper):
+    def __init__(self, setup, hist_bin_chopper, plot_with_bin_widths=False):
         self.setup = setup
         self.hist_bin_chopper = hist_bin_chopper
         self.unfolder = setup.region['unfolder']
-        self.plot_with_bin_widths = False # use bin widths in plot instead of uniform bin widths
+        self.plot_with_bin_widths = plot_with_bin_widths # use bin widths in plot instead of uniform bin widths
 
         self.pt_bin_edges_generator = self.unfolder.pt_bin_edges_gen
         self.num_pt_bins_generator = len(self.pt_bin_edges_generator)-1
@@ -2829,8 +2831,7 @@ def do_all_big_normalised_1d_plots_per_region_angle(setup, hist_bin_chopper=None
     has_model_systs = len(region['model_systematics']) > 0
     has_pdf_systs = len(region['pdf_systematics']) > 0
 
-    big_plotter = BigNormalised1DPlotter(setup, hist_bin_chopper)
-    big_plotter.plot_with_bin_widths = True
+    big_plotter = BigNormalised1DPlotter(setup, hist_bin_chopper, plot_with_bin_widths=True)
 
     print("...doing standard big 1D plots")
     big_plotter.plot_unfolded_truth()
@@ -2877,7 +2878,7 @@ def do_all_big_absolute_1d_plots_per_region_angle(setup):
     title = "%s\n%s region, %s" % (setup.jet_algo, region['label'], setup.angle_str)
     # put it in the over-arching directory as a quick check
     unfolder_plotter.draw_unfolded_1d(output_dir=os.path.dirname(os.path.dirname(setup.output_dir)),
-                                      append=setup.append, 
+                                      append=setup.append,
                                       title=title)
 
     # reco using detector binning
@@ -2997,9 +2998,12 @@ if __name__ == "__main__":
     parser.add_argument("--doBinnedPlotsRecoPt",
                         action='store_true',
                         help='Do lambda plots, binned by reco pT')
-    parser.add_argument("--doBig1DPlots",
+    parser.add_argument("--doBigNormed1DPlots",
                         action='store_true',
                         help='Do big 1D plots (all normalised hists on one big axis)')
+    parser.add_argument("--doBigAbs1DPlots",
+                        action='store_true',
+                        help='Do big absolute 1D plots')
 
     region_group = parser.add_argument_group('Region selection')
     region_group.add_argument("--doAllRegions",
@@ -3056,7 +3060,7 @@ if __name__ == "__main__":
 
     num_all_iterations = len(regions) * len(angles)
     counter = 1
-    
+
     # Iterate through regions & variables
     for region in regions:
         region_dir = os.path.join(args.source, region['name'])
@@ -3107,14 +3111,18 @@ if __name__ == "__main__":
                                                                     do_binned_gen_lambda=args.doBinnedPlotsGenLambda,
                                                                     do_binned_reco_pt=args.doBinnedPlotsRecoPt)
 
-            if args.doBig1DPlots:
+            if args.doBigNormed1DPlots:
                 print("...........................................................")
-                print(" Doing big 1D plots...")
+                print(" Doing big normed 1D plots...")
                 print("...........................................................")
                 # Do a 1D summary plot, with all the normalised plots with bins divided by their width
                 # (unlike the standard plot from MyUnfolderPlotter, which is absolute)
-                # do_all_big_normalised_1d_plots_per_region_angle(setup, hist_bin_chopper)
+                do_all_big_normalised_1d_plots_per_region_angle(setup, hist_bin_chopper)
 
+            if args.doBigAbs1DPlots:
+                print("...........................................................")
+                print(" Doing big absolute 1D plots...")
+                print("...........................................................")
                 # Do standard 1D absolute plots
                 do_all_big_absolute_1d_plots_per_region_angle(setup)
 
