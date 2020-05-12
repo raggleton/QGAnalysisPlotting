@@ -19,8 +19,12 @@ from array import array
 from math import sqrt
 from copy import copy
 
+# jax for differentiation to do errors
 import jax.numpy as np
 from jax import grad, jit
+from jax.config import config
+# to debug NaNS - turn off if not debugging as slow
+# config.update("jax_debug_nans", True)
 
 # make things blazingly fast
 import uproot
