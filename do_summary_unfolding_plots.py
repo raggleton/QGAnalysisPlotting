@@ -1863,7 +1863,8 @@ if __name__ == "__main__":
     # For summary plots
     low_pt = 120
     high_pt = 614
-    # high_pt = 800
+    high_pt = 800
+    high_pt = 1000
 
     ak4_str = "AK4"
     ak8_str = "AK8"
@@ -1929,7 +1930,7 @@ if __name__ == "__main__":
         low_pt_bin = np.where(pt_bins == low_pt)[0][0]
         low_pt_str = "[%g, %g] GeV" % (low_pt, pt_bins[low_pt_bin+1])
     
-        high_pt = 481
+        high_pt = 326
         high_pt_bin = np.where(pt_bins == high_pt)[0][0]
         high_pt_str = "[%g, %g] GeV" % (high_pt, pt_bins[high_pt_bin+1])
 
