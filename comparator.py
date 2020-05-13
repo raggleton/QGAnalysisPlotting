@@ -274,6 +274,8 @@ class Plot(object):
         self.y_padding_min_log = 0.1  # factor to auto extend y lower limit for log scale
         self.do_legend = legend
         self.legend = ROOT.TLegend(0.65, 0.6, 0.94, 0.85) if legend else None
+        if self.do_legend:
+            self._style_legend()
         self.reverse_legend = False
         self.do_extend = extend
         self.container = None
@@ -705,11 +707,9 @@ class Plot(object):
 
         # Plot legend
         if self.do_legend:
-            self._style_legend()
             self.canvas.cd()
             self.legend.Draw()
             self.main_pad.cd()
-
 
         # Add CMS text
         self.canvas.cd()
