@@ -14,7 +14,8 @@ import sys
 import argparse
 import math
 from array import array
-import pandas as pd
+# import pandas as pd
+from copy import copy
 
 import ROOT
 from MyStyle import My_Style
@@ -299,9 +300,46 @@ class GenPtBinnedPlotter(object):
             mc_gen_hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('hist_truth', **hbc_args)
             unfolded_hist_bin_stat_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded_stat_err', **hbc_args)
             unfolded_hist_bin_total_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded', **hbc_args)
+            unfolded_hist_bin_total_errors_marker_noerror = unfolded_hist_bin_total_errors.Clone()  # clone to avoid restyling the original as well
+
+            # Remove vertical error bar so we can see the stat unc
+            # Note that you CAN'T set it to 0, otherwise vertical lines connecting
+            # bins start being drawn. Instead set it to some super small value.
+            for i in range(1, unfolded_hist_bin_total_errors_marker_noerror.GetNbinsX()+1):
+                unfolded_hist_bin_total_errors_marker_noerror.SetBinError(i, 1E-100)
+
             alt_mc_gen_hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('alt_hist_truth', **hbc_args)
+            # unfolded_hist_bin_total_errors_marker_noerror.SetBarWidth(0)
+
+            data_entries = [
+                Contribution(unfolded_hist_bin_total_errors,
+                             label="Data (total unc.)",
+                             line_color=self.plot_colours['unfolded_total_colour'], line_width=self.line_width, line_style=1,
+                             marker_color=self.plot_colours['unfolded_total_colour'], marker_style=20, marker_size=0.75,
+                             subplot=mc_gen_hist_bin),
+                Contribution(unfolded_hist_bin_stat_errors,
+                             label="Data (stat. unc.)",
+                             line_color=self.plot_colours['unfolded_stat_colour'], line_width=self.line_width, line_style=1,
+                             marker_color=self.plot_colours['unfolded_stat_colour'], marker_style=20, marker_size=0.75,  # you need a non-0 marker to get the horizontal bars at the end of errors
+                             subplot=mc_gen_hist_bin, leg_draw_opt="E"),
+                # do data with black marker to get it on top
+                Contribution(unfolded_hist_bin_total_errors_marker_noerror,
+                             label=None,
+                             line_color=self.plot_colours['unfolded_total_colour'], line_width=self.line_width, line_style=1,
+                             marker_color=self.plot_colours['unfolded_total_colour'], marker_style=20, marker_size=0.75,
+                             subplot=mc_gen_hist_bin),
+            ]
+
+            data_entries_no_label = [copy(c) for c in data_entries]
+            for d in data_entries_no_label:
+                d.label = None
 
             entries = [
+                # Draw data first to get to top of legend
+                # FIXME: add some indexing option for legend construction?
+                *data_entries,
+                
+                # Draw MC
                 Contribution(mc_gen_hist_bin,
                              label=self.region['mc_label'],
                              line_color=self.plot_colours['gen_colour'], line_width=self.line_width,
@@ -311,19 +349,13 @@ class GenPtBinnedPlotter(object):
                              line_color=self.plot_colours['alt_gen_colour'], line_width=self.line_width, line_style=2,
                              marker_color=self.plot_colours['alt_gen_colour'], marker_size=0,
                              subplot=mc_gen_hist_bin),
-                Contribution(unfolded_hist_bin_total_errors,
-                             label="Data (total unc.)",
-                             line_color=self.plot_colours['unfolded_total_colour'], line_width=self.line_width, line_style=1,
-                             marker_color=self.plot_colours['unfolded_total_colour'], #marker_style=20, marker_size=0.75,
-                             subplot=mc_gen_hist_bin),
-                Contribution(unfolded_hist_bin_stat_errors,
-                             label="Data (stat. unc.)",
-                             line_color=self.plot_colours['unfolded_stat_colour'], line_width=self.line_width, line_style=1,
-                             marker_color=self.plot_colours['unfolded_stat_colour'], marker_style=20, marker_size=0.75,
-                             subplot=mc_gen_hist_bin),
+                
+                # Draw data again to put on top of MC
+                *data_entries_no_label
             ]
             if not self.check_entries(entries, "plot_unfolded_with_alt_truth_normalised_pt_bin %d" % (ibin)):
                 return
+            # ROOT.gStyle.SetErrorX(0)
             plot = Plot(entries,
                         ytitle=self.setup.pt_bin_normalised_differential_label,
                         title=self.get_pt_bin_title(bin_edge_low, bin_edge_high),
