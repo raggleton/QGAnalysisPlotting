@@ -15,6 +15,7 @@ Example usage:
 import os
 import numpy as np
 import ROOT
+from copy import copy
 import common_utils as cu
 from MyStyle import My_Style
 
@@ -261,7 +262,7 @@ class Plot(object):
         if ylim is not None:
             if len(ylim) != 2:
                 raise ValueError("ylim must have length 2 or be None")
-        self.ylim = ylim
+        self.ylim = copy(ylim)
         if isinstance(ylim, tuple):
             # convert non-mutable tuple to mutable list, since it might be modified
             # in _set_automatic_y_maximum/minimum()
