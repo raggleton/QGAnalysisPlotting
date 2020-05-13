@@ -99,7 +99,7 @@ class Contribution(object):
                  subplot_line_width=None, subplot_line_color=None, subplot_line_style=None,
                  subplot_fill_color=None, subplot_fill_style=None,
                  subplot_marker_size=None, subplot_marker_color=None, subplot_marker_style=None,
-                 fit_match_style=True,
+                 fit_match_style=True, leg_draw_opt=None,
                  normalise_hist=False, divide_bin_width=False,
                  rebin_hist=None, subplot=None):
         """
@@ -147,6 +147,7 @@ class Contribution(object):
         self.marker_size = marker_size
         self.marker_color = marker_color
         self.marker_style = marker_style
+        self.leg_draw_opt = leg_draw_opt
         self.subplot = subplot
 
         # subplot-specific stylings - inherit from main stylings by default
@@ -405,14 +406,18 @@ class Plot(object):
             iterable = self.contributions[::-1]
         for contrib in iterable:
             if self.do_legend and contrib.label != "" and contrib.label is not None:
-                opt = "LP"
-                if self.plot_what == "hist":
-                    if contrib.marker_size != 0:
-                        opt += "P"
-                    if contrib.line_width != 0:
-                        opt += "LE"
-                    if contrib.fill_style != 0:
-                        opt += "F"
+                # Use the Contribution's leg_draw_opt if possible, otherwise figure one out
+                opt = contrib.leg_draw_opt
+                if opt is None:
+                    opt = "LP"
+                    if self.plot_what == "hist":
+                        if contrib.marker_size != 0:
+                            opt += "P"
+                        if contrib.line_width != 0:
+                            opt += "LE"
+                        if contrib.fill_style != 0:
+                            opt += "F"
+
                 # Split text by newline \n
                 # Add an entry for each line
                 for i, substr in enumerate(contrib.label.split("\n")):
