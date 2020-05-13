@@ -2133,10 +2133,10 @@ def do_binned_plots_per_region_angle(setup, do_binned_gen_pt, do_binned_gen_lamb
             print("...doing model systs")
             gen_pt_binned_plotter.plot_unfolded_with_model_systs_normalised()
 
-        if has_pdf_systs:
-            print("...doing pdf systs")
-            gen_pt_binned_plotter.plot_unfolded_with_pdf_systs_normalised()
-            gen_pt_binned_plotter.plot_unfolded_with_pdf_systs_unnormalised()
+        # if has_pdf_systs:
+        #     print("...doing pdf systs")
+        #     gen_pt_binned_plotter.plot_unfolded_with_pdf_systs_normalised()
+        #     gen_pt_binned_plotter.plot_unfolded_with_pdf_systs_unnormalised()
 
         if has_exp_systs or has_model_systs or has_pdf_systs:
             print("...doing syst fraction")
@@ -2878,23 +2878,23 @@ def do_all_big_normalised_1d_plots_per_region_angle(setup, hist_bin_chopper=None
         print("...doing alt truth big 1D plots")
         big_plotter.plot_unfolded_truth_alt_truth()
 
-    if alt_unfolder:
-        print("...doing alt unfolder big 1D plots")
-        big_plotter.plot_unfolded_truth_alt_response(alt_unfolder)
-        big_plotter.plot_unfolded_truth_alt_response_truth(alt_unfolder)
+    # if alt_unfolder:
+    #     print("...doing alt unfolder big 1D plots")
+    #     big_plotter.plot_unfolded_truth_alt_response(alt_unfolder)
+    #     big_plotter.plot_unfolded_truth_alt_response_truth(alt_unfolder)
 
-    if has_exp_systs:
-        print("...doing exp systs big 1D plots")
-        big_plotter.plot_unfolded_exp_systs()
+    # if has_exp_systs:
+    #     print("...doing exp systs big 1D plots")
+    #     big_plotter.plot_unfolded_exp_systs()
 
-    if has_model_systs:
-        print("...doing model systs big 1D plots")
-        big_plotter.plot_unfolded_model_systs()
-        big_plotter.plot_unfolded_model_systs_only_scale()
+    # if has_model_systs:
+    #     print("...doing model systs big 1D plots")
+    #     big_plotter.plot_unfolded_model_systs()
+    #     big_plotter.plot_unfolded_model_systs_only_scale()
 
-    if has_pdf_systs:
-        print("...doing pdf systs big 1D plots")
-        big_plotter.plot_unfolded_pdf_systs()
+    # if has_pdf_systs:
+    #     print("...doing pdf systs big 1D plots")
+    #     big_plotter.plot_unfolded_pdf_systs()
 
 
 def do_all_big_absolute_1d_plots_per_region_angle(setup):
