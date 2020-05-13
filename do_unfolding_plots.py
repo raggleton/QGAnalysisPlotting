@@ -175,6 +175,7 @@ class GenPtBinnedPlotter(object):
             what="hist",
             xtitle=self.setup.particle_title,
             has_data=self.setup.has_data,
+            ylim=[0, None],
             subplot_type='ratio',
             subplot_title="* / %s" % (self.region['mc_label']),
             subplot_limits=(0, 2) if self.setup.has_data else (0.75, 1.25),
@@ -326,7 +327,6 @@ class GenPtBinnedPlotter(object):
             plot = Plot(entries,
                         ytitle=self.setup.pt_bin_normalised_differential_label,
                         title=self.get_pt_bin_title(bin_edge_low, bin_edge_high),
-                        ylim=[0, None],
                         **self.pt_bin_plot_args)
             self._modify_plot(plot)
             plot.plot("NOSTACK E1")
