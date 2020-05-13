@@ -225,7 +225,8 @@ class Plot(object):
         xlim: list
             Limits of x axis. If None then determines suitable limits.
         ylim: list
-            Limits of y axis. If None then determines suitable limits.
+            Limits of y axis. If either or both element is None,
+            then determines suitable limits.
         legend: bool
             Include legend on plot.
         extend: bool
@@ -253,8 +254,18 @@ class Plot(object):
         self.cms_text_font_size = 0.035
         self.xtitle = xtitle
         self.ytitle = ytitle
+        if xlim is not None:
+            if len(xlim) != 2:
+                raise ValueError("xlim must have length 2 or be None")
         self.xlim = xlim
+        if ylim is not None:
+            if len(ylim) != 2:
+                raise ValueError("ylim must have length 2 or be None")
         self.ylim = ylim
+        if isinstance(ylim, tuple):
+            # convert non-mutable tuple to mutable list, since it might be modified
+            # in _set_automatic_y_maximum/minimum()
+            self.ylim = list(ylim)
         self.y_padding_max_linear = 1.6  # factor to auto extend y upper limit for linear scale
         self.y_padding_max_log = 10  # factor to auto extend y upper limit for log scale
         self.y_padding_min_linear = 1.4 # factor to auto extend y lower limit for linear scale
@@ -472,6 +483,11 @@ class Plot(object):
         # update y limits since padding different for log/lin
         if not self.ylim:
             self._set_automatic_y_limits()
+        else:
+            if self.ylim[0] is None:
+                self._set_automatic_y_minimum()
+            if self.ylim[1] is None:
+                self._set_automatic_y_maximum()
 
     def set_logz(self, state=True):
         self.main_pad.SetLogz(int(state))
@@ -483,10 +499,9 @@ class Plot(object):
             modifier = self.container.Mod()
         return modifier
 
-    def _set_automatic_y_limits(self):
+    def _set_automatic_y_maximum(self):
         # urgh why doesnt THStack.GetMaximum() return the actual maximum
         # GetYaxis().GetXmax() doesnt work either
-
         modifier = self.get_modifier()
         ymax = max([o.GetMaximum() for o in self.contributions_objs])
 
@@ -496,8 +511,13 @@ class Plot(object):
             ymax *= self.y_padding_max_linear
         # print("Set y maximum automatically to", ymax)
         modifier.SetMaximum(ymax)
+        if self.ylim is None:
+            self.ylim = [None, None]
+        self.ylim[1] = ymax
 
+    def _set_automatic_y_minimum(self):
         # this is tricky... how to handle various cases like -ve, ignoring 0s
+        modifier = self.get_modifier()
         if isinstance(self.contributions_objs[0], ROOT.TH1):
             ymin = min([o.GetMinimum() for o in self.contributions_objs])
             if ymin >= 0:
@@ -522,6 +542,13 @@ class Plot(object):
 
         # print("Set y minimum automatically to", ymin)
         modifier.SetMinimum(ymin)
+        if self.ylim is None:
+            self.ylim = [None, None]
+        self.ylim[0] = ymin
+
+    def _set_automatic_y_limits(self):
+        self._set_automatic_y_minimum()
+        self._set_automatic_y_maximum()
 
     def plot(self, draw_opts=None, subplot_draw_opts=None):
         """Make the plot.
@@ -645,16 +672,25 @@ class Plot(object):
                 modifier.GetXaxis().SetLimits(*self.xlim)
             else:
                 modifier.GetXaxis().SetRangeUser(*self.xlim)
-        if self.ylim and all([x is not None for x in self.ylim]):
-            # dont use the SetLimits for graphs, that doesnt work properly.
-            # no idea, ROOT is fucking insane
-            modifier.GetYaxis().SetRangeUser(*self.ylim)
-            modifier.SetMinimum(self.ylim[0])  # use this, not SetRangeUser()
-            modifier.SetMaximum(self.ylim[1])
-        else:
-            # add some padding to the y limits
+
+        if not self.ylim:
             self.canvas.Update()
             self._set_automatic_y_limits()
+        else:
+            if self.ylim[0] is None:
+                self._set_automatic_y_minimum()
+            else:
+                modifier.SetMinimum(self.ylim[0])  # use this, not SetRangeUser()
+
+            if self.ylim[1] is None:
+                self._set_automatic_y_maximum()
+            else:
+                modifier.SetMaximum(self.ylim[1])
+
+            # dont use the SetLimits for graphs, that doesnt work properly.
+            # no idea, ROOT is fucking insane
+            # modifier.GetYaxis().SetRangeUser(*self.ylim)
+
 
         # Draw it again to update
         if self.plot_what == "graph":
