@@ -188,7 +188,7 @@ class GenPtBinnedPlotter(object):
         this_plot.legend.SetX1(0.6)
         this_plot.legend.SetY1(0.68)
         this_plot.legend.SetX2(0.98)
-        this_plot.legend.SetY2(0.9)
+        this_plot.legend.SetY2(0.88)
         this_plot.left_margin = 0.16
 
     @staticmethod
