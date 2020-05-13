@@ -441,6 +441,7 @@ class Plot(object):
 
         yax = container.GetYaxis()
         yax.SetLabelSize(yax.GetLabelSize()/factor)
+        yax.SetLabelOffset(yax.GetLabelOffset()/factor)
         yax.SetTitleSize(yax.GetTitleSize()/factor)
         # magic numbers: 0.1 is the default margin, but scaling against that gives too much, so we knock it down by a bit
         yax.SetTitleOffset(yax.GetTitleOffset()*factor*(0.7*self.left_margin/0.1))
@@ -745,7 +746,10 @@ class Plot(object):
 
         # Do subplot
         if self.subplot_type:
-            self._rescale_plot_labels(modifier, 1-self.subplot_pad_height)
+            self.main_pad.cd()
+            self._rescale_plot_labels(modifier, self.main_pad.GetAbsHNDC())  # use actual height since add in fudges
+            yax = modifier.GetYaxis()
+            yax.SetLabelOffset(2*yax.GetLabelOffset())  # manual fudge since _rescale_plot_labels doesn't handle it properly
 
             # Get rid of main plot x axis labels
             modifier.GetHistogram().GetXaxis().SetLabelSize(0)
@@ -813,7 +817,7 @@ class Plot(object):
                 self.subplot_line.Draw()
 
             # Some resizing of subplot things
-            self._rescale_plot_labels(self.subplot_container, self.subplot_pad_height)
+            self._rescale_plot_labels(self.subplot_container, self.subplot_pad.GetAbsHNDC())  # use actual height since add in fudges
             self.subplot_container.GetXaxis().SetTitleOffset(self.subplot_container.GetXaxis().GetTitleOffset()*3)
             self.subplot_container.GetYaxis().SetNdivisions(505)
 
