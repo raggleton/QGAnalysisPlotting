@@ -298,70 +298,136 @@ class GenPtBinnedPlotter(object):
         for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
             hbc_args = dict(ind=ibin, binning_scheme='generator')
             mc_gen_hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('hist_truth', **hbc_args)
+            alt_mc_gen_hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('alt_hist_truth', **hbc_args)
             unfolded_hist_bin_stat_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded_stat_err', **hbc_args)
             unfolded_hist_bin_total_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded', **hbc_args)
-            unfolded_hist_bin_total_errors_marker_noerror = unfolded_hist_bin_total_errors.Clone()  # clone to avoid restyling the original as well
 
-            # Remove vertical error bar so we can see the stat unc
+            # Create copy of data to go on top of stat unc,
+            # but remove vertical error bar so we can see the stat unc
             # Note that you CAN'T set it to 0, otherwise vertical lines connecting
             # bins start being drawn. Instead set it to some super small value.
+            unfolded_hist_bin_total_errors_marker_noerror = unfolded_hist_bin_total_errors.Clone()  # clone to avoid restyling the original as well
             for i in range(1, unfolded_hist_bin_total_errors_marker_noerror.GetNbinsX()+1):
                 unfolded_hist_bin_total_errors_marker_noerror.SetBinError(i, 1E-100)
-
-            alt_mc_gen_hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('alt_hist_truth', **hbc_args)
-            # unfolded_hist_bin_total_errors_marker_noerror.SetBarWidth(0)
 
             data_entries = [
                 Contribution(unfolded_hist_bin_total_errors,
                              label="Data (total unc.)",
                              line_color=self.plot_colours['unfolded_total_colour'], line_width=self.line_width, line_style=1,
                              marker_color=self.plot_colours['unfolded_total_colour'], marker_style=20, marker_size=0.75,
-                             subplot=mc_gen_hist_bin),
+                             subplot=None),
                 Contribution(unfolded_hist_bin_stat_errors,
                              label="Data (stat. unc.)",
                              line_color=self.plot_colours['unfolded_stat_colour'], line_width=self.line_width, line_style=1,
                              marker_color=self.plot_colours['unfolded_stat_colour'], marker_style=20, marker_size=0.75,  # you need a non-0 marker to get the horizontal bars at the end of errors
-                             subplot=mc_gen_hist_bin, leg_draw_opt="E"),
+                             subplot=None, leg_draw_opt="E1"), # no "L" in leg_draw_opt as we don't want horizontal bar
                 # do data with black marker to get it on top
                 Contribution(unfolded_hist_bin_total_errors_marker_noerror,
-                             label=None,
+                             label=None,  # don't want in legend
                              line_color=self.plot_colours['unfolded_total_colour'], line_width=self.line_width, line_style=1,
                              marker_color=self.plot_colours['unfolded_total_colour'], marker_style=20, marker_size=0.75,
-                             subplot=mc_gen_hist_bin),
+                             subplot=None),
             ]
 
-            data_entries_no_label = [copy(c) for c in data_entries]
-            for d in data_entries_no_label:
-                d.label = None
+            # Create dummy graphs with the same styling to put into the legend
+            dummy_gr = ROOT.TGraphErrors(1, array('d', [1]), array('d', [1]), array('d', [1]), array('d', [1]))
+            dummy_total_errors = Contribution(dummy_gr.Clone(),
+                                              label="Data (total unc.)",
+                                              line_color=self.plot_colours['unfolded_total_colour'], line_width=self.line_width, line_style=1,
+                                              marker_color=self.plot_colours['unfolded_total_colour'], marker_style=20, marker_size=0.75,
+                                              leg_draw_opt="EP")
+            dummy_stat_errors = Contribution(dummy_gr.Clone(),
+                                             label="Data (stat. unc.)",
+                                             line_color=self.plot_colours['unfolded_stat_colour'], line_width=self.line_width, line_style=1,
+                                             marker_color=self.plot_colours['unfolded_stat_colour'], marker_style=20, marker_size=0.75,
+                                             leg_draw_opt="E")
+            dummy_mc = Contribution(dummy_gr.Clone(),
+                                    label=self.region['mc_label'],
+                                    line_color=self.plot_colours['gen_colour'], line_width=self.line_width,
+                                    marker_color=self.plot_colours['gen_colour'], marker_size=0,
+                                    leg_draw_opt="E")
+            dummy_alt_mc = Contribution(dummy_gr.Clone(),
+                                        label=self.region['alt_mc_label'],
+                                        line_color=self.plot_colours['alt_gen_colour'], line_width=self.line_width, line_style=2,
+                                        marker_color=self.plot_colours['alt_gen_colour'], marker_size=0,
+                                        leg_draw_opt="E")
 
-            entries = [
-                # Draw data first to get to top of legend
-                # FIXME: add some indexing option for legend construction?
-                *data_entries,
-                
-                # Draw MC
+            # For subplot to ensure only MC errors drawn, not MC+data
+            data_no_errors = unfolded_hist_bin_total_errors_marker_noerror.Clone()
+            cu.remove_th1_errors(data_no_errors)
+
+            mc_entries = [
                 Contribution(mc_gen_hist_bin,
                              label=self.region['mc_label'],
                              line_color=self.plot_colours['gen_colour'], line_width=self.line_width,
-                             marker_color=self.plot_colours['gen_colour'], marker_size=0),
+                             marker_color=self.plot_colours['gen_colour'], marker_size=0,
+                             subplot=data_no_errors, leg_draw_opt="EL"),
                 Contribution(alt_mc_gen_hist_bin,
                              label=self.region['alt_mc_label'],
                              line_color=self.plot_colours['alt_gen_colour'], line_width=self.line_width, line_style=2,
                              marker_color=self.plot_colours['alt_gen_colour'], marker_size=0,
-                             subplot=mc_gen_hist_bin),
-                
-                # Draw data again to put on top of MC
-                *data_entries_no_label
+                             subplot=data_no_errors, leg_draw_opt="EL"),
             ]
+
+            entries = [
+                # Draw MC
+                *mc_entries,
+                # Draw data after to put on top of MC
+                *data_entries
+            ]
+
             if not self.check_entries(entries, "plot_unfolded_with_alt_truth_normalised_pt_bin %d" % (ibin)):
                 return
-            # ROOT.gStyle.SetErrorX(0)
+
             plot = Plot(entries,
                         ytitle=self.setup.pt_bin_normalised_differential_label,
                         title=self.get_pt_bin_title(bin_edge_low, bin_edge_high),
+                        legend=True,
                         **self.pt_bin_plot_args)
+
+            # TODO use plot.reverse_legend = True
+            plot.subplot_title = "Simulation / data"
             self._modify_plot(plot)
-            plot.plot("NOSTACK E1")
+
+            # disable adding objects to legend & drawing - we'll do it manually
+            plot.do_legend = False
+            subplot_draw_opts = "NOSTACK E1"
+            plot.plot("NOSTACK E1", subplot_draw_opts)
+            for cont in [dummy_total_errors, dummy_stat_errors, dummy_mc, dummy_alt_mc]:
+                plot.legend.AddEntry(cont.obj, cont.label, cont.leg_draw_opt)
+            plot.canvas.cd()
+            plot.legend.Draw()
+
+            # Create hists for data with error region for ratio
+            # Easiest way to get errors right is to do data (with 0 errors)
+            # and divide by data (with errors), as if you had MC = data with 0 error
+            data_stat_ratio = data_no_errors.Clone()
+            data_stat_ratio.Divide(unfolded_hist_bin_stat_errors)
+            data_stat_ratio.SetFillStyle(3245)
+            data_stat_ratio.SetFillColor(self.plot_colours['unfolded_stat_colour'])
+            data_stat_ratio.SetLineWidth(0)
+            data_stat_ratio.SetMarkerSize(0)
+
+            data_total_ratio = data_no_errors.Clone()
+            data_total_ratio.Divide(unfolded_hist_bin_total_errors)
+            data_total_ratio.SetFillStyle(3254)
+            data_total_ratio.SetFillColor(self.plot_colours['unfolded_total_colour'])
+            data_total_ratio.SetLineWidth(0)
+            data_total_ratio.SetMarkerSize(0)
+
+            # now draw the data error shaded area
+            # this is a bit hacky - basically draw them on the ratio pad,
+            # then redraw the existing hists & line to get them ontop
+            # note that we use "same" for all - this is to keep the original axes
+            # (we may want to rethink this later?)
+            plot.subplot_pad.cd()
+            draw_opt = "E2 SAME"
+            data_stat_ratio.Draw(draw_opt)
+            data_total_ratio.Draw(draw_opt)
+            plot.subplot_container.Draw("SAME" + subplot_draw_opts)
+            plot.subplot_line.Draw()
+            plot.canvas.cd()
+
             plot.save("%s/unfolded_%s_alt_truth_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
 
     def plot_unfolded_with_unreg_normalised(self):
