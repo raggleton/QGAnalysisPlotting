@@ -409,7 +409,7 @@ class Plot(object):
                     if contrib.marker_size != 0:
                         opt += "P"
                     if contrib.line_width != 0:
-                        opt += "L"
+                        opt += "LE"
                     if contrib.fill_style != 0:
                         opt += "F"
                 # Split text by newline \n
