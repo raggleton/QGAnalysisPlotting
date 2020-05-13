@@ -176,7 +176,7 @@ class GenPtBinnedPlotter(object):
             xtitle=self.setup.particle_title,
             has_data=self.setup.has_data,
             subplot_type='ratio',
-            subplot_title="* / Gen",
+            subplot_title="* / %s" % (self.region['mc_label']),
             subplot_limits=(0, 2) if self.setup.has_data else (0.75, 1.25),
         )
         self.unfolder = unfolder
@@ -267,16 +267,16 @@ class GenPtBinnedPlotter(object):
 
             entries = [
                 Contribution(mc_gen_hist_bin,
-                             label="Generator (%s)" % (self.region['mc_label']),
+                             label=self.region['mc_label'],
                              line_color=self.plot_colours['gen_colour'], line_width=self.line_width,
                              marker_color=self.plot_colours['gen_colour'], marker_size=0),
                 Contribution(unfolded_hist_bin_total_errors,
-                             label="Unfolded (#tau = %.3g) (total unc.)" % (self.unfolder.tau),
+                             label="Data (total unc.)",
                              line_color=self.plot_colours['unfolded_total_colour'], line_width=self.line_width, line_style=1,
                              marker_color=self.plot_colours['unfolded_total_colour'],# marker_style=20, marker_size=0.75,
                              subplot=mc_gen_hist_bin),
                 Contribution(unfolded_hist_bin_stat_errors,
-                             label="Unfolded (#tau = %.3g) (stat. unc.)" % (self.unfolder.tau),
+                             label="Data (stat. unc.)",
                              line_color=self.plot_colours['unfolded_stat_colour'], line_width=self.line_width, line_style=1,
                              marker_color=self.plot_colours['unfolded_stat_colour'], marker_style=20, marker_size=0.75,
                              subplot=mc_gen_hist_bin),
@@ -302,21 +302,21 @@ class GenPtBinnedPlotter(object):
 
             entries = [
                 Contribution(mc_gen_hist_bin,
-                             label="Generator (%s)" % (self.region['mc_label']),
+                             label=self.region['mc_label'],
                              line_color=self.plot_colours['gen_colour'], line_width=self.line_width,
                              marker_color=self.plot_colours['gen_colour'], marker_size=0),
                 Contribution(alt_mc_gen_hist_bin,
-                             label="Generator (%s)" % (self.region['alt_mc_label']),
+                             label=self.region['alt_mc_label'],
                              line_color=self.plot_colours['alt_gen_colour'], line_width=self.line_width, line_style=2,
                              marker_color=self.plot_colours['alt_gen_colour'], marker_size=0,
                              subplot=mc_gen_hist_bin),
                 Contribution(unfolded_hist_bin_total_errors,
-                             label="Unfolded (#tau = %.3g) (total unc.)" % (self.unfolder.tau),
+                             label="Data (total unc.)",
                              line_color=self.plot_colours['unfolded_total_colour'], line_width=self.line_width, line_style=1,
                              marker_color=self.plot_colours['unfolded_total_colour'], #marker_style=20, marker_size=0.75,
                              subplot=mc_gen_hist_bin),
                 Contribution(unfolded_hist_bin_stat_errors,
-                             label="Unfolded (#tau = %.3g) (stat. unc.)" % (self.unfolder.tau),
+                             label="Data (stat. unc.)",
                              line_color=self.plot_colours['unfolded_stat_colour'], line_width=self.line_width, line_style=1,
                              marker_color=self.plot_colours['unfolded_stat_colour'], marker_style=20, marker_size=0.75,
                              subplot=mc_gen_hist_bin),
@@ -326,6 +326,7 @@ class GenPtBinnedPlotter(object):
             plot = Plot(entries,
                         ytitle=self.setup.pt_bin_normalised_differential_label,
                         title=self.get_pt_bin_title(bin_edge_low, bin_edge_high),
+                        ylim=[0, None],
                         **self.pt_bin_plot_args)
             self._modify_plot(plot)
             plot.plot("NOSTACK E1")
