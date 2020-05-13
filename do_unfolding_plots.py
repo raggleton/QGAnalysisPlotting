@@ -2147,9 +2147,9 @@ def do_binned_plots_per_region_angle(setup, do_binned_gen_pt, do_binned_gen_lamb
                                                    bins=unfolder.pt_bin_edges_gen,
                                                    hist_bin_chopper=hbc,
                                                    unfolder=unfolder)
-        gen_pt_binned_plotter.plot_unfolded_normalised()
+        # gen_pt_binned_plotter.plot_unfolded_normalised()
         gen_pt_binned_plotter.plot_unfolded_unnormalised()
-        gen_pt_binned_plotter.plot_total_ematrix()
+        # gen_pt_binned_plotter.plot_total_ematrix()
 
         if alt_hist_truth:
             print("...doing alt truth")
@@ -2168,7 +2168,7 @@ def do_binned_plots_per_region_angle(setup, do_binned_gen_pt, do_binned_gen_lamb
 
         if has_exp_systs:
             print("...doing exp systs")
-            gen_pt_binned_plotter.plot_uncertainty_shifts_normalised()
+            # gen_pt_binned_plotter.plot_uncertainty_shifts_normalised()
             gen_pt_binned_plotter.plot_unfolded_with_exp_systs_normalised()
             gen_pt_binned_plotter.plot_unfolded_with_exp_systs_unnormalised()
 
@@ -2181,9 +2181,9 @@ def do_binned_plots_per_region_angle(setup, do_binned_gen_pt, do_binned_gen_lamb
         #     gen_pt_binned_plotter.plot_unfolded_with_pdf_systs_normalised()
         #     gen_pt_binned_plotter.plot_unfolded_with_pdf_systs_unnormalised()
 
-        if has_exp_systs or has_model_systs or has_pdf_systs:
-            print("...doing syst fraction")
-            gen_pt_binned_plotter.plot_syst_fraction_normalised()
+        # if has_exp_systs or has_model_systs or has_pdf_systs:
+        #     print("...doing syst fraction")
+        #     gen_pt_binned_plotter.plot_syst_fraction_normalised()
 
         # if has_data:
         print("...doing detector-level")
@@ -3210,7 +3210,7 @@ if __name__ == "__main__":
             # all_chi2_stats.append(get_bottom_line_stats(setup))
 
             # cleanup object, as it uses loads of memory
-            if (len(regions)*len(angles)) > 1:
+            if num_all_iterations > 1:
                 print("...tidying up...")
                 del unpickled_region
 
