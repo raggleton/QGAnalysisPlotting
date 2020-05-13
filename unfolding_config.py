@@ -33,7 +33,7 @@ def get_dijet_config(source_dir, central=True, groomed=False):
         "label": "Dijet",
         "data_tfile": input_jetht_tfile,
         "mc_tfile": input_mc_qcd_mgpythia_tfile,
-        "mc_label": "MG+Pythia8",
+        "mc_label": "MG5+Pythia8",
         # "mc_tfile": input_mc_qcd_herwig_tfile,
         # "mc_label": "Herwig++",
         # "mc_tfile": input_mc_qcd_pythia_tfile,
@@ -252,10 +252,10 @@ def get_zpj_config(source_dir, groomed=False):
         "data_tfile": input_singlemu_tfile,
 
         "mc_tfile": input_mc_dy_mgpythia_tfile,
-        "mc_label": "MG+Pythia8",
+        "mc_label": "MG5+Pythia8",
 
         # "mc_tfile": input_mc_dy_mgpythia_incl_tfile,
-        # "mc_label": "MG+Pythia8 (inclusive)",
+        # "mc_label": "MG5+Pythia8 (inclusive)",
 
         "alt_mc_tfile": input_mc_dy_herwig_tfile,
         "alt_mc_label": "Herwig++",

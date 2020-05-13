@@ -3096,6 +3096,7 @@ if __name__ == "__main__":
             # use region dict from unpickling
             # don't use update(), mega slow
             this_region = unpickled_region
+            this_region['mc_label'] = 'MG5+Pythia8'
 
             # MAKE ALL THE PLOTS
             # ------------------------------------------------------------------
