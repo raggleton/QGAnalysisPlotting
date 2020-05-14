@@ -159,7 +159,7 @@ def make_comparison_plot_ingredients(entries, rebin=1, normalise_hist=True, mean
     return p
 
 
-def do_comparison_plot(entries, output_filename, rebin=1, draw_opt="NOSTACK HIST E1", data_first=False, **plot_kwargs):
+def do_comparison_plot(entries, output_filename, rebin=1, draw_opt="NOSTACK HIST E", data_first=False, **plot_kwargs):
     """Plot several different objects on a single plot
 
     entries : list of 2-tuples, with (object, dict), where the dict is a set of kwargs passed to the Contribution object
@@ -177,7 +177,7 @@ def do_comparison_plot(entries, output_filename, rebin=1, draw_opt="NOSTACK HIST
         # Special case if data first object
         if data_first:
             # Redraw data on top
-            data_hist = plot.contributions[0].obj
+            data_hist = plot.contributions[0].obj.Clone()
             data_hist.SetLineWidth(entries[0][1].get('line_width', 1))
             data_hist.SetMarkerSize(entries[0][1].get('marker_size', 1))
             plot.main_pad.cd()
