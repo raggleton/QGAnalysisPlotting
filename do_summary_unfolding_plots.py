@@ -1946,10 +1946,11 @@ if __name__ == "__main__":
                 ('jet_algo=="ak4puppi" & pt_bin==%d & ~isgroomed & region=="ZPlusJets" & angle=="%s"' % (low_pt_bin, angle.var),
                     "{jet_str}, {pt_str}".format(jet_str=ak4_str, pt_str=low_pt_str)),
                     # "#splitline{{{jet_str}}}{{{pt_str}}}".format(jet_str=ak4_str, pt_str=low_pt_str)),
-
-                ('jet_algo=="ak4puppi" & pt_bin==%d & ~isgroomed & region=="ZPlusJets" & angle=="%s"' % (high_pt_bin, angle.var),
-                    "{jet_str}, {pt_str}".format(jet_str=ak4_str, pt_str=high_pt_str)),
-                    # "#splitline{{{jet_str}}}{{{pt_str}}}".format(jet_str=ak4_str, pt_str=high_pt_str)),
+                
+                # ignore high pt bin as not useful - same composition as dijet but fewer stats
+                # ('jet_algo=="ak4puppi" & pt_bin==%d & ~isgroomed & region=="ZPlusJets" & angle=="%s"' % (high_pt_bin, angle.var),
+                #     "{jet_str}, {pt_str}".format(jet_str=ak4_str, pt_str=high_pt_str)),
+                #     # "#splitline{{{jet_str}}}{{{pt_str}}}".format(jet_str=ak4_str, pt_str=high_pt_str)),
 
                 ('jet_algo=="ak8puppi" & pt_bin==%d & ~isgroomed & region=="ZPlusJets" & angle=="%s"' % (low_pt_bin, angle.var),
                     "{jet_str}, {pt_str}".format(jet_str=ak8_str, pt_str=low_pt_str)),

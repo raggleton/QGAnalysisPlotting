@@ -117,18 +117,18 @@ Angle = namedtuple("Angle", ['var', 'kappa', 'beta', 'name', "lambda_str", "colo
 COMMON_VARS_WITH_FLAV = [
     # The order here is important: determines that in summary plots
     # Angle("jet_multiplicity", 0, 0, "Multiplicity", "#lambda_{0}^{0}", 2),
-    Angle("jet_puppiMultiplicity", 0, 0, "Multiplicity", "#lambda_{0}^{0}", 2),
     Angle('jet_LHA', 1, 0.5, "LHA", "#lambda_{0.5}^{1}", 600),
-    Angle('jet_pTD', 2, 0, "(p_{T}^{D})^{2}", "#lambda_{0}^{2}", 418),
     Angle('jet_width', 1, 1, "Width", "#lambda_{1}^{1}", 861),
     Angle('jet_thrust', 1, 2, "Thrust", "#lambda_{2}^{1}", 617),
+    Angle("jet_puppiMultiplicity", 0, 0, "Multiplicity", "#lambda_{0}^{0}", 2),
+    Angle('jet_pTD', 2, 0, "(p_{T}^{D})^{2}", "#lambda_{0}^{2}", 418),
     # charged-only constit
     # Angle("jet_multiplicity_charged", 0, 0, "Multiplicity (charged)", "#lambda_{0}^{0}", 2),
-    Angle("jet_puppiMultiplicity_charged", 0, 0, "Multiplicity (charged-only)", "#lambda_{0}^{0}", 2),
     Angle('jet_LHA_charged', 1, 0.5, "LHA (charged-only)", "#lambda_{0.5}^{1}", 600),
-    Angle('jet_pTD_charged', 2, 0, "(p_{T}^{D})^{2} (charged-only)", "#lambda_{0}^{2}", 418),
     Angle('jet_width_charged', 1, 1, "Width (charged-only)", "#lambda_{1}^{1}", 861),
     Angle('jet_thrust_charged', 1, 2, "Thrust (charged-only)", "#lambda_{2}^{1}", 617),
+    Angle("jet_puppiMultiplicity_charged", 0, 0, "Multiplicity (charged-only)", "#lambda_{0}^{0}", 2),
+    Angle('jet_pTD_charged', 2, 0, "(p_{T}^{D})^{2} (charged-only)", "#lambda_{0}^{2}", 418),
     # Angle('jet_multiplicity', 0, 0, "Multiplicity", "#lambda_{0}^{0}", 2),  # leave last as we don't want it in our RIVET numbering
     Angle('jet_flavour', 0, 0, "Flavour", "PDGID", 7),
     Angle("jet_genParton_flavour", 0, 0, "Flavour", "PDGID", 8)
