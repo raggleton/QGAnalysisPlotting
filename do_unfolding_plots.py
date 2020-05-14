@@ -365,10 +365,10 @@ class GenPtBinnedPlotter(object):
 
             # Create dummy graphs with the same styling to put into the legend
             dummy_gr = ROOT.TGraphErrors(1, array('d', [1]), array('d', [1]), array('d', [1]), array('d', [1]))
-            dummy_total_errors = Contribution(dummy_gr.Clone(), leg_draw_opt="EP", **data_total_errors_style)
-            dummy_stat_errors = Contribution(dummy_gr.Clone(), leg_draw_opt="E", **data_stat_errors_style)
-            dummy_mc = Contribution(dummy_gr.Clone(), leg_draw_opt="E", **mc_style)
-            dummy_alt_mc = Contribution(dummy_gr.Clone(), leg_draw_opt="E", **alt_mc_style)
+            dummy_total_errors = Contribution(dummy_gr.Clone(), leg_draw_opt="LEP", **data_total_errors_style)
+            dummy_stat_errors = Contribution(dummy_gr.Clone(), leg_draw_opt="LE", **data_stat_errors_style)
+            dummy_mc = Contribution(dummy_gr.Clone(), leg_draw_opt="LE", **mc_style)
+            dummy_alt_mc = Contribution(dummy_gr.Clone(), leg_draw_opt="LE", **alt_mc_style)
             # Add them to the legend and draw it
             for cont in [dummy_total_errors, dummy_stat_errors, dummy_mc, dummy_alt_mc]:
                 plot.legend.AddEntry(cont.obj, cont.label, cont.leg_draw_opt)
