@@ -96,7 +96,7 @@ def do_plots(root_dir):
                 # SINGLE MU DATA
                 h2d_dyj_data = grab_obj(os.path.join(root_dir, qgc.SINGLE_MU_FILENAME), "%s/%s" % (zpj_dirname, v))
                 dy_kwargs_data = dict(line_color=qgc.SINGLE_MU_COLOUR, line_width=data_line_width, fill_color=qgc.SINGLE_MU_COLOUR,
-                                      marker_color=qgc.SINGLE_MU_COLOUR, marker_style=cu.Marker.get(qgc.DY_MARKER), marker_size=msize,
+                                      marker_color=qgc.SINGLE_MU_COLOUR, marker_style=cu.Marker.get(qgc.DY_MARKER), marker_size=msize*0.7,
                                       label="Data")
                 zpj_data_hist = qgp.get_projection_plot(h2d_dyj_data, start_val, end_val)
                 entries.append((zpj_data_hist, dy_kwargs_data))
