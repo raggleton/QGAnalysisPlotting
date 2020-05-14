@@ -75,11 +75,11 @@ def make_comparison_plot_ingredients(entries, rebin=1, normalise_hist=True, mean
                             and ent[0].Integral() > 0
                             for ent in entries])
 
-    # If this is the case, rebin the plot. Start by making bins factor 2 bigger,
+    # If this is the case, rebin the plot. Start by making bins bigger,
     # but check to find nearest divisor
     orig_rebin = rebin
     if big_mean_rel_err:
-        rebin *= 2
+        rebin += 1
 
         # find some sensible divisor
         counter = 0
@@ -138,7 +138,7 @@ def make_comparison_plot_ingredients(entries, rebin=1, normalise_hist=True, mean
     return p
 
 
-def do_comparison_plot(entries, output_filename, rebin=1, draw_opt="NOSTACK HISTE", **plot_kwargs):
+def do_comparison_plot(entries, output_filename, rebin=1, draw_opt="NOSTACK HIST E1", **plot_kwargs):
     """Plot several different objects on a single plot
 
     entries : list of 2-tuples, with (object, dict), where the dict is a set of kwargs passed to the Contribution object

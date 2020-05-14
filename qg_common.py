@@ -79,16 +79,16 @@ PT_BINS_ZPJ = [
 # ]
 #
 
-PT_BINS = [
+PT_BINS = [(30,50),
 (50, 65), (65, 88), (88, 120), (120, 150), (150, 186),
 (186, 254), (254, 326), (326, 408), (408, 481), (481, 614),
-(614, 800), (800, 1000), (1000, 1500), (1500, 2000), (2000, 6500)
-]
+(614, 800), (800, 1000), (1000, 4000)
+][:]
 
 PT_BINS_ZPJ = [
 (50, 65), (65, 88), (88, 120), (120, 150), (150, 186),
 (186, 254), (254, 326), (326, 408), (408, 481), (481, 614),
-(614, 800), (800, 6500)
+(614, 800), (800, 2000)
 ]
 
 PT_BINS_INC_UFLOW = [(30, 38), (38, 50)]
@@ -460,14 +460,14 @@ QCD_Dijet_GEN_LABEL = "QCD MC, Dijet region\n(GenJets)"
 QCD_Dijet_QFLAV_LABEL = "QCD MC, Dijet region\n(uds-matched)"
 QCD_Dijet_GFLAV_LABEL = "QCD MC, Dijet region\n(g-matched)"
 
-Dijet_CEN_LABEL = "Dijet region (central jet)"
-QCD_Dijet_CEN_LABEL = "QCD MC, Dijet region (central jet)"
+Dijet_CEN_LABEL = "Dijet (central) region"
+QCD_Dijet_CEN_LABEL = "QCD MC, Dijet (central) region"
 QCD_Dijet_CEN_GROOMED_LABEL = "QCD MC, Dijet region (central jet, groomed)"
-QCD_Dijet_CEN_GEN_LABEL = "QCD MC, Dijet region (central jet)\n(GenJets)"
-QCD_Dijet_CEN_QFLAV_LABEL = "QCD MC, Dijet region (central jet)\n(uds-matched)"
-QCD_Dijet_CEN_GFLAV_LABEL = "QCD MC, Dijet region (central jet)\n(g-matched)"
+QCD_Dijet_CEN_GEN_LABEL = "QCD MC, Dijet (central) region\n(GenJets)"
+QCD_Dijet_CEN_QFLAV_LABEL = "QCD MC, Dijet (central) region\n(uds-matched)"
+QCD_Dijet_CEN_GFLAV_LABEL = "QCD MC, Dijet (central) region\n(g-matched)"
 
-Dijet_FWD_LABEL = "Dijet region (forward jet)"
+Dijet_FWD_LABEL = "Dijet (forward) region"
 QCD_Dijet_FWD_LABEL = "QCD MC, Dijet region (forward jet)"
 QCD_Dijet_FWD_GROOMED_LABEL = "QCD MC, Dijet region (forward jet, groomed)"
 QCD_Dijet_FWD_GEN_LABEL = "QCD MC, Dijet region (forward jet)\n(GenJets)"
@@ -479,13 +479,13 @@ JETHT_LABEL = "JetHT, Dijet region"
 ZB_LABEL = "ZeroBias, Dijet region"
 JETHT_ZB_LABEL = "JetHT+ZeroBias, Dijet region"
 
-JETHT_CEN_LABEL = "JetHT, Dijet region (central jet)"
-ZB_CEN_LABEL = "ZeroBias, Dijet region (central jet)"
-JETHT_ZB_CEN_LABEL = "JetHT+ZeroBias, Dijet region (central jet)"
+JETHT_CEN_LABEL = "JetHT, Dijet (central) region"
+ZB_CEN_LABEL = "ZeroBias, Dijet (central) region"
+JETHT_ZB_CEN_LABEL = "JetHT+ZeroBias, Dijet (central) region"
 
-JETHT_FWD_LABEL = "JetHT, Dijet region (forward jet)"
-ZB_FWD_LABEL = "ZeroBias, Dijet region (forward jet)"
-JETHT_ZB_FWD_LABEL = "JetHT+ZeroBias, Dijet region (forward jet)"
+JETHT_FWD_LABEL = "JetHT, Dijet (forward) region"
+ZB_FWD_LABEL = "ZeroBias, Dijet (forward) region"
+JETHT_ZB_FWD_LABEL = "JetHT+ZeroBias, Dijet (forward) region"
 
 # Dirs in ROOT files
 ZPJ_RECOJET_RDIR = "ZPlusJets_QG"
