@@ -39,7 +39,7 @@ ROOT.gROOT.SetBatch(1)
 ROOT.TH1.SetDefaultSumw2()
 
 
-def make_comparison_plot_ingredients(entries, rebin=1, normalise_hist=True, mean_rel_error=1.0, **plot_kwargs):
+def make_comparison_plot_ingredients(entries, rebin=1, normalise_hist=True, mean_rel_error=1.0, data_first=False, **plot_kwargs):
     """Make the Plot object for a comparison plot.
 
     User can then add other elements to the plot.
@@ -55,6 +55,8 @@ def make_comparison_plot_ingredients(entries, rebin=1, normalise_hist=True, mean
     mean_rel_error : float, optional
         Rebin contributions that have a mean relative error more than this value,
         where "mean relative error" = mean across all (error/bin contents) in a hist
+    data_first : bool, optional
+        If True, then the first entry is data, and we do special things like the ratio plot
     **plot_kwargs
         Any other kwargs to be passed to the Plot object contructor
 
@@ -98,13 +100,22 @@ def make_comparison_plot_ingredients(entries, rebin=1, normalise_hist=True, mean
     if len(conts) == 0:
         raise RuntimeError("0 contributions for this plot")
 
+    if data_first:
+        data_obj = entries[0][0]
+        # For subplot to ensure only MC errors drawn, not MC+data
+        data_no_errors = data_obj.Clone()
+        cu.remove_th1_errors(data_no_errors)
+        for i, cont in enumerate(conts[1:], 1):
+            if cont.subplot == data_obj:
+                cont.subplot = data_no_errors
+
     # Automatically correct plot_kwargs if we only have 1 contribution (don't want subplot)
     do_subplot = any(c.subplot for c in conts) or "subplot" in plot_kwargs
     if (len(conts) == 1 or not do_subplot) and "subplot_type" in plot_kwargs:
         plot_kwargs['subplot_type'] = None
         print("Not doing subplot")
 
-    # Plot expects subplot to be a Contribution
+    # If 'subplot' in plot_kwargs, then Plot expects it to be a Contribution object
     # But we only make those here
     # So here we figure out which contribution matches the subplot, if it exists
     if "subplot" in plot_kwargs and plot_kwargs['subplot'] is not None:
@@ -119,7 +130,11 @@ def make_comparison_plot_ingredients(entries, rebin=1, normalise_hist=True, mean
 
     ytitle = "p.d.f." if normalise_hist else "N"
     ytitle = "#DeltaN/N" if normalise_hist else "N"
-    p = Plot(conts, what="hist", ytitle=ytitle, legend=do_legend, **plot_kwargs)
+    p = Plot(conts, what="hist",
+             ytitle=ytitle,
+             legend=do_legend,
+             has_data=data_first,
+             **plot_kwargs)
     if do_legend:
         # ensure legend big enough, but not too big, depending on how long entries are
         max_leg_str = max([len(c.label) for c in conts])
@@ -138,19 +153,63 @@ def make_comparison_plot_ingredients(entries, rebin=1, normalise_hist=True, mean
     return p
 
 
-def do_comparison_plot(entries, output_filename, rebin=1, draw_opt="NOSTACK HIST E1", **plot_kwargs):
+def do_comparison_plot(entries, output_filename, rebin=1, draw_opt="NOSTACK HIST E1", data_first=False, **plot_kwargs):
     """Plot several different objects on a single plot
 
     entries : list of 2-tuples, with (object, dict), where the dict is a set of kwargs passed to the Contribution object
     plot_kwargs : any other kwargs to be passed to the Plot object ctor
     """
     try:
-        p = make_comparison_plot_ingredients(entries, rebin=rebin, mean_rel_error=0.4, **plot_kwargs)
-        p.plot(draw_opt)
+
+        plot = make_comparison_plot_ingredients(entries,
+                                                rebin=rebin,
+                                                mean_rel_error=0.4,
+                                                data_first=data_first,
+                                                **plot_kwargs)
+        plot.plot(draw_opt)
+
+        # Special case if data first object
+        # Do the subplot uncertainty shading
+        if data_first:
+            data_no_errors = entries[0][0].Clone()
+            cu.remove_th1_errors(data_no_errors)
+
+            # Create hists for data with error region for ratio
+            # Easiest way to get errors right is to do data (with 0 errors)
+            # and divide by data (with errors), as if you had MC = data with 0 error
+
+            # data_stat_ratio = data_no_errors.Clone()
+            # data_stat_ratio.Divide(unfolded_hist_bin_stat_errors)
+            # data_stat_ratio.SetFillStyle(3245)
+            # data_stat_ratio.SetFillColor(self.plot_colours['unfolded_stat_colour'])
+            # data_stat_ratio.SetLineWidth(0)
+            # data_stat_ratio.SetMarkerSize(0)
+
+            data_total_ratio = data_no_errors.Clone()
+            data_total_ratio.Divide(entries[0][0])
+            data_total_ratio.SetFillStyle(3254)
+            data_total_ratio.SetFillColor(entries[0][1]['fill_color'])
+            data_total_ratio.SetLineWidth(0)
+            data_total_ratio.SetMarkerSize(0)
+
+            # now draw the data error shaded area
+            # this is a bit hacky - basically draw them on the ratio pad,
+            # then redraw the existing hists & line to get them ontop
+            # note that we use "same" for all - this is to keep the original axes
+            # (we may want to rethink this later?)
+            plot.subplot_pad.cd()
+            data_draw_opt = "E2 SAME"  # need SAME otherwise axis get rescaled
+            # data_stat_ratio.Draw(data_draw_opt)
+            data_total_ratio.Draw(data_draw_opt)
+            plot.subplot_container.Draw("SAME " + draw_opt)
+            plot.subplot_line.Draw()
+            plot.canvas.cd()
+
         dirname = os.path.dirname(output_filename)
         if not os.path.isdir(dirname):
             os.makedirs(dirname)
-        p.save(output_filename)
+        plot.save(output_filename)
+
     except RuntimeError as e:
         print("Skipping:", e)
 

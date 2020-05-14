@@ -315,11 +315,13 @@ def do_plots(root_dir):
                 qgp.do_comparison_plot(dijet_cen_entries,
                                        "%s/ptBinned/%s_pt%dto%d_dijet_central.%s" % (plot_dir, v, start_val, end_val, OUTPUT_FMT),
                                        rebin=rebin,
+                                       draw_opt="NOSTACK HIST E1",
                                        # title="%d < p_{T}^{jet} < %d GeV\n%s\n%s" % (start_val, end_val, jet_str, qgc.Dijet_CEN_LABEL),
                                        title=_title(qgc.Dijet_CEN_LABEL, start_val, end_val),
                                        xtitle=xlabel,
                                        xlim=xlim,
                                        ylim=ylim,
+                                       data_first=True,
                                        subplot_type='ratio',
                                        subplot_title=subplot_title,
                                        subplot_limits=subplot_limits)
@@ -333,6 +335,7 @@ def do_plots(root_dir):
                                        xtitle=xlabel,
                                        xlim=xlim,
                                        ylim=ylim,
+                                       data_first=True,
                                        subplot_type='ratio',
                                        subplot_title=subplot_title,
                                        subplot_limits=subplot_limits)
@@ -352,6 +355,7 @@ def do_plots(root_dir):
                                        xtitle=xlabel,
                                        xlim=xlim,
                                        ylim=ylim,
+                                       data_first=True,
                                        subplot_type='ratio',
                                        subplot_title=subplot_title,
                                        subplot_limits=subplot_limits)
