@@ -1903,8 +1903,8 @@ if __name__ == "__main__":
                     "{jet_str}, {pt_str}".format(jet_str=ak8_str, pt_str=low_pt_str)),
                     # "#splitline{{{jet_str}}}{{{pt_str}}}".format(jet_str=ak8_str, pt_str=low_pt_str)),
 
-                ('jet_algo=="ak8puppi" & pt_bin==%d & ~isgroomed & region=="Dijet_central" & angle=="%s_charged"' % (low_pt_bin, angle.var),
-                    "#splitline{{{jet_str}, {pt_str}}}{{Charged-only}}".format(jet_str=ak8_str, pt_str=low_pt_str)),
+                ('jet_algo=="ak4puppi" & pt_bin==%d & ~isgroomed & region=="Dijet_central" & angle=="%s_charged"' % (low_pt_bin, angle.var),
+                    "#splitline{{{jet_str}, {pt_str}}}{{Charged-only}}".format(jet_str=ak4_str, pt_str=low_pt_str)),
                     # "#splitline{{#splitline{{{jet_str}}}{{{pt_str}}}}}{{Charged-only}}".format(jet_str=ak8_str, pt_str=low_pt_str)),
 
                 ('jet_algo=="ak4puppi" & pt_bin==%d & isgroomed  & region=="Dijet_central_groomed" & angle=="%s"' % (low_pt_bin, angle.var),
@@ -1955,8 +1955,8 @@ if __name__ == "__main__":
                     "{jet_str}, {pt_str}".format(jet_str=ak8_str, pt_str=low_pt_str)),
                     # "#splitline{{{jet_str}}}{{{pt_str}}}".format(jet_str=ak8_str, pt_str=low_pt_str)),
 
-                ('jet_algo=="ak8puppi" & pt_bin==%d & ~isgroomed & region=="ZPlusJets" & angle=="%s_charged"' % (low_pt_bin, angle.var),
-                    "#splitline{{{jet_str}, {pt_str}}}{{Charged-only}}".format(jet_str=ak8_str, pt_str=low_pt_str)),
+                ('jet_algo=="ak4puppi" & pt_bin==%d & ~isgroomed & region=="ZPlusJets" & angle=="%s_charged"' % (low_pt_bin, angle.var),
+                    "#splitline{{{jet_str}, {pt_str}}}{{Charged-only}}".format(jet_str=ak4_str, pt_str=low_pt_str)),
                     # "#splitline{{#splitline{{{jet_str}}}{{{pt_str}}}}}{{Charged-only}}".format(jet_str=ak8_str, pt_str=low_pt_str)),
 
                 ('jet_algo=="ak4puppi" & pt_bin==%d & isgroomed  & region=="ZPlusJets_groomed" & angle=="%s"' % (low_pt_bin, angle.var),
