@@ -101,8 +101,14 @@ def make_comparison_plot_ingredients(entries, rebin=1, normalise_hist=True, mean
         raise RuntimeError("0 contributions for this plot")
 
     if data_first:
-        data_obj = entries[0][0]
+        # Modify data Contribution to have no vertical lines
+        # We'll redraw it at the end with them ontop
+        conts[0].line_width = 0
+        conts[0].marker_size = 0.01
+        conts[0]._update_styles()
+
         # For subplot to ensure only MC errors drawn, not MC+data
+        data_obj = entries[0][0]
         data_no_errors = data_obj.Clone()
         cu.remove_th1_errors(data_no_errors)
         for i, cont in enumerate(conts[1:], 1):
@@ -169,8 +175,15 @@ def do_comparison_plot(entries, output_filename, rebin=1, draw_opt="NOSTACK HIST
         plot.plot(draw_opt)
 
         # Special case if data first object
-        # Do the subplot uncertainty shading
         if data_first:
+            # Redraw data on top
+            data_hist = plot.contributions[0].obj
+            data_hist.SetLineWidth(entries[0][1].get('line_width', 1))
+            data_hist.SetMarkerSize(entries[0][1].get('marker_size', 1))
+            plot.main_pad.cd()
+            data_hist.Draw("E1 SAME")
+
+            # Do the subplot uncertainty shading
             data_no_errors = entries[0][0].Clone()
             cu.remove_th1_errors(data_no_errors)
 

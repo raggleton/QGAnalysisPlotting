@@ -148,6 +148,7 @@ class Contribution(object):
         self.marker_color = marker_color
         self.marker_style = marker_style
         self.leg_draw_opt = leg_draw_opt
+        self.fit_match_style = fit_match_style
         self.subplot = subplot
 
         # subplot-specific stylings - inherit from main stylings by default
@@ -160,21 +161,7 @@ class Contribution(object):
         self.subplot_marker_color = subplot_marker_color or self.marker_color
         self.subplot_marker_style = subplot_marker_style or self.marker_style
 
-        self.obj.SetLineWidth(self.line_width)
-        self.obj.SetLineColor(self.line_color)
-        self.obj.SetLineStyle(self.line_style)
-        self.obj.SetFillColor(self.fill_color)
-        self.obj.SetFillStyle(self.fill_style)
-        self.obj.SetMarkerSize(self.marker_size)
-        self.obj.SetMarkerColor(self.marker_color)
-        self.obj.SetMarkerStyle(self.marker_style)
-
-        # Match fit to hist styles
-        if fit_match_style and self.obj.GetListOfFunctions().GetSize() == 1:
-            func = self.obj.GetListOfFunctions().At(0)
-            func.SetLineStyle(line_style)
-            func.SetLineWidth(line_width)
-            func.SetLineColor(line_color)
+        self._update_styles()
 
         if rebin_hist and rebin_hist != 1:
             self.obj.Rebin(rebin_hist) # Does this handle 2D hists?
@@ -190,6 +177,23 @@ class Contribution(object):
                 self.obj.Scale(1./(obj.Integral()))
         if isinstance(self.obj, ROOT.TH1) or isinstance(self.obj, ROOT.TH2):
             self.obj.SetDirectory(0)
+
+    def _update_styles(self):
+        self.obj.SetLineWidth(self.line_width)
+        self.obj.SetLineColor(self.line_color)
+        self.obj.SetLineStyle(self.line_style)
+        self.obj.SetFillColor(self.fill_color)
+        self.obj.SetFillStyle(self.fill_style)
+        self.obj.SetMarkerSize(self.marker_size)
+        self.obj.SetMarkerColor(self.marker_color)
+        self.obj.SetMarkerStyle(self.marker_style)
+
+        # Match fit to hist styles
+        if self.fit_match_style and self.obj.GetListOfFunctions().GetSize() == 1:
+            func = self.obj.GetListOfFunctions().At(0)
+            func.SetLineStyle(self.line_style)
+            func.SetLineWidth(self.line_width)
+            func.SetLineColor(self.line_color)
 
     def __eq__(self, other):
         return self.obj == other.obj
