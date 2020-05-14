@@ -172,6 +172,10 @@ def do_comparison_plot(entries, output_filename, rebin=1, draw_opt="NOSTACK HIST
                                                 mean_rel_error=0.4,
                                                 data_first=data_first,
                                                 **plot_kwargs)
+        if data_first:
+            # we'll do the filling of legend ourselves
+            plot.do_legend = False
+
         plot.plot(draw_opt)
 
         # Special case if data first object
@@ -181,7 +185,31 @@ def do_comparison_plot(entries, output_filename, rebin=1, draw_opt="NOSTACK HIST
             data_hist.SetLineWidth(entries[0][1].get('line_width', 1))
             data_hist.SetMarkerSize(entries[0][1].get('marker_size', 1))
             plot.main_pad.cd()
-            data_hist.Draw("E1 SAME")
+            data_draw_opt = "E1 X0 SAME"
+            data_hist.Draw(data_draw_opt)
+
+            # Create dummy graphs with the same styling to put into the legend
+            # Using graphs we can get the correct endings on the TLegend entries (!)
+            # Yes a massive faff for something so trivial
+            dummy_gr = ROOT.TGraphErrors(1, array('d', [1]), array('d', [1]), array('d', [1]), array('d', [1]))
+            dummy_hist = ROOT.TGraphErrors(1, array('d', [1]), array('d', [1]), array('d', [1]), array('d', [1]))
+            # Add them to the legend and draw it
+            dummy_conts = []  # stop premature deletion
+            for i, entry in enumerate(entries):
+                leg_draw_opt = "LE"
+                # check if line_width > 0?
+                if i == 0:
+                    if "X0" in data_draw_opt:
+                        leg_draw_opt = "E"
+                    if data_hist.GetMarkerSize() > 0:
+                        leg_draw_opt += "P"
+
+                cont = Contribution(dummy_gr.Clone(), leg_draw_opt=leg_draw_opt, **entry[1])
+                dummy_conts.append(cont)
+                plot.legend.AddEntry(cont.obj, cont.label, cont.leg_draw_opt)
+
+            plot.canvas.cd()
+            plot.legend.Draw()
 
             # Do the subplot uncertainty shading
             data_no_errors = entries[0][0].Clone()
