@@ -295,6 +295,20 @@ class GenPtBinnedPlotter(object):
             plot.save("%s/unfolded_%s_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
 
     def plot_unfolded_with_alt_truth_normalised(self):
+        data_total_errors_style = dict(label="Data (total unc.)",
+                                       line_color=self.plot_colours['unfolded_total_colour'], line_width=self.line_width, line_style=1,
+                                       marker_color=self.plot_colours['unfolded_total_colour'], marker_style=20, marker_size=0.75)
+        data_stat_errors_style = dict(label="Data (stat. unc.)",
+                                      line_color=self.plot_colours['unfolded_stat_colour'], line_width=self.line_width, line_style=1,
+                                      marker_color=self.plot_colours['unfolded_stat_colour'], marker_style=20, marker_size=0.75)  # you need a non-0 marker to get the horizontal bars at the end of errors
+
+        mc_style = dict( label=self.region['mc_label'],
+                         line_color=self.plot_colours['gen_colour'], line_width=self.line_width,
+                         marker_color=self.plot_colours['gen_colour'], marker_size=0)
+        alt_mc_style = dict(label=self.region['alt_mc_label'],
+                            line_color=self.plot_colours['alt_gen_colour'], line_width=self.line_width, line_style=2,
+                            marker_color=self.plot_colours['alt_gen_colour'], marker_size=0)
+
         for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
             hbc_args = dict(ind=ibin, binning_scheme='generator')
             mc_gen_hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('hist_truth', **hbc_args)
@@ -310,13 +324,6 @@ class GenPtBinnedPlotter(object):
             for i in range(1, unfolded_hist_bin_total_errors_marker_noerror.GetNbinsX()+1):
                 unfolded_hist_bin_total_errors_marker_noerror.SetBinError(i, 1E-100)
 
-            data_total_errors_style = dict(label="Data (total unc.)",
-                                           line_color=self.plot_colours['unfolded_total_colour'], line_width=self.line_width, line_style=1,
-                                           marker_color=self.plot_colours['unfolded_total_colour'], marker_style=20, marker_size=0.75)
-            data_stat_errors_style = dict(label="Data (stat. unc.)",
-                                          line_color=self.plot_colours['unfolded_stat_colour'], line_width=self.line_width, line_style=1,
-                                          marker_color=self.plot_colours['unfolded_stat_colour'], marker_style=20, marker_size=0.75)  # you need a non-0 marker to get the horizontal bars at the end of errors
-
             data_entries = [
                 Contribution(unfolded_hist_bin_total_errors, **data_total_errors_style),
                 Contribution(unfolded_hist_bin_stat_errors, **data_stat_errors_style),
@@ -328,12 +335,6 @@ class GenPtBinnedPlotter(object):
             data_no_errors = unfolded_hist_bin_total_errors_marker_noerror.Clone()
             cu.remove_th1_errors(data_no_errors)
 
-            mc_style = dict( label=self.region['mc_label'],
-                             line_color=self.plot_colours['gen_colour'], line_width=self.line_width,
-                             marker_color=self.plot_colours['gen_colour'], marker_size=0)
-            alt_mc_style = dict(label=self.region['alt_mc_label'],
-                                line_color=self.plot_colours['alt_gen_colour'], line_width=self.line_width, line_style=2,
-                                marker_color=self.plot_colours['alt_gen_colour'], marker_size=0)
             mc_entries = [
                 Contribution(mc_gen_hist_bin, subplot=data_no_errors, **mc_style),
                 Contribution(alt_mc_gen_hist_bin, subplot=data_no_errors, **alt_mc_style),
