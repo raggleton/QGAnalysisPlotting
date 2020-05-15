@@ -91,6 +91,7 @@ class Setup(object):
         self.particle_title = self.angle_str
         self.detector_title = "Detector-level " + self.angle_str
         self.pt_bin_normalised_differential_label = "#frac{1}{d#sigma/dp_{T}} #frac{d^{2}#sigma}{dp_{T} d%s}" % (angle.lambda_str)
+        self.pt_bin_detector_normalised_differential_label = "#frac{1}{dN/dp_{T}} #frac{d^{2}N}{dp_{T} d%s}" % (angle.lambda_str)
         self.pt_bin_normalised_differential_times_width_label = "#frac{1}{d#sigma/dp_{T}} #frac{d^{2}#sigma}{dp_{T} d%s}" % (angle.lambda_str)
         self.pt_bin_unnormalised_differential_label = "#frac{1}{dN/dp_{T}} #frac{d^{2}N}{dp_{T} d%s}" % (angle.lambda_str)  # FIXME
         self.pt_bin_unnormalised_differential_label = "N"
@@ -112,13 +113,14 @@ PLOT_COLOURS = dict(
     alt_gen_colour=ROOT.kViolet+1,
     alt_unfolded_colour=ROOT.kOrange-3,
     alt_unfolded_total_colour=ROOT.kOrange-7,
-    alt_reco_colour=ROOT.kOrange-3,
+    alt_reco_colour=ROOT.kViolet+1,
+    # alt_reco_colour=ROOT.kOrange-3,
     # reco_mc_colour=ROOT.kGreen+2,
     # reco_mc_colour=ROOT.kAzure-7,
     # reco_data_colour=ROOT.kRed,
     reco_data_colour=ROOT.kBlack,
-    # reco_mc_colour=ROOT.kRed+1,
-    reco_mc_colour=ROOT.kMagenta+1,
+    reco_mc_colour=ROOT.kRed,
+    # reco_mc_colour=ROOT.kMagenta+1,
     reco_unfolding_input_colour=ROOT.kRed,
     reco_folded_unfolded_colour=ROOT.kAzure+1,
     reco_folded_mc_truth_colour=ROOT.kGreen+2,
@@ -1734,7 +1736,7 @@ class RecoPtBinnedPlotter(object):
         this_plot.legend.SetX1(0.6)
         this_plot.legend.SetY1(0.68)
         this_plot.legend.SetX2(0.98)
-        this_plot.legend.SetY2(0.9)
+        this_plot.legend.SetY2(0.88)
         this_plot.left_margin = 0.16
 
     @staticmethod
@@ -1769,47 +1771,100 @@ class RecoPtBinnedPlotter(object):
         return title
 
     def plot_detector_normalised(self, alt_detector=None):
+        data_total_errors_style = dict(label="Data",
+                                       line_color=self.plot_colours['reco_data_colour'], line_width=self.line_width, line_style=1,
+                                       marker_color=self.plot_colours['reco_data_colour'], marker_style=20, marker_size=0.75)
+
+        mc_style = dict( label=self.region['mc_label'],
+                         line_color=self.plot_colours['reco_mc_colour'], line_width=self.line_width,
+                         marker_color=self.plot_colours['reco_mc_colour'], marker_size=0)
+
+        alt_mc_style = dict(label=self.region['alt_mc_label'],
+                            line_color=self.plot_colours['alt_reco_colour'], line_width=self.line_width, #line_style=2,
+                            marker_color=self.plot_colours['alt_reco_colour'], marker_size=0)
+
         for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
-            input_hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('input_hist', ibin, binning_scheme='detector')
-            mc_hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('hist_mc_reco', ibin, binning_scheme='detector')
+            hbc_args = dict(ind=ibin, binning_scheme='detector')
+            data_hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('input_hist', **hbc_args)
+            mc_hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('hist_mc_reco', **hbc_args)
+
+            # For subplot to ensure only MC errors drawn, not MC+data
+            data_no_errors = data_hist_bin.Clone()
+            cu.remove_th1_errors(data_no_errors)
 
             entries = [
-                Contribution(mc_hist_bin,
-                             label=self.setup.region['mc_label'],
-                             line_color=self.plot_colours['reco_mc_colour'], line_width=self.line_width,
-                             marker_color=self.plot_colours['reco_mc_colour'], marker_size=0,
-                             subplot=input_hist_bin if alt_detector else None),
+                Contribution(mc_hist_bin, subplot=data_no_errors, **mc_style),
             ]
             if alt_detector:
                 name = "alt_hist_mc_reco"
                 self.hist_bin_chopper.add_obj(name, alt_detector)
-                alt_mc_hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width(name, ibin, binning_scheme='detector')
+                alt_mc_hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width(name, **hbc_args)
                 entries.append(Contribution(alt_mc_hist_bin,
-                                            label=self.setup.region['alt_mc_label'],
-                                            line_color=self.plot_colours['alt_reco_colour'], line_width=self.line_width,
-                                            marker_color=self.plot_colours['alt_reco_colour'], marker_size=0,
-                                            subplot=input_hist_bin if alt_detector else None)
+                                            subplot=data_no_errors,
+                                            **alt_mc_style)
                 )
-            entries.extend([
-                Contribution(input_hist_bin,
-                             label="Data",
-                             line_color=self.plot_colours['reco_data_colour'], line_width=self.line_width,
-                             marker_color=self.plot_colours['reco_data_colour'], marker_style=20, marker_size=0.75,
-                             subplot=mc_hist_bin if not alt_detector else None),
-            ])
+            # Put data last so it gets drawn on top - we do legend ordering ourselves later anyway
+            entries.append(
+                Contribution(data_hist_bin, **data_total_errors_style),
+            )
             if not self.check_entries(entries, "plot_detector_normalised %d" % (ibin)):
                 continue
             plot = Plot(entries,
                         xtitle=self.setup.detector_title,
-                        ytitle=self.setup.pt_bin_normalised_differential_label,
+                        ytitle=self.setup.pt_bin_detector_normalised_differential_label,
                         what="hist",
                         title=self.get_pt_bin_title(bin_edge_low, bin_edge_high),
                         has_data=self.setup.has_data,
                         subplot_type='ratio',
-                        subplot_title='MC / Data' if alt_detector else 'Data / MC',
-                        subplot_limits=(0.75, 1.25),)
+                        subplot_title='Simulation / data',
+                        subplot_limits=(0, 2))
             self._modify_plot(plot)
-            plot.plot("NOSTACK E1")
+
+            # disable adding objects to legend & drawing - we'll do it manually
+            plot.do_legend = False
+            subplot_draw_opts = "NOSTACK E1"
+            plot.plot("NOSTACK E1", subplot_draw_opts)
+
+            # Create dummy graphs with the same styling to put into the legend
+            dummy_gr = ROOT.TGraphErrors(1, array('d', [1]), array('d', [1]), array('d', [1]), array('d', [1]))
+            dummy_data = Contribution(dummy_gr.Clone(), leg_draw_opt="LEP", **data_total_errors_style)
+            dummy_mc = Contribution(dummy_gr.Clone(), leg_draw_opt="LE", **mc_style)
+            dummy_alt_mc = Contribution(dummy_gr.Clone(), leg_draw_opt="LE", **alt_mc_style)
+            # Add them to the legend and draw it
+            for cont in [dummy_data, dummy_mc, dummy_alt_mc]:
+                plot.legend.AddEntry(cont.obj, cont.label, cont.leg_draw_opt)
+            plot.canvas.cd()
+            plot.legend.Draw()
+
+            # Create hists for data with error region for ratio
+            # Easiest way to get errors right is to do data (with 0 errors)
+            # and divide by data (with errors), as if you had MC = data with 0 error
+            # data_stat_ratio = data_no_errors.Clone()
+            # data_stat_ratio.Divide(unfolded_hist_bin_stat_errors)
+            # data_stat_ratio.SetFillStyle(3245)
+            # data_stat_ratio.SetFillColor(self.plot_colours['unfolded_stat_colour'])
+            # data_stat_ratio.SetLineWidth(0)
+            # data_stat_ratio.SetMarkerSize(0)
+
+            data_total_ratio = data_no_errors.Clone()
+            data_total_ratio.Divide(data_hist_bin)
+            data_total_ratio.SetFillStyle(3254)
+            data_total_ratio.SetFillColor(self.plot_colours['reco_data_colour'])
+            data_total_ratio.SetLineWidth(0)
+            data_total_ratio.SetMarkerSize(0)
+
+            # now draw the data error shaded area
+            # this is a bit hacky - basically draw them on the ratio pad,
+            # then redraw the existing hists & line to get them ontop
+            # note that we use "same" for all - this is to keep the original axes
+            # (we may want to rethink this later?)
+            plot.subplot_pad.cd()
+            draw_opt = "E2 SAME"
+            data_total_ratio.Draw(draw_opt)
+            plot.subplot_container.Draw("SAME" + subplot_draw_opts)
+            plot.subplot_line.Draw()
+            plot.canvas.cd()
+
             plot.save("%s/detector_reco_binning_%s_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
 
     def plot_detector_normalised_bg_subtracted(self, alt_detector=None):
@@ -1845,7 +1900,7 @@ class RecoPtBinnedPlotter(object):
                 continue
             plot = Plot(entries,
                         xtitle=self.setup.detector_title,
-                        ytitle=self.setup.pt_bin_normalised_differential_label,
+                        ytitle=self.setup.pt_bin_detector_normalised_differential_label,
                         what="hist",
                         title=self.get_pt_bin_title(bin_edge_low, bin_edge_high),
                         has_data=self.setup.has_data,
@@ -1876,7 +1931,7 @@ class RecoPtBinnedPlotter(object):
                 continue
             plot = Plot(entries,
                         xtitle=self.setup.detector_title,
-                        ytitle=self.setup.pt_bin_normalised_differential_label,
+                        ytitle=self.setup.pt_bin_detector_normalised_differential_label,
                         what="hist",
                         title=self.get_pt_bin_title(bin_edge_low, bin_edge_high),
                         has_data=self.setup.has_data,
@@ -1913,7 +1968,7 @@ class RecoPtBinnedPlotter(object):
                 continue
             plot = Plot(entries,
                         xtitle=self.setup.detector_title,
-                        ytitle=self.setup.pt_bin_normalised_differential_label,
+                        ytitle=self.setup.pt_bin_detector_normalised_differential_label,
                         what="hist",
                         title=self.get_pt_bin_title(bin_edge_low, bin_edge_high),
                         has_data=self.setup.has_data,
@@ -1944,7 +1999,7 @@ class RecoPtBinnedPlotter(object):
                 continue
             plot = Plot(entries,
                         xtitle=self.setup.detector_title,
-                        ytitle=self.setup.pt_bin_normalised_differential_label,
+                        ytitle=self.setup.pt_bin_detector_normalised_differential_label,
                         what="hist",
                         title=self.get_pt_bin_title(bin_edge_low, bin_edge_high),
                         has_data=self.setup.has_data,
@@ -1984,7 +2039,7 @@ class RecoPtBinnedPlotter(object):
                 continue
             plot = Plot(entries,
                         xtitle=self.setup.detector_title,
-                        ytitle=self.setup.pt_bin_normalised_differential_label,
+                        ytitle=self.setup.pt_bin_detector_normalised_differential_label,
                         what="hist",
                         title=self.get_pt_bin_title(bin_edge_low, bin_edge_high),
                         has_data=self.setup.has_data,
@@ -2084,7 +2139,7 @@ class RecoPtBinnedPlotter(object):
                 continue
             plot = Plot(entries,
                         xtitle=self.setup.detector_title,
-                        ytitle=self.setup.pt_bin_normalised_differential_label,
+                        ytitle=self.setup.pt_bin_detector_normalised_differential_label,
                         what="hist",
                         title=self.get_pt_bin_title(bin_edge_low, bin_edge_high),
                         has_data=self.setup.has_data,
