@@ -2281,19 +2281,19 @@ def do_binned_plots_per_region_angle(setup, do_binned_gen_pt, do_binned_gen_lamb
                                                      bins=unfolder.pt_bin_edges_reco,
                                                      hist_bin_chopper=hbc,
                                                      unfolder=unfolder)
-        reco_pt_binned_plotter.plot_folded_unfolded_normalised()
-        reco_pt_binned_plotter.plot_folded_unfolded_with_mc_normalised()
-        reco_pt_binned_plotter.plot_folded_gen_normalised()
         reco_pt_binned_plotter.plot_detector_normalised(alt_detector=alt_hist_reco)
         reco_pt_binned_plotter.plot_detector_normalised_bg_subtracted(alt_detector=alt_hist_reco_bg_subtracted)
+        # reco_pt_binned_plotter.plot_folded_unfolded_normalised()
+        # reco_pt_binned_plotter.plot_folded_unfolded_with_mc_normalised()
+        # reco_pt_binned_plotter.plot_folded_gen_normalised()
 
-        if has_model_systs:
-            reco_pt_binned_plotter.plot_detector_with_model_systs_normalised()
-            reco_pt_binned_plotter.plot_detector_with_model_systs_unnormalised()
+        # if has_model_systs:
+        #     reco_pt_binned_plotter.plot_detector_with_model_systs_normalised()
+        #     reco_pt_binned_plotter.plot_detector_with_model_systs_unnormalised()
 
-        if has_pdf_systs:
-            reco_pt_binned_plotter.plot_detector_with_pdf_systs_normalised()
-            reco_pt_binned_plotter.plot_detector_with_pdf_systs_unnormalised()
+        # if has_pdf_systs:
+        #     reco_pt_binned_plotter.plot_detector_with_pdf_systs_normalised()
+        #     reco_pt_binned_plotter.plot_detector_with_pdf_systs_unnormalised()
 
     return hbc
 
