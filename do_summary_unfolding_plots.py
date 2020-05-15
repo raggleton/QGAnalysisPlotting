@@ -1885,6 +1885,9 @@ if __name__ == "__main__":
         high_pt_bin = np.where(pt_bins == high_pt)[0][0]
         high_pt_str = "[%g, %g] GeV" % (high_pt, pt_bins[high_pt_bin+1])
 
+        # DIJET CENTRAL
+        # ---------------------------------------------
+
         # Create selection queries for mean/RMS/delta summary plots
         selections = []
         for angle in charged_and_neutral_angles:
@@ -1916,13 +1919,56 @@ if __name__ == "__main__":
         plotter.plot_mean_rms_bins_summary(
             selections=selections,
             legend_header=legend_header,
-            output_file=os.path.join(args.outputDir, "dijet_mean_rms_summary.pdf")
+            output_file=os.path.join(args.outputDir, "dijet_central_mean_rms_summary.pdf")
         )
 
         plotter.plot_delta_bins_summary(
             selections=selections,
             legend_header=legend_header,
-            output_file=os.path.join(args.outputDir, "dijet_delta_summary.pdf")
+            output_file=os.path.join(args.outputDir, "dijet_central_delta_summary.pdf")
+        )        
+
+        # DIJET FORWARD
+        # ---------------------------------------------
+
+        # Create selection queries for mean/RMS/delta summary plots
+        selections = []
+        for angle in charged_and_neutral_angles:
+            this_angle_str = "%s (%s)" % (angle.name, angle.lambda_str)
+            # this_angle_str = "%s" % (angle.lambda_str)
+            this_selection = [
+                ('jet_algo=="ak4puppi" & pt_bin==%d & ~isgroomed & region=="Dijet_forward" & angle=="%s"' % (low_pt_bin, angle.var),
+                    "{jet_str}, {pt_str}".format(jet_str=ak4_str, pt_str=low_pt_str)),
+                    # "#splitline{{{jet_str}}}{{{pt_str}}}".format(jet_str=ak4_str, pt_str=low_pt_str)),
+
+                ('jet_algo=="ak4puppi" & pt_bin==%d & ~isgroomed & region=="Dijet_forward" & angle=="%s"' % (high_pt_bin, angle.var),
+                    "{jet_str}, {pt_str}".format(jet_str=ak4_str, pt_str=high_pt_str)),
+                    # "#splitline{{{jet_str}}}{{{pt_str}}}".format(jet_str=ak4_str, pt_str=high_pt_str)),
+
+                ('jet_algo=="ak8puppi" & pt_bin==%d & ~isgroomed & region=="Dijet_forward" & angle=="%s"' % (low_pt_bin, angle.var),
+                    "{jet_str}, {pt_str}".format(jet_str=ak8_str, pt_str=low_pt_str)),
+                    # "#splitline{{{jet_str}}}{{{pt_str}}}".format(jet_str=ak8_str, pt_str=low_pt_str)),
+
+                ('jet_algo=="ak4puppi" & pt_bin==%d & ~isgroomed & region=="Dijet_forward" & angle=="%s_charged"' % (low_pt_bin, angle.var),
+                    "#splitline{{{jet_str}, {pt_str}}}{{Charged-only}}".format(jet_str=ak4_str, pt_str=low_pt_str)),
+                    # "#splitline{{#splitline{{{jet_str}}}{{{pt_str}}}}}{{Charged-only}}".format(jet_str=ak8_str, pt_str=low_pt_str)),
+
+                ('jet_algo=="ak4puppi" & pt_bin==%d & isgroomed  & region=="Dijet_forward_groomed" & angle=="%s"' % (low_pt_bin, angle.var),
+                    "#splitline{{{jet_str}, {pt_str}}}{{Groomed}}".format(jet_str=ak4_str, pt_str=low_pt_str)),
+            ]
+            selections.append({'label': this_angle_str, 'selections': this_selection})
+
+        legend_header = "#splitline{Dijet (forward)}{region}"
+        plotter.plot_mean_rms_bins_summary(
+            selections=selections,
+            legend_header=legend_header,
+            output_file=os.path.join(args.outputDir, "dijet_forward_mean_rms_summary.pdf")
+        )
+
+        plotter.plot_delta_bins_summary(
+            selections=selections,
+            legend_header=legend_header,
+            output_file=os.path.join(args.outputDir, "dijet_forward_delta_summary.pdf")
         )
 
     if has_zpj:
