@@ -70,28 +70,31 @@ def make_comparison_plot_ingredients(entries, rebin=1, normalise_hist=True, mean
     RuntimeError
         If there are 0 contributions
     """
+    entries = [ent for ent in entries if ent]
+    
     # first figure out if there is a plot where the mean relative error
     #  is greater than a certain amount
-    entries = [ent for ent in entries if ent]
-    big_mean_rel_err = any([cu.get_hist_mean_rel_error(ent[0]) > mean_rel_error
-                            and ent[0].Integral() > 0
-                            for ent in entries])
 
-    # If this is the case, rebin the plot. Start by making bins bigger,
-    # but check to find nearest divisor
-    orig_rebin = rebin
-    if big_mean_rel_err:
-        rebin += 1
+    if mean_rel_error > 0:
+        big_mean_rel_err = any([cu.get_hist_mean_rel_error(ent[0]) > mean_rel_error
+                                and ent[0].Integral() > 0
+                                for ent in entries])
 
-        # find some sensible divisor
-        counter = 0
-        while entries[0][0].GetNbinsX() % rebin != 0:
+        # If this is the case, rebin the plot. Start by making bins bigger,
+        # but check to find nearest divisor
+        orig_rebin = rebin
+        if big_mean_rel_err:
             rebin += 1
-            counter += 1
-            # if we don't find one, then revert back to original setting
-            if counter == 10:
-                rebin = orig_rebin
-                break
+
+            # find some sensible divisor
+            counter = 0
+            while entries[0][0].GetNbinsX() % rebin != 0:
+                rebin += 1
+                counter += 1
+                # if we don't find one, then revert back to original setting
+                if counter == 10:
+                    rebin = orig_rebin
+                    break
 
     conts = [Contribution(ent[0], normalise_hist=normalise_hist, rebin_hist=rebin, **ent[1])
              for ent in entries]
@@ -155,7 +158,9 @@ def make_comparison_plot_ingredients(entries, rebin=1, normalise_hist=True, mean
         else:
             p.legend.SetY1(0.68)
         p.legend.SetY2(0.88)
-    rebin = orig_rebin
+    
+    if mean_rel_error > 0:
+        rebin = orig_rebin
     return p
 
 
