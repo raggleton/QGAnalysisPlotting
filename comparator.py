@@ -578,12 +578,12 @@ class Plot(object):
 
         if self.plot_what == 'hist':
             # check hists have data in them
-            has_entries = [c.obj.GetEntries() > 0 for c in self.contributions]
+            has_entries = [c.obj.GetEntries() > 0 for c in self.contributions if isinstance(c.obj, ROOT.TH1)]
             if not any(has_entries):
                 raise ZeroContributions("All contributions have 0 entries")
         elif self.plot_what == 'graph':
             # check graphs have data in them
-            has_entries = [c.obj.GetN() > 0 for c in self.contributions]
+            has_entries = [c.obj.GetN() > 0 for c in self.contributions if isinstance(c.obj, ROOT.TGraph)]
             if not any(has_entries):
                 raise ZeroContributions("All contributions have 0 entries")
 
