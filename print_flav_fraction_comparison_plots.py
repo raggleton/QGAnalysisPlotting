@@ -96,7 +96,7 @@ def do_all_flavour_fraction_plots(root_dir,
                                             output_filename="%s/%s_flav_fraction_compare_jet1.%s" % (plot_dir, this_flav, OUTPUT_FMT),
                                             var_prepend=var_prepend,
                                             which_jet="1",
-                                            xtitle="p_{T}^{jet} [GeV]")
+                                            xtitle="p_{T}^{genjet} [GeV]")
 
 
 def do_flavour_fraction_input_comparison_plots(root_dirs, labels, plot_dir="flav_fractions_comparison", zpj_dirname="ZPlusJets_QG", dj_cen_dirname="Dijet_QG_central_tighter", dj_fwd_dirname="Dijet_QG_forward_tighter", var_prepend=""):

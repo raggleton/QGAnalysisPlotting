@@ -211,7 +211,7 @@ def compare_flavour_fractions_vs_pt(input_files, dirnames, pt_bins, labels, flav
         '1-g': 'Non-gluon',
     }
     flav_str = flav_str_dict[flav]
-    ytitle = "Fraction of %s flavour jets" % flav_str.lower()
+    ytitle = "Fraction of %s flavour genjets" % flav_str.lower()
     p = Plot(contribs,
              what='graph',
              xtitle=xtitle,
@@ -240,7 +240,7 @@ def do_flavour_fraction_vs_pt(input_file, dirname, pt_bins, output_filename, tit
 
     p_flav = Plot([plot_d, plot_u, plot_s, plot_c, plot_b, plot_g, plot_unknown],
                   what='graph',
-                  xtitle="p_{T}^{jet} [GeV]",
+                  xtitle="p_{T}^{genjet} [GeV]",
                   ytitle="Fraction",
                   title=title,
                   xlim=(pt_bins[0][0], pt_bins[-1][1]),
