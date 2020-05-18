@@ -42,7 +42,8 @@ def do_all_flavour_fraction_plots(root_dir,
                                   dj_fwd_dirname="Dijet_QG_forward_tighter", 
                                   var_prepend=""):
     """Do plots of jet flavour fractions vs pT, for both Z+jets and dijets regions"""
-    pt_bins = qgc.PT_BINS_INC_UFLOW
+    # pt_bins = qgc.PT_BINS_INC_UFLOW
+    pt_bins = qgc.PT_BINS_ZPJ
     # Plots of all flavour fractions vs pT for a given sample/selection
     if zpj_dirname:
         # Z+jets
@@ -99,7 +100,8 @@ def do_all_flavour_fraction_plots(root_dir,
 
 def do_flavour_fraction_input_comparison_plots(root_dirs, labels, plot_dir="flav_fractions_comparison", zpj_dirname="ZPlusJets_QG", dj_cen_dirname="Dijet_QG_central_tighter", dj_fwd_dirname="Dijet_QG_forward_tighter", var_prepend=""):
     """Do plots comparing several input dirs """
-    pt_bins = qgc.PT_BINS_INC_UFLOW
+    # pt_bins = qgc.PT_BINS_INC_UFLOW
+    pt_bins = qgc.PT_BINS_ZPJ
     if dj_cen_dirname:
         this_flav = "g"
         dirnames = [dj_cen_dirname]*len(root_dirs)
