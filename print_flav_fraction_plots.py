@@ -34,10 +34,11 @@ ROOT.gStyle.SetOptStat(0)
 OUTPUT_FMT = "pdf"
 
 
-def do_all_flavour_fraction_plots(root_dir, plot_dir="flav_fractions", zpj_dirname="ZPlusJets_QG", dj_dirname="Dijet_QG", var_prepend="", flav_source=""):
+def do_all_flavour_fraction_plots(root_dir, plot_dir="flav_fractions", zpj_dirname="ZPlusJets_QG", dj_dirname="Dijet_QG", var_prepend=""):
     """Do plots of jet flavour fractions vs pT, for both Z+jets and dijets regions"""
 
     pt_bins = qgc.PT_BINS_INC_UFLOW
+    pt_bins = qgc.PT_BINS
     # Plots of all flavour fractions vs pT for a given sample/selection
     if zpj_dirname:
         # Z+jets
@@ -45,7 +46,6 @@ def do_all_flavour_fraction_plots(root_dir, plot_dir="flav_fractions", zpj_dirna
                                       title="Z+jets selection",
                                       dirname=zpj_dirname,
                                       pt_bins=pt_bins,
-                                      flav_source=flav_source,
                                       var_prepend=var_prepend,
                                       output_filename="%s/zpj_flavour_fractions.%s" % (plot_dir, OUTPUT_FMT))
     if dj_dirname:
@@ -54,14 +54,12 @@ def do_all_flavour_fraction_plots(root_dir, plot_dir="flav_fractions", zpj_dirna
                                       title="Dijet selection (both jets)",
                                       dirname=dj_dirname,
                                       pt_bins=pt_bins,
-                                      flav_source=flav_source,
                                       var_prepend=var_prepend,
                                       output_filename="%s/dj_flavour_fractions.%s" % (plot_dir, OUTPUT_FMT))
         qgf.do_flavour_fraction_vs_pt(input_file=os.path.join(root_dir, qgc.QCD_FILENAME),
                                       title="Dijet selection (jet 1)",
                                       dirname=dj_dirname,
                                       pt_bins=pt_bins,
-                                      flav_source=flav_source,
                                       var_prepend=var_prepend,
                                       which_jet="1",
                                       output_filename="%s/dj_flavour_fractions_jet1.%s" % (plot_dir, OUTPUT_FMT))
@@ -69,7 +67,6 @@ def do_all_flavour_fraction_plots(root_dir, plot_dir="flav_fractions", zpj_dirna
                                       title="Dijet selection (jet 2)",
                                       dirname=dj_dirname,
                                       pt_bins=pt_bins,
-                                      flav_source=flav_source,
                                       var_prepend=var_prepend,
                                       which_jet="2",
                                       output_filename="%s/dj_flavour_fractions_jet2.%s" % (plot_dir, OUTPUT_FMT))
@@ -85,7 +82,6 @@ def do_all_flavour_fraction_plots(root_dir, plot_dir="flav_fractions", zpj_dirna
                                             labels=labels,
                                             flav=this_flav,
                                             output_filename="%s/g_flav_fraction_compare_bothjets.%s" % (plot_dir, OUTPUT_FMT),
-                                            flav_source=flav_source,
                                             var_prepend=var_prepend)
         qgf.compare_flavour_fractions_vs_pt(input_files=[os.path.join(root_dir, qgc.QCD_FILENAME), os.path.join(root_dir, qgc.DY_FILENAME)],
                                             dirnames=dirnames,
@@ -93,7 +89,6 @@ def do_all_flavour_fraction_plots(root_dir, plot_dir="flav_fractions", zpj_dirna
                                             labels=labels,
                                             flav=this_flav,
                                             output_filename="%s/g_flav_fraction_compare_jet1.%s" % (plot_dir, OUTPUT_FMT),
-                                            flav_source=flav_source,
                                             var_prepend=var_prepend,
                                             which_jet="1",
                                             xtitle="p_{T}^{jet 1} [GeV]")
@@ -103,7 +98,6 @@ def do_all_flavour_fraction_plots(root_dir, plot_dir="flav_fractions", zpj_dirna
                                             labels=labels,
                                             flav=this_flav,
                                             output_filename="%s/g_flav_fraction_compare_jet2.%s" % (plot_dir, OUTPUT_FMT),
-                                            flav_source=flav_source,
                                             var_prepend=var_prepend,
                                             which_jet="2",
                                             xtitle="p_{T}^{jet 2} [GeV]")
@@ -113,19 +107,18 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("--dj", help="do dijet plots", action="store_true")
     parser.add_argument("--zpj", help="do z + jets plots", action="store_true")
-    parser.add_argument("--genparton", help="Use genparton flavour instead of partonflavour", action="store_true")
+    parser.add_argument("--gen", help="Use genjet flavour instead of recojet", action="store_true")
     parser.add_argument("dirs", help="Workdir(s) with ROOT files", nargs="+")
     args = parser.parse_args()
     for root_dir in args.dirs:
-        if args.genparton:
+        if args.gen:
             do_all_flavour_fraction_plots(root_dir, 
-                plot_dir=os.path.join(root_dir, "flav_fractions_genParton"), 
-                flav_source="genParton_",
+                plot_dir=os.path.join(root_dir, "flav_fractions_gen"),
+                var_prepend="gen",
                 zpj_dirname="ZPlusJets_QG" if args.zpj else None,
                 dj_dirname="Dijet_QG" if args.dj else None)
         else:
             do_all_flavour_fraction_plots(root_dir, 
                 plot_dir=os.path.join(root_dir, "flav_fractions"), 
-                flav_source="",
                 zpj_dirname="ZPlusJets_QG" if args.zpj else None,
                 dj_dirname="Dijet_QG" if args.dj else None)
