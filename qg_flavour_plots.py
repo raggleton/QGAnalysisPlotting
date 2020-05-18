@@ -196,7 +196,8 @@ def compare_flavour_fractions_vs_pt(input_files, dirnames, pt_bins, labels, flav
         c = Contribution(obj,
                          label="%s" % (labels[i]),
                          line_color=colours[i], line_width=1,
-                         marker_style=20+i, marker_color=colours[i], marker_size=1)
+                         marker_style=20+i, marker_color=colours[i], marker_size=1,
+                         leg_draw_opt="LEP")
         contribs.append(c)
 
     flav_str_dict = {
@@ -220,7 +221,6 @@ def compare_flavour_fractions_vs_pt(input_files, dirnames, pt_bins, labels, flav
              ylim=(0, 1),
              has_data=False)
     p.default_canvas_size = (800, 600)
-    # p.legend.SetX1(0.4)
     p.plot("ALP")
     p.set_logx(do_more_labels=False)
     p.save(output_filename)
@@ -230,13 +230,13 @@ def do_flavour_fraction_vs_pt(input_file, dirname, pt_bins, output_filename, tit
     """Plot all flavour fractions vs PT for one input file & dirname in the ROOT file"""
     info = get_flavour_efficiencies(input_file, dirname, pt_bins, var_prepend=var_prepend, which_jet=(which_jet if "Dijet" in dirname else "both"))
 
-    plot_u = Contribution(info['u'].CreateGraph(), label="Up", line_color=ROOT.kRed, marker_color=ROOT.kRed, marker_style=20)
-    plot_d = Contribution(info['d'].CreateGraph(), label="Down", line_color=ROOT.kBlue, marker_color=ROOT.kBlue, marker_style=21)
-    plot_s = Contribution(info['s'].CreateGraph(), label="Strange", line_color=ROOT.kBlack, marker_color=ROOT.kBlack, marker_style=22)
-    plot_c = Contribution(info['c'].CreateGraph(), label="Charm", line_color=ROOT.kGreen-3, marker_color=ROOT.kGreen-3, marker_style=23)
-    plot_b = Contribution(info['b'].CreateGraph(), label="Bottom", line_color=ROOT.kOrange-3, marker_color=ROOT.kOrange-3, marker_style=33)
-    plot_g = Contribution(info['g'].CreateGraph(), label="Gluon", line_color=ROOT.kViolet, marker_color=ROOT.kViolet, marker_style=29)
-    plot_unknown = Contribution(info['unknown'].CreateGraph(), label="Unknown", line_color=ROOT.kGray+1, marker_color=ROOT.kGray+1, marker_style=26)
+    plot_u = Contribution(info['u'].CreateGraph(), label="Up", line_color=ROOT.kRed, marker_color=ROOT.kRed, marker_style=20, leg_draw_opt="LEP")
+    plot_d = Contribution(info['d'].CreateGraph(), label="Down", line_color=ROOT.kBlue, marker_color=ROOT.kBlue, marker_style=21, leg_draw_opt="LEP")
+    plot_s = Contribution(info['s'].CreateGraph(), label="Strange", line_color=ROOT.kBlack, marker_color=ROOT.kBlack, marker_style=22, leg_draw_opt="LEP")
+    plot_c = Contribution(info['c'].CreateGraph(), label="Charm", line_color=ROOT.kGreen-3, marker_color=ROOT.kGreen-3, marker_style=23, leg_draw_opt="LEP")
+    plot_b = Contribution(info['b'].CreateGraph(), label="Bottom", line_color=ROOT.kOrange-3, marker_color=ROOT.kOrange-3, marker_style=33, leg_draw_opt="LEP")
+    plot_g = Contribution(info['g'].CreateGraph(), label="Gluon", line_color=ROOT.kViolet, marker_color=ROOT.kViolet, marker_style=29, leg_draw_opt="LEP")
+    plot_unknown = Contribution(info['unknown'].CreateGraph(), label="Unknown", line_color=ROOT.kGray+1, marker_color=ROOT.kGray+1, marker_style=26, leg_draw_opt="LEP")
 
     p_flav = Plot([plot_d, plot_u, plot_s, plot_c, plot_b, plot_g, plot_unknown],
                   what='graph',
