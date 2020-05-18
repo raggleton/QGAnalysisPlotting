@@ -524,9 +524,10 @@ class Plot(object):
             ymax *= self.y_padding_max_linear
         # print("Set y maximum automatically to", ymax)
         modifier.SetMaximum(ymax)
-        if self.ylim is None:
-            self.ylim = [None, None]
-        self.ylim[1] = ymax
+        # dont' save to self.ylim, as it will never auto update if set_logy called
+        # if self.ylim is None:
+        #     self.ylim = [None, None]
+        # self.ylim[1] = ymax
 
     def _set_automatic_y_minimum(self):
         # this is tricky... how to handle various cases like -ve, ignoring 0s
@@ -555,9 +556,9 @@ class Plot(object):
 
         # print("Set y minimum automatically to", ymin)
         modifier.SetMinimum(ymin)
-        if self.ylim is None:
-            self.ylim = [None, None]
-        self.ylim[0] = ymin
+        # if self.ylim is None:
+            # self.ylim = [None, None]
+        # self.ylim[0] = ymin
 
     def _set_automatic_y_limits(self):
         self._set_automatic_y_minimum()
