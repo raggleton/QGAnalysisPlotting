@@ -34,12 +34,12 @@ ROOT.gStyle.SetOptStat(0)
 OUTPUT_FMT = "pdf"
 
 
-def do_all_flavour_fraction_plots(root_dir, 
-                                  plot_dir="flav_fractions", 
-                                  use_gen=True, 
-                                  zpj_dirname="ZPlusJets_QG", 
-                                  dj_cen_dirname="Dijet_QG_central_tighter", 
-                                  dj_fwd_dirname="Dijet_QG_forward_tighter", 
+def do_all_flavour_fraction_plots(root_dir,
+                                  plot_dir="flav_fractions",
+                                  use_gen=True,
+                                  zpj_dirname="ZPlusJets_QG",
+                                  dj_cen_dirname="Dijet_QG_central_tighter",
+                                  dj_fwd_dirname="Dijet_QG_forward_tighter",
                                   var_prepend=""):
     """Do plots of jet flavour fractions vs pT, for both Z+jets and dijets regions"""
     # pt_bins = qgc.PT_BINS_INC_UFLOW
@@ -83,7 +83,8 @@ def do_all_flavour_fraction_plots(root_dir,
         if d:
             this_dirnames.append(d)
             this_labels.append(l)
-    for this_flav in ['g', 'u', 'd', '1-g']:
+    for this_flav in ['g', 'u', 'd', '1-g'][:-1]:
+    # for this_flav in ['b']:
         # this_flav = "g"
         # Compare gluon fractions across samples/selections
         input_files = [os.path.join(root_dir, qgc.QCD_FILENAME) if "Dijet" in d else os.path.join(root_dir, qgc.DY_FILENAME) for d in this_dirnames]
@@ -189,17 +190,18 @@ if __name__ == '__main__':
     # One set of plots per input
     for adir in args.dir:
         do_all_flavour_fraction_plots(adir,
-            plot_dir=os.path.join(adir, "flav_fractions%s" % ("_gen" if args.gen else "")),
-            var_prepend="gen" if args.gen else "",
-            # zpj_dirname=None,
-            zpj_dirname="ZPlusJets_QG",
-            dj_cen_dirname="Dijet_QG_central_tighter",
-            dj_fwd_dirname="Dijet_QG_forward_tighter")
+                                      plot_dir=os.path.join(adir, "flav_fractions%s" % ("_gen" if args.gen else "")),
+                                      var_prepend="gen" if args.gen else "",
+                                      # zpj_dirname=None,
+                                      zpj_dirname="ZPlusJets_QG",
+                                      dj_cen_dirname="Dijet_QG_central_tighter",
+                                      dj_fwd_dirname="Dijet_QG_forward_tighter")
 
-    # Now comparison across all inputs
-    do_flavour_fraction_input_comparison_plots(args.dir,
-                                               plot_dir=os.path.join(args.dir[0], "flav_fractions_comparison"),
-                                               labels=args.dirlabel,
-                                               dj_cen_dirname="Dijet_QG_central_tighter" if args.dj else None,
-                                               dj_fwd_dirname="Dijet_QG_forward_tighter" if args.dj else None,
-                                               zpj_dirname="ZPlusJets_QG" if args.zpj else None)
+    if len(args.dir) > 1:
+        # Now comparison across all inputs
+        do_flavour_fraction_input_comparison_plots(args.dir,
+                                                   plot_dir=os.path.join(args.dir[0], "flav_fractions_comparison"),
+                                                   labels=args.dirlabel,
+                                                   dj_cen_dirname="Dijet_QG_central_tighter" if args.dj else None,
+                                                   dj_fwd_dirname="Dijet_QG_forward_tighter" if args.dj else None,
+                                                   zpj_dirname="ZPlusJets_QG" if args.zpj else None)
