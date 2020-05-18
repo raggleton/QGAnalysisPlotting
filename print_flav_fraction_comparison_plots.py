@@ -34,7 +34,13 @@ ROOT.gStyle.SetOptStat(0)
 OUTPUT_FMT = "pdf"
 
 
-def do_all_flavour_fraction_plots(root_dir, plot_dir="flav_fractions", zpj_dirname="ZPlusJets_QG", dj_cen_dirname="Dijet_QG_central_tighter", dj_fwd_dirname="Dijet_QG_forward_tighter", var_prepend=""):
+def do_all_flavour_fraction_plots(root_dir, 
+                                  plot_dir="flav_fractions", 
+                                  use_gen=True, 
+                                  zpj_dirname="ZPlusJets_QG", 
+                                  dj_cen_dirname="Dijet_QG_central_tighter", 
+                                  dj_fwd_dirname="Dijet_QG_forward_tighter", 
+                                  var_prepend=""):
     """Do plots of jet flavour fractions vs pT, for both Z+jets and dijets regions"""
     pt_bins = qgc.PT_BINS_INC_UFLOW
     # Plots of all flavour fractions vs pT for a given sample/selection
@@ -172,6 +178,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("--dj", help="do dijet plots", action="store_true")
     parser.add_argument("--zpj", help="do z + jets plots", action="store_true")
+    parser.add_argument("--gen", help="Use genjet flavour", action="store_true")
     parser.add_argument("--dir", help="Directory to get plot from. Can be used multiple times", action="append")
     parser.add_argument("--dirlabel", help="Label to be given for dir. Must be used in conjunction with --dir, once per entry.", action="append")
     args = parser.parse_args()
@@ -180,7 +187,8 @@ if __name__ == '__main__':
     # One set of plots per input
     for adir in args.dir:
         do_all_flavour_fraction_plots(adir,
-            plot_dir=os.path.join(adir, "flav_fractions_genParton"),
+            plot_dir=os.path.join(adir, "flav_fractions%s" % ("_gen" if args.gen else "")),
+            var_prepend="gen" if args.gen else "",
             # zpj_dirname=None,
             zpj_dirname="ZPlusJets_QG",
             dj_cen_dirname="Dijet_QG_central_tighter",
