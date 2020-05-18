@@ -88,7 +88,18 @@ def compare_flavour_fractions_vs_pt(input_files, dirnames, pt_bins, labels, flav
             gr = ROOT.TGraphErrors(N, np.array(bin_centers), 1.-np.array(fdict[flav.replace("1-", '')]), np.array(bin_widths), np.zeros(N))
         c = Contribution(gr, label="%s" % (labels[i]), line_color=colours[i], marker_style=20+i, marker_color=colours[i])
         contribs.append(c)
-    ytitle = "%s flavour fraction" % flav
+    flav_str_dict = {
+        'u': 'Up quark',
+        'd': 'Down quark',
+        'c': 'Charm quark',
+        's': 'Strange quark',
+        'b': 'Bottom quark',
+        't': 'Top quark',
+        'g': 'Gluon',
+        '1-g': 'Non-gluon',
+    }
+    flav_str = flav_str_dict[flav]
+    ytitle = "Fraction of %s flavour jets" % flav_str.lower()
     p = Plot(contribs,
              what='graph',
              xtitle=xtitle,
@@ -97,9 +108,10 @@ def compare_flavour_fractions_vs_pt(input_files, dirnames, pt_bins, labels, flav
              xlim=(pt_bins[0][0], pt_bins[-1][1]),
              ylim=(0, 1),
              has_data=False)
+    p.default_canvas_size = (800, 600)
     # p.legend.SetX1(0.4)
     p.plot("ALP")
-    p.set_logx()
+    p.set_logx(do_more_labels=False)
     p.save(output_filename)
 
 
@@ -119,15 +131,15 @@ def do_flavour_fraction_vs_pt(input_file, dirname, pt_bins, output_filename, tit
     gr_flav_g = ROOT.TGraphErrors(N, np.array(bin_centers), np.array(flav_dict['g']), np.array(bin_widths), np.zeros(N))
     gr_flav_unknown = ROOT.TGraphErrors(N, np.array(bin_centers), np.array(flav_dict['unknown']), np.array(bin_widths), np.zeros(N))
 
-    plot_u = Contribution(gr_flav_u, label="u", line_color=ROOT.kRed, marker_color=ROOT.kRed, marker_style=20)
-    plot_d = Contribution(gr_flav_d, label="d", line_color=ROOT.kBlue, marker_color=ROOT.kBlue, marker_style=21)
-    plot_s = Contribution(gr_flav_s, label="s", line_color=ROOT.kBlack, marker_color=ROOT.kBlack, marker_style=22)
-    plot_c = Contribution(gr_flav_c, label="c", line_color=ROOT.kGreen-3, marker_color=ROOT.kGreen-3, marker_style=23)
-    plot_b = Contribution(gr_flav_b, label="b", line_color=ROOT.kOrange-3, marker_color=ROOT.kOrange-3, marker_style=33)
-    plot_g = Contribution(gr_flav_g, label="g", line_color=ROOT.kViolet, marker_color=ROOT.kViolet, marker_style=29)
+    plot_u = Contribution(gr_flav_u, label="Up", line_color=ROOT.kRed, marker_color=ROOT.kRed, marker_style=20)
+    plot_d = Contribution(gr_flav_d, label="Down", line_color=ROOT.kBlue, marker_color=ROOT.kBlue, marker_style=21)
+    plot_s = Contribution(gr_flav_s, label="Strange", line_color=ROOT.kBlack, marker_color=ROOT.kBlack, marker_style=22)
+    plot_c = Contribution(gr_flav_c, label="Charm", line_color=ROOT.kGreen-3, marker_color=ROOT.kGreen-3, marker_style=23)
+    plot_b = Contribution(gr_flav_b, label="Bottom", line_color=ROOT.kOrange-3, marker_color=ROOT.kOrange-3, marker_style=33)
+    plot_g = Contribution(gr_flav_g, label="Gluon", line_color=ROOT.kViolet, marker_color=ROOT.kViolet, marker_style=29)
     plot_unknown = Contribution(gr_flav_unknown, label="unknown", line_color=ROOT.kGray+1, marker_color=ROOT.kGray+1, marker_style=26)
 
-    p_flav = Plot([plot_u, plot_d, plot_s, plot_c, plot_b, plot_g, plot_unknown],
+    p_flav = Plot([plot_d, plot_u, plot_s, plot_c, plot_b, plot_g, plot_unknown],
                   what='graph',
                   xtitle="p_{T}^{jet} [GeV]",
                   ytitle="Fraction",
@@ -136,5 +148,5 @@ def do_flavour_fraction_vs_pt(input_file, dirname, pt_bins, output_filename, tit
                   ylim=[0, 1],
                   has_data=False)
     p_flav.plot("ALP")
-    p_flav.set_logx()
+    p_flav.set_logx(do_more_labels=False)
     p_flav.save(output_filename)
