@@ -19,7 +19,7 @@ import ROOT
 from MyStyle import My_Style
 from comparator import Contribution, Plot
 My_Style.cd()
-ROOT.gErrorIgnoreLevel = ROOT.kWarning
+# ROOT.gErrorIgnoreLevel = ROOT.kWarning
 
 # my packages
 import common_utils as cu
@@ -60,6 +60,8 @@ def do_plot(entries, output_file, hist_name=None, xlim=None, ylim=None, rebin=2,
                          rebin_hist=rebin
                         )
         )
+        # print stats
+        print(ent['hist_name'], ent['label'], ent['hist'].Integral())
     title = 'AK8 PUPPI' if is_ak8 else 'AK4 PUPPI'
     plot = Plot(components,
                 what='hist',
@@ -101,8 +103,8 @@ if __name__ == "__main__":
         'filename': "%s/%s" % (input_dir, qgc.ZB_FILENAME),
         'label': 'HLT_ZeroBias',
         'color': ROOT.kMagenta-9,
-        'scale': 35918219492.947 / 29048.362
-        # 'scale': 1
+        # 'scale': 35918219492.947 / 29048.362
+        'scale': 1
     }
     jet_ht_filename = "%s/%s" % (input_dir, qgc.JETHT_FILENAME)
     # jet_ht_filename = "%s/%s" % (input_dir, qgc.JETHT_RUNB_FILENAME)
@@ -176,7 +178,7 @@ if __name__ == "__main__":
             this_entry['hist_name'] = ht_name.format(ind=this_entry['ind'])
             this_data_entries.append(this_entry)
 
-        output_filename = "%s/DataJetHTZB-%s.%s" % (args.output, zb_name.split("/", 1)[1], OUTPUT_FMT)
+        output_filename = "%s/DataJetHTZB-%s.%s" % (input_dir, zb_name.split("/", 1)[1], OUTPUT_FMT)
         do_plot(this_data_entries,
                 output_file=output_filename,
                 xlim=[30, 2E3],
