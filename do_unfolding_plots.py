@@ -89,7 +89,11 @@ class Setup(object):
                                                                  lambda_str=angle.lambda_str)
         # self.particle_title = "Particle-level " + self.angle_str
         self.particle_title = self.angle_str
-        self.detector_title = "Detector-level " + self.angle_str
+        
+        angle_prepend = "groomed " if "groomed" in region['name'] else ""
+        self.detector_title = "Detector-level {prepend}{name} ({lambda_str})".format(prepend=angle_prepend,
+                                                                                     name=this_angle_name,
+                                                                                     lambda_str=angle.lambda_str)
         self.pt_bin_normalised_differential_label = "#frac{1}{d#sigma/dp_{T}} #frac{d^{2}#sigma}{dp_{T} d%s}" % (angle.lambda_str)
         self.pt_bin_detector_normalised_differential_label = "#frac{1}{dN/dp_{T}} #frac{d^{2}N}{dp_{T} d%s}" % (angle.lambda_str)
         self.pt_bin_normalised_differential_times_width_label = "#frac{1}{d#sigma/dp_{T}} #frac{d^{2}#sigma}{dp_{T} d%s}" % (angle.lambda_str)
