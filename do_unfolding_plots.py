@@ -2305,7 +2305,7 @@ def do_binned_plots_per_region_angle(setup, do_binned_gen_pt, do_binned_gen_lamb
                                                    bins=unfolder.pt_bin_edges_gen,
                                                    hist_bin_chopper=hbc,
                                                    unfolder=unfolder)
-        # gen_pt_binned_plotter.plot_unfolded_normalised()
+        gen_pt_binned_plotter.plot_unfolded_normalised()
         gen_pt_binned_plotter.plot_unfolded_unnormalised()
         # gen_pt_binned_plotter.plot_total_ematrix()
 
