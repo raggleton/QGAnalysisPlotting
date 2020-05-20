@@ -115,19 +115,20 @@ def do_flavour_fraction_input_comparison_plots(root_dirs, labels, plot_dir="flav
                                             output_filename="%s/dj_g_flav_fraction_compare_central_jet.%s" % (plot_dir, OUTPUT_FMT),
                                             var_prepend=var_prepend,
                                             which_jet="1",
-                                            xtitle="p_{T}^{jet} [GeV]")
-        this_flav = "1-g"
-        dirnames = [dj_cen_dirname]*len(root_dirs)
-        # Compare non-gluon fractions across samples/selections
-        qgf.compare_flavour_fractions_vs_pt(input_files=[os.path.join(rd, qgc.QCD_FILENAME) for rd in root_dirs],
-                                            dirnames=dirnames,
-                                            pt_bins=pt_bins,
-                                            labels=labels,
-                                            flav=this_flav,
-                                            output_filename="%s/dj_q_flav_fraction_compare_central_jet.%s" % (plot_dir, OUTPUT_FMT),
-                                            var_prepend=var_prepend,
-                                            which_jet="1",
-                                            xtitle="p_{T}^{jet 1} [GeV]")
+                                            title="Dijet (central) region",
+                                            xtitle="p_{T}^{%sjet} [GeV]" % (var_prepend))
+        # this_flav = "1-g"
+        # dirnames = [dj_cen_dirname]*len(root_dirs)
+        # # Compare non-gluon fractions across samples/selections
+        # qgf.compare_flavour_fractions_vs_pt(input_files=[os.path.join(rd, qgc.QCD_FILENAME) for rd in root_dirs],
+        #                                     dirnames=dirnames,
+        #                                     pt_bins=pt_bins,
+        #                                     labels=labels,
+        #                                     flav=this_flav,
+        #                                     output_filename="%s/dj_q_flav_fraction_compare_central_jet.%s" % (plot_dir, OUTPUT_FMT),
+        #                                     var_prepend=var_prepend,
+        #                                     which_jet="1",
+        #                                     xtitle="p_{T}^{jet 1} [GeV]")
     if dj_fwd_dirname:
         this_flav = "g"
         dirnames = [dj_fwd_dirname]*len(root_dirs)
@@ -140,19 +141,20 @@ def do_flavour_fraction_input_comparison_plots(root_dirs, labels, plot_dir="flav
                                             output_filename="%s/dj_g_flav_fraction_compare_forward_jet.%s" % (plot_dir, OUTPUT_FMT),
                                             var_prepend=var_prepend,
                                             which_jet="1",
-                                            xtitle="p_{T}^{jet} [GeV]")
-        this_flav = "1-g"
-        dirnames = [dj_fwd_dirname]*len(root_dirs)
-        # Compare non-gluon fractions across samples/selections
-        qgf.compare_flavour_fractions_vs_pt(input_files=[os.path.join(rd, qgc.QCD_FILENAME) for rd in root_dirs],
-                                            dirnames=dirnames,
-                                            pt_bins=pt_bins,
-                                            labels=labels,
-                                            flav=this_flav,
-                                            output_filename="%s/dj_q_flav_fraction_compare_forward_jet.%s" % (plot_dir, OUTPUT_FMT),
-                                            var_prepend=var_prepend,
-                                            which_jet="1",
-                                            xtitle="p_{T}^{jet 1} [GeV]")
+                                            title="Dijet (forward) region",
+                                            xtitle="p_{T}^{%sjet} [GeV]" % (var_prepend))
+        # this_flav = "1-g"
+        # dirnames = [dj_fwd_dirname]*len(root_dirs)
+        # # Compare non-gluon fractions across samples/selections
+        # qgf.compare_flavour_fractions_vs_pt(input_files=[os.path.join(rd, qgc.QCD_FILENAME) for rd in root_dirs],
+        #                                     dirnames=dirnames,
+        #                                     pt_bins=pt_bins,
+        #                                     labels=labels,
+        #                                     flav=this_flav,
+        #                                     output_filename="%s/dj_q_flav_fraction_compare_forward_jet.%s" % (plot_dir, OUTPUT_FMT),
+        #                                     var_prepend=var_prepend,
+        #                                     which_jet="1",
+        #                                     xtitle="p_{T}^{jet 1} [GeV]")
 
     if zpj_dirname:
         this_flav = "g"
@@ -164,17 +166,19 @@ def do_flavour_fraction_input_comparison_plots(root_dirs, labels, plot_dir="flav
                                             labels=labels,
                                             flav=this_flav,
                                             output_filename="%s/zpj_g_flav_fraction_compare.%s" % (plot_dir, OUTPUT_FMT),
+                                            title=qgc.ZpJ_LABEL,
+                                            xtitle="p_{T}^{%sjet} [GeV]" % (var_prepend),
                                             var_prepend=var_prepend)
-        this_flav = "1-g"
-        dirnames = [zpj_dirname] * len(root_dirs)
-        # Compare quark fractions across samples/selections
-        qgf.compare_flavour_fractions_vs_pt(input_files=[os.path.join(rd, qgc.DY_FILENAME) for rd in root_dirs],
-                                            dirnames=dirnames,
-                                            pt_bins=pt_bins,
-                                            labels=labels,
-                                            flav=this_flav,
-                                            output_filename="%s/zpj_q_flav_fraction_compare.%s" % (plot_dir, OUTPUT_FMT),
-                                            var_prepend=var_prepend)
+        # this_flav = "1-g"
+        # dirnames = [zpj_dirname] * len(root_dirs)
+        # # Compare quark fractions across samples/selections
+        # qgf.compare_flavour_fractions_vs_pt(input_files=[os.path.join(rd, qgc.DY_FILENAME) for rd in root_dirs],
+        #                                     dirnames=dirnames,
+        #                                     pt_bins=pt_bins,
+        #                                     labels=labels,
+        #                                     flav=this_flav,
+        #                                     output_filename="%s/zpj_q_flav_fraction_compare.%s" % (plot_dir, OUTPUT_FMT),
+        #                                     var_prepend=var_prepend)
 
 
 if __name__ == '__main__':
@@ -202,6 +206,7 @@ if __name__ == '__main__':
         do_flavour_fraction_input_comparison_plots(args.dir,
                                                    plot_dir=os.path.join(args.dir[0], "flav_fractions_comparison"),
                                                    labels=args.dirlabel,
+                                                   var_prepend="gen" if args.gen else "",
                                                    dj_cen_dirname="Dijet_QG_central_tighter" if args.dj else None,
                                                    dj_fwd_dirname="Dijet_QG_forward_tighter" if args.dj else None,
                                                    zpj_dirname="ZPlusJets_QG" if args.zpj else None)

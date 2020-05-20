@@ -96,8 +96,8 @@ def get_flavour_efficiencies(input_file, dirname, pt_bins, var_prepend="", which
 
         total = d_num+u_num+s_num+c_num+b_num+t_num+g_num+unknown_num
 
-        if total != total2:
-            raise RuntimeError("totals dont match")
+        if not cu.same_floats(total, total2):
+            raise RuntimeError("totals dont match: %.9g vs %.9g" % (total, total2))
 
         unknown_err = h_flav.GetBinError(1)
         d_err = h_flav.GetBinError(2)
