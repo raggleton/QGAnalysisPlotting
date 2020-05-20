@@ -1791,6 +1791,7 @@ def unpickle_region(pickle_filename):
     """Retreive region dict from pickle file"""
     if not os.path.isfile(pickle_filename):
         print("! Warning ! cannot find unfolding pickle file", pickle_filename, ' - skipping')
+        return None
     # with lzma.open(pickle_filename, 'r') as f:
     with gzip.open(pickle_filename, 'r') as f:
         unpickled_region = pickle.load(f)

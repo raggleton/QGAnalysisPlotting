@@ -3320,6 +3320,8 @@ if __name__ == "__main__":
             # Get region dict from pickle file
             pickle_filename = os.path.join(angle_output_dir, "unfolding_result.pkl")
             unpickled_region = unpickle_region(pickle_filename)
+            if unpickled_region is None:
+                continue
 
             # check
             if region['name'] != unpickled_region['name']:
