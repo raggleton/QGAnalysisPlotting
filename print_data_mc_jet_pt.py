@@ -29,6 +29,16 @@ ROOT.gErrorIgnoreLevel = ROOT.kWarning
 OUTPUT_FMT = "pdf"
 
 
+def compare_bins(histA, histB):
+    h1Array = histA.GetXaxis().GetXbins()
+    h2Array = histB.GetXaxis().GetXbins()
+    if h1Array.fN != h2Array.fN:
+        raise ValueError("h1Array.fN != h2Array.fN")
+
+    for i in range(h1Array.fN):
+        if not ROOT.TMath.AreEqualRel(h1Array.GetAt(i), h2Array.GetAt(i), 1E-10):
+            raise ValueError("not equal: %g %g" % (h1Array.GetAt(i), h2Array.GetAt(i)))
+
 def do_jet_pt_plot(entries,
                    output_filename,
                    xlim=None,
@@ -39,7 +49,7 @@ def do_jet_pt_plot(entries,
                    normalise_hists=True,
                    subplot_limits=None
                    ):
-    entries = [ent for ent in entries if ent]
+    # entries = [ent for ent in entries if ent]
 
     conts = [Contribution(ent[0], rebin_hist=rebin, **ent[1])  # Don't use noramlise_hist - screws up with unequal binning
              for ent in entries]
@@ -57,11 +67,13 @@ def do_jet_pt_plot(entries,
 
         # For subplot to ensure only MC errors drawn, not MC+data
         data_obj = entries[0][0]
+        # data_obj = conts[0].obj
         data_no_errors = data_obj.Clone()
         cu.remove_th1_errors(data_no_errors)
         for i, cont in enumerate(conts[1:], 1):
             if cont.subplot == data_obj:
                 cont.subplot = data_no_errors
+                # compare_bins(cont.obj, cont.subplot)
 
     plot = Plot(conts,
                 what='hist',
@@ -71,7 +83,7 @@ def do_jet_pt_plot(entries,
                 ylim=ylim,
                 xtitle="p_{T}^{jet} [GeV]",
                 # ytitle="#DeltaN/N" if normalise_hists else "N",
-                ytitle="#frac{d#sigma}{dp_{T}}" if normalise_hists else "N",
+                ytitle="#frac{dN}{dp_{T}} [events / GeV]",
                 title=title,
                 subplot_type='ratio',
                 subplot_title="Simulation / data",
@@ -145,6 +157,7 @@ def do_jet_pt_plot(entries,
         # data_stat_ratio.SetMarkerSize(0)
 
         data_total_ratio = data_no_errors.Clone()
+        # compare_bins(data_total_ratio, entries[0][0])
         data_total_ratio.Divide(entries[0][0])
         data_total_ratio.SetFillStyle(3254)
         data_total_ratio.SetFillColor(entries[0][1]['fill_color'])
@@ -167,9 +180,32 @@ def do_jet_pt_plot(entries,
     plot.save(output_filename)
 
 
-def _rebin_scale(hist, binning):
-    new_hist = hist.Rebin(len(binning)-1, hist.GetName()+"_rebin", binning)
-    new_hist.Scale(1./new_hist.Integral(), "width")
+def _rebin_scale(hist, binning, normalise=False):
+    if binning is not None:
+        new_hist = hist.Rebin(len(binning)-1, hist.GetName()+"_rebin" + cu.get_unique_str(), binning)
+    else:
+        new_hist = hist.Clone(hist.GetName()+"_rebin_scale" + cu.get_unique_str())
+    factor = 1.
+    if normalise and new_hist.Integral() != 0:
+        factor = new_hist.Integral()
+    # Urgh this breaks .Integral() somehow
+    new_hist.Scale(1./factor, "width")
+    return new_hist
+
+
+def tunfold_to_phsyical_bins(hist, bins, divide_by_bin_width=True):
+    if hist.GetNbinsX() != len(bins)-1:
+        raise ValueError("tunfold_to_phsyical_bins: bins not correct size (%d vs %d)" % (hist.GetNbinsX(), len(bins)-1))
+
+    new_hist = ROOT.TH1D(hist.GetName()+"_relabel" + cu.get_unique_str(), "", len(bins)-1, bins)
+    for ix in range(1, hist.GetNbinsX()+1):
+        bin_width = bins[ix] - bins[ix-1]
+        if not divide_by_bin_width:
+            bin_width = 1.
+        # print(ix, hist.GetBinError(ix), hist.GetBinError(ix) / bin_width)
+        new_hist.SetBinContent(ix, hist.GetBinContent(ix) / bin_width)
+        new_hist.SetBinError(ix, hist.GetBinError(ix) / bin_width)
+    new_hist.SetEntries(hist.GetEntries())
     return new_hist
 
 
@@ -182,7 +218,8 @@ def do_dijet_pt_plots(workdir):
 
     for region_shortname, region_label in [("central", qgc.Dijet_CEN_LABEL), ("forward", qgc.Dijet_FWD_LABEL)]:
 
-        histname = "Dijet_QG_%s_tighter/jet_pt" % (region_shortname)  # fine equidistant binning
+        # histname = "Dijet_QG_%s_tighter/jet_pt" % (region_shortname)  # fine equidistant binning
+        histname = "Dijet_QG_Unfold_%s_tighter/hist_pt_reco_all" % (region_shortname) # tunfold binning
 
         lw = 2
         msize = 1.1
@@ -198,23 +235,43 @@ def do_dijet_pt_plots(workdir):
         py_hist = cu.get_from_tfile(py_tfile, histname)
         hpp_hist = cu.get_from_tfile(hpp_tfile, histname)
 
+        # For use with tunfold binning, which just has bin indices as x values instead of physical values
+        all_pt_bins = np.append(qgc.PT_UNFOLD_DICT['underflow_reco'][:-1], qgc.PT_UNFOLD_DICT['signal_reco'])
+        all_pt_bins = np.append(all_pt_bins, 8000)  # the overflow bin
+        print(all_pt_bins)
+        data_hist = tunfold_to_phsyical_bins(data_hist, all_pt_bins, divide_by_bin_width=True)
+        mg_hist = tunfold_to_phsyical_bins(mg_hist, all_pt_bins, divide_by_bin_width=True)
+        py_hist = tunfold_to_phsyical_bins(py_hist, all_pt_bins, divide_by_bin_width=True)
+        hpp_hist = tunfold_to_phsyical_bins(hpp_hist, all_pt_bins, divide_by_bin_width=True)
 
-        custom_bins = np.concatenate([
-            np.arange(50, 200, 10),
-            np.arange(200, 300, 20),
-            np.arange(300, 1000., 50),
-            np.arange(1000, 2100., 100),
-            # np.array([500, 600, 700, 800, 900, 1000], dtype='d')
-            ])
-        print('dijet binning:', custom_bins)
+        # Scale to data
+        mg_hist.Scale(data_hist.Integral()/mg_hist.Integral())
+        py_hist.Scale(data_hist.Integral()/py_hist.Integral())
+        hpp_hist.Scale(data_hist.Integral()/hpp_hist.Integral())
 
-        data_hist = _rebin_scale(data_hist, custom_bins)
-        mg_hist = _rebin_scale(mg_hist, custom_bins)
-        py_hist = _rebin_scale(py_hist, custom_bins)
-        hpp_hist = _rebin_scale(hpp_hist, custom_bins)
+
+        # custom_bins = np.concatenate([
+        #     np.arange(50, 200, 10),
+        #     np.arange(200, 300, 20),
+        #     np.arange(300, 1000., 50),
+        #     np.arange(1000, 2100., 100),
+        #     # np.array([500, 600, 700, 800, 900, 1000], dtype='d')
+        #     ])
+        # print('dijet binning:', custom_bins)
+
+        # can't use this, screws up nentries for some reason
+        # data_hist = _rebin_scale(data_hist, binning=custom_bins, normalise=False)
+        # mg_hist = _rebin_scale(mg_hist, binning=custom_bins, normalise=False)
+        # py_hist = _rebin_scale(py_hist, binning=custom_bins, normalise=False)
+        # hpp_hist = _rebin_scale(hpp_hist, binning=custom_bins, normalise=False)
+
+        # hpp_hist.Scale(23.76 / )
+        # hpp_hist.Scale(1E6)
+        # for ih in range(1, 4):
+            # print(hpp_hist.GetBinContent(ih) / data_hist.GetBinContent(ih))
 
         entries = [
-            # SINGLE MU DATA
+            # DATA
             [
                 data_hist,
                 dict(line_color=qgc.JETHT_COLOUR, line_width=data_line_width, fill_color=qgc.JETHT_COLOUR,
@@ -258,13 +315,12 @@ def do_dijet_pt_plots(workdir):
         do_jet_pt_plot(entries,
                        output_filename=os.path.join(workdir, "data_mc_jet_pt/Dijet_%s/jet_pt.%s" % (region_shortname, OUTPUT_FMT)),
                        rebin=1,
-                       # xlim=(50, 1000),
-                       xlim=(custom_bins[0], custom_bins[-1]),
+                       xlim=(30, 4000),
                        ylim=None,
                        title=title,
                        subplot_limits=(0, 2.5),
                        data_first=True,
-                       normalise_hists=True)
+                       normalise_hists=False)
 
 
 
@@ -274,8 +330,8 @@ def do_zpj_pt_plots(workdir):
     mg_dy_tfile = cu.open_root_file(os.path.join(workdir, qgc.DY_FILENAME))
     hpp_dy_tfile = cu.open_root_file(os.path.join(workdir, qgc.DY_HERWIG_LOW_HIGH_PT_FILENAME))
 
-    histname = "ZPlusJets_QG/jet_pt"  # fine equidistant binning
-    # histname = "ZPlusJets_QG_Unfold/hist_pt_reco_all"  # tunfold binning
+    # histname = "ZPlusJets_QG/jet_pt"  # fine equidistant binning
+    histname = "ZPlusJets_QG_Unfold/hist_pt_reco_all"  # tunfold binning
 
     lw = 2
     msize = 1.1
@@ -290,26 +346,38 @@ def do_zpj_pt_plots(workdir):
     mg_hist = cu.get_from_tfile(mg_dy_tfile, histname)
     hpp_hist = cu.get_from_tfile(hpp_dy_tfile, histname)
 
-    custom_bins = np.concatenate([
-        np.arange(50, 100, 10),
-        np.arange(100, 200, 20),
-        np.arange(200, 300, 25),
-        np.arange(300, 500., 50),
-        np.arange(500, 1100., 100),
-        # np.array([500, 600, 700, 800, 900, 1000], dtype='d')
-        ])
+    # For use with tunfold binning, which just has bin indices as x values instead of physical values
+    all_pt_bins = np.append(qgc.PT_UNFOLD_DICT['underflow_zpj_reco'][:-1], qgc.PT_UNFOLD_DICT['signal_zpj_reco'])
+    all_pt_bins = np.append(all_pt_bins, 8000)  # the overflow bin
+    print(all_pt_bins)
+    data_hist = tunfold_to_phsyical_bins(data_hist, all_pt_bins, divide_by_bin_width=True)
+    mg_hist = tunfold_to_phsyical_bins(mg_hist, all_pt_bins, divide_by_bin_width=True)
+    hpp_hist = tunfold_to_phsyical_bins(hpp_hist, all_pt_bins, divide_by_bin_width=True)
 
-    custom_bins = np.concatenate([
-        np.arange(50, 200, 10),
-        np.arange(200, 300, 20),
-        np.arange(300, 500., 50),
-        np.arange(500, 1100., 100),
-        ])
-    print('zpj binning:', custom_bins)
+    # Scale to data
+    mg_hist.Scale(data_hist.Integral()/mg_hist.Integral())
+    hpp_hist.Scale(data_hist.Integral()/hpp_hist.Integral())
 
-    data_hist = _rebin_scale(data_hist, custom_bins)
-    mg_hist = _rebin_scale(mg_hist, custom_bins)
-    hpp_hist = _rebin_scale(hpp_hist, custom_bins)
+    # custom_bins = np.concatenate([
+    #     np.arange(50, 100, 10),
+    #     np.arange(100, 200, 20),
+    #     np.arange(200, 300, 25),
+    #     np.arange(300, 500., 50),
+    #     np.arange(500, 1100., 100),
+    #     # np.array([500, 600, 700, 800, 900, 1000], dtype='d')
+    #     ])
+
+    # custom_bins = np.concatenate([
+    #     np.arange(50, 200, 10),
+    #     np.arange(200, 300, 20),
+    #     np.arange(300, 500., 50),
+    #     np.arange(500, 1100., 100),
+    #     ])
+    # print('zpj binning:', custom_bins)
+
+    # data_hist = _rebin_scale(data_hist, custom_bins)
+    # mg_hist = _rebin_scale(mg_hist, custom_bins)
+    # hpp_hist = _rebin_scale(hpp_hist, custom_bins)
 
     entries = [
         # SINGLE MU DATA
@@ -349,13 +417,12 @@ def do_zpj_pt_plots(workdir):
     do_jet_pt_plot(entries,
                    output_filename=os.path.join(workdir, "data_mc_jet_pt/ZPlusJets/jet_pt.%s" % (OUTPUT_FMT)),
                    rebin=1,
-                   # xlim=(50, 1000),
-                   xlim=(custom_bins[0], custom_bins[-1]),
+                   xlim=(30, 1000),
                    ylim=None,
                    title=title,
                    data_first=True,
                    subplot_limits=(0, 2),
-                   normalise_hists=True)
+                   normalise_hists=False)
 
 
 if __name__ == "__main__":
