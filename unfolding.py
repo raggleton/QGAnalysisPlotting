@@ -2333,8 +2333,17 @@ if __name__ == "__main__":
             print("...unpickled data:")
             print("    ", data)
             print("")
-            print("...data['unfolder'].hist_bin_chopper.objects:")
+            # print("...data['unfolder'].hist_bin_chopper.objects:")
             # print("    ", data['unfolder'].hist_bin_chopper.objects)
+            # print("")
+            print("unpickled region attr sizes:")
+            print("-"*80)
+            cu.print_dict_item_sizes(data)
+            print("-"*80)
+            print("unpickled unfolder attr sizes:")
+            print("-"*80)
+            cu.print_dict_item_sizes(data['unfolder'].__dict__)
+            print("-"*80)
 
             # ------------------------------------------------------------------
             # PLOT LOTS OF THINGS
