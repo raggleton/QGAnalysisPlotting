@@ -24,10 +24,11 @@ conda activate unfolding_py3
 
 # Actually run all the unfolding jobs
 set -x
-ODIR="${INPUTDIR}/unfolding_output"
+# INPUTDIR and OUTPUTDIR come from the grid-control config
+ODIR="${INPUTDIR}/${OUTPUTDIR}"
 
 # MC input, split (closure test), and alt response
-python unfolding.py $INPUTDIR --do$CHANNEL --regularize=None --MCinput=True --MCsplit=True --useAltResponse=True --angles $ANGLE --noBinnedPlots --outputDir=$ODIR
+python unfolding.py $INPUTDIR --outputDir=$ODIR --do$CHANNEL --regularize=None --MCinput=True --MCsplit=True --useAltResponse=True --angles $ANGLE --noBinnedPlots
 
 # MC input, not split - use to derive model, exp, pdf systs for data
 ARGS="$INPUTDIR --outputDir=$ODIR --do$CHANNEL --regularize=None --MCinput=True --MCsplit=False --useAltResponse=False --doExperimentalSysts=True --doScaleSysts=True --doPDFSysts=True --angles $ANGLE --noBinnedPlots"
@@ -39,7 +40,7 @@ python unfolding.py $ARGS
 python unfolding.py $INPUTDIR --outputDir=$ODIR --do$CHANNEL --regularize=None --MCinput=False --MCsplit=False --useAltResponse=False --doExperimentalSystsFromFile=$REFFILE --doScaleSystsFromFile=$REFFILE --doPDFSystsFromFile=$REFFILE --angles $ANGLE --noBinnedPlots
 
 # Data input, use alt response matrix as cross-check
-python unfolding.py --outputDir=$ODIR $INPUTDIR --do$CHANNEL --regularize=None --MCinput=False --MCsplit=False --useAltResponse=True --angles $ANGLE --noBinnedPlots
+python unfolding.py $INPUTDIR --outputDir=$ODIR --do$CHANNEL --regularize=None --MCinput=False --MCsplit=False --useAltResponse=True --angles $ANGLE --noBinnedPlots
 
 # Zip up output files
 # Not needed?
