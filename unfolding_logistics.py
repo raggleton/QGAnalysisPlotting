@@ -153,6 +153,20 @@ def get_unfolding_argparser(description='', parser=None):
                                  'made by a previous running of unfolding.py ' \
                                  'that covers the different signal regions & variables')
 
+    # SCALE SYST OPTIONS
+    # --------------------------------------------------------------------------
+    syst_group.add_argument("--doScaleSysts",
+                            type=lambda x: bool(distutils.util.strtobool(x)),
+                            default=False,
+                            help=('Do scale systematics.'
+                                   + standard_bool_description))
+    
+    syst_group.add_argument("--doScaleSystsFromFile",
+                            default=None,
+                            help='Get scale systematics from file. This should be a directory ' \
+                                 'made by a previous running of unfolding.py ' \
+                                 'that covers the different signal regions & variables')
+
     # MODEL SYST OPTIONS
     # --------------------------------------------------------------------------
     syst_group.add_argument("--doModelSysts",
@@ -224,6 +238,9 @@ def sanitise_args(args):
     if args.doPDFSysts and not args.MCinput:
         raise RuntimeError("Cannot do PDF systs and run over data")
 
+    if args.doScaleSysts and args.doScaleSystsFromFile:
+        raise RuntimeError("Cannot do both --doScaleSysts and --doScaleSystsFromFile")
+
     if (args.doModelSysts or args.doModelSystsOnlyHerwig or args.doModelSystsOnlyScale) and not args.MCinput:
         raise RuntimeError("Cannot do model systs and run over data")
 
@@ -285,6 +302,12 @@ def get_unfolding_output_dir(args):
 
     if args.doExperimentalSystsFromFile:
         append += "_experimentalSystFromFile"
+
+    if args.doScaleSysts:
+        append += "_scaleSysts"
+
+    if args.doScaleSystsFromFile:
+        append += "_scaleSystsFromFile"
 
     if args.doModelSysts:
         append += "_modelSyst"

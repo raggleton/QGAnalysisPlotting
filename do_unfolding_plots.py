@@ -89,7 +89,7 @@ class Setup(object):
                                                                  lambda_str=angle.lambda_str)
         # self.particle_title = "Particle-level " + self.angle_str
         self.particle_title = self.angle_str
-        
+
         angle_prepend = "groomed " if "groomed" in region['name'] else ""
         self.detector_title = "Detector-level {prepend}{name} ({lambda_str})".format(prepend=angle_prepend,
                                                                                      name=this_angle_name,
@@ -548,6 +548,62 @@ class GenPtBinnedPlotter(object):
             self._modify_plot(plot)
             plot.plot("NOSTACK E1")
             plot.save("%s/unfolded_%s_alt_response_truth_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
+
+    def plot_unfolded_with_scale_systs_normalised(self):
+        for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
+            syst_entries = []
+            hbc_args = dict(ind=ibin, binning_scheme='generator')
+
+            mc_gen_hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('hist_truth', **hbc_args)
+
+            for syst_dict in self.region['scale_systematics']:
+                syst_unfolder = syst_dict['unfolder']
+                syst_label = syst_dict['label']
+
+                # Get binned hists from the scale unfolder, since the error bars may have been setup specially
+                syst_unfolded_hist_bin = syst_unfolder.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded', **hbc_args)
+
+                syst_entries.extend([
+                    Contribution(syst_unfolded_hist_bin,
+                                 label="Unfolded (#tau = %.3g) (total unc.) (%s)" % (syst_unfolder.tau, syst_label),
+                                 line_color=syst_dict['colour'], line_width=self.line_width, line_style=1,
+                                 marker_color=syst_dict['colour'], marker_size=0,
+                                 subplot=mc_gen_hist_bin),
+                ])
+
+            # add nominal ones last
+            unfolded_hist_bin_total_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded', **hbc_args)
+
+            syst_entries.extend([
+                Contribution(mc_gen_hist_bin,
+                             label="Generator (%s)" % (self.region['mc_label']),
+                             line_color=self.plot_colours['gen_colour'], line_width=self.line_width,
+                             marker_color=self.plot_colours['gen_colour'], marker_size=0),
+                Contribution(unfolded_hist_bin_total_errors,
+                             label="Nominal unfolded (#tau = %.3g) (total unc.)" % (self.unfolder.tau),
+                             line_color=self.plot_colours['unfolded_total_colour'], line_width=self.line_width, line_style=1,
+                             marker_color=self.plot_colours['unfolded_total_colour'], #marker_style=20, marker_size=0.75,
+                             subplot=mc_gen_hist_bin),
+            ])
+            if not self.check_entries(syst_entries, "plot_unfolded_with_scale_systs_normalised_pt_bin %d" % (ibin)):
+                return
+            plot = Plot(syst_entries,
+                        ytitle=self.setup.pt_bin_normalised_differential_label,
+                        title=self.get_pt_bin_title(bin_edge_low, bin_edge_high),
+                        **self.pt_bin_plot_args)
+            self._modify_plot(plot)
+            plot.legend.SetX1(0.53)
+            plot.legend.SetY1(0.7)
+            plot.legend.SetX2(0.96)
+            plot.legend.SetY2(0.88)
+            if len(syst_entries) > 4:
+                # plot.legend.SetX1(0.53)
+                plot.legend.SetY1(0.65)
+                plot.y_padding_max_linear = 1.8
+            if len(syst_entries) > 6:
+                plot.legend.SetNColumns(2)
+            plot.plot("NOSTACK E1")
+            plot.save("%s/unfolded_%s_syst_scale_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
 
     def plot_unfolded_with_model_systs_normalised(self):
         for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
@@ -1398,6 +1454,62 @@ class GenLambdaBinnedPlotter(object):
             plot.set_logx(do_more_labels=False)
             plot.set_logy(do_more_labels=False)
             plot.save("%s/unfolded_unnormalised_%s_alt_response_lambda_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
+
+    def plot_unfolded_with_scale_systs_unnormalised(self):
+        for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
+            syst_entries = []
+            
+            mc_gen_hist_bin = self.hist_bin_chopper.get_lambda_bin_div_bin_width('hist_truth', ibin, binning_scheme='generator')
+            
+            for syst_dict in self.region['scale_systematics']:
+                syst_unfolder = syst_dict['unfolder']
+                syst_label = syst_dict['label']
+
+                syst_unfolded_hist_bin = syst_unfolder.hist_bin_chopper.get_lambda_bin_div_bin_width('unfolded', ibin, binning_scheme='generator')
+
+                syst_entries.extend([
+                    Contribution(syst_unfolded_hist_bin,
+                                 label="Unfolded (#tau = %.3g) (total unc.) (%s)" % (syst_unfolder.tau, syst_label),
+                                 line_color=syst_dict['colour'], line_width=self.line_width, line_style=1,
+                                 marker_color=syst_dict['colour'], marker_size=0,
+                                 subplot=mc_gen_hist_bin),
+                ])
+
+            # add nominal ones last
+            unfolded_hist_bin_total_errors = self.hist_bin_chopper.get_lambda_bin_div_bin_width('unfolded', ibin, binning_scheme='generator')
+
+            syst_entries.extend([
+                Contribution(mc_gen_hist_bin,
+                             label="Generator (%s)" % (self.region['mc_label']),
+                             line_color=self.plot_colours['gen_colour'], line_width=self.line_width,
+                             marker_color=self.plot_colours['gen_colour'], marker_size=0),
+                Contribution(unfolded_hist_bin_total_errors,
+                             label="Nominal unfolded (#tau = %.3g) (total unc.)" % (self.unfolder.tau),
+                             line_color=self.plot_colours['unfolded_total_colour'], line_width=self.line_width, line_style=1,
+                             marker_color=self.plot_colours['unfolded_total_colour'], #marker_style=20, marker_size=0.75,
+                             subplot=mc_gen_hist_bin),
+            ])
+            if not self.check_entries(syst_entries, "plot_unfolded_with_scale_systs_unnormalised %d" % (ibin)):
+                return
+            plot = Plot(syst_entries,
+                        ytitle=self.setup.pt_bin_normalised_differential_label,
+                        title=self.get_lambda_bin_title(bin_edge_low, bin_edge_high),
+                        **self.lambda_bin_plot_args)
+            self._modify_plot(plot)
+            plot.legend.SetX1(0.55)
+            plot.legend.SetY1(0.72)
+            plot.legend.SetX2(0.97)
+            plot.legend.SetY2(0.88)
+            if len(syst_entries) > 4:
+                # plot.legend.SetX1(0.53)
+                plot.legend.SetY1(0.65)
+                plot.y_padding_max_linear = 1.8
+            if len(syst_entries) > 6:
+                plot.legend.SetNColumns(2)
+            plot.plot("NOSTACK E1")
+            plot.set_logx(do_more_labels=False)
+            plot.set_logy(do_more_labels=False)
+            plot.save("%s/unfolded_unnormalised_%s_syst_scale_lambda_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
 
     def plot_unfolded_with_model_systs_unnormalised(self):
         for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
@@ -2273,6 +2385,7 @@ def do_binned_plots_per_region_angle(setup, do_binned_gen_pt, do_binned_gen_lamb
     region = setup.region
     # Note that experimental systs are only different response matrices, and are stored in the main unfolder
     has_exp_systs = len(region['experimental_systematics']) > 0
+    has_scale_systs = len(region['scale_systematics']) > 0
     has_model_systs = len(region['model_systematics']) > 0
     has_pdf_systs = len(region['pdf_systematics']) > 0
 
@@ -2330,18 +2443,22 @@ def do_binned_plots_per_region_angle(setup, do_binned_gen_pt, do_binned_gen_lamb
         #     gen_pt_binned_plotter.plot_unfolded_with_exp_systs_normalised()
         #     gen_pt_binned_plotter.plot_unfolded_with_exp_systs_unnormalised()
 
-        # if has_model_systs:
-        #     print("...doing model systs")
-        #     gen_pt_binned_plotter.plot_unfolded_with_model_systs_normalised()
+        if has_scale_systs:
+            print("...doing scale systs")
+            gen_pt_binned_plotter.plot_unfolded_with_scale_systs_normalised()
 
-        # if has_pdf_systs:
-        #     print("...doing pdf systs")
-        #     gen_pt_binned_plotter.plot_unfolded_with_pdf_systs_normalised()
-        #     gen_pt_binned_plotter.plot_unfolded_with_pdf_systs_unnormalised()
+        if has_model_systs:
+            print("...doing model systs")
+            gen_pt_binned_plotter.plot_unfolded_with_model_systs_normalised()
 
-        # if has_exp_systs or has_model_systs or has_pdf_systs:
-        #     print("...doing syst fraction")
-        #     gen_pt_binned_plotter.plot_syst_fraction_normalised()
+        if has_pdf_systs:
+            print("...doing pdf systs")
+            gen_pt_binned_plotter.plot_unfolded_with_pdf_systs_normalised()
+            gen_pt_binned_plotter.plot_unfolded_with_pdf_systs_unnormalised()
+
+        if has_exp_systs or has_scale_systs or has_pdf_systs:
+            print("...doing syst fraction")
+            gen_pt_binned_plotter.plot_syst_fraction_normalised()
 
         # if has_data:
         print("...doing detector-level")
@@ -2369,6 +2486,9 @@ def do_binned_plots_per_region_angle(setup, do_binned_gen_pt, do_binned_gen_lamb
         if has_exp_systs:
             lambda_pt_binned_plotter.plot_uncertainty_shifts_unnormalised()
             lambda_pt_binned_plotter.plot_unfolded_with_exp_systs_unnormalised()
+
+        if has_scale_systs:
+            lambda_pt_binned_plotter.plot_unfolded_with_scale_systs_unnormalised()
 
         if has_model_systs:
             lambda_pt_binned_plotter.plot_unfolded_with_model_systs_unnormalised()
@@ -2853,6 +2973,47 @@ class BigNormalised1DPlotter(object):
             l, t = self._plot_pt_bins(plot)
             plot.save("%s/unfolded_1d_normalised_exp_syst_%s_%s_divBinWidth.%s" % (self.setup.output_dir, this_syst.label_no_spaces, self.setup.append, self.setup.output_fmt))
 
+    def plot_unfolded_scale_systs(self):
+        all_entries = [Contribution(self.get_big_1d('hist_truth', 'generator'),
+                                     **self.get_mc_truth_kwargs()),
+                       Contribution(self.get_big_1d('unfolded_stat_err', 'generator'),
+                                    subplot=self.get_big_1d('hist_truth', 'generator'),
+                                    **dict(self.get_unfolded_stat_err_kwargs(),
+                                           line_color=ROOT.kGray+2))
+                      ]
+
+        for syst_dict in self.setup.region['scale_systematics']:
+            syst_unfolder = syst_dict['unfolder']
+            syst_label = syst_dict['label']
+
+            syst_label_no_spaces = cu.no_space_str(syst_dict['label'])
+
+            hbc_name = 'scale_syst_%s_unfolded' % (syst_label_no_spaces)
+            self.hist_bin_chopper.add_obj(hbc_name, syst_unfolder.unfolded)
+
+            all_entries.extend([
+                Contribution(self.get_big_1d(hbc_name, 'generator'),
+                             label="Unfolded (#tau = %.3g) (stat. unc.) (%s)" % (syst_unfolder.tau, syst_label),
+                             line_color=syst_dict['colour'], line_width=self.line_width, line_style=1,
+                             marker_color=syst_dict['colour'], marker_size=0,
+                             subplot=self.get_big_1d('hist_truth', 'generator')),
+            ])
+
+        plot = Plot(all_entries, 'hist',
+                    ytitle=self.get_ytitle(),
+                    title=self.get_title(),
+                    xtitle=self.setup.angle_str + ', per %s bin' % (self.setup.pt_var_str),
+                    has_data=self.setup.has_data,
+                    ylim=self._get_ylim(all_entries),
+                    subplot_type='ratio',
+                    subplot_title="Unfolded / Gen",
+                    subplot_limits=self.get_subplot_ylim()
+                    )
+        self._modify_plot(plot)
+        plot.plot("NOSTACK E")
+        l, t = self._plot_pt_bins(plot)
+        plot.save("%s/unfolded_1d_normalised_scale_scale_syst_%s_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, self.setup.output_fmt))
+
     def plot_unfolded_model_systs(self):
         all_entries = [Contribution(self.get_big_1d('hist_truth', 'generator'),
                                      **self.get_mc_truth_kwargs()),
@@ -3069,6 +3230,7 @@ def do_all_big_normalised_1d_plots_per_region_angle(setup, hist_bin_chopper=None
             hist_bin_chopper.add_obj("alt_hist_truth", alt_hist_truth)
 
     has_exp_systs = len(region['experimental_systematics']) > 0
+    has_scale_systs = len(region['scale_systematics']) > 0
     has_model_systs = len(region['model_systematics']) > 0
     has_pdf_systs = len(region['pdf_systematics']) > 0
 
@@ -3091,6 +3253,10 @@ def do_all_big_normalised_1d_plots_per_region_angle(setup, hist_bin_chopper=None
     #     print("...doing exp systs big 1D plots")
     #     big_plotter.plot_unfolded_exp_systs()
 
+    if has_scale_systs:
+        print("...doing scale systs big 1D plots")
+        big_plotter.plot_unfolded_scale_systs()
+
     # if has_model_systs:
     #     print("...doing model systs big 1D plots")
     #     big_plotter.plot_unfolded_model_systs()
@@ -3109,6 +3275,7 @@ def do_all_big_absolute_1d_plots_per_region_angle(setup):
     alt_hist_truth = region.get('alt_hist_mc_gen', None)
 
     has_exp_systs = len(region['experimental_systematics']) > 0
+    has_scale_systs = len(region['scale_systematics']) > 0
     has_model_systs = len(region['model_systematics']) > 0
     has_pdf_systs = len(region['pdf_systematics']) > 0
 

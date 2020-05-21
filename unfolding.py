@@ -409,6 +409,9 @@ if __name__ == "__main__":
         else:
             orig_region['experimental_systematics'] = []
 
+        if not (args.doScaleSysts or args.doScaleSystsFromFile):
+            orig_region['scale_systematics'] = []
+
         if not (args.doModelSysts or args.doModelSystsFromFile):
             orig_region['model_systematics'] = []
 
@@ -1242,7 +1245,6 @@ if __name__ == "__main__":
                                                   other_contributions=syst_contributions,
                                                   subplot_title='#splitline{Variation /}{nominal}')
 
-
             # Draw matrices
             # ------------------------------------------------------------------
             unfolder_plotter.plot_bias_vector(title=title, **plot_args)
@@ -1546,6 +1548,157 @@ if __name__ == "__main__":
             region["alt_hist_mc_reco_bg_subtracted_gen_binning"] = alt_hist_mc_reco_bg_subtracted_gen_binning
 
             # ------------------------------------------------------------------
+            # SCALE SYST VARIATIONS
+            # ------------------------------------------------------------------
+            # For each scale variation, we unfold the nominal input using the
+            # variation's response matrix. Then we take the envelope as the final
+            # scale uncertainty
+            if args.doScaleSysts:
+                for ind, scale_dict in enumerate(region['scale_systematics']):
+                    scale_label = scale_dict['label']
+                    scale_label_no_spaces = cu.no_space_str(scale_dict['label'])
+
+                    print("*" * 80)
+                    print("*** Unfolding scale variation:", scale_label, "(%d/%d) ***" % (ind+1, len(region['scale_systematics'])))
+                    print("*" * 80)
+
+                    if isinstance(scale_dict['tfile'], str):
+                        scale_dict['tfile'] = cu.open_root_file(scale_dict['tfile'])
+                    scale_dict['response_map'] = cu.get_from_tfile(scale_dict['tfile'], "%s/tu_%s_GenReco_all" % (region['dirname'], angle_shortname))
+
+                    scale_unfolder = MyUnfolder(response_map=scale_dict['response_map'],
+                                                variable_bin_edges_reco=unfolder.variable_bin_edges_reco,
+                                                variable_bin_edges_gen=unfolder.variable_bin_edges_gen,
+                                                variable_name=unfolder.variable_name,
+                                                pt_bin_edges_reco=unfolder.pt_bin_edges_reco,
+                                                pt_bin_edges_gen=unfolder.pt_bin_edges_gen,
+                                                pt_bin_edges_underflow_reco=unfolder.pt_bin_edges_underflow_reco,
+                                                pt_bin_edges_underflow_gen=unfolder.pt_bin_edges_underflow_gen,
+                                                orientation=unfolder.orientation,
+                                                constraintMode=unfolder.constraintMode,
+                                                regMode=unfolder.regMode,
+                                                densityFlags=unfolder.densityFlags,
+                                                distribution=unfolder.distribution,
+                                                axisSteering=unfolder.axisSteering)
+
+                    # Needed beacuse some of the variations struggle to unfold
+                    # Even 1E-18 wouldn't work - needs to be v.small
+                    scale_unfolder.SetEpsMatrix(eps_matrix)
+
+                    scale_unfolder_plotter = MyUnfolderPlotter(scale_unfolder, is_data=not MC_INPUT)
+                    scale_output_dir = this_output_dir+"/scaleSyst/"+scale_label_no_spaces
+                    scale_plot_args = dict(output_dir=scale_output_dir,
+                                           append=append)
+
+                    # Set what is to be unfolded
+                    # --------------------------------------------------------------
+                    # Same input as nominal unfolder, since we only change responsematrix
+                    scale_unfolder.set_input(input_hist=reco_1d,
+                                           input_hist_gen_binning=reco_1d_gen_binning,
+                                           hist_truth=hist_mc_gen,
+                                           hist_mc_reco=hist_mc_reco,
+                                           hist_mc_reco_bg_subtracted=hist_mc_reco_bg_subtracted,
+                                           hist_mc_reco_gen_binning=hist_mc_reco_gen_binning,
+                                           hist_mc_reco_gen_binning_bg_subtracted=hist_mc_reco_gen_binning_bg_subtracted,
+                                           bias_factor=args.biasFactor)
+
+                    # Subtract fakes (treat as background)
+                    # --------------------------------------------------------------
+                    if SUBTRACT_FAKES:
+                        scale_unfolder.subtract_background(hist_fakes_reco, "Signal fakes", scale=1., scale_err=0.0)
+                        scale_unfolder.subtract_background_gen_binning(hist_fakes_reco_gen_binning, "Signal fakes", scale=1., scale_err=0.0)
+
+                    # Do any regularization
+                    # --------------------------------------------------------------
+                    scale_tau = 0
+                    if REGULARIZE != "None":
+                        raise RuntimeError("Robin hasn't implemented regularization for scale systs yet")
+
+                    scale_dict['tau'] = scale_tau
+
+                    # Do unfolding!
+                    # --------------------------------------------------------------
+                    scale_unfolder.do_unfolding(scale_tau)
+                    scale_unfolder.get_output(hist_name="scale_%s_unfolded_1d" % (scale_label_no_spaces))
+                    scale_unfolder._post_process()
+                    scale_unfolder.setup_normalised_results()
+
+                    # Plot absolute 1D result
+                    scale_title = "%s\n%s region, %s, %s input" % (jet_algo, region['label'], angle_str, scale_label)
+                    scale_unfolder_plotter.draw_unfolded_1d(title=scale_title, **scale_plot_args)
+                    scale_dict['unfolder'] = scale_unfolder
+
+                    del scale_dict['response_map']  # save memory
+                    scale_dict['unfolder'] = scale_unfolder
+
+                unfolder.create_normalised_scale_syst_uncertainty(region['scale_systematics'])
+                unfolder.create_normalised_scale_syst_ematrices()
+
+            # ------------------------------------------------------------------
+            # LOAD SCALE VARIATIONS FROM ANOTHER FILE
+            # ------------------------------------------------------------------
+            # Load scale systs from another reference file, and calc fractional
+            # uncertainty, apply to this unfolded result
+            ref_tfile_scale = None
+            if args.doScaleSystsFromFile is not None:
+                scale_dir = "%s/%s/%s" % (args.doScaleSystsFromFile, region['name'], angle.var)
+
+                this_pkl_filename = os.path.join(scale_dir, "unfolding_result.pkl")
+                if not os.path.isfile(this_pkl_filename):
+                    raise IOError("Cannot find scale systematics file, %s" % this_pkl_filename)
+                scale_syst_region = unpickle_region(this_pkl_filename)
+
+                # update original region object with the scale syst info from the reference file
+                region['scale_systematics'] = scale_syst_region['scale_systematics']
+
+                # Add dummy object to hist_bin_chopper for later, so we can directly manipulate the cache
+                # this replaces the procedure in create_normalised_scale_syst_uncertainty()
+                unfolder.hist_bin_chopper.add_obj(unfolder.scale_uncert_name, unfolder.get_unfolded_with_ematrix_stat())
+                unfolder.hist_bin_chopper.add_obj("unfolded_stat_err", unfolder.get_unfolded_with_ematrix_stat())
+
+                for ibin_pt in range(len(unfolder.pt_bin_edges_gen[:-1])):
+                    # Calculate scale uncertainty by taking relative uncertainty
+                    # from reference file (which was already calculated in the 1st running),
+                    # and applying to this result
+                    key = unfolder.hist_bin_chopper._generate_key(unfolder.scale_uncert_name,
+                                                                  ind=ibin_pt,
+                                                                  axis='pt',
+                                                                  do_norm=True,
+                                                                  do_div_bin_width=True,
+                                                                  binning_scheme='generator')
+                    ref_scale_syst = scale_syst_region['unfolder'].hist_bin_chopper._cache[key]
+                    scale_syst = unfolder.hist_bin_chopper.get_pt_bin_normed_div_bin_width("unfolded_stat_err", ibin_pt, binning_scheme='generator').Clone()
+                    for i in range(1, scale_syst.GetNbinsX()+1):
+                        if ref_scale_syst.GetBinContent(i) != 0:
+                            rel_err = ref_scale_syst.GetBinError(i) / ref_scale_syst.GetBinContent(i)
+                        else:
+                            rel_err = 0
+                        scale_syst.SetBinError(i, rel_err * scale_syst.GetBinContent(i))
+                    unfolder.hist_bin_chopper._cache[key] = scale_syst
+
+                unfolder.create_normalised_scale_syst_ematrices()
+
+            # ------------------------------------------------------------------
+            # BIG ABSOLUTE PLOT WITH ALL SCALE VARIATIONS
+            # ------------------------------------------------------------------
+            if len(region['scale_systematics']) > 0:
+                # Do a big absolute 1D plots for sanity
+                scale_contributions = [
+                    Contribution(mdict['unfolder'].get_unfolded_with_ematrix_stat(),
+                                 label=mdict['label'],
+                                 line_color=mdict['colour'], line_style=1, line_width=1,
+                                 marker_color=mdict['colour'], marker_size=0, marker_style=21,
+                                 subplot=unfolder.get_unfolded_with_ematrix_stat())
+                    for mdict in region['scale_systematics']
+                ]
+                unfolder_plotter.draw_unfolded_1d(do_unfolded=True, do_gen=False,
+                                                  output_dir=this_output_dir,
+                                                  append='scale_systs_%s' % append,
+                                                  title=title,
+                                                  other_contributions=scale_contributions,
+                                                  subplot_title='#splitline{Variation /}{nominal}')
+
+            # ------------------------------------------------------------------
             # MODEL INPUT VARIATIONS
             # ------------------------------------------------------------------
             # For each model variation, we unfold using the same settings as
@@ -1804,13 +1957,6 @@ if __name__ == "__main__":
                     output_filename = "%s/unfolded_1d_modelSyst_%s.%s" % (syst_output_dir, syst_label_no_spaces, syst_unfolder_plotter.output_fmt)
                     plot.save(output_filename)
 
-                # Update main unfolder with these unfolded variations
-                # --------------------------------------------------------------
-                scale_model_systs = [r for r in region['model_systematics'] if 'mu' in r['label'].lower()]
-                if len(scale_model_systs) > 0:
-                    unfolder.create_normalised_scale_syst_uncertainty(scale_model_systs)
-                    unfolder.create_normalised_scale_syst_ematrices()
-
                 # Do big 1D plot of nominal & all systs
                 # --------------------------------------------------------------
                 entries = []
@@ -1987,7 +2133,7 @@ if __name__ == "__main__":
                     # Even 1E-18 wouldn't work - needs to be v.small
                     pdf_unfolder.SetEpsMatrix(eps_matrix)
 
-                    pdf_unfolder_plotter = MyUnfolderPlotter(pdf_unfolder, is_data=False)
+                    pdf_unfolder_plotter = MyUnfolderPlotter(pdf_unfolder, is_data=not MC_INPUT)
                     pdf_output_dir = this_output_dir+"/pdfSyst/"+pdf_label_no_spaces
                     pdf_plot_args = dict(output_dir=pdf_output_dir,
                                          append=append)

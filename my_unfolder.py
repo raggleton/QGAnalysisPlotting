@@ -44,6 +44,10 @@ with open("MyTUnfoldDensity.cpp") as f:
     code = f.read()
     ROOT.gInterpreter.ProcessLine(code)
 
+# Load my derived class
+# ROOT.gInterpreter.ProcessLine(".L MyTUnfoldDensity.cc+")
+# ROOT.gSystem.Load("MyTUnfoldDensity_cc.so")
+
 
 class MyUnfolder(ROOT.MyTUnfoldDensity):
     """Main class to handle unfolding input/outputs, all the associated objects
@@ -1328,22 +1332,13 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
     # METHODS FOR NORMALISED RESULTS
     # --------------------------------------------------------------------------
     def create_normalised_scale_syst_uncertainty(self, scale_systs):
-        """Create scale uncertainty from unfolded scale variation inputs.
-        Stores hist where error bar is envelope of variations in (unfolded/gen).
+        """Create scale uncertainty from unfolding with scale variation response matrices.
+        Stores hist where error bar is envelope of variations of unfolded result.
 
         This is done by taking in all the unfolded scale systematics results,
         then getting the normalised result for each pT bin.
-        Then do same for truth hists.
-        We can then figure out the envelope of (unfolded/truth) from the scale variations.
+        We can then figure out the envelope of the scale variations.
         We can then store this as an extra uncertianty, to be added in quadrature later.
-
-        This is done because we are adding an uncertainty that corresponds to a
-        change in the input being unfolded, and how well we handle that.
-        As opposed to just comparing the unfolded results, which only tells
-        about theoretical uncertainties in your MC.
-
-        This is probably the same size as putting it in as an "experimental" syst,
-        instead varying the response matrix.
 
         scale_systs is a list of dicts, the ones produced in unfolding.py
         Each has the form:
@@ -1355,11 +1350,8 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         }
         """
         for syst in scale_systs:
-            syst['hbc_key_unfolded'] = 'model_syst_%s_unfolded' % cu.no_space_str(syst['label'])
+            syst['hbc_key_unfolded'] = 'scale_syst_%s_unfolded' % cu.no_space_str(syst['label'])
             self.hist_bin_chopper.add_obj(syst['hbc_key_unfolded'], syst['unfolder'].get_unfolded_with_ematrix_stat())
-
-            syst['hbc_key_truth'] = 'model_syst_%s_hist_truth' % cu.no_space_str(syst['label'])
-            self.hist_bin_chopper.add_obj(syst['hbc_key_truth'], syst['unfolder'].hist_truth)
 
         # Add dummy object to hist_bin_chopper for later, so we can directly manipulate the cache
         self.hist_bin_chopper.add_obj(self.scale_uncert_name, self.get_unfolded_with_ematrix_stat())
@@ -1368,24 +1360,21 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
 
         # print("Doing scale variation")
         for ibin_pt in range(len(self.pt_bin_edges_gen[:-1])):
-            variations_ratio = []
-            for syst in scale_systs:
-                # Get normalised results for each variation, calulate ratio
-                vr = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width(syst['hbc_key_unfolded'], ibin_pt, binning_scheme='generator').Clone(cu.get_unique_str())
-                vt = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width(syst['hbc_key_truth'], ibin_pt, binning_scheme='generator')
-                vr.Divide(vt)
-                variations_ratio.append(vr)
+            hbc_args = dict(ind=ibin_pt, binning_scheme='generator')
+            variations = [
+                self.hist_bin_chopper.get_pt_bin_normed_div_bin_width(syst['hbc_key_unfolded'], **hbc_args)
+                for syst in scale_systs
+            ]
 
-            # Calculate envelope error bar from max ratio in each bin
-            # Scale error bar is then ratio * nominal result
-            nominal = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded_stat_err', ibin_pt, binning_scheme='generator')
+            # Calculate envelope error bar from max variation in each bin
+            nominal = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded_stat_err', **hbc_args)
             variations_envelope = nominal.Clone("scale_envelope_pt_bin%d" % ibin_pt)
+
             # print("pt bin", ibin_pt)
             for ix in range(1, variations_envelope.GetNbinsX()+1):
-                max_ratio = max([abs(v.GetBinContent(ix) - 1)
-                                 for v in variations_ratio])
-                variations_envelope.SetBinError(ix, max_ratio*nominal.GetBinContent(ix))
-                # print("bin", ix, "max ratio", max_ratio, "setting error", max_ratio*nominal.GetBinContent(ix))
+                max_variation = max([abs(v.GetBinContent(ix) - nominal.GetBinContent(ix))
+                                     for v in variations])
+                variations_envelope.SetBinError(ix, max_variation)
 
             # Store in hist_bin_chopper for later
             key = self.hist_bin_chopper._generate_key(self.scale_uncert_name,
@@ -1430,7 +1419,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         """Create PDF uncertainty from unfolded PDF variations
 
         This is done by taking in all the unfolded pdf systematics results,
-        then getting the normalised result for each pT bin. 
+        then getting the normalised result for each pT bin.
         Then we figure out the RMS of these variations.
         We can then store this as an extra uncertianty, to be added in quadrature later.
 
