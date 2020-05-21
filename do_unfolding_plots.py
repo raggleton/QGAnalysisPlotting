@@ -800,7 +800,7 @@ class GenPtBinnedPlotter(object):
             # Get stat. unc. from input for this bin
             unfolded_hist_bin_stat_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded_stat_err', **hbc_args)
             # Get stat. unc. from response matrix for this bin
-            unfolded_hist_bin_rsp_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded_rsp_err', **hbc_args)
+            unfolded_hist_bin_rsp_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded_response_err', **hbc_args)
 
             for syst_dict in self.region['experimental_systematics']:
                 # For each systematic, get the normalised shift and hence fraction
@@ -895,7 +895,7 @@ class GenPtBinnedPlotter(object):
             # Get stat. unc. from input for this bin
             unfolded_hist_bin_stat_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded_stat_err', **hbc_args)
             # Get stat. unc. from response matrix for this bin
-            unfolded_hist_bin_rsp_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded_rsp_err', **hbc_args)
+            unfolded_hist_bin_rsp_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded_response_err', **hbc_args)
 
             def _remove_error_bars(h):
                 for i in range(1, h.GetNbinsX()+1):
@@ -956,7 +956,7 @@ class GenPtBinnedPlotter(object):
             # Get stat. unc. from input for this bin
             unfolded_hist_bin_stat_errors = self.hist_bin_chopper.get_pt_bin_div_bin_width('unfolded_stat_err', **hbc_args)
             # Get stat. unc. from response matrix for this bin
-            unfolded_hist_bin_rsp_errors = self.hist_bin_chopper.get_pt_bin_div_bin_width('unfolded_rsp_err', **hbc_args)
+            unfolded_hist_bin_rsp_errors = self.hist_bin_chopper.get_pt_bin_div_bin_width('unfolded_response_err', **hbc_args)
 
             def _remove_error_bars(h):
                 for i in range(1, h.GetNbinsX()+1):
@@ -1042,7 +1042,7 @@ class GenPtBinnedPlotter(object):
             # Get stat. unc. from input for this bin
             unfolded_hist_bin_stat_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded_stat_err', **hbc_args)
             # Get stat. unc. from response matrix for this bin
-            unfolded_hist_bin_rsp_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded_rsp_err', **hbc_args)
+            unfolded_hist_bin_rsp_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded_response_err', **hbc_args)
 
             entries = []
             check_bin = 6
@@ -1640,7 +1640,7 @@ class GenLambdaBinnedPlotter(object):
             # Get stat. unc. from input for this bin
             unfolded_hist_bin_stat_errors = self.hist_bin_chopper.get_lambda_bin_div_bin_width('unfolded_stat_err', ibin, binning_scheme='generator')
             # Get stat. unc. from response matrix for this bin
-            unfolded_hist_bin_rsp_errors = self.hist_bin_chopper.get_lambda_bin_div_bin_width('unfolded_rsp_err', ibin, binning_scheme='generator')
+            unfolded_hist_bin_rsp_errors = self.hist_bin_chopper.get_lambda_bin_div_bin_width('unfolded_response_err', ibin, binning_scheme='generator')
 
             for syst_dict in self.region['experimental_systematics']:
                 # For each systematic, get the normalised shifted distribution for this bin
@@ -2406,7 +2406,7 @@ def do_binned_plots_per_region_angle(setup, do_binned_gen_pt, do_binned_gen_lamb
     # hbc.add_obj("hist_truth", unfolder.hist_truth)
     # hbc.add_obj('unfolded', unfolder.get_output())
     # hbc.add_obj('unfolded_stat_err', unfolder.get_unfolded_with_ematrix_stat())
-    # hbc.add_obj('unfolded_rsp_err', unfolder.get_unfolded_with_ematrix_rsp())
+    # hbc.add_obj('unfolded_response_err', unfolder.get_unfolded_with_ematrix_response())
     # hbc.update(unfolder.hist_bin_chopper)   # update the HistBinChopper with the new normalised systematics already produced in unfolder
     hbc = unfolder.hist_bin_chopper
 
