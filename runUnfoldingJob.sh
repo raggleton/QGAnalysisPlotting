@@ -30,13 +30,13 @@ ODIR="${INPUTDIR}/unfolding_output"
 python unfolding.py $INPUTDIR --do$CHANNEL --regularize=None --MCinput=True --MCsplit=True --useAltResponse=True --angles $ANGLE --noBinnedPlots --outputDir=$ODIR
 
 # MC input, not split - use to derive model, exp, pdf systs for data
-ARGS="$INPUTDIR --outputDir=$ODIR --do$CHANNEL --regularize=None --MCinput=True --MCsplit=False --useAltResponse=False --doExperimentalSysts=True --doModelSystsOnlyScale=True --doPDFSysts=True --angles $ANGLE --noBinnedPlots"
+ARGS="$INPUTDIR --outputDir=$ODIR --do$CHANNEL --regularize=None --MCinput=True --MCsplit=False --useAltResponse=False --doExperimentalSysts=True --doScaleSysts=True --doPDFSysts=True --angles $ANGLE --noBinnedPlots"
 # stash location of output file for use later with data
 REFFILE=$(python unfolding_logistics.py out $ARGS)
 python unfolding.py $ARGS
 
 # Data input, use previous MC file to get systs
-python unfolding.py --outputDir=$ODIR $INPUTDIR --do$CHANNEL --regularize=None --MCinput=False --MCsplit=False --useAltResponse=False --doExperimentalSystsFromFile=$REFFILE --doModelSystsFromFile=$REFFILE --doPDFSystsFromFile=$REFFILE --angles $ANGLE --noBinnedPlots
+python unfolding.py $INPUTDIR --outputDir=$ODIR --do$CHANNEL --regularize=None --MCinput=False --MCsplit=False --useAltResponse=False --doExperimentalSystsFromFile=$REFFILE --doScaleSystsFromFile=$REFFILE --doPDFSystsFromFile=$REFFILE --angles $ANGLE --noBinnedPlots
 
 # Data input, use alt response matrix as cross-check
 python unfolding.py --outputDir=$ODIR $INPUTDIR --do$CHANNEL --regularize=None --MCinput=False --MCsplit=False --useAltResponse=True --angles $ANGLE --noBinnedPlots
