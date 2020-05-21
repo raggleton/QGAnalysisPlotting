@@ -239,7 +239,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         self.unfolded_stat_err = None  # set in get_unfolded_with_ematrix_stat()
         self.unfolded_rsp_err = None  # set in get_unfolded_with_ematrix_rsp()
 
-        self.exp_systs = []  # list of ExpSystematic objects to hodl experimental systematics
+        self.exp_systs = []  # list of ExpSystematic objects to hold experimental systematics
 
         # use "generator" for signal + underflow region
         # "generatordistribution" only for ???
@@ -1160,6 +1160,85 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         if getattr(self, 'folded_mc_truth', None) is None:
             self.folded_mc_truth = self.fold_generator_level(self.hist_truth)
         return self.folded_mc_truth
+
+    def do_numpy_comparison(self, output_dir):
+        """Do unregularised unfolding and simple matrix inversion with numpy to compare"""
+        vyyinv_ndarray = self.get_vyy_inv_ndarray()
+
+        rsp_inv_ndarray = np.linalg.pinv(self.probability_ndarray)
+
+        y_ndarray = np.zeros(shape=(self.GetNy(),1))
+        y = self.GetY()
+        for i in range(self.GetNy()):
+            y_ndarray[i,0] = y(i, 0)
+
+        # calculate my own result simple inversion
+        # nb this is really dodgy as non-square matrices don't have an inverse technically...
+        result = rsp_inv_ndarray @ y_ndarray
+        # print(result.shape)
+        result_hist = cu.ndarray_to_th1(result.T)
+
+        # calculate full non-regularised result
+        Einv = self.probability_ndarray.T @ vyyinv_ndarray @ self.probability_ndarray
+        E = np.linalg.pinv(Einv, rcond=1E-160)  # can't use .inv as singular matrix
+        rhs = self.probability_ndarray.T @ vyyinv_ndarray @ y_ndarray
+        proper_x = E @ rhs
+
+        E_hist = cu.ndarray_to_th2(E)
+        E_hist.SetTitle("E = (A^{T}V^{-1}_{yy}A)^{-1}")
+        canv = ROOT.TCanvas(cu.get_unique_str(), "", 800, 600)
+        E_hist.Draw("COLZ")
+        cu.set_french_flag_palette()
+        canv.SetRightMargin(0.2)
+        canv.SaveAs(os.path.join(this_output_dir, "E.pdf"))
+        canv.Clear()
+
+        E_inv_hist = cu.ndarray_to_th2(Einv)
+        E_inv_hist.SetTitle("E^{-1} = A^{T}V^{-1}_{yy}A")
+        E_inv_hist.Draw("COLZ")
+        ROOT.gStyle.SetPalette(ROOT.kBird)
+        canv.SetRightMargin(0.2)
+        canv.SetLogz()
+        E_inv_hist.SetMinimum(1E-10)
+        canv.SaveAs(os.path.join(this_output_dir, "E_inv.pdf"))
+        canv.Clear()
+
+        rhs_hist = cu.ndarray_to_th1(rhs.T)
+        canv.SetRightMargin(0.12)
+        rhs_hist.SetTitle("A^{T}V^{-1}_{yy}y;Generator bin;N")
+        rhs_hist.Draw("HIST")
+
+        canv.SaveAs(os.path.join(this_output_dir, "rhs.pdf"))
+
+        proper_x_hist = cu.ndarray_to_th1(proper_x.T)
+
+        unfolded_hist = self.get_output().Clone("bah")
+        cu.remove_th1_errors(unfolded_hist)
+        cu.remove_th1_errors(result_hist)
+        cu.remove_th1_errors(proper_x_hist)
+
+        conts = [
+            Contribution(unfolded_hist, line_color=ROOT.kBlue, marker_color=ROOT.kBlue, label='TUnfold'),
+            # Contribution(result_hist, line_color=ROOT.kGreen, marker_color=ROOT.kGreen, label='Simple numpy inversion', subplot=unfolded_hist),
+            Contribution(proper_x_hist, line_color=ROOT.kRed, marker_color=ROOT.kRed, label='Full numpy inversion', subplot=unfolded_hist, line_style=2),
+        ]
+        title = "%s\n%s region, %s" % (jet_algo, region['label'], angle_str)
+        plot = Plot(conts, what='hist',
+                    xtitle='Generator bin',
+                    ytitle='N',
+                    title=title,
+                    # ylim=(1E-3, 1E8),
+                    ylim=(-1E3, 1E4),  # focus on small values, +ve and -ve
+                    subplot_type='ratio',
+                    subplot_limits=(0.5, 1.5),
+                    subplot_title="* / TUnfold")
+        plot.default_canvas_size = (800, 600)
+        plot.plot("HISTE NOSTACK")
+        plot.legend.SetY1NDC(0.8)
+        plot.legend.SetX1NDC(0.65)
+        plot.legend.SetX2NDC(0.9)
+        # plot.set_logy(do_more_labels=False)
+        plot.save(os.path.join(output_dir, 'tunfold_vs_numpy.pdf'))
 
     def calculate_chi2(self, one_hist, other_hist, cov_inv_matrix, detector_space=True, ignore_underflow_bins=True, debugging_dir=None):
         one_vec, _ = cu.th1_to_ndarray(one_hist, False)
@@ -2200,7 +2279,7 @@ class ExpSystematic(object):
         self.label_no_spaces = cu.no_space_str(label)
         self.syst_map = syst_map
 
-        # shift to norminal unfolded result(from TnNfold)
+        # shift to norminal unfolded result(from TUnfold)
         self.syst_shift = syst_shift
         # these labels are for HistBinChopper
         self.syst_shift_label = 'syst_shift_%s' % (self.label_no_spaces)

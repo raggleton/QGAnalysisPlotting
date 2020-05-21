@@ -633,7 +633,7 @@ if __name__ == "__main__":
                 # And unfolded looks wacko
                 unfolder.SetEpsMatrix(1E-18)
 
-            eps_matrix = 1E-45
+            eps_matrix = 1E-160
             unfolder.SetEpsMatrix(eps_matrix)
             print("Running with eps =", unfolder.GetEpsMatrix())
 
@@ -652,48 +652,48 @@ if __name__ == "__main__":
 
             # Add systematic errors as different response matrices
             # ------------------------------------------------------------------
-            if args.doExperimentalSysts:
-                chosen_rsp_bin = (35, 35)
-                print("nominal response bin content for", chosen_rsp_bin, unfolder.response_map.GetBinContent(*chosen_rsp_bin))
+            # if args.doExperimentalSysts:
+            #     chosen_rsp_bin = (35, 35)
+            #     print("nominal response bin content for", chosen_rsp_bin, unfolder.response_map.GetBinContent(*chosen_rsp_bin))
 
-                for syst_ind, syst_dict in enumerate(region['experimental_systematics']):
-                    print("Adding systematic:", syst_dict['label'])
-                    if 'factor' in syst_dict:
-                        # special case for e.g. lumi - we construct a reponse hist, and add it using relative mode
-                        rel_map = unfolder.response_map.Clone(syst_dict['label']+"Map")
-                        for xbin, ybin in product(range(1, rel_map.GetNbinsX()+1), range(1, rel_map.GetNbinsY()+1)):
-                            rel_map.SetBinContent(xbin, ybin, syst_dict['factor'])
-                            rel_map.SetBinError(xbin, ybin, 0)
-                        unfolder.add_sys_error(rel_map, syst_dict['label'], ROOT.TUnfoldDensity.kSysErrModeRelative)
+            #     for syst_ind, syst_dict in enumerate(region['experimental_systematics']):
+            #         print("Adding systematic:", syst_dict['label'])
+            #         if 'factor' in syst_dict:
+            #             # special case for e.g. lumi - we construct a reponse hist, and add it using relative mode
+            #             rel_map = unfolder.response_map.Clone(syst_dict['label']+"Map")
+            #             for xbin, ybin in product(range(1, rel_map.GetNbinsX()+1), range(1, rel_map.GetNbinsY()+1)):
+            #                 rel_map.SetBinContent(xbin, ybin, syst_dict['factor'])
+            #                 rel_map.SetBinError(xbin, ybin, 0)
+            #             unfolder.add_sys_error(rel_map, syst_dict['label'], ROOT.TUnfoldDensity.kSysErrModeRelative)
 
-                    # elif 'herwig' in syst_dict['label'].lower():
-                    #     if not isinstance(syst_dict['tfile'], ROOT.TFile):
-                    #         syst_dict['tfile'] = cu.open_root_file(syst_dict['tfile'])
-                    #     map_syst = cu.get_from_tfile(syst_dict['tfile'], "%s/tu_%s_GenReco_all" % (region['dirname'], angle_shortname))
-                    #     map_syst.Scale(unfolder.response_map.Integral() / map_syst.Integral())
-                    #     print("    syst bin", chosen_rsp_bin, map_syst.GetBinContent(*chosen_rsp_bin))
-                    #     unfolder.add_sys_error(rm_large_rel_error_bins(map_syst), syst_dict['label'], ROOT.TUnfoldDensity.kSysErrModeMatrix)
+            #         # elif 'herwig' in syst_dict['label'].lower():
+            #         #     if not isinstance(syst_dict['tfile'], ROOT.TFile):
+            #         #         syst_dict['tfile'] = cu.open_root_file(syst_dict['tfile'])
+            #         #     map_syst = cu.get_from_tfile(syst_dict['tfile'], "%s/tu_%s_GenReco_all" % (region['dirname'], angle_shortname))
+            #         #     map_syst.Scale(unfolder.response_map.Integral() / map_syst.Integral())
+            #         #     print("    syst bin", chosen_rsp_bin, map_syst.GetBinContent(*chosen_rsp_bin))
+            #         #     unfolder.add_sys_error(rm_large_rel_error_bins(map_syst), syst_dict['label'], ROOT.TUnfoldDensity.kSysErrModeMatrix)
 
-                    else:
-                        if not isinstance(syst_dict['tfile'], ROOT.TFile):
-                            syst_dict['tfile'] = cu.open_root_file(syst_dict['tfile'])
-                        map_syst = cu.get_from_tfile(syst_dict['tfile'], "%s/tu_%s_GenReco_all" % (region['dirname'], angle_shortname))
-                        print("    syst bin", chosen_rsp_bin, map_syst.GetBinContent(*chosen_rsp_bin))
-                        unfolder.add_sys_error(rm_large_rel_error_bins(map_syst), syst_dict['label'], ROOT.TUnfoldDensity.kSysErrModeMatrix)
+            #         else:
+            #             if not isinstance(syst_dict['tfile'], ROOT.TFile):
+            #                 syst_dict['tfile'] = cu.open_root_file(syst_dict['tfile'])
+            #             map_syst = cu.get_from_tfile(syst_dict['tfile'], "%s/tu_%s_GenReco_all" % (region['dirname'], angle_shortname))
+            #             print("    syst bin", chosen_rsp_bin, map_syst.GetBinContent(*chosen_rsp_bin))
+            #             unfolder.add_sys_error(rm_large_rel_error_bins(map_syst), syst_dict['label'], ROOT.TUnfoldDensity.kSysErrModeMatrix)
 
-                    # Plot the reponse matrix for this systematic
-                    syst_label_no_spaces = cu.no_space_str(syst_dict['label'])
-                    output_filename = "%s/response_map_syst_%s_%s.%s" % (this_output_dir, syst_label_no_spaces, append, unfolder_plotter.output_fmt)
-                    title = "%s, %s region, %s, %s" % (jet_algo, region['label'], angle_str, syst_dict['label'])
-                    unfolder_plotter.draw_2d_hist(unfolder.get_exp_syst(syst_dict['label']).syst_map,
-                                                  title=title,
-                                                  output_filename=output_filename,
-                                                  logz=True,
-                                                  draw_bin_lines_x=True,
-                                                  draw_bin_lines_y=True,
-                                                  canvas_size=(800, 700),
-                                                  xtitle='Generator bin',
-                                                  ytitle='Detector bin')
+            #         # Plot the reponse matrix for this systematic
+            #         syst_label_no_spaces = cu.no_space_str(syst_dict['label'])
+            #         output_filename = "%s/response_map_syst_%s_%s.%s" % (this_output_dir, syst_label_no_spaces, append, unfolder_plotter.output_fmt)
+            #         title = "%s, %s region, %s, %s" % (jet_algo, region['label'], angle_str, syst_dict['label'])
+            #         unfolder_plotter.draw_2d_hist(unfolder.get_exp_syst(syst_dict['label']).syst_map,
+            #                                       title=title,
+            #                                       output_filename=output_filename,
+            #                                       logz=True,
+            #                                       draw_bin_lines_x=True,
+            #                                       draw_bin_lines_y=True,
+            #                                       canvas_size=(800, 700),
+            #                                       xtitle='Generator bin',
+            #                                       ytitle='Detector bin')
 
             # Subtract fakes (treat as background)
             # ------------------------------------------------------------------
