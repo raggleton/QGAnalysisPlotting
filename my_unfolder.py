@@ -1190,7 +1190,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         E_hist.Draw("COLZ")
         cu.set_french_flag_palette()
         canv.SetRightMargin(0.2)
-        canv.SaveAs(os.path.join(this_output_dir, "E.pdf"))
+        canv.SaveAs(os.path.join(output_dir, "E.pdf"))
         canv.Clear()
 
         E_inv_hist = cu.ndarray_to_th2(Einv)
@@ -1200,7 +1200,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         canv.SetRightMargin(0.2)
         canv.SetLogz()
         E_inv_hist.SetMinimum(1E-10)
-        canv.SaveAs(os.path.join(this_output_dir, "E_inv.pdf"))
+        canv.SaveAs(os.path.join(output_dir, "E_inv.pdf"))
         canv.Clear()
 
         rhs_hist = cu.ndarray_to_th1(rhs.T)
@@ -1208,7 +1208,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         rhs_hist.SetTitle("A^{T}V^{-1}_{yy}y;Generator bin;N")
         rhs_hist.Draw("HIST")
 
-        canv.SaveAs(os.path.join(this_output_dir, "rhs.pdf"))
+        canv.SaveAs(os.path.join(output_dir, "rhs.pdf"))
 
         proper_x_hist = cu.ndarray_to_th1(proper_x.T)
 
@@ -1222,11 +1222,11 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             # Contribution(result_hist, line_color=ROOT.kGreen, marker_color=ROOT.kGreen, label='Simple numpy inversion', subplot=unfolded_hist),
             Contribution(proper_x_hist, line_color=ROOT.kRed, marker_color=ROOT.kRed, label='Full numpy inversion', subplot=unfolded_hist, line_style=2),
         ]
-        title = "%s\n%s region, %s" % (jet_algo, region['label'], angle_str)
+        # title = "%s\n%s region" % (region['jet_algo'], region['label'])
         plot = Plot(conts, what='hist',
                     xtitle='Generator bin',
                     ytitle='N',
-                    title=title,
+                    # title=title,
                     # ylim=(1E-3, 1E8),
                     ylim=(-1E3, 1E4),  # focus on small values, +ve and -ve
                     subplot_type='ratio',

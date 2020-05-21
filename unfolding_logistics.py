@@ -311,28 +311,20 @@ def get_unfolding_output_dir(args):
 
     if args.doModelSysts:
         append += "_modelSyst"
-        if not args.doExperimentalSysts:
-            append += "NoExperimentalSyst"
 
     if args.doModelSystsOnlyHerwig:
         args.doModelSysts = True
         append += "_modelSystOnlyHerwig"
-        if not args.doExperimentalSysts:
-            append += "NoExperimentalSyst"
 
     elif args.doModelSystsOnlyScale:
         args.doModelSysts = True
         append += "_modelSystOnlyScale"
-        if not args.doExperimentalSysts:
-            append += "NoExperimentalSyst"
 
     if args.doModelSystsFromFile:
         append += "_modelSystFromFile"
 
     if args.doPDFSysts:
         append += "_pdfSyst"
-        if not args.doExperimentalSysts:
-            append += "NoExperimentalSyst"
 
     if args.doPDFSystsFromFile:
         append += "_pdfSystFromFile"
