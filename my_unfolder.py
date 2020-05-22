@@ -253,14 +253,18 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         self.hist_bin_chopper = HistBinChopper(generator_binning=self.generator_binning.FindNode("generatordistribution"),
                                                detector_binning=self.detector_binning.FindNode("detectordistribution"))
 
-        # For setting/getting total scale & PDF uncerts from HistBinChopper
+        # For setting/getting various uncerts from HistBinChopper
+        self.stat_ematrix_name = "stat_ematrix"
+
+        self.rsp_uncert_name = 'unfolded_rsp_err'
+        self.rsp_ematrix_name = "rsp_ematrix"
+
         self.scale_uncert_name = "scale_uncert"
         self.scale_uncert_ematrix_name = "scale_uncert_ematrix"
+
         self.pdf_uncert_name = "pdf_uncert"
         self.pdf_uncert_ematrix_name = "pdf_uncert_ematrix"
 
-        self.stat_ematrix_name = "stat_ematrix"
-        self.rsp_ematrix_name = "rsp_ematrix"
         self.total_ematrix_name = "total_ematrix"
 
     @staticmethod
@@ -739,7 +743,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         self.hist_bin_chopper.add_obj('hist_truth', self.hist_truth)
         self.hist_bin_chopper.add_obj('unfolded', self.get_output())
         self.hist_bin_chopper.add_obj('unfolded_stat_err', self.get_unfolded_with_ematrix_stat())
-        self.hist_bin_chopper.add_obj('unfolded_rsp_err', self.get_unfolded_with_ematrix_response())
+        self.hist_bin_chopper.add_obj(self.rsp_uncert_name, self.get_unfolded_with_ematrix_response())
 
     @staticmethod
     def make_hist_from_diagonal_errors(h2d, do_sqrt=True):
@@ -1450,10 +1454,10 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
                 self.ematrix_stat_response.SetBinError(ix+1, iy+1, 0)
 
         # update HistBinChopper objects & cache
-        if 'unfolded_rsp_err' in self.hist_bin_chopper.objects:
-            self.hist_bin_chopper.objects['unfolded_rsp_err'] = unfolded_rsp_err
+        if self.rsp_uncert_name in self.hist_bin_chopper.objects:
+            self.hist_bin_chopper.objects[self.rsp_uncert_name] = unfolded_rsp_err
             for k, v in self.hist_bin_chopper._cache.items():
-                if 'unfolded_rsp_err' in k:
+                if self.rsp_uncert_name in k:
                     del self.hist_bin_chopper._cache[k]  # reset HBC cache
 
 
@@ -1467,8 +1471,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         """
         # Add just incase user hasn't done so already
         # We wont use this object - we'll overwrite the cache ourselves
-        response_err_name = 'unfolded_rsp_err'
-        self.hist_bin_chopper.add_obj(response_err_name, self.get_unfolded_with_ematrix_response())
+        self.hist_bin_chopper.add_obj(self.rsp_uncert_name, self.get_unfolded_with_ematrix_response())
         self.hist_bin_chopper.add_obj(self.rsp_ematrix_name, self.get_ematrix_stat())
 
         num_vars = len(jackknife_variations)
@@ -1485,7 +1488,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
                 self.hist_bin_chopper.add_obj(jvar['label'], jvar['unfolder'].get_output())
                 bin_variations.append(self.hist_bin_chopper.get_pt_bin_normed_div_bin_width(jvar['label'], **hbc_args))
 
-            this_bin_unfolded_rsp_err = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width(response_err_name, **hbc_args).Clone()
+            this_bin_unfolded_rsp_err = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width(self.rsp_uncert_name, **hbc_args).Clone()
             all_values = []
             for ix in range(1, bin_variations[0].GetNbinsX()+1):
                 values = [h.GetBinContent(ix) for h in bin_variations]
@@ -1517,7 +1520,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
                     raise ValueError("Mismatch in this_bin_unfolded_rsp_ematrix, this_bin_unfolded_rsp_err")
 
             # Store in the HistBinChopper
-            key = self.hist_bin_chopper._generate_key(response_err_name,
+            key = self.hist_bin_chopper._generate_key(self.rsp_uncert_name,
                                                       ind=ibin_pt,
                                                       axis='pt',
                                                       do_norm=True,

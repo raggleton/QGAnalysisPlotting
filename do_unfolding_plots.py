@@ -800,8 +800,7 @@ class GenPtBinnedPlotter(object):
             # Get stat. unc. from input for this bin
             unfolded_hist_bin_stat_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded_stat_err', **hbc_args)
             # Get stat. unc. from response matrix for this bin
-            # unfolded_hist_bin_rsp_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded_response_err', **hbc_args)
-            unfolded_hist_bin_rsp_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded_rsp_err', **hbc_args)
+            unfolded_hist_bin_rsp_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width(self.unfolder.rsp_uncert_name, **hbc_args)
 
             for syst_dict in self.region['experimental_systematics']:
                 # For each systematic, get the normalised shift and hence fraction
@@ -896,8 +895,7 @@ class GenPtBinnedPlotter(object):
             # Get stat. unc. from input for this bin
             unfolded_hist_bin_stat_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded_stat_err', **hbc_args)
             # Get stat. unc. from response matrix for this bin
-            # unfolded_hist_bin_rsp_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded_response_err', **hbc_args)
-            unfolded_hist_bin_rsp_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded_rsp_err', **hbc_args)
+            unfolded_hist_bin_rsp_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width(self.unfolder.rsp_uncert_name, **hbc_args)
 
             def _remove_error_bars(h):
                 for i in range(1, h.GetNbinsX()+1):
@@ -958,8 +956,7 @@ class GenPtBinnedPlotter(object):
             # Get stat. unc. from input for this bin
             unfolded_hist_bin_stat_errors = self.hist_bin_chopper.get_pt_bin_div_bin_width('unfolded_stat_err', **hbc_args)
             # Get stat. unc. from response matrix for this bin
-            # unfolded_hist_bin_rsp_errors = self.hist_bin_chopper.get_pt_bin_div_bin_width('unfolded_response_err', **hbc_args)
-            unfolded_hist_bin_rsp_errors = self.hist_bin_chopper.get_pt_bin_div_bin_width('unfolded_rsp_err', **hbc_args)
+            unfolded_hist_bin_rsp_errors = self.hist_bin_chopper.get_pt_bin_div_bin_width(self.unfolder.rsp_uncert_name, **hbc_args)
 
             def _remove_error_bars(h):
                 for i in range(1, h.GetNbinsX()+1):
@@ -1045,8 +1042,7 @@ class GenPtBinnedPlotter(object):
             # Get stat. unc. from input for this bin
             unfolded_hist_bin_stat_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded_stat_err', **hbc_args)
             # Get stat. unc. from response matrix for this bin
-            # unfolded_hist_bin_rsp_errors = self.hist_bin_chopper.get_pt_bin_normed_di_bidth('unfolded_response_err', **hbc_args)
-            unfolded_hist_bin_rsp_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded_rsp_err', **hbc_args)
+            unfolded_hist_bin_rsp_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width(self.unfolder.rsp_uncert_name, **hbc_args)
 
             entries = []
             check_bin = 6
@@ -1644,8 +1640,7 @@ class GenLambdaBinnedPlotter(object):
             # Get stat. unc. from input for this bin
             unfolded_hist_bin_stat_errors = self.hist_bin_chopper.get_lambda_bin_div_bin_width('unfolded_stat_err', ibin, binning_scheme='generator')
             # Get stat. unc. from response matrix for this bin
-            # unfolded_hist_bin_rsp_errors = self.hist_bin_chopper.get_lambda_bin_div_bin_width('unfolded_response_err', ibin, binning_scheme='generator')
-            unfolded_hist_bin_rsp_errors = self.hist_bin_chopper.get_lambda_bin_div_bin_width('unfolded_rsp_err', ibin, binning_scheme='generator')
+            unfolded_hist_bin_rsp_errors = self.hist_bin_chopper.get_lambda_bin_div_bin_width(self.unfolder.rsp_uncert_name, ibin, binning_scheme='generator')
 
             for syst_dict in self.region['experimental_systematics']:
                 # For each systematic, get the normalised shifted distribution for this bin
@@ -2411,7 +2406,6 @@ def do_binned_plots_per_region_angle(setup, do_binned_gen_pt, do_binned_gen_lamb
     # hbc.add_obj("hist_truth", unfolder.hist_truth)
     # hbc.add_obj('unfolded', unfolder.get_output())
     # hbc.add_obj('unfolded_stat_err', unfolder.get_unfolded_with_ematrix_stat())
-    # hbc.add_obj('unfolded_response_err', unfolder.get_unfolded_with_ematrix_response())
     # hbc.update(unfolder.hist_bin_chopper)   # update the HistBinChopper with the new normalised systematics already produced in unfolder
     hbc = unfolder.hist_bin_chopper
 
@@ -2442,11 +2436,11 @@ def do_binned_plots_per_region_angle(setup, do_binned_gen_pt, do_binned_gen_lamb
             gen_pt_binned_plotter.plot_unfolded_with_alt_response_normalised(alt_unfolder=alt_unfolder)
             gen_pt_binned_plotter.plot_unfolded_with_alt_response_truth_normalised(alt_unfolder=alt_unfolder)
 
-        # if has_exp_systs:
-        #     print("...doing exp systs")
-        #     # gen_pt_binned_plotter.plot_uncertainty_shifts_normalised()
-        #     gen_pt_binned_plotter.plot_unfolded_with_exp_systs_normalised()
-        #     gen_pt_binned_plotter.plot_unfolded_with_exp_systs_unnormalised()
+        if has_exp_systs:
+            print("...doing exp systs")
+            # gen_pt_binned_plotter.plot_uncertainty_shifts_normalised()
+            gen_pt_binned_plotter.plot_unfolded_with_exp_systs_normalised()
+            gen_pt_binned_plotter.plot_unfolded_with_exp_systs_unnormalised()
 
         if has_scale_systs:
             print("...doing scale systs")
@@ -2456,10 +2450,10 @@ def do_binned_plots_per_region_angle(setup, do_binned_gen_pt, do_binned_gen_lamb
             print("...doing model systs")
             gen_pt_binned_plotter.plot_unfolded_with_model_systs_normalised()
 
-        if has_pdf_systs:
-            print("...doing pdf systs")
-            gen_pt_binned_plotter.plot_unfolded_with_pdf_systs_normalised()
-            gen_pt_binned_plotter.plot_unfolded_with_pdf_systs_unnormalised()
+        # if has_pdf_systs:
+        #     print("...doing pdf systs")
+        #     gen_pt_binned_plotter.plot_unfolded_with_pdf_systs_normalised()
+        #     gen_pt_binned_plotter.plot_unfolded_with_pdf_systs_unnormalised()
 
         if has_exp_systs or has_scale_systs or has_pdf_systs:
             print("...doing syst fraction")
@@ -3258,9 +3252,9 @@ def do_all_big_normalised_1d_plots_per_region_angle(setup, hist_bin_chopper=None
     #     print("...doing exp systs big 1D plots")
     #     big_plotter.plot_unfolded_exp_systs()
 
-    if has_scale_systs:
-        print("...doing scale systs big 1D plots")
-        big_plotter.plot_unfolded_scale_systs()
+    # if has_scale_systs:
+    #     print("...doing scale systs big 1D plots")
+    #     big_plotter.plot_unfolded_scale_systs()
 
     # if has_model_systs:
     #     print("...doing model systs big 1D plots")
@@ -3330,6 +3324,14 @@ def do_all_big_absolute_1d_plots_per_region_angle(setup):
                                        output_dir=setup.output_dir,
                                        append='bg_fakes_subtracted_%s' % setup.append,
                                        title=title)
+
+    unfolder_plotter.draw_unfolded_pt_absolute_with_systs(do_truth_mc=False,
+                                                          experimental_systematics=region['experimental_systematics'],
+                                                          scale_systematics=region['scale_systematics'],
+                                                          pdf_systematics=region['pdf_systematics'],
+                                                          output_dir=setup.output_dir,
+                                                          append=setup.append,
+                                                          title=title)
 
 def get_bottom_line_stats(setup):
     """Construct dict of bottom-line (i.e. chi2) stats for this region/angle combo"""
