@@ -395,6 +395,9 @@ if __name__ == "__main__":
         # Modify systematics as necessary
         # ----------------------------------------------------------------------
 
+        if not args.doJackknifeResponse:
+            orig_region['jackknife_response_variations'] = []
+
         if args.doExperimentalSysts or args.doExperimentalSystsFromFile:
             # Remove the lumi one if we have no backgrounds, or the user has not said to remove backgrounds
             orig_region['experimental_systematics'] = [syst_dict for syst_dict in orig_region['experimental_systematics']
@@ -966,6 +969,118 @@ if __name__ == "__main__":
 
             # Check result with numpy
             unfolder.do_numpy_comparison(output_dir=this_output_dir)
+
+            # ------------------------------------------------------------------
+            # CALCULATE JACKKNIFED UNCERTAINTIES
+            # ------------------------------------------------------------------
+            if args.doJackknifeResponse:
+                # first construct all new systematic variations dicts
+                original_jk_dict = region['jackknife_response_variations'][0]
+                original_jk_dict['label'] = '_jackknife_template'  # initial _ to ignore it later on
+                tfile = original_jk_dict['tfile']
+                if not isinstance(tfile, ROOT.TFile):
+                    tfile = cu.open_root_file(tfile)
+
+                region['jackknife_response_variations']  = []
+                num_vars = len(original_jk_dict['variations'])
+                for jk_ind in original_jk_dict['variations']:
+                    region['jackknife_response_variations'].append(
+                        {
+                            "label": "Jackknife_response_%d" % (jk_ind),
+                            "response_map": cu.get_from_tfile(tfile, "%s/tu_%s_GenReco_all_jackknife_%d" % (region['dirname'], angle_shortname, jk_ind)),
+                            "colour": cu.get_colour_seq(jk_ind, num_vars),
+                        })
+
+                # Now run over all variations, unfolding the nominal inputs
+                # but with the various response matrices
+                for jk_ind, jk_dict in enumerate(region['jackknife_response_variations']):
+                    jk_label = jk_dict['label']
+                    jk_label_no_spaces = cu.no_space_str(jk_label)
+
+                    print("*" * 80)
+                    print("*** Unfolding with jackknife response matrix:", jk_label, "(%d/%d) ***" % (jk_ind+1, len(region['jackknife_response_variations'])))
+                    print("*" * 80)
+
+                    jk_unfolder = MyUnfolder(response_map=jk_dict['response_map'],
+                                              variable_bin_edges_reco=unfolder.variable_bin_edges_reco,
+                                              variable_bin_edges_gen=unfolder.variable_bin_edges_gen,
+                                              variable_name=unfolder.variable_name,
+                                              pt_bin_edges_reco=unfolder.pt_bin_edges_reco,
+                                              pt_bin_edges_gen=unfolder.pt_bin_edges_gen,
+                                              pt_bin_edges_underflow_reco=unfolder.pt_bin_edges_underflow_reco,
+                                              pt_bin_edges_underflow_gen=unfolder.pt_bin_edges_underflow_gen,
+                                              orientation=unfolder.orientation,
+                                              constraintMode=unfolder.constraintMode,
+                                              regMode=unfolder.regMode,
+                                              densityFlags=unfolder.densityFlags,
+                                              distribution=unfolder.distribution,
+                                              axisSteering=unfolder.axisSteering)
+
+                    jk_unfolder.SetEpsMatrix(eps_matrix)
+
+                    jk_unfolder_plotter = MyUnfolderPlotter(jk_unfolder, is_data=not MC_INPUT)
+                    jk_output_dir = os.path.join(this_output_dir, "jackknife_response", jk_label_no_spaces)
+                    jk_plot_args = dict(output_dir=jk_output_dir, append=append)
+
+                    # Set what is to be unfolded
+                    # --------------------------------------------------------------
+                    # Same input as nominal unfolder, since we only change responsematrix
+                    jk_unfolder.set_input(input_hist=reco_1d,
+                                          input_hist_gen_binning=reco_1d_gen_binning,
+                                          hist_truth=hist_mc_gen,
+                                          hist_mc_reco=hist_mc_reco,
+                                          hist_mc_reco_bg_subtracted=hist_mc_reco_bg_subtracted,
+                                          hist_mc_reco_gen_binning=hist_mc_reco_gen_binning,
+                                          hist_mc_reco_gen_binning_bg_subtracted=hist_mc_reco_gen_binning_bg_subtracted,
+                                          bias_factor=args.biasFactor)
+
+                    # Subtract fakes (treat as background)
+                    # --------------------------------------------------------------
+                    if SUBTRACT_FAKES:
+                        jk_unfolder.subtract_background(hist_fakes_reco, "Signal fakes", scale=1., scale_err=0.0)
+                        jk_unfolder.subtract_background_gen_binning(hist_fakes_reco_gen_binning, "Signal fakes", scale=1., scale_err=0.0)
+
+                    # Do unfolding!
+                    # --------------------------------------------------------------
+                    jk_unfolder.do_unfolding(0)
+                    jk_unfolder.get_output(hist_name="%s_unfolded_1d" % jk_label_no_spaces)
+                    jk_unfolder._post_process()
+                    jk_unfolder.setup_normalised_results()
+
+                    # Plot 1D results
+                    # --------------------------------------------------------------
+                    jk_title = "%s\n%s region, %s\n%s response matrix" % (jet_algo, region['label'], angle_str, jk_label)
+                    jk_unfolder_plotter.draw_unfolded_1d(title=jk_title, **jk_plot_args)
+
+                    del region['jackknife_response_variations'][jk_ind]['response_map']  # save memory                    
+
+                    region['jackknife_response_variations'][jk_ind]['unfolder'] = jk_unfolder
+
+                # ------------------------------------------------------------------
+                # Update main response stat uncert with jackknife variations
+                # ------------------------------------------------------------------
+                unfolder.update_stat_response_from_jackknife(region['jackknife_response_variations'])
+                unfolder.create_normalised_jackknife_response_uncertainty(region['jackknife_response_variations'])
+
+                # ------------------------------------------------------------------
+                # Big absolute plot with all jackknife variations
+                # ------------------------------------------------------------------
+                if len(region['jackknife_response_variations']) > 0:
+                    # Do a big absolute 1D plots for sanity
+                    scale_contributions = [
+                        Contribution(mdict['unfolder'].get_unfolded_with_ematrix_stat(),
+                                     label=mdict['label'],
+                                     line_color=mdict['colour'], line_style=1, line_width=1,
+                                     marker_color=mdict['colour'], marker_size=0, marker_style=21,
+                                     subplot=unfolder.get_unfolded_with_ematrix_stat())
+                        for mdict in region['jackknife_response_variations']
+                    ]
+                    unfolder_plotter.draw_unfolded_1d(do_unfolded=True, do_gen=False,
+                                                      output_dir=this_output_dir,
+                                                      append='jackknife_response_%s' % append,
+                                                      title=title,
+                                                      other_contributions=scale_contributions,
+                                                      subplot_title='#splitline{Variation /}{nominal}')
             # Calculate experimental uncertainty shifts using results from another unfolding
             # ------------------------------------------------------------------
             if args.doExperimentalSystsFromFile is not None:

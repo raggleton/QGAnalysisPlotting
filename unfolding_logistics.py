@@ -122,6 +122,12 @@ def get_unfolding_argparser(description='', parser=None):
                           help=('Split MC between response & 1D reco, good for testing procedure.'
                                 + standard_bool_description))
 
+    mc_group.add_argument("--doJackknifeResponse",
+                          type=lambda x: bool(distutils.util.strtobool(x)),
+                          default=False,
+                          help=('Calculate jackknife uncertainties for the response matrix.'
+                                + standard_bool_description))
+
     # BACKGROUNDS OPTIONS
     # --------------------------------------------------------------------------
     bg_group = parser.add_argument_group("Backgrounds options")
@@ -226,17 +232,11 @@ def sanitise_args(args):
     if not any([args.doDijetCentral, args.doDijetForward, args.doDijetCentralGroomed, args.doDijetForwardGroomed, args.doZPJ, args.doZPJGroomed]):
         raise RuntimeError("You need to specify at least one signal region e.g. --doDijetCentral")
 
-    if not args.MCinput and args.doModelSysts:
-        raise RuntimeError("You cannot do both model systs and run on data")
-
     if args.MCinput and args.subtractBackgrounds:
         print("")
         print("!!!! Cannot subtract backgrounds while using MC input, ignoring for now")
         print("")
         args.subtractBackgrounds = False
-
-    if args.doPDFSysts and not args.MCinput:
-        raise RuntimeError("Cannot do PDF systs and run over data")
 
     if args.doScaleSysts and args.doScaleSystsFromFile:
         raise RuntimeError("Cannot do both --doScaleSysts and --doScaleSystsFromFile")
@@ -292,6 +292,9 @@ def get_unfolding_output_dir(args):
 
     if args.subtractBackgrounds:
         append += "_subBkg"
+
+    if args.doJackknifeResponse:
+        append += "_jackknifeResponse"
 
     if args.doExperimentalSysts:
         append += "_experimentalSyst"

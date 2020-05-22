@@ -243,7 +243,18 @@ def get_dijet_config(source_dir, central=True, groomed=False):
                 "unfolder": None,
                 "variations": range(100),  # list of all the variation #s to be used
             },
+        ],
+
+        "jackknife_response_variations": [
+            {
+                "label": "jackknife",  # this is a template entry, used for future
+                "tfile": input_mc_qcd_mgpythia_tfile,
+                "colour": ROOT.kCyan+2,
+                "unfolder": None,
+                "variations": range(10),  # list of all the variation #s to be used
+            },
         ]
+
     }
 
     if central and not groomed:
@@ -520,6 +531,7 @@ def get_zpj_config(source_dir, groomed=False):
                 "unfolder": None,
             },
         ],
+        
         "pdf_systematics": [
             {
                 "label": "PDF",
@@ -527,6 +539,16 @@ def get_zpj_config(source_dir, groomed=False):
                 "colour": ROOT.kCyan+2,
                 "unfolder": None,
                 "variations": range(100),
+            },
+        ],
+
+        "jackknife_response_variations": [
+            {
+                "label": "jackknife",  # this is a template entry, used for future
+                "tfile": input_mc_dy_mgpythia_tfile,
+                "colour": ROOT.kCyan+2,
+                "unfolder": None,
+                "variations": range(10),  # list of all the variation #s to be used
             },
         ]
     }
