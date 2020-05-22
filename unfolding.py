@@ -620,14 +620,9 @@ if __name__ == "__main__":
             unfolder_plotter = MyUnfolderPlotter(unfolder, is_data=not MC_INPUT)
             plot_args = dict(output_dir=this_output_dir, append=append)
 
-            is_herwig = "Herwig" in region['mc_label']
-            is_pythia8 = region['mc_label'] == "Pythia8"  # not MG+Pythia9
-            if is_herwig or is_pythia8:
-                # SetEpsMatrix ensures rank properly calculated when inverting
-                # Needed if you get message "rank of matrix E 55 expect 170"
-                # And unfolded looks wacko
-                unfolder.SetEpsMatrix(1E-18)
-
+            # SetEpsMatrix ensures rank properly calculated when inverting
+            # Needed if you get message "rank of matrix E 55 expect 170"
+            # And unfolded looks wacko
             eps_matrix = 1E-160
             unfolder.SetEpsMatrix(eps_matrix)
             print("Running with eps =", unfolder.GetEpsMatrix())
@@ -973,7 +968,6 @@ if __name__ == "__main__":
             unfolder.do_numpy_comparison(output_dir=this_output_dir)
             # Calculate experimental uncertainty shifts using results from another unfolding
             # ------------------------------------------------------------------
-            ref_tfile_exp = None
             if args.doExperimentalSystsFromFile is not None:
                 print("Getting experimental systematics from another file...")
                 angle_output_dir = "%s/%s/%s" % (args.doExperimentalSystsFromFile, region['name'], angle.var)
@@ -1285,14 +1279,9 @@ if __name__ == "__main__":
                                           distribution=unfolder.distribution,
                                           axisSteering=unfolder.axisSteering)
 
-                is_herwig = "Herwig" in region['alt_mc_label']
-                is_pythia8 = region['alt_mc_label'] == "Pythia8"  # not MG+Pythia9
-                if is_herwig or is_pythia8:
-                    # SetEpsMatrix ensures rank properly calculated when inverting
-                    # Needed if you get message "rank of matrix E 55 expect 170"
-                    # And unfolded looks wacko
-                    alt_unfolder.SetEpsMatrix(1E-18)
-
+                # SetEpsMatrix ensures rank properly calculated when inverting
+                # Needed if you get message "rank of matrix E 55 expect 170"
+                # And unfolded looks wacko
                 alt_unfolder.SetEpsMatrix(eps_matrix)
 
                 alt_unfolder_plotter = MyUnfolderPlotter(alt_unfolder, is_data=not MC_INPUT)
@@ -1617,7 +1606,7 @@ if __name__ == "__main__":
                     syst_label_no_spaces = cu.no_space_str(syst_dict['label'])
 
                     print("*" * 80)
-                    print("*** Unfolding with alternate input:", syst_label, "(%d/%d) ***" % (ind+1, len(region['model_systematics'])))
+                    print("*** Unfolding with model syst input:", syst_label, "(%d/%d) ***" % (ind+1, len(region['model_systematics'])))
                     print("*" * 80)
 
                     is_herwig = "Herwig" in syst_label
@@ -1651,12 +1640,9 @@ if __name__ == "__main__":
                     syst_plot_args = dict(output_dir=syst_output_dir,
                                           append=append)
 
-                    if is_herwig:
-                        # SetEpsMatrix ensures rank properly calculated when inverting
-                        # Needed if you get message "rank of matrix E 55 expect 170"
-                        # And unfolded looks wacko
-                        syst_unfolder.SetEpsMatrix(1E-18)
-
+                    # SetEpsMatrix ensures rank properly calculated when inverting
+                    # Needed if you get message "rank of matrix E 55 expect 170"
+                    # And unfolded looks wacko
                     syst_unfolder.SetEpsMatrix(eps_matrix)
 
                     # because we only care about shape, not overall normalisation
@@ -1933,12 +1919,13 @@ if __name__ == "__main__":
                     tfile = cu.open_root_file(tfile)
 
                 region['pdf_systematics']  = []
+                num_vars = len(original_pdf_dict['variations'])
                 for pdf_ind in original_pdf_dict['variations']:
                     region['pdf_systematics'].append(
                         {
                             "label": "PDF_%d" % (pdf_ind),
                             "response_map": cu.get_from_tfile(tfile, "%s/tu_%s_GenReco_all_PDF_%d" % (region['dirname'], angle_shortname, pdf_ind)),
-                            "colour": ROOT.kCyan+2,
+                            "colour": cu.get_colour_seq(pdf_ind, num_vars)
                         })
 
                 # Now run over all variations, unfolding the nominal inputs
@@ -1948,7 +1935,7 @@ if __name__ == "__main__":
                     pdf_label_no_spaces = cu.no_space_str(pdf_label)
 
                     print("*" * 80)
-                    print("*** Unfolding with alternate input:", pdf_label, "(%d/%d) ***" % (ind+1, len(region['pdf_systematics'])))
+                    print("*** Unfolding with PDF variation:", pdf_label, "(%d/%d) ***" % (ind+1, len(region['pdf_systematics'])))
                     print("*" * 80)
 
                     pdf_unfolder = MyUnfolder(response_map=pdf_dict['response_map'],

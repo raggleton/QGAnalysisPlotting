@@ -104,8 +104,8 @@ def make_comparison_plot_ingredients(entries, rebin=1, normalise_hist=True, mean
         raise RuntimeError("0 contributions for this plot")
 
     if data_first:
-        # Modify data Contribution to have no vertical lines
-        # We'll redraw it at the end with them ontop
+        # Modify data Contribution to have no  lines
+        # We'll redraw it at the end with the proper ones ontop
         conts[0].line_width = 0
         conts[0].marker_size = 0.01
         conts[0]._update_styles()
