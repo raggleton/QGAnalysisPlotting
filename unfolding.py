@@ -645,48 +645,48 @@ if __name__ == "__main__":
 
             # Add systematic errors as different response matrices
             # ------------------------------------------------------------------
-            # if args.doExperimentalSysts:
-            #     chosen_rsp_bin = (35, 35)
-            #     print("nominal response bin content for", chosen_rsp_bin, unfolder.response_map.GetBinContent(*chosen_rsp_bin))
+            if args.doExperimentalSysts:
+                chosen_rsp_bin = (35, 35)
+                print("nominal response bin content for", chosen_rsp_bin, unfolder.response_map.GetBinContent(*chosen_rsp_bin))
 
-            #     for syst_ind, syst_dict in enumerate(region['experimental_systematics']):
-            #         print("Adding systematic:", syst_dict['label'])
-            #         if 'factor' in syst_dict:
-            #             # special case for e.g. lumi - we construct a reponse hist, and add it using relative mode
-            #             rel_map = unfolder.response_map.Clone(syst_dict['label']+"Map")
-            #             for xbin, ybin in product(range(1, rel_map.GetNbinsX()+1), range(1, rel_map.GetNbinsY()+1)):
-            #                 rel_map.SetBinContent(xbin, ybin, syst_dict['factor'])
-            #                 rel_map.SetBinError(xbin, ybin, 0)
-            #             unfolder.add_sys_error(rel_map, syst_dict['label'], ROOT.TUnfoldDensity.kSysErrModeRelative)
+                for syst_ind, syst_dict in enumerate(region['experimental_systematics']):
+                    print("Adding systematic:", syst_dict['label'])
+                    if 'factor' in syst_dict:
+                        # special case for e.g. lumi - we construct a reponse hist, and add it using relative mode
+                        rel_map = unfolder.response_map.Clone(syst_dict['label']+"Map")
+                        for xbin, ybin in product(range(1, rel_map.GetNbinsX()+1), range(1, rel_map.GetNbinsY()+1)):
+                            rel_map.SetBinContent(xbin, ybin, syst_dict['factor'])
+                            rel_map.SetBinError(xbin, ybin, 0)
+                        unfolder.add_sys_error(rel_map, syst_dict['label'], ROOT.TUnfoldDensity.kSysErrModeRelative)
 
-            #         # elif 'herwig' in syst_dict['label'].lower():
-            #         #     if not isinstance(syst_dict['tfile'], ROOT.TFile):
-            #         #         syst_dict['tfile'] = cu.open_root_file(syst_dict['tfile'])
-            #         #     map_syst = cu.get_from_tfile(syst_dict['tfile'], "%s/tu_%s_GenReco_all" % (region['dirname'], angle_shortname))
-            #         #     map_syst.Scale(unfolder.response_map.Integral() / map_syst.Integral())
-            #         #     print("    syst bin", chosen_rsp_bin, map_syst.GetBinContent(*chosen_rsp_bin))
-            #         #     unfolder.add_sys_error(rm_large_rel_error_bins(map_syst), syst_dict['label'], ROOT.TUnfoldDensity.kSysErrModeMatrix)
+                    # elif 'herwig' in syst_dict['label'].lower():
+                    #     if not isinstance(syst_dict['tfile'], ROOT.TFile):
+                    #         syst_dict['tfile'] = cu.open_root_file(syst_dict['tfile'])
+                    #     map_syst = cu.get_from_tfile(syst_dict['tfile'], "%s/tu_%s_GenReco_all" % (region['dirname'], angle_shortname))
+                    #     map_syst.Scale(unfolder.response_map.Integral() / map_syst.Integral())
+                    #     print("    syst bin", chosen_rsp_bin, map_syst.GetBinContent(*chosen_rsp_bin))
+                    #     unfolder.add_sys_error(rm_large_rel_error_bins(map_syst), syst_dict['label'], ROOT.TUnfoldDensity.kSysErrModeMatrix)
 
-            #         else:
-            #             if not isinstance(syst_dict['tfile'], ROOT.TFile):
-            #                 syst_dict['tfile'] = cu.open_root_file(syst_dict['tfile'])
-            #             map_syst = cu.get_from_tfile(syst_dict['tfile'], "%s/tu_%s_GenReco_all" % (region['dirname'], angle_shortname))
-            #             print("    syst bin", chosen_rsp_bin, map_syst.GetBinContent(*chosen_rsp_bin))
-            #             unfolder.add_sys_error(rm_large_rel_error_bins(map_syst), syst_dict['label'], ROOT.TUnfoldDensity.kSysErrModeMatrix)
+                    else:
+                        if not isinstance(syst_dict['tfile'], ROOT.TFile):
+                            syst_dict['tfile'] = cu.open_root_file(syst_dict['tfile'])
+                        map_syst = cu.get_from_tfile(syst_dict['tfile'], "%s/tu_%s_GenReco_all" % (region['dirname'], angle_shortname))
+                        print("    syst bin", chosen_rsp_bin, map_syst.GetBinContent(*chosen_rsp_bin))
+                        unfolder.add_sys_error(rm_large_rel_error_bins(map_syst), syst_dict['label'], ROOT.TUnfoldDensity.kSysErrModeMatrix)
 
-            #         # Plot the reponse matrix for this systematic
-            #         syst_label_no_spaces = cu.no_space_str(syst_dict['label'])
-            #         output_filename = "%s/response_map_syst_%s_%s.%s" % (this_output_dir, syst_label_no_spaces, append, unfolder_plotter.output_fmt)
-            #         title = "%s, %s region, %s, %s" % (jet_algo, region['label'], angle_str, syst_dict['label'])
-            #         unfolder_plotter.draw_2d_hist(unfolder.get_exp_syst(syst_dict['label']).syst_map,
-            #                                       title=title,
-            #                                       output_filename=output_filename,
-            #                                       logz=True,
-            #                                       draw_bin_lines_x=True,
-            #                                       draw_bin_lines_y=True,
-            #                                       canvas_size=(800, 700),
-            #                                       xtitle='Generator bin',
-            #                                       ytitle='Detector bin')
+                    # Plot the reponse matrix for this systematic
+                    syst_label_no_spaces = cu.no_space_str(syst_dict['label'])
+                    output_filename = "%s/response_map_syst_%s_%s.%s" % (this_output_dir, syst_label_no_spaces, append, unfolder_plotter.output_fmt)
+                    title = "%s, %s region, %s, %s" % (jet_algo, region['label'], angle_str, syst_dict['label'])
+                    unfolder_plotter.draw_2d_hist(unfolder.get_exp_syst(syst_dict['label']).syst_map,
+                                                  title=title,
+                                                  output_filename=output_filename,
+                                                  logz=True,
+                                                  draw_bin_lines_x=True,
+                                                  draw_bin_lines_y=True,
+                                                  canvas_size=(800, 700),
+                                                  xtitle='Generator bin',
+                                                  ytitle='Detector bin')
 
             # Subtract fakes (treat as background)
             # ------------------------------------------------------------------
@@ -1081,6 +1081,106 @@ if __name__ == "__main__":
                                                       title=title,
                                                       other_contributions=scale_contributions,
                                                       subplot_title='#splitline{Variation /}{nominal}')
+
+            # Calculate exp systs
+            # ------------------------------------------------------------------
+            # for syst_ind, syst_dict in enumerate(region['experimental_systematics']):
+            #     print("*******************************************************")
+            #     print("Adding systematic:", syst_dict['label'])
+            #     print("*******************************************************")
+            #     if not isinstance(syst_dict['tfile'], ROOT.TFile):
+            #         syst_dict['tfile'] = cu.open_root_file(syst_dict['tfile'])
+            #     map_syst = cu.get_from_tfile(syst_dict['tfile'], "%s/tu_%s_GenReco_all" % (region['dirname'], angle_shortname))
+
+            #     this_syst = ExpSystematic(label=syst_dict['label'], syst_map=map_syst)
+
+            #     # construct unfolder like original but with this response matrix, do unfolding
+            #     exp_syst_unfolder = MyUnfolder(response_map=rm_large_rel_error_bins(map_syst),
+            #                                    variable_bin_edges_reco=unfolder.variable_bin_edges_reco,
+            #                                    variable_bin_edges_gen=unfolder.variable_bin_edges_gen,
+            #                                    variable_name=unfolder.variable_name,
+            #                                    pt_bin_edges_reco=unfolder.pt_bin_edges_reco,
+            #                                    pt_bin_edges_gen=unfolder.pt_bin_edges_gen,
+            #                                    pt_bin_edges_underflow_reco=unfolder.pt_bin_edges_underflow_reco,
+            #                                    pt_bin_edges_underflow_gen=unfolder.pt_bin_edges_underflow_gen,
+            #                                    orientation=unfolder.orientation,
+            #                                    constraintMode=unfolder.constraintMode,
+            #                                    regMode=unfolder.regMode,
+            #                                    densityFlags=unfolder.densityFlags,
+            #                                    distribution=unfolder.distribution,
+            #                                    axisSteering=unfolder.axisSteering)
+
+            #     exp_syst_unfolder.SetEpsMatrix(eps_matrix)
+
+            #     exp_syst_unfolder_plotter = MyUnfolderPlotter(exp_syst_unfolder, is_data=not MC_INPUT)
+            #     exp_syst_output_dir = this_output_dir+"/expSyst%s" % this_syst.label_no_spaces
+            #     exp_syst_plot_args = dict(output_dir=exp_syst_output_dir,
+            #                               append=append)
+
+            #     # Set what is to be unfolded - same as main unfolder
+            #     # --------------------------------------------------------------
+            #     exp_syst_unfolder.set_input(input_hist=reco_1d,
+            #                                 input_hist_gen_binning=reco_1d_gen_binning,
+            #                                 hist_truth=unfolder.hist_truth.Clone(),
+            #                                 hist_mc_reco=unfolder.hist_mc_reco.Clone(),
+            #                                 hist_mc_reco_bg_subtracted=unfolder.hist_mc_reco_bg_subtracted.Clone(),
+            #                                 hist_mc_reco_gen_binning=unfolder.hist_mc_reco_gen_binning.Clone(),
+            #                                 hist_mc_reco_gen_binning_bg_subtracted=unfolder.hist_mc_reco_gen_binning_bg_subtracted.Clone(),
+            #                                 bias_factor=args.biasFactor)
+
+            #     # Subtract fakes (treat as background)
+            #     # --------------------------------------------------------------
+            #     if SUBTRACT_FAKES:
+            #         exp_syst_unfolder.subtract_background(hist_fakes_reco, "fakes")
+
+            #     # Do unfolding!
+            #     # --------------------------------------------------------------
+            #     exp_syst_unfolder.do_unfolding(0)
+            #     exp_syst_unfolder.get_output(hist_name="exp_syst_%s_unfolded_1d" % this_syst.label_no_spaces)
+            #     exp_syst_unfolder._post_process()
+
+            #     if SUBTRACT_FAKES:
+            #         title = "%s\n%s region, %s, %s response map" % (jet_algo, region['label'], angle_str, this_syst.label)
+            #         exp_syst_unfolder_plotter.draw_detector_1d(do_reco_data_bg_sub=not MC_INPUT,
+            #                                               do_reco_bg=SUBTRACT_FAKES,
+            #                                               do_reco_mc_bg_sub=True,
+            #                                               output_dir=exp_syst_output_dir,
+            #                                               append='bg_fakes_subtracted_%s' % append,
+            #                                               title=title)
+
+            #         # same but with generator-binning
+            #         exp_syst_unfolder_plotter.draw_generator_1d(do_reco_data=False,
+            #                                                do_reco_data_bg_sub=not MC_INPUT,
+            #                                                do_reco_bg=True,
+            #                                                do_reco_mc=False,
+            #                                                do_reco_mc_bg_sub=True,
+            #                                                do_truth_mc=True,
+            #                                                output_dir=exp_syst_output_dir,
+            #                                                append='bg_fakes_subtracted_%s' % append,
+            #                                                title=title)
+
+            #     exp_syst_title = "%s\n%s region, %s, %s response map" % (jet_algo, region['label'], angle_str, this_syst.label)
+            #     exp_syst_unfolder_plotter.draw_unfolded_1d(title=exp_syst_title, **exp_syst_plot_args)
+
+            #     title = "Correlation matrix, %s, %s region, %s, %s response map" % (jet_algo, region['label'], angle_str, this_syst.label)
+            #     exp_syst_unfolder_plotter.draw_correlation_matrix(title=title, draw_values=False, **exp_syst_plot_args)
+
+            #     exp_syst_unfolder.setup_normalised_results()
+
+            #     region['experimental_systematics'][syst_ind]['unfolder'] = exp_syst_unfolder
+
+            #     # Calculate shift in absolute due to systematic
+            #     # --------------------------------------------------------------
+            #     exp_syst_unfolded = exp_syst_unfolder.get_output()
+            #     nominal_unfolded = unfolder.get_output()
+            #     shift = exp_syst_unfolded.Clone()
+            #     shift.Add(nominal_unfolded, -1)
+            #     this_syst.syst_shifted = exp_syst_unfolded
+            #     this_syst.syst_shift = shift
+            #     this_syst.syst_ematrix = cu.shift_to_covariance(shift)
+            #     unfolder.exp_systs.append(this_syst)
+
+
             # Calculate experimental uncertainty shifts using results from another unfolding
             # ------------------------------------------------------------------
             if args.doExperimentalSystsFromFile is not None:
