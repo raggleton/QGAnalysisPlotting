@@ -437,6 +437,12 @@ def symmetrize_h2d_z_limits(h2d):
     h2d.SetMinimum(-max_z)
 
 
+def get_colour_seq(index, total_length):
+    """Get colour from current palette that corresponds to (index / total_length) fraction in the palette"""
+    num_colours = ROOT.TColor.GetPalette().fN
+    return ROOT.TColor.GetColorPalette(int(num_colours * index / total_length))
+
+
 # Various helper functions
 # ------------------------------------------------------------------------------
 
