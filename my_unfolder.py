@@ -81,7 +81,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         # unfolded
         "unfolded",
         "unfolded_stat_err",
-        "unfolded_response_err",
+        "unfolded_rsp_err",
         # inverse cov for chi2 tests
         "vyy_inv_tmatrix",
         "vxx_inv_th2",
@@ -237,7 +237,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
 
         self.unfolded = None  # set in get_output(), total error
         self.unfolded_stat_err = None  # set in get_unfolded_with_ematrix_stat()
-        self.unfolded_response_err = None  # set in get_unfolded_with_ematrix_response()
+        self.unfolded_rsp_err = None  # set in get_unfolded_with_ematrix_response()
 
         self.exp_systs = []  # list of ExpSystematic objects to hold experimental systematics
 
@@ -739,7 +739,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         self.hist_bin_chopper.add_obj('hist_truth', self.hist_truth)
         self.hist_bin_chopper.add_obj('unfolded', self.get_output())
         self.hist_bin_chopper.add_obj('unfolded_stat_err', self.get_unfolded_with_ematrix_stat())
-        self.hist_bin_chopper.add_obj('unfolded_response_err', self.get_unfolded_with_ematrix_response())
+        self.hist_bin_chopper.add_obj('unfolded_rsp_err', self.get_unfolded_with_ematrix_response())
 
     @staticmethod
     def make_hist_from_diagonal_errors(h2d, do_sqrt=True):
@@ -813,11 +813,11 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
 
     def get_unfolded_with_ematrix_response(self):
         """Create unfolded with error bars from response matrix uncertainties"""
-        if getattr(self, 'unfolded_response_err', None) is None:
+        if getattr(self, 'unfolded_rsp_err', None) is None:
             error_stat_response = self.make_hist_from_diagonal_errors(self.get_ematrix_stat_response(), do_sqrt=True) # note that bin contents need to be correct, otherwise won't normalise correctly
-            self.unfolded_response_err = self.get_output().Clone("unfolded_response_err")
-            self.update_hist_bin_error(h_orig=error_stat_response, h_to_be_updated=self.unfolded_response_err)
-        return self.unfolded_response_err
+            self.unfolded_rsp_err = self.get_output().Clone("unfolded_rsp_err")
+            self.update_hist_bin_error(h_orig=error_stat_response, h_to_be_updated=self.unfolded_rsp_err)
+        return self.unfolded_rsp_err
 
     def get_bias_vector(self):
         if getattr(self, "bias_vector", None) is None:
@@ -1681,7 +1681,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         self.hist_bin_chopper.add_obj('hist_truth', self.hist_truth)
         self.hist_bin_chopper.add_obj('unfolded', self.get_output())
         self.hist_bin_chopper.add_obj('unfolded_stat_err', self.get_unfolded_with_ematrix_stat())
-        self.hist_bin_chopper.add_obj('unfolded_response_err', self.get_unfolded_with_ematrix_response())
+        self.hist_bin_chopper.add_obj('unfolded_rsp_err', self.get_unfolded_with_ematrix_response())
 
         # add dummy objects to fool check
         self.hist_bin_chopper.add_obj(self.stat_ematrix_name, self.get_ematrix_stat())
@@ -1694,7 +1694,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             hbc_args = dict(ind=ibin_pt, binning_scheme='generator')
 
             unfolded_hist_bin_stat_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded_stat_err', **hbc_args)
-            unfolded_hist_bin_rsp_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded_response_err', **hbc_args)
+            unfolded_hist_bin_rsp_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded_rsp_err', **hbc_args)
 
             unfolded_hist_bin_abs = self.hist_bin_chopper.get_pt_bin_div_bin_width('unfolded_stat_err', **hbc_args)
             norm = unfolded_hist_bin_abs.Integral("width") / unfolded_hist_bin_stat_errors.Integral("width")

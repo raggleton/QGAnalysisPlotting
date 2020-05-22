@@ -800,7 +800,8 @@ class GenPtBinnedPlotter(object):
             # Get stat. unc. from input for this bin
             unfolded_hist_bin_stat_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded_stat_err', **hbc_args)
             # Get stat. unc. from response matrix for this bin
-            unfolded_hist_bin_rsp_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded_response_err', **hbc_args)
+            # unfolded_hist_bin_rsp_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded_response_err', **hbc_args)
+            unfolded_hist_bin_rsp_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded_rsp_err', **hbc_args)
 
             for syst_dict in self.region['experimental_systematics']:
                 # For each systematic, get the normalised shift and hence fraction
@@ -895,7 +896,8 @@ class GenPtBinnedPlotter(object):
             # Get stat. unc. from input for this bin
             unfolded_hist_bin_stat_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded_stat_err', **hbc_args)
             # Get stat. unc. from response matrix for this bin
-            unfolded_hist_bin_rsp_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded_response_err', **hbc_args)
+            # unfolded_hist_bin_rsp_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded_response_err', **hbc_args)
+            unfolded_hist_bin_rsp_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded_rsp_err', **hbc_args)
 
             def _remove_error_bars(h):
                 for i in range(1, h.GetNbinsX()+1):
@@ -956,7 +958,8 @@ class GenPtBinnedPlotter(object):
             # Get stat. unc. from input for this bin
             unfolded_hist_bin_stat_errors = self.hist_bin_chopper.get_pt_bin_div_bin_width('unfolded_stat_err', **hbc_args)
             # Get stat. unc. from response matrix for this bin
-            unfolded_hist_bin_rsp_errors = self.hist_bin_chopper.get_pt_bin_div_bin_width('unfolded_response_err', **hbc_args)
+            # unfolded_hist_bin_rsp_errors = self.hist_bin_chopper.get_pt_bin_div_bin_width('unfolded_response_err', **hbc_args)
+            unfolded_hist_bin_rsp_errors = self.hist_bin_chopper.get_pt_bin_div_bin_width('unfolded_rsp_err', **hbc_args)
 
             def _remove_error_bars(h):
                 for i in range(1, h.GetNbinsX()+1):
@@ -1042,7 +1045,8 @@ class GenPtBinnedPlotter(object):
             # Get stat. unc. from input for this bin
             unfolded_hist_bin_stat_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded_stat_err', **hbc_args)
             # Get stat. unc. from response matrix for this bin
-            unfolded_hist_bin_rsp_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded_response_err', **hbc_args)
+            # unfolded_hist_bin_rsp_errors = self.hist_bin_chopper.get_pt_bin_normed_di_bidth('unfolded_response_err', **hbc_args)
+            unfolded_hist_bin_rsp_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded_rsp_err', **hbc_args)
 
             entries = []
             check_bin = 6
@@ -1458,9 +1462,9 @@ class GenLambdaBinnedPlotter(object):
     def plot_unfolded_with_scale_systs_unnormalised(self):
         for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
             syst_entries = []
-            
+
             mc_gen_hist_bin = self.hist_bin_chopper.get_lambda_bin_div_bin_width('hist_truth', ibin, binning_scheme='generator')
-            
+
             for syst_dict in self.region['scale_systematics']:
                 syst_unfolder = syst_dict['unfolder']
                 syst_label = syst_dict['label']
@@ -1640,7 +1644,8 @@ class GenLambdaBinnedPlotter(object):
             # Get stat. unc. from input for this bin
             unfolded_hist_bin_stat_errors = self.hist_bin_chopper.get_lambda_bin_div_bin_width('unfolded_stat_err', ibin, binning_scheme='generator')
             # Get stat. unc. from response matrix for this bin
-            unfolded_hist_bin_rsp_errors = self.hist_bin_chopper.get_lambda_bin_div_bin_width('unfolded_response_err', ibin, binning_scheme='generator')
+            # unfolded_hist_bin_rsp_errors = self.hist_bin_chopper.get_lambda_bin_div_bin_width('unfolded_response_err', ibin, binning_scheme='generator')
+            unfolded_hist_bin_rsp_errors = self.hist_bin_chopper.get_lambda_bin_div_bin_width('unfolded_rsp_err', ibin, binning_scheme='generator')
 
             for syst_dict in self.region['experimental_systematics']:
                 # For each systematic, get the normalised shifted distribution for this bin
