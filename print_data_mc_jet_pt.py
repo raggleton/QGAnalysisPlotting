@@ -12,6 +12,7 @@ My_Style.cd()
 import sys
 from array import array
 import numpy as np
+import math
 
 # My stuff
 from comparator import Contribution, Plot, grab_obj
@@ -19,10 +20,13 @@ import qg_common as qgc
 import qg_general_plots as qgg
 import common_utils as cu
 
+from my_unfolder import MyUnfolder
+
 ROOT.PyConfig.IgnoreCommandLineOptions = True
 ROOT.gROOT.SetBatch(1)
 ROOT.TH1.SetDefaultSumw2()
 ROOT.gErrorIgnoreLevel = ROOT.kWarning
+ROOT.TH1.AddDirectory(False)  # VERY IMPORTANT - somewhere, closing a TFile for exp systs deletes a map...dunno why
 
 
 # Control output format
@@ -47,7 +51,11 @@ def do_jet_pt_plot(entries,
                    rebin=1,
                    data_first=True,
                    normalise_hists=True,
-                   subplot_limits=None
+                   subplot_limits=None,
+                   experimental_syst=None,
+                   scale_syst=None,
+                   pdf_syst=None,
+                   total_syst=None,
                    ):
     # entries = [ent for ent in entries if ent]
 
@@ -160,6 +168,7 @@ def do_jet_pt_plot(entries,
         # compare_bins(data_total_ratio, entries[0][0])
         data_total_ratio.Divide(entries[0][0])
         data_total_ratio.SetFillStyle(3254)
+        # data_total_ratio.SetFillStyle(3002)
         data_total_ratio.SetFillColor(entries[0][1]['fill_color'])
         data_total_ratio.SetLineWidth(0)
         data_total_ratio.SetMarkerSize(0)
@@ -173,6 +182,33 @@ def do_jet_pt_plot(entries,
         data_draw_opt = "E2 SAME ]["  # need SAME otherwise axis get rescaled
         # data_stat_ratio.Draw(data_draw_opt)
         data_total_ratio.Draw(data_draw_opt)
+
+        # Do systematic shading
+        if experimental_syst:
+            experimental_syst.SetFillStyle(3254)
+            # experimental_syst.SetFillStyle(3002)
+            experimental_syst.SetFillColor(ROOT.kAzure)
+            experimental_syst.Draw("SAME 2")
+
+        if scale_syst:
+            scale_syst.SetFillStyle(3245)
+            # scale_syst.SetFillStyle(3002)
+            scale_syst.SetFillColor(ROOT.kOrange)
+            scale_syst.Draw("SAME 2")
+
+        if pdf_syst:
+            pdf_syst.SetFillStyle(3002)
+            pdf_syst.SetFillColor(ROOT.kMagenta)
+            pdf_syst.Draw("SAME 2")
+
+        if total_syst:
+            total_syst.SetFillStyle(3003)
+            total_syst.SetFillStyle(3245)
+            total_syst.SetFillColor(ROOT.kRed)
+            total_syst.SetFillColor(qgc.QCD_COLOUR)
+            total_syst.SetFillColor(entries[1][1]['fill_color'])
+            total_syst.Draw("SAME 2")
+
         plot.subplot_container.Draw("SAME " + draw_opt)
         plot.subplot_line.Draw()
         plot.canvas.cd()
@@ -193,9 +229,9 @@ def _rebin_scale(hist, binning, normalise=False):
     return new_hist
 
 
-def tunfold_to_phsyical_bins(hist, bins, divide_by_bin_width=True):
+def tunfold_to_physical_bins(hist, bins, divide_by_bin_width=True):
     if hist.GetNbinsX() != len(bins)-1:
-        raise ValueError("tunfold_to_phsyical_bins: bins not correct size (%d vs %d)" % (hist.GetNbinsX(), len(bins)-1))
+        raise ValueError("tunfold_to_physical_bins: bins not correct size (%d vs %d)" % (hist.GetNbinsX(), len(bins)-1))
 
     new_hist = ROOT.TH1D(hist.GetName()+"_relabel" + cu.get_unique_str(), "", len(bins)-1, bins)
     for ix in range(1, hist.GetNbinsX()+1):
@@ -209,12 +245,193 @@ def tunfold_to_phsyical_bins(hist, bins, divide_by_bin_width=True):
     return new_hist
 
 
-def do_dijet_pt_plots(workdir):
+angle = [a for a in qgc.COMMON_VARS if a.var in 'jet_LHA'][0]
+LAMBDA_VAR_DICTS = qgc.VAR_UNFOLD_DICT_TARGET0p5
+variable_bin_edges_reco = LAMBDA_VAR_DICTS[angle.var]['reco']
+variable_bin_edges_gen = LAMBDA_VAR_DICTS[angle.var]['gen']
+variable_name = angle.name
+
+pt_bin_edges_gen = qgc.PT_UNFOLD_DICT['signal_gen']
+pt_bin_edges_reco = qgc.PT_UNFOLD_DICT['signal_reco']
+pt_bin_edges_underflow_gen = qgc.PT_UNFOLD_DICT['underflow_gen']
+pt_bin_edges_underflow_reco = qgc.PT_UNFOLD_DICT['underflow_reco']
+
+zpj_append = "_zpj"
+pt_bin_edges_zpj_gen = qgc.PT_UNFOLD_DICT['signal%s_gen' % (zpj_append)]
+pt_bin_edges_zpj_reco = qgc.PT_UNFOLD_DICT['signal%s_reco' % (zpj_append)]
+pt_bin_edges_zpj_underflow_gen = qgc.PT_UNFOLD_DICT['underflow%s_gen' % (zpj_append)]
+pt_bin_edges_zpj_underflow_reco = qgc.PT_UNFOLD_DICT['underflow%s_reco' % (zpj_append)]
+
+
+def create_pt_hist(hist, binning, binning_uflow, pt_bin_edges, pt_bin_edges_uflow, variable_bin_edges):
+    """Create 1D pt hist from var & pt 1d hist"""
+    # THIS IS A HORRIBLE HACK BECAUSE I DIDNT FILL MY HISTS
+    all_pt_bins = list(np.append(pt_bin_edges_uflow[:-1], pt_bin_edges))
+    all_pt_bins.append(8000)
+    # print(all_pt_bins)
+    nbins_pt = len(all_pt_bins)-1
+    h_new = ROOT.TH1D("hpt"+cu.get_unique_str(), "", nbins_pt, array('d', all_pt_bins))
+    for pt_ind in range(1, h_new.GetNbinsX()+1):
+        this_sum = 0
+        this_err_sq = 0
+        this_pt = all_pt_bins[pt_ind-1]
+        # ARGH THIS IS SO FRUSTRATING
+        this_binning = binning if this_pt >= pt_bin_edges[0] else binning_uflow
+        for var_ind, var in enumerate(variable_bin_edges[:-1]):
+            bin_num = this_binning.GetGlobalBinNumber(var, this_pt)
+            this_sum += hist.GetBinContent(bin_num)
+            this_err_sq += hist.GetBinError(bin_num)**2
+        h_new.SetBinContent(pt_ind, this_sum)
+        h_new.SetBinError(pt_ind, math.sqrt(this_err_sq))
+    return h_new
+
+
+def do_dijet_pt_plots(workdir, do_systematics=True):
 
     data_tfile = cu.open_root_file(os.path.join(workdir, qgc.JETHT_ZB_FILENAME))
     mg_tfile = cu.open_root_file(os.path.join(workdir, qgc.QCD_FILENAME))
     py_tfile = cu.open_root_file(os.path.join(workdir, qgc.QCD_PYTHIA_ONLY_FILENAME))
     hpp_tfile = cu.open_root_file(os.path.join(workdir, qgc.QCD_HERWIG_FILENAME))
+
+    source_dir_systs = os.path.join(workdir, "systematics_files")
+
+    experimental_systematics = [
+        {
+            "label": "Charged hadron up",
+            "tfile": os.path.join(source_dir_systs, 'chargedHadronShiftUp', qgc.QCD_FILENAME),
+            "colour": ROOT.kAzure+1,
+        },
+        {
+            "label": "Charged hadron down",
+            "tfile": os.path.join(source_dir_systs, 'chargedHadronShiftDown', qgc.QCD_FILENAME),
+            "colour": ROOT.kAzure+1,
+            "linestyle": 2,
+        },
+        {
+            "label": "Neutral hadron up",
+            "tfile": os.path.join(source_dir_systs, 'neutralHadronShiftUp', qgc.QCD_FILENAME),
+            "colour": ROOT.kOrange-4,
+        },
+        {
+            "label": "Neutral hadron down",
+            "tfile": os.path.join(source_dir_systs, 'neutralHadronShiftDown', qgc.QCD_FILENAME),
+            "colour": ROOT.kOrange-4,
+            "linestyle": 2,
+        },
+        {
+            "label": "Photon up",
+            "tfile": os.path.join(source_dir_systs, 'photonShiftUp', qgc.QCD_FILENAME),
+            "colour": ROOT.kMagenta-3,
+        },
+        {
+            "label": "Photon down",
+            "tfile": os.path.join(source_dir_systs, 'photonShiftDown', qgc.QCD_FILENAME),
+            "colour": ROOT.kMagenta-3,
+            "linestyle": 2,
+        },
+        {
+            "label": "JES up",
+            "tfile": os.path.join(source_dir_systs, 'jecsmear_directionUp', qgc.QCD_FILENAME),
+            "colour": ROOT.kGreen+3,
+        },
+        {
+            "label": "JES down",
+            "tfile": os.path.join(source_dir_systs, 'jecsmear_directionDown', qgc.QCD_FILENAME),
+            "colour": ROOT.kGreen+3,
+            "linestyle": 2,
+        },
+        {
+            "label": "JER up",
+            "tfile": os.path.join(source_dir_systs, 'jersmear_directionUp', qgc.QCD_FILENAME),
+            "colour": ROOT.kOrange+3,
+        },
+        {
+            "label": "JER down",
+            "tfile": os.path.join(source_dir_systs, 'jersmear_directionDown', qgc.QCD_FILENAME),
+            "colour": ROOT.kOrange+3,
+            "linestyle": 2,
+        },
+        {
+            "label": "Pileup up",
+            "tfile": os.path.join(source_dir_systs, 'pileup_directionUp', qgc.QCD_FILENAME),
+            "colour": ROOT.kBlue-4,
+        },
+        {
+            "label": "Pileup down",
+            "tfile": os.path.join(source_dir_systs, 'pileup_directionDown', qgc.QCD_FILENAME),
+            "colour": ROOT.kBlue-4,
+            "linestyle": 2,
+        },
+        {
+            "label": "Tracking up",
+            "tfile": os.path.join(source_dir_systs, 'track_directionUp', qgc.QCD_FILENAME),
+            "colour": ROOT.kMagenta+3,
+        },
+        {
+            "label": "Tracking down",
+            "tfile": os.path.join(source_dir_systs, 'track_directionDown', qgc.QCD_FILENAME),
+            "colour": ROOT.kMagenta+3,
+            "linestyle": 2,
+        },
+    ]
+
+    scale_systematics = [
+        {
+            "label": "muR up, muF nominal",
+            "tfile": os.path.join(source_dir_systs, 'ScaleVariationMuRUp_ScaleVariationMuFNom', qgc.QCD_FILENAME),
+            "colour": ROOT.kAzure,
+        },
+        {
+            "label": "muR down, muF nominal",
+            "tfile": os.path.join(source_dir_systs, 'ScaleVariationMuRDown_ScaleVariationMuFNom', qgc.QCD_FILENAME),
+            "colour": ROOT.kAzure+1,
+        },
+        {
+            "label": "muR nominal, muF up",
+            "tfile": os.path.join(source_dir_systs, 'ScaleVariationMuRNom_ScaleVariationMuFUp', qgc.QCD_FILENAME),
+            "colour": ROOT.kAzure+2,
+        },
+        {
+            "label": "muR nominal, muF down",
+            "tfile": os.path.join(source_dir_systs, 'ScaleVariationMuRNom_ScaleVariationMuFDown', qgc.QCD_FILENAME),
+            "colour": ROOT.kAzure+3,
+        },
+        {
+            "label": "muR down, muF down",
+            "tfile": os.path.join(source_dir_systs, 'ScaleVariationMuRDown_ScaleVariationMuFDown', qgc.QCD_FILENAME),
+            "colour": ROOT.kAzure+4,
+        },
+        {
+            "label": "muR up, muF up",
+            "tfile": os.path.join(source_dir_systs, 'ScaleVariationMuRUp_ScaleVariationMuFUp', qgc.QCD_FILENAME),
+            "colour": ROOT.kAzure+5,
+        },
+    ]
+
+    pdf_systematics = [
+        {
+            "label": "PDF",  # this is a template entry, used for future
+            # this file has the newer PDF hists for reco pt
+            "tfile": os.path.join(source_dir_systs, 'PDFvariationsTrue', qgc.QCD_FILENAME),
+            # "tfile": os.path.join('/Users/robin/Projects/QGAnalysis/workdir_ak4puppi_data_target0p5_ZReweight_wta_groomed_fwdcenDijet_betterLargeWeightVeto_noPtHatCut_noPtReweight_noZjet2Cut_zPt30_trkSF_wtaAK_fixPrescales_sameGenCuts_fixPassGen_jackknife/systematic_files', 'PDFvariationsTrue', qgc.QCD_FILENAME),
+            "colour": ROOT.kCyan+2,
+            "variations": range(100),  # list of all the variation #s to be used
+        },
+    ]
+
+    generator_binning, detector_binning = MyUnfolder.construct_tunfold_binning(variable_bin_edges_reco,
+                                                                               variable_bin_edges_gen,
+                                                                               variable_name,
+                                                                               pt_bin_edges_reco,
+                                                                               pt_bin_edges_gen,
+                                                                               pt_bin_edges_underflow_reco,
+                                                                               pt_bin_edges_underflow_gen)
+    generator_binning_uflow = generator_binning.FindNode("generatordistribution_underflow")
+    generator_binning_main = generator_binning.FindNode("generatordistribution")
+
+    detector_binning_uflow = detector_binning.FindNode("detectordistribution_underflow")
+    detector_binning_main = detector_binning.FindNode("detectordistribution")
+
 
     for region_shortname, region_label in [("central", qgc.Dijet_CEN_LABEL), ("forward", qgc.Dijet_FWD_LABEL)]:
 
@@ -230,6 +447,7 @@ def do_dijet_pt_plots(workdir):
         hpp_label = "Herwig++"
         col_hpp = qgc.QCD_COLOURS[3]
 
+        print(mg_tfile)
         data_hist = cu.get_from_tfile(data_tfile, histname)
         mg_hist = cu.get_from_tfile(mg_tfile, histname)
         py_hist = cu.get_from_tfile(py_tfile, histname)
@@ -239,36 +457,144 @@ def do_dijet_pt_plots(workdir):
         all_pt_bins = np.append(qgc.PT_UNFOLD_DICT['underflow_reco'][:-1], qgc.PT_UNFOLD_DICT['signal_reco'])
         all_pt_bins = np.append(all_pt_bins, 8000)  # the overflow bin
         print(all_pt_bins)
-        data_hist = tunfold_to_phsyical_bins(data_hist, all_pt_bins, divide_by_bin_width=True)
-        mg_hist = tunfold_to_phsyical_bins(mg_hist, all_pt_bins, divide_by_bin_width=True)
-        py_hist = tunfold_to_phsyical_bins(py_hist, all_pt_bins, divide_by_bin_width=True)
-        hpp_hist = tunfold_to_phsyical_bins(hpp_hist, all_pt_bins, divide_by_bin_width=True)
+        data_hist = tunfold_to_physical_bins(data_hist, all_pt_bins, divide_by_bin_width=True)
+        mg_hist = tunfold_to_physical_bins(mg_hist, all_pt_bins, divide_by_bin_width=True)
+        py_hist = tunfold_to_physical_bins(py_hist, all_pt_bins, divide_by_bin_width=True)
+        hpp_hist = tunfold_to_physical_bins(hpp_hist, all_pt_bins, divide_by_bin_width=True)
 
         # Scale to data
-        mg_hist.Scale(data_hist.Integral()/mg_hist.Integral())
+        mg_sf = data_hist.Integral()/mg_hist.Integral()
+        mg_hist.Scale(mg_sf)
         py_hist.Scale(data_hist.Integral()/py_hist.Integral())
         hpp_hist.Scale(data_hist.Integral()/hpp_hist.Integral())
 
+        # Absolute shifted variations
+        exp_hist_up, exp_hist_down = None, None
+        scale_hist_up, scale_hist_down = None, None
+        pdf_hist_up, pdf_hist_down = None, None
+        total_hist_up, total_hist_down = None, None
 
-        # custom_bins = np.concatenate([
-        #     np.arange(50, 200, 10),
-        #     np.arange(200, 300, 20),
-        #     np.arange(300, 1000., 50),
-        #     np.arange(1000, 2100., 100),
-        #     # np.array([500, 600, 700, 800, 900, 1000], dtype='d')
-        #     ])
-        # print('dijet binning:', custom_bins)
+        if do_systematics:
+            # Calculate total experimental systematic uncertainty
+            # ------------------------------------------------------------------
+            for exp_dict in experimental_systematics:
+                if isinstance(exp_dict['tfile'], str):
+                    exp_dict['tfile'] = cu.open_root_file(exp_dict['tfile'])
+                hist = cu.get_from_tfile(exp_dict['tfile'], histname)
+                hist = tunfold_to_physical_bins(hist, all_pt_bins, divide_by_bin_width=True)
+                hist.Scale(mg_sf)
+                exp_dict['hist'] = hist
 
-        # can't use this, screws up nentries for some reason
-        # data_hist = _rebin_scale(data_hist, binning=custom_bins, normalise=False)
-        # mg_hist = _rebin_scale(mg_hist, binning=custom_bins, normalise=False)
-        # py_hist = _rebin_scale(py_hist, binning=custom_bins, normalise=False)
-        # hpp_hist = _rebin_scale(hpp_hist, binning=custom_bins, normalise=False)
+            # create envelope of quadrature sum max/min per bin
+            exp_hist_up = mg_hist.Clone("exp_hist_up")
+            exp_hist_down = mg_hist.Clone("exp_hist_down")
+            for ix in range(1, mg_hist.GetNbinsX()+1):
+                nominal_bin = mg_hist.GetBinContent(ix)
+                all_bin_diffs = [exp_dict['hist'].GetBinContent(ix) - nominal_bin
+                                 for exp_dict in experimental_systematics]
 
-        # hpp_hist.Scale(23.76 / )
-        # hpp_hist.Scale(1E6)
-        # for ih in range(1, 4):
-            # print(hpp_hist.GetBinContent(ih) / data_hist.GetBinContent(ih))
+                positive_err = math.sqrt(sum([x**2 for x in all_bin_diffs if x > 0]))
+                exp_hist_up.SetBinContent(ix, nominal_bin + positive_err)
+                exp_hist_up.SetBinError(ix, 0)
+
+                negative_err = math.sqrt(sum([x**2 for x in all_bin_diffs if x < 0]))
+                exp_hist_down.SetBinContent(ix, nominal_bin - negative_err)
+                exp_hist_down.SetBinError(ix, 0)
+
+                # print(ix, 'nominal', nominal_bin)
+                # print(ix, 'positive_err', positive_err, positive_err/nominal_bin)
+                # print(ix, 'negative_err', negative_err, negative_err/nominal_bin)
+
+
+            # Calculate total scale uncertainty
+            # ------------------------------------------------------------------
+            for scale_dict in scale_systematics:
+                if isinstance(scale_dict['tfile'], str):
+                    scale_dict['tfile'] = cu.open_root_file(scale_dict['tfile'])
+                hist = cu.get_from_tfile(scale_dict['tfile'], histname)
+                hist = tunfold_to_physical_bins(hist, all_pt_bins, divide_by_bin_width=True)
+                hist.Scale(mg_sf)
+                scale_dict['hist'] = hist
+
+            # create envelope of max/min per bin
+            scale_hist_up = mg_hist.Clone("scale_hist_up")
+            scale_hist_down = mg_hist.Clone("scale_hist_down")
+            for ix in range(1, mg_hist.GetNbinsX()+1):
+                nominal_bin = mg_hist.GetBinContent(ix)
+                all_bin_values = [scale_dict['hist'].GetBinContent(ix)
+                                  for scale_dict in scale_systematics]
+                scale_hist_up.SetBinContent(ix, max(all_bin_values))
+                scale_hist_up.SetBinError(ix, 0)
+                scale_hist_down.SetBinContent(ix, min(all_bin_values))
+                scale_hist_down.SetBinError(ix, 0)
+
+
+            # Calculate total PDF uncertainty
+            # ------------------------------------------------------------------
+            # Create all dicts first
+            tfile = pdf_systematics[0]['tfile']
+            if isinstance(tfile, str):
+                tfile = cu.open_root_file(tfile)
+
+            these_pdf_systematics = []
+            num_vars = len(pdf_systematics[0]['variations'])
+            for pdf_ind in pdf_systematics[0]['variations']:
+                hist = cu.get_from_tfile(tfile, "Dijet_QG_Unfold_%s_tighter/hist_LHA_reco_all_PDF_%d" % (region_shortname, pdf_ind))
+                hist = create_pt_hist(hist, detector_binning_main, detector_binning_uflow, pt_bin_edges_reco, pt_bin_edges_underflow_reco, variable_bin_edges_reco)
+                hist.Scale(mg_sf, "width")
+                these_pdf_systematics.append(
+                    {
+                        "label": "PDF_%d" % (pdf_ind),
+                        "hist": hist,
+                        "colour": cu.get_colour_seq(pdf_ind, num_vars)
+                    })
+
+            # create RMS up/down
+            pdf_hist_up = mg_hist.Clone("pdf_hist_up")
+            pdf_hist_down = mg_hist.Clone("pdf_hist_down")
+            for ix in range(1, mg_hist.GetNbinsX()+1):
+                nominal = mg_hist.GetBinContent(ix)
+                values = [(pdf_dict['hist'].GetBinContent(ix)-nominal)**2 
+                          for pdf_dict in these_pdf_systematics]
+                variation = math.sqrt(sum(values))
+
+                values = [pdf_dict['hist'].GetBinContent(ix) for pdf_dict in these_pdf_systematics]
+                rms = np.std(values, ddof=1)
+                pdf_hist_up.SetBinContent(ix, nominal+variation)
+                # pdf_hist_up.SetBinContent(ix, nominal+rms)
+                pdf_hist_up.SetBinError(ix, 0)
+                # pdf_hist_down.SetBinContent(ix, max(nominal-variation, 1E-10))
+                pdf_hist_down.SetBinContent(ix, max(nominal-variation, 0))
+                # pdf_hist_down.SetBinContent(ix, max(nominal-rms, 0))
+                pdf_hist_down.SetBinError(ix, 0)
+                # print(ix, 'values', values)
+                print(ix, 'nominal', nominal, 'variation', variation, 'variation/nominal', variation/nominal)
+                print(ix, 'nominal', nominal, 'rms', rms, 'rms/nominal', rms/nominal)
+                if variation > nominal:
+                    print("!!!!!")
+                if rms > nominal:
+                    print("!!!!!")
+
+            # Calculate total uncertainty
+            # ------------------------------------------------------------------
+            total_hist_up = mg_hist.Clone('total_hist_up')
+            total_hist_down = mg_hist.Clone('total_hist_down')
+            for ix in range(1, mg_hist.GetNbinsX()+1):
+                nominal = mg_hist.GetBinContent(ix)
+                sum_sq = sum([(up_hist.GetBinContent(ix) - nominal)**2
+                              for up_hist in [exp_hist_up, scale_hist_up, pdf_hist_up]
+                              if up_hist is not None])
+                # print(ix, [(up_hist.GetBinContent(ix) - nominal)**2
+                #           for up_hist in [exp_hist_up, scale_hist_up, pdf_hist_up]
+                #           if up_hist is not None])
+                total_hist_up.SetBinContent(ix, nominal+math.sqrt(sum_sq))
+                total_hist_up.SetBinError(ix, 0)
+
+                sum_sq = sum([(down_hist.GetBinContent(ix) - nominal)**2
+                              for down_hist in [exp_hist_down, scale_hist_down, pdf_hist_down]
+                              if down_hist is not None])
+                total_hist_down.SetBinContent(ix, nominal - math.sqrt(sum_sq))
+                total_hist_down.SetBinError(ix, 0)
 
         entries = [
             # DATA
@@ -307,6 +633,175 @@ def do_dijet_pt_plots(workdir):
             ]
         ]
 
+        if do_systematics:
+            # ADD EXPERIMENTAL ENTRIES
+            # ------------------------------------------------------------------
+            # plot individual variations
+            # for exp_dict in experimental_systematics:
+                # entries.append([exp_dict['hist'],
+                #                 dict(line_color=exp_dict['colour'], line_width=lw, fill_color=exp_dict['colour'],
+                #                      marker_color=exp_dict['colour'], marker_size=0, label=exp_dict['label'],
+                #                      subplot=data_hist
+                #                 )
+                #                ])
+
+            exp_col = ROOT.kRed+2
+            exp_col2 = ROOT.kRed-2
+            # plot up/down boundaries
+            # entries.extend([
+            #     [
+            #         exp_hist_up.Clone(),
+            #         dict(line_color=exp_col, line_width=lw, line_style=1,
+            #              fill_color=exp_col,
+            #              marker_color=exp_col, marker_size=0, label="Exp systs up",
+            #              subplot=data_hist)
+            #     ],
+            #     [
+            #         exp_hist_down.Clone(),
+            #         dict(line_color=exp_col2, line_width=lw, line_style=2,
+            #              fill_color=exp_col2,
+            #              marker_color=exp_col2, marker_size=0, label="Exp systs down",
+            #              subplot=data_hist)
+            #     ],
+            # ])
+
+            exp_hist_up_ratio = exp_hist_up.Clone()
+            exp_hist_down_ratio = exp_hist_down.Clone()
+            exp_hist_up_ratio.Add(mg_hist, -1)
+            exp_hist_up_ratio.Divide(mg_hist)
+            exp_hist_down_ratio.Add(mg_hist, -1)
+            exp_hist_down_ratio.Divide(mg_hist)
+            exp_hist_down_ratio.Scale(-1)
+            n = mg_hist.GetNbinsX()
+            bin_width = [mg_hist.GetBinWidth(i)/2. for i in range(1, n+1)]
+            x = array('d', [mg_hist.GetBinCenter(i) for i in range(1, n+1)])
+            y = array('d', [1 for i in range(1, n+1)])
+            exl = array('d', [bin_width[i-1] for i in range(1, n+1)])
+            exh = array('d', [bin_width[i-1] for i in range(1, n+1)])
+            exp_eyl = array('d', [exp_hist_down_ratio.GetBinContent(i) for i in range(1, n+1)])
+            exp_eyh = array('d', [exp_hist_up_ratio.GetBinContent(i) for i in range(1, n+1)])
+            exp_gr = ROOT.TGraphAsymmErrors(n, x, y, exl, exh, exp_eyl, exp_eyh)
+
+            # ADD SCALE ENTRIES
+            # ------------------------------------------------------------------
+            # plot individual variations
+            # for scale_dict in scale_systematics:
+            #     entries.append([scale_dict['hist'],
+            #                     dict(line_color=scale_dict['colour'], line_width=lw, fill_color=scale_dict['colour'],
+            #                          marker_color=scale_dict['colour'], marker_size=0, label=scale_dict['label'],
+            #                          subplot=data_hist
+            #                     )
+            #                    ])
+
+            scale_col = ROOT.kAzure+2
+            scale_col2 = scale_col
+            # plot up/down boundaries
+            # entries.extend([
+            #     [
+            #         scale_hist_up.Clone(),
+            #         dict(line_color=scale_col, line_width=lw, line_style=1,
+            #              fill_color=scale_col,
+            #              marker_color=scale_col, marker_size=0, label="Scale up",
+            #              subplot=data_hist)
+            #     ],
+            #     [
+            #         scale_hist_down.Clone(),
+            #         dict(line_color=scale_col2, line_width=lw, line_style=2,
+            #              fill_color=scale_col2,
+            #              marker_color=scale_col2, marker_size=0, label="Scale down",
+            #              subplot=data_hist)
+            #     ],
+            # ])
+
+            scale_hist_up_ratio = scale_hist_up.Clone()
+            scale_hist_down_ratio = scale_hist_down.Clone()
+            scale_hist_up_ratio.Add(mg_hist, -1)
+            scale_hist_up_ratio.Divide(mg_hist)
+            scale_hist_down_ratio.Add(mg_hist, -1)
+            scale_hist_down_ratio.Divide(mg_hist)
+            scale_hist_down_ratio.Scale(-1)
+            scale_eyl = array('d', [scale_hist_down_ratio.GetBinContent(i) for i in range(1, n+1)])
+            scale_eyh = array('d', [scale_hist_up_ratio.GetBinContent(i) for i in range(1, n+1)])
+            scale_gr = ROOT.TGraphAsymmErrors(n, x, y, exl, exh, scale_eyl, scale_eyh)
+
+            # ADD PDF ENTRIES
+            # ------------------------------------------------------------------
+            # print(these_pdf_systematics)
+            # plot individual variations
+            # for pdf_dict in these_pdf_systematics:
+            #     entries.append(
+            #         [
+            #             pdf_dict['hist'],
+            #             dict(label=pdf_dict['label'],
+            #                  line_color=pdf_dict['colour'],
+            #                  # subplot=mg_hist)
+            #                  subplot=data_hist)
+            #         ]
+            #     )
+
+            pdf_col = ROOT.kMagenta
+            pdf_col2 = pdf_col
+            # plot up/down boundaries
+            entries.extend([
+                [
+                    pdf_hist_up.Clone(),
+                    dict(line_color=pdf_col, line_width=lw, line_style=1,
+                         fill_color=pdf_col,
+                         marker_color=pdf_col, marker_size=0, label="PDF up",
+                         subplot=data_hist)
+                ],
+                [
+                    pdf_hist_down.Clone(),
+                    dict(line_color=pdf_col2, line_width=lw, line_style=2,
+                         fill_color=pdf_col2,
+                         marker_color=pdf_col2, marker_size=0, label="PDF down",
+                         subplot=data_hist)
+                ],
+            ])
+
+            pdf_hist_up_ratio = pdf_hist_up.Clone()
+            pdf_hist_down_ratio = pdf_hist_down.Clone()
+            pdf_hist_up_ratio.Add(mg_hist, -1)
+            pdf_hist_up_ratio.Divide(mg_hist)
+            pdf_hist_down_ratio.Add(mg_hist, -1)
+            pdf_hist_down_ratio.Divide(mg_hist)
+            pdf_hist_down_ratio.Scale(-1)
+            pdf_eyl = array('d', [pdf_hist_down_ratio.GetBinContent(i) for i in range(1, n+1)])
+            pdf_eyh = array('d', [pdf_hist_up_ratio.GetBinContent(i) for i in range(1, n+1)])
+            pdf_gr = ROOT.TGraphAsymmErrors(n, x, y, exl, exh, pdf_eyl, pdf_eyh)
+
+            # ADD TOTAL
+            # ------------------------------------------------------------------
+            total_col = ROOT.kBlack
+            total_col2 = total_col
+            # entries.extend([
+            #     [
+            #         total_hist_up.Clone(),
+            #         dict(line_color=total_col, line_width=lw, line_style=1,
+            #              fill_color=total_col,
+            #              marker_color=total_col, marker_size=0, label="Total up",
+            #              subplot=data_hist)
+            #     ],
+            #     [
+            #         total_hist_down.Clone(),
+            #         dict(line_color=total_col2, line_width=lw, line_style=2,
+            #              fill_color=total_col2,
+            #              marker_color=total_col2, marker_size=0, label="Total down",
+            #              subplot=data_hist)
+            #     ],
+            # ])
+
+            total_hist_up_ratio = total_hist_up.Clone()
+            total_hist_down_ratio = total_hist_down.Clone()
+            total_hist_up_ratio.Add(mg_hist, -1)
+            total_hist_up_ratio.Divide(mg_hist)
+            total_hist_down_ratio.Add(mg_hist, -1)
+            total_hist_down_ratio.Divide(mg_hist)
+            total_hist_down_ratio.Scale(-1)
+            total_eyl = array('d', [total_hist_down_ratio.GetBinContent(i) for i in range(1, n+1)])
+            total_eyh = array('d', [total_hist_up_ratio.GetBinContent(i) for i in range(1, n+1)])
+            total_gr = ROOT.TGraphAsymmErrors(n, x, y, exl, exh, total_eyl, total_eyh)
+
         radius, pus = cu.get_jet_config_from_dirname(workdir)
         jet_str = "AK%s PF %s" % (radius.upper(), pus.upper())
         title = "{jet_algo}\n{region_label}".format(jet_algo=jet_str,
@@ -316,15 +811,19 @@ def do_dijet_pt_plots(workdir):
                        output_filename=os.path.join(workdir, "data_mc_jet_pt/Dijet_%s/jet_pt.%s" % (region_shortname, OUTPUT_FMT)),
                        rebin=1,
                        xlim=(30, 4000),
-                       ylim=None,
+                       ylim=(5E-3, 1E14),
                        title=title,
-                       subplot_limits=(0, 2.5),
+                       subplot_limits=(0, 5),
                        data_first=True,
-                       normalise_hists=False)
+                       normalise_hists=False,
+                       experimental_syst=None,
+                       scale_syst=None,
+                       pdf_syst=None,
+                       total_syst=None)
 
 
 
-def do_zpj_pt_plots(workdir):
+def do_zpj_pt_plots(workdir, do_systematics=True):
 
     single_mu_tfile = cu.open_root_file(os.path.join(workdir, qgc.SINGLE_MU_FILENAME))
     mg_dy_tfile = cu.open_root_file(os.path.join(workdir, qgc.DY_FILENAME))
@@ -332,6 +831,146 @@ def do_zpj_pt_plots(workdir):
 
     # histname = "ZPlusJets_QG/jet_pt"  # fine equidistant binning
     histname = "ZPlusJets_QG_Unfold/hist_pt_reco_all"  # tunfold binning
+
+    source_dir_systs = os.path.join(workdir, "systematics_files")
+
+    experimental_systematics = [
+        {
+            "label": "Charged hadron up",
+            "tfile": os.path.join(source_dir_systs, 'chargedHadronShiftUp', qgc.DY_FILENAME),
+            "colour": ROOT.kAzure+1,
+        },
+        {
+            "label": "Charged hadron down",
+            "tfile": os.path.join(source_dir_systs, 'chargedHadronShiftDown', qgc.DY_FILENAME),
+            "colour": ROOT.kAzure+1,
+            "linestyle": 2,
+        },
+        {
+            "label": "Neutral hadron up",
+            "tfile": os.path.join(source_dir_systs, 'neutralHadronShiftUp', qgc.DY_FILENAME),
+            "colour": ROOT.kOrange-4,
+        },
+        {
+            "label": "Neutral hadron down",
+            "tfile": os.path.join(source_dir_systs, 'neutralHadronShiftDown', qgc.DY_FILENAME),
+            "colour": ROOT.kOrange-4,
+            "linestyle": 2,
+        },
+        {
+            "label": "Photon up",
+            "tfile": os.path.join(source_dir_systs, 'photonShiftUp', qgc.DY_FILENAME),
+            "colour": ROOT.kMagenta-3,
+        },
+        {
+            "label": "Photon down",
+            "tfile": os.path.join(source_dir_systs, 'photonShiftDown', qgc.DY_FILENAME),
+            "colour": ROOT.kMagenta-3,
+            "linestyle": 2,
+        },
+        {
+            "label": "JES up",
+            "tfile": os.path.join(source_dir_systs, 'jecsmear_directionUp', qgc.DY_FILENAME),
+            "colour": ROOT.kGreen+3,
+        },
+        {
+            "label": "JES down",
+            "tfile": os.path.join(source_dir_systs, 'jecsmear_directionDown', qgc.DY_FILENAME),
+            "colour": ROOT.kGreen+3,
+            "linestyle": 2,
+        },
+        {
+            "label": "JER up",
+            "tfile": os.path.join(source_dir_systs, 'jersmear_directionUp', qgc.DY_FILENAME),
+            "colour": ROOT.kOrange+3,
+        },
+        {
+            "label": "JER down",
+            "tfile": os.path.join(source_dir_systs, 'jersmear_directionDown', qgc.DY_FILENAME),
+            "colour": ROOT.kOrange+3,
+            "linestyle": 2,
+        },
+        {
+            "label": "Pileup up",
+            "tfile": os.path.join(source_dir_systs, 'pileup_directionUp', qgc.DY_FILENAME),
+            "colour": ROOT.kBlue-4,
+        },
+        {
+            "label": "Pileup down",
+            "tfile": os.path.join(source_dir_systs, 'pileup_directionDown', qgc.DY_FILENAME),
+            "colour": ROOT.kBlue-4,
+            "linestyle": 2,
+        },
+        {
+            "label": "Tracking up",
+            "tfile": os.path.join(source_dir_systs, 'track_directionUp', qgc.DY_FILENAME),
+            "colour": ROOT.kMagenta+3,
+        },
+        {
+            "label": "Tracking down",
+            "tfile": os.path.join(source_dir_systs, 'track_directionDown', qgc.DY_FILENAME),
+            "colour": ROOT.kMagenta+3,
+            "linestyle": 2,
+        },
+    ]
+
+    scale_systematics = [
+        {
+            "label": "muR up, muF nominal",
+            "tfile": os.path.join(source_dir_systs, 'ScaleVariationMuRUp_ScaleVariationMuFNom', qgc.DY_FILENAME),
+            "colour": ROOT.kAzure,
+        },
+        {
+            "label": "muR down, muF nominal",
+            "tfile": os.path.join(source_dir_systs, 'ScaleVariationMuRDown_ScaleVariationMuFNom', qgc.DY_FILENAME),
+            "colour": ROOT.kAzure+1,
+        },
+        {
+            "label": "muR nominal, muF up",
+            "tfile": os.path.join(source_dir_systs, 'ScaleVariationMuRNom_ScaleVariationMuFUp', qgc.DY_FILENAME),
+            "colour": ROOT.kAzure+2,
+        },
+        {
+            "label": "muR nominal, muF down",
+            "tfile": os.path.join(source_dir_systs, 'ScaleVariationMuRNom_ScaleVariationMuFDown', qgc.DY_FILENAME),
+            "colour": ROOT.kAzure+3,
+        },
+        {
+            "label": "muR down, muF down",
+            "tfile": os.path.join(source_dir_systs, 'ScaleVariationMuRDown_ScaleVariationMuFDown', qgc.DY_FILENAME),
+            "colour": ROOT.kAzure+4,
+        },
+        {
+            "label": "muR up, muF up",
+            "tfile": os.path.join(source_dir_systs, 'ScaleVariationMuRUp_ScaleVariationMuFUp', qgc.DY_FILENAME),
+            "colour": ROOT.kAzure+5,
+        },
+    ]
+
+    pdf_systematics = [
+        {
+            "label": "PDF",  # this is a template entry, used for future
+            # this file has the newer PDF hists for reco pt
+            "tfile": os.path.join(source_dir_systs, 'PDFvariationsTrue', qgc.DY_FILENAME),
+            # "tfile": os.path.join('/Users/robin/Projects/QGAnalysis/workdir_ak4puppi_data_target0p5_ZReweight_wta_groomed_fwdcenDijet_betterLargeWeightVeto_noPtHatCut_noPtReweight_noZjet2Cut_zPt30_trkSF_wtaAK_fixPrescales_sameGenCuts_fixPassGen_jackknife/systematic_files', 'PDFvariationsTrue', qgc.QCD_FILENAME),
+            "colour": ROOT.kCyan+2,
+            "variations": range(100),  # list of all the variation #s to be used
+        },
+    ]
+
+    generator_binning, detector_binning = MyUnfolder.construct_tunfold_binning(variable_bin_edges_reco,
+                                                                               variable_bin_edges_gen,
+                                                                               variable_name,
+                                                                               pt_bin_edges_zpj_reco,
+                                                                               pt_bin_edges_zpj_gen,
+                                                                               pt_bin_edges_zpj_underflow_reco,
+                                                                               pt_bin_edges_zpj_underflow_gen)
+    generator_binning_uflow = generator_binning.FindNode("generatordistribution_underflow")
+    generator_binning_main = generator_binning.FindNode("generatordistribution")
+
+    detector_binning_uflow = detector_binning.FindNode("detectordistribution_underflow")
+    detector_binning_main = detector_binning.FindNode("detectordistribution")
+
 
     lw = 2
     msize = 1.1
@@ -350,34 +989,133 @@ def do_zpj_pt_plots(workdir):
     all_pt_bins = np.append(qgc.PT_UNFOLD_DICT['underflow_zpj_reco'][:-1], qgc.PT_UNFOLD_DICT['signal_zpj_reco'])
     all_pt_bins = np.append(all_pt_bins, 8000)  # the overflow bin
     print(all_pt_bins)
-    data_hist = tunfold_to_phsyical_bins(data_hist, all_pt_bins, divide_by_bin_width=True)
-    mg_hist = tunfold_to_phsyical_bins(mg_hist, all_pt_bins, divide_by_bin_width=True)
-    hpp_hist = tunfold_to_phsyical_bins(hpp_hist, all_pt_bins, divide_by_bin_width=True)
+    data_hist = tunfold_to_physical_bins(data_hist, all_pt_bins, divide_by_bin_width=True)
+    mg_hist = tunfold_to_physical_bins(mg_hist, all_pt_bins, divide_by_bin_width=True)
+    hpp_hist = tunfold_to_physical_bins(hpp_hist, all_pt_bins, divide_by_bin_width=True)
 
     # Scale to data
-    mg_hist.Scale(data_hist.Integral()/mg_hist.Integral())
+    mg_sf = data_hist.Integral()/mg_hist.Integral()
+    mg_hist.Scale(mg_sf)
     hpp_hist.Scale(data_hist.Integral()/hpp_hist.Integral())
+    
+    # Absolute shifted variations
+    exp_hist_up, exp_hist_down = None, None
+    scale_hist_up, scale_hist_down = None, None
+    pdf_hist_up, pdf_hist_down = None, None
+    total_hist_up, total_hist_down = None, None
 
-    # custom_bins = np.concatenate([
-    #     np.arange(50, 100, 10),
-    #     np.arange(100, 200, 20),
-    #     np.arange(200, 300, 25),
-    #     np.arange(300, 500., 50),
-    #     np.arange(500, 1100., 100),
-    #     # np.array([500, 600, 700, 800, 900, 1000], dtype='d')
-    #     ])
+    if do_systematics:
+        # Calculate total experimental systematic uncertainty
+        # ------------------------------------------------------------------
+        for exp_dict in experimental_systematics:
+            if isinstance(exp_dict['tfile'], str):
+                exp_dict['tfile'] = cu.open_root_file(exp_dict['tfile'])
+            hist = cu.get_from_tfile(exp_dict['tfile'], histname)
+            hist = tunfold_to_physical_bins(hist, all_pt_bins, divide_by_bin_width=True)
+            hist.Scale(mg_sf)
+            exp_dict['hist'] = hist
 
-    # custom_bins = np.concatenate([
-    #     np.arange(50, 200, 10),
-    #     np.arange(200, 300, 20),
-    #     np.arange(300, 500., 50),
-    #     np.arange(500, 1100., 100),
-    #     ])
-    # print('zpj binning:', custom_bins)
+        # create envelope of quadrature sum max/min per bin
+        exp_hist_up = mg_hist.Clone("exp_hist_up")
+        exp_hist_down = mg_hist.Clone("exp_hist_down")
+        for ix in range(1, mg_hist.GetNbinsX()+1):
+            nominal_bin = mg_hist.GetBinContent(ix)
+            all_bin_diffs = [exp_dict['hist'].GetBinContent(ix) - nominal_bin
+                             for exp_dict in experimental_systematics]
 
-    # data_hist = _rebin_scale(data_hist, custom_bins)
-    # mg_hist = _rebin_scale(mg_hist, custom_bins)
-    # hpp_hist = _rebin_scale(hpp_hist, custom_bins)
+            positive_err = math.sqrt(sum([x**2 for x in all_bin_diffs if x > 0]))
+            exp_hist_up.SetBinContent(ix, nominal_bin + positive_err)
+            exp_hist_up.SetBinError(ix, 0)
+
+            negative_err = math.sqrt(sum([x**2 for x in all_bin_diffs if x < 0]))
+            exp_hist_down.SetBinContent(ix, nominal_bin - negative_err)
+            exp_hist_down.SetBinError(ix, 0)
+
+            # print(ix, 'nominal', nominal_bin)
+            # print(ix, 'positive_err', positive_err, positive_err/nominal_bin)
+            # print(ix, 'negative_err', negative_err, negative_err/nominal_bin)
+
+
+        # Calculate total scale uncertainty
+        # ------------------------------------------------------------------
+        for scale_dict in scale_systematics:
+            if isinstance(scale_dict['tfile'], str):
+                scale_dict['tfile'] = cu.open_root_file(scale_dict['tfile'])
+            hist = cu.get_from_tfile(scale_dict['tfile'], histname)
+            hist = tunfold_to_physical_bins(hist, all_pt_bins, divide_by_bin_width=True)
+            hist.Scale(mg_sf)
+            scale_dict['hist'] = hist
+
+        # create envelope of max/min per bin
+        scale_hist_up = mg_hist.Clone("scale_hist_up")
+        scale_hist_down = mg_hist.Clone("scale_hist_down")
+        for ix in range(1, mg_hist.GetNbinsX()+1):
+            nominal_bin = mg_hist.GetBinContent(ix)
+            all_bin_values = [scale_dict['hist'].GetBinContent(ix)
+                              for scale_dict in scale_systematics]
+            scale_hist_up.SetBinContent(ix, max(all_bin_values))
+            scale_hist_up.SetBinError(ix, 0)
+            scale_hist_down.SetBinContent(ix, min(all_bin_values))
+            scale_hist_down.SetBinError(ix, 0)
+
+
+        # Calculate total PDF uncertainty
+        # ------------------------------------------------------------------
+        # Create all dicts first
+        tfile = pdf_systematics[0]['tfile']
+        if isinstance(tfile, str):
+            tfile = cu.open_root_file(tfile)
+
+        these_pdf_systematics = []
+        num_vars = len(pdf_systematics[0]['variations'])
+        for pdf_ind in pdf_systematics[0]['variations']:
+            hist = cu.get_from_tfile(tfile, "ZPlusJets_QG_Unfold/hist_LHA_reco_all_PDF_%d" % (pdf_ind))
+            hist = create_pt_hist(hist, detector_binning_main, detector_binning_uflow, pt_bin_edges_zpj_reco, pt_bin_edges_zpj_underflow_reco, variable_bin_edges_reco)
+            hist.Scale(mg_sf, "width")
+            these_pdf_systematics.append(
+                {
+                    "label": "PDF_%d" % (pdf_ind),
+                    "hist": hist,
+                    "colour": cu.get_colour_seq(pdf_ind, num_vars)
+                })
+
+        # create RMS up/down
+        pdf_hist_up = mg_hist.Clone("pdf_hist_up")
+        pdf_hist_down = mg_hist.Clone("pdf_hist_down")
+        for ix in range(1, mg_hist.GetNbinsX()+1):
+            values = [pdf_dict['hist'].GetBinContent(ix) for pdf_dict in these_pdf_systematics]
+            rms = np.std(values, ddof=0)
+            nominal = mg_hist.GetBinContent(ix)
+            pdf_hist_up.SetBinContent(ix, nominal+rms)
+            pdf_hist_up.SetBinError(ix, 0)
+            pdf_hist_down.SetBinContent(ix, max(nominal-rms, 1E-10))
+            pdf_hist_down.SetBinError(ix, 0)
+            # print(ix, 'values', values)
+            print(ix, 'nominal', nominal, 'rms', rms, 'rms/nominal', rms/nominal)
+            if rms > nominal:
+                print("!!!!!")
+
+        # Calculate total uncertainty
+        # ------------------------------------------------------------------
+        total_hist_up = mg_hist.Clone('total_hist_up')
+        total_hist_down = mg_hist.Clone('total_hist_down')
+        for ix in range(1, mg_hist.GetNbinsX()+1):
+            nominal = mg_hist.GetBinContent(ix)
+            sum_sq = sum([(up_hist.GetBinContent(ix) - nominal)**2
+                          for up_hist in [exp_hist_up, scale_hist_up, pdf_hist_up]
+                          if up_hist is not None])
+            # print(ix, [(up_hist.GetBinContent(ix) - nominal)**2
+            #           for up_hist in [exp_hist_up, scale_hist_up, pdf_hist_up]
+            #           if up_hist is not None])
+            total_hist_up.SetBinContent(ix, nominal+math.sqrt(sum_sq))
+            total_hist_up.SetBinError(ix, 0)
+
+            sum_sq = sum([(down_hist.GetBinContent(ix) - nominal)**2
+                          for down_hist in [exp_hist_down, scale_hist_down, pdf_hist_down]
+                          if down_hist is not None])
+            total_hist_down.SetBinContent(ix, nominal - math.sqrt(sum_sq))
+            total_hist_down.SetBinError(ix, 0)
+
 
     entries = [
         # SINGLE MU DATA
@@ -407,6 +1145,175 @@ def do_zpj_pt_plots(workdir):
         ]
     ]
 
+    if do_systematics:
+        # ADD EXPERIMENTAL ENTRIES
+        # ------------------------------------------------------------------
+        # plot individual variations
+        for exp_dict in experimental_systematics:
+            entries.append([exp_dict['hist'],
+                            dict(line_color=exp_dict['colour'], line_width=1, fill_color=exp_dict['colour'],
+                                 marker_color=exp_dict['colour'], marker_size=0, label=exp_dict['label'],
+                                 line_style=1 if "up" in exp_dict['label'].lower() else 2,
+                                 subplot=data_hist
+                            )
+                           ])
+
+        exp_col = ROOT.kRed+2
+        exp_col2 = ROOT.kRed-2
+        # plot up/down boundaries
+        # entries.extend([
+        #     [
+        #         exp_hist_up.Clone(),
+        #         dict(line_color=exp_col, line_width=lw, line_style=1,
+        #              fill_color=exp_col,
+        #              marker_color=exp_col, marker_size=0, label="Exp systs up",
+        #              subplot=data_hist)
+        #     ],
+        #     [
+        #         exp_hist_down.Clone(),
+        #         dict(line_color=exp_col2, line_width=lw, line_style=2,
+        #              fill_color=exp_col2,
+        #              marker_color=exp_col2, marker_size=0, label="Exp systs down",
+        #              subplot=data_hist)
+        #     ],
+        # ])
+
+        exp_hist_up_ratio = exp_hist_up.Clone()
+        exp_hist_down_ratio = exp_hist_down.Clone()
+        exp_hist_up_ratio.Add(mg_hist, -1)
+        exp_hist_up_ratio.Divide(mg_hist)
+        exp_hist_down_ratio.Add(mg_hist, -1)
+        exp_hist_down_ratio.Divide(mg_hist)
+        exp_hist_down_ratio.Scale(-1)
+        n = mg_hist.GetNbinsX()
+        bin_width = [mg_hist.GetBinWidth(i)/2. for i in range(1, n+1)]
+        x = array('d', [mg_hist.GetBinCenter(i) for i in range(1, n+1)])
+        y = array('d', [1 for i in range(1, n+1)])
+        exl = array('d', [bin_width[i-1] for i in range(1, n+1)])
+        exh = array('d', [bin_width[i-1] for i in range(1, n+1)])
+        exp_eyl = array('d', [exp_hist_down_ratio.GetBinContent(i) for i in range(1, n+1)])
+        exp_eyh = array('d', [exp_hist_up_ratio.GetBinContent(i) for i in range(1, n+1)])
+        exp_gr = ROOT.TGraphAsymmErrors(n, x, y, exl, exh, exp_eyl, exp_eyh)
+
+        # ADD SCALE ENTRIES
+        # ------------------------------------------------------------------
+        # plot individual variations
+        for scale_dict in scale_systematics:
+            entries.append([scale_dict['hist'],
+                            dict(line_color=scale_dict['colour'], line_width=lw, fill_color=scale_dict['colour'],
+                                 marker_color=scale_dict['colour'], marker_size=0, label=scale_dict['label'],
+                                 subplot=data_hist
+                            )
+                           ])
+
+        scale_col = ROOT.kAzure+2
+        scale_col2 = scale_col
+        # plot up/down boundaries
+        # entries.extend([
+        #     [
+        #         scale_hist_up.Clone(),
+        #         dict(line_color=scale_col, line_width=lw, line_style=1,
+        #              fill_color=scale_col,
+        #              marker_color=scale_col, marker_size=0, label="Scale up",
+        #              subplot=data_hist)
+        #     ],
+        #     [
+        #         scale_hist_down.Clone(),
+        #         dict(line_color=scale_col2, line_width=lw, line_style=2,
+        #              fill_color=scale_col2,
+        #              marker_color=scale_col2, marker_size=0, label="Scale down",
+        #              subplot=data_hist)
+        #     ],
+        # ])
+
+        scale_hist_up_ratio = scale_hist_up.Clone()
+        scale_hist_down_ratio = scale_hist_down.Clone()
+        scale_hist_up_ratio.Add(mg_hist, -1)
+        scale_hist_up_ratio.Divide(mg_hist)
+        scale_hist_down_ratio.Add(mg_hist, -1)
+        scale_hist_down_ratio.Divide(mg_hist)
+        scale_hist_down_ratio.Scale(-1)
+        scale_eyl = array('d', [scale_hist_down_ratio.GetBinContent(i) for i in range(1, n+1)])
+        scale_eyh = array('d', [scale_hist_up_ratio.GetBinContent(i) for i in range(1, n+1)])
+        scale_gr = ROOT.TGraphAsymmErrors(n, x, y, exl, exh, scale_eyl, scale_eyh)
+
+        # ADD PDF ENTRIES
+        # ------------------------------------------------------------------
+        # print(these_pdf_systematics)
+        # plot individual variations
+        # for pdf_dict in these_pdf_systematics:
+        #     entries.append(
+        #         [
+        #             pdf_dict['hist'],
+        #             dict(label=pdf_dict['label'],
+        #                  line_color=pdf_dict['colour'],
+        #                  subplot=mg_hist)
+        #         ]
+        #     )
+
+        pdf_col = ROOT.kMagenta
+        pdf_col2 = pdf_col
+        # plot up/down boundaries
+        entries.extend([
+            [
+                pdf_hist_up.Clone(),
+                dict(line_color=pdf_col, line_width=lw, line_style=1,
+                     fill_color=pdf_col,
+                     marker_color=pdf_col, marker_size=0, label="PDF up",
+                     subplot=data_hist)
+            ],
+            [
+                pdf_hist_down.Clone(),
+                dict(line_color=pdf_col2, line_width=lw, line_style=2,
+                     fill_color=pdf_col2,
+                     marker_color=pdf_col2, marker_size=0, label="PDF down",
+                     subplot=data_hist)
+            ],
+        ])
+
+        pdf_hist_up_ratio = pdf_hist_up.Clone()
+        pdf_hist_down_ratio = pdf_hist_down.Clone()
+        pdf_hist_up_ratio.Add(mg_hist, -1)
+        pdf_hist_up_ratio.Divide(mg_hist)
+        pdf_hist_down_ratio.Add(mg_hist, -1)
+        pdf_hist_down_ratio.Divide(mg_hist)
+        pdf_hist_down_ratio.Scale(-1)
+        pdf_eyl = array('d', [pdf_hist_down_ratio.GetBinContent(i) for i in range(1, n+1)])
+        pdf_eyh = array('d', [pdf_hist_up_ratio.GetBinContent(i) for i in range(1, n+1)])
+        pdf_gr = ROOT.TGraphAsymmErrors(n, x, y, exl, exh, pdf_eyl, pdf_eyh)
+
+        # ADD TOTAL
+        # ------------------------------------------------------------------
+        total_col = ROOT.kBlack
+        total_col2 = total_col
+        # entries.extend([
+        #     [
+        #         total_hist_up.Clone(),
+        #         dict(line_color=total_col, line_width=lw, line_style=1,
+        #              fill_color=total_col,
+        #              marker_color=total_col, marker_size=0, label="Total up",
+        #              subplot=data_hist)
+        #     ],
+        #     [
+        #         total_hist_down.Clone(),
+        #         dict(line_color=total_col2, line_width=lw, line_style=2,
+        #              fill_color=total_col2,
+        #              marker_color=total_col2, marker_size=0, label="Total down",
+        #              subplot=data_hist)
+        #     ],
+        # ])
+
+        total_hist_up_ratio = total_hist_up.Clone()
+        total_hist_down_ratio = total_hist_down.Clone()
+        total_hist_up_ratio.Add(mg_hist, -1)
+        total_hist_up_ratio.Divide(mg_hist)
+        total_hist_down_ratio.Add(mg_hist, -1)
+        total_hist_down_ratio.Divide(mg_hist)
+        total_hist_down_ratio.Scale(-1)
+        total_eyl = array('d', [total_hist_down_ratio.GetBinContent(i) for i in range(1, n+1)])
+        total_eyh = array('d', [total_hist_up_ratio.GetBinContent(i) for i in range(1, n+1)])
+        total_gr = ROOT.TGraphAsymmErrors(n, x, y, exl, exh, total_eyl, total_eyh)
+
     print("data_hist.Integral('width'):", data_hist.Integral("width"))
 
     radius, pus = cu.get_jet_config_from_dirname(workdir)
@@ -417,12 +1324,18 @@ def do_zpj_pt_plots(workdir):
     do_jet_pt_plot(entries,
                    output_filename=os.path.join(workdir, "data_mc_jet_pt/ZPlusJets/jet_pt.%s" % (OUTPUT_FMT)),
                    rebin=1,
-                   xlim=(30, 1000),
-                   ylim=None,
+                   xlim=(30, 800),
+                   ylim=(5E-3, 1E9),
                    title=title,
                    data_first=True,
-                   subplot_limits=(0, 2),
-                   normalise_hists=False)
+                   # subplot_limits=(0, 2),
+                   subplot_limits=(0.5, 1.5),
+                   normalise_hists=False,
+                   experimental_syst=None,
+                   scale_syst=None,
+                   pdf_syst=None,
+                   total_syst=None
+                   )
 
 
 if __name__ == "__main__":
@@ -431,6 +1344,6 @@ if __name__ == "__main__":
 
     for workdir in args.workdirs:
         do_dijet_pt_plots(workdir)
-        do_zpj_pt_plots(workdir)
+        # do_zpj_pt_plots(workdir)
 
     sys.exit(0)
