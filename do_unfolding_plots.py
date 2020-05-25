@@ -158,7 +158,7 @@ def calc_auto_xlim(entries):
             else:
                 # find the first empty bin
                 if val == 0:
-                    x_max = max(xax.GetBinLowEdge(i+1), x_max)
+                    x_max = max(xax.GetBinLowEdge(i), x_max)
                     break
     if x_max > x_min:
         return (x_min, x_max)
@@ -360,6 +360,7 @@ class GenPtBinnedPlotter(object):
                         ytitle=self.setup.pt_bin_normalised_differential_label,
                         title=self.get_pt_bin_title(bin_edge_low, bin_edge_high),
                         legend=True,
+                        xlim=calc_auto_xlim(entries[2:3]),  # set x lim to where data is non-0
                         **self.pt_bin_plot_args)
 
             plot.subplot_title = "Simulation / data"
@@ -1985,6 +1986,7 @@ class RecoPtBinnedPlotter(object):
                         what="hist",
                         title=self.get_pt_bin_title(bin_edge_low, bin_edge_high),
                         has_data=self.setup.has_data,
+                        xlim=calc_auto_xlim(entries[0:1]),  # reduce x axis to where reference prediction is non-0
                         subplot_type='ratio',
                         subplot_title='Simulation / data',
                         subplot_limits=(0, 2))
