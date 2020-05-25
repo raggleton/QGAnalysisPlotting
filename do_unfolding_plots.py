@@ -790,6 +790,60 @@ class GenPtBinnedPlotter(object):
             plot.save("%s/unfolded_%s_pdf_model_unnormalised_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
             ROOT.gStyle.SetPalette(ROOT.kViridis)
 
+    def plot_unfolded_with_jackknife_response_normalised(self):
+        for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
+            entries = []
+            hbc_args = dict(ind=ibin, binning_scheme='generator')
+            mc_gen_hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('hist_truth', **hbc_args)
+            for jk_dict in self.region['jackknife_response_variations']:
+                syst_unfolder = jk_dict['unfolder']
+                syst_label = jk_dict['label']
+
+                # Get binned hists from the jackknife unfolder, since the error bars may have been setup specially
+                jk_unfolded_hist_bin = syst_unfolder.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded', **hbc_args)
+
+                entries.extend([
+                    Contribution(jk_unfolded_hist_bin,
+                                 label="Unfolded (%s)" % (syst_label),
+                                 line_color=jk_dict['colour'], line_width=self.line_width, line_style=1,
+                                 marker_color=jk_dict['colour'], marker_size=0,
+                                 subplot=mc_gen_hist_bin),
+                ])
+
+            # add nominal ones last
+            unfolded_hist_bin_total_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded', **hbc_args)
+
+            entries.extend([
+                Contribution(mc_gen_hist_bin,
+                             label="Generator (%s)" % (self.region['mc_label']),
+                             line_color=self.plot_colours['gen_colour'], line_width=self.line_width,
+                             marker_color=self.plot_colours['gen_colour'], marker_size=0),
+                Contribution(unfolded_hist_bin_total_errors,
+                             label="Unfolded (#tau = %.3g) (total unc.)" % (self.unfolder.tau),
+                             line_color=self.plot_colours['unfolded_total_colour'], line_width=self.line_width, line_style=1,
+                             marker_color=self.plot_colours['unfolded_total_colour'], #marker_style=20, marker_size=0.75,
+                             subplot=mc_gen_hist_bin),
+            ])
+            if not self.check_entries(entries, "plot_unfolded_with_jackknife_response_normalised_pt_bin %d" % (ibin)):
+                return
+            plot = Plot(entries,
+                        ytitle=self.setup.pt_bin_normalised_differential_label,
+                        title=self.get_pt_bin_title(bin_edge_low, bin_edge_high),
+                        **self.pt_bin_plot_args)
+            self._modify_plot(plot)
+            plot.legend.SetX1(0.53)
+            plot.legend.SetY1(0.7)
+            plot.legend.SetX2(0.96)
+            plot.legend.SetY2(0.88)
+            if len(entries) > 4:
+                # plot.legend.SetX1(0.53)
+                plot.legend.SetY1(0.65)
+                plot.y_padding_max_linear = 1.8
+            if len(entries) > 6:
+                plot.legend.SetNColumns(2)
+            plot.plot("NOSTACK E1")
+            plot.save("%s/unfolded_%s_jackknife_response_vars_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
+
     def plot_uncertainty_shifts_normalised(self):
         """Do plots of fractional uncertainty shifts on *normalised* unfolded distribution"""
         for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
@@ -2388,10 +2442,12 @@ def do_binned_plots_per_region_angle(setup, do_binned_gen_pt, do_binned_gen_lamb
     has_scale_systs = len(region['scale_systematics']) > 0
     has_model_systs = len(region['model_systematics']) > 0
     has_pdf_systs = len(region['pdf_systematics']) > 0
+    has_jackknife_response_vars = len(region['jackknife_response_variations']) > 0
 
     if has_exp_systs: print("We have experimental systs")
     if has_model_systs: print("We have model systs")
     if has_pdf_systs: print("We have pdf systs")
+    if has_jackknife_response_vars: print("We have jackknife response variations")
 
     unfolder = region['unfolder']
     unreg_unfolder = region.get('unreg_unfolder', None)
@@ -2455,9 +2511,12 @@ def do_binned_plots_per_region_angle(setup, do_binned_gen_pt, do_binned_gen_lamb
         #     gen_pt_binned_plotter.plot_unfolded_with_pdf_systs_normalised()
         #     gen_pt_binned_plotter.plot_unfolded_with_pdf_systs_unnormalised()
 
-        if has_exp_systs or has_scale_systs or has_pdf_systs:
-            print("...doing syst fraction")
-            gen_pt_binned_plotter.plot_syst_fraction_normalised()
+        if has_jackknife_response_vars:
+            print("...doing jackknife response variations")
+            gen_pt_binned_plotter.plot_unfolded_with_jackknife_response_normalised()
+
+        print("...doing uncert fraction")
+        gen_pt_binned_plotter.plot_syst_fraction_normalised()
 
         # if has_data:
         print("...doing detector-level")
