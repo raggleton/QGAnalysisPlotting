@@ -609,28 +609,28 @@ class GenPtBinnedPlotter(object):
         for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
             syst_entries = []
             hbc_args = dict(ind=ibin, binning_scheme='generator')
+            mc_gen_hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('hist_truth', **hbc_args)
             for syst_dict in self.region['model_systematics']:
                 syst_unfolder = syst_dict['unfolder']
                 syst_label = syst_dict['label']
 
                 # Get binned hists from the model unfolder, since the error bars may have been setup specially
                 syst_unfolded_hist_bin = syst_unfolder.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded', **hbc_args)
-                syst_gen_hist_bin = syst_unfolder.hist_bin_chopper.get_pt_bin_normed_div_bin_width('hist_truth', **hbc_args)
+                # syst_gen_hist_bin = syst_unfolder.hist_bin_chopper.get_pt_bin_normed_div_bin_width('hist_truth', **hbc_args)
 
                 syst_entries.extend([
-                    Contribution(syst_gen_hist_bin,
-                                 label="Generator (%s)" % (syst_label),
-                                 line_color=syst_dict['colour'], line_width=self.line_width, line_style=2,
-                                 marker_color=syst_dict['colour'], marker_size=0),
+                    # Contribution(syst_gen_hist_bin,
+                    #              label="Generator (%s)" % (syst_label),
+                    #              line_color=syst_dict['colour'], line_width=self.line_width, line_style=2,
+                    #              marker_color=syst_dict['colour'], marker_size=0),
                     Contribution(syst_unfolded_hist_bin,
                                  label="Unfolded (#tau = %.3g) (total unc.) (%s)" % (syst_unfolder.tau, syst_label),
                                  line_color=syst_dict['colour'], line_width=self.line_width, line_style=1,
                                  marker_color=syst_dict['colour'], marker_size=0,
-                                 subplot=syst_gen_hist_bin),
+                                 subplot=mc_gen_hist_bin),
                 ])
 
             # add nominal ones last
-            mc_gen_hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('hist_truth', **hbc_args)
             unfolded_hist_bin_total_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded', **hbc_args)
 
             syst_entries.extend([
@@ -668,23 +668,24 @@ class GenPtBinnedPlotter(object):
         for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
             pdf_entries = []
             hbc_args = dict(ind=ibin, binning_scheme='generator')
+            mc_gen_hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('hist_truth', **hbc_args)
             for pdf_dict in self.region['pdf_systematics']:
                 pdf_unfolder = pdf_dict['unfolder']
                 pdf_label = pdf_dict['label']
                 pdf_label_no_spaces = cu.no_space_str(pdf_dict['label'])
 
                 self.hist_bin_chopper.add_obj('pdf_syst_%s_unfolded' % (pdf_label_no_spaces), pdf_unfolder.unfolded)
-                self.hist_bin_chopper.add_obj('pdf_syst_%s_hist_truth' % (pdf_label_no_spaces), pdf_unfolder.hist_truth)
+                # self.hist_bin_chopper.add_obj('pdf_syst_%s_hist_truth' % (pdf_label_no_spaces), pdf_unfolder.hist_truth)
 
                 pdf_unfolded_hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('pdf_syst_%s_unfolded' % (pdf_label_no_spaces), **hbc_args)
-                pdf_gen_hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('pdf_syst_%s_hist_truth' % (pdf_label_no_spaces), **hbc_args)
+                # pdf_gen_hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('pdf_syst_%s_hist_truth' % (pdf_label_no_spaces), **hbc_args)
 
                 pdf_entries.extend([
                     Contribution(pdf_unfolded_hist_bin,
                                  label="Unfolded (#tau = %.3g) (stat. unc.) (%s)" % (pdf_unfolder.tau, pdf_label),
                                  line_color=pdf_dict['colour'], line_width=1, line_style=1,
                                  marker_color=pdf_dict['colour'], marker_size=0,
-                                 subplot=pdf_gen_hist_bin),
+                                 subplot=mc_gen_hist_bin),
                     # Disable this as the PDF variations are in the response matrix, not input being unfolded
                     # so gen wiill always be the same!
                     # Contribution(pdf_gen_hist_bin,
@@ -694,7 +695,6 @@ class GenPtBinnedPlotter(object):
                 ])
 
             # add nominal ones last
-            mc_gen_hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('hist_truth', **hbc_args)
             unfolded_hist_bin_total_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded', **hbc_args)
 
             pdf_entries.extend([
@@ -732,31 +732,31 @@ class GenPtBinnedPlotter(object):
         for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
             pdf_entries = []
             hbc_args = dict(ind=ibin, binning_scheme='generator')
+            mc_gen_hist_bin = self.hist_bin_chopper.get_pt_bin_div_bin_width('hist_truth', **hbc_args)
             for pdf_dict in self.region['pdf_systematics']:
                 pdf_unfolder = pdf_dict['unfolder']
                 pdf_label = pdf_dict['label']
                 pdf_label_no_spaces = cu.no_space_str(pdf_dict['label'])
 
                 self.hist_bin_chopper.add_obj('pdf_syst_%s_unfolded' % (pdf_label_no_spaces), pdf_unfolder.unfolded)
-                self.hist_bin_chopper.add_obj('pdf_syst_%s_hist_truth' % (pdf_label_no_spaces), pdf_unfolder.hist_truth)
+                # self.hist_bin_chopper.add_obj('pdf_syst_%s_hist_truth' % (pdf_label_no_spaces), pdf_unfolder.hist_truth)
 
                 pdf_unfolded_hist_bin = self.hist_bin_chopper.get_pt_bin_div_bin_width('pdf_syst_%s_unfolded' % (pdf_label_no_spaces), **hbc_args)
-                pdf_gen_hist_bin = self.hist_bin_chopper.get_pt_bin_div_bin_width('pdf_syst_%s_hist_truth' % (pdf_label_no_spaces), **hbc_args)
+                # pdf_gen_hist_bin = self.hist_bin_chopper.get_pt_bin_div_bin_width('pdf_syst_%s_hist_truth' % (pdf_label_no_spaces), **hbc_args)
 
                 pdf_entries.extend([
                     Contribution(pdf_unfolded_hist_bin,
                                  label="Unfolded (#tau = %.3g) (stat. unc.) (%s)" % (pdf_unfolder.tau, pdf_label),
                                  line_color=pdf_dict['colour'], line_width=1, line_style=1,
                                  marker_color=pdf_dict['colour'], marker_size=0,
-                                 subplot=pdf_gen_hist_bin),
-                    Contribution(pdf_gen_hist_bin,
-                                 label="Generator (%s)" % (pdf_label),
-                                 line_color=pdf_dict['colour'], line_width=1, line_style=2,
-                                 marker_color=pdf_dict['colour'], marker_size=0),
+                                 subplot=mc_gen_hist_bin),
+                    # Contribution(pdf_gen_hist_bin,
+                    #              label="Generator (%s)" % (pdf_label),
+                    #              line_color=pdf_dict['colour'], line_width=1, line_style=2,
+                    #              marker_color=pdf_dict['colour'], marker_size=0),
                 ])
 
             # add nominal ones last
-            mc_gen_hist_bin = self.hist_bin_chopper.get_pt_bin_div_bin_width('hist_truth', **hbc_args)
             unfolded_hist_bin_total_errors = self.hist_bin_chopper.get_pt_bin_div_bin_width('unfolded', **hbc_args)
 
             pdf_entries.extend([
