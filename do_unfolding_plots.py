@@ -181,7 +181,12 @@ def calc_chi2_stats(one_hist, other_hist, cov_matrix):
     # print("delta:", delta)
     # v = np.diag(np.diag(v))  # turn off correlations
     # print("v:", v)
-    v_inv = np.linalg.inv(v)
+    print("v:", v)
+    try:
+        v_inv = np.linalg.inv(v)
+    except np.linalg.LinAlgError:
+        print("Trying pseudo-inverse instead")
+        v_inv = np.linalg.pinv(v, rcond=1E-30)
     inter = v_inv.dot(delta.T)
     # print("parts:", delta * inter.T)
     chi2 = delta.dot(inter)[0][0]
