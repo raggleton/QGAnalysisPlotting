@@ -2616,7 +2616,7 @@ def do_binned_plots_per_region_angle(setup, do_binned_gen_pt, do_binned_gen_lamb
             lambda_pt_binned_plotter.plot_unfolded_with_alt_response_unnormalised(alt_unfolder=alt_unfolder)
 
         if has_exp_systs:
-            lambda_pt_binned_plotter.plot_uncertainty_shifts_unnormalised()
+            # lambda_pt_binned_plotter.plot_uncertainty_shifts_unnormalised()
             lambda_pt_binned_plotter.plot_unfolded_with_exp_systs_unnormalised()
 
         if has_scale_systs:
