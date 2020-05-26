@@ -254,6 +254,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
                                                detector_binning=self.detector_binning.FindNode("detectordistribution"))
 
         # For setting/getting various uncerts from HistBinChopper
+        self.stat_uncert_name = 'unfolded_stat_err'
         self.stat_ematrix_name = "stat_ematrix"
 
         self.rsp_uncert_name = 'unfolded_rsp_err'
@@ -431,7 +432,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         # super(ROOT.MyTUnfoldDensity, self).Write()
 
     def save_unfolded_binned_hists_to_tfile(self, tfile):
-        if "unfolded_stat_err" not in self.hist_bin_chopper.objects:
+        if self.stat_uncert_name not in self.hist_bin_chopper.objects:
             print("Cannot save unfolded_stat_err binned as not in HistBinChopper")
             return
 
@@ -440,7 +441,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             return
         try:
             for ibin_pt in range(len(self.pt_bin_edges_gen[:-1])):
-                tfile.WriteTObject(self.hist_bin_chopper.get_pt_bin_normed_div_bin_width("unfolded_stat_err", ibin_pt, 'generator'), "unfolded_stat_err_norm_divBinWidth_%d" % (ibin_pt))
+                tfile.WriteTObject(self.hist_bin_chopper.get_pt_bin_normed_div_bin_width(self.stat_uncert_name, ibin_pt, 'generator'), "unfolded_stat_err_norm_divBinWidth_%d" % (ibin_pt))
                 tfile.WriteTObject(self.hist_bin_chopper.get_pt_bin_normed_div_bin_width("unfolded", ibin_pt, 'generator'), "unfolded_norm_divBinWidth_%d" % (ibin_pt))
                 tfile.WriteTObject(self.hist_bin_chopper.get_pt_bin_normed_div_bin_width("hist_truth", ibin_pt, 'generator'), "hist_truth_norm_divBinWidth_%d" % (ibin_pt))
                 tfile.WriteTObject(self.hist_bin_chopper.get_pt_bin_normed_div_bin_width("alt_hist_truth", ibin_pt, 'generator'), "alt_hist_truth_norm_divBinWidth_%d" % (ibin_pt))
@@ -742,7 +743,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
 
         self.hist_bin_chopper.add_obj('hist_truth', self.hist_truth)
         self.hist_bin_chopper.add_obj('unfolded', self.get_output())
-        self.hist_bin_chopper.add_obj('unfolded_stat_err', self.get_unfolded_with_ematrix_stat())
+        self.hist_bin_chopper.add_obj(self.stat_uncert_name, self.get_unfolded_with_ematrix_stat())
         self.hist_bin_chopper.add_obj(self.rsp_uncert_name, self.get_unfolded_with_ematrix_response())
 
     @staticmethod
