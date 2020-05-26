@@ -15,7 +15,9 @@ import argparse
 import math
 from array import array
 # import pandas as pd
-from copy import copy
+from copy import copy, deepcopy
+import numpy as np
+import scipy
 
 import ROOT
 from MyStyle import My_Style
@@ -167,6 +169,27 @@ def calc_auto_xlim(entries):
         return None
 
 
+def calc_chi2_stats(one_hist, other_hist, cov_matrix):
+    one_vec, one_err = cu.th1_to_ndarray(one_hist, False)
+    # print(one_err)
+    other_vec, _ = cu.th1_to_ndarray(other_hist, False)
+    delta = one_vec - other_vec
+    if isinstance(cov_matrix, ROOT.TH2):
+        v, _ = cu.th2_to_ndarray(cov_matrix)
+    else:
+        v = cov_matrix
+    # print("delta:", delta)
+    # v = np.diag(np.diag(v))  # turn off correlations
+    # print("v:", v)
+    v_inv = np.linalg.inv(v)
+    inter = v_inv.dot(delta.T)
+    # print("parts:", delta * inter.T)
+    chi2 = delta.dot(inter)[0][0]
+    ndof = delta.shape[1]
+    p = 1-scipy.stats.chi2.cdf(chi2, int(ndof))
+    return chi2, ndof, p
+
+
 # FIXME: generalise this and LambdaBinnedPlotter into one generic BinnedPlotter?
 # Although each has different set of plots, so not easy/possible
 class GenPtBinnedPlotter(object):
@@ -300,7 +323,7 @@ class GenPtBinnedPlotter(object):
             plot.plot("NOSTACK E1")
             plot.save("%s/unfolded_%s_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
 
-    def plot_unfolded_with_alt_truth_normalised(self):
+    def plot_unfolded_with_alt_truth_normalised(self, do_chi2=False):
         data_total_errors_style = dict(label="Data (total unc.)",
                                        line_color=self.plot_colours['unfolded_total_colour'], line_width=self.line_width, line_style=1,
                                        marker_color=self.plot_colours['unfolded_total_colour'], marker_style=20, marker_size=0.75)
@@ -308,7 +331,7 @@ class GenPtBinnedPlotter(object):
                                       line_color=self.plot_colours['unfolded_stat_colour'], line_width=self.line_width, line_style=1,
                                       marker_color=self.plot_colours['unfolded_stat_colour'], marker_style=20, marker_size=0.75)  # you need a non-0 marker to get the horizontal bars at the end of errors
 
-        mc_style = dict( label=self.region['mc_label'],
+        mc_style = dict(label=self.region['mc_label'],
                          line_color=self.plot_colours['gen_colour'], line_width=self.line_width,
                          marker_color=self.plot_colours['gen_colour'], marker_size=0)
         alt_mc_style = dict(label=self.region['alt_mc_label'],
@@ -341,9 +364,24 @@ class GenPtBinnedPlotter(object):
             data_no_errors = unfolded_hist_bin_total_errors_marker_noerror.Clone()
             cu.remove_th1_errors(data_no_errors)
 
+            this_mc_style = deepcopy(mc_style)
+            this_alt_mc_style = deepcopy(alt_mc_style)
+            
+            # Calculate chi2 between data and MCs if desired
+            if do_chi2:
+                print("unfolded_alt_truth bin", ibin)
+                ematrix = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width(self.unfolder.total_ematrix_name, **hbc_args)
+                # stats are chi2, ndof, p
+                mc_stats = calc_chi2_stats(unfolded_hist_bin_total_errors, mc_gen_hist_bin, ematrix)
+                alt_mc_stats = calc_chi2_stats(unfolded_hist_bin_total_errors, alt_mc_gen_hist_bin, ematrix)
+                # print(mc_stats)
+                # print(alt_mc_stats)
+                this_mc_style['label'] += "\n(#chi^{2} = %.2f)" % mc_stats[0]
+                this_alt_mc_style['label'] += "\n(#chi^{2} = %.2f)" % alt_mc_stats[0]
+
             mc_entries = [
-                Contribution(mc_gen_hist_bin, subplot=data_no_errors, **mc_style),
-                Contribution(alt_mc_gen_hist_bin, subplot=data_no_errors, **alt_mc_style),
+                Contribution(mc_gen_hist_bin, subplot=data_no_errors, **this_mc_style),
+                Contribution(alt_mc_gen_hist_bin, subplot=data_no_errors, **this_alt_mc_style),
             ]
 
             entries = [
@@ -375,11 +413,19 @@ class GenPtBinnedPlotter(object):
             dummy_gr = ROOT.TGraphErrors(1, array('d', [1]), array('d', [1]), array('d', [1]), array('d', [1]))
             dummy_total_errors = Contribution(dummy_gr.Clone(), leg_draw_opt="LEP", **data_total_errors_style)
             dummy_stat_errors = Contribution(dummy_gr.Clone(), leg_draw_opt="LE", **data_stat_errors_style)
-            dummy_mc = Contribution(dummy_gr.Clone(), leg_draw_opt="LE", **mc_style)
-            dummy_alt_mc = Contribution(dummy_gr.Clone(), leg_draw_opt="LE", **alt_mc_style)
+            dummy_mc = Contribution(dummy_gr.Clone(), leg_draw_opt="LE", **this_mc_style)
+            dummy_alt_mc = Contribution(dummy_gr.Clone(), leg_draw_opt="LE", **this_alt_mc_style)
             # Add them to the legend and draw it
             for cont in [dummy_total_errors, dummy_stat_errors, dummy_mc, dummy_alt_mc]:
-                plot.legend.AddEntry(cont.obj, cont.label, cont.leg_draw_opt)
+                this_label = cont.label
+                if '\n' not in this_label:
+                    plot.legend.AddEntry(cont.obj, this_label, cont.leg_draw_opt)
+                else:
+                    for label_ind, label_part in enumerate(this_label.split("\n")):
+                        obj = cont.obj if label_ind == 0 else 0
+                        draw_opt = cont.leg_draw_opt if label_ind == 0 else ""
+                        plot.legend.AddEntry(obj, label_part, draw_opt)
+
             plot.canvas.cd()
             plot.legend.Draw()
 
@@ -2515,6 +2561,7 @@ def do_binned_plots_per_region_angle(setup, do_binned_gen_pt, do_binned_gen_lamb
 
     if has_exp_systs: print("We have experimental systs")
     if has_model_systs: print("We have model systs")
+    if has_scale_systs: print("We have scale systs")
     if has_pdf_systs: print("We have pdf systs")
     if has_jackknife_input_vars: print("We have jackknife input variations")
     if has_jackknife_response_vars: print("We have jackknife response variations")
@@ -2545,12 +2592,12 @@ def do_binned_plots_per_region_angle(setup, do_binned_gen_pt, do_binned_gen_lamb
                                                    unfolder=unfolder)
         gen_pt_binned_plotter.plot_unfolded_normalised()
         gen_pt_binned_plotter.plot_unfolded_unnormalised()
-        # gen_pt_binned_plotter.plot_total_ematrix()
+        gen_pt_binned_plotter.plot_total_ematrix()
 
         if alt_hist_truth:
             print("...doing alt truth")
             gen_pt_binned_plotter.hist_bin_chopper.add_obj('alt_hist_truth', alt_hist_truth)
-            gen_pt_binned_plotter.plot_unfolded_with_alt_truth_normalised()
+            gen_pt_binned_plotter.plot_unfolded_with_alt_truth_normalised(do_chi2=True)
 
         if unfolder.tau > 0 and unreg_unfolder:
             print("...doing unregularised vs regularised")
@@ -3366,6 +3413,13 @@ def do_all_big_normalised_1d_plots_per_region_angle(setup, hist_bin_chopper=None
     has_model_systs = len(region['model_systematics']) > 0
     has_pdf_systs = len(region['pdf_systematics']) > 0
 
+    if has_exp_systs: print("We have experimental systs")
+    if has_model_systs: print("We have model systs")
+    if has_scale_systs: print("We have scale systs")
+    if has_pdf_systs: print("We have pdf systs")
+    # if has_jackknife_input_vars: print("We have jackknife input variations")
+    # if has_jackknife_response_vars: print("We have jackknife response variations")
+
     big_plotter = BigNormalised1DPlotter(setup, hist_bin_chopper, plot_with_bin_widths=True)
 
     print("...doing standard big 1D plots")
@@ -3410,6 +3464,13 @@ def do_all_big_absolute_1d_plots_per_region_angle(setup):
     has_scale_systs = len(region['scale_systematics']) > 0
     has_model_systs = len(region['model_systematics']) > 0
     has_pdf_systs = len(region['pdf_systematics']) > 0
+
+    if has_exp_systs: print("We have experimental systs")
+    if has_model_systs: print("We have model systs")
+    if has_scale_systs: print("We have scale systs")
+    if has_pdf_systs: print("We have pdf systs")
+    # if has_jackknife_input_vars: print("We have jackknife input variations")
+    # if has_jackknife_response_vars: print("We have jackknife response variations")
 
     unfolder_plotter = MyUnfolderPlotter(unfolder, is_data=setup.has_data)
 
