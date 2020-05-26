@@ -183,34 +183,61 @@ def do_jet_pt_plot(entries,
         # data_stat_ratio.Draw(data_draw_opt)
         data_total_ratio.Draw(data_draw_opt)
 
+        # draw small legend for shadings
+        plot.subplot_leg = ROOT.TLegend(0.25, 0.8, 0.7, 0.9)
+        plot.subplot_leg.SetFillStyle(0)
+        plot.subplot_leg.SetNColumns(2)
+        plot.subplot_leg.AddEntry(data_total_ratio, "Data stat. uncert.", "F")
+
         # Do systematic shading
         if experimental_syst:
-            experimental_syst.SetFillStyle(3254)
+            experimental_syst.SetFillStyle(3005)
             # experimental_syst.SetFillStyle(3002)
             experimental_syst.SetFillColor(ROOT.kAzure)
+            experimental_syst.SetLineWidth(0)
+            experimental_syst.SetMarkerSize(0)
             experimental_syst.Draw("SAME 2")
 
         if scale_syst:
-            scale_syst.SetFillStyle(3245)
+            scale_syst.SetFillStyle(3003)
             # scale_syst.SetFillStyle(3002)
             scale_syst.SetFillColor(ROOT.kOrange)
+            scale_syst.SetLineWidth(0)
+            scale_syst.SetMarkerSize(0)
             scale_syst.Draw("SAME 2")
 
         if pdf_syst:
             pdf_syst.SetFillStyle(3002)
             pdf_syst.SetFillColor(ROOT.kMagenta)
+            pdf_syst.SetLineWidth(0)
+            pdf_syst.SetMarkerSize(0)
             pdf_syst.Draw("SAME 2")
 
         if total_syst:
             total_syst.SetFillStyle(3003)
             total_syst.SetFillStyle(3245)
-            total_syst.SetFillColor(ROOT.kRed)
-            total_syst.SetFillColor(qgc.QCD_COLOUR)
+            # total_syst.SetFillColor(ROOT.kRed)
+            # total_syst.SetFillColor(qgc.QCD_COLOUR)
             total_syst.SetFillColor(entries[1][1]['fill_color'])
+            total_syst.SetLineWidth(0)
+            total_syst.SetMarkerSize(0)
             total_syst.Draw("SAME 2")
 
         plot.subplot_container.Draw("SAME " + draw_opt)
         plot.subplot_line.Draw()
+
+
+        if experimental_syst:
+            plot.subplot_leg.AddEntry(experimental_syst, "Exp. syst.", "F")
+        if scale_syst:
+            plot.subplot_leg.AddEntry(scale_syst, "Scale syst.", "F")
+        if pdf_syst:
+            plot.subplot_leg.AddEntry(pdf_syst, "PDF syst.", "F")
+        if total_syst:
+            plot.subplot_leg.AddEntry(total_syst, "Total MC syst. uncert.", "F")
+
+        plot.subplot_leg.Draw()
+
         plot.canvas.cd()
 
     plot.save(output_filename)
