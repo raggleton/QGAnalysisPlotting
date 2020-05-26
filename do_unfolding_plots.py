@@ -3458,13 +3458,6 @@ def do_all_big_absolute_1d_plots_per_region_angle(setup):
                                        append='bg_fakes_subtracted_%s' % setup.append,
                                        title=title)
 
-    unfolder_plotter.draw_unfolded_pt_absolute_with_systs(do_truth_mc=False,
-                                                          experimental_systematics=region['experimental_systematics'],
-                                                          scale_systematics=region['scale_systematics'],
-                                                          pdf_systematics=region['pdf_systematics'],
-                                                          output_dir=setup.output_dir,
-                                                          append=setup.append,
-                                                          title=title)
 
 def get_bottom_line_stats(setup):
     """Construct dict of bottom-line (i.e. chi2) stats for this region/angle combo"""
