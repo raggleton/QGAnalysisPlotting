@@ -122,6 +122,12 @@ def get_unfolding_argparser(description='', parser=None):
                           help=('Split MC between response & 1D reco, good for testing procedure.'
                                 + standard_bool_description))
 
+    mc_group.add_argument("--doJackknifeInput",
+                          type=lambda x: bool(distutils.util.strtobool(x)),
+                          default=False,
+                          help=('Calculate jackknife uncertainties for the input.'
+                                + standard_bool_description))
+
     mc_group.add_argument("--doJackknifeResponse",
                           type=lambda x: bool(distutils.util.strtobool(x)),
                           default=False,
@@ -293,8 +299,11 @@ def get_unfolding_output_dir(args):
     if args.subtractBackgrounds:
         append += "_subBkg"
 
+    if args.doJackknifeInput:
+        append += "_jackknife25Input"
+
     if args.doJackknifeResponse:
-        append += "_jackknifeResponse"
+        append += "_jackknife25Response"
 
     if args.doExperimentalSysts:
         append += "_experimentalSyst"

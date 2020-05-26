@@ -9,7 +9,6 @@ My_Style.cd()
 
 import qg_common as qgc
 
-ROOT.gErrorIgnoreLevel = ROOT.kWarning
 ROOT.PyConfig.IgnoreCommandLineOptions = True
 ROOT.gROOT.SetBatch(1)
 ROOT.TH1.SetDefaultSumw2()
@@ -245,6 +244,16 @@ def get_dijet_config(source_dir, central=True, groomed=False):
             },
         ],
 
+        "jackknife_input_variations": [
+            {
+                "label": "jackknife",  # this is a template entry, used for future
+                "tfile": input_mc_qcd_mgpythia_tfile,
+                "colour": ROOT.kCyan+2,
+                "unfolder": None,
+                "variations": range(10),  # list of all the variation #s to be used
+            },
+        ],
+
         "jackknife_response_variations": [
             {
                 "label": "jackknife",  # this is a template entry, used for future
@@ -338,6 +347,7 @@ def get_zpj_config(source_dir, groomed=False):
                 "rate_unc": 1.
             },
         ],
+
         "experimental_systematics": [
             # {
             #     "label": "Luminosity up",
@@ -542,13 +552,23 @@ def get_zpj_config(source_dir, groomed=False):
             },
         ],
 
+        "jackknife_input_variations": [
+            {
+                "label": "jackknife",  # this is a template entry, used for future
+                "tfile": input_mc_dy_mgpythia_tfile,
+                "colour": ROOT.kCyan+2,
+                "unfolder": None,
+                "variations": range(25),  # list of all the variation #s to be used
+            },
+        ],
+
         "jackknife_response_variations": [
             {
                 "label": "jackknife",  # this is a template entry, used for future
                 "tfile": input_mc_dy_mgpythia_tfile,
                 "colour": ROOT.kCyan+2,
                 "unfolder": None,
-                "variations": range(10),  # list of all the variation #s to be used
+                "variations": range(25),  # list of all the variation #s to be used
             },
         ]
     }

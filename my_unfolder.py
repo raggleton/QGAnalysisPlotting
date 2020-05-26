@@ -1422,7 +1422,6 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         # Go through each bin of the output distribution,
         # get the RMS of the variations, apply scale factor
         # This then becomes the response uncertainty in that bin
-        # TODO: how to create ematrix - usual x.x^T?
         unfolded_rsp_err = self.get_output().Clone("unfolded_rsp_err")
         all_values = []
         for ix in range(1, self.get_output().GetNbinsX()+1):
@@ -1461,6 +1460,57 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
                 if self.rsp_uncert_name in k:
                     del self.hist_bin_chopper._cache[k]  # reset HBC cache
 
+
+    def update_input_stat_uncert_from_jackknife(self, jackknife_variations):
+        """Use jackknife results to update absolute input stat uncert
+
+        TODO what about uncert from backgrounds?
+        """
+        num_vars = len(jackknife_variations)
+        # Factor to scale up to full uncert
+        scale_factor = len(jackknife_variations) / (len(jackknife_variations) - 1)
+        # Go through each bin of the output distribution,
+        # get the RMS of the variations, apply scale factor
+        # This then becomes the response uncertainty in that bin
+        unfolded_stat_err = self.get_output().Clone("unfolded_stat_err")
+        all_values = []
+        for ix in range(1, self.get_output().GetNbinsX()+1):
+            values = [jk['unfolder'].get_output().GetBinContent(ix)
+                      for jk in jackknife_variations]
+            all_values.append(values)
+            scaled_rms = np.std(values, ddof=0) * scale_factor
+            unfolded_stat_err.SetBinError(ix, scaled_rms)
+
+        # Calculate covariance matrix using all "observations"
+        # Be careful about ddof - MUST specify it since default is diff to std()
+        all_values = np.array(all_values, dtype='float64')
+        cov_matrix = np.cov(all_values, rowvar=True, ddof=0)
+        cov_matrix *= (scale_factor**2)
+
+        self.unfolded_stat_err = unfolded_stat_err
+
+        # Setup input uncert error matrix
+        # FIXME this is technically only input stat err, not including background stat error
+        # Need to add in the latter somehow
+        if getattr(self, 'ematrix_stat', None) is None:
+            # Create a new error matrix if one doesn't exist
+            this_binning = self.generator_binning.FindNode('generator')
+            # I cannot figure out how to make the int** object for bin_map
+            # So we are trusting that the default args for title and axisSteering are correct
+            self.ematrix_stat = this_binning.CreateErrorMatrixHistogram("ematrix_stat_"+cu.get_unique_str(), self.use_axis_binning) #, bin_map, "", "*[]")
+
+        # NB this includes overflow bins
+        for ix in range(len(cov_matrix)):
+            for iy in range(len(cov_matrix)):
+                self.ematrix_stat.SetBinContent(ix+1, iy+1, cov_matrix[ix][iy])
+                self.ematrix_stat.SetBinError(ix+1, iy+1, 0)
+
+        # update HistBinChopper objects & cache
+        if self.stat_uncert_name in self.hist_bin_chopper.objects:
+            self.hist_bin_chopper.objects[self.stat_uncert_name] = unfolded_stat_err
+            for k, v in self.hist_bin_chopper._cache.items():
+                if self.stat_uncert_name in k:
+                    del self.hist_bin_chopper._cache[k]  # reset HBC cache
 
     # METHODS FOR NORMALISED RESULTS
     # --------------------------------------------------------------------------
@@ -1536,6 +1586,88 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
                                                       do_div_bin_width=True,
                                                       binning_scheme='generator')
             self.hist_bin_chopper._cache[key] = this_bin_unfolded_rsp_ematrix
+
+            # Cleanup all the jackknife variations
+            keys_to_del = []
+            for k in self.hist_bin_chopper._cache.keys():
+                for jvar in jackknife_variations:
+                    if jvar['label'] in k:
+                        keys_to_del.append(k)
+            for k in keys_to_del:
+                self.hist_bin_chopper._cache[k]
+
+    def create_normalised_jackknife_input_uncertainty(self, jackknife_variations):
+        """Create input uncertainty & error matrices for each gen pt bin for use later.
+
+        Done like the absolute jackknife uncertainty, but only on the normalised
+        plots for each pt bin.
+        """
+        # Add just incase user hasn't done so already
+        # We wont use this object - we'll overwrite the cache ourselves
+        self.hist_bin_chopper.add_obj(self.stat_uncert_name, self.get_unfolded_with_ematrix_stat())
+        self.hist_bin_chopper.add_obj(self.stat_ematrix_name, self.get_ematrix_stat())
+
+        num_vars = len(jackknife_variations)
+        # Factor to scale up to full uncert
+        scale_factor = len(jackknife_variations) / (len(jackknife_variations) - 1)
+        for ibin_pt in range(len(self.pt_bin_edges_gen[:-1])):
+            # Go through each bin of the output distribution,
+            # get the RMS of the variations, apply scale factor
+            # This then becomes the response uncertainty in that bin
+            # TODO: how to create ematrix - usual x.x^T?
+            hbc_args = dict(ind=ibin_pt, binning_scheme='generator')
+            bin_variations = []
+            for jvar in jackknife_variations:
+                self.hist_bin_chopper.add_obj(jvar['label'], jvar['unfolder'].get_output())
+                bin_variations.append(self.hist_bin_chopper.get_pt_bin_normed_div_bin_width(jvar['label'], **hbc_args))
+
+            this_bin_unfolded_stat_err = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width(self.stat_uncert_name, **hbc_args).Clone()
+            all_values = []
+            for ix in range(1, bin_variations[0].GetNbinsX()+1):
+                values = [h.GetBinContent(ix) for h in bin_variations]
+                all_values.append(values)
+                scaled_rms = np.std(values, ddof=0) * scale_factor
+                this_bin_unfolded_stat_err.SetBinError(ix, scaled_rms)
+
+            # Calculate covariance matrix using all "observations"
+            # Be careful about ddof - MUST specify it since default is diff to std()
+            all_values = np.array(all_values, dtype='float64')
+            cov_matrix = np.cov(all_values, rowvar=True, ddof=0)
+            cov_matrix *= (scale_factor**2)
+
+            bins = self.variable_bin_edges_gen
+            nbins = len(bins) - 1
+            # FIXME which binning to use? index or physical?
+            this_bin_unfolded_stat_ematrix = ROOT.TH2D("ematrix_stat_bin_%d_%s" % (ibin_pt, cu.get_unique_str()), "", nbins, 0, nbins, nbins,0, nbins)
+            for ix in range(nbins):
+                for iy in range(nbins):
+                    this_bin_unfolded_stat_ematrix.SetBinContent(ix+1, iy+1, cov_matrix[ix][iy])
+                    this_bin_unfolded_stat_ematrix.SetBinError(ix+1, iy+1, 0)
+
+            if ibin_pt == 0:
+                # Check dimensions
+                if len(cov_matrix) != this_bin_unfolded_stat_err.GetNbinsX():
+                    raise ValueError("len(cov_matrix) != this_bin_unfolded_stat_err.GetNbinsX()")
+                # Check values
+                if not cu.same_floats(this_bin_unfolded_stat_ematrix.GetBinContent(2, 2), this_bin_unfolded_stat_err.GetBinError(2)**2):
+                    raise ValueError("Mismatch in this_bin_unfolded_stat_ematrix, this_bin_unfolded_stat_err")
+
+            # Store in the HistBinChopper
+            key = self.hist_bin_chopper._generate_key(self.stat_uncert_name,
+                                                      ind=ibin_pt,
+                                                      axis='pt',
+                                                      do_norm=True,
+                                                      do_div_bin_width=True,
+                                                      binning_scheme='generator')
+            self.hist_bin_chopper._cache[key] = this_bin_unfolded_stat_err
+
+            key = self.hist_bin_chopper._generate_key(self.stat_ematrix_name,
+                                                      ind=ibin_pt,
+                                                      axis='pt',
+                                                      do_norm=True,
+                                                      do_div_bin_width=True,
+                                                      binning_scheme='generator')
+            self.hist_bin_chopper._cache[key] = this_bin_unfolded_stat_ematrix
 
             # Cleanup all the jackknife variations
             keys_to_del = []
@@ -1837,6 +1969,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             norm = unfolded_hist_bin_abs.Integral("width") / unfolded_hist_bin_stat_errors.Integral("width")
 
             # create stat & rsp err covariance matrices for this pt bin,
+            # if they haven't been calculated by jackknife methods,
             # scaling by overall normalisation and bin widths
             binning = self.generator_binning.FindNode("generatordistribution")
             var_bins = self.variable_bin_edges_gen
@@ -1844,18 +1977,19 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             # the 1.0001 is to ensure we're def inside this bin
             start_bin = binning.GetGlobalBinNumber(var_bins[0]*1.0001, pt*1.0001)
             end_bin = binning.GetGlobalBinNumber(var_bins[-2]*1.0001, pt*1.0001)  # -2 since the last one is the upper edge of the last bin
-            # Get the full error matrix from TUnfold, then select the sub-matrix
-            # for this pt bin, then scale by normalisation and bin widths
-            stat_ematrix = self.get_sub_th2(self.get_ematrix_stat(), start_bin, end_bin)
-            stat_ematrix.Scale(1./(norm*norm))
-            self.scale_th2_bin_widths(stat_ematrix, var_bins)
             stat_key = self.hist_bin_chopper._generate_key(self.stat_ematrix_name,
                                                            ind=ibin_pt,
                                                            axis='pt',
                                                            do_norm=True,
                                                            do_div_bin_width=True,
                                                            binning_scheme='generator')
-            self.hist_bin_chopper._cache[stat_key] = stat_ematrix
+            if stat_key not in self.hist_bin_chopper._cache:
+                # Get the stat error matrix from TUnfold, then select the sub-matrix
+                # for this pt bin, then scale by normalisation and bin widths
+                stat_ematrix = self.get_sub_th2(self.get_ematrix_stat(), start_bin, end_bin)
+                stat_ematrix.Scale(1./(norm*norm))
+                self.scale_th2_bin_widths(stat_ematrix, var_bins)
+                self.hist_bin_chopper._cache[stat_key] = stat_ematrix
 
             rsp_key = self.hist_bin_chopper._generate_key(self.rsp_ematrix_name,
                                                           ind=ibin_pt,
@@ -1872,7 +2006,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
                 self.hist_bin_chopper._cache[rsp_key] = rsp_ematrix
 
             # Calculate total ematrix
-            total_ematrix = stat_ematrix.Clone()
+            total_ematrix = self.hist_bin_chopper._cache[stat_key].Clone()
             total_ematrix.Add(self.hist_bin_chopper._cache[rsp_key])
 
             for exp_syst in self.exp_systs:
