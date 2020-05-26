@@ -567,6 +567,7 @@ if __name__ == "__main__":
             # ---------------------
             variable_name = "%s%s" % (angle_prepend, angle.name)
             axis_steering = '*[B]'
+            # axis_steering = '*[]'
             if args.regularizeAxis == 'pt':
                 axis_steering = 'pt[B];%s[N]' % variable_name
             elif args.regularizeAxis == 'angle':
@@ -574,32 +575,32 @@ if __name__ == "__main__":
 
             # setup one unfolder to get binning
             # TODO: move creation of TUnfoldbinning into own func
-            dummy_unfolder = MyUnfolder(response_map=rm_large_rel_error_bins(hist_mc_gen_reco_map),
-                                        variable_bin_edges_reco=angle_bin_edges_reco,
-                                        variable_bin_edges_gen=angle_bin_edges_gen,
-                                        variable_name=variable_name,
-                                        pt_bin_edges_reco=pt_bin_edges_reco,
-                                        pt_bin_edges_gen=pt_bin_edges_gen,
-                                        pt_bin_edges_underflow_reco=pt_bin_edges_underflow_reco,
-                                        pt_bin_edges_underflow_gen=pt_bin_edges_underflow_gen,
-                                        orientation=ROOT.TUnfold.kHistMapOutputHoriz,
-                                        constraintMode=args.areaConstraint,
-                                        # regMode=ROOT.TUnfold.kRegModeCurvature,
-                                        # densityFlags=ROOT.TUnfoldDensity.kDensityModeBinWidth, # important as we have varying bin sizes!
-                                        regMode=ROOT.TUnfold.kRegModeNone,
-                                        densityFlags=ROOT.TUnfoldDensity.kDensityModeBinWidthAndUser, # doesn't actually matter as RegModNone
-                                        distribution='generatordistribution',  # the one to use for actual final regularisation/unfolding
-                                        axisSteering=axis_steering)
+            # dummy_unfolder = MyUnfolder(response_map=rm_large_rel_error_bins(hist_mc_gen_reco_map),
+            #                             variable_bin_edges_reco=angle_bin_edges_reco,
+            #                             variable_bin_edges_gen=angle_bin_edges_gen,
+            #                             variable_name=variable_name,
+            #                             pt_bin_edges_reco=pt_bin_edges_reco,
+            #                             pt_bin_edges_gen=pt_bin_edges_gen,
+            #                             pt_bin_edges_underflow_reco=pt_bin_edges_underflow_reco,
+            #                             pt_bin_edges_underflow_gen=pt_bin_edges_underflow_gen,
+            #                             orientation=ROOT.TUnfold.kHistMapOutputHoriz,
+            #                             constraintMode=args.areaConstraint,
+            #                             # regMode=ROOT.TUnfold.kRegModeCurvature,
+            #                             # densityFlags=ROOT.TUnfoldDensity.kDensityModeBinWidth, # important as we have varying bin sizes!
+            #                             regMode=ROOT.TUnfold.kRegModeNone,
+            #                             densityFlags=ROOT.TUnfoldDensity.kDensityModeBinWidthAndUser, # doesn't actually matter as RegModNone
+            #                             distribution='generatordistribution',  # the one to use for actual final regularisation/unfolding
+            #                             axisSteering=axis_steering)
 
-            # fill in empty bins in response_map to ensure better unfolding
-            new_response_map = fill_empty_bins(hist_mc_gen_reco_map,
-                                               variable_bin_edges_reco=angle_bin_edges_reco,
-                                               variable_bin_edges_gen=angle_bin_edges_gen,
-                                               variable_name=variable_name,
-                                               pt_bin_edges_reco=pt_bin_edges_reco,
-                                               pt_bin_edges_gen=pt_bin_edges_gen,
-                                               pt_bin_edges_underflow_reco=pt_bin_edges_underflow_reco,
-                                               pt_bin_edges_underflow_gen=pt_bin_edges_underflow_gen,)
+            # # fill in empty bins in response_map to ensure better unfolding
+            # new_response_map = fill_empty_bins(hist_mc_gen_reco_map,
+            #                                    variable_bin_edges_reco=angle_bin_edges_reco,
+            #                                    variable_bin_edges_gen=angle_bin_edges_gen,
+            #                                    variable_name=variable_name,
+            #                                    pt_bin_edges_reco=pt_bin_edges_reco,
+            #                                    pt_bin_edges_gen=pt_bin_edges_gen,
+            #                                    pt_bin_edges_underflow_reco=pt_bin_edges_underflow_reco,
+            #                                    pt_bin_edges_underflow_gen=pt_bin_edges_underflow_gen,)
 
 
             unfolder = MyUnfolder(response_map=rm_large_rel_error_bins(hist_mc_gen_reco_map),
