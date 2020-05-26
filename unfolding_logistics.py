@@ -316,10 +316,10 @@ def get_unfolding_output_dir(args):
         append += "_experimentalSystFromFile"
 
     if args.doScaleSysts:
-        append += "_scaleSysts"
+        append += "_scaleSyst"
 
     if args.doScaleSystsFromFile:
-        append += "_scaleSystsFromFile"
+        append += "_scaleSystFromFile"
 
     if args.doModelSysts:
         append += "_modelSyst"
