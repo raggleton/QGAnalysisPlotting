@@ -80,8 +80,9 @@ def draw_projection_comparison(h_orig, h_projection, title, xtitle, output_filen
             if value_orig == 0 and value_proj == 0:
                 continue
             rel_diff = abs((value_orig - value_proj)/max(abs(value_orig), abs(value_proj)))
-            if rel_diff > 1E-3:
-                print("draw_projection_comparison: bin %s has different contents: %f vs %f (rel diff %f)" % (i, value_orig, value_proj, rel_diff))
+            if rel_diff > 1E-5:
+                # print("draw_projection_comparison: bin %s has different contents: %f vs %f (rel diff %f)" % (i, value_orig, value_proj, rel_diff))
+                raise ValueError("draw_projection_comparison: bin %s has different contents: %f vs %f (rel diff %f)" % (i, value_orig, value_proj, rel_diff))
 
     entries = [
         Contribution(h_orig, label="1D hist",
