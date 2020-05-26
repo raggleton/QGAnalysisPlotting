@@ -581,24 +581,13 @@ def do_dijet_pt_plots(workdir, do_systematics=True):
             pdf_hist_down = mg_hist.Clone("pdf_hist_down")
             for ix in range(1, mg_hist.GetNbinsX()+1):
                 nominal = mg_hist.GetBinContent(ix)
-                values = [(pdf_dict['hist'].GetBinContent(ix)-nominal)**2 
-                          for pdf_dict in these_pdf_systematics]
-                variation = math.sqrt(sum(values))
-
                 values = [pdf_dict['hist'].GetBinContent(ix) for pdf_dict in these_pdf_systematics]
                 rms = np.std(values, ddof=1)
-                pdf_hist_up.SetBinContent(ix, nominal+variation)
-                # pdf_hist_up.SetBinContent(ix, nominal+rms)
+                pdf_hist_up.SetBinContent(ix, nominal+rms)
                 pdf_hist_up.SetBinError(ix, 0)
-                # pdf_hist_down.SetBinContent(ix, max(nominal-variation, 1E-10))
-                pdf_hist_down.SetBinContent(ix, max(nominal-variation, 0))
-                # pdf_hist_down.SetBinContent(ix, max(nominal-rms, 0))
+                pdf_hist_down.SetBinContent(ix, max(nominal-rms, 0))
                 pdf_hist_down.SetBinError(ix, 0)
-                # print(ix, 'values', values)
-                print(ix, 'nominal', nominal, 'variation', variation, 'variation/nominal', variation/nominal)
                 print(ix, 'nominal', nominal, 'rms', rms, 'rms/nominal', rms/nominal)
-                if variation > nominal:
-                    print("!!!!!")
                 if rms > nominal:
                     print("!!!!!")
 
@@ -769,22 +758,22 @@ def do_dijet_pt_plots(workdir, do_systematics=True):
             pdf_col = ROOT.kMagenta
             pdf_col2 = pdf_col
             # plot up/down boundaries
-            entries.extend([
-                [
-                    pdf_hist_up.Clone(),
-                    dict(line_color=pdf_col, line_width=lw, line_style=1,
-                         fill_color=pdf_col,
-                         marker_color=pdf_col, marker_size=0, label="PDF up",
-                         subplot=data_hist)
-                ],
-                [
-                    pdf_hist_down.Clone(),
-                    dict(line_color=pdf_col2, line_width=lw, line_style=2,
-                         fill_color=pdf_col2,
-                         marker_color=pdf_col2, marker_size=0, label="PDF down",
-                         subplot=data_hist)
-                ],
-            ])
+            # entries.extend([
+            #     [
+            #         pdf_hist_up.Clone(),
+            #         dict(line_color=pdf_col, line_width=lw, line_style=1,
+            #              fill_color=pdf_col,
+            #              marker_color=pdf_col, marker_size=0, label="PDF up",
+            #              subplot=data_hist)
+            #     ],
+            #     [
+            #         pdf_hist_down.Clone(),
+            #         dict(line_color=pdf_col2, line_width=lw, line_style=2,
+            #              fill_color=pdf_col2,
+            #              marker_color=pdf_col2, marker_size=0, label="PDF down",
+            #              subplot=data_hist)
+            #     ],
+            # ])
 
             pdf_hist_up_ratio = pdf_hist_up.Clone()
             pdf_hist_down_ratio = pdf_hist_down.Clone()
@@ -840,13 +829,16 @@ def do_dijet_pt_plots(workdir, do_systematics=True):
                        xlim=(30, 4000),
                        ylim=(5E-3, 1E14),
                        title=title,
-                       subplot_limits=(0, 5),
+                       subplot_limits=(0, 2),
                        data_first=True,
                        normalise_hists=False,
+                       # experimental_syst=exp_gr,
+                       # scale_syst=scale_gr,
+                       # pdf_syst=pdf_gr,
                        experimental_syst=None,
                        scale_syst=None,
                        pdf_syst=None,
-                       total_syst=None)
+                       total_syst=total_gr)
 
 
 
@@ -1024,7 +1016,7 @@ def do_zpj_pt_plots(workdir, do_systematics=True):
     mg_sf = data_hist.Integral()/mg_hist.Integral()
     mg_hist.Scale(mg_sf)
     hpp_hist.Scale(data_hist.Integral()/hpp_hist.Integral())
-    
+
     # Absolute shifted variations
     exp_hist_up, exp_hist_down = None, None
     scale_hist_up, scale_hist_down = None, None
@@ -1096,9 +1088,12 @@ def do_zpj_pt_plots(workdir, do_systematics=True):
         these_pdf_systematics = []
         num_vars = len(pdf_systematics[0]['variations'])
         for pdf_ind in pdf_systematics[0]['variations']:
-            hist = cu.get_from_tfile(tfile, "ZPlusJets_QG_Unfold/hist_LHA_reco_all_PDF_%d" % (pdf_ind))
-            hist = create_pt_hist(hist, detector_binning_main, detector_binning_uflow, pt_bin_edges_zpj_reco, pt_bin_edges_zpj_underflow_reco, variable_bin_edges_reco)
-            hist.Scale(mg_sf, "width")
+            hist = cu.get_from_tfile(tfile, "ZPlusJets_QG_Unfold/hist_pt_reco_all_PDF_%d" % (pdf_ind))
+            hist = tunfold_to_physical_bins(hist, all_pt_bins, divide_by_bin_width=True)
+            hist.Scale(mg_sf)
+            # hist = cu.get_from_tfile(tfile, "ZPlusJets_QG_Unfold/hist_LHA_reco_all_PDF_%d" % (pdf_ind))
+            # hist = create_pt_hist(hist, detector_binning_main, detector_binning_uflow, pt_bin_edges_zpj_reco, pt_bin_edges_zpj_underflow_reco, variable_bin_edges_reco)
+            # hist.Scale(mg_sf, "width")
             these_pdf_systematics.append(
                 {
                     "label": "PDF_%d" % (pdf_ind),
@@ -1106,21 +1101,21 @@ def do_zpj_pt_plots(workdir, do_systematics=True):
                     "colour": cu.get_colour_seq(pdf_ind, num_vars)
                 })
 
-        # create RMS up/down
+        # create up/down
         pdf_hist_up = mg_hist.Clone("pdf_hist_up")
         pdf_hist_down = mg_hist.Clone("pdf_hist_down")
         for ix in range(1, mg_hist.GetNbinsX()+1):
-            values = [pdf_dict['hist'].GetBinContent(ix) for pdf_dict in these_pdf_systematics]
-            rms = np.std(values, ddof=0)
             nominal = mg_hist.GetBinContent(ix)
+            values = [pdf_dict['hist'].GetBinContent(ix) for pdf_dict in these_pdf_systematics]
+            rms = np.std(values, ddof=1)
             pdf_hist_up.SetBinContent(ix, nominal+rms)
             pdf_hist_up.SetBinError(ix, 0)
-            pdf_hist_down.SetBinContent(ix, max(nominal-rms, 1E-10))
+            pdf_hist_down.SetBinContent(ix, max(nominal-rms, 0))
             pdf_hist_down.SetBinError(ix, 0)
-            # print(ix, 'values', values)
             print(ix, 'nominal', nominal, 'rms', rms, 'rms/nominal', rms/nominal)
             if rms > nominal:
                 print("!!!!!")
+
 
         # Calculate total uncertainty
         # ------------------------------------------------------------------
@@ -1176,14 +1171,14 @@ def do_zpj_pt_plots(workdir, do_systematics=True):
         # ADD EXPERIMENTAL ENTRIES
         # ------------------------------------------------------------------
         # plot individual variations
-        for exp_dict in experimental_systematics:
-            entries.append([exp_dict['hist'],
-                            dict(line_color=exp_dict['colour'], line_width=1, fill_color=exp_dict['colour'],
-                                 marker_color=exp_dict['colour'], marker_size=0, label=exp_dict['label'],
-                                 line_style=1 if "up" in exp_dict['label'].lower() else 2,
-                                 subplot=data_hist
-                            )
-                           ])
+        # for exp_dict in experimental_systematics:
+        #     entries.append([exp_dict['hist'],
+        #                     dict(line_color=exp_dict['colour'], line_width=1, fill_color=exp_dict['colour'],
+        #                          marker_color=exp_dict['colour'], marker_size=0, label=exp_dict['label'],
+        #                          line_style=1 if "up" in exp_dict['label'].lower() else 2,
+        #                          subplot=data_hist
+        #                     )
+        #                    ])
 
         exp_col = ROOT.kRed+2
         exp_col2 = ROOT.kRed-2
@@ -1225,13 +1220,13 @@ def do_zpj_pt_plots(workdir, do_systematics=True):
         # ADD SCALE ENTRIES
         # ------------------------------------------------------------------
         # plot individual variations
-        for scale_dict in scale_systematics:
-            entries.append([scale_dict['hist'],
-                            dict(line_color=scale_dict['colour'], line_width=lw, fill_color=scale_dict['colour'],
-                                 marker_color=scale_dict['colour'], marker_size=0, label=scale_dict['label'],
-                                 subplot=data_hist
-                            )
-                           ])
+        # for scale_dict in scale_systematics:
+        #     entries.append([scale_dict['hist'],
+        #                     dict(line_color=scale_dict['colour'], line_width=lw, fill_color=scale_dict['colour'],
+        #                          marker_color=scale_dict['colour'], marker_size=0, label=scale_dict['label'],
+        #                          subplot=data_hist
+        #                     )
+        #                    ])
 
         scale_col = ROOT.kAzure+2
         scale_col2 = scale_col
@@ -1281,22 +1276,22 @@ def do_zpj_pt_plots(workdir, do_systematics=True):
         pdf_col = ROOT.kMagenta
         pdf_col2 = pdf_col
         # plot up/down boundaries
-        entries.extend([
-            [
-                pdf_hist_up.Clone(),
-                dict(line_color=pdf_col, line_width=lw, line_style=1,
-                     fill_color=pdf_col,
-                     marker_color=pdf_col, marker_size=0, label="PDF up",
-                     subplot=data_hist)
-            ],
-            [
-                pdf_hist_down.Clone(),
-                dict(line_color=pdf_col2, line_width=lw, line_style=2,
-                     fill_color=pdf_col2,
-                     marker_color=pdf_col2, marker_size=0, label="PDF down",
-                     subplot=data_hist)
-            ],
-        ])
+        # entries.extend([
+        #     [
+        #         pdf_hist_up.Clone(),
+        #         dict(line_color=pdf_col, line_width=lw, line_style=1,
+        #              fill_color=pdf_col,
+        #              marker_color=pdf_col, marker_size=0, label="PDF up",
+        #              subplot=data_hist)
+        #     ],
+        #     [
+        #         pdf_hist_down.Clone(),
+        #         dict(line_color=pdf_col2, line_width=lw, line_style=2,
+        #              fill_color=pdf_col2,
+        #              marker_color=pdf_col2, marker_size=0, label="PDF down",
+        #              subplot=data_hist)
+        #     ],
+        # ])
 
         pdf_hist_up_ratio = pdf_hist_up.Clone()
         pdf_hist_down_ratio = pdf_hist_down.Clone()
@@ -1352,16 +1347,19 @@ def do_zpj_pt_plots(workdir, do_systematics=True):
                    output_filename=os.path.join(workdir, "data_mc_jet_pt/ZPlusJets/jet_pt.%s" % (OUTPUT_FMT)),
                    rebin=1,
                    xlim=(30, 800),
-                   ylim=(5E-3, 1E9),
+                   ylim=(5E-2, 1E7),
                    title=title,
                    data_first=True,
-                   # subplot_limits=(0, 2),
-                   subplot_limits=(0.5, 1.5),
+                   subplot_limits=(0, 2),
+                   # subplot_limits=(0.5, 1.5),
                    normalise_hists=False,
+                   # experimental_syst=exp_gr,
+                   # scale_syst=scale_gr,
+                   # pdf_syst=pdf_gr,
                    experimental_syst=None,
                    scale_syst=None,
                    pdf_syst=None,
-                   total_syst=None
+                   total_syst=total_gr
                    )
 
 
@@ -1371,6 +1369,6 @@ if __name__ == "__main__":
 
     for workdir in args.workdirs:
         do_dijet_pt_plots(workdir)
-        # do_zpj_pt_plots(workdir)
+        do_zpj_pt_plots(workdir)
 
     sys.exit(0)
