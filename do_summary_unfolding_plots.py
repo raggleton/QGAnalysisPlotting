@@ -242,6 +242,7 @@ class SummaryPlotter(object):
             zpj_hist_ratio_error = zpj_hist_no_errors.Clone()
             zpj_hist_ratio_error.Divide(zpj_hist)
             zpj_hist_ratio_error.SetFillStyle(3003)
+            zpj_hist_ratio_error.SetFillStyle(3254)
             zpj_hist_ratio_error.SetFillColor(zpj_col)
             zpj_hist_ratio_error.SetLineWidth(0)
             zpj_hist_ratio_error.SetMarkerSize(0)
@@ -343,7 +344,7 @@ class SummaryPlotter(object):
             plot.legend.SetY2(0.92)
             # plot.legend.SetBorderSize(1)
             # plot.legend.SetLineColor(ROOT.kBlack)
-            plot.title_left_offset = 0.02
+            plot.title_left_offset = 0.03
         if len(entries) > 6:
             plot.legend.SetNColumns(3)
         plot.legend.SetY2(0.87)
@@ -361,14 +362,22 @@ class SummaryPlotter(object):
         # note that we use "same" for all - this is to keep the original axes
         # (we may want to rethink this later?)
         plot.subplot_pad.cd()
+        plot.subplot_legend = ROOT.TLegend(0.25, 0.75, 0.47, 0.9)
+        plot.subplot_legend.SetFillStyle(0)
         draw_opt = "E2 SAME"
         if do_dijet:
             dijet_central_hist_ratio_error.Draw(draw_opt)
             dijet_forward_hist_ratio_error.Draw(draw_opt)
+            plot.subplot_legend.AddEntry(dijet_central_hist_ratio_error, "Data uncert. (central)", "F")
+            plot.subplot_legend.AddEntry(dijet_forward_hist_ratio_error, "Data uncert. (forward)", "F")
+            plot.subplot_legend.SetNColumns(2)
+            plot.subplot_legend.SetX2(0.8)
         if do_zpj:
+            plot.subplot_legend.AddEntry(zpj_hist_ratio_error, "Data uncert.", "F")
             zpj_hist_ratio_error.Draw(draw_opt)
         plot.subplot_container.Draw("SAME" + subplot_draw_opts)
         plot.subplot_line.Draw()
+        plot.subplot_legend.Draw()
         plot.canvas.cd()
 
         prefix = self._generate_filename_prefix(do_dijet, do_zpj)
@@ -579,14 +588,21 @@ class SummaryPlotter(object):
         # note that we use "same" for all - this is to keep the original axes
         # (we may want to rethink this later?)
         plot.subplot_pad.cd()
+        plot.subplot_legend = ROOT.TLegend(0.25, 0.7, 0.6, 0.9)
+        plot.subplot_legend.SetFillStyle(0)
         draw_opt = "E2 SAME"
         if do_dijet:
             dijet_central_hist_ratio_error.Draw(draw_opt)
             dijet_forward_hist_ratio_error.Draw(draw_opt)
+            plot.subplot_legend.AddEntry(dijet_central_hist_ratio_error, "Data uncert. (central)", "F")
+            plot.subplot_legend.AddEntry(dijet_forward_hist_ratio_error, "Data uncert. (forward)", "F")
+            plot.subplot_legend.SetNColumns(2)
         if do_zpj:
             zpj_hist_ratio_error.Draw(draw_opt)
+            plot.subplot_legend.AddEntry(zpj_hist_ratio_error, "Data uncert.", "F")
         plot.subplot_container.Draw("SAME" + subplot_draw_opts)
         plot.subplot_line.Draw()
+        plot.subplot_legend.Draw()
         plot.canvas.cd()
 
         prefix = self._generate_filename_prefix(do_dijet, do_zpj)
