@@ -262,7 +262,7 @@ class SummaryPlotter(object):
             ])
         if do_zpj:
             entries.extend([
-                Contribution(zpj_hist, label=' Z+jet',
+                Contribution(zpj_hist, label=' Z+jets',
                              line_color=zpj_col, line_width=lw,
                              marker_color=zpj_col, marker_style=cu.Marker.get('triangleUp', True), marker_size=m_size),
             ])
@@ -281,7 +281,7 @@ class SummaryPlotter(object):
             ])
         if do_zpj:
             entries.extend([
-                Contribution(zpj_hist_truth, label='#splitline{ Z+jet  }{ [%s]}' % (self.mc_label),
+                Contribution(zpj_hist_truth, label='#splitline{ Z+jets  }{ [%s]}' % (self.mc_label),
                              line_color=zpj_col, line_width=lw, line_style=COMMON_STYLE_DICT['mc_line_style'],
                              marker_color=zpj_col, marker_style=cu.Marker.get('triangleUp', False), marker_size=0,
                              subplot=zpj_hist_no_errors),
@@ -300,7 +300,7 @@ class SummaryPlotter(object):
             ])
         if do_zpj:
             entries.extend([
-                Contribution(zpj_hist_alt_truth, label='#splitline{ Z+jet}{ [%s]}' % (self.alt_mc_label),
+                Contribution(zpj_hist_alt_truth, label='#splitline{ Z+jets}{ [%s]}' % (self.alt_mc_label),
                              line_color=zpj_col, line_width=2, line_style=COMMON_STYLE_DICT['mc_alt_line_style'],
                              marker_color=zpj_col, marker_style=cu.Marker.get('triangleUp', False), marker_size=0,
                              subplot=zpj_hist_no_errors),
@@ -486,7 +486,7 @@ class SummaryPlotter(object):
             ])
         if do_zpj:
             entries.extend([
-                Contribution(zpj_hist, label=' Z+jet',
+                Contribution(zpj_hist, label=' Z+jets',
                              line_color=zpj_col, line_width=lw,
                              marker_color=zpj_col, marker_style=cu.Marker.get('triangleUp', True), marker_size=m_size),
             ])
@@ -505,7 +505,7 @@ class SummaryPlotter(object):
             ])
         if do_zpj:
             entries.extend([
-                Contribution(zpj_hist_truth, label='#splitline{ Z+jet  }{ [%s]}' % (self.mc_label),
+                Contribution(zpj_hist_truth, label='#splitline{ Z+jets  }{ [%s]}' % (self.mc_label),
                              line_color=zpj_col, line_width=lw, line_style=COMMON_STYLE_DICT['mc_line_style'],
                              marker_color=zpj_col, marker_style=cu.Marker.get('triangleUp', False), marker_size=0,
                              subplot=zpj_hist_no_errors),
@@ -524,7 +524,7 @@ class SummaryPlotter(object):
             ])
         if do_zpj:
             entries.extend([
-                Contribution(zpj_hist_alt_truth, label='#splitline{ Z+jet}{ [%s]}' % (self.alt_mc_label),
+                Contribution(zpj_hist_alt_truth, label='#splitline{ Z+jets}{ [%s]}' % (self.alt_mc_label),
                              line_color=zpj_col, line_width=lw, line_style=COMMON_STYLE_DICT['mc_alt_line_style'],
                              marker_color=zpj_col, marker_style=cu.Marker.get('triangleUp', False), marker_size=0,
                              subplot=zpj_hist_no_errors),
@@ -669,7 +669,7 @@ class SummaryPlotter(object):
             ])
         if do_zpj:
             entries.extend([
-                Contribution(zpj_hist_truth, label='#splitline{ Z+jet  }{ [%s]}' % (self.mc_label),
+                Contribution(zpj_hist_truth, label='#splitline{ Z+jets  }{ [%s]}' % (self.mc_label),
                              line_color=zpj_col, line_width=lw, line_style=COMMON_STYLE_DICT['mc_line_style'],
                              marker_color=zpj_col, marker_style=cu.Marker.get('triangleUp', False), marker_size=0,
                              ),
@@ -688,7 +688,7 @@ class SummaryPlotter(object):
             ])
         if do_zpj:
             entries.extend([
-                Contribution(zpj_hist_alt_truth, label='#splitline{ Z+jet}{ [%s]}' % (self.alt_mc_label),
+                Contribution(zpj_hist_alt_truth, label='#splitline{ Z+jets}{ [%s]}' % (self.alt_mc_label),
                              line_color=zpj_col, line_width=lw, line_style=COMMON_STYLE_DICT['mc_alt_line_style'],
                              marker_color=zpj_col, marker_style=cu.Marker.get('triangleUp', False), marker_size=0,
                              ),
@@ -2011,7 +2011,7 @@ if __name__ == "__main__":
             ]
             selections.append({'label': this_angle_str, 'selections': this_selection})
 
-        legend_header = "Z+jet region"
+        legend_header = "Z+jets region"
 
         plotter.plot_mean_rms_bins_summary(
             selections=selections,
