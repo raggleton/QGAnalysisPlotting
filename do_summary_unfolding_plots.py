@@ -52,6 +52,10 @@ ROOT.TH1.SetDefaultSumw2()
 # import hunter
 # hunter.trace(module='my_unfolder', action=hunter.CallPrinter)
 
+# Define own linestyle for smaller plots
+# linestyle 2 (dashed) has too big dashes
+ROOT.gStyle.SetLineStyleString(22, "8 6")
+ROOT.gStyle.SetLineStyleString(23, "5 8")
 
 COMMON_STYLE_DICT = {
     "line_width": 2,
@@ -63,7 +67,7 @@ COMMON_STYLE_DICT = {
     "data_line_style": 1,
     "data_color": ROOT.kBlack,
 
-    "mc_line_style": 2,
+    "mc_line_style": 22,
     # format: 3ijk,
     # i=distance between lines,
     # j=angle between 0 and 90 degrees (5 = not drawn),
@@ -71,7 +75,7 @@ COMMON_STYLE_DICT = {
     "mc_fill_style": 3445,
     "mc_color": ROOT.kBlue+1,
 
-    "mc_alt_line_style": 3,
+    "mc_alt_line_style": 23,
     "mc_alt_fill_style": 3454,
     "mc_alt_color": ROOT.kAzure+1,
 }
@@ -920,7 +924,7 @@ class SummaryPlotter(object):
         n_pads = len(selections)
 
         # gap between right end of plots and edge of canvas, used for legend
-        right_margin = 0.12
+        right_margin = 0.15
         # pad_left_titles_gap = 0.01 # gap between pad_left_titles and all plots
         pad_to_pad_gap = 0.005  # gap between plot pad columns
         # how far in from the left the first plotting pad starts. used for y axis title
@@ -1073,9 +1077,14 @@ class SummaryPlotter(object):
         # This is because the hashing separation is scaled by the pad size
         # So we can't just put the legend in the global canvas.
         # We also can't modify the fill style of the legend entries (I tried, it does nothing)
+        # Note that this only matters if you have fill styles - if you have lines
+        # you can get away with other sizing
         leg_y_top = 0.93
-        leg_x_right = 1-0.0
-        leg_pad = ROOT.TPad("leg_pad_"+cu.get_unique_str(), "", leg_x_right-mean_pads[0].GetAbsWNDC(), leg_y_top-mean_pads[0].GetAbsHNDC(), leg_x_right, leg_y_top)
+        # leg_pad = ROOT.TPad("leg_pad_"+cu.get_unique_str(), "", leg_x2-mean_pads[0].GetAbsWNDC(), leg_y_top-mean_pads[0].GetAbsHNDC(), leg_x2, leg_y_top)
+        leg_left = mean_pads[-1].GetAbsXlowNDC() + mean_pads[-1].GetAbsWNDC() + pad_to_pad_gap
+        leg_right = 1-0.02
+        leg_y_bottom = leg_y_top-(1.*mean_pads[0].GetAbsHNDC())
+        leg_pad = ROOT.TPad("leg_pad_"+cu.get_unique_str(), "", leg_left, leg_y_bottom, leg_right, leg_y_top)
         ROOT.SetOwnership(leg_pad, False)  # important! otherwise seg fault
         # leg_pad.SetFillColor(ROOT.kYellow)
         # leg_pad.SetFillStyle(3004)
@@ -1087,13 +1096,57 @@ class SummaryPlotter(object):
         leg_pad.Draw()
         leg_pad.cd()
         gc_stash.append(leg_pad)
-        leg = ROOT.TLegend(0.28, mean_pads[0].GetBottomMargin(), 1, 1)
+        leg = ROOT.TLegend(0., mean_pads[0].GetBottomMargin(), 1, 1)
+
+        pt = None
         if legend_header:
-            leg.SetHeader(legend_header)
-        leg.AddEntry(mean_hists[0][0], "Data" ,"EL")
-        leg.AddEntry(mean_hists[0][1], self.mc_label ,"L")
-        leg.AddEntry(mean_hists[0][2], self.alt_mc_label ,"L")
-        leg.SetTextSize(0.08)
+            # Add title to legend
+            # Add ability to do multiple lines by splitting on \n
+            # Assumes first line most important, so bolded
+            # Dont account for blank lines
+            num_header_lines = len([x for x in legend_header.split("\n") if len(x) > 0])
+            line_height = 0.1
+            offset = num_header_lines * line_height
+            # move legend down by the height of the new TPaveText
+            leg.SetY1(leg.GetY1()-offset)
+            leg.SetY2(leg.GetY2()-offset)
+            pt = ROOT.TPaveText(leg.GetX1(), leg.GetY2(), leg.GetX2(), leg_y_top, "NDC NB")
+            pt.SetFillStyle(0)
+            pt.SetBorderSize(0)
+            for line_ind, line in enumerate(legend_header.split("\n")):
+                text = pt.AddText(line)
+                text.SetTextAlign(11)
+                if line_ind == 0:
+                    text.SetTextFont(62)
+                    text.SetTextSize(0.1)
+                else:
+                    text.SetTextFont(42)
+                    text.SetTextSize(0.09)
+            pt.Draw()
+
+        # Replace legend markers with graph to get correct error bar endings
+        # Yes this is ridiculous
+        dummy_gr = ROOT.TGraphErrors(1, array('d', [1]), array('d', [1]), array('d', [1]), array('d', [1]))
+        dummy_data = dummy_gr.Clone()
+        self._style_data_hist(dummy_data)
+        dummy_mc = dummy_gr.Clone()
+        self._style_mc_hist(dummy_mc)
+        dummy_alt_mc = dummy_gr.Clone()
+        self._style_alt_mc_hist(dummy_alt_mc)
+        leg.AddEntry(dummy_data, "Data" ,"EL")
+        leg.AddEntry(dummy_mc, self.mc_label, "EL")
+        leg.AddEntry(dummy_alt_mc, self.alt_mc_label, "EL")
+        # Add a dummy entry, otherwise it won't print the label of the last entry
+        # No idea why - seems correlated with having > 2 lines in the legend header?
+        # Absolute mess
+        leg.AddEntry(0, "", "")
+        leg.SetFillColor(0)
+        leg.SetBorderSize(0)
+        # leg.SetFillColor(ROOT.kGreen)
+        # leg.SetFillStyle(3004)
+        leg.SetTextSize(0.1)
+        leg.SetTextAlign(12)
+        leg.SetEntrySeparation(0.08)
         leg.Draw()
 
         canvas.cd()
@@ -1931,7 +1984,7 @@ if __name__ == "__main__":
             ]
             selections.append({'label': this_angle_str, 'selections': this_selection})
 
-        legend_header = "#splitline{Dijet (central)}{region}"
+        legend_header = "Gluon-enriched jets\nDijet (central) region"
         plotter.plot_mean_rms_bins_summary(
             selections=selections,
             legend_header=legend_header,
@@ -1942,7 +1995,7 @@ if __name__ == "__main__":
             selections=selections,
             legend_header=legend_header,
             output_file=os.path.join(args.outputDir, "dijet_central_delta_summary.pdf")
-        )        
+        )
 
         # DIJET FORWARD
         # ---------------------------------------------
@@ -1974,7 +2027,7 @@ if __name__ == "__main__":
             ]
             selections.append({'label': this_angle_str, 'selections': this_selection})
 
-        legend_header = "#splitline{Dijet (forward)}{region}"
+        legend_header = "Dijet (forward) region"
         plotter.plot_mean_rms_bins_summary(
             selections=selections,
             legend_header=legend_header,
@@ -1995,7 +2048,7 @@ if __name__ == "__main__":
         pt_bins = qgc.PT_UNFOLD_DICT['signal_zpj_gen']
         low_pt_bin = np.where(pt_bins == low_pt)[0][0]
         low_pt_str = "[%g, %g] GeV" % (low_pt, pt_bins[low_pt_bin+1])
-    
+
         high_pt = 326
         high_pt_bin = np.where(pt_bins == high_pt)[0][0]
         high_pt_str = "[%g, %g] GeV" % (high_pt, pt_bins[high_pt_bin+1])
@@ -2008,7 +2061,7 @@ if __name__ == "__main__":
                 ('jet_algo=="ak4puppi" & pt_bin==%d & ~isgroomed & region=="ZPlusJets" & angle=="%s"' % (low_pt_bin, angle.var),
                     "{jet_str}, {pt_str}".format(jet_str=ak4_str, pt_str=low_pt_str)),
                     # "#splitline{{{jet_str}}}{{{pt_str}}}".format(jet_str=ak4_str, pt_str=low_pt_str)),
-                
+
                 # ignore high pt bin as not useful - same composition as dijet but fewer stats
                 # ('jet_algo=="ak4puppi" & pt_bin==%d & ~isgroomed & region=="ZPlusJets" & angle=="%s"' % (high_pt_bin, angle.var),
                 #     "{jet_str}, {pt_str}".format(jet_str=ak4_str, pt_str=high_pt_str)),
