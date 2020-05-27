@@ -2094,7 +2094,49 @@ if __name__ == "__main__":
             output_file=os.path.join(args.outputDir, "zpj_delta_summary.pdf")
         )
 
-    # if has_dijet and has_zpj:
-    #     plotter.plot_dijet_zpj_means_vs_pt_all()
-        # plotter.plot_dijet_zpj_rms_vs_pt_all()
+    if has_dijet and has_zpj:
+        low_pt = 120
+        pt_bins = qgc.PT_UNFOLD_DICT['signal_gen']
+        low_pt_bin = np.where(pt_bins == low_pt)[0][0]
+        low_pt_str = "[%g, %g] GeV" % (low_pt, pt_bins[low_pt_bin+1])
 
+        high_pt = 1000
+        high_pt_bin = np.where(pt_bins == high_pt)[0][0]
+        high_pt_str = "[%g, %g] GeV" % (high_pt, pt_bins[high_pt_bin+1])
+
+        # DIJET CENTRAL
+        # ---------------------------------------------
+
+        # Create selection queries for mean/RMS/delta summary plots
+        selections = []
+        for angle in charged_and_neutral_angles:
+            this_angle_str = "%s (%s)" % (angle.name, angle.lambda_str)
+            # this_angle_str = "%s" % (angle.lambda_str)
+            this_selection = [
+                ('jet_algo=="ak4puppi" & pt_bin==%d & ~isgroomed & region=="ZPlusJets" & angle=="%s"' % (low_pt_bin, angle.var),
+                    "{jet_str}, {pt_str}".format(jet_str=ak4_str, pt_str=low_pt_str)),
+                    # "#splitline{{{jet_str}}}{{{pt_str}}}".format(jet_str=ak4_str, pt_str=low_pt_str)),
+
+                ('jet_algo=="ak4puppi" & pt_bin==%d & ~isgroomed & region=="Dijet_forward" & angle=="%s"' % (high_pt_bin, angle.var),
+                    "{jet_str}, {pt_str}".format(jet_str=ak4_str, pt_str=high_pt_str)),
+                    # "#splitline{{{jet_str}}}{{{pt_str}}}".format(jet_str=ak4_str, pt_str=high_pt_str)),
+
+                ('jet_algo=="ak8puppi" & pt_bin==%d & ~isgroomed & region=="ZPlusJets" & angle=="%s"' % (low_pt_bin, angle.var),
+                    "{jet_str}, {pt_str}".format(jet_str=ak8_str, pt_str=low_pt_str)),
+                    # "#splitline{{{jet_str}}}{{{pt_str}}}".format(jet_str=ak8_str, pt_str=low_pt_str)),
+
+                ('jet_algo=="ak4puppi" & pt_bin==%d & ~isgroomed & region=="ZPlusJets" & angle=="%s_charged"' % (low_pt_bin, angle.var),
+                    "#splitline{{{jet_str}, {pt_str}}}{{Charged-only}}".format(jet_str=ak4_str, pt_str=low_pt_str)),
+                    # "#splitline{{#splitline{{{jet_str}}}{{{pt_str}}}}}{{Charged-only}}".format(jet_str=ak8_str, pt_str=low_pt_str)),
+
+                ('jet_algo=="ak4puppi" & pt_bin==%d & isgroomed  & region=="ZPlusJets_groomed" & angle=="%s"' % (low_pt_bin, angle.var),
+                    "#splitline{{{jet_str}, {pt_str}}}{{Groomed}}".format(jet_str=ak4_str, pt_str=low_pt_str)),
+            ]
+            selections.append({'label': this_angle_str, 'selections': this_selection})
+
+        legend_header = "Quark-enriched jets\n%s:\nZ+jets region\n%s:\nDijet (forward) region" % (low_pt_str, high_pt_str)
+        plotter.plot_mean_rms_bins_summary(
+            selections=selections,
+            legend_header=legend_header,
+            output_file=os.path.join(args.outputDir, "quark_mean_rms_summary.pdf")
+        )
