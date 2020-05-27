@@ -1499,7 +1499,8 @@ if __name__ == "__main__":
 
             # Draw matrices
             # ------------------------------------------------------------------
-            unfolder_plotter.plot_bias_vector(title=title, **plot_args)
+            if REGULARIZE != "None":
+                unfolder_plotter.plot_bias_vector(title=title, **plot_args)
 
             title = "Response matrix, %s, %s region, %s" % (jet_algo, region['label'], angle_str)
             unfolder_plotter.draw_response_matrix(title=title, **plot_args)

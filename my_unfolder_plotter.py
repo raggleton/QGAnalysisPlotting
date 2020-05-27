@@ -365,6 +365,7 @@ class MyUnfolderPlotter(object):
                         line_color=ROOT.kBlue, line_width=1,
                         marker_color=ROOT.kBlue, marker_size=0)]
             all_contributions.extend(entries)
+            
             plot = Plot(entries,
                         what='hist',
                         title=title,
@@ -384,43 +385,45 @@ class MyUnfolderPlotter(object):
             output_filename = "%s/bg_fraction_%s_%s.%s" % (output_dir, bg_name.replace(" ", "_").lower(), append, self.output_fmt)
             plot.save(output_filename)
 
-        # Now do one with all stacked
-        # sort by ascending size
-        all_contributions = sorted(all_contributions, key=lambda x: x.obj.Integral(), reverse=False)
-        plot = Plot(all_contributions,
-                    what='hist',
-                    title=title,
-                    xtitle='Detector bin number',
-                    ytitle='Cumulative background fraction',
-                    ylim=(frac_min, frac_max),
-                    has_data=False)
-        plot.default_canvas_size = (800, 600)
-        plot.reverse_legend = True
-        ROOT.gStyle.SetPalette(ROOT.kCMYK)
-        # ROOT.gStyle.SetPalette(ROOT.kPastel)
-        # ROOT.gStyle.SetPalette(ROOT.kVisibleSpectrum)
-        plot.plot("HIST PLC PMC")
-        plot.set_logy()
-        plot.legend.SetNColumns(2)
-        plot.legend.SetY1(0.75)
-        plot.legend.SetY2(0.88)
-        l, t = self.draw_pt_binning_lines(plot, which='reco', axis='x',
-                                          do_underflow=True,
-                                          do_labels_inside=True,
-                                          do_labels_outside=False)
-        output_filename = "%s/bg_fraction_all_stack_%s.%s" % (output_dir, append, self.output_fmt)
-        plot.save(output_filename)
+        if len(all_contributions) > 1:
+            # Now do one with all stacked
+            # sort by ascending size
+            # only plot if multiple backgrounds, otherwise duplicate plots
+            all_contributions = sorted(all_contributions, key=lambda x: x.obj.Integral(), reverse=False)
+            plot = Plot(all_contributions,
+                        what='hist',
+                        title=title,
+                        xtitle='Detector bin number',
+                        ytitle='Cumulative background fraction',
+                        ylim=(frac_min, frac_max),
+                        has_data=False)
+            plot.default_canvas_size = (800, 600)
+            plot.reverse_legend = True
+            ROOT.gStyle.SetPalette(ROOT.kCMYK)
+            # ROOT.gStyle.SetPalette(ROOT.kPastel)
+            # ROOT.gStyle.SetPalette(ROOT.kVisibleSpectrum)
+            plot.plot("HIST PLC PMC")
+            plot.set_logy()
+            plot.legend.SetNColumns(2)
+            plot.legend.SetY1(0.75)
+            plot.legend.SetY2(0.88)
+            l, t = self.draw_pt_binning_lines(plot, which='reco', axis='x',
+                                              do_underflow=True,
+                                              do_labels_inside=True,
+                                              do_labels_outside=False)
+            output_filename = "%s/bg_fraction_all_stack_%s.%s" % (output_dir, append, self.output_fmt)
+            plot.save(output_filename)
 
-        # And one not stacked
-        plot.ytitle = "Individual background fraction"
-        plot.plot("NOSTACK HIST PLC")
-        l, t = self.draw_pt_binning_lines(plot, which='reco', axis='x',
-                                          do_underflow=True,
-                                          do_labels_inside=True,
-                                          do_labels_outside=False)
-        output_filename = "%s/bg_fraction_all_nostack_%s.%s" % (output_dir, append, self.output_fmt)
-        plot.save(output_filename)
-        ROOT.gStyle.SetPalette(self.default_palette)
+            # And one not stacked
+            plot.ytitle = "Individual background fraction"
+            plot.plot("NOSTACK HIST PLC")
+            l, t = self.draw_pt_binning_lines(plot, which='reco', axis='x',
+                                              do_underflow=True,
+                                              do_labels_inside=True,
+                                              do_labels_outside=False)
+            output_filename = "%s/bg_fraction_all_nostack_%s.%s" % (output_dir, append, self.output_fmt)
+            plot.save(output_filename)
+            ROOT.gStyle.SetPalette(self.default_palette)
 
     def draw_L_matrix(self, output_dir='.', append="", title=""):
         """Draw L matrix used for regularisation"""
