@@ -372,7 +372,7 @@ class GenPtBinnedPlotter(object):
 
             this_mc_style = deepcopy(mc_style)
             this_alt_mc_style = deepcopy(alt_mc_style)
-            
+
             # Calculate chi2 between data and MCs if desired
             if do_chi2:
                 print("unfolded_alt_truth bin", ibin)
@@ -380,10 +380,17 @@ class GenPtBinnedPlotter(object):
                 # stats are chi2, ndof, p
                 mc_stats = calc_chi2_stats(unfolded_hist_bin_total_errors, mc_gen_hist_bin, ematrix)
                 alt_mc_stats = calc_chi2_stats(unfolded_hist_bin_total_errors, alt_mc_gen_hist_bin, ematrix)
-                # print(mc_stats)
-                # print(alt_mc_stats)
-                this_mc_style['label'] += "\n(#chi^{2} = %.2f)" % mc_stats[0]
-                this_alt_mc_style['label'] += "\n(#chi^{2} = %.2f)" % alt_mc_stats[0]
+                print(mc_stats)
+                print(alt_mc_stats)
+                nbins = unfolded_hist_bin_total_errors.GetNbinsX()
+                reduced_chi2 = mc_stats[0] / nbins
+                alt_reduced_chi2 = alt_mc_stats[0] / nbins
+                def nsf(num, n=1):
+                    """n-Significant Figures"""
+                    numstr = ("{0:.%ie}" % (n-1)).format(num)
+                    return float(numstr)
+                this_mc_style['label'] += "\n(#chi^{2} / N_{bins} = %g)" % nsf(reduced_chi2, 2)
+                this_alt_mc_style['label'] += "\n(#chi^{2} / N_{bins} = %g)" % nsf(alt_reduced_chi2, 2)
 
             mc_entries = [
                 Contribution(mc_gen_hist_bin, subplot=data_no_errors, **this_mc_style),
