@@ -1514,7 +1514,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
 
     # METHODS FOR NORMALISED RESULTS
     # --------------------------------------------------------------------------
-    def create_normalised_jackknife_response_uncertainty(self, jackknife_variations):
+    def create_normalised_jackknife_response_uncertainty_per_pt_bin(self, jackknife_variations):
         """Create response uncertainty & error matrices for each gen pt bin for use later.
 
         Done like the absolute jackknife uncertainty, but only on the normalised
@@ -1596,7 +1596,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             for k in keys_to_del:
                 self.hist_bin_chopper._cache[k]
 
-    def create_normalised_jackknife_input_uncertainty(self, jackknife_variations):
+    def create_normalised_jackknife_input_uncertainty_per_pt_bin(self, jackknife_variations):
         """Create input uncertainty & error matrices for each gen pt bin for use later.
 
         Done like the absolute jackknife uncertainty, but only on the normalised
@@ -1679,7 +1679,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
                 self.hist_bin_chopper._cache[k]
 
 
-    def create_normalised_scale_syst_uncertainty(self, scale_systs):
+    def create_normalised_scale_syst_uncertainty_per_pt_bin(self, scale_systs):
         """Create scale uncertainty from unfolding with scale variation response matrices.
         Stores hist where error bar is envelope of variations of unfolded result.
 
@@ -1734,7 +1734,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             self.hist_bin_chopper._cache[key] = variations_envelope
 
 
-    def create_normalised_scale_syst_ematrices(self):
+    def create_normalised_scale_syst_ematrices_per_pt_bin(self):
         """Create ematrix corresponding to scale uncertainty for each pt bin
 
         Calculated as x.x^T, where x is the difference between the scale-uncert
@@ -1763,7 +1763,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             self.hist_bin_chopper._cache[key] = scale_ematrix
 
 
-    def create_normalised_pdf_syst_uncertainty(self, pdf_systs):
+    def create_normalised_pdf_syst_uncertainty_per_pt_bin(self, pdf_systs):
         """Create PDF uncertainty from unfolded PDF variations
 
         This is done by taking in all the unfolded pdf systematics results,
@@ -1805,7 +1805,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
                                                       binning_scheme='generator')
             self.hist_bin_chopper._cache[key] = variations_envelope
 
-    def create_normalised_pdf_syst_ematrices(self):
+    def create_normalised_pdf_syst_ematrices_per_pt_bin(self):
         """Create ematrix corresponding to pdf uncertainty for each pt bin
 
         Calculated as x.x^T, where x is the difference between the pdf-uncert
@@ -1858,11 +1858,11 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             h.SetBinError(i, h_shifted.GetBinContent(i))
         return h
 
-    def setup_normalised_experimental_systs(self):
+    def setup_normalised_experimental_systs_per_pt_bin(self):
         """Setup normalised experimental uncertainties
 
         In particular recalculates uncertainties, since the systematic one are non-trivial.
-        We must re-calcualte the systematic shifts on the _normalised_ result,
+        We must re-calculate the systematic shifts on the _normalised_ result,
         by comparing the normalised nominal and shifted hists for each pt bin,
         then add those in quadrature per bin of each histogram.
 
@@ -1942,7 +1942,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
                 h2d.SetBinContent(ix, iy, value / scale)
                 h2d.SetBinError(ix, iy, err / scale)
 
-    def setup_normalised_results(self):
+    def setup_normalised_results_per_pt_bin(self):
         """Setup final normalised results per pt bin with all uncertainties.
 
         Experimental, model & PDF normalised systs should have already been setup.
@@ -2235,7 +2235,7 @@ def unpack_slim_unfolding_root_file(input_tfile, region_name, angle_name, pt_bin
 #         obj = tdir.Get(attr_name)
 #         setattr(unfolder, attr_name, obj)
 
-#     unfolder.setup_normalised_results()
+#     unfolder.setup_normalised_results_per_pt_bin()
 
 #     return unfolder
 
@@ -2315,7 +2315,7 @@ def unpack_slim_unfolding_root_file(input_tfile, region_name, angle_name, pt_bin
 #     # setup normalised errors
 #     if len(region['model_systematics']) > 0:
 #         print("Doing normalised scale uncertainties")
-#         unfolder.create_normalised_scale_syst_uncertainty(region['model_systematics'])
+#         unfolder.create_normalised_scale_syst_uncertainty_per_pt_bin(region['model_systematics'])
 
 #     # Get PDF systs
 #     # For some reason, this is done as a list instead of dict
@@ -2339,9 +2339,9 @@ def unpack_slim_unfolding_root_file(input_tfile, region_name, angle_name, pt_bin
 #     # setup normalised errors
 #     if len(region['pdf_systematics']) > 0:
 #         print("Doing normalised PDF uncertainties")
-#         unfolder.create_normalised_pdf_syst_uncertainty(region['pdf_systematics'])
+#         unfolder.create_normalised_pdf_syst_uncertainty_per_pt_bin(region['pdf_systematics'])
 
-#     unfolder.setup_normalised_results()
+#     unfolder.setup_normalised_results_per_pt_bin()
 
 #     return dict(
 #         unfolder=unfolder,

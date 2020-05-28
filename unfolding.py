@@ -1069,7 +1069,7 @@ if __name__ == "__main__":
                     jk_unfolder.do_unfolding(0)
                     jk_unfolder.get_output(hist_name="%s_unfolded_1d" % jk_label_no_spaces)
                     jk_unfolder._post_process()
-                    jk_unfolder.setup_normalised_results()
+                    jk_unfolder.setup_normalised_results_per_pt_bin()
 
                     # Plot 1D results
                     # --------------------------------------------------------------
@@ -1086,7 +1086,7 @@ if __name__ == "__main__":
                 # Update main response stat uncert with jackknife variations
                 # ------------------------------------------------------------------
                 unfolder.update_input_stat_uncert_from_jackknife(region['jackknife_input_variations'])
-                unfolder.create_normalised_jackknife_input_uncertainty(region['jackknife_input_variations'])
+                unfolder.create_normalised_jackknife_input_uncertainty_per_pt_bin(region['jackknife_input_variations'])
 
                 # ------------------------------------------------------------------
                 # Big absolute plot with all jackknife variations
@@ -1180,7 +1180,7 @@ if __name__ == "__main__":
                     jk_unfolder.do_unfolding(0)
                     jk_unfolder.get_output(hist_name="%s_unfolded_1d" % jk_label_no_spaces)
                     jk_unfolder._post_process()
-                    jk_unfolder.setup_normalised_results()
+                    jk_unfolder.setup_normalised_results_per_pt_bin()
 
                     # Plot 1D results
                     # --------------------------------------------------------------
@@ -1195,7 +1195,7 @@ if __name__ == "__main__":
                 # Update main response stat uncert with jackknife variations
                 # ------------------------------------------------------------------
                 unfolder.update_stat_response_from_jackknife(region['jackknife_response_variations'])
-                unfolder.create_normalised_jackknife_response_uncertainty(region['jackknife_response_variations'])
+                unfolder.create_normalised_jackknife_response_uncertainty_per_pt_bin(region['jackknife_response_variations'])
 
                 # ------------------------------------------------------------------
                 # Big absolute plot with all jackknife variations
@@ -1300,7 +1300,7 @@ if __name__ == "__main__":
             #     title = "Correlation matrix, %s, %s region, %s, %s response map" % (jet_algo, region['label'], angle_str, this_syst.label)
             #     exp_syst_unfolder_plotter.draw_correlation_matrix(title=title, draw_values=False, **exp_syst_plot_args)
 
-            #     exp_syst_unfolder.setup_normalised_results()
+            #     exp_syst_unfolder.setup_normalised_results_per_pt_bin()
 
             #     region['experimental_systematics'][syst_ind]['unfolder'] = exp_syst_unfolder
 
@@ -1406,7 +1406,7 @@ if __name__ == "__main__":
                                                       if syst_dict['label'] in reference_unfolder.get_all_exp_syst_labels()]
 
             else:
-                unfolder.setup_normalised_experimental_systs()
+                unfolder.setup_normalised_experimental_systs_per_pt_bin()
 
             # Draw big 1D distributions
             # ------------------------------------------------------------------
@@ -1785,7 +1785,7 @@ if __name__ == "__main__":
                 #                                                                                   debugging_dir=os.path.join(this_output_dir, 'unfolded_alt_chi2_debug'))
                 #     print('unfolded chi2 (alt MC):', unfolded_alt_chi2, unfolded_alt_ndf, unfolded_alt_chi2/unfolded_alt_ndf, unfolded_alt_p)
 
-                alt_unfolder.setup_normalised_results()
+                alt_unfolder.setup_normalised_results_per_pt_bin()
 
                 region['alt_unfolder'] = alt_unfolder
 
@@ -1869,7 +1869,7 @@ if __name__ == "__main__":
                     scale_unfolder.do_unfolding(scale_tau)
                     scale_unfolder.get_output(hist_name="scale_%s_unfolded_1d" % (scale_label_no_spaces))
                     scale_unfolder._post_process()
-                    scale_unfolder.setup_normalised_results()
+                    scale_unfolder.setup_normalised_results_per_pt_bin()
 
                     # Plot absolute 1D result
                     scale_title = "%s\n%s region, %s, %s input" % (jet_algo, region['label'], angle_str, scale_label)
@@ -1879,8 +1879,8 @@ if __name__ == "__main__":
                     del scale_dict['response_map']  # save memory
                     scale_dict['unfolder'] = scale_unfolder
 
-                unfolder.create_normalised_scale_syst_uncertainty(region['scale_systematics'])
-                unfolder.create_normalised_scale_syst_ematrices()
+                unfolder.create_normalised_scale_syst_uncertainty_per_pt_bin(region['scale_systematics'])
+                unfolder.create_normalised_scale_syst_ematrices_per_pt_bin()
 
             # ------------------------------------------------------------------
             # LOAD SCALE VARIATIONS FROM ANOTHER FILE
@@ -1899,7 +1899,7 @@ if __name__ == "__main__":
                 region['scale_systematics'] = scale_syst_region['scale_systematics']
 
                 # Add dummy object to hist_bin_chopper for later, so we can directly manipulate the cache
-                # this replaces the procedure in create_normalised_scale_syst_uncertainty()
+                # this replaces the procedure in create_normalised_scale_syst_uncertainty_per_pt_bin()
                 unfolder.hist_bin_chopper.add_obj(unfolder.scale_uncert_name, unfolder.get_unfolded_with_ematrix_stat())
                 unfolder.hist_bin_chopper.add_obj("unfolded_stat_err", unfolder.get_unfolded_with_ematrix_stat())
 
@@ -1923,7 +1923,7 @@ if __name__ == "__main__":
                         scale_syst.SetBinError(i, rel_err * scale_syst.GetBinContent(i))
                     unfolder.hist_bin_chopper._cache[key] = scale_syst
 
-                unfolder.create_normalised_scale_syst_ematrices()
+                unfolder.create_normalised_scale_syst_ematrices_per_pt_bin()
 
             # ------------------------------------------------------------------
             # BIG ABSOLUTE PLOT WITH ALL SCALE VARIATIONS
@@ -2112,7 +2112,7 @@ if __name__ == "__main__":
                     syst_unfolder.do_unfolding(syst_tau)
                     syst_unfolder.get_output(hist_name="syst_%s_unfolded_1d" % (syst_label_no_spaces))
                     syst_unfolder._post_process()
-                    syst_unfolder.setup_normalised_results()
+                    syst_unfolder.setup_normalised_results_per_pt_bin()
 
                     syst_title = "%s\n%s region, %s, %s input" % (jet_algo, region['label'], angle_str, syst_label)
                     syst_unfolder_plotter.draw_unfolded_1d(title=syst_title, **syst_plot_args)
@@ -2201,7 +2201,7 @@ if __name__ == "__main__":
                 region['model_systematics'] = model_syst_region['model_systematics']
 
                 # Add dummy object to hist_bin_chopper for later, so we can directly manipulate the cache
-                # this replaces the procedure in create_normalised_scale_syst_uncertainty()
+                # this replaces the procedure in create_normalised_scale_syst_uncertainty_per_pt_bin()
                 unfolder.hist_bin_chopper.add_obj(unfolder.scale_uncert_name, unfolder.get_unfolded_with_ematrix_stat())
                 unfolder.hist_bin_chopper.add_obj("unfolded_stat_err", unfolder.get_unfolded_with_ematrix_stat())
 
@@ -2225,7 +2225,7 @@ if __name__ == "__main__":
                         scale_syst.SetBinError(i, rel_err * scale_syst.GetBinContent(i))
                     unfolder.hist_bin_chopper._cache[key] = scale_syst
 
-                unfolder.create_normalised_scale_syst_ematrices()
+                unfolder.create_normalised_scale_syst_ematrices_per_pt_bin()
 
             if len(region['model_systematics']) > 0 and MC_INPUT:
                 # Do a big absolute 1D plots for sanity
@@ -2392,7 +2392,7 @@ if __name__ == "__main__":
                     pdf_unfolder.get_output(hist_name="syst_%s_unfolded_1d" % (pdf_label_no_spaces))
                     pdf_unfolder._post_process()
 
-                    pdf_unfolder.setup_normalised_results()
+                    pdf_unfolder.setup_normalised_results_per_pt_bin()
 
                     pdf_title = "%s\n%s region, %s\n%s response matrix" % (jet_algo, region['label'], angle_str, pdf_label)
                     pdf_unfolder_plotter.draw_unfolded_1d(title=pdf_title, **pdf_plot_args)
@@ -2400,8 +2400,8 @@ if __name__ == "__main__":
                     del region['pdf_systematics'][ind]['response_map']  # save memory
                     region['pdf_systematics'][ind]['unfolder'] = pdf_unfolder
 
-                unfolder.create_normalised_pdf_syst_uncertainty(region['pdf_systematics'])
-                unfolder.create_normalised_pdf_syst_ematrices()
+                unfolder.create_normalised_pdf_syst_uncertainty_per_pt_bin(region['pdf_systematics'])
+                unfolder.create_normalised_pdf_syst_ematrices_per_pt_bin()
 
             # Load PDF syst from another reference file, and calc fractional
             # uncertainty, apply to this unfolded result
@@ -2440,7 +2440,7 @@ if __name__ == "__main__":
                         pdf_syst.SetBinError(i, rel_err * pdf_syst.GetBinContent(i))
                     unfolder.hist_bin_chopper._cache[key] = pdf_syst
 
-                unfolder.create_normalised_pdf_syst_ematrices()
+                unfolder.create_normalised_pdf_syst_ematrices_per_pt_bin()
 
 
             if len(region['pdf_systematics']) > 0 and MC_INPUT:
@@ -2477,7 +2477,7 @@ if __name__ == "__main__":
             # ------------------------------------------------------------------
             # Finally update normalised results
             # ------------------------------------------------------------------
-            unfolder.setup_normalised_results()
+            unfolder.setup_normalised_results_per_pt_bin()
 
             region['unfolder'] = unfolder
 
