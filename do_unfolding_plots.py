@@ -213,7 +213,8 @@ class GenPtBinnedPlotter(object):
             ylim=[0, None],
             subplot_type='ratio',
             subplot_title="* / %s" % (self.region['mc_label']),
-            subplot_limits=(0, 2) if self.setup.has_data else (0.75, 1.25),
+            # subplot_limits=(0, 2) if self.setup.has_data else (0.75, 1.25),
+            subplot_limits=(0, 2.75) if self.setup.has_data else (0.75, 1.25),
         )
         self.unfolder = unfolder
 
@@ -462,6 +463,20 @@ class GenPtBinnedPlotter(object):
             data_total_ratio.Draw(draw_opt)
             plot.subplot_container.Draw("SAME" + subplot_draw_opts)
             plot.subplot_line.Draw()
+
+            # Add subplot legend
+            x_left = 0.25
+            y_bottom = 0.78
+            width = 0.45
+            height = 0.12
+            plot.subplot_legend = ROOT.TLegend(x_left, y_bottom, x_left+width, y_bottom+height)
+            # plot.subplot_legend = ROOT.TLegend(width, height, width, height)  # automatic placement doesn't work
+            plot.subplot_legend.AddEntry(data_total_ratio, "Total uncert.", "F")
+            plot.subplot_legend.AddEntry(data_stat_ratio, "Stat. uncert.", "F")
+            plot.subplot_legend.SetFillStyle(0)
+            plot.subplot_legend.SetNColumns(2)
+            plot.subplot_legend.Draw()
+
             plot.canvas.cd()
 
             plot.save("%s/unfolded_%s_alt_truth_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
@@ -917,7 +932,7 @@ class GenPtBinnedPlotter(object):
                 entries.extend([
                     Contribution(jk_unfolded_hist_bin,
                                  label="Unfolded (%s)" % (jk_label),
-                                 line_color=jk_dict['colour'], line_width=self.line_width, 
+                                 line_color=jk_dict['colour'], line_width=self.line_width,
                                  line_style=1 if ind % 2 == 0 else 3,
                                  marker_color=jk_dict['colour'], marker_size=0,
                                  subplot=mc_gen_hist_bin),
@@ -1299,7 +1314,7 @@ class GenPtBinnedPlotter(object):
                              line_color=ROOT.kRed, line_width=self.line_width, line_style=3,
                              marker_color=ROOT.kRed, marker_style=20, marker_size=0,
                              fill_style=0, fill_color=13),
-                
+
                 # RESPONSE UNCERT
                 Contribution(_convert_error_bars_to_error_ratio_hist(unfolded_hist_bin_rsp_errors),
                              label="Response matrix stats",
@@ -1311,7 +1326,7 @@ class GenPtBinnedPlotter(object):
                              line_color=ROOT.kGray+2, line_width=self.line_width, line_style=3,
                              marker_color=ROOT.kGray+2, marker_style=20, marker_size=0,
                              fill_style=0, fill_color=13),
-                
+
                 # TOTAL UNCERT
                 Contribution(_convert_error_bars_to_error_ratio_hist(unfolded_hist_bin_total_errors),
                              label="Total uncertainty",
@@ -1505,7 +1520,7 @@ class GenLambdaBinnedPlotter(object):
                  .format(
                     jet_algo=self.setup.jet_algo,
                     region_label=self.region['label'],
-                    angle_str=self.setup.angle.name,
+                    angle_str=self.setup.angle_str,
                     bin_edge_low=bin_edge_low,
                     bin_edge_high=bin_edge_high
                 ))
@@ -1911,19 +1926,22 @@ class GenLambdaBinnedPlotter(object):
             unfolded_hist_bin_total_errors = self.hist_bin_chopper.get_lambda_bin_div_bin_width('unfolded', ibin, binning_scheme='generator')
             # Get stat. unc. from input for this bin
             unfolded_hist_bin_stat_errors = self.hist_bin_chopper.get_lambda_bin_div_bin_width('unfolded_stat_err', ibin, binning_scheme='generator')
+            unfolded_hist_bin_no_errors = unfolded_hist_bin_total_errors.Clone()
+            cu.remove_th1_errors(unfolded_hist_bin_no_errors)
 
             entries = []
             for syst_dict in self.region['experimental_systematics']:
                 this_syst = self.unfolder.get_exp_syst(syst_dict['label'])
 
                 self.hist_bin_chopper.add_obj(this_syst.syst_shifted_label, this_syst.syst_shifted)
-                syst_unfolded_hist_bin = self.hist_bin_chopper.get_lambda_bin_div_bin_width(this_syst.syst_shifted_label, ibin, binning_scheme='generator')
+                syst_unfolded_hist_bin = self.hist_bin_chopper.get_lambda_bin_div_bin_width(this_syst.syst_shifted_label, ibin, binning_scheme='generator').Clone()
+                cu.remove_th1_errors(syst_unfolded_hist_bin)
                 c = Contribution(syst_unfolded_hist_bin,
                                  label=syst_dict['label'],
                                  line_color=syst_dict['colour'], line_width=self.line_width,
                                  line_style=2 if 'down' in syst_dict['label'].lower() else 1,
                                  marker_color=syst_dict['colour'], marker_size=0,
-                                 subplot=unfolded_hist_bin_total_errors)
+                                 subplot=unfolded_hist_bin_no_errors)
                 entries.append(c)
 
             entries.append(
@@ -2273,7 +2291,7 @@ class RecoPtBinnedPlotter(object):
                         xlim=calc_auto_xlim(entries[0:1]),  # reduce x axis to where reference prediction is non-0
                         subplot_type='ratio',
                         subplot_title='Simulation / data',
-                        subplot_limits=(0, 2))
+                        subplot_limits=(0, 2.75))
             self._modify_plot(plot)
 
             # disable adding objects to legend & drawing - we'll do it manually
@@ -2319,6 +2337,17 @@ class RecoPtBinnedPlotter(object):
             data_total_ratio.Draw(draw_opt)
             plot.subplot_container.Draw("SAME" + subplot_draw_opts)
             plot.subplot_line.Draw()
+
+            # Add subplot legend
+            x_left = 0.25
+            y_bottom = 0.78
+            width = 0.35
+            height = 0.12
+            plot.subplot_legend = ROOT.TLegend(x_left, y_bottom, x_left+width, y_bottom+height)
+            plot.subplot_legend.AddEntry(data_total_ratio, "Data stat. uncert.", "F")
+            plot.subplot_legend.SetFillStyle(0)
+            plot.subplot_legend.Draw()
+
             plot.canvas.cd()
 
             plot.save("%s/detector_reco_binning_%s_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
@@ -2829,20 +2858,26 @@ def do_binned_plots_per_region_angle(setup, do_binned_gen_pt, do_binned_gen_lamb
         lambda_pt_binned_plotter.plot_unfolded_unnormalised()
 
         if unfolder.tau > 0 and unreg_unfolder:
+            print("...doing unregularised vs regularised")
             lambda_pt_binned_plotter.plot_unfolded_with_unreg_unnormalised()
 
         if alt_unfolder:
+            print("...doing alt unfolder")
             lambda_pt_binned_plotter.plot_unfolded_with_alt_response_unnormalised(alt_unfolder=alt_unfolder)
 
         if has_exp_systs:
             # lambda_pt_binned_plotter.plot_uncertainty_shifts_unnormalised()
+            print("...doing exp systs")
             lambda_pt_binned_plotter.plot_unfolded_with_exp_systs_unnormalised()
 
         if has_scale_systs:
             lambda_pt_binned_plotter.plot_unfolded_with_scale_systs_unnormalised()
+        #     print("...doing scale systs")
+        #     print("...doing model systs")
 
         if has_model_systs:
             lambda_pt_binned_plotter.plot_unfolded_with_model_systs_unnormalised()
+        #     print("...doing pdf systs")
 
         if has_pdf_systs:
             lambda_pt_binned_plotter.plot_unfolded_with_pdf_systs_unnormalised()
@@ -2856,6 +2891,7 @@ def do_binned_plots_per_region_angle(setup, do_binned_gen_pt, do_binned_gen_lamb
 
         # if has_data:
         lambda_pt_binned_plotter.plot_detector_unnormalised(alt_detector=alt_hist_reco_bg_subtracted_gen_binning)
+        print("...doing detector-level")
 
     if do_binned_reco_pt:
         # Iterate through pt bins - reco binning
