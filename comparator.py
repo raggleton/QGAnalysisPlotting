@@ -455,9 +455,18 @@ class Plot(object):
 
     def set_logx(self, state=True, do_more_labels=True):
         # Call AFTER plot()
-        self.main_pad.SetLogx(int(state))
-        if self.subplot_pad:
-            self.subplot_pad.SetLogx(int(state))
+        try:
+            self.main_pad.SetLogx(int(state))
+            if self.subplot_pad:
+                self.subplot_pad.SetLogx(int(state))
+        except AttributeError as e:
+            print("")
+            print(e)
+            print("")
+            print("You should run set_logx() after plot()")
+            print("")
+            raise
+
         if do_more_labels:
             if self.container:
                 ax = self.container.GetXaxis()
