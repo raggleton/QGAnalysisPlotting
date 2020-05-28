@@ -1078,7 +1078,7 @@ if __name__ == "__main__":
 
                     # save memory, in the Unfolder already
                     del region['jackknife_input_variations'][jk_ind]['input_reco']
-                    del region['jackknife_input_variations'][jk_ind]['input_gen'] 
+                    del region['jackknife_input_variations'][jk_ind]['input_gen']
 
                     region['jackknife_input_variations'][jk_ind]['unfolder'] = jk_unfolder
 
@@ -2483,7 +2483,7 @@ if __name__ == "__main__":
             # ------------------------------------------------------------------
             unfolder.setup_normalised_results_per_pt_bin()
 
-            unfolder.setup_absolute_results_per_pt_bin()
+            unfolder.setup_absolute_results_per_lambda_bin()
 
             region['unfolder'] = unfolder
 

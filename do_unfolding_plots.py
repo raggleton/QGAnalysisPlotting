@@ -2891,7 +2891,7 @@ def do_binned_plots_per_region_angle(setup, do_binned_gen_pt, do_binned_gen_lamb
         # bit of a hack, should do it in main unfolding.py script
         unfolder.create_scale_syst_uncertainty_per_lambda_bin(region['scale_systematics'])
         unfolder.create_pdf_syst_uncertainty_per_lambda_bin(region['pdf_systematics'])
-        unfolder.setup_absolute_results_per_pt_bin()
+        unfolder.setup_absolute_results_per_lambda_bin()
 
         print("...doing uncert fraction")
         lambda_pt_binned_plotter.plot_syst_fraction_unnormalised()

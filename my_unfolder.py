@@ -2185,7 +2185,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
     def create_pdf_syst_ematrices_per_lambda_bin(self):
         pass
 
-    def setup_absolute_results_per_pt_bin(self):
+    def setup_absolute_results_per_lambda_bin(self):
         """Setup final absolute results per pt bin with all uncertainties.
 
         Experimental, model & PDF absolute systs should have already been setup.
