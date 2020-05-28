@@ -2029,18 +2029,32 @@ if __name__ == "__main__":
             ]
             selections.append({'label': this_angle_str, 'selections': this_selection})
 
-        legend_header = "Gluon-enriched jets\nDijet (central) region"
+        legend_header = "Dijet (central) region"
         plotter.plot_mean_rms_bins_summary(
             selections=selections,
             legend_header=legend_header,
             output_file=os.path.join(args.outputDir, "dijet_central_mean_rms_summary.pdf")
         )
 
-        legend_header = "Gluon-enriched jets\nDijet (central) region"
+        legend_header = "Dijet (central) region"
         plotter.plot_delta_bins_summary(
             selections=selections,
             legend_header=legend_header,
             output_file=os.path.join(args.outputDir, "dijet_central_delta_summary.pdf")
+        )
+
+        legend_header = "Gluon-enriched jets\nDijet (central) region"
+        plotter.plot_mean_rms_bins_summary(
+            selections=selections,
+            legend_header=legend_header,
+            output_file=os.path.join(args.outputDir, "gluon_mean_rms_summary.pdf")
+        )
+
+        legend_header = "Gluon-enriched jets\nDijet (central) region"
+        plotter.plot_delta_bins_summary(
+            selections=selections,
+            legend_header=legend_header,
+            output_file=os.path.join(args.outputDir, "gluon_delta_summary.pdf")
         )
 
         # DIJET FORWARD
