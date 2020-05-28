@@ -1882,6 +1882,8 @@ if __name__ == "__main__":
                 unfolder.create_normalised_scale_syst_uncertainty_per_pt_bin(region['scale_systematics'])
                 unfolder.create_normalised_scale_syst_ematrices_per_pt_bin()
 
+                unfolder.create_scale_syst_uncertainty_per_pt_bin(region['scale_systematics'])
+
                 unfolder.create_scale_syst_uncertainty_per_lambda_bin(region['scale_systematics'])
 
             # ------------------------------------------------------------------
@@ -2405,6 +2407,8 @@ if __name__ == "__main__":
                 unfolder.create_normalised_pdf_syst_uncertainty_per_pt_bin(region['pdf_systematics'])
                 unfolder.create_normalised_pdf_syst_ematrices_per_pt_bin()
 
+                unfolder.create_pdf_syst_uncertainty_per_ptbin(region['pdf_systematics'])
+
                 unfolder.create_pdf_syst_uncertainty_per_lambda_bin(region['pdf_systematics'])
 
             # Load PDF syst from another reference file, and calc fractional
@@ -2483,6 +2487,7 @@ if __name__ == "__main__":
             # ------------------------------------------------------------------
             unfolder.setup_normalised_results_per_pt_bin()
 
+            unfolder.setup_absolute_results_per_pt_bin()
             unfolder.setup_absolute_results_per_lambda_bin()
 
             region['unfolder'] = unfolder
