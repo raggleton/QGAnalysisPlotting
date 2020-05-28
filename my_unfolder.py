@@ -1737,6 +1737,8 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
     def create_normalised_scale_syst_ematrices_per_pt_bin(self):
         """Create ematrix corresponding to scale uncertainty for each pt bin
 
+        Required create_normalised_scale_syst_uncertainty_per_pt_bin() to be run first
+
         Calculated as x.x^T, where x is the difference between the scale-uncert
         normalised hist, and the nominal normalised hist
 
@@ -1808,6 +1810,8 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
     def create_normalised_pdf_syst_ematrices_per_pt_bin(self):
         """Create ematrix corresponding to pdf uncertainty for each pt bin
 
+        Requires create_normalised_pdf_syst_uncertainty_per_pt_bin() to be run first
+
         Calculated as x.x^T, where x is the difference between the pdf-uncert
         normalised hist, and the nominal normalised hist
 
@@ -1852,7 +1856,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
     @staticmethod
     def convert_error_shift_to_error_bars(h_unshifted, h_shifted):
         """Create histogram with bin contents from h_unshifted,
-        and error bars from h_shifted"""
+        and error bars from bin values of h_shifted"""
         h = h_unshifted.Clone(cu.get_unique_str())
         for i in range(1, h_unshifted.GetNbinsX()+1):
             h.SetBinError(i, h_shifted.GetBinContent(i))
@@ -1879,7 +1883,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             # add these dummy obj to to HistBinChopper for later, but it isn't used
             # Just to bypass internal checks that it exists in its cached objects
             # when e.g. get_pt_bin_normed_div_bin_width() called
-            self.hist_bin_chopper.add_obj(exp_syst.syst_shift_label, exp_syst.syst_shifted)
+            self.hist_bin_chopper.add_obj(exp_syst.syst_shift_label, exp_syst.syst_shift)
             self.hist_bin_chopper.add_obj(exp_syst.syst_ematrix_label, exp_syst.syst_shifted)
 
             # Now manually recalculate the syst shifts and store them
@@ -2076,6 +2080,242 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
                                                       ind=ibin_pt,
                                                       axis='pt',
                                                       do_norm=True,
+                                                      do_div_bin_width=True,
+                                                      binning_scheme='generator')
+            self.hist_bin_chopper._cache[key] = h_total
+
+    # METHODS FOR ABSOLUTE PER LAMBDA BIN RESULTS
+    # --------------------------------------------------------------------------
+    def create_scale_syst_uncertainty_per_lambda_bin(self, scale_systs):
+        """Create scale uncertainty from unfolding with scale variation response matrices.
+        Stores hist where error bar is envelope of variations of unfolded result.
+
+        Note that because it's absolute values, we don't have to worry about normalising
+
+        scale_systs is a list of dicts, the ones produced in unfolding.py
+        Each has the form:
+        {
+            "label": "muR up, muF nominal",
+            "tfile": os.path.join(source_dir_systs, 'ScaleVariationMuRUp_ScaleVariationMuFNom', qgc.QCD_FILENAME),
+            "colour": ROOT.kAzure,
+            "unfolder": MyUnfolder,
+        }
+        """
+        for syst in scale_systs:
+            syst['hbc_key_unfolded'] = 'scale_syst_%s_unfolded' % cu.no_space_str(syst['label'])
+            self.hist_bin_chopper.add_obj(syst['hbc_key_unfolded'], syst['unfolder'].get_unfolded_with_ematrix_stat())
+
+        # Add dummy object to hist_bin_chopper for later, so we can directly manipulate the cache
+        self.hist_bin_chopper.add_obj(self.scale_uncert_name, self.get_unfolded_with_ematrix_stat())
+
+        self.hist_bin_chopper.add_obj('unfolded_stat_err', self.get_unfolded_with_ematrix_stat())
+
+        # print("Doing scale variation")
+        for ibin_var in range(len(self.variable_bin_edges_gen[:-1])):
+            hbc_args = dict(ind=ibin_var, binning_scheme='generator')
+            variations = [
+                self.hist_bin_chopper.get_lambda_bin_div_bin_width(syst['hbc_key_unfolded'], **hbc_args)
+                for syst in scale_systs
+            ]
+
+            # Calculate envelope error bar from max variation in each bin
+            nominal = self.hist_bin_chopper.get_lambda_bin_div_bin_width('unfolded_stat_err', **hbc_args)
+            variations_envelope = nominal.Clone("scale_envelope_lambda_bin%d" % ibin_var)
+
+            # print("pt bin", ibin_var)
+            for ix in range(1, variations_envelope.GetNbinsX()+1):
+                max_variation = max([abs(v.GetBinContent(ix) - nominal.GetBinContent(ix))
+                                     for v in variations])
+                variations_envelope.SetBinError(ix, max_variation)
+
+            # Store in hist_bin_chopper for later
+            key = self.hist_bin_chopper._generate_key(self.scale_uncert_name,
+                                                      ind=ibin_var,
+                                                      axis='lambda',
+                                                      do_norm=False,
+                                                      do_div_bin_width=True,
+                                                      binning_scheme='generator')
+            self.hist_bin_chopper._cache[key] = variations_envelope
+
+    def create_scale_syst_ematrices_per_lambda_bin(self):
+        pass
+
+    def create_pdf_syst_uncertainty_per_lambda_bin(self, pdf_systs):
+        """Create PDF uncertainty from unfolded PDF variations
+
+        This is done by taking in all the unfolded pdf systematics results,
+        then we figure out the RMS of these variations.
+        We can then store this as an extra uncertianty, to be added in quadrature later.
+
+        pdf_systs is a list of dicts, the ones produced in unfolding.py
+        Each has the form:
+        {
+            "label": "PDF",  # this is a template entry, used for future
+            "tfile": os.path.join(source_dir_systs, 'PDFvariationsTrue', qgc.QCD_FILENAME),
+            "colour": ROOT.kCyan+2,
+            "unfolder": None,
+        }
+        """
+        # Add dummy object to hist_bin_chopper for later, so we can directly manipulate the cache
+        self.hist_bin_chopper.add_obj(self.pdf_uncert_name, self.get_unfolded_with_ematrix_stat())
+
+        for ibin_var in range(len(self.variable_bin_edges_gen[:-1])):
+            hbc_args = dict(ind=ibin_var, binning_scheme="generator")
+            # Calculate error by using RMS of variations in each bin of the histogram
+            variations = [syst['unfolder'].hist_bin_chopper.get_lambda_bin_div_bin_width('unfolded', **hbc_args)
+                          for syst in pdf_systs]
+
+            variations_envelope = self.hist_bin_chopper.get_lambda_bin_div_bin_width('unfolded_stat_err', **hbc_args).Clone("pdf_%d" % (ibin_var))
+
+            for ix in range(1, variations_envelope.GetNbinsX()+1):
+                # np.std does sqrt((abs(x - x.mean())**2) / (len(x) - ddof)),
+                # and the PDF4LHC recommendation is N-1 in the denominator
+                rms_ratio = np.std([v.GetBinContent(ix) for v in variations], ddof=1)
+                variations_envelope.SetBinError(ix, rms_ratio)
+
+            # Store in hist_bin_chopper for later
+            key = self.hist_bin_chopper._generate_key(self.pdf_uncert_name,
+                                                      ind=ibin_var,
+                                                      axis='lambda',
+                                                      do_norm=False,
+                                                      do_div_bin_width=True,
+                                                      binning_scheme='generator')
+            self.hist_bin_chopper._cache[key] = variations_envelope
+
+    def create_pdf_syst_ematrices_per_lambda_bin(self):
+        pass
+
+    def setup_absolute_results_per_pt_bin(self):
+        """Setup final absolute results per pt bin with all uncertainties.
+
+        Experimental, model & PDF absolute systs should have already been setup.
+        """
+        self.hist_bin_chopper.add_obj('hist_truth', self.hist_truth)
+        self.hist_bin_chopper.add_obj('unfolded', self.get_output())
+        self.hist_bin_chopper.add_obj('unfolded_stat_err', self.get_unfolded_with_ematrix_stat())
+        self.hist_bin_chopper.add_obj('unfolded_rsp_err', self.get_unfolded_with_ematrix_response())
+
+        # add dummy objects to fool check
+        self.hist_bin_chopper.add_obj(self.stat_ematrix_name, self.get_ematrix_stat())
+        self.hist_bin_chopper.add_obj(self.rsp_ematrix_name, self.get_ematrix_stat())
+        self.hist_bin_chopper.add_obj(self.total_ematrix_name, self.get_ematrix_stat())
+
+        # For each lambda bin, recalculate total error in quadrature and store in unfolded hist
+        for ibin_var, var in enumerate(self.variable_bin_edges_gen[:-1]):
+            first_bin = ibin_var == 0
+            hbc_args = dict(ind=ibin_var, binning_scheme='generator')
+
+            unfolded_hist_bin_stat_errors = self.hist_bin_chopper.get_lambda_bin_div_bin_width('unfolded_stat_err', **hbc_args)
+            unfolded_hist_bin_rsp_errors = self.hist_bin_chopper.get_lambda_bin_div_bin_width('unfolded_rsp_err', **hbc_args)
+
+            # # create stat & rsp err covariance matrices for this pt bin,
+            # # if they haven't been calculated by jackknife methods,
+            # # scaling by overall normalisation and bin widths
+            # binning = self.generator_binning.FindNode("generatordistribution")
+            # pt_bins = self.pt_bin_edges_gen
+            # # FIXME what to do if non-sequential bin numbers?!
+            # # the 1.0001 is to ensure we're def inside this bin
+            # start_bin = binning.GetGlobalBinNumber(var*1.0001, pt_bins[0]*1.0001)
+            # end_bin = binning.GetGlobalBinNumber(var*1.0001, pt_bins[-2]*1.0001)  # -2 since the last one is the upper edge of the last bin
+            # stat_key = self.hist_bin_chopper._generate_key(self.stat_ematrix_name,
+            #                                                ind=ibin_var,
+            #                                                axis='lambda',
+            #                                                do_norm=False,
+            #                                                do_div_bin_width=True,
+            #                                                binning_scheme='generator')
+            # if stat_key not in self.hist_bin_chopper._cache:
+            #     # Get the stat error matrix from TUnfold, then select the sub-matrix
+            #     # for this pt bin, then scale by normalisation and bin widths
+            #     stat_ematrix = self.get_sub_th2(self.get_ematrix_stat(), start_bin, end_bin)
+            #     self.scale_th2_bin_widths(stat_ematrix, var_bins)
+            #     self.hist_bin_chopper._cache[stat_key] = stat_ematrix
+
+            # rsp_key = self.hist_bin_chopper._generate_key(self.rsp_ematrix_name,
+            #                                               ind=ibin_var,
+            #                                               axis='lambda',
+            #                                               do_norm=False,
+            #                                               do_div_bin_width=True,
+            #                                               binning_scheme='generator')
+            # if rsp_key not in self.hist_bin_chopper._cache:
+            #     # if it has been setup already, it was from jackknife
+            #     # otherwise we use the one from TUnfold
+            #     rsp_ematrix = self.get_sub_th2(self.get_ematrix_stat_response(), start_bin, end_bin)
+            #     self.scale_th2_bin_widths(rsp_ematrix, var_bins)
+            #     self.hist_bin_chopper._cache[rsp_key] = rsp_ematrix
+
+            # # Calculate total ematrix
+            # total_ematrix = self.hist_bin_chopper._cache[stat_key].Clone()
+            # total_ematrix.Add(self.hist_bin_chopper._cache[rsp_key])
+
+            # for exp_syst in self.exp_systs:
+            #     if first_bin:
+            #         print("Adding", exp_syst.label, "ematrix to total absolute ematrix...")
+            #     total_ematrix.Add(self.hist_bin_chopper.get_lambda_bin_div_bin_width(exp_syst.syst_ematrix_label, **hbc_args))
+
+            # if self.scale_uncert_ematrix_name in self.hist_bin_chopper.objects:
+            #     if first_bin:
+            #         print("Adding scale ematrix to total absolute ematrix")
+            #     total_ematrix.Add(self.hist_bin_chopper.get_lambda_bin_div_bin_width(self.scale_uncert_ematrix_name, **hbc_args))
+
+            # if self.pdf_uncert_ematrix_name in self.hist_bin_chopper.objects:
+            #     if first_bin:
+            #         print("Adding pdf ematrix to total absolute ematrix")
+            #     total_ematrix.Add(self.hist_bin_chopper.get_lambda_bin_div_bin_width(self.pdf_uncert_ematrix_name, **hbc_args))
+
+            # key = self.hist_bin_chopper._generate_key(self.total_ematrix_name,
+            #                                           ind=ibin_var,
+            #                                           axis='lambda',
+            #                                           do_norm=False,
+            #                                           do_div_bin_width=True,
+            #                                           binning_scheme='generator')
+            # self.hist_bin_chopper._cache[key] = total_ematrix
+
+            error_bar_hists = [unfolded_hist_bin_stat_errors, unfolded_hist_bin_rsp_errors]
+
+            # convert all shifts to error bars
+            for exp_syst in self.exp_systs:
+                if first_bin:
+                    print("Adding", exp_syst.label, "uncertainty to absolute result...")
+                # Here we access the things we just manually put in the cache - must match up with key!
+                # Don't worry about it being normed etc - that is just so keys agree, and it matches
+                # up with the nominal result (which we do want normed_div_bin_width)
+                # Create shift due to this syst
+                syst_shift = self.hist_bin_chopper.get_lambda_bin_div_bin_width(exp_syst.syst_shifted_label, **hbc_args).Clone()
+                syst_shift.Add(unfolded_hist_bin_stat_errors, -1)
+                error_bar_hists.append(self.convert_error_shift_to_error_bars(unfolded_hist_bin_stat_errors, syst_shift))
+
+            # Add in scale syst
+            if self.scale_uncert_name in self.hist_bin_chopper.objects:
+                if first_bin:
+                    print("Adding scale uncertainty to absolute result...")
+                error_bar_hists.append(self.hist_bin_chopper.get_lambda_bin_div_bin_width(self.scale_uncert_name, **hbc_args))
+
+            # Add in PDF syst
+            if self.pdf_uncert_name in self.hist_bin_chopper.objects:
+                if first_bin:
+                    print("Adding PDF uncertainty to absolute result...")
+                error_bar_hists.append(self.hist_bin_chopper.get_lambda_bin_div_bin_width(self.pdf_uncert_name, **hbc_args))
+
+            # Get absolute hist with nominal unfolded value, and change error bars
+            # to be quadrature sum of those we want (stat+rsp+systs)
+            h_total = self.hist_bin_chopper.get_lambda_bin_div_bin_width('unfolded', **hbc_args)
+            for i in range(1, h_total.GetNbinsX()+1):
+                err2 = sum([pow(h.GetBinError(i), 2) for h in error_bar_hists])
+                h_total.SetBinError(i, math.sqrt(err2))
+            # if first_bin:
+                # print("total ematrix diags:", [h_total.GetBinError(i) for i in range(1, nbins+1)])
+
+            # Sanity check
+            # if not cu.same_floats(h_total.GetBinError(3)**2, total_ematrix.GetBinContent(3, 3)):
+            #     print("h_total:", h_total.GetBinError(3)**2)
+            #     print("total_ematrix:", total_ematrix.GetBinContent(3, 3))
+            #     raise ValueError("Disagreement between h_total and total_ematrix: you screwed it up somewhere")
+
+            # Update cache
+            key = self.hist_bin_chopper._generate_key('unfolded',
+                                                      ind=ibin_var,
+                                                      axis='lambda',
+                                                      do_norm=False,
                                                       do_div_bin_width=True,
                                                       binning_scheme='generator')
             self.hist_bin_chopper._cache[key] = h_total

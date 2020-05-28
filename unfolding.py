@@ -1882,6 +1882,8 @@ if __name__ == "__main__":
                 unfolder.create_normalised_scale_syst_uncertainty_per_pt_bin(region['scale_systematics'])
                 unfolder.create_normalised_scale_syst_ematrices_per_pt_bin()
 
+                unfolder.create_scale_syst_uncertainty_per_lambda_bin(region['scale_systematics'])
+
             # ------------------------------------------------------------------
             # LOAD SCALE VARIATIONS FROM ANOTHER FILE
             # ------------------------------------------------------------------
@@ -2403,6 +2405,8 @@ if __name__ == "__main__":
                 unfolder.create_normalised_pdf_syst_uncertainty_per_pt_bin(region['pdf_systematics'])
                 unfolder.create_normalised_pdf_syst_ematrices_per_pt_bin()
 
+                unfolder.create_pdf_syst_uncertainty_per_lambda_bin(region['pdf_systematics'])
+
             # Load PDF syst from another reference file, and calc fractional
             # uncertainty, apply to this unfolded result
             if args.doPDFSystsFromFile is not None:
@@ -2475,9 +2479,11 @@ if __name__ == "__main__":
                                                   subplot_title='#splitline{Variation /}{nominal}')
 
             # ------------------------------------------------------------------
-            # Finally update normalised results
+            # Finally update absolute/normalised results
             # ------------------------------------------------------------------
             unfolder.setup_normalised_results_per_pt_bin()
+
+            unfolder.setup_absolute_results_per_pt_bin()
 
             region['unfolder'] = unfolder
 

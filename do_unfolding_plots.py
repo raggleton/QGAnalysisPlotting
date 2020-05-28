@@ -1955,6 +1955,173 @@ class GenLambdaBinnedPlotter(object):
             plot.set_logy(do_more_labels=False)
             plot.save("%s/unfolded_unnormalised_syst_variations_%s_lambda_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
 
+    def plot_syst_fraction_unnormalised(self):
+        """Plot varation / central value on absolute hists
+        (basically the subplot from plot_unfolded_with_exp_systs_unnormalised)
+        """
+        def _convert_error_bars_to_error_ratio_hist(h, direction=1):
+            """Create hist with bin content = error shift / bin value, 0 error"""
+            h_new = h.Clone(h.GetName() + cu.get_unique_str())
+            for ibin in range(1, h_new.GetNbinsX()+1):
+                if h.GetBinContent(ibin) > 0:
+                    h_new.SetBinContent(ibin, 1+(direction*(h.GetBinError(ibin) / h.GetBinContent(ibin))))
+                else:
+                    if h.GetBinContent(ibin) < 0:
+                        h_new.SetBinContent(ibin, 1+(direction*(h.GetBinError(ibin) / h.GetBinContent(ibin))))
+                        print("_convert_error_bars_to_error_ratio_hist() warning: bin %d content < 0!" % (ibin))
+                    else:
+                        h_new.SetBinContent(ibin, 1)
+                h_new.SetBinError(ibin, 0)
+            return h_new
+
+        def _convert_syst_shift_to_error_ratio_hist(h_syst, h_nominal):
+            """Create h_syst / h_nominal without error bars"""
+            h_new = h_syst.Clone(h_syst.GetName() + cu.get_unique_str())
+            h_new.Divide(h_nominal)
+            for ibin in range(1, h_new.GetNbinsX()+1):
+                h_new.SetBinError(ibin, 0)
+            return h_new
+
+        for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
+            hbc_args = dict(ind=ibin, binning_scheme='generator')
+            # Get total for this bin
+            unfolded_hist_bin_total_errors = self.hist_bin_chopper.get_lambda_bin_div_bin_width('unfolded', **hbc_args)
+            # Get stat. unc. from input for this bin
+            unfolded_hist_bin_stat_errors = self.hist_bin_chopper.get_lambda_bin_div_bin_width(self.unfolder.stat_uncert_name, **hbc_args)
+            # Get stat. unc. from response matrix for this bin
+            unfolded_hist_bin_rsp_errors = self.hist_bin_chopper.get_lambda_bin_div_bin_width(self.unfolder.rsp_uncert_name, **hbc_args)
+
+            entries = []
+            check_bin = 6
+            checks = []
+            # Add experimental systs
+            for syst_dict, mark in zip(self.region['experimental_systematics'], cu.Marker().cycle(cycle_filling=True)):
+                this_syst = self.unfolder.get_exp_syst(syst_dict['label'])
+                syst_unfolded_hist_bin = self.hist_bin_chopper.get_lambda_bin_div_bin_width(this_syst.syst_shifted_label, **hbc_args)
+                this_syst_hist = _convert_syst_shift_to_error_ratio_hist(syst_unfolded_hist_bin, unfolded_hist_bin_total_errors)
+                c = Contribution(this_syst_hist,
+                                 label=syst_dict['label'],
+                                 line_color=syst_dict['colour'],
+                                 line_width=0,
+                                 # line_width=self.line_width,
+                                 # line_style=2 if 'down' in syst_dict['label'].lower() else 1,
+                                 marker_color=syst_dict['colour'],
+                                 marker_size=1.25,
+                                 marker_style=mark)
+                entries.append(c)
+
+            # Add scale syst
+            if self.unfolder.scale_uncert_name in self.hist_bin_chopper.objects:
+                scale_hist = self.hist_bin_chopper.get_lambda_bin_div_bin_width(self.unfolder.scale_uncert_name, **hbc_args)
+                scale_col = ROOT.kTeal-8
+                entries.extend([
+                    Contribution(_convert_error_bars_to_error_ratio_hist(scale_hist),
+                                label='Scale uncertainty',
+                                line_color=scale_col, line_width=self.line_width, line_style=2,
+                                marker_color=scale_col, marker_style=20, marker_size=0,
+                                fill_style=0, fill_color=15),
+                    # add -ve side, no label as we don't want it in legend
+                    Contribution(_convert_error_bars_to_error_ratio_hist(scale_hist, -1),
+                                line_color=scale_col, line_width=self.line_width, line_style=2,
+                                marker_color=scale_col, marker_style=20, marker_size=0,
+                                fill_style=0, fill_color=15)
+                ])
+
+            # Add pdf syst
+            if self.unfolder.pdf_uncert_name in self.hist_bin_chopper.objects:
+                pdf_hist = self.hist_bin_chopper.get_lambda_bin_div_bin_width(self.unfolder.pdf_uncert_name, **hbc_args)
+                pdf_col = ROOT.kOrange+4
+                entries.extend([
+                    Contribution(_convert_error_bars_to_error_ratio_hist(pdf_hist),
+                                label='PDF uncertainty',
+                                line_color=pdf_col, line_width=self.line_width, line_style=2,
+                                marker_color=pdf_col, marker_style=20, marker_size=0,
+                                fill_style=0, fill_color=15),
+                    # add -ve side, no label as we don't want it in legend
+                    Contribution(_convert_error_bars_to_error_ratio_hist(pdf_hist, -1),
+                                line_color=pdf_col, line_width=self.line_width, line_style=2,
+                                marker_color=pdf_col, marker_style=20, marker_size=0,
+                                fill_style=0, fill_color=15)
+                ])
+
+            entries.extend([
+                # INPUT UNCERT
+                Contribution(_convert_error_bars_to_error_ratio_hist(unfolded_hist_bin_stat_errors),
+                             label="Input stats",
+                             line_color=ROOT.kRed, line_width=self.line_width, line_style=3,
+                             marker_color=ROOT.kRed, marker_style=20, marker_size=0,
+                             fill_style=0, fill_color=13),
+                # Add in the -ve side, but no label as we don't want it in the legend
+                Contribution(_convert_error_bars_to_error_ratio_hist(unfolded_hist_bin_stat_errors, -1),
+                             line_color=ROOT.kRed, line_width=self.line_width, line_style=3,
+                             marker_color=ROOT.kRed, marker_style=20, marker_size=0,
+                             fill_style=0, fill_color=13),
+
+                # RESPONSE UNCERT
+                Contribution(_convert_error_bars_to_error_ratio_hist(unfolded_hist_bin_rsp_errors),
+                             label="Response matrix stats",
+                             line_color=ROOT.kGray+2, line_width=self.line_width, line_style=3,
+                             marker_color=ROOT.kGray+2, marker_style=20, marker_size=0,
+                             fill_style=0, fill_color=13),
+                # Add in the -ve side, but no label as we don't want it in the legend
+                Contribution(_convert_error_bars_to_error_ratio_hist(unfolded_hist_bin_rsp_errors, -1),
+                             line_color=ROOT.kGray+2, line_width=self.line_width, line_style=3,
+                             marker_color=ROOT.kGray+2, marker_style=20, marker_size=0,
+                             fill_style=0, fill_color=13),
+
+                # TOTAL UNCERT
+                Contribution(_convert_error_bars_to_error_ratio_hist(unfolded_hist_bin_total_errors),
+                             label="Total uncertainty",
+                             line_color=self.plot_colours['unfolded_total_colour'], line_width=self.line_width, line_style=2,
+                             marker_color=self.plot_colours['unfolded_total_colour'], marker_style=20, marker_size=0,
+                             fill_style=0, fill_color=15),
+                # Add in the -ve side, but no label as we don't want it in the legend
+                Contribution(_convert_error_bars_to_error_ratio_hist(unfolded_hist_bin_total_errors, -1),
+                             line_color=self.plot_colours['unfolded_total_colour'], line_width=self.line_width, line_style=2,
+                             marker_color=self.plot_colours['unfolded_total_colour'], marker_style=20, marker_size=0,
+                             fill_style=0, fill_color=15),
+            ])
+
+            if not self.check_entries(entries, "plot_syst_fraction_unnormalised %d" % ibin):
+                return
+            xlim = calc_auto_xlim(entries)
+            ylim = [0.7, 1.5] if "Dijet" in self.setup.region['name'] else [0.3, 1.9]
+            min_total = entries[-1].obj.GetMinimum()
+            max_total = entries[-2].obj.GetMaximum()
+            if max_total > ylim[1]:
+                ylim[1] = max_total*1.1
+            if min_total < ylim[0]:
+                ylim[0] = min_total*0.9
+            plot = Plot(entries,
+                        xtitle=self.setup.pt_str,
+                        ytitle='Variation / nominal (on absolute distribution)',
+                        what="hist",
+                        title=self.get_lambda_bin_title(bin_edge_low, bin_edge_high),
+                        has_data=self.setup.has_data,
+                        xlim=xlim,
+                        ylim=ylim,
+                        subplot_type=None)
+            self._modify_plot(plot)
+            plot.default_canvas_size = (800, 700)
+            plot.legend.SetX1(0.5)
+            plot.legend.SetY1(0.65)
+            plot.legend.SetX2(0.93)
+            plot.legend.SetY2(0.88)
+            if len(entries) > 5: plot.legend.SetNColumns(2)
+            plot.plot("NOSTACK P L") # hard to get one that is points for systs, and line for stats
+            plot.set_logx(do_more_labels=False)
+            plot.main_pad.cd()
+            if xlim is not None:
+                line = ROOT.TLine(xlim[0], 1, xlim[1], 1)
+            else:
+                xmin = unfolded_hist_bin_stat_errors.GetXaxis().GetBinLowEdge(1)
+                xmax = unfolded_hist_bin_stat_errors.GetXaxis().GetBinLowEdge(unfolded_hist_bin_stat_errors.GetNbinsX()+1)
+                line = ROOT.TLine(xmin, 1, xmax, 1)
+            line.SetLineColor(ROOT.kGray+2)
+            line.SetLineColor(ROOT.kBlack)
+            line.Draw()
+            plot.save("%s/unfolded_unnormalised_syst_variations_vs_nominal_%s_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
+
     def plot_detector_unnormalised(self, alt_detector=None):
         for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
             input_hist_bin = self.hist_bin_chopper.get_lambda_bin_div_bin_width('input_hist_gen_binning_bg_subtracted', ibin, binning_scheme='generator')
@@ -2679,6 +2846,13 @@ def do_binned_plots_per_region_angle(setup, do_binned_gen_pt, do_binned_gen_lamb
 
         if has_pdf_systs:
             lambda_pt_binned_plotter.plot_unfolded_with_pdf_systs_unnormalised()
+        # bit of a hack, should do it in main unfolding.py script
+        unfolder.create_scale_syst_uncertainty_per_lambda_bin(region['scale_systematics'])
+        unfolder.create_pdf_syst_uncertainty_per_lambda_bin(region['pdf_systematics'])
+        unfolder.setup_absolute_results_per_pt_bin()
+
+        print("...doing uncert fraction")
+        lambda_pt_binned_plotter.plot_syst_fraction_unnormalised()
 
         # if has_data:
         lambda_pt_binned_plotter.plot_detector_unnormalised(alt_detector=alt_hist_reco_bg_subtracted_gen_binning)
