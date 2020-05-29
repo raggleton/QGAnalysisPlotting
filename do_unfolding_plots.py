@@ -979,6 +979,55 @@ class GenPtBinnedPlotter(object):
             plot.plot("NOSTACK E1")
             plot.save("%s/unfolded_%s_jackknife_response_vars_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
 
+    def plot_jackknife_residuals(self, jackknife_variations):
+        """Plot distributions of unfolded / gen for each bin for all jackknife variations
+
+        Hopefully Gaussian with centre on 1
+        """
+        for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
+            hbc_args = dict(ind=ibin, binning_scheme='generator')
+            
+            # hists of all jackknife variations for all bins
+            hists = [ROOT.TH1D("jk_ratios_%d" % ind, "%s, %s, bin %d;Unfolded/Gen;N" % (self.setup.angle_str, self.get_pt_bin_title(bin_edge_low, bin_edge_high).replace("\n", ", "), ind), 25, 0.6, 1.4) 
+                     for ind in range(len(self.unfolder.variable_bin_edges_gen)-1)]
+
+            for ind, jk_dict in enumerate(jackknife_variations):
+                jk_unfolder = jk_dict['unfolder']
+                jk_label = jk_dict['label']
+                jk_gen_hist_bin = jk_unfolder.hist_bin_chopper.get_pt_bin_normed_div_bin_width('hist_truth', **hbc_args)
+                jk_unfolded_hist_bin = jk_unfolder.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded', **hbc_args)
+                ratio = jk_unfolded_hist_bin.Clone()
+                ratio.Divide(jk_gen_hist_bin)
+                for ix in range(1, ratio.GetNbinsX()+1):
+                    hists[ix-1].Fill(ratio.GetBinContent(ix))
+
+            entries = [
+                Contribution(h, 
+                             label="bin %d" % ind,
+                             marker_color=cu.get_colour_seq(ind, len(hists)),
+                             line_style=1 + (ind % 2),
+                             line_width=2,
+                             line_color=cu.get_colour_seq(ind, len(hists)))
+                for ind, h in enumerate(hists)
+            ]
+            canv = ROOT.TCanvas(cu.get_unique_str(), "", 1200, 900)
+            n = len(hists)
+            nx = math.ceil(n / 3)
+            ny = 3
+            canv.Divide(nx, ny)
+            for i, h in enumerate(hists, 1):
+                canv.cd(i)
+                h.Draw("HIST")
+                h.SetMaximum(h.GetMaximum()*1.2)
+            canv.SaveAs("%s/jackknife_residuals_%s_bin_%d.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
+            # plot = Plot(entries[1:-1], what='hist',
+            #             title=self.get_pt_bin_title(bin_edge_low, bin_edge_high),
+            #             ylim=(0, None),
+            #             xtitle="Unfolded / Gen")
+            # plot.plot("NOSTACK HIST")
+            # plot.legend.SetNColumns(2)
+            # plot.save("%s/jackknife_residuals_%s_bin_%d.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
+
     def plot_uncertainty_shifts_normalised(self):
         """Do plots of fractional uncertainty shifts on *normalised* unfolded distribution"""
         for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
@@ -3002,10 +3051,12 @@ def do_binned_plots_per_region_angle(setup, do_binned_gen_pt, do_binned_gen_lamb
         if has_jackknife_input_vars:
             print("...doing jackknife input variations")
             gen_pt_binned_plotter.plot_unfolded_with_jackknife_input_normalised()
+            gen_pt_binned_plotter.plot_jackknife_residuals(region['jackknife_input_variations'])
 
         if has_jackknife_response_vars:
             print("...doing jackknife response variations")
             gen_pt_binned_plotter.plot_unfolded_with_jackknife_response_normalised()
+            gen_pt_binned_plotter.plot_jackknife_residuals(region['jackknife_response_variations'])
 
         print("...doing uncert fraction")
         gen_pt_binned_plotter.plot_syst_fraction_normalised()
