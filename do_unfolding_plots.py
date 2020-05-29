@@ -1382,7 +1382,7 @@ class GenPtBinnedPlotter(object):
             if not self.check_entries(entries, "plot_syst_fraction_normalised %d" % ibin):
                 return
             xlim = calc_auto_xlim(entries)
-            ylim = [0.7, 1.5] if "Dijet" in self.setup.region['name'] else [0.3, 1.9]
+            ylim = [0.8, 1.45] if "Dijet" in self.setup.region['name'] else [0.3, 1.9]
             min_total = _convert_error_bars_to_error_ratio_hist(unfolded_hist_bin_total_errors, -1).GetMinimum()
             max_total = _convert_error_bars_to_error_ratio_hist(unfolded_hist_bin_total_errors).GetMaximum()
             if max_total > ylim[1]:
@@ -1454,98 +1454,102 @@ class GenPtBinnedPlotter(object):
             # Get stat. unc. from response matrix for this bin
             unfolded_hist_bin_rsp_errors = self.hist_bin_chopper.get_pt_bin_div_bin_width(self.unfolder.rsp_uncert_name, **hbc_args)
 
-            entries = []
-            check_bin = 6
-            checks = []
+            unfolded_hist_bin_no_errors = unfolded_hist_bin_total_errors.Clone()
+            cu.remove_th1_errors(unfolded_hist_bin_no_errors)
+
+            input_stats = unfolded_hist_bin_stat_errors.Clone()
+            input_stats.Divide(unfolded_hist_bin_no_errors)
+
+            total_err = unfolded_hist_bin_total_errors.Clone()
+            total_err.Divide(unfolded_hist_bin_no_errors)
+
+            entries = [
+                # TOTAL UNCERT
+                Contribution(total_err,
+                             label="Total uncertainty",
+                             line_color=self.plot_colours['unfolded_total_colour'], line_width=0, line_style=2,
+                             marker_color=self.plot_colours['unfolded_total_colour'], marker_style=20, marker_size=0,
+                             fill_style=3154,
+                             # fill_style=3005,
+                             fill_color=16),
+                # INPUT UNCERT
+                Contribution(input_stats,
+                             label="Data stat.",
+                             line_color=self.plot_colours['unfolded_stat_colour'], line_width=0, line_style=3,
+                             marker_color=self.plot_colours['unfolded_stat_colour'], marker_style=20, marker_size=0,
+                             fill_style=3245,
+                             # fill_style=3003,
+                             fill_color=self.plot_colours['unfolded_stat_colour']),
+            ]
+
             # Add experimental systs
             for syst_dict, mark in zip(self.region['experimental_systematics'], cu.Marker().cycle(cycle_filling=True)):
                 this_syst = self.unfolder.get_exp_syst(syst_dict['label'])
                 syst_unfolded_hist_bin = self.hist_bin_chopper.get_pt_bin_div_bin_width(this_syst.syst_shifted_label, **hbc_args)
                 this_syst_hist = _convert_syst_shift_to_error_ratio_hist(syst_unfolded_hist_bin, unfolded_hist_bin_total_errors)
+                is_herwig = "herwig" in syst_dict['label'].lower()
                 c = Contribution(this_syst_hist,
-                                 label=syst_dict['label'],
+                                 label="Shower & hadronisation" if is_herwig else syst_dict['label'],
                                  line_color=syst_dict['colour'],
-                                 line_width=0,
-                                 marker_color=syst_dict['colour'], marker_size=1.25,
+                                 leg_draw_opt="L" if is_herwig else "P",
+                                 line_width=self.line_width if is_herwig else 0,
+                                 # line_width=self.line_width,
+                                 line_style=5,
+                                 marker_color=syst_dict['colour'],
+                                 marker_size=0 if is_herwig else 1.25,
                                  marker_style=mark)
                 entries.append(c)
 
             # Add scale syst
             if self.unfolder.scale_uncert_name in self.hist_bin_chopper.objects:
                 scale_hist = self.hist_bin_chopper.get_pt_bin_div_bin_width(self.unfolder.scale_uncert_name, **hbc_args)
-                scale_col = ROOT.kTeal-8
+                scale_col = self.plot_colours['scale_colour']
+                scale_style = dict(line_color=scale_col, line_width=self.line_width, line_style=2,
+                                   marker_color=scale_col, marker_style=20, marker_size=0,
+                                   fill_style=0, fill_color=15)
                 entries.extend([
                     Contribution(_convert_error_bars_to_error_ratio_hist(scale_hist),
-                                label='Scale uncertainty',
-                                line_color=scale_col, line_width=self.line_width, line_style=2,
-                                marker_color=scale_col, marker_style=20, marker_size=0,
-                                fill_style=0, fill_color=15),
+                                label='Scale uncertainty', leg_draw_opt="L",
+                                **scale_style),
                     # add -ve side, no label as we don't want it in legend
                     Contribution(_convert_error_bars_to_error_ratio_hist(scale_hist, -1),
-                                line_color=scale_col, line_width=self.line_width, line_style=2,
-                                marker_color=scale_col, marker_style=20, marker_size=0,
-                                fill_style=0, fill_color=15)
+                                **scale_style)
                 ])
 
             # Add pdf syst
             if self.unfolder.pdf_uncert_name in self.hist_bin_chopper.objects:
                 pdf_hist = self.hist_bin_chopper.get_pt_bin_div_bin_width(self.unfolder.pdf_uncert_name, **hbc_args)
-                pdf_col = ROOT.kOrange+4
+                pdf_col = self.plot_colours['pdf_colour']
+                pdf_style = dict(line_color=pdf_col, line_width=self.line_width, line_style=6,
+                                 marker_color=pdf_col, marker_style=20, marker_size=0,
+                                 fill_style=0, fill_color=15)
                 entries.extend([
                     Contribution(_convert_error_bars_to_error_ratio_hist(pdf_hist),
-                                label='PDF uncertainty',
-                                line_color=pdf_col, line_width=self.line_width, line_style=2,
-                                marker_color=pdf_col, marker_style=20, marker_size=0,
-                                fill_style=0, fill_color=15),
+                                label='PDF uncertainty', leg_draw_opt="L",
+                                **pdf_style),
                     # add -ve side, no label as we don't want it in legend
                     Contribution(_convert_error_bars_to_error_ratio_hist(pdf_hist, -1),
-                                line_color=pdf_col, line_width=self.line_width, line_style=2,
-                                marker_color=pdf_col, marker_style=20, marker_size=0,
-                                fill_style=0, fill_color=15)
+                                **pdf_style)
                 ])
 
+            rsp_col = self.plot_colours['rsp_colour']
+            rsp_style = dict(line_color=rsp_col, line_width=self.line_width, line_style=3,
+                             marker_color=rsp_col, marker_style=20, marker_size=0,
+                             fill_style=0, fill_color=rsp_col)
             entries.extend([
-                # INPUT UNCERT
-                Contribution(_convert_error_bars_to_error_ratio_hist(unfolded_hist_bin_stat_errors),
-                             label="Input stats",
-                             line_color=ROOT.kRed, line_width=self.line_width, line_style=3,
-                             marker_color=ROOT.kRed, marker_style=20, marker_size=0,
-                             fill_style=0, fill_color=13),
-                # Add in the -ve side, but no label as we don't want it in the legend
-                Contribution(_convert_error_bars_to_error_ratio_hist(unfolded_hist_bin_stat_errors, -1),
-                             line_color=ROOT.kRed, line_width=self.line_width, line_style=3,
-                             marker_color=ROOT.kRed, marker_style=20, marker_size=0,
-                             fill_style=0, fill_color=13),
-
                 # RESPONSE UNCERT
                 Contribution(_convert_error_bars_to_error_ratio_hist(unfolded_hist_bin_rsp_errors),
-                             label="Response matrix stats",
-                             line_color=ROOT.kGray+2, line_width=self.line_width, line_style=3,
-                             marker_color=ROOT.kGray+2, marker_style=20, marker_size=0,
-                             fill_style=0, fill_color=13),
+                             label="Response matrix stat.", leg_draw_opt="L",
+                             **rsp_style),
                 # Add in the -ve side, but no label as we don't want it in the legend
                 Contribution(_convert_error_bars_to_error_ratio_hist(unfolded_hist_bin_rsp_errors, -1),
-                             line_color=ROOT.kGray+2, line_width=self.line_width, line_style=3,
-                             marker_color=ROOT.kGray+2, marker_style=20, marker_size=0,
-                             fill_style=0, fill_color=13),
-
-                # TOTAL UNCERT
-                Contribution(_convert_error_bars_to_error_ratio_hist(unfolded_hist_bin_total_errors),
-                             label="Total uncertainty",
-                             line_color=self.plot_colours['unfolded_total_colour'], line_width=self.line_width, line_style=2,
-                             marker_color=self.plot_colours['unfolded_total_colour'], marker_style=20, marker_size=0,
-                             fill_style=0, fill_color=15),
-                # Add in the -ve side, but no label as we don't want it in the legend
-                Contribution(_convert_error_bars_to_error_ratio_hist(unfolded_hist_bin_total_errors, -1),
-                             line_color=self.plot_colours['unfolded_total_colour'], line_width=self.line_width, line_style=2,
-                             marker_color=self.plot_colours['unfolded_total_colour'], marker_style=20, marker_size=0,
-                             fill_style=0, fill_color=15),
+                             **rsp_style),
             ])
 
             if not self.check_entries(entries, "plot_syst_fraction_normalised %d" % ibin):
                 return
             xlim = calc_auto_xlim(entries)
-            ylim = [0.7, 1.5] if "Dijet" in self.setup.region['name'] else [0.3, 1.9]
+            ylim = [0.8, 1.45] if "Dijet" in self.setup.region['name'] else [0.3, 1.9]
             min_total = _convert_error_bars_to_error_ratio_hist(unfolded_hist_bin_total_errors, -1).GetMinimum()
             max_total = _convert_error_bars_to_error_ratio_hist(unfolded_hist_bin_total_errors).GetMaximum()
             if max_total > ylim[1]:
@@ -1563,12 +1567,12 @@ class GenPtBinnedPlotter(object):
                         subplot_type=None)
             self._modify_plot(plot)
             plot.default_canvas_size = (800, 700)
-            plot.legend.SetX1(0.5)
-            plot.legend.SetY1(0.65)
+            plot.legend.SetX1(0.43)
+            plot.legend.SetY1(0.63)
             plot.legend.SetX2(0.93)
-            plot.legend.SetY2(0.88)
+            plot.legend.SetY2(0.87)
             if len(entries) > 5: plot.legend.SetNColumns(2)
-            plot.plot("NOSTACK P L") # hard to get one that is points for systs, and line for stats
+            plot.plot("NOSTACK E2 P L") # hard to get one that is points for systs, and line for stats
             plot.main_pad.cd()
             if xlim is not None:
                 line = ROOT.TLine(xlim[0], 1, xlim[1], 1)
@@ -2071,7 +2075,7 @@ class GenLambdaBinnedPlotter(object):
                 h_syst.SetBinError(i, 0)
                 h_total.SetBinError(i, 0)
             c_stat = Contribution(h_stat,
-                                 label="Input stats",
+                                 label="Input stat.",
                                  line_color=ROOT.kRed,
                                  line_style=3,
                                  line_width=3,
@@ -2079,7 +2083,7 @@ class GenLambdaBinnedPlotter(object):
                                  marker_color=ROOT.kRed,
                                  )
             c_syst = Contribution(h_syst,
-                                 label="Response matrix stats",
+                                 label="Response matrix stat.",
                                  line_color=ROOT.kGray+2,
                                  line_style=3,
                                  line_width=3,
@@ -2211,95 +2215,97 @@ class GenLambdaBinnedPlotter(object):
             # Get stat. unc. from response matrix for this bin
             unfolded_hist_bin_rsp_errors = self.hist_bin_chopper.get_lambda_bin_div_bin_width(self.unfolder.rsp_uncert_name, **hbc_args)
 
-            entries = []
-            check_bin = 6
-            checks = []
+            unfolded_hist_bin_no_errors = unfolded_hist_bin_total_errors.Clone()
+            cu.remove_th1_errors(unfolded_hist_bin_no_errors)
+
+            input_stats = unfolded_hist_bin_stat_errors.Clone()
+            input_stats.Divide(unfolded_hist_bin_no_errors)
+
+            total_err = unfolded_hist_bin_total_errors.Clone()
+            total_err.Divide(unfolded_hist_bin_no_errors)
+
+            entries = [
+                # TOTAL UNCERT
+                Contribution(total_err,
+                             label="Total uncertainty",
+                             line_color=self.plot_colours['unfolded_total_colour'], line_width=0, line_style=2,
+                             marker_color=self.plot_colours['unfolded_total_colour'], marker_style=20, marker_size=0,
+                             fill_style=3154,
+                             # fill_style=3005,
+                             fill_color=16),
+                # INPUT UNCERT
+                Contribution(input_stats,
+                             label="Data stat.",
+                             line_color=self.plot_colours['unfolded_stat_colour'], line_width=0, line_style=3,
+                             marker_color=self.plot_colours['unfolded_stat_colour'], marker_style=20, marker_size=0,
+                             fill_style=3245,
+                             # fill_style=3003,
+                             fill_color=self.plot_colours['unfolded_stat_colour']),
+            ]
+
             # Add experimental systs
             for syst_dict, mark in zip(self.region['experimental_systematics'], cu.Marker().cycle(cycle_filling=True)):
                 this_syst = self.unfolder.get_exp_syst(syst_dict['label'])
                 syst_unfolded_hist_bin = self.hist_bin_chopper.get_lambda_bin_div_bin_width(this_syst.syst_shifted_label, **hbc_args)
                 this_syst_hist = _convert_syst_shift_to_error_ratio_hist(syst_unfolded_hist_bin, unfolded_hist_bin_total_errors)
+                is_herwig = "herwig" in syst_dict['label'].lower()
                 c = Contribution(this_syst_hist,
-                                 label=syst_dict['label'],
+                                 label="Shower & hadronisation" if is_herwig else syst_dict['label'],
                                  line_color=syst_dict['colour'],
-                                 line_width=0,
+                                 leg_draw_opt="L" if is_herwig else "P",
+                                 line_width=self.line_width if is_herwig else 0,
                                  # line_width=self.line_width,
-                                 # line_style=2 if 'down' in syst_dict['label'].lower() else 1,
+                                 line_style=5,
                                  marker_color=syst_dict['colour'],
-                                 marker_size=1.25,
+                                 marker_size=0 if is_herwig else 1.25,
                                  marker_style=mark)
                 entries.append(c)
 
             # Add scale syst
             if self.unfolder.scale_uncert_name in self.hist_bin_chopper.objects:
                 scale_hist = self.hist_bin_chopper.get_lambda_bin_div_bin_width(self.unfolder.scale_uncert_name, **hbc_args)
-                scale_col = ROOT.kTeal-8
+                scale_col = self.plot_colours['scale_colour']
+                scale_style = dict(line_color=scale_col, line_width=self.line_width, line_style=2,
+                                   marker_color=scale_col, marker_style=20, marker_size=0,
+                                   fill_style=0, fill_color=15)
                 entries.extend([
                     Contribution(_convert_error_bars_to_error_ratio_hist(scale_hist),
-                                label='Scale uncertainty',
-                                line_color=scale_col, line_width=self.line_width, line_style=2,
-                                marker_color=scale_col, marker_style=20, marker_size=0,
-                                fill_style=0, fill_color=15),
+                                label='Scale uncertainty', leg_draw_opt="L",
+                                **scale_style),
                     # add -ve side, no label as we don't want it in legend
                     Contribution(_convert_error_bars_to_error_ratio_hist(scale_hist, -1),
-                                line_color=scale_col, line_width=self.line_width, line_style=2,
-                                marker_color=scale_col, marker_style=20, marker_size=0,
-                                fill_style=0, fill_color=15)
+                                **scale_style)
                 ])
 
             # Add pdf syst
             if self.unfolder.pdf_uncert_name in self.hist_bin_chopper.objects:
                 pdf_hist = self.hist_bin_chopper.get_lambda_bin_div_bin_width(self.unfolder.pdf_uncert_name, **hbc_args)
-                pdf_col = ROOT.kOrange+4
+                pdf_col = self.plot_colours['pdf_colour']
+                pdf_style = dict(line_color=pdf_col, line_width=self.line_width, line_style=6,
+                                 marker_color=pdf_col, marker_style=20, marker_size=0,
+                                 fill_style=0, fill_color=15)
                 entries.extend([
                     Contribution(_convert_error_bars_to_error_ratio_hist(pdf_hist),
-                                label='PDF uncertainty',
-                                line_color=pdf_col, line_width=self.line_width, line_style=2,
-                                marker_color=pdf_col, marker_style=20, marker_size=0,
-                                fill_style=0, fill_color=15),
+                                label='PDF uncertainty', leg_draw_opt="L",
+                                **pdf_style),
                     # add -ve side, no label as we don't want it in legend
                     Contribution(_convert_error_bars_to_error_ratio_hist(pdf_hist, -1),
-                                line_color=pdf_col, line_width=self.line_width, line_style=2,
-                                marker_color=pdf_col, marker_style=20, marker_size=0,
-                                fill_style=0, fill_color=15)
+                                **pdf_style)
                 ])
 
-            entries.extend([
-                # INPUT UNCERT
-                Contribution(_convert_error_bars_to_error_ratio_hist(unfolded_hist_bin_stat_errors),
-                             label="Input stats",
-                             line_color=ROOT.kRed, line_width=self.line_width, line_style=3,
-                             marker_color=ROOT.kRed, marker_style=20, marker_size=0,
-                             fill_style=0, fill_color=13),
-                # Add in the -ve side, but no label as we don't want it in the legend
-                Contribution(_convert_error_bars_to_error_ratio_hist(unfolded_hist_bin_stat_errors, -1),
-                             line_color=ROOT.kRed, line_width=self.line_width, line_style=3,
-                             marker_color=ROOT.kRed, marker_style=20, marker_size=0,
-                             fill_style=0, fill_color=13),
 
+            rsp_col = self.plot_colours['rsp_colour']
+            rsp_style = dict(line_color=rsp_col, line_width=self.line_width, line_style=3,
+                             marker_color=rsp_col, marker_style=20, marker_size=0,
+                             fill_style=0, fill_color=rsp_col)
+            entries.extend([
                 # RESPONSE UNCERT
                 Contribution(_convert_error_bars_to_error_ratio_hist(unfolded_hist_bin_rsp_errors),
-                             label="Response matrix stats",
-                             line_color=ROOT.kGray+2, line_width=self.line_width, line_style=3,
-                             marker_color=ROOT.kGray+2, marker_style=20, marker_size=0,
-                             fill_style=0, fill_color=13),
+                             label="Response matrix stat.", leg_draw_opt="L",
+                             **rsp_style),
                 # Add in the -ve side, but no label as we don't want it in the legend
                 Contribution(_convert_error_bars_to_error_ratio_hist(unfolded_hist_bin_rsp_errors, -1),
-                             line_color=ROOT.kGray+2, line_width=self.line_width, line_style=3,
-                             marker_color=ROOT.kGray+2, marker_style=20, marker_size=0,
-                             fill_style=0, fill_color=13),
-
-                # TOTAL UNCERT
-                Contribution(_convert_error_bars_to_error_ratio_hist(unfolded_hist_bin_total_errors),
-                             label="Total uncertainty",
-                             line_color=self.plot_colours['unfolded_total_colour'], line_width=self.line_width, line_style=2,
-                             marker_color=self.plot_colours['unfolded_total_colour'], marker_style=20, marker_size=0,
-                             fill_style=0, fill_color=15),
-                # Add in the -ve side, but no label as we don't want it in the legend
-                Contribution(_convert_error_bars_to_error_ratio_hist(unfolded_hist_bin_total_errors, -1),
-                             line_color=self.plot_colours['unfolded_total_colour'], line_width=self.line_width, line_style=2,
-                             marker_color=self.plot_colours['unfolded_total_colour'], marker_style=20, marker_size=0,
-                             fill_style=0, fill_color=15),
+                             **rsp_style),
             ])
 
             if not self.check_entries(entries, "plot_syst_fraction_unnormalised %d" % ibin):
@@ -2323,12 +2329,12 @@ class GenLambdaBinnedPlotter(object):
                         subplot_type=None)
             self._modify_plot(plot)
             plot.default_canvas_size = (800, 700)
-            plot.legend.SetX1(0.5)
-            plot.legend.SetY1(0.65)
+            plot.legend.SetX1(0.43)
+            plot.legend.SetY1(0.63)
             plot.legend.SetX2(0.93)
-            plot.legend.SetY2(0.88)
+            plot.legend.SetY2(0.87)
             if len(entries) > 5: plot.legend.SetNColumns(2)
-            plot.plot("NOSTACK P L") # hard to get one that is points for systs, and line for stats
+            plot.plot("NOSTACK E2 P L") # hard to get one that is points for systs, and line for stats
             plot.set_logx(do_more_labels=False)
             plot.main_pad.cd()
             if xlim is not None:
