@@ -185,7 +185,6 @@ def calc_chi2_stats(one_hist, other_hist, cov_matrix):
     # print("delta:", delta)
     # v = np.diag(np.diag(v))  # turn off correlations
     # print("v:", v)
-    print("v:", v)
     try:
         v_inv = np.linalg.inv(v)
     except np.linalg.LinAlgError:
@@ -339,7 +338,7 @@ class GenPtBinnedPlotter(object):
                                        marker_color=self.plot_colours['unfolded_total_colour'], marker_style=20, marker_size=0.75)
         data_stat_errors_style = dict(label="Data (stat. unc.)",
                                       line_color=self.plot_colours['unfolded_stat_colour'], line_width=self.line_width, line_style=1,
-                                      marker_color=self.plot_colours['unfolded_stat_colour'], marker_style=20, marker_size=0.75)  # you need a non-0 marker to get the horizontal bars at the end of errors
+                                      marker_color=self.plot_colours['unfolded_stat_colour'], marker_style=20, marker_size=0.0001)  # you need a non-0 marker to get the horizontal bars at the end of errors
 
         mc_style = dict(label=self.region['mc_label'],
                          line_color=self.plot_colours['gen_colour'], line_width=self.line_width,
@@ -379,13 +378,13 @@ class GenPtBinnedPlotter(object):
 
             # Calculate chi2 between data and MCs if desired
             if do_chi2:
-                print("unfolded_alt_truth bin", ibin)
+                # print("unfolded_alt_truth bin", ibin)
                 ematrix = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width(self.unfolder.total_ematrix_name, **hbc_args)
                 # stats are chi2, ndof, p
                 mc_stats = calc_chi2_stats(unfolded_hist_bin_total_errors, mc_gen_hist_bin, ematrix)
                 alt_mc_stats = calc_chi2_stats(unfolded_hist_bin_total_errors, alt_mc_gen_hist_bin, ematrix)
-                print(mc_stats)
-                print(alt_mc_stats)
+                # print(mc_stats)
+                # print(alt_mc_stats)
                 nbins = unfolded_hist_bin_total_errors.GetNbinsX()
                 reduced_chi2 = mc_stats[0] / nbins
                 alt_reduced_chi2 = alt_mc_stats[0] / nbins
@@ -990,9 +989,9 @@ class GenPtBinnedPlotter(object):
         """
         for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
             hbc_args = dict(ind=ibin, binning_scheme='generator')
-            
+
             # hists of all jackknife variations for all bins
-            hists = [ROOT.TH1D("jk_ratios_%d" % ind, "%s, %s, bin %d;Unfolded/Gen;N" % (self.setup.angle_str, self.get_pt_bin_title(bin_edge_low, bin_edge_high).replace("\n", ", "), ind), 25, 0.6, 1.4) 
+            hists = [ROOT.TH1D("jk_ratios_%d" % ind, "%s, %s, bin %d;Unfolded/Gen;N" % (self.setup.angle_str, self.get_pt_bin_title(bin_edge_low, bin_edge_high).replace("\n", ", "), ind), 25, 0.6, 1.4)
                      for ind in range(len(self.unfolder.variable_bin_edges_gen)-1)]
 
             for ind, jk_dict in enumerate(jackknife_variations):
@@ -1006,7 +1005,7 @@ class GenPtBinnedPlotter(object):
                     hists[ix-1].Fill(ratio.GetBinContent(ix))
 
             entries = [
-                Contribution(h, 
+                Contribution(h,
                              label="bin %d" % ind,
                              marker_color=cu.get_colour_seq(ind, len(hists)),
                              line_style=1 + (ind % 2),
@@ -3071,8 +3070,10 @@ def do_binned_plots_per_region_angle(setup, do_binned_gen_pt, do_binned_gen_lamb
         gen_pt_binned_plotter.plot_syst_fraction_normalised()
 
         # FIXME delete this next time, should be done in unfolding.py
-        unfolder.create_scale_syst_uncertainty_per_pt_bin(region['scale_systematics'])
-        unfolder.create_pdf_syst_uncertainty_per_pt_bin(region['pdf_systematics'])
+        if has_scale_systs:
+            unfolder.create_scale_syst_uncertainty_per_pt_bin(region['scale_systematics'])
+        if has_pdf_systs:
+            unfolder.create_pdf_syst_uncertainty_per_pt_bin(region['pdf_systematics'])
         unfolder.setup_absolute_results_per_pt_bin()
         gen_pt_binned_plotter.plot_syst_fraction_unnormalised()
 
@@ -3112,8 +3113,10 @@ def do_binned_plots_per_region_angle(setup, do_binned_gen_pt, do_binned_gen_lamb
         if has_pdf_systs:
             lambda_pt_binned_plotter.plot_unfolded_with_pdf_systs_unnormalised()
         # bit of a hack, should do it in main unfolding.py script
-        unfolder.create_scale_syst_uncertainty_per_lambda_bin(region['scale_systematics'])
-        unfolder.create_pdf_syst_uncertainty_per_lambda_bin(region['pdf_systematics'])
+        if has_scale_systs:
+            unfolder.create_scale_syst_uncertainty_per_lambda_bin(region['scale_systematics'])
+        if has_pdf_systs:
+            unfolder.create_pdf_syst_uncertainty_per_lambda_bin(region['pdf_systematics'])
         unfolder.setup_absolute_results_per_lambda_bin()
 
         print("...doing uncert fraction")

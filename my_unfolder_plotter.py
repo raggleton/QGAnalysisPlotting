@@ -365,7 +365,7 @@ class MyUnfolderPlotter(object):
                         line_color=ROOT.kBlue, line_width=1,
                         marker_color=ROOT.kBlue, marker_size=0)]
             all_contributions.extend(entries)
-            
+
             plot = Plot(entries,
                         what='hist',
                         title=title,
@@ -1020,7 +1020,7 @@ class MyUnfolderPlotter(object):
             arrows.append(self.mark_zeros(reco_data, ymin*0.01, ymin*50))
         if do_reco_mc:
             arrows.append(self.mark_zeros(reco_mc, ymin*0.01, ymin*50))
-        
+
         output_filename = "%s/detector_gen_binning_%s.%s" % (output_dir, append, self.output_fmt)
         plot.save(output_filename)
 
