@@ -3041,11 +3041,31 @@ def do_binned_plots_per_region_angle(setup, do_binned_gen_pt, do_binned_gen_lamb
             print("...doing jackknife input variations")
             gen_pt_binned_plotter.plot_unfolded_with_jackknife_input_normalised()
             gen_pt_binned_plotter.plot_jackknife_residuals(region['jackknife_input_variations'])
+            # Do a set of individual plots for these jackknife variations
+            for jk_dict in region['jackknife_input_variations']:
+                this_setup = copy(setup)
+                this_setup.output_dir = os.path.join(setup.output_dir, "jackknife_input", jk_dict['label'])
+                jk_gen_pt_binned_plotter = GenPtBinnedPlotter(setup=this_setup,
+                                                              bins=unfolder.pt_bin_edges_gen,
+                                                              hist_bin_chopper=jk_dict['unfolder'].hist_bin_chopper,
+                                                              unfolder=jk_dict['unfolder'])
+                jk_gen_pt_binned_plotter.plot_unfolded_unnormalised()
+                jk_gen_pt_binned_plotter.plot_unfolded_normalised()
 
         if has_jackknife_response_vars:
             print("...doing jackknife response variations")
             gen_pt_binned_plotter.plot_unfolded_with_jackknife_response_normalised()
             gen_pt_binned_plotter.plot_jackknife_residuals(region['jackknife_response_variations'])
+            # Do a set of individual plots for these jackknife variations
+            for jk_dict in region['jackknife_response_variations']:
+                this_setup = copy(setup)
+                this_setup.output_dir = os.path.join(setup.output_dir, "jackknife_response", jk_dict['label'])
+                jk_gen_pt_binned_plotter = GenPtBinnedPlotter(setup=this_setup,
+                                                              bins=unfolder.pt_bin_edges_gen,
+                                                              hist_bin_chopper=jk_dict['unfolder'].hist_bin_chopper,
+                                                              unfolder=jk_dict['unfolder'])
+                jk_gen_pt_binned_plotter.plot_unfolded_unnormalised()
+                jk_gen_pt_binned_plotter.plot_unfolded_normalised()
 
         print("...doing uncert fraction")
         gen_pt_binned_plotter.plot_syst_fraction_normalised()
