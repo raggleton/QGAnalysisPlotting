@@ -3944,6 +3944,13 @@ def do_all_big_absolute_1d_plots_per_region_angle(setup):
                                        append='bg_fakes_subtracted_%s' % setup.append,
                                        title=title)
 
+    # folded unfolded
+    plot_args = dict(output_dir=setup.output_dir, append=setup.append)
+    unfolder_plotter.draw_unfolded_folded(title=title, **plot_args)
+
+    # Folded MC truth
+    unfolder_plotter.draw_truth_folded(title=title, **plot_args)
+
 
 def get_bottom_line_stats(setup):
     """Construct dict of bottom-line (i.e. chi2) stats for this region/angle combo"""
