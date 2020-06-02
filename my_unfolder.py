@@ -3068,6 +3068,9 @@ class HistBinChopper(object):
     def get_pt_bin_div_bin_width(self, name, ind, binning_scheme='generator'):
         return self.get_bin_plot(name, ind, axis='pt', do_norm=False, do_div_bin_width=True, binning_scheme=binning_scheme)
 
+    def get_pt_bin_normed(self, name, ind, binning_scheme='generator'):
+        return self.get_bin_plot(name, ind, axis='pt', do_norm=True, do_div_bin_width=False, binning_scheme=binning_scheme)
+
     def get_pt_bin_normed_div_bin_width(self, name, ind, binning_scheme='generator'):
         return self.get_bin_plot(name, ind, axis='pt', do_norm=True, do_div_bin_width=True, binning_scheme=binning_scheme)
 
@@ -3076,6 +3079,9 @@ class HistBinChopper(object):
 
     def get_lambda_bin_div_bin_width(self, name, ind, binning_scheme='generator'):
         return self.get_bin_plot(name, ind, axis='lambda', do_norm=False, do_div_bin_width=True, binning_scheme=binning_scheme)
+
+    def get_lambda_bin_normed(self, name, ind, binning_scheme='generator'):
+        return self.get_bin_plot(name, ind, axis='lambda', do_norm=True, do_div_bin_width=False, binning_scheme=binning_scheme)
 
     def get_lambda_bin_normed_div_bin_width(self, name, ind, binning_scheme='generator'):
         return self.get_bin_plot(name, ind, axis='lambda', do_norm=True, do_div_bin_width=True, binning_scheme=binning_scheme)

@@ -357,7 +357,7 @@ def get_unfolding_output_dir(args):
             reg_axis_str = '_onlyRegAngle'
         # reg_axis_str += "_onlyBinFactors"
         # reg_axis_str += "_invTruthMoreBins"
-        reg_axis_str += "_invTruth"
+        reg_axis_str += "_useTemplateFit"
         # reg_axis_str += "_invTruthUseUnfolded"
 
     regularize_str = "regularize%s%s%s" % (str(args.regularize).capitalize(), bias_str, reg_axis_str)

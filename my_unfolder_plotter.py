@@ -178,7 +178,7 @@ class MyUnfolderPlotter(object):
                     has_data=False)
         plot.default_canvas_size = (800, 600)
         plot.plot("NOSTACK HIST")
-        plot.set_logy()
+        plot.set_logy(do_more_labels=False)
         plot.legend.SetY1NDC(0.77)
         plot.legend.SetX2NDC(0.85)
         output_filename = "%s/bias_hist%s.%s" % (output_dir, append, self.output_fmt)
@@ -429,19 +429,20 @@ class MyUnfolderPlotter(object):
         """Draw L matrix used for regularisation"""
         Lmatrix = self.unfolder.GetL("hist_Lmatrix_%s" % (append), title)
         cu.set_french_flag_palette()
-        # # Custom colour scheme - french flag colouring
-        # NRGBs = 5
-        # NCont = 256
-        # # Set max & min such that 0 is in the middle
-        # stops = [ 0.00, 0.49, 0.5, 0.51, 1.00 ]
-        # red = [ 0.00, 1.00, 1.00, 1.00, 1.00]
-        # green = [ 0.00, 1.00, 1.00, 1.00, 0.00 ]
-        # blue = [ 1.00, 1.00, 1.00, 1.00, 0.00 ]
-        # stopsArray = array('d', stops)
-        # redArray = array('d', red)
-        # greenArray = array('d', green)
-        # blueArray = array('d', blue)
-        # ROOT.TColor.CreateGradientColorTable(NRGBs, stopsArray, redArray, greenArray, blueArray, NCont)
+        # Custom colour scheme - french flag colouring
+        NRGBs = 5
+        NCont = 512
+        # Set max & min such that 0 is in the middle
+        delta = 1E-16
+        stops = [ 0.00, 0.5-delta, 0.5, 0.5+delta, 1.00 ]
+        red =   [ 0.00, 0.00, 0.50, 0.98, 1.00]
+        green = [ 0.00, 1.00, 0.93, 0.86, 0.00 ]
+        blue =  [ 1.00, 1.00, 0.98, 0.96, 0.00 ]
+        stopsArray = array('d', stops)
+        redArray = array('d', red)
+        greenArray = array('d', green)
+        blueArray = array('d', blue)
+        ROOT.TColor.CreateGradientColorTable(NRGBs, stopsArray, redArray, greenArray, blueArray, NCont)
 
         canv = MyUnfolderPlotter.generate_2d_canvas()
         this_title = "%s;%s;%s" % (title, "Generator bin", "n_{R} bin")
@@ -451,6 +452,7 @@ class MyUnfolderPlotter(object):
         Lmatrix.SetMaximum(h_lim)
         Lmatrix.GetYaxis().SetTitleOffset(1.5)
         Lmatrix.GetXaxis().SetTitleOffset(1.5)
+        Lmatrix.SetContour(512)
         Lmatrix.Draw("COL1 Z CJUST")
         l, t = self.draw_pt_binning_lines(Lmatrix, which='gen', axis='x',
                                           do_underflow=True,
@@ -723,7 +725,9 @@ class MyUnfolderPlotter(object):
 
     def draw_unfolded_1d(self, do_gen=True, do_unfolded=True,
                          other_contributions=None,
-                         output_dir='.', append='', title='', subplot_title=None):
+                         output_dir='.', append='', title='',
+                         subplot_title=None,
+                         subplot_limits=(0.75, 1.25)):
         """Simple plot of unfolded & gen, by bin number (ie non physical axes)"""
         entries = []
 
@@ -759,7 +763,7 @@ class MyUnfolderPlotter(object):
                     ytitle="N",
                     subplot_type='ratio' if do_subplot else None,
                     subplot_title=subplot_title if subplot_title else '#splitline{Unfolded %s /}{MC Gen}' % label,
-                    subplot_limits=(0.75, 1.25),
+                    subplot_limits=subplot_limits,
                     has_data=self.is_data)
         plot.default_canvas_size = (800, 600)
         # plot.text_left_offset = 0.05  # have to bodge this
