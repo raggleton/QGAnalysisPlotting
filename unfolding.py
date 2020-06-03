@@ -1699,6 +1699,7 @@ if __name__ == "__main__":
                 # --------------------------------------------------------------
                 if SUBTRACT_FAKES:
                     alt_unfolder.subtract_background(hist_fakes_reco, "fakes")
+                    alt_unfolder.subtract_background(hist_fakes_reco_gen_binning, "fakes")
 
                 # Do regularisation
                 # --------------------------------------------------------------
