@@ -1700,63 +1700,39 @@ if __name__ == "__main__":
                 if SUBTRACT_FAKES:
                     alt_unfolder.subtract_background(hist_fakes_reco, "fakes")
 
-                # Do any regularization
+                # Do regularisation
                 # --------------------------------------------------------------
-                # Setup L matrix
-                if REGULARIZE != "None":
-                    gen_node = unfolder.generator_binning.FindNode('generatordistribution')
-                    for ilambda in range(len(unfolder.variable_bin_edges_gen[:-1])):
-                        for ipt in range(len(unfolder.pt_bin_edges_gen[:-3])):
-                            pt_cen = unfolder.pt_bin_edges_gen[ipt+1] + 0.000001  # add a tiny bit to make sure we're in the bin properly (I can never remember if included or not)
-                            # lambda_cen = unfolder.variable_bin_edges_gen[ilambda+1] + 0.000001  # add a tiny bit to make sure we're in the bin properly (I can never remember if included or not)
-                            lambda_cen = unfolder.variable_bin_edges_gen[ilambda] + 0.000001  # add a tiny bit to make sure we're in the bin properly (I can never remember if included or not)
-
-                            bin_ind_pt_down = gen_node.GetGlobalBinNumber(lambda_cen, unfolder.pt_bin_edges_gen[ipt] + 0.000001)
-                            bin_ind_pt_up = gen_node.GetGlobalBinNumber(lambda_cen, unfolder.pt_bin_edges_gen[ipt+2] + 0.000001)
-                            bin_ind_cen = gen_node.GetGlobalBinNumber(lambda_cen, pt_cen)
-
-                            val_down = unfolder.hist_truth.GetBinContent(bin_ind_pt_down)
-                            value_pt_down = 1./val_down if val_down != 0 else 0
-
-                            val_up = unfolder.hist_truth.GetBinContent(bin_ind_pt_down)
-                            value_pt_up = 1./val_up if val_up != 0 else 0
-                            value_pt_cen = - (value_pt_down + value_pt_up)
-
-                            alt_unfolder.AddRegularisationCondition(bin_ind_pt_down, value_pt_down, bin_ind_cen, value_pt_cen, bin_ind_pt_up, value_pt_up)
-
-                # Scan for best regularisation strength
+                # since the input is the same as the main unfolder's, we can
+                # use the same L matrix & bias vector
                 alt_tau = 0
-                if REGULARIZE == "L":
-                    print("Regularizing alternative with ScanL, please be patient...")
-                    alt_L_scanner = LCurveScanner()
-                    alt_tau = alt_l_scanner.scan_L(tunfolder=alt_unfolder,
-                                               n_scan=args.nScan,
-                                               tau_min=region['tau_limits'][angle.var][0],
-                                               tau_max=region['tau_limits'][angle.var][1])
-                    print("Found tau:", alt_tau)
-                    alt_l_scanner.plot_scan_L_curve(output_filename="%s/scanL_alt_%s.%s" % (alt_output_dir, unfolder.variable_name, OUTPUT_FMT))
-                    alt_l_scanner.plot_scan_L_curvature(output_filename="%s/scanLcurvature_alt_%s.%s" % (alt_output_dir, unfolder.variable_name, OUTPUT_FMT))
+                if REGULARIZE != "None":
+                    alt_unfolder.SetBias(unfolder.truth_template)
+                    for L_args in unfolder.L_matrix_entries:
+                        alt_unfolder.AddRegularisationCondition(*L_args)
 
-                elif REGULARIZE == "tau":
-                    print("Regularizing alternative with ScanTau, please be patient...")
-                    alt_tau_scanner = TauScanner()
-                    alt_tau = alt_tau_scanner.scan_tau(tunfolder=alt_unfolder,
+                    if REGULARIZE == "L":
+                        print("Regularizing with ScanLcurve, please be patient...")
+                        alt_l_scanner = LCurveScanner()
+                        alt_tau = alt_l_scanner.scan_L(tunfolder=alt_unfolder,
                                                        n_scan=args.nScan,
                                                        tau_min=region['tau_limits'][angle.var][0],
-                                                       tau_max=region['tau_limits'][angle.var][1],
-                                                       scan_mode=scan_mode,
-                                                       distribution=scan_distribution,
-                                                       axis_steering=alt_unfolder.axisSteering)
-                    print("Found tau for alt matrix:", alt_tau)
-                    alt_tau_scanner.plot_scan_tau(output_filename="%s/scantau_alt_%s.%s" % (alt_output_dir, alt_unfolder.variable_name, OUTPUT_FMT))
+                                                       tau_max=region['tau_limits'][angle.var][1])
+                        print("Found tau:", alt_tau)
+                        alt_l_scanner.plot_scan_L_curve(output_filename="%s/scanL_%s.%s" % (alt_output_dir, append, OUTPUT_FMT))
+                        alt_l_scanner.plot_scan_L_curvature(output_filename="%s/scanLcurvature_%s.%s" % (alt_output_dir, append, OUTPUT_FMT))
 
-                if REGULARIZE != "None":
-                    title = "L matrix, %s region, %s, alt. response (%s)" % (region['label'], angle_str, region['alt_mc_label'])
-                    alt_unfolder_plotter.draw_L_matrix(title=title, **alt_plot_args)
-                    title = "L^{T}L matrix, %s region, %s, alt. response (%s)" % (region['label'], angle_str, region['alt_mc_label'])
-                    alt_unfolder_plotter.draw_L_matrix_squared(title=title, **alt_plot_args)
-                    title = "L * (x - bias vector), %s region, %s,  alt. response (%s)" % (region['label'], angle_str, region['alt_mc_label'])
-                    alt_unfolder_plotter.draw_Lx_minus_bias(title=title, **alt_plot_args)
+                    elif REGULARIZE == "tau":
+                        print("Regularizing with ScanTau, please be patient...")
+                        alt_tau_scanner = TauScanner()
+                        alt_tau = alt_tau_scanner.scan_tau(tunfolder=alt_unfolder,
+                                                           n_scan=args.nScan,
+                                                           tau_min=region['tau_limits'][angle.var][0],
+                                                           tau_max=region['tau_limits'][angle.var][1],
+                                                           scan_mode=scan_mode,
+                                                           distribution=scan_distribution,
+                                                           axis_steering=unfolder.axisSteering)
+                        print("Found tau:", alt_tau)
+                        alt_tau_scanner.plot_scan_tau(output_filename="%s/scantau_%s.%s" % (alt_output_dir, append, OUTPUT_FMT))
 
                 # Do unfolding!
                 # --------------------------------------------------------------
