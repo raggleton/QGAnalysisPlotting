@@ -574,6 +574,35 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         self.tau = tau
         self.DoUnfold(tau)
 
+    def convert_reco_binned_hist_to_gen_binned(self, hist):
+        """Convert a hist with detector level binning to gen level binning"""
+        new_hist = self.generator_binning.CreateHistogram(cu.get_unique_str())
+        # Iterate through all the finer reco bins, and for each determine
+        # the corresponding gen bin, and add it to it from hist
+        for ibin_var, (var_low, var_high) in enumerate(zip(self.variable_bin_edges_reco[:-1], self.variable_bin_edges_reco[1:])):
+            for ibin_pt, (pt_low, pt_high) in enumerate(zip(self.pt_bin_edges_underflow_reco[:-1], self.pt_bin_edges_underflow_reco[1:])):
+                gen_bin = self.generator_distribution_underflow.GetGlobalBinNumber(var_low*1.000001, pt_low*1.0000001)
+                det_bin = self.detector_distribution_underflow.GetGlobalBinNumber(var_low*1.000001, pt_low*1.0000001)
+                print("Converting bin", pt_low, var_low, ":", det_bin, "->", gen_bin)
+                val = new_hist.GetBinContent(gen_bin)
+                val += hist.GetBinContent(det_bin)
+                new_hist.SetBinContent(gen_bin, val)
+                err2 = new_hist.GetBinError(gen_bin)**2
+                err2 += hist.GetBinError(det_bin)**2
+                new_hist.SetBinError(gen_bin, math.sqrt(err2))
+            
+            for ibin_pt, (pt_low, pt_high) in enumerate(zip(self.pt_bin_edges_reco[:-1], self.pt_bin_edges_reco[1:])):
+                gen_bin = self.generator_distribution.GetGlobalBinNumber(var_low*1.000001, pt_low*1.0000001)
+                det_bin = self.detector_distribution.GetGlobalBinNumber(var_low*1.000001, pt_low*1.0000001)
+                print("Converting bin", pt_low, var_low, ":", det_bin, "->", gen_bin)
+                val = new_hist.GetBinContent(gen_bin)
+                val += hist.GetBinContent(det_bin)
+                new_hist.SetBinContent(gen_bin, val)
+                err2 = new_hist.GetBinError(gen_bin)**2
+                err2 += hist.GetBinError(det_bin)**2
+                new_hist.SetBinError(gen_bin, math.sqrt(err2))
+
+        return new_hist
 
     # SETUP REGULARISATION STUFF
     # --------------------------------------------------------------------------

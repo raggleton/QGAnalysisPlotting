@@ -1029,8 +1029,8 @@ if __name__ == "__main__":
                             "colour": cu.get_colour_seq(jk_ind, num_vars),
                         })
 
-                # Now run over all variations, unfolding the nominal inputs
-                # but with the various response matrices
+                # Now run over all variations, unfolding the various inputs
+                # but with the nominal response matrices
                 for jk_ind, jk_dict in enumerate(region['jackknife_input_variations']):
                     jk_label = jk_dict['label']
                     jk_label_no_spaces = cu.no_space_str(jk_label)
@@ -1062,7 +1062,6 @@ if __name__ == "__main__":
 
                     # Set what is to be unfolded
                     # --------------------------------------------------------------
-                    # Recalculate fakes fraction
                     input_hist = jk_dict['input_reco']
 
                     jk_hist_mc_reco = input_hist.Clone()
@@ -1074,31 +1073,106 @@ if __name__ == "__main__":
                     jk_hist_mc_reco_bg_subtracted.Add(jk_hist_fakes, -1)
 
                     # gen-binned versions of detector-level plots
-                    # jk_hist_mc_reco_gen_binning = cu.get_from_tfile(region['jk_mc_tfile'], "%s/hist_%s_reco_gen_binning" % (region['dirname'], angle_shortname))
-                    # jk_hist_mc_reco_gen_binning.Scale(jk_scale)
-                    # jk_hist_fakes_gen_binning = hist_fakes_reco_fraction_gen_binning.Clone("hist_fakes_jk_gen_binning")
-                    # jk_hist_fakes_gen_binning.Multiply(jk_hist_mc_reco_gen_binning)
-                    # jk_hist_mc_reco_bg_subtracted_gen_binning = jk_hist_mc_reco_gen_binning.Clone()
-                    # jk_hist_mc_reco_bg_subtracted_gen_binning.Add(jk_hist_fakes_gen_binning, -1)
+                    # this is tricky - they don't exist in the ROOT file, so we'll have to construct it ourselves
+                    # luckily only needed for regularisation template so not too crucial
+                    jk_hist_mc_reco_gen_binning = jk_unfolder.convert_reco_binned_hist_to_gen_binned(jk_hist_mc_reco)
+                    jk_hist_fakes_gen_binning = jk_unfolder.convert_reco_binned_hist_to_gen_binned(jk_hist_fakes)
+                    jk_hist_mc_reco_bg_subtracted_gen_binning = jk_hist_mc_reco_gen_binning.Clone()
+                    jk_hist_mc_reco_bg_subtracted_gen_binning.Add(jk_hist_fakes_gen_binning, -1)
+                    # print(jk_hist_mc_reco_gen_binning)
+                    # print(jk_hist_mc_reco_bg_subtracted_gen_binning)
 
                     jk_unfolder.set_input(input_hist=input_hist,
-                                          input_hist_gen_binning=None,
+                                          input_hist_gen_binning=jk_hist_mc_reco_gen_binning,
                                           hist_truth=jk_dict['input_gen'].Clone(),
                                           hist_mc_reco=jk_hist_mc_reco,
                                           hist_mc_reco_bg_subtracted=jk_hist_mc_reco_bg_subtracted,
-                                          hist_mc_reco_gen_binning=None,
-                                          hist_mc_reco_gen_binning_bg_subtracted=None,
+                                          hist_mc_reco_gen_binning=jk_hist_mc_reco_gen_binning,
+                                          hist_mc_reco_gen_binning_bg_subtracted=jk_hist_mc_reco_bg_subtracted_gen_binning,
                                           bias_factor=args.biasFactor)
 
                     # Subtract fakes (treat as background)
                     # --------------------------------------------------------------
                     if SUBTRACT_FAKES:
                         jk_unfolder.subtract_background(jk_hist_fakes, "Signal fakes", scale=1., scale_err=0.0)
-                        # jk_unfolder.subtract_background_gen_binning(jk_hist_fakes_gen_binning, "Signal fakes", scale=1., scale_err=0.0)
+                        jk_unfolder.subtract_background_gen_binning(jk_hist_fakes_gen_binning, "Signal fakes", scale=1., scale_err=0.0)
+
+                    # Do regularisation
+                    # --------------------------------------------------------------
+                    # Since different input need to redo the template creation
+                    jk_tau = 0
+                    if REGULARIZE != "None":
+
+                        # Create truth template by fitting MC to data @ detector level
+                        # --------------------------------------------------------------
+                        # Fit the two MC templates to data to get their fractions
+                        # Then use the same at truth level
+                        # This template will allow us to setup a more accurate L matrix,
+                        # and a bias hist
+                        jk_template_maker = TruthTemplateMaker(generator_binning=unfolder.generator_binning,
+                                                               detector_binning=unfolder.detector_binning,
+                                                               variable_bin_edges_reco=unfolder.variable_bin_edges_reco,
+                                                               variable_bin_edges_gen=unfolder.variable_bin_edges_gen,
+                                                               variable_name=unfolder.variable_name,
+                                                               pt_bin_edges_reco=unfolder.pt_bin_edges_reco,
+                                                               pt_bin_edges_gen=unfolder.pt_bin_edges_gen,
+                                                               pt_bin_edges_underflow_reco=unfolder.pt_bin_edges_underflow_reco,
+                                                               pt_bin_edges_underflow_gen=unfolder.pt_bin_edges_underflow_gen,
+                                                               output_dir=jk_output_dir)
+
+                        jk_template_maker.set_input(jk_unfolder.input_hist_gen_binning_bg_subtracted)
+
+                        jk_template_maker.add_mc_template(name=region['mc_label'],
+                                                          hist_reco=hist_mc_reco_gen_binning_bg_subtracted,
+                                                          hist_gen=hist_mc_gen,
+                                                          colour=ROOT.kRed)
+                        jk_template_maker.add_mc_template(name=region['alt_mc_label'],
+                                                          hist_reco=alt_hist_mc_reco_bg_subtracted_gen_binning,
+                                                          hist_gen=alt_hist_mc_gen,
+                                                          colour=ROOT.kViolet+1)
+
+                        jk_truth_template = jk_template_maker.create_template()
+                        jk_unfolder.truth_template = jk_truth_template
+                        jk_unfolder.hist_bin_chopper.add_obj("truth_template", jk_unfolder.truth_template)
+                        jk_unfolder.hist_bin_chopper.add_obj("alt_hist_truth", alt_hist_mc_gen)
+
+                        jk_unfolder.SetBias(jk_unfolder.truth_template)
+                        jk_unfolder.setup_L_matrix_curvature(ref_hist=jk_unfolder.truth_template, axis=args.regularizeAxis)
+
+                        if REGULARIZE == "L":
+                            print("Regularizing with ScanLcurve, please be patient...")
+                            jk_l_scanner = LCurveScanner()
+                            jk_tau = jk_l_scanner.scan_L(tunfolder=jk_unfolder,
+                                                         n_scan=args.nScan,
+                                                         tau_min=region['tau_limits'][angle.var][0],
+                                                         tau_max=region['tau_limits'][angle.var][1])
+                            print("Found tau:", jk_tau)
+                            jk_l_scanner.plot_scan_L_curve(output_filename="%s/scanL_%s.%s" % (jk_output_dir, append, OUTPUT_FMT))
+                            jk_l_scanner.plot_scan_L_curvature(output_filename="%s/scanLcurvature_%s.%s" % (jk_output_dir, append, OUTPUT_FMT))
+
+                        elif REGULARIZE == "tau":
+                            print("Regularizing with ScanTau, please be patient...")
+                            jk_tau_scanner = TauScanner()
+                            jk_tau = jk_tau_scanner.scan_tau(tunfolder=jk_unfolder,
+                                                             n_scan=args.nScan,
+                                                             tau_min=region['tau_limits'][angle.var][0],
+                                                             tau_max=region['tau_limits'][angle.var][1],
+                                                             scan_mode=scan_mode,
+                                                             distribution=scan_distribution,
+                                                             axis_steering=unfolder.axisSteering)
+                            print("Found tau:", jk_tau)
+                            jk_tau_scanner.plot_scan_tau(output_filename="%s/scantau_%s.%s" % (jk_output_dir, append, OUTPUT_FMT))
+
+                        title = "L matrix %s %s region %s" % (jet_algo, region['label'], angle_str)
+                        jk_unfolder_plotter.draw_L_matrix(title=title, **jk_plot_args)
+                        title = "L^{T}L matrix %s %s region %s" % (jet_algo, region['label'], angle_str)
+                        jk_unfolder_plotter.draw_L_matrix_squared(title=title, **jk_plot_args)
+                        title = "L * (x - bias vector)\n%s\n%s region\n%s" % (jet_algo, region['label'], angle_str)
+                        jk_unfolder_plotter.draw_Lx_minus_bias(title=title, **jk_plot_args)
 
                     # Do unfolding!
                     # --------------------------------------------------------------
-                    jk_unfolder.do_unfolding(0)
+                    jk_unfolder.do_unfolding(jk_tau)
                     jk_unfolder.get_output(hist_name="%s_unfolded_1d" % jk_label_no_spaces)
                     jk_unfolder._post_process()
                     jk_unfolder.setup_normalised_results_per_pt_bin()
@@ -1108,6 +1182,27 @@ if __name__ == "__main__":
                     jk_title = "%s\n%s region, %s\n%s input" % (jet_algo, region['label'], angle_str, jk_label)
                     jk_unfolder_plotter.draw_unfolded_1d(title=jk_title, **jk_plot_args)
 
+                    if REGULARIZE != "None":
+                        # Draw our new template alongside unfolded
+                        ocs = [
+                            Contribution(alt_hist_mc_gen, label=region['alt_mc_label'],
+                                         line_color=ROOT.kViolet+1,
+                                         marker_color=ROOT.kViolet+1,
+                                         subplot=jk_unfolder.hist_truth),
+                            Contribution(jk_unfolder.truth_template, label="Template",
+                                         line_color=ROOT.kAzure+1,
+                                         marker_color=ROOT.kAzure+1,
+                                         subplot=jk_unfolder.hist_truth),
+                        ]
+                        title = "%s\n%s region, %s" % (jet_algo, region['label'], angle_str)
+                        jk_unfolder_plotter.draw_unfolded_1d(do_gen=True,
+                                                             do_unfolded=True,
+                                                             other_contributions=ocs,
+                                                             output_dir=jk_output_dir,
+                                                             append='jk_with_template',
+                                                             title='',
+                                                             subplot_title="* / Generator")
+
                     # save memory, in the Unfolder already
                     del region['jackknife_input_variations'][jk_ind]['input_reco']
                     del region['jackknife_input_variations'][jk_ind]['input_gen']
@@ -1115,7 +1210,7 @@ if __name__ == "__main__":
                     region['jackknife_input_variations'][jk_ind]['unfolder'] = jk_unfolder
 
                 # ------------------------------------------------------------------
-                # Update main response stat uncert with jackknife variations
+                # Update main input stat uncert with jackknife variations
                 # ------------------------------------------------------------------
                 unfolder.update_input_stat_uncert_from_jackknife(region['jackknife_input_variations'])
                 unfolder.create_normalised_jackknife_input_uncertainty_per_pt_bin(region['jackknife_input_variations'])
@@ -1125,6 +1220,23 @@ if __name__ == "__main__":
                 # ------------------------------------------------------------------
                 if len(region['jackknife_input_variations']) > 0:
                     # Do a big absolute 1D plots for sanity
+                    # Compared to nominal
+                    jk_contributions = [
+                        Contribution(mdict['unfolder'].get_unfolded_with_ematrix_stat(),
+                                     label=mdict['label'],
+                                     line_color=mdict['colour'], line_style=1, line_width=1,
+                                     marker_color=mdict['colour'], marker_size=0, marker_style=21,
+                                     subplot=unfolder.get_unfolded_with_ematrix_stat())
+                        for mdict in region['jackknife_input_variations']
+                    ]
+                    unfolder_plotter.draw_unfolded_1d(do_unfolded=True, do_gen=False,
+                                                      output_dir=this_output_dir,
+                                                      append='jackknife_input_%s' % append,
+                                                      title=title,
+                                                      other_contributions=jk_contributions,
+                                                      subplot_title='#splitline{Variation /}{nominal}')
+                    
+                    # Compared to respective truths
                     jk_contributions = [
                         Contribution(mdict['unfolder'].get_unfolded_with_ematrix_stat(),
                                      label=mdict['label'],
@@ -1135,7 +1247,7 @@ if __name__ == "__main__":
                     ]
                     unfolder_plotter.draw_unfolded_1d(do_unfolded=True, do_gen=False,
                                                       output_dir=this_output_dir,
-                                                      append='jackknife_response_%s' % append,
+                                                      append='jackknife_input_vs_gen_%s' % append,
                                                       title=title,
                                                       other_contributions=jk_contributions,
                                                       subplot_title='#splitline{Variation /}{nominal}')
