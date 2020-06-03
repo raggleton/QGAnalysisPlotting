@@ -17,6 +17,8 @@ import inspect
 import warnings
 import pickle
 import gzip
+from functools import partial
+
 
 import ROOT
 from MyStyle import My_Style
@@ -248,6 +250,8 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         self.folded_unfolded = None  # set in get_folded_unfolded()
         self.folded_unfolded_tunfold = None  # set in get_folded_unfolded()
         self.folded_mc_truth = None  # set in get_folded_mc_truth()
+
+        self.L_matrix_entries = []  # set in setup_L_matrix_curvature()
 
         # For producing normalised distributions
         self.hist_bin_chopper = HistBinChopper(generator_binning=self.generator_binning.FindNode("generatordistribution"),
@@ -570,6 +574,9 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         self.tau = tau
         self.DoUnfold(tau)
 
+
+    # SETUP REGULARISATION STUFF
+    # --------------------------------------------------------------------------
     def calculate_pt_bin_factors(self, which):
         """Calculate bin factors to account for falling distributions when regularising
 
@@ -644,6 +651,116 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
                 pt_width = self.pt_bin_edges_gen[pt_ind+1] - self.pt_bin_edges_gen[pt_ind]
                 results[global_bin] = (lambda_width, pt_width)
         return results
+
+    def setup_L_matrix_curvature(self, ref_hist, axis="both"):
+        """Setup custom L matrix for curvature regularisation.
+
+        ref_hist is the reference hist to determine factors for differential
+
+        axis should be one of "both", "pt", or "angle",
+        to determine along which axis/es the curvature is calculated.
+        """
+        gen_node = self.generator_distribution
+        nr_counter = 0
+
+        # unfolded_max = ref_hist.GetMaximum()
+
+        L_matrix_entries = []
+
+        # Add regularisation across pt bins, per lambda bin
+        if axis in ["both", "pt"]:
+            for ilambda in range(len(self.variable_bin_edges_gen[:-1])):
+                for ipt in range(len(self.pt_bin_edges_gen[:-3])):
+                    pt_cen = self.pt_bin_edges_gen[ipt+1] + 0.000001  # add a tiny bit to make sure we're in the bin properly (I can never remember if included or not)
+                    lambda_cen = self.variable_bin_edges_gen[ilambda] + 0.000001  # add a tiny bit to make sure we're in the bin properly (I can never remember if included or not)
+
+                    bin_ind_pt_down = gen_node.GetGlobalBinNumber(lambda_cen, self.pt_bin_edges_gen[ipt] + 0.000001)
+                    bin_ind_pt_up = gen_node.GetGlobalBinNumber(lambda_cen, self.pt_bin_edges_gen[ipt+2] + 0.000001)
+
+                    bin_ind_cen = gen_node.GetGlobalBinNumber(lambda_cen, pt_cen)
+
+                    # bin_ind_var_down = gen_node.GetGlobalBinNumber(self.variable_bin_edges_gen[ilambda], pt_cen)
+                    # bin_ind_var_up = gen_node.GetGlobalBinNumber(self.variable_bin_edges_gen[ilambda+2], pt_cen)
+
+                    print("Adding L matrix entry", nr_counter)
+                    print('lambda:', self.variable_bin_edges_gen[ilambda], 'pt:', (self.pt_bin_edges_gen[ipt], self.pt_bin_edges_gen[ipt+1], self.pt_bin_edges_gen[ipt+2]))
+
+                    # pt_bin_width_down = pt_bin_edges_gen[ipt+1] - pt_bin_edges_gen[ipt]
+                    # pt_bin_width_up = pt_bin_edges_gen[ipt+2] - pt_bin_edges_gen[ipt+1]
+                    # factor = (pt_bin_width_down + pt_bin_width_up)
+                    # value_pt_down = bin_factors[bin_ind_pt_down]
+                    # value_pt_up = bin_factors[bin_ind_pt_up]
+                    # ref_hist = unreg_self.unfolded
+
+                    val_down = ref_hist.GetBinContent(bin_ind_pt_down)
+                    value_pt_down = 1./val_down if val_down != 0 else 0
+
+                    val_up = ref_hist.GetBinContent(bin_ind_pt_up)
+                    value_pt_up = 1./val_up if val_up != 0 else 0
+
+                    # value_pt_down = bin_factors[bin_ind_pt_down]
+                    # value_pt_up = bin_factors[bin_ind_pt_up]
+                    value_pt_cen = - (value_pt_down + value_pt_up)
+                    # print(bin_ind_pt_down, value_pt_down, bin_ind_cen, value_pt_cen, bin_ind_pt_up, value_pt_up)
+                    L_args = [bin_ind_pt_down, value_pt_down, bin_ind_cen, value_pt_cen, bin_ind_pt_up, value_pt_up]
+                    L_matrix_entries.append(L_args)
+                    self.AddRegularisationCondition(*L_args)
+                    nr_counter += 1
+                    print(value_pt_down, value_pt_cen, value_pt_up)
+
+                    # value_pt_down = unfolded_max/ref_hist.GetBinContent(bin_ind_pt_down)
+                    # value_pt_up = unfolded_max/ref_hist.GetBinContent(bin_ind_pt_up)
+                    # value_var_down = unfolded_max/ref_hist.GetBinContent(bin_ind_var_down)
+                    # value_var_up = unfolded_max/ref_hist.GetBinContent(bin_ind_var_up)
+                    # value_cen = - (value_pt_down + value_pt_up + value_var_down + value_var_up)
+                    # print(bin_ind_pt_down, value_pt_down, bin_ind_cen, value_cen, bin_ind_pt_up, value_pt_up)
+                    # indices = [bin_ind_pt_down, bin_ind_var_down, bin_ind_cen, bin_ind_pt_up, bin_ind_var_up]
+                    # row_data = [value_pt_down, value_var_down, value_cen, value_pt_up, value_var_up]
+                    # self.AddRegularisationCondition(5, array('i', indices), array('d', row_data))
+                    # print(indices, row_data)
+
+        # Add regularisation across lambda bins, per pt bin
+        if axis in ["both", "angle"]:
+            for ipt in range(len(self.pt_bin_edges_gen[:-1])):
+                for ilambda in range(len(self.variable_bin_edges_gen[:-3])):
+                    pt_cen = self.pt_bin_edges_gen[ipt] + 0.000001  # add a tiny bit to make sure we're in the bin properly (I can never remember if included or not)
+                    lambda_cen = self.variable_bin_edges_gen[ilambda+1] + 0.000001  # add a tiny bit to make sure we're in the bin properly (I can never remember if included or not)
+
+                    bin_ind_lambda_down = gen_node.GetGlobalBinNumber(self.variable_bin_edges_gen[ilambda] + 0.000001, pt_cen)
+                    bin_ind_lambda_up = gen_node.GetGlobalBinNumber(self.variable_bin_edges_gen[ilambda+2] + 0.000001, pt_cen)
+
+                    bin_ind_cen = gen_node.GetGlobalBinNumber(lambda_cen, pt_cen)
+
+                    # bin_ind_var_down = gen_node.GetGlobalBinNumber(self.variable_bin_edges_gen[ilambda], pt_cen)
+                    # bin_ind_var_up = gen_node.GetGlobalBinNumber(self.variable_bin_edges_gen[ilambda+2], pt_cen)
+
+                    print("Adding L matrix entry", nr_counter)
+                    print('pt:', self.pt_bin_edges_gen[ipt], 'lambda:', (self.variable_bin_edges_gen[ilambda], self.variable_bin_edges_gen[ilambda+1], self.variable_bin_edges_gen[ilambda+2]))
+
+                    # pt_bin_width_down = variable_bin_edges_gen[ilambda+1] - variable_bin_edges_gen[ilambda]
+                    # pt_bin_width_up = variable_bin_edges_gen[ilambda+2] - variable_bin_edges_gen[ilambda+1]
+                    # factor = (pt_bin_width_down + pt_bin_width_up)
+                    # value_lambda_down = bin_factors[bin_ind_lambda_down]
+                    # value_lambda_up = bin_factors[bin_ind_lambda_up]
+                    # ref_hist = unreg_self.unfolded
+
+                    val_down = ref_hist.GetBinContent(bin_ind_lambda_down)
+                    value_lambda_down = 1./val_down if val_down != 0 else 0
+
+                    val_up = ref_hist.GetBinContent(bin_ind_lambda_up)
+                    value_lambda_up = 1./val_up if val_up != 0 else 0
+
+                    # value_lambda_down = bin_factors[bin_ind_lambda_down]
+                    # value_lambda_up = bin_factors[bin_ind_lambda_up]
+                    value_lambda_cen = - (value_lambda_down + value_lambda_up)
+                    # print(bin_ind_lambda_down, value_lambda_down, bin_ind_cen, value_lambda_cen, bin_ind_lambda_up, value_lambda_up)
+                    L_args = [bin_ind_lambda_down, value_lambda_down, bin_ind_cen, value_lambda_cen, bin_ind_lambda_up, value_lambda_up]
+                    L_matrix_entries.append(L_args)
+                    self.AddRegularisationCondition(*L_args)
+                    nr_counter += 1
+                    print(value_lambda_down, value_lambda_cen, value_lambda_up)
+
+        self.L_matrix_entries = L_matrix_entries
 
     # HANDLE SYSTEMATIC UNCERTAINTIES
     # --------------------------------------------------------------------------
@@ -3108,3 +3225,345 @@ class ExpSystematic(object):
         self.syst_ematrix = syst_ematrix
         self.syst_ematrix_label = 'syst_ematrix_%s' % (self.label_no_spaces)
 
+
+class TruthTemplateMaker(object):
+    """Create truth-level data template from fitting MCs templates at detector level,
+    fitting per gen pT bin.
+
+    Yes, "template" is used for both the MC shapes being fitted, and the final
+    distribution. I'm lazy.
+    """
+
+    def __init__(self,
+                 generator_binning,
+                 detector_binning,
+                 variable_bin_edges_reco, # 'variable' refers to e.g. ptD, LHA
+                 variable_bin_edges_gen, # reco for detector binnig, gen for generator (final) binning
+                 variable_name,
+                 pt_bin_edges_reco,
+                 pt_bin_edges_gen,
+                 pt_bin_edges_underflow_reco,
+                 pt_bin_edges_underflow_gen,
+                 output_dir):
+        self.generator_binning = generator_binning
+        self.detector_binning = detector_binning
+
+        self.variable_bin_edges_reco = variable_bin_edges_reco
+        self.nbins_variable_reco = len(variable_bin_edges_reco)-1 if variable_bin_edges_reco is not None else 0
+        self.variable_bin_edges_gen = variable_bin_edges_gen
+        self.nbins_variable_gen = len(variable_bin_edges_gen)-1 if variable_bin_edges_gen is not None else 0
+
+        self.variable_name = variable_name
+
+        self.pt_bin_edges_reco = pt_bin_edges_reco
+        self.nbins_pt_reco = len(pt_bin_edges_reco)-1 if pt_bin_edges_reco is not None else 0
+        self.pt_bin_edges_gen = pt_bin_edges_gen
+        self.nbins_pt_gen = len(pt_bin_edges_gen)-1 if pt_bin_edges_gen is not None else 0
+
+        self.pt_bin_edges_underflow_reco = pt_bin_edges_underflow_reco
+        self.nbins_pt_underflow_reco = len(pt_bin_edges_underflow_reco)-1 if pt_bin_edges_underflow_reco is not None else 0
+        self.pt_bin_edges_underflow_gen = pt_bin_edges_underflow_gen
+        self.nbins_pt_underflow_gen = len(pt_bin_edges_underflow_gen)-1 if pt_bin_edges_underflow_gen is not None else 0
+
+        self.hist_bin_chopper_signal = HistBinChopper(generator_binning=self.generator_binning.FindNode("generatordistribution"),
+                                                      detector_binning=self.detector_binning.FindNode("detectordistribution"))
+
+        self.hist_bin_chopper_uflow = HistBinChopper(generator_binning=self.generator_binning.FindNode("generatordistribution_underflow"),
+                                                     detector_binning=self.detector_binning.FindNode("detectordistribution_underflow"))
+
+        self.templates = []
+        self.data_label_reco = "hist_data_reco"
+        self.fits = []
+        self.fit_results = []
+        self.components = []
+        self.output_dir = output_dir  # for plots
+        self.truth_template = None
+
+    def set_input(self, data_hist_reco):
+        """Set thing that gets fitted. Should be at detector-level, but with gen binning"""
+        self.hist_bin_chopper_signal.add_obj(self.data_label_reco, data_hist_reco)
+        self.hist_bin_chopper_uflow.add_obj(self.data_label_reco, data_hist_reco)
+
+    def add_mc_template(self, name, hist_reco, hist_gen, colour=None):
+        """Add MC template to be part of the fit.
+        Both hists should have gen binning.
+        """
+        reco_label = "mc_reco_%s" % (name)
+        gen_label = "mc_gen_%s" % (name)
+        self.templates.append(dict(
+            name=name,
+            reco_label=reco_label,
+            hist_reco=hist_reco,
+            gen_label=gen_label,
+            hist_gen=hist_gen,
+            colour=colour
+        ))
+        self.hist_bin_chopper_signal.add_obj(reco_label, hist_reco)
+        self.hist_bin_chopper_signal.add_obj(gen_label, hist_gen)
+        self.hist_bin_chopper_uflow.add_obj(reco_label, hist_reco)
+        self.hist_bin_chopper_uflow.add_obj(gen_label, hist_gen)
+
+    # Create fit function from templates
+    # Should be used with functools.partial
+    @staticmethod
+    def data_distribution_fn(x, pars, hists):
+        xx = x[0]
+        # get content of the histograms for this point in all hists,
+        # do linear sum
+        return sum([pars[i]*h.GetBinContent(h.GetXaxis().FindFixBin(xx))
+                    for i, h in enumerate(hists)])
+
+        # w1 = pars[0]
+        # w2 = pars[1]
+        # # get content of the histograms for this point
+        # y1 = hist1.GetBinContent(hist1.GetXaxis().FindFixBin(xx));
+        # y2 = hist2.GetBinContent(hist2.GetXaxis().FindFixBin(xx));
+        # return w1*y1 + w2*y2
+
+    def create_template(self):
+        """Create gen level template using MCs, by fitting to data at detector level
+
+        Note that all hists should use gen binning, since that's what we need
+        to produce the gen-level template
+
+        We do this per pT bin invidivdually, then create one big distribution
+
+        """
+        # do the fits per pT bin, including plotting the fit
+        self.do_fits()
+        # plot scale factors vs pt bin
+        first_bin = self.pt_bin_edges_underflow_gen[0]
+        last_bin = self.pt_bin_edges_gen[-1]
+        self.plot_fit_results_vs_pt_bin("Fit to reco data %g < p_{T} < %G GeV" % (first_bin, last_bin),
+                                        os.path.join(self.output_dir, "reco_gen_bin_fit_factors.pdf"))
+        self.construct_truth_template()
+        return self.truth_template
+
+    def plot_fit(self, hist_data, mc_hists, labels, title, filename):
+        canv = ROOT.TCanvas(cu.get_unique_str(), "", 800, 600)
+        canv.SetTicks(1, 1)
+        hst = ROOT.THStack(cu.get_unique_str(), "%s;%s;N / bin width" % (title, self.variable_name))
+        this_hist_data = hist_data.Clone("Data")
+        this_hist_data.SetMarkerStyle(cu.Marker.get('triangleUp'))
+        # draw first to get stats box as not drawn with THStack
+        this_hist_data.Draw()
+        canv.Update()
+        stats = this_hist_data.GetListOfFunctions().FindObject("stats")
+        func = this_hist_data.GetListOfFunctions().At(0)
+        func.SetLineColor(ROOT.kRed)
+        func.SetLineWidth(1)
+        func.SetLineStyle(2)
+        func.SetMarkerColor(ROOT.kRed)
+
+        hst.Add(this_hist_data)
+        for h, lab in zip(mc_hists, labels):
+            this_hist = h.Clone(lab)
+            # this_hist.SetLineColor()
+            hst.Add(this_hist)
+
+        hst.Draw("NOSTACK HIST E PLC PMC")
+        hst.SetMaximum(hst.GetMaximum()*1.1)
+        func.Draw("SAME")
+        leg = ROOT.gPad.BuildLegend()
+        leg.SetFillStyle(0)
+        # leg.SetY1(0.7)
+        # leg.SetY2(0.9)
+        stats.SetBorderSize(0)
+        stats.SetFillStyle(0)
+        stats.SetY1NDC(0.65)
+        stats.SetY2NDC(0.85)
+        stats.SetX2NDC(0.85)
+        stats.Draw()
+        canv.SaveAs(filename)
+
+    def do_fits(self):
+        """Do the MC fits to data one per gen pT bin"""
+
+        # reset result holders
+        self.fits = []
+        self.fit_results = []
+        self.components = []
+
+        xmin = 0
+        xmax = len(self.variable_bin_edges_gen)-1
+        n_components = len(self.templates)
+
+        if n_components < 2:
+            raise RuntimeError("Cannot do git with < 2 MC components")
+
+        labels = [t['name'] for t in self.templates]
+        # Fit underflow pT bins
+        for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.pt_bin_edges_underflow_gen[:-1], self.pt_bin_edges_underflow_gen[1:])):
+            print("Fitting uflow", bin_edge_low, bin_edge_high)
+            hbc_args = dict(ind=ibin, binning_scheme='generator')
+            hist_data = self.hist_bin_chopper_uflow.get_pt_bin_div_bin_width(self.data_label_reco, **hbc_args).Clone()
+            if hist_data.Integral() == 0:
+                self.fits.append(None)
+                self.fit_results.append(None)
+                self.components.append(None)
+                print("... empty data, skipping fit")
+                continue
+            mc_hists = [self.hist_bin_chopper_uflow.get_pt_bin_div_bin_width(t['reco_label'], **hbc_args).Clone()
+                        for t in self.templates]
+            # create TF1 using MC histograms
+            f = ROOT.TF1("reco_fit_gen_ubin_%d" % ibin, partial(TruthTemplateMaker.data_distribution_fn, hists=mc_hists), xmin, xmax, n_components)
+            f.SetNpx(10000)
+            # Actually do the fit to data
+            fit_result = hist_data.Fit(f, "EMS")
+            self.fit_results.append(fit_result)
+            self.fits.append(f)
+            # scaled versions of component hists
+            for i in range(n_components):
+                mc_hists[i].Scale(f.GetParameter(i))
+            self.plot_fit(hist_data,
+                          mc_hists,
+                          labels=labels,
+                          title="Fit to reco data %g < p_{T} < %g GeV" % (bin_edge_low, bin_edge_high),
+                          filename=os.path.join(self.output_dir, "reco_fit_gen_bin_uflow_%d.pdf" % ibin))
+
+        # Fit signal pT bins
+        for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.pt_bin_edges_gen[:-1], self.pt_bin_edges_gen[1:])):
+            print("Fitting", bin_edge_low, bin_edge_high)
+            hbc_args = dict(ind=ibin, binning_scheme='generator')
+            hist_data = self.hist_bin_chopper_signal.get_pt_bin_div_bin_width(self.data_label_reco, **hbc_args).Clone()
+            mc_hists = [self.hist_bin_chopper_signal.get_pt_bin_div_bin_width(t['reco_label'], **hbc_args).Clone()
+                        for t in self.templates]
+            # create TF1 using MC histograms
+            f = ROOT.TF1("reco_fit_gen_bin_%d" % ibin, partial(TruthTemplateMaker.data_distribution_fn, hists=mc_hists), xmin, xmax, len(mc_hists))
+            f.SetNpx(10000)
+            # Actually do the fit to data
+            fit_result = hist_data.Fit(f, "EMS")
+            self.fit_results.append(fit_result)
+            self.fits.append(f)
+            # scaled versions of component hists
+            for i in range(n_components):
+                mc_hists[i].Scale(f.GetParameter(i))
+            self.plot_fit(hist_data,
+                          mc_hists,
+                          labels=labels,
+                          title="Fit to reco data %g < p_{T} < %g GeV" % (bin_edge_low, bin_edge_high),
+                          filename=os.path.join(self.output_dir, "reco_fit_gen_bin_%d.pdf" % ibin))
+
+    def plot_fit_results_vs_pt_bin(self, title, output_filename):
+        n = len(self.fits)
+        x = array('d', list(range(n)))
+        ex = array('d', [0 for f in self.fits])
+        multi_gr = ROOT.TMultiGraph(cu.get_unique_str(), "%s;pt bin index;Fit parameter" % title)
+        marker = cu.Marker()
+        for ind_t, (template, mark) in enumerate(zip(self.templates, marker.cycle())):
+            y = array('d', [f.GetParameter(ind_t) if f else 0 for f in self.fits])
+            ey = array('d', [f.GetParError(ind_t) if f else 0 for f in self.fits])
+            gr = ROOT.TGraphErrors(n, x, y, ex, ey)
+            gr.SetTitle(template['name'])
+            gr.SetMarkerStyle(mark)
+            col = template['colour']
+            if col:
+                gr.SetMarkerColor(col)
+                gr.SetLineColor(col)
+            multi_gr.Add(gr)
+
+        canv = ROOT.TCanvas(cu.get_unique_str(), "", 800, 600)
+        canv.SetTicks(1, 1)
+        multi_gr.Draw("ALP")
+        multi_leg = ROOT.gPad.BuildLegend()
+        multi_leg.SetFillStyle(0)
+        canv.SaveAs(output_filename)
+
+    def construct_truth_template(self):
+        # Construct a new truth-level distribution using the fit factors
+        self.truth_template = None
+
+        new_truth_hists = []
+
+        # underflow pt bins
+        for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.pt_bin_edges_underflow_gen[:-1], self.pt_bin_edges_underflow_gen[1:])):
+            print("Creating template", ibin, bin_edge_low, bin_edge_high)
+
+            hbc_args = dict(ind=ibin, binning_scheme='generator')
+            sum_hist = None
+
+            if ibin == 0:
+                # add the lowest pt bin manually since it isn't filled at reco level
+                # extrapolate from lowest pt bins to get fit factors for this bin
+                last_ind = 3
+                degree = 1
+                pt_params = [0.5*(self.pt_bin_edges_underflow_gen[i]+self.pt_bin_edges_underflow_gen[i+1]) for i in range(1, last_ind)]
+                center_bin_0 = 0.5*(self.pt_bin_edges_underflow_gen[0] + self.pt_bin_edges_underflow_gen[1])
+
+                for ind_t, template in enumerate(self.templates):
+                    params = [f.GetParameter(ind_t) for f in self.fits[1:last_ind]]
+                    fit_coeff = np.polyfit(pt_params, params, deg=degree)
+                    w = np.poly1d(fit_coeff)(center_bin_0)
+                    print("Extrapolated w%d for lowest pt bin:" % ind_t, w)
+                    # note no div bin width, as that's what TUnfold uses
+                    hist_gen = self.hist_bin_chopper_uflow.get_pt_bin(template['gen_label'], **hbc_args).Clone()
+                    hist_gen.Scale(w)
+                    if sum_hist is None:
+                        sum_hist = hist_gen
+                    else:
+                        sum_hist.Add(hist_gen)
+
+            else:
+                # Get the scaled truth-level distributions, using fit factors
+                # from doing the fit
+                # Sum together into one hist for this pt bin
+                for ind_t, template in enumerate(self.templates):
+                    # note no div bin width, as that's what TUnfold uses
+                    hist_gen = self.hist_bin_chopper_uflow.get_pt_bin(template['gen_label'], **hbc_args).Clone()
+                    print("Scaling template", ind_t, "by", self.fits[ibin].GetParameter(ind_t))
+                    hist_gen.Scale(self.fits[ibin].GetParameter(ind_t))
+                    if sum_hist is None:
+                        sum_hist = hist_gen
+                    else:
+                        sum_hist.Add(hist_gen)
+
+            sum_hist.SetName("template_truth_%d" % ibin)
+            new_truth_hists.append(sum_hist)
+
+        # signal pt bins
+        global_ibin = ibin+1
+        for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.pt_bin_edges_gen[:-1], self.pt_bin_edges_gen[1:])):
+            print("Creating template", ibin, global_ibin, bin_edge_low, bin_edge_high)
+
+            hbc_args = dict(ind=ibin, binning_scheme='generator')
+            sum_hist = None
+
+            # Get the scaled truth-level distributions, using fit factors
+            # from doing the fit
+            # Sum together into one hist for this pt bin
+            for ind_t, template in enumerate(self.templates):
+                # note no div bin width, as that's what TUnfold uses
+                hist_gen = self.hist_bin_chopper_signal.get_pt_bin(template['gen_label'], **hbc_args).Clone()
+                print("Scaling template", ind_t, "by", self.fits[global_ibin].GetParameter(ind_t))
+                hist_gen.Scale(self.fits[global_ibin].GetParameter(ind_t))
+                if sum_hist is None:
+                    sum_hist = hist_gen
+                else:
+                    sum_hist.Add(hist_gen)
+            sum_hist.SetName("template_truth_%d" % global_ibin)
+            new_truth_hists.append(sum_hist)
+            global_ibin += 1
+
+        # Create 1 big absolute distribution at gen level by combining all these
+        # individual binned hists
+        # It's a bit convoluted to get the correct binning
+        truth_template = self.templates[0]['hist_gen'].Clone("truth_template")
+        truth_template.Reset()
+
+        all_pt_bins = self.pt_bin_edges_underflow_gen[:-1]
+        all_pt_bins = np.append(all_pt_bins, self.pt_bin_edges_gen)
+        print(all_pt_bins)
+        for pt_ind, (pt_low, pt_high) in enumerate(zip(all_pt_bins[:-1], all_pt_bins[1:])):
+            binning = self.generator_binning.FindNode("generatordistribution_underflow") if pt_low < self.pt_bin_edges_gen[0] else self.generator_binning.FindNode("generatordistribution")
+            start_bin = binning.GetGlobalBinNumber(self.variable_bin_edges_gen[0]*1.00001, pt_low*1.00001)
+            end_bin = binning.GetGlobalBinNumber(self.variable_bin_edges_gen[-1]*1.00001, pt_low*1.00001)
+            for bin_ind, glob_bin in enumerate(range(start_bin, end_bin+1), 1):
+                # bin_ind refers to bin in the template hist, glob_bin refers to global bin number
+                truth_template.SetBinContent(glob_bin, new_truth_hists[pt_ind].GetBinContent(bin_ind))
+                truth_template.SetBinError(glob_bin, new_truth_hists[pt_ind].GetBinError(bin_ind))
+
+            # TODO: deal with overflow?
+
+        self.truth_template = truth_template
+        self.hist_bin_chopper_signal.add_obj("truth_template", self.truth_template)
+        self.hist_bin_chopper_uflow.add_obj("truth_template", self.truth_template)

@@ -172,7 +172,7 @@ def get_unfolding_argparser(description='', parser=None):
                             default=False,
                             help=('Do scale systematics.'
                                    + standard_bool_description))
-    
+
     syst_group.add_argument("--doScaleSystsFromFile",
                             default=None,
                             help='Get scale systematics from file. This should be a directory ' \
@@ -344,12 +344,8 @@ def get_unfolding_output_dir(args):
     if args.useAltResponse:
         append += "_altResponse"
 
-    bias_str = ""
-    if args.biasFactor != 0:
-        bias_str = "_biasFactor%g" % args.biasFactor
-        bias_str = bias_str.replace(".", "p")
-
     reg_axis_str = ""
+    bias_str = ""
     if args.regularize != "None":
         if args.regularizeAxis == 'pt':
             reg_axis_str = '_onlyRegPt'
@@ -359,6 +355,10 @@ def get_unfolding_output_dir(args):
         # reg_axis_str += "_invTruthMoreBins"
         reg_axis_str += "_useTemplateFit"
         # reg_axis_str += "_invTruthUseUnfolded"
+
+        if args.biasFactor != 0:
+            bias_str = "_biasFactor%g" % args.biasFactor
+            bias_str = bias_str.replace(".", "p")
 
     regularize_str = "regularize%s%s%s" % (str(args.regularize).capitalize(), bias_str, reg_axis_str)
 

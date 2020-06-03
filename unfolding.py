@@ -17,7 +17,6 @@ import numpy as np
 import math
 from itertools import product, chain
 from copy import copy, deepcopy
-from functools import partial
 
 import ROOT
 from MyStyle import My_Style
@@ -28,7 +27,7 @@ My_Style.cd()
 import common_utils as cu
 import qg_common as qgc
 import qg_general_plots as qgp
-from my_unfolder import MyUnfolder, pickle_region, unpickle_region, ExpSystematic, HistBinChopper
+from my_unfolder import MyUnfolder, pickle_region, unpickle_region, ExpSystematic, HistBinChopper, TruthTemplateMaker
 from my_unfolder_plotter import MyUnfolderPlotter
 from unfolding_regularisation_classes import TauScanner, LCurveScanner
 from unfolding_config import get_dijet_config, get_zpj_config
@@ -184,36 +183,6 @@ def fill_empty_bins(response_map,
     return new_map
 
 
-def plot_fit_results_vs_pt_bin(fits, title, output_filename):
-    n = len(fits)
-    x = array('d', list(range(n)))
-    y = array('d', [f.GetParameter(0) if f else 0 for f in fits])
-    ey = array('d', [f.GetParError(0) if f else 0 for f in fits])
-    ex = array('d', [0 for f in fits])
-    gr_mc = ROOT.TGraphErrors(n, x, y, ex, ey)
-    alt_y = array('d', [f.GetParameter(1) if f else 0 for f in fits])
-    alt_ey = array('d', [f.GetParError(1) if f else 0 for f in fits])
-    gr_alt_mc = ROOT.TGraphErrors(n, x, alt_y, ex, alt_ey)
-    canv = ROOT.TCanvas(cu.get_unique_str(), "", 800, 600)
-    canv.SetTicks(1, 1)
-    gr_mc.SetLineColor(ROOT.kAzure)
-    gr_mc.SetMarkerColor(ROOT.kAzure)
-    gr_mc.SetMarkerStyle(cu.Marker.get('circle'))
-    gr_alt_mc.SetLineColor(ROOT.kGreen+2)
-    gr_alt_mc.SetMarkerColor(ROOT.kGreen+2)
-    gr_alt_mc.SetMarkerStyle(cu.Marker.get('square'))
-    gr_mc.SetTitle("MG+Pythia8")
-    gr_alt_mc.SetTitle("Herwig++")
-    multi_gr = ROOT.TMultiGraph(cu.get_unique_str(), "%s;pt bin index;Fit parameter" % title)
-    multi_gr.Add(gr_mc)
-    multi_gr.Add(gr_alt_mc)
-    multi_gr.Draw("ALP")
-    multi_leg = ROOT.gPad.BuildLegend()
-    multi_leg.SetFillStyle(0)
-    canv.SaveAs(output_filename)
-
-
-
 # To be able to export to XML, since getting std::ostream from python is impossible?
 my_binning_xml_code = """
 class BinningXMLExporter {
@@ -268,56 +237,55 @@ if __name__ == "__main__":
     if any([args.doDijetCentral, args.doDijetForward, args.doDijetCentralGroomed, args.doDijetForwardGroomed]):
         # actually these are all pretty similar...
         tau_limits_central = {
-            'jet_puppiMultiplicity': (1E-9, 1E-6) if args.regularizeAxis == 'angle' else (1E-1, 1E3),
-            'jet_pTD': (1E-12, 1E-8) if args.regularizeAxis == 'angle' else (1E-1, 1E3),
-            # 'jet_LHA': (1E-11, 1E-7) if args.regularizeAxis == 'angle' else (1E-13, 1E-10),
-            'jet_LHA': (1E-13, 1E-9) if args.regularizeAxis == 'angle' else (1E-1, 1E3),
-            'jet_width': (1E-12, 1E-8) if args.regularizeAxis == 'angle' else (1E-1, 1E3),
-            'jet_thrust': (1E-12, 1E-8) if args.regularizeAxis == 'angle' else (1E-1, 1E3),
-            'jet_puppiMultiplicity_charged': (1E-12, 1E-8) if args.regularizeAxis == 'angle' else (1E-1, 1E3),
-            'jet_pTD_charged': (1E-12, 1E-8) if args.regularizeAxis == 'angle' else (1E-1, 1E3),
-            'jet_LHA_charged': (1E-10, 1E-8) if args.regularizeAxis == 'angle' else (1E-1, 1E3),
-            'jet_width_charged': (1E-13, 1E-8) if args.regularizeAxis == 'angle' else (1E-1, 1E3),
-            'jet_thrust_charged': (1E-12, 1E-9) if args.regularizeAxis == 'angle' else (1E-1, 1E3),
+            'jet_puppiMultiplicity': (1E-1, 1E3),
+            'jet_pTD': (1E-1, 1E3),
+            'jet_LHA': (1E-1, 1E3),
+            'jet_width': (1E-1, 1E3),
+            'jet_thrust': (1E-1, 1E3),
+            'jet_puppiMultiplicity_charged': (1E-1, 1E3),
+            'jet_pTD_charged': (1E-1, 1E3),
+            'jet_LHA_charged': (1E-1, 1E3),
+            'jet_width_charged': (1E-1, 1E3),
+            'jet_thrust_charged': (1E-1, 1E3),
         }
 
         tau_limits_central_groomed = {
-            'jet_puppiMultiplicity': (1E-9, 1E-6) if args.regularizeAxis == "angle" else (1E-1, 1E3),
-            'jet_pTD': (1E-12, 1E-8) if args.regularizeAxis == "angle" else (1E-1, 1E3),
-            'jet_LHA': (1E-11, 1E-8) if args.regularizeAxis == 'angle' else (1E-13, 1E-10),
-            'jet_width': (1E-12, 1E-8) if args.regularizeAxis == "angle" else (1E-1, 1E3),
-            'jet_thrust': (1E-12, 1E-8) if args.regularizeAxis == "angle" else (1E-1, 1E3),
-            'jet_puppiMultiplicity_charged': (1E-12, 1E-8) if args.regularizeAxis == "angle" else (1E-1, 1E3),
-            'jet_pTD_charged': (1E-12, 1E-8) if args.regularizeAxis == "angle" else (1E-1, 1E3),
-            'jet_LHA_charged': (1E-10, 1E-8) if args.regularizeAxis == "angle" else (1E-1, 1E3),
-            'jet_width_charged': (1E-13, 1E-8) if args.regularizeAxis == "angle" else (1E-1, 1E3),
-            'jet_thrust_charged': (1E-12, 1E-9) if args.regularizeAxis == "angle" else (1E-1, 1E3),
+            'jet_puppiMultiplicity': (1E-1, 1E3),
+            'jet_pTD': (1E-1, 1E3),
+            'jet_LHA': (1E-1, 1E2),
+            'jet_width': (1E-1, 1E3),
+            'jet_thrust': (1E-1, 1E3),
+            'jet_puppiMultiplicity_charged': (1E-1, 1E3),
+            'jet_pTD_charged': (1E-1, 1E3),
+            'jet_LHA_charged': (1E-1, 1E3),
+            'jet_width_charged': (1E-1, 1E3),
+            'jet_thrust_charged': (1E-1, 1E3),
         }
 
         tau_limits_forward = {
-            'jet_puppiMultiplicity': (1E-9, 1E-6) if args.regularizeAxis == 'angle' else (1E-1, 1E3),
-            'jet_pTD': (1E-12, 1E-8) if args.regularizeAxis == 'angle' else (1E-1, 1E3),
-            'jet_LHA': (1E-11, 1E-8) if args.regularizeAxis == 'angle' else (1E-13, 1E-10),
-            'jet_width': (1E-12, 1E-8) if args.regularizeAxis == 'angle' else (1E-1, 1E3),
-            'jet_thrust': (1E-12, 1E-8) if args.regularizeAxis == 'angle' else (1E-1, 1E3),
-            'jet_puppiMultiplicity_charged': (1E-12, 1E-8) if args.regularizeAxis == 'angle' else (1E-1, 1E3),
-            'jet_pTD_charged': (1E-12, 1E-8) if args.regularizeAxis == 'angle' else (1E-1, 1E3),
-            'jet_LHA_charged': (1E-10, 1E-8) if args.regularizeAxis == 'angle' else (1E-1, 1E3),
-            'jet_width_charged': (1E-13, 1E-8) if args.regularizeAxis == 'angle' else (1E-1, 1E3),
-            'jet_thrust_charged': (1E-12, 1E-9) if args.regularizeAxis == 'angle' else (1E-1, 1E3),
+            'jet_puppiMultiplicity': (1E-1, 1E3),
+            'jet_pTD': (1E-1, 1E3),
+            'jet_LHA': (1E-1, 1E3),
+            'jet_width': (1E-1, 1E3),
+            'jet_thrust': (1E-1, 1E3),
+            'jet_puppiMultiplicity_charged': (1E-1, 1E3),
+            'jet_pTD_charged': (1E-1, 1E3),
+            'jet_LHA_charged': (1E-1, 1E3),
+            'jet_width_charged': (1E-1, 1E3),
+            'jet_thrust_charged': (1E-1, 1E3),
         }
 
         tau_limits_forward_groomed = {
-            'jet_puppiMultiplicity': (1E-9, 1E-6) if args.regularizeAxis == 'angle' else (1E-1, 1E3),
-            'jet_pTD': (1E-12, 1E-8) if args.regularizeAxis == 'angle' else (1E-1, 1E3),
-            'jet_LHA': (1E-11, 1E-8) if args.regularizeAxis == 'angle' else (1E-13, 1E-10),
-            'jet_width': (1E-12, 1E-8) if args.regularizeAxis == 'angle' else (1E-1, 1E3),
-            'jet_thrust': (1E-12, 1E-8) if args.regularizeAxis == 'angle' else (1E-1, 1E3),
-            'jet_puppiMultiplicity_charged': (1E-12, 1E-8) if args.regularizeAxis == 'angle' else (1E-1, 1E3),
-            'jet_pTD_charged': (1E-12, 1E-8) if args.regularizeAxis == 'angle' else (1E-1, 1E3),
-            'jet_LHA_charged': (1E-10, 1E-8) if args.regularizeAxis == 'angle' else (1E-1, 1E3),
-            'jet_width_charged': (1E-13, 1E-8) if args.regularizeAxis == 'angle' else (1E-1, 1E3),
-            'jet_thrust_charged': (1E-12, 1E-9) if args.regularizeAxis == 'angle' else (1E-1, 1E3),
+            'jet_puppiMultiplicity': (1E-1, 1E3),
+            'jet_pTD': (1E-1, 1E3),
+            'jet_LHA': (1E-1, 1E3),
+            'jet_width': (1E-1, 1E3),
+            'jet_thrust': (1E-1, 1E3),
+            'jet_puppiMultiplicity_charged': (1E-1, 1E3),
+            'jet_pTD_charged': (1E-1, 1E3),
+            'jet_LHA_charged': (1E-1, 1E3),
+            'jet_width_charged': (1E-1, 1E3),
+            'jet_thrust_charged': (1E-1, 1E3),
         }
 
         if args.doDijetCentral:
@@ -343,33 +311,29 @@ if __name__ == "__main__":
     if any([args.doZPJ, args.doZPJGroomed]):
         # FOR Z+JETS:
         tau_limits = {
-            'jet_puppiMultiplicity': (1E-5, 1E-2) if args.regularizeAxis == 'angle' else (1E-1, 1E3),
-            'jet_pTD': (1E-6, 1E-4) if args.regularizeAxis == 'angle' else (1E-1, 1E3),
-            # 'jet_LHA': (1E-5, 1E-3) if args.regularizeAxis == 'angle' else (1E-1, 1E3),
-            # 'jet_LHA': (1E-7, 1E-4) if args.regularizeAxis == 'angle' else (1E-1, 1E3),
-            # 'jet_LHA': (1E-8, 1E-4) if args.regularizeAxis == 'angle' else (1E-1, 1E3),
-            # 'jet_LHA': (1E-6, 1E-3) if args.regularizeAxis == 'angle' else (1E-1, 1E3),
-            'jet_LHA': (1E-2, 1E2) if args.regularizeAxis == 'angle' else (1E-1, 1E3),
-            'jet_width': (1E-5, 1E-2) if args.regularizeAxis == 'angle' else (1E-1, 1E3),
-            'jet_thrust': (1E-6, 1E-2) if args.regularizeAxis == 'angle' else (1E-1, 1E3),
-            'jet_puppiMultiplicity_charged': (1E-6, 1E-2) if args.regularizeAxis == 'angle' else (1E-1, 1E3),
-            'jet_pTD_charged': (1E-6, 1E-2) if args.regularizeAxis == 'angle' else (1E-1, 1E3),
-            'jet_LHA_charged': (1E-5, 1E-2) if args.regularizeAxis == 'angle' else (1E-1, 1E3),
-            'jet_width_charged': (1E-6, 1E-3) if args.regularizeAxis == 'angle' else (1E-1, 1E3),
-            'jet_thrust_charged': (1E-8, 1E-5) if args.regularizeAxis == 'angle' else (1E-1, 1E3),
+            'jet_puppiMultiplicity': (1E-1, 1E3),
+            'jet_pTD': (1E-1, 1E3),
+            'jet_LHA': (1E-1, 1E3),
+            'jet_width': (1E-1, 1E3),
+            'jet_thrust': (1E-1, 1E3),
+            'jet_puppiMultiplicity_charged': (1E-1, 1E3),
+            'jet_pTD_charged': (1E-1, 1E3),
+            'jet_LHA_charged': (1E-1, 1E3),
+            'jet_width_charged': (1E-1, 1E3),
+            'jet_thrust_charged': (1E-1, 1E3),
         }
 
         tau_limits_groomed = {
-            'jet_puppiMultiplicity': (1E-5, 1E-2) if args.regularizeAxis == 'angle' else (1E-1, 1E3),
-            'jet_pTD': (1E-7, 1E-3) if args.regularizeAxis == 'angle' else (1E-1, 1E3),
-            'jet_LHA': (1E-5, 1E-3) if args.regularizeAxis == 'angle' else (1E-1, 1E3),
-            'jet_width': (1E-5, 1E-2) if args.regularizeAxis == 'angle' else (1E-1, 1E3),
-            'jet_thrust': (1E-6, 1E-2) if args.regularizeAxis == 'angle' else (1E-1, 1E3),
-            'jet_puppiMultiplicity_charged': (1E-5, 1E-2) if args.regularizeAxis == 'angle' else (1E-1, 1E3),
-            'jet_pTD_charged': (1E-6, 1E-2) if args.regularizeAxis == 'angle' else (1E-1, 1E3),
-            'jet_LHA_charged': (1E-5, 1E-2) if args.regularizeAxis == 'angle' else (1E-1, 1E3),
-            'jet_width_charged': (1E-6, 1E-3) if args.regularizeAxis == 'angle' else (1E-1, 1E3),
-            'jet_thrust_charged': (1E-7, 1E-5) if args.regularizeAxis == 'angle' else (1E-1, 1E3),
+            'jet_puppiMultiplicity': (1E-1, 1E3),
+            'jet_pTD': (1E-1, 1E3),
+            'jet_LHA': (1E-1, 1E3),
+            'jet_width': (1E-1, 1E3),
+            'jet_thrust': (1E-1, 1E3),
+            'jet_puppiMultiplicity_charged': (1E-1, 1E3),
+            'jet_pTD_charged': (1E-1, 1E3),
+            'jet_LHA_charged': (1E-1, 1E3),
+            'jet_width_charged': (1E-1, 1E3),
+            'jet_thrust_charged': (1E-1, 1E3),
         }
 
         if args.doZPJ:
@@ -828,7 +792,6 @@ if __name__ == "__main__":
                 unreg_unfolder.SetEpsMatrix(eps_matrix)
 
                 unreg_unfolder_plotter = MyUnfolderPlotter(unreg_unfolder, is_data=not MC_INPUT)
-                # plot_args = dict(output_dir=this_output_dir, append=append)
 
                 # Do the unregularised unfolding to get an idea of bin contents
                 # and uncertainties
@@ -877,538 +840,79 @@ if __name__ == "__main__":
 
                 region['unreg_unfolder'] = unreg_unfolder
 
-                if alt_hist_mc_gen and alt_hist_mc_reco_bg_subtracted:
-                    # Let's try fitting the two MC templates to data to get their fractions
-                    # Maybe we can use the same at truth level
-                    # others added in _post_process()
-                    unreg_unfolder.hist_bin_chopper.add_obj("alt_hist_truth", alt_hist_mc_gen)
-                    unreg_unfolder.hist_bin_chopper.add_obj("hist_truth", hist_mc_gen)
-                    unreg_unfolder.hist_bin_chopper.add_obj("hist_mc_reco_bg_subtracted", hist_mc_reco_bg_subtracted)
-                    unreg_unfolder.hist_bin_chopper.add_obj("hist_mc_reco_gen_binning_bg_subtracted", hist_mc_reco_gen_binning_bg_subtracted)
-                    unreg_unfolder.hist_bin_chopper.add_obj("alt_hist_mc_reco_bg_subtracted", alt_hist_mc_reco_bg_subtracted)
-                    unreg_unfolder.hist_bin_chopper.add_obj("alt_hist_mc_reco_bg_subtracted_gen_binning", alt_hist_mc_reco_bg_subtracted_gen_binning)
-                    unreg_unfolder.hist_bin_chopper.add_obj("input_hist", unreg_unfolder.input_hist)
-                    unreg_unfolder.hist_bin_chopper.add_obj("input_hist_bg_subtracted", unreg_unfolder.input_hist_bg_subtracted)
-                    unreg_unfolder.hist_bin_chopper.add_obj("input_hist_gen_binning_bg_subtracted", unreg_unfolder.input_hist_gen_binning_bg_subtracted)
+                if not (alt_hist_mc_gen and alt_hist_mc_reco_bg_subtracted):
+                    raise RuntimeError("Cannot create truth template for regularisation as alt MC missing")
 
-                    # need another one for the underflow bins
-                    hist_bin_chopper_uflow = HistBinChopper(generator_binning=unreg_unfolder.generator_binning.FindNode("generatordistribution_underflow"),
-                                                            detector_binning=unreg_unfolder.detector_binning.FindNode("detectordistribution_underflow"))
-                    hist_bin_chopper_uflow.add_obj("alt_hist_truth", alt_hist_mc_gen)
-                    hist_bin_chopper_uflow.add_obj("hist_truth", hist_mc_gen)
-                    hist_bin_chopper_uflow.add_obj("hist_mc_reco_bg_subtracted", hist_mc_reco_bg_subtracted)
-                    hist_bin_chopper_uflow.add_obj("hist_mc_reco_gen_binning_bg_subtracted", hist_mc_reco_gen_binning_bg_subtracted)
-                    hist_bin_chopper_uflow.add_obj("alt_hist_mc_reco_bg_subtracted", alt_hist_mc_reco_bg_subtracted)
-                    hist_bin_chopper_uflow.add_obj("alt_hist_mc_reco_bg_subtracted_gen_binning", alt_hist_mc_reco_bg_subtracted_gen_binning)
-                    hist_bin_chopper_uflow.add_obj("input_hist", unreg_unfolder.input_hist)
-                    hist_bin_chopper_uflow.add_obj("input_hist_bg_subtracted", unreg_unfolder.input_hist_bg_subtracted)
-                    hist_bin_chopper_uflow.add_obj("input_hist_gen_binning_bg_subtracted", unreg_unfolder.input_hist_gen_binning_bg_subtracted)
+                # Create truth template by fitting MC to data @ detector level
+                # --------------------------------------------------------------
+                # Fit the two MC templates to data to get their fractions
+                # Then use the same at truth level
+                # This template will allow us to setup a more accurate L matrix,
+                # and a bias hist
+                template_maker = TruthTemplateMaker(generator_binning=unfolder.generator_binning,
+                                                    detector_binning=unfolder.detector_binning,
+                                                    variable_bin_edges_reco=unfolder.variable_bin_edges_reco,
+                                                    variable_bin_edges_gen=unfolder.variable_bin_edges_gen,
+                                                    variable_name=unfolder.variable_name,
+                                                    pt_bin_edges_reco=unfolder.pt_bin_edges_reco,
+                                                    pt_bin_edges_gen=unfolder.pt_bin_edges_gen,
+                                                    pt_bin_edges_underflow_reco=unfolder.pt_bin_edges_underflow_reco,
+                                                    pt_bin_edges_underflow_gen=unfolder.pt_bin_edges_underflow_gen,
+                                                    output_dir=this_output_dir)
 
+                template_maker.set_input(unreg_unfolder.input_hist_gen_binning_bg_subtracted)
 
-                    # For each detector pT bin, we fit to the data
-                    # We have to do this per pT bin, since the MC pT spectrum is wildly different to data
+                template_maker.add_mc_template(name=region['mc_label'],
+                                               hist_reco=hist_mc_reco_gen_binning_bg_subtracted,
+                                               hist_gen=hist_mc_gen,
+                                               colour=ROOT.kRed)
+                template_maker.add_mc_template(name=region['alt_mc_label'],
+                                               hist_reco=alt_hist_mc_reco_bg_subtracted_gen_binning,
+                                               hist_gen=alt_hist_mc_gen,
+                                               colour=ROOT.kViolet+1)
 
-                    # Create fit function from templates
-                    def data_distribution_fn(x, pars, hist1, hist2):
-                        xx = x[0]
-                        w1 = pars[0]
-                        w2 = pars[1]
-                        # get content of the histograms for this point
-                        y1 = hist1.GetBinContent(hist1.GetXaxis().FindFixBin(xx));
-                        y2 = hist2.GetBinContent(hist2.GetXaxis().FindFixBin(xx));
-                        return w1*y1 + w2*y2
+                truth_template = template_maker.create_template()
+                unfolder.truth_template = truth_template
+                unfolder.hist_bin_chopper.add_obj("truth_template", truth_template)
+                unreg_unfolder.truth_template = truth_template
+                unreg_unfolder.hist_bin_chopper.add_obj("truth_template", truth_template)
 
-                    def plot_fit(hist_data, hist_mc, w1, alt_hist_mc, w2, title, filename):
-                        canv = ROOT.TCanvas(cu.get_unique_str(), "", 800, 600)
-                        canv.SetTicks(1, 1)
-                        hst = ROOT.THStack(cu.get_unique_str(), "%s;%s;N / bin width" % (title, angle_str))
-                        this_hist_data = hist_data.Clone("Data")
-                        this_hist_data.SetMarkerStyle(cu.Marker.get('triangleUp'))
-                        # draw first to get stats box as not drawn with THStack
-                        this_hist_data.Draw()
-                        canv.Update()
-                        stats = this_hist_data.GetListOfFunctions().FindObject("stats")
-                        func = this_hist_data.GetListOfFunctions().At(0)
-                        func.SetLineColor(ROOT.kRed)
-                        func.SetLineWidth(1)
-                        func.SetMarkerColor(ROOT.kRed)
-                        this_hist_mc = hist_mc.Clone("MG5+Pythia8")
-                        this_hist_mc.Scale(w1)
-                        this_alt_hist_mc = alt_hist_mc.Clone("Herwig++")
-                        this_alt_hist_mc.Scale(w2)
-                        this_hist_mc.SetLineColor(ROOT.kAzure)
-                        this_hist_mc.SetMarkerColor(ROOT.kAzure)
-                        this_hist_mc.SetMarkerStyle(cu.Marker.get('circle'))
-                        this_alt_hist_mc.SetLineColor(ROOT.kGreen+2)
-                        this_alt_hist_mc.SetMarkerColor(ROOT.kGreen+2)
-                        this_alt_hist_mc.SetMarkerStyle(cu.Marker.get('square'))
-                        hst.Add(this_hist_data)
-                        hst.Add(this_hist_mc)
-                        hst.Add(this_alt_hist_mc)
-                        hst.Draw("NOSTACK HIST E")
-                        hst.SetMaximum(hst.GetMaximum()*1.1)
-                        func.Draw("SAME")
-                        leg = ROOT.gPad.BuildLegend()
-                        leg.SetFillStyle(0)
-                        # leg.SetY1(0.7)
-                        # leg.SetY2(0.9)
-                        stats.SetBorderSize(0)
-                        stats.SetFillStyle(0)
-                        stats.SetY1NDC(0.65)
-                        stats.SetY2NDC(0.85)
-                        stats.SetX2NDC(0.85)
-                        stats.Draw()
-                        canv.SaveAs(filename)
+                # Draw our new template
+                ocs = [
+                    Contribution(alt_hist_mc_gen, label=region['alt_mc_label'],
+                                 line_color=ROOT.kViolet+1,
+                                 marker_color=ROOT.kViolet+1,
+                                 subplot=unreg_unfolder.hist_truth),
+                    Contribution(truth_template, label="Template",
+                                 line_color=ROOT.kAzure+1,
+                                 marker_color=ROOT.kAzure+1,
+                                 subplot=unreg_unfolder.hist_truth),
+                ]
+                title = "%s\n%s region, %s" % (jet_algo, region['label'], angle_str)
+                unreg_unfolder_plotter.draw_unfolded_1d(do_gen=True,
+                                                        do_unfolded=True,
+                                                        other_contributions=ocs,
+                                                        output_dir=this_output_dir,
+                                                        append='unreg_with_template',
+                                                        title='',
+                                                        subplot_title=None,
+                                                        subplot_limits=(0, 2))
 
-                    # fits = []
-                    # fit_results = []
-                    # xmax = len(unreg_unfolder.variable_bin_edges_reco)-1
-                    # for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(unreg_unfolder.pt_bin_edges_underflow_reco[:-1], unreg_unfolder.pt_bin_edges_underflow_reco[1:])):
-                    #     print("Fitting", bin_edge_low, bin_edge_high)
-                    #     hbc_args = dict(ind=ibin, binning_scheme='detector')
-                    #     hist_data = hist_bin_chopper_uflow.get_pt_bin_div_bin_width("input_hist_bg_subtracted", **hbc_args).Clone()
-                    #     hist_mc = hist_bin_chopper_uflow.get_pt_bin_div_bin_width("hist_mc_reco_bg_subtracted", **hbc_args).Clone()
-                    #     alt_hist_mc = hist_bin_chopper_uflow.get_pt_bin_div_bin_width("alt_hist_mc_reco_bg_subtracted", **hbc_args).Clone()
-                    #     f = ROOT.TF1("reco_fit_ubin_%d" % ibin, partial(data_distribution_fn, hist1=hist_mc, hist2=alt_hist_mc), 0, xmax, 2)
-                    #     f.SetNpx(10000)
-                    #     fit_result = hist_data.Fit(f, "EMS")
-                    #     fit_results.append(fit_result)
-                    #     fits.append(f)
-                    #     w1 = f.GetParameter(0)
-                    #     w2 = f.GetParameter(1)
-                    #     plot_fit(hist_data, hist_mc, w1, alt_hist_mc, w2, "Fit to reco data %g < p_{T} < %g GeV" % (bin_edge_low, bin_edge_high),
-                    #              os.path.join(this_output_dir, "reco_fit_uflow_%d.pdf" % ibin))
+                # Setup our L matrix
+                # ------------------------------------------------------------------
+                # ref_hist = unreg_unfolder.hist_truth
+                unfolder.SetBias(truth_template)
+                unfolder.setup_L_matrix_curvature(ref_hist=truth_template, axis=args.regularizeAxis)
 
-                    # for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(unreg_unfolder.pt_bin_edges_reco[:-1], unreg_unfolder.pt_bin_edges_reco[1:])):
-                    #     print("Fitting", bin_edge_low, bin_edge_high)
-                    #     hbc_args = dict(ind=ibin, binning_scheme='detector')
-                    #     hist_data = unreg_unfolder.hist_bin_chopper.get_pt_bin_div_bin_width("input_hist_bg_subtracted", **hbc_args).Clone()
-                    #     hist_mc = unreg_unfolder.hist_bin_chopper.get_pt_bin_div_bin_width("hist_mc_reco_bg_subtracted", **hbc_args).Clone()
-                    #     alt_hist_mc = unreg_unfolder.hist_bin_chopper.get_pt_bin_div_bin_width("alt_hist_mc_reco_bg_subtracted", **hbc_args).Clone()
-                    #     f = ROOT.TF1("reco_fit_bin_%d" % ibin, partial(data_distribution_fn, hist1=hist_mc, hist2=alt_hist_mc), 0, xmax, 2)
-                    #     f.SetNpx(10000)
-                    #     fit_result = hist_data.Fit(f, "EMS")
-                    #     fit_results.append(fit_result)
-                    #     fits.append(f)
-                    #     w1 = f.GetParameter(0)
-                    #     w2 = f.GetParameter(1)
-                    #     plot_fit(hist_data, hist_mc, w1, alt_hist_mc, w2, "Fit to reco data %g < p_{T} < %g GeV" % (bin_edge_low, bin_edge_high),
-                    #              os.path.join(this_output_dir, "reco_fit_%d.pdf" % ibin))
-
-                    # # plot scale factors vs pt bin
-                    # first_bin = unreg_unfolder.pt_bin_edges_underflow_reco[0]
-                    # last_bin = unreg_unfolder.pt_bin_edges_reco[-1]
-                    # plot_fit_results_vs_pt_bin(fits, "Fit to reco data %g < p_{T} < %G GeV" % (first_bin, last_bin),
-                    #                            os.path.join(this_output_dir, "reco_fit_factors.pdf"))
-
-                    # Do the same but gen binning this time
-                    fits = []
-                    fit_results = []
-                    xmax = len(unreg_unfolder.variable_bin_edges_gen)-1
-                    for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(unreg_unfolder.pt_bin_edges_underflow_gen[:-1], unreg_unfolder.pt_bin_edges_underflow_gen[1:])):
-                        print("Fitting", bin_edge_low, bin_edge_high)
-                        hbc_args = dict(ind=ibin, binning_scheme='generator')
-                        hist_data = hist_bin_chopper_uflow.get_pt_bin_div_bin_width("input_hist_gen_binning_bg_subtracted", **hbc_args).Clone()
-                        hist_mc = hist_bin_chopper_uflow.get_pt_bin_div_bin_width("hist_mc_reco_gen_binning_bg_subtracted", **hbc_args).Clone()
-                        alt_hist_mc = hist_bin_chopper_uflow.get_pt_bin_div_bin_width("alt_hist_mc_reco_bg_subtracted_gen_binning", **hbc_args).Clone()
-                        if hist_data.Integral() == 0:
-                            fits.append(None)
-                            continue
-                        f = ROOT.TF1("reco_fit_gen_ubin_%d" % ibin, partial(data_distribution_fn, hist1=hist_mc, hist2=alt_hist_mc), 0, xmax, 2)
-                        f.SetNpx(10000)
-                        fit_result = hist_data.Fit(f, "EMS")
-                        fit_results.append(fit_result)
-                        fits.append(f)
-                        w1 = f.GetParameter(0)
-                        w2 = f.GetParameter(1)
-                        plot_fit(hist_data, hist_mc, w1, alt_hist_mc, w2, "Fit to reco data %g < p_{T} < %g GeV" % (bin_edge_low, bin_edge_high),
-                                 os.path.join(this_output_dir, "reco_fit_gen_bin_uflow_%d.pdf" % ibin))
-
-                    for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(unreg_unfolder.pt_bin_edges_gen[:-1], unreg_unfolder.pt_bin_edges_gen[1:])):
-                        print("Fitting", bin_edge_low, bin_edge_high)
-                        hbc_args = dict(ind=ibin, binning_scheme='generator')
-                        hist_data = unreg_unfolder.hist_bin_chopper.get_pt_bin_div_bin_width("input_hist_gen_binning_bg_subtracted", **hbc_args).Clone()
-                        hist_mc = unreg_unfolder.hist_bin_chopper.get_pt_bin_div_bin_width("hist_mc_reco_gen_binning_bg_subtracted", **hbc_args).Clone()
-                        alt_hist_mc = unreg_unfolder.hist_bin_chopper.get_pt_bin_div_bin_width("alt_hist_mc_reco_bg_subtracted_gen_binning", **hbc_args).Clone()
-                        f = ROOT.TF1("reco_fit_gen_bin_%d" % ibin, partial(data_distribution_fn, hist1=hist_mc, hist2=alt_hist_mc), 0, xmax, 2)
-                        f.SetNpx(10000)
-                        fit_result = hist_data.Fit(f, "EMS")
-                        fit_results.append(fit_result)
-                        fits.append(f)
-                        w1 = f.GetParameter(0)
-                        w2 = f.GetParameter(1)
-                        plot_fit(hist_data, hist_mc, w1, alt_hist_mc, w2, "Fit to reco data %g < p_{T} < %g GeV" % (bin_edge_low, bin_edge_high),
-                                 os.path.join(this_output_dir, "reco_fit_gen_bin_%d.pdf" % ibin))
-
-                    # plot scale factors vs pt bin
-                    first_bin = unreg_unfolder.pt_bin_edges_underflow_gen[0]
-                    last_bin = unreg_unfolder.pt_bin_edges_gen[-1]
-                    plot_fit_results_vs_pt_bin(fits, "Fit to reco data %g < p_{T} < %G GeV" % (first_bin, last_bin),
-                                               os.path.join(this_output_dir, "reco_gen_bin_fit_factors.pdf"))
-
-                    # Construct a new truth-level distribution using the fit factors
-                    new_truth_hists = []
-
-                    for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(unreg_unfolder.pt_bin_edges_underflow_gen[:-1], unreg_unfolder.pt_bin_edges_underflow_gen[1:])):
-                        w1, w2 = 0, 0
-
-                        if ibin == 0:
-                            # add the lowest pt bin manually since it isn't filled at reco level
-                            # extrapolate from lowest pt bins
-                            last_ind = 3
-                            pt_params = [0.5*(unreg_unfolder.pt_bin_edges_underflow_gen[i]+unreg_unfolder.pt_bin_edges_underflow_gen[i+1]) for i in range(1, last_ind)]
-                            mc_params = [f.GetParameter(0) for f in fits[1:last_ind]]
-                            mc_fit_coeff = np.polyfit(pt_params, mc_params, deg=1)
-                            alt_mc_params = [f.GetParameter(1) for f in fits[1:last_ind]]
-                            alt_mc_fit_coeff = np.polyfit(pt_params, alt_mc_params, deg=1)
-                            center_bin_0 = 0.5*(unreg_unfolder.pt_bin_edges_underflow_gen[0] + unreg_unfolder.pt_bin_edges_underflow_gen[1])
-                            # use poly1d to turn params into callable function
-                            w1 = np.poly1d(mc_fit_coeff)(center_bin_0)
-                            w2 = np.poly1d(alt_mc_fit_coeff)(center_bin_0)
-                            print(mc_fit_coeff)
-                            print("Extrapolated w1:", w1)
-                            print(alt_mc_fit_coeff)
-                            print("Extrapolated w2:", w2)
-                        else:
-                            f = fits[ibin]
-                            w1 = f.GetParameter(0)
-                            w2 = f.GetParameter(1)
-
-                        print("Creating template", ibin, bin_edge_low, bin_edge_high)
-                        hbc_args = dict(ind=ibin, binning_scheme='generator')
-                        # note no div bin width, as that's what TUnfold uses
-                        hist_mc = hist_bin_chopper_uflow.get_pt_bin("hist_truth", **hbc_args).Clone()
-                        alt_hist_mc = hist_bin_chopper_uflow.get_pt_bin("alt_hist_truth", **hbc_args).Clone()
-                        hist_mc.Scale(w1)
-                        alt_hist_mc.Scale(w2)
-                        hist_mc.Add(alt_hist_mc)
-                        hist_mc.SetName("template_truth_%d" % ibin)
-                        new_truth_hists.append(hist_mc)
-
-                    global_ibin = ibin+1
-                    for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(unreg_unfolder.pt_bin_edges_gen[:-1], unreg_unfolder.pt_bin_edges_gen[1:])):
-                        print("Creating template", ibin, global_ibin, bin_edge_low, bin_edge_high)
-                        f = fits[global_ibin]
-                        w1 = f.GetParameter(0)
-                        w2 = f.GetParameter(1)
-                        hbc_args = dict(ind=ibin, binning_scheme='generator')
-                        hist_mc = unreg_unfolder.hist_bin_chopper.get_pt_bin("hist_truth", **hbc_args).Clone()
-                        alt_hist_mc = unreg_unfolder.hist_bin_chopper.get_pt_bin("alt_hist_truth", **hbc_args).Clone()
-                        hist_mc.Scale(w1)
-                        alt_hist_mc.Scale(w2)
-                        hist_mc.Add(alt_hist_mc)
-                        hist_mc.SetName("template_truth_%d" % global_ibin)
-                        new_truth_hists.append(hist_mc)
-                        global_ibin += 1
-
-                    # Create 1 big absolute distribution at gen level
-                    new_truth_total = unreg_unfolder.get_output().Clone("new_truth_total")
-                    new_truth_total.Reset()
-
-                    all_pt_bins = unreg_unfolder.pt_bin_edges_underflow_gen[:-1]
-                    all_pt_bins = np.append(all_pt_bins, unreg_unfolder.pt_bin_edges_gen)
-                    print(all_pt_bins)
-                    for pt_ind, (pt_low, pt_high) in enumerate(zip(all_pt_bins[:-1], all_pt_bins[1:])):
-                        binning = unreg_unfolder.generator_distribution_underflow if pt_low < unreg_unfolder.pt_bin_edges_gen[0] else unreg_unfolder.generator_distribution
-                        start_bin = binning.GetGlobalBinNumber(unreg_unfolder.variable_bin_edges_gen[0]*1.00001, pt_low*1.00001)
-                        end_bin = binning.GetGlobalBinNumber(unreg_unfolder.variable_bin_edges_gen[-1]*1.00001, pt_low*1.00001)
-                        for bin_ind, glob_bin in enumerate(range(start_bin, end_bin+1), 1):
-                            # bin_ind refers to bin in the template hist, glob_bin refers to global bin number
-                            new_truth_total.SetBinContent(glob_bin, new_truth_hists[pt_ind].GetBinContent(bin_ind))
-                            new_truth_total.SetBinError(glob_bin, new_truth_hists[pt_ind].GetBinError(bin_ind))
-
-                        # TODO: deal with overflow?
-
-
-                    # Draw our new template
-                    ocs = [
-                        Contribution(alt_hist_mc_gen, label=region['alt_mc_label'],
-                                     line_color=ROOT.kGreen+2,
-                                     marker_color=ROOT.kGreen+2,
-                                     subplot=unreg_unfolder.hist_truth),
-                        Contribution(new_truth_total, label="Template",
-                                     line_color=ROOT.kAzure+1,
-                                     marker_color=ROOT.kAzure+1,
-                                     subplot=unreg_unfolder.hist_truth),
-                    ]
-                    title = "%s\n%s region, %s" % (jet_algo, region['label'], angle_str)
-                    unreg_unfolder_plotter.draw_unfolded_1d(do_gen=True,
-                                                            do_unfolded=True,
-                                                            other_contributions=ocs,
-                                                            output_dir=this_output_dir,
-                                                            append='unreg_with_template',
-                                                            title='',
-                                                            subplot_title=None,
-                                                            subplot_limits=(0, 2))
-
-                    unreg_unfolder.hist_bin_chopper.add_obj("template", new_truth_total)
-
-                    # plot each bin of template
-                    # PUT THIS IN do_unfolding_plots !
-                    plot_colours = dict(
-                        gen_colour=ROOT.kRed,
-                        unfolded_basic_colour=ROOT.kAzure+7,
-                        unfolded_stat_colour=ROOT.kAzure+7,
-                        unfolded_total_colour=ROOT.kBlack,
-                        unfolded_unreg_colour=ROOT.kViolet+2,
-                        # alt_gen_colour=ROOT.kOrange-3,
-                        alt_gen_colour=ROOT.kViolet+1,
-                        alt_unfolded_colour=ROOT.kOrange-3,
-                        alt_unfolded_total_colour=ROOT.kOrange-7,
-                        alt_reco_colour=ROOT.kViolet+1,
-                        # alt_reco_colour=ROOT.kOrange-3,
-                        # reco_mc_colour=ROOT.kGreen+2,
-                        # reco_mc_colour=ROOT.kAzure-7,
-                        # reco_data_colour=ROOT.kRed,
-                        reco_data_colour=ROOT.kBlack,
-                        reco_mc_colour=ROOT.kRed,
-                        # reco_mc_colour=ROOT.kMagenta+1,
-                        reco_unfolding_input_colour=ROOT.kRed,
-                        reco_folded_unfolded_colour=ROOT.kAzure+1,
-                        reco_folded_mc_truth_colour=ROOT.kGreen+2,
-                        default_palette=ROOT.kBird,
-
-                        rsp_colour=ROOT.kGray+3,
-                        scale_colour=ROOT.kTeal+3,
-                        pdf_colour=ROOT.kOrange+4,
-
-                        template_colour=ROOT.kAzure+1,
-                    )
-
-                    for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(unreg_unfolder.pt_bin_edges_underflow_gen[:-1], unreg_unfolder.pt_bin_edges_underflow_gen[1:])):
-                        hbc_args = dict(ind=ibin, binning_scheme='generator')
-                        mc_gen_hist_bin = unreg_unfolder.hist_bin_chopper.get_pt_bin_div_bin_width('hist_truth', **hbc_args)
-                        alt_mc_gen_hist_bin = unreg_unfolder.hist_bin_chopper.get_pt_bin_div_bin_width('alt_hist_truth', **hbc_args)
-                        template_hist_bin = unreg_unfolder.hist_bin_chopper.get_pt_bin_div_bin_width('template', **hbc_args)
-                        unfolded_hist_bin_total_errors = unreg_unfolder.hist_bin_chopper.get_pt_bin_div_bin_width('unfolded', **hbc_args)
-
-                        # unnormalised version
-                        line_width = 2
-
-                        entries = [
-                            Contribution(mc_gen_hist_bin,
-                                         label=region['mc_label'],
-                                         line_color=plot_colours['gen_colour'], line_width=line_width,
-                                         marker_color=plot_colours['gen_colour'], marker_size=0,
-                                         subplot=unfolded_hist_bin_total_errors),
-                            Contribution(alt_mc_gen_hist_bin,
-                                         label=region['alt_mc_label'],
-                                         line_color=plot_colours['alt_gen_colour'], line_width=line_width,
-                                         marker_color=plot_colours['alt_gen_colour'], marker_size=0,
-                                         subplot=unfolded_hist_bin_total_errors),
-                            Contribution(template_hist_bin,
-                                         label="Template",
-                                         line_color=plot_colours['template_colour'], line_width=line_width, line_style=1,
-                                         marker_color=plot_colours['template_colour'],# marker_style=20, marker_size=0.75,
-                                         subplot=unfolded_hist_bin_total_errors),
-                            Contribution(unfolded_hist_bin_total_errors,
-                                         label="Unfolded data",
-                                         line_color=plot_colours['unfolded_total_colour'], line_width=line_width, line_style=1,
-                                         marker_color=plot_colours['unfolded_total_colour'], marker_style=20, marker_size=0.75,
-                                         ),
-                        ]
-                        title = (("{jet_algo}\n"
-                                  "{region_label} region\n"
-                                  "{bin_edge_low:g} < {pt_str} < {bin_edge_high:g} GeV")
-                                 .format(
-                                    jet_algo=jet_algo,
-                                    region_label=region['label'],
-                                    pt_str="p_{T}^{jet}",
-                                    bin_edge_low=bin_edge_low,
-                                    bin_edge_high=bin_edge_high
-                        ))
-                        plot = Plot(entries,
-                                    ytitle="N / bin width",
-                                    title=title,
-                                    what="hist",
-                                    xtitle=angle_str,
-                                    has_data=not MC_INPUT,
-                                    ylim=[0, None],
-                                    subplot_type='ratio',
-                                    subplot_title="Simulation / data",
-                                    # subplot_limits=(0, 2) if self.setup.has_data else (0.75, 1.25),
-                                    subplot_limits=(0, 2.75))
-                        plot.legend.SetX1(0.6)
-                        plot.legend.SetY1(0.68)
-                        plot.legend.SetX2(0.98)
-                        plot.legend.SetY2(0.88)
-                        plot.left_margin = 0.16
-                        plot.plot("NOSTACK E1")
-                        plot.save("%s/unfolded_unnormalised_template_%s_uflow_bin_%d_divBinWidth.%s" % (this_output_dir, append, ibin, "pdf"))
-
-                    global_ibin = ibin + 1
-                    for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(unreg_unfolder.pt_bin_edges_gen[:-1], unreg_unfolder.pt_bin_edges_gen[1:])):
-                        hbc_args = dict(ind=ibin, binning_scheme='generator')
-                        mc_gen_hist_bin = unreg_unfolder.hist_bin_chopper.get_pt_bin_div_bin_width('hist_truth', **hbc_args)
-                        alt_mc_gen_hist_bin = unreg_unfolder.hist_bin_chopper.get_pt_bin_div_bin_width('alt_hist_truth', **hbc_args)
-                        template_hist_bin = unreg_unfolder.hist_bin_chopper.get_pt_bin_div_bin_width('template', **hbc_args)
-                        unfolded_hist_bin_total_errors = unreg_unfolder.hist_bin_chopper.get_pt_bin_div_bin_width('unfolded', **hbc_args)
-
-                        # unnormalised version
-                        line_width = 2
-
-                        entries = [
-                            Contribution(mc_gen_hist_bin,
-                                         label=region['mc_label'],
-                                         line_color=plot_colours['gen_colour'], line_width=line_width,
-                                         marker_color=plot_colours['gen_colour'], marker_size=0,
-                                         subplot=unfolded_hist_bin_total_errors),
-                            Contribution(alt_mc_gen_hist_bin,
-                                         label=region['alt_mc_label'],
-                                         line_color=plot_colours['alt_gen_colour'], line_width=line_width,
-                                         marker_color=plot_colours['alt_gen_colour'], marker_size=0,
-                                         subplot=unfolded_hist_bin_total_errors),
-                            Contribution(template_hist_bin,
-                                         label="Template",
-                                         line_color=plot_colours['template_colour'], line_width=line_width, line_style=1,
-                                         marker_color=plot_colours['template_colour'],# marker_style=20, marker_size=0.75,
-                                         subplot=unfolded_hist_bin_total_errors),
-                            Contribution(unfolded_hist_bin_total_errors,
-                                         label="Unfolded data",
-                                         line_color=plot_colours['unfolded_total_colour'], line_width=line_width, line_style=1,
-                                         marker_color=plot_colours['unfolded_total_colour'], marker_style=20, marker_size=0.75,
-                                         ),
-                        ]
-                        title = (("{jet_algo}\n"
-                                  "{region_label} region\n"
-                                  "{bin_edge_low:g} < {pt_str} < {bin_edge_high:g} GeV")
-                                 .format(
-                                    jet_algo=jet_algo,
-                                    region_label=region['label'],
-                                    pt_str="p_{T}^{jet}",
-                                    bin_edge_low=bin_edge_low,
-                                    bin_edge_high=bin_edge_high
-                        ))
-                        plot = Plot(entries,
-                                    ytitle="N / bin width",
-                                    title=title,
-                                    what="hist",
-                                    xtitle=angle_str,
-                                    has_data=not MC_INPUT,
-                                    ylim=[0, None],
-                                    subplot_type='ratio',
-                                    subplot_title="Simulation / data",
-                                    # subplot_limits=(0, 2) if self.setup.has_data else (0.75, 1.25),
-                                    subplot_limits=(0, 2.75))
-                        plot.legend.SetX1(0.6)
-                        plot.legend.SetY1(0.68)
-                        plot.legend.SetX2(0.98)
-                        plot.legend.SetY2(0.88)
-                        plot.left_margin = 0.16
-                        plot.plot("NOSTACK E1")
-                        plot.save("%s/unfolded_unnormalised_template_%s_bin_%d_divBinWidth.%s" % (this_output_dir, append, ibin, "pdf"))
-
-                orig_Lmatrix = unreg_unfolder.GetL("orig_Lmatrix_%s" % (append), "", unreg_unfolder.use_axis_binning)
-                xax = orig_Lmatrix.GetXaxis()
                 # Get bin factors from an unregularised unfolding first,
                 # to compensate for the fact that the shape differs between data & MC
-                bin_factors = unreg_unfolder.calculate_pt_bin_factors(which='gen') # calculate factors to get uniform pt spectrum
+                # bin_factors = unreg_unfolder.calculate_pt_bin_factors(which='gen') # calculate factors to get uniform pt spectrum
                 # bin_factors = unreg_unfolder.calculate_pt_bin_factors(which='unfolded') # calculate factors to get uniform pt spectrum
-                bin_widths = unreg_unfolder.get_gen_bin_widths() # mapping {global bin number : (lambda bin width, pt bin width)}
-
-                print(unreg_unfolder.variable_bin_edges_gen)
-
-                ref_hist = unreg_unfolder.hist_truth
-                ref_hist = new_truth_total
-                unfolded_max = ref_hist.GetMaximum()
-                gen_node = unfolder.generator_binning.FindNode('generatordistribution')
-                unfolder.SetBias(new_truth_total)
-
-                nr_counter = 0
-
-                # Add regularisation across pt bins, per lambda bin
-                for ilambda in range(len(unfolder.variable_bin_edges_gen[:-1])):
-                    for ipt in range(len(unfolder.pt_bin_edges_gen[:-3])):
-                        pt_cen = unfolder.pt_bin_edges_gen[ipt+1] + 0.000001  # add a tiny bit to make sure we're in the bin properly (I can never remember if included or not)
-                        lambda_cen = unfolder.variable_bin_edges_gen[ilambda] + 0.000001  # add a tiny bit to make sure we're in the bin properly (I can never remember if included or not)
-
-                        bin_ind_pt_down = gen_node.GetGlobalBinNumber(lambda_cen, unfolder.pt_bin_edges_gen[ipt] + 0.000001)
-                        bin_ind_pt_up = gen_node.GetGlobalBinNumber(lambda_cen, unfolder.pt_bin_edges_gen[ipt+2] + 0.000001)
-
-                        bin_ind_cen = gen_node.GetGlobalBinNumber(lambda_cen, pt_cen)
-
-                        # bin_ind_var_down = gen_node.GetGlobalBinNumber(unfolder.variable_bin_edges_gen[ilambda], pt_cen)
-                        # bin_ind_var_up = gen_node.GetGlobalBinNumber(unfolder.variable_bin_edges_gen[ilambda+2], pt_cen)
-
-                        print("Adding L matrix entry", nr_counter)
-                        print('lambda:', unfolder.variable_bin_edges_gen[ilambda], 'pt:', (unfolder.pt_bin_edges_gen[ipt], unfolder.pt_bin_edges_gen[ipt+1], unfolder.pt_bin_edges_gen[ipt+2]))
-
-                        # pt_bin_width_down = pt_bin_edges_gen[ipt+1] - pt_bin_edges_gen[ipt]
-                        # pt_bin_width_up = pt_bin_edges_gen[ipt+2] - pt_bin_edges_gen[ipt+1]
-                        # factor = (pt_bin_width_down + pt_bin_width_up)
-                        # value_pt_down = bin_factors[bin_ind_pt_down]
-                        # value_pt_up = bin_factors[bin_ind_pt_up]
-                        # ref_hist = unreg_unfolder.unfolded
-
-                        val_down = ref_hist.GetBinContent(bin_ind_pt_down)
-                        value_pt_down = 1./val_down if val_down != 0 else 0
-
-                        val_up = ref_hist.GetBinContent(bin_ind_pt_up)
-                        value_pt_up = 1./val_up if val_up != 0 else 0
-
-                        # value_pt_down = bin_factors[bin_ind_pt_down]
-                        # value_pt_up = bin_factors[bin_ind_pt_up]
-                        value_pt_cen = - (value_pt_down + value_pt_up)
-                        # print(bin_ind_pt_down, value_pt_down, bin_ind_cen, value_pt_cen, bin_ind_pt_up, value_pt_up)
-                        L_args = [bin_ind_pt_down, value_pt_down, bin_ind_cen, value_pt_cen, bin_ind_pt_up, value_pt_up]
-                        L_matrix_entries.append(L_args)
-                        unfolder.AddRegularisationCondition(*L_args)
-                        nr_counter += 1
-                        print(value_pt_down, value_pt_cen, value_pt_up)
-
-                        # value_pt_down = unfolded_max/ref_hist.GetBinContent(bin_ind_pt_down)
-                        # value_pt_up = unfolded_max/ref_hist.GetBinContent(bin_ind_pt_up)
-                        # value_var_down = unfolded_max/ref_hist.GetBinContent(bin_ind_var_down)
-                        # value_var_up = unfolded_max/ref_hist.GetBinContent(bin_ind_var_up)
-                        # value_cen = - (value_pt_down + value_pt_up + value_var_down + value_var_up)
-                        # print(bin_ind_pt_down, value_pt_down, bin_ind_cen, value_cen, bin_ind_pt_up, value_pt_up)
-                        # indices = [bin_ind_pt_down, bin_ind_var_down, bin_ind_cen, bin_ind_pt_up, bin_ind_var_up]
-                        # row_data = [value_pt_down, value_var_down, value_cen, value_pt_up, value_var_up]
-                        # unfolder.AddRegularisationCondition(5, array('i', indices), array('d', row_data))
-                        # print(indices, row_data)
-
-                # Add regularisation across lambda bins, per pt bin
-                for ipt in range(len(unfolder.pt_bin_edges_gen[:-1])):
-                    for ilambda in range(len(unfolder.variable_bin_edges_gen[:-3])):
-                        pt_cen = unfolder.pt_bin_edges_gen[ipt] + 0.000001  # add a tiny bit to make sure we're in the bin properly (I can never remember if included or not)
-                        lambda_cen = unfolder.variable_bin_edges_gen[ilambda+1] + 0.000001  # add a tiny bit to make sure we're in the bin properly (I can never remember if included or not)
-
-                        bin_ind_lambda_down = gen_node.GetGlobalBinNumber(unfolder.variable_bin_edges_gen[ilambda] + 0.000001, pt_cen)
-                        bin_ind_lambda_up = gen_node.GetGlobalBinNumber(unfolder.variable_bin_edges_gen[ilambda+2] + 0.000001, pt_cen)
-
-                        bin_ind_cen = gen_node.GetGlobalBinNumber(lambda_cen, pt_cen)
-
-                        # bin_ind_var_down = gen_node.GetGlobalBinNumber(unfolder.variable_bin_edges_gen[ilambda], pt_cen)
-                        # bin_ind_var_up = gen_node.GetGlobalBinNumber(unfolder.variable_bin_edges_gen[ilambda+2], pt_cen)
-
-                        print("Adding L matrix entry", nr_counter)
-                        print('pt:', unfolder.pt_bin_edges_gen[ipt], 'lambda:', (unfolder.variable_bin_edges_gen[ilambda], unfolder.variable_bin_edges_gen[ilambda+1], unfolder.variable_bin_edges_gen[ilambda+2]))
-
-                        # pt_bin_width_down = variable_bin_edges_gen[ilambda+1] - variable_bin_edges_gen[ilambda]
-                        # pt_bin_width_up = variable_bin_edges_gen[ilambda+2] - variable_bin_edges_gen[ilambda+1]
-                        # factor = (pt_bin_width_down + pt_bin_width_up)
-                        # value_lambda_down = bin_factors[bin_ind_lambda_down]
-                        # value_lambda_up = bin_factors[bin_ind_lambda_up]
-                        # ref_hist = unreg_unfolder.unfolded
-
-                        val_down = ref_hist.GetBinContent(bin_ind_lambda_down)
-                        value_lambda_down = 1./val_down if val_down != 0 else 0
-
-                        val_up = ref_hist.GetBinContent(bin_ind_lambda_up)
-                        value_lambda_up = 1./val_up if val_up != 0 else 0
-
-                        # value_lambda_down = bin_factors[bin_ind_lambda_down]
-                        # value_lambda_up = bin_factors[bin_ind_lambda_up]
-                        value_lambda_cen = - (value_lambda_down + value_lambda_up)
-                        # print(bin_ind_lambda_down, value_lambda_down, bin_ind_cen, value_lambda_cen, bin_ind_lambda_up, value_lambda_up)
-                        L_args = [bin_ind_lambda_down, value_lambda_down, bin_ind_cen, value_lambda_cen, bin_ind_lambda_up, value_lambda_up]
-                        L_matrix_entries.append(L_args)
-                        unfolder.AddRegularisationCondition(*L_args)
-                        nr_counter += 1
-                        print(value_lambda_down, value_lambda_cen, value_lambda_up)
+                # bin_widths = unreg_unfolder.get_gen_bin_widths() # mapping {global bin number : (lambda bin width, pt bin width)}
 
                 # loop over existing regularisation conditions, since we want to modify them
                 # in our main unfolder
+                # orig_Lmatrix = unreg_unfolder.GetL("orig_Lmatrix_%s" % (append), "", unreg_unfolder.use_axis_binning)
                 # for iy in range(1, orig_Lmatrix.GetNbinsY()+1):
                 #     # Look for gen bin number where values start for this regularisation row
                 #     left_bin, mid_bin, right_bin = 0, 0, 0
@@ -1453,39 +957,36 @@ if __name__ == "__main__":
                     # print("Adding regularisation rule: nR=%d, gen bins: [%d - %d], factors: [%f, %f, %f]" % (iy, left_bin, right_bin, -scale_left, 2*(scale_left+scale_right), -scale_right) )
                     # unfolder.RegularizeCurvature(left_bin, mid_bin, right_bin, scale_left, scale_right)
 
-            # exit()
-            tau = 3.322366546731066e-10
             tau = 0
             scan_mode = ROOT.TUnfoldDensity.kEScanTauRhoAvgSys
             scan_mode = ROOT.TUnfoldDensity.kEScanTauRhoAvg
             scan_distribution = unfolder.distribution
-            if REGULARIZE == "L":
-                print("Regularizing with ScanLcurve, please be patient...")
-                l_scanner = LCurveScanner()
-                tau = l_scanner.scan_L(tunfolder=unfolder,
-                                       n_scan=args.nScan,
-                                       tau_min=region['tau_limits'][angle.var][0]/10,
-                                       tau_max=region['tau_limits'][angle.var][1])
-                                       # tau_min=tau/10,
-                                       # tau_max=tau*10)
-                print("Found tau:", tau)
-                l_scanner.plot_scan_L_curve(output_filename="%s/scanL_%s.%s" % (this_output_dir, append, OUTPUT_FMT))
-                l_scanner.plot_scan_L_curvature(output_filename="%s/scanLcurvature_%s.%s" % (this_output_dir, append, OUTPUT_FMT))
-
-            elif REGULARIZE == "tau":
-                print("Regularizing with ScanTau, please be patient...")
-                tau_scanner = TauScanner()
-                tau = tau_scanner.scan_tau(tunfolder=unfolder,
+            
+            if REGULARIZE != "None":
+                if REGULARIZE == "L":
+                    print("Regularizing with ScanLcurve, please be patient...")
+                    l_scanner = LCurveScanner()
+                    tau = l_scanner.scan_L(tunfolder=unfolder,
                                            n_scan=args.nScan,
                                            tau_min=region['tau_limits'][angle.var][0],
-                                           tau_max=region['tau_limits'][angle.var][1],
-                                           scan_mode=scan_mode,
-                                           distribution=scan_distribution,
-                                           axis_steering=unfolder.axisSteering)
-                print("Found tau:", tau)
-                tau_scanner.plot_scan_tau(output_filename="%s/scantau_%s.%s" % (this_output_dir, append, OUTPUT_FMT))
+                                           tau_max=region['tau_limits'][angle.var][1])
+                    print("Found tau:", tau)
+                    l_scanner.plot_scan_L_curve(output_filename="%s/scanL_%s.%s" % (this_output_dir, append, OUTPUT_FMT))
+                    l_scanner.plot_scan_L_curvature(output_filename="%s/scanLcurvature_%s.%s" % (this_output_dir, append, OUTPUT_FMT))
 
-            if REGULARIZE != "None":
+                elif REGULARIZE == "tau":
+                    print("Regularizing with ScanTau, please be patient...")
+                    tau_scanner = TauScanner()
+                    tau = tau_scanner.scan_tau(tunfolder=unfolder,
+                                               n_scan=args.nScan,
+                                               tau_min=region['tau_limits'][angle.var][0],
+                                               tau_max=region['tau_limits'][angle.var][1],
+                                               scan_mode=scan_mode,
+                                               distribution=scan_distribution,
+                                               axis_steering=unfolder.axisSteering)
+                    print("Found tau:", tau)
+                    tau_scanner.plot_scan_tau(output_filename="%s/scantau_%s.%s" % (this_output_dir, append, OUTPUT_FMT))
+
                 title = "L matrix %s %s region %s" % (jet_algo, region['label'], angle_str)
                 unfolder_plotter.draw_L_matrix(title=title, **plot_args)
                 title = "L^{T}L matrix %s %s region %s" % (jet_algo, region['label'], angle_str)

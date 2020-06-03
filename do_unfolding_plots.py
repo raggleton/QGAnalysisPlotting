@@ -114,7 +114,7 @@ PLOT_COLOURS = dict(
     unfolded_basic_colour=ROOT.kAzure+7,
     unfolded_stat_colour=ROOT.kAzure+7,
     unfolded_total_colour=ROOT.kBlack,
-    unfolded_unreg_colour=ROOT.kViolet+2,
+    unfolded_unreg_colour=ROOT.kOrange-3,
     # alt_gen_colour=ROOT.kOrange-3,
     alt_gen_colour=ROOT.kViolet+1,
     alt_unfolded_colour=ROOT.kOrange-3,
@@ -135,6 +135,8 @@ PLOT_COLOURS = dict(
     rsp_colour=ROOT.kGray+3,
     scale_colour=ROOT.kTeal+3,
     pdf_colour=ROOT.kOrange+4,
+
+    template_colour=ROOT.kAzure+1,
 )
 
 
@@ -556,6 +558,98 @@ class GenPtBinnedPlotter(object):
             self._modify_plot(plot)
             plot.plot("NOSTACK E1")
             plot.save("%s/unfolded_unnormalised_%s_with_unreg_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
+
+    def plot_unfolded_with_template_normalised(self):
+        for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
+            hbc_args = dict(ind=ibin, binning_scheme='generator')
+            mc_gen_hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('hist_truth', **hbc_args)
+            alt_mc_gen_hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('alt_hist_truth', **hbc_args)
+            unfolded_hist_bin_total_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded', **hbc_args)
+            unreg_unfolded_hist_bin_total_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unreg_unfolded', **hbc_args)
+            template_hist_bin_total_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('truth_template', **hbc_args)
+
+            entries = [
+                Contribution(mc_gen_hist_bin,
+                             label="Generator (%s)" % (self.region['mc_label']),
+                             line_color=self.plot_colours['gen_colour'], line_width=self.line_width,
+                             marker_color=self.plot_colours['gen_colour'], marker_size=0),
+                Contribution(alt_mc_gen_hist_bin,
+                             label="Generator (%s)" % (self.region['alt_mc_label']),
+                             line_color=self.plot_colours['alt_gen_colour'], line_width=self.line_width,
+                             marker_color=self.plot_colours['alt_gen_colour'], marker_size=0,
+                             subplot=mc_gen_hist_bin),
+                Contribution(unfolded_hist_bin_total_errors,
+                             label="Unfolded (#tau = %.3g) (total unc.)" % (self.unfolder.tau),
+                             line_color=self.plot_colours['unfolded_total_colour'], line_width=self.line_width, line_style=1,
+                             marker_color=self.plot_colours['unfolded_total_colour'], #marker_style=20, marker_size=0.75,
+                             subplot=mc_gen_hist_bin),
+                Contribution(unreg_unfolded_hist_bin_total_errors,
+                             label="Unfolded (#tau = 0) (total unc.)",
+                             line_color=self.plot_colours['unfolded_unreg_colour'], line_width=self.line_width, line_style=1,
+                             marker_color=self.plot_colours['unfolded_unreg_colour'], #marker_style=20, marker_size=0.75,
+                             subplot=mc_gen_hist_bin),
+                Contribution(template_hist_bin_total_errors,
+                             label="Template",
+                             line_color=self.plot_colours['template_colour'], line_width=self.line_width, line_style=1,
+                             marker_color=self.plot_colours['template_colour'], #marker_style=20, marker_size=0.75,
+                             subplot=mc_gen_hist_bin),
+
+            ]
+            if not self.check_entries(entries, "plot_unfolded_with_template_normalised %d" % (ibin)):
+                return
+            plot = Plot(entries,
+                        ytitle=self.setup.pt_bin_normalised_differential_label,
+                        title=self.get_pt_bin_title(bin_edge_low, bin_edge_high),
+                        **self.pt_bin_plot_args)
+            self._modify_plot(plot)
+            plot.plot("NOSTACK E1")
+            plot.save("%s/unfolded_%s_with_template_unreg_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
+
+    def plot_unfolded_with_template_unnormalised(self):
+        for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
+            hbc_args = dict(ind=ibin, binning_scheme='generator')
+            mc_gen_hist_bin = self.hist_bin_chopper.get_pt_bin_div_bin_width('hist_truth', **hbc_args)
+            alt_mc_gen_hist_bin = self.hist_bin_chopper.get_pt_bin_div_bin_width('alt_hist_truth', **hbc_args)
+            unfolded_hist_bin_total_errors = self.hist_bin_chopper.get_pt_bin_div_bin_width('unfolded', **hbc_args)
+            unreg_unfolded_hist_bin_total_errors = self.hist_bin_chopper.get_pt_bin_div_bin_width('unreg_unfolded', **hbc_args)
+            template_hist_bin_total_errors = self.hist_bin_chopper.get_pt_bin_div_bin_width('truth_template', **hbc_args)
+
+            entries = [
+                Contribution(mc_gen_hist_bin,
+                             label="Generator (%s)" % (self.region['mc_label']),
+                             line_color=self.plot_colours['gen_colour'], line_width=self.line_width,
+                             marker_color=self.plot_colours['gen_colour'], marker_size=0),
+                Contribution(alt_mc_gen_hist_bin,
+                             label="Generator (%s)" % (self.region['alt_mc_label']),
+                             line_color=self.plot_colours['alt_gen_colour'], line_width=self.line_width,
+                             marker_color=self.plot_colours['alt_gen_colour'], marker_size=0,
+                             subplot=mc_gen_hist_bin),
+                Contribution(unfolded_hist_bin_total_errors,
+                             label="Unfolded (#tau = %.3g) (total unc.)" % (self.unfolder.tau),
+                             line_color=self.plot_colours['unfolded_total_colour'], line_width=self.line_width, line_style=1,
+                             marker_color=self.plot_colours['unfolded_total_colour'], #marker_style=20, marker_size=0.75,
+                             subplot=mc_gen_hist_bin),
+                Contribution(unreg_unfolded_hist_bin_total_errors,
+                             label="Unfolded (#tau = 0) (total unc.)",
+                             line_color=self.plot_colours['unfolded_unreg_colour'], line_width=self.line_width, line_style=1,
+                             marker_color=self.plot_colours['unfolded_unreg_colour'], #marker_style=20, marker_size=0.75,
+                             subplot=mc_gen_hist_bin),
+                Contribution(template_hist_bin_total_errors,
+                             label="Template",
+                             line_color=self.plot_colours['template_colour'], line_width=self.line_width, line_style=1,
+                             marker_color=self.plot_colours['template_colour'], #marker_style=20, marker_size=0.75,
+                             subplot=mc_gen_hist_bin),
+
+            ]
+            if not self.check_entries(entries, "plot_unfolded_with_template_unnormalised %d" % (ibin)):
+                return
+            plot = Plot(entries,
+                        ytitle=self.setup.pt_bin_unnormalised_differential_label,
+                        title=self.get_pt_bin_title(bin_edge_low, bin_edge_high),
+                        **self.pt_bin_plot_args)
+            self._modify_plot(plot)
+            plot.plot("NOSTACK E1")
+            plot.save("%s/unfolded_unnormalised_%s_with_template_unreg_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
 
     def plot_unfolded_with_alt_response_normalised(self, alt_unfolder):
         for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
@@ -1835,6 +1929,54 @@ class GenLambdaBinnedPlotter(object):
             plot.set_logy(do_more_labels=False)
             plot.save("%s/unfolded_unnormalised_%s_with_unreg_lambda_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
 
+    def plot_unfolded_with_template_unnormalised(self):
+        for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
+            hbc_args = dict(ind=ibin, binning_scheme='generator')
+            mc_gen_hist_bin = self.hist_bin_chopper.get_lambda_bin_div_bin_width('hist_truth', **hbc_args)
+            alt_mc_gen_hist_bin = self.hist_bin_chopper.get_lambda_bin_div_bin_width('alt_hist_truth', **hbc_args)
+            unfolded_hist_bin_total_errors = self.hist_bin_chopper.get_lambda_bin_div_bin_width('unfolded', **hbc_args)
+            unreg_unfolded_hist_bin_total_errors = self.hist_bin_chopper.get_lambda_bin_div_bin_width('unreg_unfolded', **hbc_args)
+            template_hist_bin_total_errors = self.hist_bin_chopper.get_lambda_bin_div_bin_width('truth_template', **hbc_args)
+
+            entries = [
+                Contribution(mc_gen_hist_bin,
+                             label="Generator (%s)" % (self.region['mc_label']),
+                             line_color=self.plot_colours['gen_colour'], line_width=self.line_width,
+                             marker_color=self.plot_colours['gen_colour'], marker_size=0),
+                Contribution(alt_mc_gen_hist_bin,
+                             label="Generator (%s)" % (self.region['alt_mc_label']),
+                             line_color=self.plot_colours['alt_gen_colour'], line_width=self.line_width,
+                             marker_color=self.plot_colours['alt_gen_colour'], marker_size=0,
+                             subplot=mc_gen_hist_bin),
+                Contribution(unfolded_hist_bin_total_errors,
+                             label="Unfolded (#tau = %.3g) (total unc.)" % (self.unfolder.tau),
+                             line_color=self.plot_colours['unfolded_total_colour'], line_width=self.line_width, line_style=1,
+                             marker_color=self.plot_colours['unfolded_total_colour'], #marker_style=20, marker_size=0.75,
+                             subplot=mc_gen_hist_bin),
+                Contribution(unreg_unfolded_hist_bin_total_errors,
+                             label="Unfolded (#tau = 0) (total unc.)",
+                             line_color=self.plot_colours['unfolded_unreg_colour'], line_width=self.line_width, line_style=1,
+                             marker_color=self.plot_colours['unfolded_unreg_colour'], #marker_style=20, marker_size=0.75,
+                             subplot=mc_gen_hist_bin),
+                Contribution(template_hist_bin_total_errors,
+                             label="Template",
+                             line_color=self.plot_colours['template_colour'], line_width=self.line_width, line_style=1,
+                             marker_color=self.plot_colours['template_colour'], #marker_style=20, marker_size=0.75,
+                             subplot=mc_gen_hist_bin),
+
+            ]
+            if not self.check_entries(entries, "plot_unfolded_with_template_unnormalised %d" % (ibin)):
+                return
+            plot = Plot(entries,
+                        ytitle=self.setup.pt_bin_unnormalised_differential_label,
+                        title=self.get_lambda_bin_title(bin_edge_low, bin_edge_high),
+                        **self.lambda_bin_plot_args)
+            self._modify_plot(plot)
+            plot.plot("NOSTACK E1")
+            plot.set_logx(do_more_labels=False)
+            plot.set_logy(do_more_labels=False)
+            plot.save("%s/unfolded_unnormalised_%s_with_template_unreg_lambda_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
+
     def plot_unfolded_with_alt_response_unnormalised(self, alt_unfolder):
         for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
             mc_gen_hist_bin = self.hist_bin_chopper.get_lambda_bin_div_bin_width('hist_truth', ibin, binning_scheme='generator')
@@ -3043,8 +3185,11 @@ def do_binned_plots_per_region_angle(setup, do_binned_gen_pt, do_binned_gen_lamb
         if unfolder.tau > 0 and unreg_unfolder:
             print("...doing unregularised vs regularised")
             gen_pt_binned_plotter.hist_bin_chopper.add_obj("unreg_unfolded", unreg_unfolder.unfolded)
+            gen_pt_binned_plotter.hist_bin_chopper.add_obj("truth_template", unreg_unfolder.truth_template)
             gen_pt_binned_plotter.plot_unfolded_with_unreg_normalised()
             gen_pt_binned_plotter.plot_unfolded_with_unreg_unnormalised()
+            gen_pt_binned_plotter.plot_unfolded_with_template_normalised()
+            gen_pt_binned_plotter.plot_unfolded_with_template_unnormalised()
 
         if alt_unfolder:
             print("...doing alt unfolder")
@@ -3124,7 +3269,10 @@ def do_binned_plots_per_region_angle(setup, do_binned_gen_pt, do_binned_gen_lamb
 
         if unfolder.tau > 0 and unreg_unfolder:
             print("...doing unregularised vs regularised")
+            lambda_pt_binned_plotter.hist_bin_chopper.add_obj("unreg_unfolded", unreg_unfolder.unfolded)
+            lambda_pt_binned_plotter.hist_bin_chopper.add_obj("truth_template", unreg_unfolder.truth_template)
             lambda_pt_binned_plotter.plot_unfolded_with_unreg_unnormalised()
+            lambda_pt_binned_plotter.plot_unfolded_with_template_unnormalised()
 
         if alt_unfolder:
             print("...doing alt unfolder")

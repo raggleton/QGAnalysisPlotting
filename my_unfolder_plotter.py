@@ -494,9 +494,9 @@ class MyUnfolderPlotter(object):
                     title=title,
                     xtitle="n_{R} bin",
                     ytitle="L(x-f_{b}x_{0})",
-                    has_data=False
-                    )
-        plot.y_padding_min_linear = 0.8
+                    has_data=False)
+        plot.y_padding_max_linear = 1.4
+        plot.y_padding_min_linear = 1.1
         plot.left_margin = 0.15
         plot.plot("HISTE")
         plot.save(output_filename)
