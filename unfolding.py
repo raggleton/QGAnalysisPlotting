@@ -2010,9 +2010,13 @@ if __name__ == "__main__":
                     if is_herwig:
                         # use all the stats!
                         mc_hname_append = "all"
+                    mc_hname_append = "all"
+
                     if not isinstance(syst_dict['tfile'], ROOT.TFile):
                         syst_dict['tfile'] = cu.open_root_file(syst_dict['tfile'])
+
                     hist_syst_reco = cu.get_from_tfile(syst_dict['tfile'], "%s/hist_%s_reco_%s" % (region['dirname'], angle_shortname, mc_hname_append))
+                    hist_syst_reco_gen_binning = cu.get_from_tfile(syst_dict['tfile'], "%s/hist_%s_reco_gen_binning" % (region['dirname'], angle_shortname))
                     hist_syst_gen = cu.get_from_tfile(syst_dict['tfile'], "%s/hist_%s_truth_%s" % (region['dirname'], angle_shortname, mc_hname_append))
 
                     syst_unfolder = MyUnfolder(response_map=unfolder.response_map,
@@ -2049,6 +2053,7 @@ if __name__ == "__main__":
                     sf = hist_mc_gen.Integral() / hist_syst_gen.Integral()
                     hist_syst_reco.Scale(sf)
                     hist_syst_gen.Scale(sf)
+                    hist_syst_reco_gen_binning.Scale(sf)
 
                     if SUBTRACT_FAKES:
                         # Use the background template from the nominal MC
@@ -2057,21 +2062,31 @@ if __name__ == "__main__":
                         hist_fakes_syst = hist_fakes_reco_fraction.Clone("hist_fakes_syst_%s" % syst_label_no_spaces)
                         hist_fakes_syst.Multiply(hist_syst_reco)
 
-                    hist_mc_reco_bg_subtracted = hist_syst_reco.Clone()
-                    hist_mc_reco_bg_subtracted.Add(hist_fakes_syst, -1)
+                        hist_fakes_syst_gen_binning = hist_fakes_reco_fraction_gen_binning.Clone("hist_fakes_syst_gen_binning_%s" % syst_label_no_spaces)
+                        hist_fakes_syst_gen_binning.Multiply(hist_syst_reco_gen_binning)
+
+                    hist_syst_mc_reco_bg_subtracted = hist_syst_reco.Clone()
+                    hist_syst_mc_reco_bg_subtracted.Add(hist_fakes_syst, -1)
+
+                    hist_syst_mc_reco_gen_binning_bg_subtracted = hist_syst_reco_gen_binning.Clone()
+                    hist_syst_mc_reco_gen_binning_bg_subtracted.Add(hist_fakes_syst_gen_binning, -1)
 
                     # Set what is to be unfolded
                     # --------------------------------------------------------------
                     syst_unfolder.set_input(input_hist=hist_syst_reco,
+                                            input_hist_gen_binning=hist_syst_reco_gen_binning,
                                             hist_truth=hist_syst_gen,
                                             hist_mc_reco=hist_syst_reco,
-                                            hist_mc_reco_bg_subtracted=hist_mc_reco_bg_subtracted,
+                                            hist_mc_reco_bg_subtracted=hist_syst_mc_reco_bg_subtracted,
+                                            hist_mc_reco_gen_binning=hist_syst_reco_gen_binning,
+                                            hist_mc_reco_gen_binning_bg_subtracted=hist_syst_mc_reco_gen_binning_bg_subtracted,
                                             bias_factor=args.biasFactor)
 
                     # Subtract fakes (treat as background)
                     # --------------------------------------------------------------
                     if SUBTRACT_FAKES:
                         syst_unfolder.subtract_background(hist_fakes_syst, "fakes")
+                        syst_unfolder.subtract_background_gen_binning(hist_fakes_syst_gen_binning, "fakes")
 
                     # also show nominal bg-subtracted input for comparison
                     ocs = [
@@ -2089,67 +2104,81 @@ if __name__ == "__main__":
                                                            append='bg_fakes_subtracted_%s' % append,
                                                            title="%s region, %s, %s" % (region['label'], angle_str, syst_label))
 
-                    # Do any regularization
+                    # Do regularisation
                     # --------------------------------------------------------------
-                    # Setup L matrix
-                    if REGULARIZE != "None":
-                        # gen_node = unfolder.generator_binning.FindNode('generatordistribution')
-                        # for ilambda in range(len(unfolder.variable_bin_edges_gen[:-1])):
-                        #     for ipt in range(len(unfolder.pt_bin_edges_gen[:-3])):
-                        #         pt_cen = unfolder.pt_bin_edges_gen[ipt+1] + 0.000001  # add a tiny bit to make sure we're in the bin properly (I can never remember if included or not)
-                        #         # lambda_cen = unfolder.variable_bin_edges_gen[ilambda+1] + 0.000001  # add a tiny bit to make sure we're in the bin properly (I can never remember if included or not)
-                        #         lambda_cen = unfolder.variable_bin_edges_gen[ilambda] + 0.000001  # add a tiny bit to make sure we're in the bin properly (I can never remember if included or not)
-
-                        #         bin_ind_pt_down = gen_node.GetGlobalBinNumber(lambda_cen, unfolder.pt_bin_edges_gen[ipt] + 0.000001)
-                        #         bin_ind_pt_up = gen_node.GetGlobalBinNumber(lambda_cen, unfolder.pt_bin_edges_gen[ipt+2] + 0.000001)
-                        #         bin_ind_cen = gen_node.GetGlobalBinNumber(lambda_cen, pt_cen)
-
-                        #         val_down = unfolder.hist_truth.GetBinContent(bin_ind_pt_down)
-                        #         value_pt_down = 1./val_down if val_down != 0 else 0
-
-                        #         val_up = unfolder.hist_truth.GetBinContent(bin_ind_pt_down)
-                        #         value_pt_up = 1./val_up if val_up != 0 else 0
-                        #         value_pt_cen = - (value_pt_down + value_pt_up)
-
-                                # syst_unfolder.AddRegularisationCondition(bin_ind_pt_down, value_pt_down, bin_ind_cen, value_pt_cen, bin_ind_pt_up, value_pt_up)
-                        for L_args in L_matrix_entries:
-                            syst_unfolder.AddRegularisationCondition(*L_args)
-
-                    # Scan for best regularisation strength
+                    # since the input isn't the same as the main unfolder's,
+                    # we can have to create new template, L matrix, etc
                     syst_tau = 0
-                    if REGULARIZE == "L":
-                        print("Regularizing systematic model with ScanL, please be patient...")
-                        syst_l_scanner = LCurveScanner()
-                        syst_tau = syst_l_scanner.scan_L(tunfolder=syst_unfolder,
-                                                         n_scan=args.nScan,
-                                                         tau_min=region['tau_limits'][angle.var][0],
-                                                         tau_max=region['tau_limits'][angle.var][1])
-                        print("Found tau:", syst_tau)
-                        syst_l_scanner.plot_scan_L_curve(output_filename="%s/scanL_syst_%s_%s.%s" % (syst_output_dir, syst_label_no_spaces, unfolder.variable_name, OUTPUT_FMT))
-                        syst_l_scanner.plot_scan_L_curvature(output_filename="%s/scanLcurvature_syst_%s_%s.%s" % (syst_output_dir, syst_label_no_spaces, unfolder.variable_name, OUTPUT_FMT))
+                    if REGULARIZE != "None":
 
-                    elif REGULARIZE == "tau":
-                        print("Regularizing systematic model with ScanTau, please be patient...")
-                        syst_tau_scanner = TauScanner()
-                        syst_tau = syst_tau_scanner.scan_tau(tunfolder=syst_unfolder,
+                        # Create truth template by fitting MC to data @ detector level
+                        # --------------------------------------------------------------
+                        # Fit the two MC templates to data to get their fractions
+                        # Then use the same at truth level
+                        # This template will allow us to setup a more accurate L matrix,
+                        # and a bias hist
+                        syst_template_maker = TruthTemplateMaker(generator_binning=unfolder.generator_binning,
+                                                                 detector_binning=unfolder.detector_binning,
+                                                                 variable_bin_edges_reco=unfolder.variable_bin_edges_reco,
+                                                                 variable_bin_edges_gen=unfolder.variable_bin_edges_gen,
+                                                                 variable_name=unfolder.variable_name,
+                                                                 pt_bin_edges_reco=unfolder.pt_bin_edges_reco,
+                                                                 pt_bin_edges_gen=unfolder.pt_bin_edges_gen,
+                                                                 pt_bin_edges_underflow_reco=unfolder.pt_bin_edges_underflow_reco,
+                                                                 pt_bin_edges_underflow_gen=unfolder.pt_bin_edges_underflow_gen,
+                                                                 output_dir=syst_output_dir)
+
+                        syst_template_maker.set_input(syst_unfolder.input_hist_gen_binning_bg_subtracted)
+
+                        syst_template_maker.add_mc_template(name=region['mc_label'],
+                                                            hist_reco=hist_mc_reco_gen_binning_bg_subtracted,
+                                                            hist_gen=hist_mc_gen,
+                                                            colour=ROOT.kRed)
+                        syst_template_maker.add_mc_template(name=region['alt_mc_label'],
+                                                            hist_reco=alt_hist_mc_reco_bg_subtracted_gen_binning,
+                                                            hist_gen=alt_hist_mc_gen,
+                                                            colour=ROOT.kViolet+1)
+
+                        syst_truth_template = syst_template_maker.create_template()
+                        syst_unfolder.truth_template = syst_truth_template
+                        syst_unfolder.hist_bin_chopper.add_obj("truth_template", syst_unfolder.truth_template)
+                        syst_unfolder.hist_bin_chopper.add_obj("alt_hist_truth", alt_hist_mc_gen)
+
+                        syst_unfolder.SetBias(syst_unfolder.truth_template)
+                        syst_unfolder.setup_L_matrix_curvature(ref_hist=syst_unfolder.truth_template, axis=args.regularizeAxis)
+
+                        if REGULARIZE == "L":
+                            print("Regularizing with ScanLcurve, please be patient...")
+                            syst_l_scanner = LCurveScanner()
+                            syst_tau = syst_l_scanner.scan_L(tunfolder=syst_unfolder,
                                                              n_scan=args.nScan,
                                                              tau_min=region['tau_limits'][angle.var][0],
-                                                             tau_max=region['tau_limits'][angle.var][1],
-                                                             scan_mode=scan_mode,
-                                                             distribution=scan_distribution,
-                                                             axis_steering=syst_unfolder.axisSteering)
-                        print("Found tau for syst matrix:", syst_tau)
-                        syst_tau_scanner.plot_scan_tau(output_filename="%s/scantau_syst_%s_%s.%s" % (syst_output_dir, syst_label_no_spaces, syst_unfolder.variable_name, OUTPUT_FMT))
+                                                             tau_max=region['tau_limits'][angle.var][1])
+                            print("Found tau:", syst_tau)
+                            syst_l_scanner.plot_scan_L_curve(output_filename="%s/scanL_%s.%s" % (syst_output_dir, append, OUTPUT_FMT))
+                            syst_l_scanner.plot_scan_L_curvature(output_filename="%s/scanLcurvature_%s.%s" % (syst_output_dir, append, OUTPUT_FMT))
+
+                        elif REGULARIZE == "tau":
+                            print("Regularizing with ScanTau, please be patient...")
+                            syst_tau_scanner = TauScanner()
+                            syst_tau = syst_tau_scanner.scan_tau(tunfolder=syst_unfolder,
+                                                                 n_scan=args.nScan,
+                                                                 tau_min=region['tau_limits'][angle.var][0],
+                                                                 tau_max=region['tau_limits'][angle.var][1],
+                                                                 scan_mode=scan_mode,
+                                                                 distribution=scan_distribution,
+                                                                 axis_steering=unfolder.axisSteering)
+                            print("Found tau:", syst_tau)
+                            syst_tau_scanner.plot_scan_tau(output_filename="%s/scantau_%s.%s" % (syst_output_dir, append, OUTPUT_FMT))
+
+                        title = "L matrix %s %s region %s" % (jet_algo, region['label'], angle_str)
+                        unfolder_plotter.draw_L_matrix(title=title, **syst_plot_args)
+                        title = "L^{T}L matrix %s %s region %s" % (jet_algo, region['label'], angle_str)
+                        unfolder_plotter.draw_L_matrix_squared(title=title, **syst_plot_args)
+                        title = "L * (x - bias vector)\n%s\n%s region\n%s" % (jet_algo, region['label'], angle_str)
+                        unfolder_plotter.draw_Lx_minus_bias(title=title, **syst_plot_args)
 
                     region['model_systematics'][ind]['tau'] = syst_tau
-
-                    if REGULARIZE != "None":
-                        title = "L matrix, %s region, %s,\n%s" % (region['label'], angle_str, syst_label)
-                        syst_unfolder_plotter.draw_L_matrix(title=title, **syst_plot_args)
-                        title = "L^{T}L matrix, %s region, %s,\n%s" % (region['label'], angle_str, syst_label)
-                        syst_unfolder_plotter.draw_L_matrix_squared(title=title, **syst_plot_args)
-                        title = "L * (x - bias vector), %s region, %s,\n%s" % (region['label'], angle_str, syst_label)
-                        syst_unfolder_plotter.draw_Lx_minus_bias(title=title, **syst_plot_args)
 
                     # Do unfolding!
                     # --------------------------------------------------------------
@@ -2160,76 +2189,97 @@ if __name__ == "__main__":
 
                     syst_title = "%s\n%s region, %s, %s input" % (jet_algo, region['label'], angle_str, syst_label)
                     syst_unfolder_plotter.draw_unfolded_1d(title=syst_title, **syst_plot_args)
+
+                    # Draw our new template alongside unfolded
+                    ocs = [
+                        Contribution(alt_hist_mc_gen, label=region['alt_mc_label'],
+                                     line_color=ROOT.kViolet+1,
+                                     marker_color=ROOT.kViolet+1,
+                                     subplot=syst_unfolder.hist_truth),
+                        Contribution(syst_unfolder.truth_template, label="Template",
+                                     line_color=ROOT.kAzure+1,
+                                     marker_color=ROOT.kAzure+1,
+                                     subplot=syst_unfolder.hist_truth),
+                    ]
+                    title = "%s\n%s region, %s" % (jet_algo, region['label'], angle_str)
+                    syst_unfolder_plotter.draw_unfolded_1d(do_gen=True,
+                                                           do_unfolded=True,
+                                                           other_contributions=ocs,
+                                                           output_dir=syst_output_dir,
+                                                           append='syst_with_template',
+                                                           title='',
+                                                           subplot_title="* / Generator")
+
                     region['model_systematics'][ind]['unfolder'] = syst_unfolder
 
                     # Do 1D plot of nominal vs syst unfolded
                     # --------------------------------------------------------------
-                    entries = []
-                    # add nominal
-                    label = 'MC' if MC_INPUT else "data"
-                    entries.append(
-                        Contribution(unfolder.unfolded, label="Unfolded (#tau = %.3g)" % (unfolder.tau),
-                                     line_color=ROOT.kRed, line_width=1,
-                                     marker_color=ROOT.kRed, marker_size=0.6, marker_style=20,
-                                     subplot_line_color=ROOT.kRed, subplot_line_width=1,
-                                     subplot_marker_color=ROOT.kRed, subplot_marker_size=0, subplot_marker_style=20,
-                                     normalise_hist=False, subplot=unfolder.hist_truth),
-                    )
+                    # entries = []
+                    # # add nominal
+                    # label = 'MC' if MC_INPUT else "data"
+                    # entries.append(
+                    #     Contribution(unfolder.unfolded, label="Unfolded (#tau = %.3g)" % (unfolder.tau),
+                    #                  line_color=ROOT.kRed, line_width=1,
+                    #                  marker_color=ROOT.kRed, marker_size=0.6, marker_style=20,
+                    #                  subplot_line_color=ROOT.kRed, subplot_line_width=1,
+                    #                  subplot_marker_color=ROOT.kRed, subplot_marker_size=0, subplot_marker_style=20,
+                    #                  normalise_hist=False, subplot=unfolder.hist_truth),
+                    # )
 
-                    entries.append(
-                        Contribution(unfolder.hist_truth, label="Generator",
-                                     line_color=ROOT.kBlue, line_width=1,
-                                     marker_color=ROOT.kBlue, marker_size=0,
-                                     normalise_hist=False),
-                    )
-                    # add systematic
-                    entries.append(
-                        Contribution(syst_unfolder.unfolded, label="Unfolded %s (#tau = %.3g)" % (syst_label, syst_unfolder.tau),
-                                     line_color=syst_dict['colour'], line_width=1,
-                                     marker_color=syst_dict['colour'], marker_size=0.6, marker_style=20+ind+1,
-                                     subplot_line_color=syst_dict['colour'], subplot_line_width=1,
-                                     subplot_marker_color=syst_dict['colour'], subplot_marker_size=0, subplot_marker_style=20,
-                                     normalise_hist=False, subplot=syst_unfolder.hist_truth),
-                    )
-                    syst_entries.append(entries[-1])
+                    # entries.append(
+                    #     Contribution(unfolder.hist_truth, label="Generator",
+                    #                  line_color=ROOT.kBlue, line_width=1,
+                    #                  marker_color=ROOT.kBlue, marker_size=0,
+                    #                  normalise_hist=False),
+                    # )
+                    # # add systematic
+                    # entries.append(
+                    #     Contribution(syst_unfolder.unfolded, label="Unfolded %s (#tau = %.3g)" % (syst_label, syst_unfolder.tau),
+                    #                  line_color=syst_dict['colour'], line_width=1,
+                    #                  marker_color=syst_dict['colour'], marker_size=0.6, marker_style=20+ind+1,
+                    #                  subplot_line_color=syst_dict['colour'], subplot_line_width=1,
+                    #                  subplot_marker_color=syst_dict['colour'], subplot_marker_size=0, subplot_marker_style=20,
+                    #                  normalise_hist=False, subplot=syst_unfolder.hist_truth),
+                    # )
+                    # syst_entries.append(entries[-1])
 
-                    entries.append(
-                        Contribution(syst_unfolder.hist_truth, label="Generator (%s)" % (syst_label),
-                                     line_color=syst_dict['colour']+2, line_width=1, line_style=1,
-                                     marker_color=syst_dict['colour']+2, marker_size=0,
-                                     normalise_hist=False),
-                    )
-                    syst_entries.append(entries[-1])
+                    # entries.append(
+                    #     Contribution(syst_unfolder.hist_truth, label="Generator (%s)" % (syst_label),
+                    #                  line_color=syst_dict['colour']+2, line_width=1, line_style=1,
+                    #                  marker_color=syst_dict['colour']+2, marker_size=0,
+                    #                  normalise_hist=False),
+                    # )
+                    # syst_entries.append(entries[-1])
 
-                    title = "%s\n%s region, %s, %s input" % (jet_algo, region['label'], angle_str, syst_label)
-                    plot = Plot(entries,
-                                what='hist',
-                                title=title,
-                                xtitle="Generator bin number",
-                                ytitle="N",
-                                subplot_type='ratio',
-                                subplot_title='Unfolded / Gen',
-                                subplot_limits=(0, 2),
-                                has_data=not MC_INPUT)
-                    plot.default_canvas_size = (800, 600)
-                    plot.plot("NOSTACK HISTE")
-                    plot.set_logy(do_more_labels=False, override_check=True)
-                    ymax = max([o.GetMaximum() for o in plot.contributions_objs])
-                    plot.container.SetMaximum(ymax * 200)
-                    ymin = max([o.GetMinimum(1E-10) for o in plot.contributions_objs])
-                    plot.container.SetMinimum(ymin*0.01)
-                    l, t = syst_unfolder_plotter.draw_pt_binning_lines(plot, which='gen', axis='x',
-                                                                       do_underflow=True,
-                                                                       do_labels_inside=True,
-                                                                       do_labels_outside=False,
-                                                                       labels_inside_align='lower'
-                                                                       )
-                    plot.legend.SetY1NDC(0.77)
-                    plot.legend.SetY2NDC(0.88)
-                    plot.legend.SetX1NDC(0.65)
-                    plot.legend.SetX2NDC(0.88)
-                    output_filename = "%s/unfolded_1d_modelSyst_%s.%s" % (syst_output_dir, syst_label_no_spaces, syst_unfolder_plotter.output_fmt)
-                    plot.save(output_filename)
+                    # title = "%s\n%s region, %s, %s input" % (jet_algo, region['label'], angle_str, syst_label)
+                    # plot = Plot(entries,
+                    #             what='hist',
+                    #             title=title,
+                    #             xtitle="Generator bin number",
+                    #             ytitle="N",
+                    #             subplot_type='ratio',
+                    #             subplot_title='Unfolded / Gen',
+                    #             subplot_limits=(0, 2),
+                    #             has_data=not MC_INPUT)
+                    # plot.default_canvas_size = (800, 600)
+                    # plot.plot("NOSTACK HISTE")
+                    # plot.set_logy(do_more_labels=False, override_check=True)
+                    # ymax = max([o.GetMaximum() for o in plot.contributions_objs])
+                    # plot.container.SetMaximum(ymax * 200)
+                    # ymin = max([o.GetMinimum(1E-10) for o in plot.contributions_objs])
+                    # plot.container.SetMinimum(ymin*0.01)
+                    # l, t = syst_unfolder_plotter.draw_pt_binning_lines(plot, which='gen', axis='x',
+                    #                                                    do_underflow=True,
+                    #                                                    do_labels_inside=True,
+                    #                                                    do_labels_outside=False,
+                    #                                                    labels_inside_align='lower'
+                    #                                                    )
+                    # plot.legend.SetY1NDC(0.77)
+                    # plot.legend.SetY2NDC(0.88)
+                    # plot.legend.SetX1NDC(0.65)
+                    # plot.legend.SetX2NDC(0.88)
+                    # output_filename = "%s/unfolded_1d_modelSyst_%s.%s" % (syst_output_dir, syst_label_no_spaces, syst_unfolder_plotter.output_fmt)
+                    # plot.save(output_filename)
 
             # Load model (scale) systs from another reference file, and calc fractional
             # uncertainty, apply to this unfolded result

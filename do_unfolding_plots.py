@@ -3211,6 +3211,20 @@ def do_binned_plots_per_region_angle(setup, do_binned_gen_pt, do_binned_gen_lamb
         if has_model_systs:
             print("...doing model systs")
             gen_pt_binned_plotter.plot_unfolded_with_model_systs_normalised()
+            # Do a set of individual plots for these model variations
+            for syst_dict in region['model_systematics']:
+                this_setup = copy(setup)
+                this_setup.output_dir = os.path.join(setup.output_dir, "modelSyst_"+cu.no_space_str(syst_dict['label']))
+                syst_gen_pt_binned_plotter = GenPtBinnedPlotter(setup=this_setup,
+                                                                bins=unfolder.pt_bin_edges_gen,
+                                                                hist_bin_chopper=syst_dict['unfolder'].hist_bin_chopper,
+                                                                unfolder=syst_dict['unfolder'])
+                syst_gen_pt_binned_plotter.plot_unfolded_unnormalised()
+                syst_gen_pt_binned_plotter.plot_unfolded_normalised()
+                if syst_dict['unfolder'].tau > 0:
+                    syst_dict['unfolder'].hist_bin_chopper.add_obj("alt_hist_truth", alt_hist_truth)
+                    syst_gen_pt_binned_plotter.plot_unfolded_with_template_normalised()
+                    syst_gen_pt_binned_plotter.plot_unfolded_with_template_unnormalised()
 
         # if has_pdf_systs:
         #     print("...doing pdf systs")
