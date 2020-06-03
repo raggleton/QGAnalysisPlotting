@@ -1853,13 +1853,13 @@ if __name__ == "__main__":
                     # --------------------------------------------------------------
                     # Same input as nominal unfolder, since we only change responsematrix
                     scale_unfolder.set_input(input_hist=reco_1d,
-                                           input_hist_gen_binning=reco_1d_gen_binning,
-                                           hist_truth=hist_mc_gen,
-                                           hist_mc_reco=hist_mc_reco,
-                                           hist_mc_reco_bg_subtracted=hist_mc_reco_bg_subtracted,
-                                           hist_mc_reco_gen_binning=hist_mc_reco_gen_binning,
-                                           hist_mc_reco_gen_binning_bg_subtracted=hist_mc_reco_gen_binning_bg_subtracted,
-                                           bias_factor=args.biasFactor)
+                                             input_hist_gen_binning=reco_1d_gen_binning,
+                                             hist_truth=hist_mc_gen,
+                                             hist_mc_reco=hist_mc_reco,
+                                             hist_mc_reco_bg_subtracted=hist_mc_reco_bg_subtracted,
+                                             hist_mc_reco_gen_binning=hist_mc_reco_gen_binning,
+                                             hist_mc_reco_gen_binning_bg_subtracted=hist_mc_reco_gen_binning_bg_subtracted,
+                                             bias_factor=args.biasFactor)
 
                     # Subtract fakes (treat as background)
                     # --------------------------------------------------------------
@@ -1867,11 +1867,39 @@ if __name__ == "__main__":
                         scale_unfolder.subtract_background(hist_fakes_reco, "Signal fakes", scale=1., scale_err=0.0)
                         scale_unfolder.subtract_background_gen_binning(hist_fakes_reco_gen_binning, "Signal fakes", scale=1., scale_err=0.0)
 
-                    # Do any regularization
+                    # Do regularisation
                     # --------------------------------------------------------------
+                    # since the input is the same as the main unfolder's, we can
+                    # use the same L matrix & bias vector
                     scale_tau = 0
                     if REGULARIZE != "None":
-                        raise RuntimeError("Robin hasn't implemented regularization for scale systs yet")
+                        scale_unfolder.SetBias(unfolder.truth_template)
+                        for L_args in unfolder.L_matrix_entries:
+                            scale_unfolder.AddRegularisationCondition(*L_args)
+
+                        if REGULARIZE == "L":
+                            print("Regularizing with ScanLcurve, please be patient...")
+                            scale_l_scanner = LCurveScanner()
+                            scale_tau = scale_l_scanner.scan_L(tunfolder=scale_unfolder,
+                                                               n_scan=args.nScan,
+                                                               tau_min=region['tau_limits'][angle.var][0],
+                                                               tau_max=region['tau_limits'][angle.var][1])
+                            print("Found tau:", scale_tau)
+                            scale_l_scanner.plot_scan_L_curve(output_filename="%s/scanL_%s.%s" % (scale_output_dir, append, OUTPUT_FMT))
+                            scale_l_scanner.plot_scan_L_curvature(output_filename="%s/scanLcurvature_%s.%s" % (scale_output_dir, append, OUTPUT_FMT))
+
+                        elif REGULARIZE == "tau":
+                            print("Regularizing with ScanTau, please be patient...")
+                            scale_tau_scanner = TauScanner()
+                            scale_tau = scale_tau_scanner.scan_tau(tunfolder=scale_unfolder,
+                                                                   n_scan=args.nScan,
+                                                                   tau_min=region['tau_limits'][angle.var][0],
+                                                                   tau_max=region['tau_limits'][angle.var][1],
+                                                                   scan_mode=scan_mode,
+                                                                   distribution=scan_distribution,
+                                                                   axis_steering=unfolder.axisSteering)
+                            print("Found tau:", scale_tau)
+                            scale_tau_scanner.plot_scan_tau(output_filename="%s/scantau_%s.%s" % (scale_output_dir, append, OUTPUT_FMT))
 
                     scale_dict['tau'] = scale_tau
 
