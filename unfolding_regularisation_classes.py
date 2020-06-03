@@ -129,6 +129,7 @@ class TauScanner(object):
         leg.AddEntry(self.graph_best_scan_point, 'Chosen point: #tau = {}'.format(self.tau), 'P')
         leg.Draw()
 
+        cu.check_dir_exists_create(os.path.dirname(os.path.abspath(output_filename)))
         canv_tau_scan.Print(output_filename)
 
     def save_to_tfile(self, tfile):
@@ -217,6 +218,7 @@ class LCurveScanner(object):
         leg.AddEntry(self.graph_best_scan_point, 'Chosen point: #tau = {}'.format(self.tau), 'P')
         leg.Draw()
 
+        cu.check_dir_exists_create(os.path.dirname(os.path.abspath(output_filename)))
         canv_L_scan.Print(output_filename)
 
     def plot_scan_L_curvature(self, output_filename):
@@ -242,6 +244,7 @@ class LCurveScanner(object):
         leg.AddEntry(self.graph_log_tau_curvature_best, 'Chosen point: #tau = {}'.format(self.tau), 'P')
         leg.Draw()
 
+        cu.check_dir_exists_create(os.path.dirname(os.path.abspath(output_filename)))
         canv_L_curvature.Print(output_filename)
 
     def save_to_tfile(self, tfile):
