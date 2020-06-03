@@ -961,7 +961,7 @@ if __name__ == "__main__":
             scan_mode = ROOT.TUnfoldDensity.kEScanTauRhoAvgSys
             scan_mode = ROOT.TUnfoldDensity.kEScanTauRhoAvg
             scan_distribution = unfolder.distribution
-            
+
             if REGULARIZE != "None":
                 if REGULARIZE == "L":
                     print("Regularizing with ScanLcurve, please be patient...")
@@ -1169,25 +1169,26 @@ if __name__ == "__main__":
                     print("*" * 80)
 
                     jk_unfolder = MyUnfolder(response_map=jk_dict['response_map'],
-                                              variable_bin_edges_reco=unfolder.variable_bin_edges_reco,
-                                              variable_bin_edges_gen=unfolder.variable_bin_edges_gen,
-                                              variable_name=unfolder.variable_name,
-                                              pt_bin_edges_reco=unfolder.pt_bin_edges_reco,
-                                              pt_bin_edges_gen=unfolder.pt_bin_edges_gen,
-                                              pt_bin_edges_underflow_reco=unfolder.pt_bin_edges_underflow_reco,
-                                              pt_bin_edges_underflow_gen=unfolder.pt_bin_edges_underflow_gen,
-                                              orientation=unfolder.orientation,
-                                              constraintMode=unfolder.constraintMode,
-                                              regMode=unfolder.regMode,
-                                              densityFlags=unfolder.densityFlags,
-                                              distribution=unfolder.distribution,
-                                              axisSteering=unfolder.axisSteering)
+                                             variable_bin_edges_reco=unfolder.variable_bin_edges_reco,
+                                             variable_bin_edges_gen=unfolder.variable_bin_edges_gen,
+                                             variable_name=unfolder.variable_name,
+                                             pt_bin_edges_reco=unfolder.pt_bin_edges_reco,
+                                             pt_bin_edges_gen=unfolder.pt_bin_edges_gen,
+                                             pt_bin_edges_underflow_reco=unfolder.pt_bin_edges_underflow_reco,
+                                             pt_bin_edges_underflow_gen=unfolder.pt_bin_edges_underflow_gen,
+                                             orientation=unfolder.orientation,
+                                             constraintMode=unfolder.constraintMode,
+                                             regMode=unfolder.regMode,
+                                             densityFlags=unfolder.densityFlags,
+                                             distribution=unfolder.distribution,
+                                             axisSteering=unfolder.axisSteering)
 
                     jk_unfolder.SetEpsMatrix(eps_matrix)
 
                     jk_unfolder_plotter = MyUnfolderPlotter(jk_unfolder, is_data=not MC_INPUT)
                     jk_output_dir = os.path.join(this_output_dir, "jackknife_response", jk_label_no_spaces)
                     jk_plot_args = dict(output_dir=jk_output_dir, append=append)
+                    cu.check_dir_exists_create(jk_output_dir)
 
                     # Set what is to be unfolded
                     # --------------------------------------------------------------
@@ -1207,9 +1208,43 @@ if __name__ == "__main__":
                         jk_unfolder.subtract_background(hist_fakes_reco, "Signal fakes", scale=1., scale_err=0.0)
                         jk_unfolder.subtract_background_gen_binning(hist_fakes_reco_gen_binning, "Signal fakes", scale=1., scale_err=0.0)
 
+                    # Do regularisation
+                    # --------------------------------------------------------------
+                    # since the input is the same as the main unfolder's, we can
+                    # use the same L matrix & bias vector
+                    jk_tau = 0
+                    if REGULARIZE != "None":
+                        jk_unfolder.SetBias(unfolder.truth_template)
+                        for L_args in unfolder.L_matrix_entries:
+                            jk_unfolder.AddRegularisationCondition(*L_args)
+
+                        if REGULARIZE == "L":
+                            print("Regularizing with ScanLcurve, please be patient...")
+                            jk_l_scanner = LCurveScanner()
+                            jk_tau = jk_l_scanner.scan_L(tunfolder=jk_unfolder,
+                                                      n_scan=args.nScan,
+                                                      tau_min=region['tau_limits'][angle.var][0],
+                                                      tau_max=region['tau_limits'][angle.var][1])
+                            print("Found tau:", jk_tau)
+                            jk_l_scanner.plot_scan_L_curve(output_filename="%s/scanL_%s.%s" % (jk_output_dir, append, OUTPUT_FMT))
+                            jk_l_scanner.plot_scan_L_curvature(output_filename="%s/scanLcurvature_%s.%s" % (jk_output_dir, append, OUTPUT_FMT))
+
+                        elif REGULARIZE == "tau":
+                            print("Regularizing with ScanTau, please be patient...")
+                            jk_tau_scanner = TauScanner()
+                            jk_tau = jk_tau_scanner.scan_tau(tunfolder=jk_unfolder,
+                                                          n_scan=args.nScan,
+                                                          tau_min=region['tau_limits'][angle.var][0],
+                                                          tau_max=region['tau_limits'][angle.var][1],
+                                                          scan_mode=scan_mode,
+                                                          distribution=scan_distribution,
+                                                          axis_steering=unfolder.axisSteering)
+                            print("Found tau:", jk_tau)
+                            jk_tau_scanner.plot_scan_tau(output_filename="%s/scantau_%s.%s" % (jk_output_dir, append, OUTPUT_FMT))
+
                     # Do unfolding!
                     # --------------------------------------------------------------
-                    jk_unfolder.do_unfolding(0)
+                    jk_unfolder.do_unfolding(jk_tau)
                     jk_unfolder.get_output(hist_name="%s_unfolded_1d" % jk_label_no_spaces)
                     jk_unfolder._post_process()
                     jk_unfolder.setup_normalised_results_per_pt_bin()
