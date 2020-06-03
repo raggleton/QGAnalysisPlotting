@@ -731,9 +731,9 @@ class MyUnfolderPlotter(object):
         """Simple plot of unfolded & gen, by bin number (ie non physical axes)"""
         entries = []
 
+        label = 'data' if self.is_data else 'MC'
         if do_unfolded and self.unfolder.unfolded:
             subplot = self.unfolder.hist_truth if (do_gen and self.unfolder.hist_truth) else None
-            label = 'data' if self.is_data else 'MC'
             entries.append(
                 Contribution(self.unfolder.unfolded, label="Unfolded %s (#tau = %.3g)" % (label, self.unfolder.tau),
                              line_color=ROOT.kRed, line_width=1,

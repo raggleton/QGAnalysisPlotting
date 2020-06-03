@@ -2284,11 +2284,11 @@ if __name__ == "__main__":
                             syst_tau_scanner.plot_scan_tau(output_filename="%s/scantau_%s.%s" % (syst_output_dir, append, OUTPUT_FMT))
 
                         title = "L matrix %s %s region %s" % (jet_algo, region['label'], angle_str)
-                        unfolder_plotter.draw_L_matrix(title=title, **syst_plot_args)
+                        syst_unfolder_plotter.draw_L_matrix(title=title, **syst_plot_args)
                         title = "L^{T}L matrix %s %s region %s" % (jet_algo, region['label'], angle_str)
-                        unfolder_plotter.draw_L_matrix_squared(title=title, **syst_plot_args)
+                        syst_unfolder_plotter.draw_L_matrix_squared(title=title, **syst_plot_args)
                         title = "L * (x - bias vector)\n%s\n%s region\n%s" % (jet_algo, region['label'], angle_str)
-                        unfolder_plotter.draw_Lx_minus_bias(title=title, **syst_plot_args)
+                        syst_unfolder_plotter.draw_Lx_minus_bias(title=title, **syst_plot_args)
 
                     region['model_systematics'][ind]['tau'] = syst_tau
 
@@ -2302,25 +2302,26 @@ if __name__ == "__main__":
                     syst_title = "%s\n%s region, %s, %s input" % (jet_algo, region['label'], angle_str, syst_label)
                     syst_unfolder_plotter.draw_unfolded_1d(title=syst_title, **syst_plot_args)
 
-                    # Draw our new template alongside unfolded
-                    ocs = [
-                        Contribution(alt_hist_mc_gen, label=region['alt_mc_label'],
-                                     line_color=ROOT.kViolet+1,
-                                     marker_color=ROOT.kViolet+1,
-                                     subplot=syst_unfolder.hist_truth),
-                        Contribution(syst_unfolder.truth_template, label="Template",
-                                     line_color=ROOT.kAzure+1,
-                                     marker_color=ROOT.kAzure+1,
-                                     subplot=syst_unfolder.hist_truth),
-                    ]
-                    title = "%s\n%s region, %s" % (jet_algo, region['label'], angle_str)
-                    syst_unfolder_plotter.draw_unfolded_1d(do_gen=True,
-                                                           do_unfolded=True,
-                                                           other_contributions=ocs,
-                                                           output_dir=syst_output_dir,
-                                                           append='syst_with_template',
-                                                           title='',
-                                                           subplot_title="* / Generator")
+                    if REGULARIZE != "None":
+                        # Draw our new template alongside unfolded
+                        ocs = [
+                            Contribution(alt_hist_mc_gen, label=region['alt_mc_label'],
+                                         line_color=ROOT.kViolet+1,
+                                         marker_color=ROOT.kViolet+1,
+                                         subplot=syst_unfolder.hist_truth),
+                            Contribution(syst_unfolder.truth_template, label="Template",
+                                         line_color=ROOT.kAzure+1,
+                                         marker_color=ROOT.kAzure+1,
+                                         subplot=syst_unfolder.hist_truth),
+                        ]
+                        title = "%s\n%s region, %s" % (jet_algo, region['label'], angle_str)
+                        syst_unfolder_plotter.draw_unfolded_1d(do_gen=True,
+                                                               do_unfolded=True,
+                                                               other_contributions=ocs,
+                                                               output_dir=syst_output_dir,
+                                                               append='syst_with_template',
+                                                               title='',
+                                                               subplot_title="* / Generator")
 
                     region['model_systematics'][ind]['unfolder'] = syst_unfolder
 
@@ -2435,6 +2436,7 @@ if __name__ == "__main__":
 
             if len(region['model_systematics']) > 0 and MC_INPUT:
                 # Do a big absolute 1D plots for sanity
+                # Detector level
                 model_contributions = [
                     Contribution(mdict['unfolder'].input_hist_bg_subtracted,
                                  label=mdict['label'],
@@ -2448,6 +2450,7 @@ if __name__ == "__main__":
                                                   append='bg_fakes_subtracted_model_systs_%s' % append,
                                                   title=title,
                                                   other_contributions=model_contributions)
+                # Truth level vs nominal
                 model_contributions = [
                     Contribution(mdict['unfolder'].get_unfolded_with_ematrix_stat(),
                                  label=mdict['label'],
@@ -2462,6 +2465,21 @@ if __name__ == "__main__":
                                                   title=title,
                                                   other_contributions=model_contributions,
                                                   subplot_title='#splitline{Variation /}{nominal}')
+                # Truth vs own gen
+                model_contributions = [
+                    Contribution(mdict['unfolder'].get_unfolded_with_ematrix_stat(),
+                                 label=mdict['label'],
+                                 line_color=mdict['colour'], line_style=1, line_width=1,
+                                 marker_color=mdict['colour'], marker_size=0, marker_style=21,
+                                 subplot=mdict['unfolder'].hist_truth)
+                    for mdict in region['model_systematics']
+                ]
+                unfolder_plotter.draw_unfolded_1d(do_unfolded=True, do_gen=False,
+                                                  output_dir=this_output_dir,
+                                                  append='model_systs_vs_gen_%s' % append,
+                                                  title=title,
+                                                  other_contributions=model_contributions,
+                                                  subplot_title='#splitline{Unfolded /}{Generator}')
 
 
             # ------------------------------------------------------------------
