@@ -895,7 +895,7 @@ if __name__ == "__main__":
                                                         output_dir=this_output_dir,
                                                         append='unreg_with_template',
                                                         title='',
-                                                        subplot_title=None,
+                                                        subplot_title="* / Generator",
                                                         subplot_limits=(0, 2))
 
                 # Setup our L matrix
