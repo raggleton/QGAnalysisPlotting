@@ -2558,55 +2558,35 @@ if __name__ == "__main__":
                     # Do any regularization
                     # --------------------------------------------------------------
                     # Setup L matrix
-                    if REGULARIZE != "None":
-                        # gen_node = unfolder.generator_binning.FindNode('generatordistribution')
-                        # for ilambda in range(len(unfolder.variable_bin_edges_gen[:-1])):
-                        #     for ipt in range(len(unfolder.pt_bin_edges_gen[:-3])):
-                        #         pt_cen = unfolder.pt_bin_edges_gen[ipt+1] + 0.000001  # add a tiny bit to make sure we're in the bin properly (I can never remember if included or not)
-                        #         # lambda_cen = unfolder.variable_bin_edges_gen[ilambda+1] + 0.000001  # add a tiny bit to make sure we're in the bin properly (I can never remember if included or not)
-                        #         lambda_cen = unfolder.variable_bin_edges_gen[ilambda] + 0.000001  # add a tiny bit to make sure we're in the bin properly (I can never remember if included or not)
-
-                        #         bin_ind_pt_down = gen_node.GetGlobalBinNumber(lambda_cen, unfolder.pt_bin_edges_gen[ipt] + 0.000001)
-                        #         bin_ind_pt_up = gen_node.GetGlobalBinNumber(lambda_cen, unfolder.pt_bin_edges_gen[ipt+2] + 0.000001)
-                        #         bin_ind_cen = gen_node.GetGlobalBinNumber(lambda_cen, pt_cen)
-
-                        #         val_down = unfolder.hist_truth.GetBinContent(bin_ind_pt_down)
-                        #         value_pt_down = 1./val_down if val_down != 0 else 0
-
-                        #         val_up = unfolder.hist_truth.GetBinContent(bin_ind_pt_down)
-                        #         value_pt_up = 1./val_up if val_up != 0 else 0
-                        #         value_pt_cen = - (value_pt_down + value_pt_up)
-
-                        #         pdf_unfolder.AddRegularisationCondition(bin_ind_pt_down, value_pt_down, bin_ind_cen, value_pt_cen, bin_ind_pt_up, value_pt_up)
-
-                        for L_args in L_matrix_entries:
-                            syst_unfolder.AddRegularisationCondition(*L_args)
-
-
                     pdf_tau = 0
-                    if REGULARIZE == "L":
-                        print("Regularizing PDF systematic with ScanL, please be patient...")
-                        pdf_l_scanner = LCurveScanner()
-                        pdf_tau = pdf_l_scanner.scan_L(tunfolder=pdf_unfolder,
-                                                       n_scan=args.nScan,
-                                                       tau_min=region['tau_limits'][angle.var][0],
-                                                       tau_max=region['tau_limits'][angle.var][1])
-                        print("Found tau:", pdf_tau)
-                        pdf_l_scanner.plot_scan_L_curve(output_filename="%s/scanL_syst_%s_%s.%s" % (pdf_output_dir, pdf_label_no_spaces, unfolder.variable_name, OUTPUT_FMT))
-                        pdf_l_scanner.plot_scan_L_curvature(output_filename="%s/scanLcurvature_syst_%s_%s.%s" % (pdf_output_dir, pdf_label_no_spaces, unfolder.variable_name, OUTPUT_FMT))
+                    if REGULARIZE != "None":
+                        pdf_unfolder.SetBias(unfolder.truth_template)
+                        for L_args in unfolder.L_matrix_entries:
+                            pdf_unfolder.AddRegularisationCondition(*L_args)
 
-                    elif REGULARIZE == "tau":
-                        print("Regularizing PDF systematic with ScanTau, please be patient...")
-                        pdf_tau_scanner = TauScanner()
-                        pdf_tau = pdf_tau_scanner.scan_tau(tunfolder=pdf_unfolder,
-                                                             n_scan=args.nScan,
-                                                             tau_min=region['tau_limits'][angle.var][0],
-                                                             tau_max=region['tau_limits'][angle.var][1],
-                                                             scan_mode=scan_mode,
-                                                             distribution=scan_distribution,
-                                                             axis_steering=pdf_unfolder.axisSteering)
-                        print("Found tau for syst matrix:", pdf_tau)
-                        pdf_tau_scanner.plot_scan_tau(output_filename="%s/scantau_syst_%s_%s.%s" % (pdf_output_dir, pdf_label_no_spaces, pdf_unfolder.variable_name, OUTPUT_FMT))
+                        if REGULARIZE == "L":
+                            print("Regularizing with ScanLcurve, please be patient...")
+                            pdf_l_scanner = LCurveScanner()
+                            pdf_tau = pdf_l_scanner.scan_L(tunfolder=pdf_unfolder,
+                                                           n_scan=args.nScan,
+                                                           tau_min=region['tau_limits'][angle.var][0],
+                                                           tau_max=region['tau_limits'][angle.var][1])
+                            print("Found tau:", pdf_tau)
+                            pdf_l_scanner.plot_scan_L_curve(output_filename="%s/scanL_%s.%s" % (pdf_output_dir, append, OUTPUT_FMT))
+                            pdf_l_scanner.plot_scan_L_curvature(output_filename="%s/scanLcurvature_%s.%s" % (pdf_output_dir, append, OUTPUT_FMT))
+
+                        elif REGULARIZE == "tau":
+                            print("Regularizing with ScanTau, please be patient...")
+                            pdf_tau_scanner = TauScanner()
+                            pdf_tau = pdf_tau_scanner.scan_tau(tunfolder=pdf_unfolder,
+                                                               n_scan=args.nScan,
+                                                               tau_min=region['tau_limits'][angle.var][0],
+                                                               tau_max=region['tau_limits'][angle.var][1],
+                                                               scan_mode=scan_mode,
+                                                               distribution=scan_distribution,
+                                                               axis_steering=unfolder.axisSteering)
+                            print("Found tau:", pdf_tau)
+                            pdf_tau_scanner.plot_scan_tau(output_filename="%s/scantau_%s.%s" % (pdf_output_dir, append, OUTPUT_FMT))
 
                     region['pdf_systematics'][ind]['tau'] = pdf_tau
 
@@ -2627,7 +2607,7 @@ if __name__ == "__main__":
                 unfolder.create_normalised_pdf_syst_uncertainty_per_pt_bin(region['pdf_systematics'])
                 unfolder.create_normalised_pdf_syst_ematrices_per_pt_bin()
 
-                unfolder.create_pdf_syst_uncertainty_per_ptbin(region['pdf_systematics'])
+                unfolder.create_pdf_syst_uncertainty_per_pt_bin(region['pdf_systematics'])
 
                 unfolder.create_pdf_syst_uncertainty_per_lambda_bin(region['pdf_systematics'])
 
@@ -2701,6 +2681,20 @@ if __name__ == "__main__":
                                                   title=title,
                                                   other_contributions=pdf_contributions,
                                                   subplot_title='#splitline{Variation /}{nominal}')
+                pdf_contributions = [
+                    Contribution(pdict['unfolder'].get_unfolded_with_ematrix_stat(),
+                                 label=pdict['label'],
+                                 line_color=pdict['colour'], line_style=1, line_width=1,
+                                 marker_color=pdict['colour'], marker_size=0, marker_style=21,
+                                 subplot=pdict['unfolder'].hist_truth)
+                    for pdict in region['pdf_systematics']
+                ]
+                unfolder_plotter.draw_unfolded_1d(do_unfolded=True, do_gen=False,
+                                                  output_dir=this_output_dir,
+                                                  append='pdf_systs_vs_gen_%s' % append,
+                                                  title=title,
+                                                  other_contributions=pdf_contributions,
+                                                  subplot_title='#splitline{Unfolded /}{generator}')
 
             # ------------------------------------------------------------------
             # Finally update absolute/normalised results
