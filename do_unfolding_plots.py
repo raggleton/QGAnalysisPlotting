@@ -3368,7 +3368,7 @@ def do_binned_plots_per_region_angle(setup, do_binned_gen_pt, do_binned_gen_lamb
                 syst_gen_lambda_binned_plotter.plot_unfolded_unnormalised()
                 syst_gen_lambda_binned_plotter.plot_unfolded_normalised()
 
-        if has_jackknife_input_vars
+        if has_jackknife_input_vars:
             # Do a set of individual plots for these jackknife variations
             for jk_dict in region['jackknife_input_variations']:
                 this_setup = copy(setup)
@@ -3385,7 +3385,7 @@ def do_binned_plots_per_region_angle(setup, do_binned_gen_pt, do_binned_gen_lamb
                     jk_gen_lambda_binned_plotter.plot_unfolded_with_unreg_unnormalised()
                     jk_gen_lambda_binned_plotter.plot_unfolded_with_template_unnormalised()
 
-        if has_jackknife_response_vars
+        if has_jackknife_response_vars:
             # Do a set of individual plots for these jackknife variations
             for jk_dict in region['jackknife_response_variations']:
                 this_setup = copy(setup)
@@ -3407,8 +3407,10 @@ def do_binned_plots_per_region_angle(setup, do_binned_gen_pt, do_binned_gen_lamb
         gen_lambda_binned_plotter.plot_syst_fraction_unnormalised()
 
         # if has_data:
-        gen_lambda_binned_plotter.plot_detector_unnormalised(alt_detector=alt_hist_reco_bg_subtracted_gen_binning)
         print("...doing detector-level")
+        gen_lambda_binned_plotter.hist_bin_chopper.add_obj("input_hist_gen_binning_bg_subtracted", unfolder.input_hist_gen_binning_bg_subtracted)
+        gen_lambda_binned_plotter.hist_bin_chopper.add_obj("hist_mc_reco_gen_binning_bg_subtracted", unfolder.hist_mc_reco_gen_binning_bg_subtracted)
+        gen_lambda_binned_plotter.plot_detector_unnormalised(alt_detector=alt_hist_reco_bg_subtracted_gen_binning)
 
     if do_binned_reco_pt:
         # Iterate through pt bins - reco binning
