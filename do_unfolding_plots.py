@@ -296,8 +296,8 @@ class GenPtBinnedPlotter(object):
                         ytitle=self.setup.pt_bin_unnormalised_differential_label,
                         title=self.get_pt_bin_title(bin_edge_low, bin_edge_high),
                         **self.pt_bin_plot_args)
-            plot.subplot_title = "* / Generator"
             self._modify_plot(plot)
+            plot.subplot_title = "* / Generator"
             plot.plot("NOSTACK E1")
             plot.save("%s/unfolded_unnormalised_%s_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
 
@@ -332,6 +332,7 @@ class GenPtBinnedPlotter(object):
                         title=self.get_pt_bin_title(bin_edge_low, bin_edge_high),
                         **self.pt_bin_plot_args)
             self._modify_plot(plot)
+            plot.subplot_title = "* / Generator"
             plot.plot("NOSTACK E1")
             plot.save("%s/unfolded_%s_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
 
@@ -3210,6 +3211,7 @@ def do_binned_plots_per_region_angle(setup, do_binned_gen_pt, do_binned_gen_lamb
             gen_pt_binned_plotter.plot_unfolded_with_scale_systs_normalised()
             # Do a set of individual plots for these scale variations
             for syst_dict in region['scale_systematics']:
+                print(".......", syst_dict['label'])
                 this_setup = copy(setup)
                 this_setup.output_dir = os.path.join(setup.output_dir, "scaleSyst_"+cu.no_space_str(syst_dict['label']))
                 syst_gen_pt_binned_plotter = GenPtBinnedPlotter(setup=this_setup,
@@ -3224,6 +3226,7 @@ def do_binned_plots_per_region_angle(setup, do_binned_gen_pt, do_binned_gen_lamb
             gen_pt_binned_plotter.plot_unfolded_with_model_systs_normalised()
             # Do a set of individual plots for these model variations
             for syst_dict in region['model_systematics']:
+                print(".......", syst_dict['label'])
                 this_setup = copy(setup)
                 this_setup.output_dir = os.path.join(setup.output_dir, "modelSyst_"+cu.no_space_str(syst_dict['label']))
                 syst_gen_pt_binned_plotter = GenPtBinnedPlotter(setup=this_setup,
@@ -3245,6 +3248,7 @@ def do_binned_plots_per_region_angle(setup, do_binned_gen_pt, do_binned_gen_lamb
             gen_pt_binned_plotter.plot_unfolded_with_pdf_systs_unnormalised()
             # Do a set of individual plots for these PDF variations
             for syst_dict in region['pdf_systematics']:
+                print(".......", syst_dict['label'])
                 this_setup = copy(setup)
                 this_setup.output_dir = os.path.join(setup.output_dir, "pdfSyst", cu.no_space_str(syst_dict['label']))
                 syst_gen_pt_binned_plotter = GenPtBinnedPlotter(setup=this_setup,
@@ -3260,6 +3264,7 @@ def do_binned_plots_per_region_angle(setup, do_binned_gen_pt, do_binned_gen_lamb
             gen_pt_binned_plotter.plot_jackknife_residuals(region['jackknife_input_variations'])
             # Do a set of individual plots for these jackknife variations
             for jk_dict in region['jackknife_input_variations']:
+                print(".......", jk_dict['label'])
                 this_setup = copy(setup)
                 this_setup.output_dir = os.path.join(setup.output_dir, "jackknife_input", jk_dict['label'])
                 jk_gen_pt_binned_plotter = GenPtBinnedPlotter(setup=this_setup,
@@ -3280,6 +3285,7 @@ def do_binned_plots_per_region_angle(setup, do_binned_gen_pt, do_binned_gen_lamb
             gen_pt_binned_plotter.plot_jackknife_residuals(region['jackknife_response_variations'])
             # Do a set of individual plots for these jackknife variations
             for jk_dict in region['jackknife_response_variations']:
+                print(".......", jk_dict['label'])
                 this_setup = copy(setup)
                 this_setup.output_dir = os.path.join(setup.output_dir, "jackknife_response", jk_dict['label'])
                 jk_gen_pt_binned_plotter = GenPtBinnedPlotter(setup=this_setup,
@@ -3342,6 +3348,7 @@ def do_binned_plots_per_region_angle(setup, do_binned_gen_pt, do_binned_gen_lamb
             gen_lambda_binned_plotter.plot_unfolded_with_model_systs_unnormalised()
             # Do a set of individual plots for these model variations
             for syst_dict in region['model_systematics']:
+                print(".......", syst_dict['label'])
                 this_setup = copy(setup)
                 this_setup.output_dir = os.path.join(setup.output_dir, "modelSyst_"+cu.no_space_str(syst_dict['label']))
                 syst_gen_lambda_binned_plotter = GenLambdaBinnedPlotter(setup=this_setup,
@@ -3360,6 +3367,7 @@ def do_binned_plots_per_region_angle(setup, do_binned_gen_pt, do_binned_gen_lamb
             gen_lambda_binned_plotter.plot_unfolded_with_pdf_systs_unnormalised()
             # Do a set of individual plots for these PDF variations
             for syst_dict in region['pdf_systematics']:
+                print(".......", syst_dict['label'])
                 this_setup = copy(setup)
                 this_setup.output_dir = os.path.join(setup.output_dir, "pdfSyst", cu.no_space_str(syst_dict['label']))
                 syst_gen_lambda_binned_plotter = GenLambdaBinnedPlotter(setup=this_setup,
@@ -3372,6 +3380,7 @@ def do_binned_plots_per_region_angle(setup, do_binned_gen_pt, do_binned_gen_lamb
         if has_jackknife_input_vars:
             # Do a set of individual plots for these jackknife variations
             for jk_dict in region['jackknife_input_variations']:
+                print(".......", jk_dict['label'])
                 this_setup = copy(setup)
                 this_setup.output_dir = os.path.join(setup.output_dir, "jackknife_input", jk_dict['label'])
                 jk_gen_lambda_binned_plotter = GenLambdaBinnedPlotter(setup=this_setup,
@@ -3389,6 +3398,7 @@ def do_binned_plots_per_region_angle(setup, do_binned_gen_pt, do_binned_gen_lamb
         if has_jackknife_response_vars:
             # Do a set of individual plots for these jackknife variations
             for jk_dict in region['jackknife_response_variations']:
+                print(".......", jk_dict['label'])
                 this_setup = copy(setup)
                 this_setup.output_dir = os.path.join(setup.output_dir, "jackknife_response", jk_dict['label'])
                 jk_gen_lambda_binned_plotter = GenLambdaBinnedPlotter(setup=this_setup,

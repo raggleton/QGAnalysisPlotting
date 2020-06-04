@@ -583,7 +583,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             for ibin_pt, (pt_low, pt_high) in enumerate(zip(self.pt_bin_edges_underflow_reco[:-1], self.pt_bin_edges_underflow_reco[1:])):
                 gen_bin = self.generator_distribution_underflow.GetGlobalBinNumber(var_low*1.000001, pt_low*1.0000001)
                 det_bin = self.detector_distribution_underflow.GetGlobalBinNumber(var_low*1.000001, pt_low*1.0000001)
-                print("Converting bin", pt_low, var_low, ":", det_bin, "->", gen_bin)
+                # print("Converting bin", pt_low, var_low, ":", det_bin, "->", gen_bin)
                 val = new_hist.GetBinContent(gen_bin)
                 val += hist.GetBinContent(det_bin)
                 new_hist.SetBinContent(gen_bin, val)
@@ -594,7 +594,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             for ibin_pt, (pt_low, pt_high) in enumerate(zip(self.pt_bin_edges_reco[:-1], self.pt_bin_edges_reco[1:])):
                 gen_bin = self.generator_distribution.GetGlobalBinNumber(var_low*1.000001, pt_low*1.0000001)
                 det_bin = self.detector_distribution.GetGlobalBinNumber(var_low*1.000001, pt_low*1.0000001)
-                print("Converting bin", pt_low, var_low, ":", det_bin, "->", gen_bin)
+                # print("Converting bin", pt_low, var_low, ":", det_bin, "->", gen_bin)
                 val = new_hist.GetBinContent(gen_bin)
                 val += hist.GetBinContent(det_bin)
                 new_hist.SetBinContent(gen_bin, val)
