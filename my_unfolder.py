@@ -590,7 +590,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
                 err2 = new_hist.GetBinError(gen_bin)**2
                 err2 += hist.GetBinError(det_bin)**2
                 new_hist.SetBinError(gen_bin, math.sqrt(err2))
-            
+
             for ibin_pt, (pt_low, pt_high) in enumerate(zip(self.pt_bin_edges_reco[:-1], self.pt_bin_edges_reco[1:])):
                 gen_bin = self.generator_distribution.GetGlobalBinNumber(var_low*1.000001, pt_low*1.0000001)
                 det_bin = self.detector_distribution.GetGlobalBinNumber(var_low*1.000001, pt_low*1.0000001)
@@ -3435,8 +3435,6 @@ class TruthTemplateMaker(object):
 
     def plot_fit(self, hist_data, mc_hists, labels, title, filename):
         canv = ROOT.TCanvas(cu.get_unique_str(), "", 800, 600)
-        canv.SetTicks(1, 1)
-        hst = ROOT.THStack(cu.get_unique_str(), "%s;%s;N / bin width" % (title, self.variable_name))
         this_hist_data = hist_data.Clone("Data")
         this_hist_data.SetMarkerStyle(cu.Marker.get('triangleUp'))
         # draw first to get stats box as not drawn with THStack
@@ -3444,31 +3442,57 @@ class TruthTemplateMaker(object):
         canv.Update()
         stats = this_hist_data.GetListOfFunctions().FindObject("stats")
         func = this_hist_data.GetListOfFunctions().At(0)
-        func.SetLineColor(ROOT.kRed)
-        func.SetLineWidth(1)
-        func.SetLineStyle(2)
-        func.SetMarkerColor(ROOT.kRed)
 
-        hst.Add(this_hist_data)
-        for h, lab in zip(mc_hists, labels):
-            this_hist = h.Clone(lab)
-            # this_hist.SetLineColor()
-            hst.Add(this_hist)
+        hist_fit = hist_data.Clone("Fit")
+        for i in range(1, hist_data.GetNbinsX()+1):
+            hist_fit.SetBinContent(i, func.Eval(hist_data.GetBinCenter(i)))
+            hist_fit.SetBinError(i, 0)
 
-        hst.Draw("NOSTACK HIST E PLC PMC")
-        hst.SetMaximum(hst.GetMaximum()*1.1)
-        func.Draw("SAME")
-        leg = ROOT.gPad.BuildLegend()
-        leg.SetFillStyle(0)
-        # leg.SetY1(0.7)
-        # leg.SetY2(0.9)
+        lw = 2
+
+        entries = [
+            Contribution(h,
+                         label=labels[ind],
+                         line_color=self.templates[ind]['colour'],
+                         line_width=lw,
+                         marker_color=self.templates[ind]['colour'])
+            for ind, h in enumerate(mc_hists)
+        ]
+        entries.extend([
+            Contribution(hist_data,
+                         label="Data",
+                         line_color=ROOT.kBlack,
+                         line_width=lw,
+                         marker_color=ROOT.kBlack,
+                         marker_style=cu.Marker.get('triangleUp')),
+            Contribution(hist_fit,
+                         label="Fit",
+                         line_color=ROOT.kAzure+1,
+                         line_width=lw,
+                         line_style=2,
+                         marker_color=ROOT.kAzure+1,
+                         subplot=hist_data)
+        ])
+
+        plot = Plot(entries, what='hist',
+                    title=title,
+                    xtitle=self.variable_name,
+                    ytitle="N / bin width",
+                    subplot_type="ratio",
+                    subplot_title="Fit / data",
+                    subplot_limits=(0.8, 1.2))
+        plot.plot("NOSTACK HIST E")
+        plot.main_pad.cd()
         stats.SetBorderSize(0)
         stats.SetFillStyle(0)
         stats.SetY1NDC(0.65)
-        stats.SetY2NDC(0.85)
-        stats.SetX2NDC(0.85)
+        stats.SetY2NDC(0.83)
+        stats.SetX2NDC(0.9)
         stats.Draw()
-        canv.SaveAs(filename)
+        plot.legend.SetY2NDC(0.7)
+        plot.legend.SetY1NDC(0.5)
+        plot.legend.SetX2NDC(0.9)
+        plot.save(filename)
 
     def do_fits(self):
         """Do the MC fits to data one per gen pT bin"""
@@ -3512,7 +3536,7 @@ class TruthTemplateMaker(object):
             self.plot_fit(hist_data,
                           mc_hists,
                           labels=labels,
-                          title="Fit to reco data %g < p_{T} < %g GeV" % (bin_edge_low, bin_edge_high),
+                          title="Fit to reco data\n%g < p_{T} < %g GeV" % (bin_edge_low, bin_edge_high),
                           filename=os.path.join(self.output_dir, "reco_fit_gen_bin_uflow_%d.pdf" % ibin))
 
         # Fit signal pT bins
@@ -3535,7 +3559,7 @@ class TruthTemplateMaker(object):
             self.plot_fit(hist_data,
                           mc_hists,
                           labels=labels,
-                          title="Fit to reco data %g < p_{T} < %g GeV" % (bin_edge_low, bin_edge_high),
+                          title="Fit to reco data\n%g < p_{T} < %g GeV" % (bin_edge_low, bin_edge_high),
                           filename=os.path.join(self.output_dir, "reco_fit_gen_bin_%d.pdf" % ibin))
 
     def plot_fit_results_vs_pt_bin(self, title, output_filename):
