@@ -79,4 +79,5 @@ My_Style.SetPaintTextFormat(".3g")
 
 My_Style.SetHistTopMargin(0.)
 
-My_Style.SetNumberContours(50)
+My_Style.SetNumberContours(512)
+

@@ -430,6 +430,26 @@ def set_french_flag_palette():
     ROOT.gStyle.SetPalette(ff_ncont, french_flag_palette)
 
 
+def set_log_french_flag_palette():
+    """Custom colour scheme - french flag colouring but colour small values non-white"""
+    NRGBs = 5
+    ff_ncont = 512
+    # Set max & min such that 0 is in the middle
+    delta = 1E-20
+    # TODO: actually have log colour scale?
+    stops = [ 0.00, 0.5-(0*delta), 0.5+delta, 0.5+(2*delta), 1.00 ]
+    red =   [ 0.00, 0.00, 0.50, 0.98, 1.00]
+    green = [ 0.00, 1.00, 0.93, 0.86, 0.00 ]
+    blue =  [ 1.00, 1.00, 0.98, 0.96, 0.00 ]
+    stopsArray = array('d', stops)
+    redArray = array('d', red)
+    greenArray = array('d', green)
+    blueArray = array('d', blue)
+    french_flag_cols = ROOT.TColor.CreateGradientColorTable(NRGBs, stopsArray, redArray, greenArray, blueArray, ff_ncont)
+    french_flag_palette = array('i', [french_flag_cols+i for i in range(ff_ncont)])
+    ROOT.gStyle.SetPalette(ff_ncont, french_flag_palette)
+
+
 def symmetrize_h2d_z_limits(h2d):
     """Set TH2 z axis to have same + & - limits - good for use with French flag palette"""
     max_z = max(h2d.GetMaximum(), abs(h2d.GetMinimum()))
