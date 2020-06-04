@@ -183,6 +183,26 @@ def fill_empty_bins(response_map,
     return new_map
 
 
+def calc_background(hist, bg_fraction_hist):
+    """Calculate background from hist,
+    given the background fractions in bg_fraction_hist"""
+    bg_hist = hist.Clone(cu.get_unique_str())
+    bg_hist.Multiply(bg_fraction_hist)
+    return bg_hist
+
+
+def subtract_background(hist, bg_fraction_hist):
+    """Calculate and subtract background from hist,
+    given the background fractions in bg_fraction_hist
+
+    Returns boths the bg-subtracted hist, and the calculated bg-hist
+    """
+    bg_hist = calc_background(hist, bg_fraction_hist)
+    new_hist = hist.Clone(cu.get_unique_str())
+    new_hist.Add(bg_hist, -1)
+    return new_hist, bg_hist
+
+
 # To be able to export to XML, since getting std::ostream from python is impossible?
 my_binning_xml_code = """
 class BinningXMLExporter {
@@ -351,7 +371,6 @@ if __name__ == "__main__":
     REGULARIZE = args.regularize
     MC_INPUT = args.MCinput
     MC_SPLIT = args.MCsplit if args.MCinput else False
-    SUBTRACT_FAKES = True  # this should alwys be True
 
     jet_algo = "AK4 PF PUPPI"
     if "ak8puppi" in src_dir:
@@ -485,6 +504,9 @@ if __name__ == "__main__":
             mc_hname_append = "split" if MC_SPLIT else "all"
             hist_mc_reco = cu.get_from_tfile(region['mc_tfile'], "%s/hist_%s_reco_%s" % (region['dirname'], angle_shortname, mc_hname_append))
             hist_mc_gen = cu.get_from_tfile(region['mc_tfile'], "%s/hist_%s_truth_%s" % (region['dirname'], angle_shortname, mc_hname_append))
+            # _all versions used in TruthTemplateMaker, since we always want the full stats
+            hist_mc_reco_all = cu.get_from_tfile(region['mc_tfile'], "%s/hist_%s_reco_all" % (region['dirname'], angle_shortname))
+            hist_mc_gen_all = cu.get_from_tfile(region['mc_tfile'], "%s/hist_%s_truth_all" % (region['dirname'], angle_shortname))
             hist_mc_gen_reco_map = cu.get_from_tfile(region['mc_tfile'], "%s/tu_%s_GenReco_%s" % (region['dirname'], angle_shortname, mc_hname_append))
 
             hist_data_reco = None
@@ -493,70 +515,38 @@ if __name__ == "__main__":
                     region['data_tfile'] = cu.open_root_file(region['data_tfile'])
                 hist_data_reco = cu.get_from_tfile(region['data_tfile'], "%s/hist_%s_reco_all" % (region['dirname'], angle_shortname))
 
-            # Need to scale if using H++ as input
-            # hist_mc_gen_reco_map.Scale(1E8)
-            # hist_mc_gen.Scale(1E8)
-            # hist_mc_reco.Scale(1E8)
-
             # Actual distribution to be unfolded
             reco_1d = hist_mc_reco.Clone() if MC_INPUT else hist_data_reco
 
-            hist_fakes_reco_fraction = None
+            # to construct our "fakes" template, we use the ratio as predicted by MC, and apply it to data
+            # this way we ensure we don't have -ve values, and avoid any issue with cross sections
+            hist_mc_fakes_reco = cu.get_from_tfile(region['mc_tfile'], "%s/hist_%s_reco_fake_all" % (region['dirname'], angle_shortname))
+            hist_fake_fraction = hist_mc_fakes_reco.Clone("hist_%s_fakes_reco_fraction" % angle_shortname)
+            hist_fake_fraction.Divide(hist_mc_reco_all)
 
-            if SUBTRACT_FAKES:
-                # to construct our "fakes" template, we use the ratio as predicted by MC, and apply it to data
-                # this way we ensure we don't have -ve values, and avoid any issue with cross sections
-                hist_mc_fakes_reco = cu.get_from_tfile(region['mc_tfile'], "%s/hist_%s_reco_fake_%s" % (region['dirname'], angle_shortname, mc_hname_append))
-                # hist_mc_fakes_reco.Scale(1E8)
-                hist_fakes_reco = hist_mc_fakes_reco.Clone("hist_%s_fakes" % angle_shortname)
-                hist_fakes_reco.Divide(hist_mc_reco)
+            hist_mc_reco_bg_subtracted, hist_fakes_reco = subtract_background(hist_mc_reco, hist_fake_fraction)
+            hist_mc_reco_all_bg_subtracted, hist_fakes_reco_all = subtract_background(hist_mc_reco_all, hist_fake_fraction)
 
-                # plot fake fraction before multiplting by 'data'
-                hist_fakes_reco_fraction = hist_fakes_reco.Clone("hist_fakes_reco_fraction")
-                hist_fakes_reco.Multiply(reco_1d)
-
-                # background-subtracted reco hists, only for plotting purposes, not for TUnfold (that does background subtraction internally)
-                reco_1d_bg_subtracted = reco_1d.Clone()
-                reco_1d_bg_subtracted.Add(hist_fakes_reco, -1)
-
-                if not MC_INPUT:
-                    hist_data_reco_bg_subtracted = hist_data_reco.Clone(hist_data_reco.GetName() + "_bgrSubtracted")
-                    hist_data_reco_bg_subtracted.Add(hist_fakes_reco, -1)
-
-                hist_mc_reco_bg_subtracted = hist_mc_reco.Clone(hist_mc_reco.GetName() + "_bgrSubtracted")
-                hist_mc_reco_bg_subtracted.Add(hist_mc_fakes_reco, -1)  # should this be hist_fakes_reco? depends on what we want to see...
-
+            # Gen binning versions
+            # -------
             mc_hname_append = "_split" if MC_SPLIT else ""  # FIXME consistency in unfold hist module!
             hist_data_reco_gen_binning = None
             if not MC_INPUT:
                 hist_data_reco_gen_binning = cu.get_from_tfile(region['data_tfile'], "%s/hist_%s_reco_gen_binning" % (region['dirname'], angle_shortname))
             hist_mc_reco_gen_binning = cu.get_from_tfile(region['mc_tfile'], "%s/hist_%s_reco_gen_binning%s" % (region['dirname'], angle_shortname, mc_hname_append))
+            hist_mc_reco_gen_binning_all = cu.get_from_tfile(region['mc_tfile'], "%s/hist_%s_reco_gen_binning" % (region['dirname'], angle_shortname))
 
             # Actual distribution to be unfolded, but with gen binning
             reco_1d_gen_binning = hist_mc_reco_gen_binning.Clone() if MC_INPUT else hist_data_reco_gen_binning
 
-            hist_fakes_reco_gen_binning = None
-            hist_fakes_reco_fraction_gen_binning = None
-            if SUBTRACT_FAKES:
-                mc_hname_append = "_split" if MC_SPLIT else ""  # FIXME consistency in unfold hist module!
-                hist_mc_fakes_reco_gen_binning = cu.get_from_tfile(region['mc_tfile'], "%s/hist_%s_reco_fake_gen_binning%s" % (region['dirname'], angle_shortname, mc_hname_append))
-                # create template as above, but with gen binning
-                hist_fakes_reco_gen_binning = hist_mc_fakes_reco_gen_binning.Clone("hist_%s_fakes_gen_binning" % angle_shortname)
-                hist_fakes_reco_gen_binning.Divide(hist_mc_reco_gen_binning)
-                hist_fakes_reco_fraction_gen_binning = hist_fakes_reco_gen_binning.Clone("hist_fakes_reco_fraction_gen_binning")
+            hist_fake_fraction_gen_binning = None
+            # create template as above, but with gen binning
+            hist_mc_fakes_reco_gen_binning = cu.get_from_tfile(region['mc_tfile'], "%s/hist_%s_reco_fake_gen_binning" % (region['dirname'], angle_shortname))
+            hist_fake_fraction_gen_binning = hist_mc_fakes_reco_gen_binning.Clone("hist_%s_fakes_fraction_gen_binning" % angle_shortname)
+            hist_fake_fraction_gen_binning.Divide(hist_mc_reco_gen_binning_all)
 
-                hist_fakes_reco_gen_binning.Multiply(reco_1d_gen_binning)
-
-                # background-subtracted reco hists, only for plotting purposes, not for TUnfold (that does background subtraction internally)
-                reco_1d_gen_binning_bg_subtracted = reco_1d_gen_binning.Clone()
-                reco_1d_gen_binning_bg_subtracted.Add(hist_fakes_reco_gen_binning, -1)
-
-                if not MC_INPUT:
-                    hist_data_reco_gen_binning_bg_subtracted = hist_data_reco_gen_binning.Clone(hist_data_reco_gen_binning.GetName() + "_bgrSubtracted")
-                    hist_data_reco_gen_binning_bg_subtracted.Add(hist_fakes_reco_gen_binning, -1)
-
-                hist_mc_reco_gen_binning_bg_subtracted = hist_mc_reco_gen_binning.Clone(hist_mc_reco_gen_binning.GetName() + "_bgrSubtracted")
-                hist_mc_reco_gen_binning_bg_subtracted.Add(hist_mc_fakes_reco_gen_binning, -1)  # should this be hist_fakes_reco_gen_binning? depends on what we want to see...
+            hist_mc_reco_gen_binning_bg_subtracted, hist_fakes_reco_gen_binning = subtract_background(hist_mc_reco_gen_binning, hist_fake_fraction_gen_binning)
+            hist_mc_reco_gen_binning_all_bg_subtracted, hist_fakes_reco_all_gen_binning = subtract_background(hist_mc_reco_gen_binning_all, hist_fake_fraction_gen_binning)
 
             # Setup unfolder object
             # ---------------------
@@ -627,6 +617,7 @@ if __name__ == "__main__":
             # Needed if you get message "rank of matrix E 55 expect 170"
             # And unfolded looks wacko
             eps_matrix = 1E-160
+            eps_matrix = 1E-60
             unfolder.SetEpsMatrix(eps_matrix)
             print("Running with eps =", unfolder.GetEpsMatrix())
 
@@ -636,7 +627,7 @@ if __name__ == "__main__":
                                input_hist_gen_binning=reco_1d_gen_binning,
                                hist_truth=hist_mc_gen,
                                hist_mc_reco=hist_mc_reco,
-                               hist_mc_reco_bg_subtracted=hist_mc_reco_bg_subtracted,
+                               hist_mc_reco_bg_subtracted=hist_mc_reco_bg_subtracted,  # do ourselves - subtract_background only for input_hist
                                hist_mc_reco_gen_binning=hist_mc_reco_gen_binning,
                                hist_mc_reco_gen_binning_bg_subtracted=hist_mc_reco_gen_binning_bg_subtracted,
                                bias_factor=args.biasFactor)
@@ -690,9 +681,12 @@ if __name__ == "__main__":
 
             # Subtract fakes (treat as background)
             # ------------------------------------------------------------------
-            if SUBTRACT_FAKES:
-                unfolder.subtract_background(hist_fakes_reco, "Signal fakes", scale=1., scale_err=0.0)
-                unfolder.subtract_background_gen_binning(hist_fakes_reco_gen_binning, "Signal fakes", scale=1., scale_err=0.0)
+            # only affects input_hist and input_hist_gen_binning
+            hist_fakes_reco = calc_background(unfolder.input_hist, hist_fake_fraction)
+            unfolder.subtract_background(hist_fakes_reco, "Signal fakes", scale=1., scale_err=0.0)
+
+            hist_fakes_reco_gen_binning = calc_background(unfolder.input_hist_gen_binning, hist_fake_fraction_gen_binning)
+            unfolder.subtract_background_gen_binning(hist_fakes_reco_gen_binning, "Signal fakes", scale=1., scale_err=0.0)
 
             # Subtract actual backgrounds if necessary
             # ------------------------------------------------------------------
@@ -728,6 +722,8 @@ if __name__ == "__main__":
 
             unfolder.print_condition_number()
 
+            # Setup hists from alternative generator
+            # ------------------------------------------------------------------
             alt_unfolder = None
             alt_hist_mc_gen = None  # mc truth of the alternate generator used to make reponse matrix
             alt_hist_mc_reco = None  # reco of the alternate generator used to make reponse matrix
@@ -746,18 +742,14 @@ if __name__ == "__main__":
                 alt_hist_mc_reco.Scale(alt_scale)
 
                 # fakes-subtracted version
-                alt_hist_fakes = hist_fakes_reco_fraction.Clone("hist_fakes_alt")
-                alt_hist_fakes.Multiply(alt_hist_mc_reco)
-                alt_hist_mc_reco_bg_subtracted = alt_hist_mc_reco.Clone()
-                alt_hist_mc_reco_bg_subtracted.Add(alt_hist_fakes, -1)
+                alt_hist_mc_reco_bg_subtracted, alt_hist_fakes = subtract_background(alt_hist_mc_reco, hist_fake_fraction)
 
                 # gen-binned versions of detector-level plots
                 alt_hist_mc_reco_gen_binning = cu.get_from_tfile(region['alt_mc_tfile'], "%s/hist_%s_reco_gen_binning" % (region['dirname'], angle_shortname))
                 alt_hist_mc_reco_gen_binning.Scale(alt_scale)
-                alt_hist_fakes_gen_binning = hist_fakes_reco_fraction_gen_binning.Clone("hist_fakes_alt_gen_binning")
-                alt_hist_fakes_gen_binning.Multiply(alt_hist_mc_reco_gen_binning)
-                alt_hist_mc_reco_bg_subtracted_gen_binning = alt_hist_mc_reco_gen_binning.Clone()
-                alt_hist_mc_reco_bg_subtracted_gen_binning.Add(alt_hist_fakes_gen_binning, -1)
+
+                # fakes-subtracted version
+                alt_hist_mc_reco_bg_subtracted_gen_binning, alt_hist_fakes_gen_binning = subtract_background(alt_hist_mc_reco_gen_binning, hist_fake_fraction_gen_binning)
 
                 unfolder.hist_bin_chopper.add_obj('alt_hist_truth', alt_hist_mc_gen)
 
@@ -768,12 +760,8 @@ if __name__ == "__main__":
             L_matrix_entries = []
             if REGULARIZE != "None":
                 print("Doing preliminary unregularised unfolding...")
-                # To setup the L matrix correctly, we have to rescale
-                # the default one by the inverse of the pT spectrum
-                # This means we first need a copy of the L matrix, so make a
-                # dummy unfolder, ensuring it's setup to make L
-                # We also need to do an unregularised unfolding first to get
-                # the correct pt factors, since data spectrum != MC
+                # Do an unregularised version first for comparison,
+                # also potentially for factor/bias
                 unreg_unfolder = MyUnfolder(response_map=unfolder.response_map,
                                             variable_bin_edges_reco=unfolder.variable_bin_edges_reco,
                                             variable_bin_edges_gen=unfolder.variable_bin_edges_gen,
@@ -784,8 +772,8 @@ if __name__ == "__main__":
                                             pt_bin_edges_underflow_gen=unfolder.pt_bin_edges_underflow_gen,
                                             orientation=unfolder.orientation,
                                             constraintMode=unfolder.constraintMode,
-                                            regMode=ROOT.TUnfold.kRegModeCurvature,
-                                            densityFlags=ROOT.TUnfoldDensity.kDensityModeBinWidth, # important as we have varying bin sizes!
+                                            regMode=ROOT.TUnfold.kRegModeNone,
+                                            densityFlags=ROOT.TUnfoldDensity.kDensityModeBinWidthAndUser,
                                             distribution=unfolder.distribution,
                                             axisSteering=unfolder.axisSteering)
 
@@ -797,23 +785,21 @@ if __name__ == "__main__":
                 # and uncertainties
                 # Set what is to be unfolded
                 # ------------------------------------------------------------------
-                unreg_unfolder.set_input(input_hist=reco_1d,
-                                         input_hist_gen_binning=reco_1d_gen_binning,
-                                         hist_truth=hist_mc_gen,
-                                         hist_mc_reco=hist_mc_reco,
-                                         hist_mc_reco_bg_subtracted=hist_mc_reco_bg_subtracted,
-                                         hist_mc_reco_gen_binning=hist_mc_reco_gen_binning,
-                                         hist_mc_reco_gen_binning_bg_subtracted=hist_mc_reco_gen_binning_bg_subtracted,
+                unreg_unfolder.set_input(input_hist=unfolder.input_hist,
+                                         input_hist_gen_binning=unfolder.input_hist_gen_binning,
+                                         hist_truth=unfolder.hist_truth.Clone(),
+                                         hist_mc_reco=unfolder.hist_mc_reco.Clone(),
+                                         hist_mc_reco_bg_subtracted=unfolder.hist_mc_reco_bg_subtracted.Clone(),
+                                         hist_mc_reco_gen_binning=unfolder.hist_mc_reco_gen_binning.Clone(),
+                                         hist_mc_reco_gen_binning_bg_subtracted=unfolder.hist_mc_reco_gen_binning_bg_subtracted.Clone(),
                                          bias_factor=0)
-
 
                 # For now, ignore experimental systematics
 
                 # Subtract fakes (treat as background)
                 # ------------------------------------------------------------------
-                if SUBTRACT_FAKES:
-                    unreg_unfolder.subtract_background(hist_fakes_reco, "Signal fakes", scale=1., scale_err=0.0)
-                    unreg_unfolder.subtract_background_gen_binning(hist_fakes_reco_gen_binning, "Signal fakes", scale=1., scale_err=0.0)
+                unreg_unfolder.subtract_background(hist_fakes_reco, "Signal fakes", scale=1., scale_err=0.0)
+                unreg_unfolder.subtract_background_gen_binning(hist_fakes_reco_gen_binning, "Signal fakes", scale=1., scale_err=0.0)
 
                 # Subtract actual backgrounds if necessary
                 # ------------------------------------------------------------------
@@ -830,9 +816,9 @@ if __name__ == "__main__":
                         bg_dict['hist_gen'] = bg_hist
 
                         unreg_unfolder.subtract_background(hist=bg_hist,
-                                                     name=bg_dict['name'],
-                                                     scale=bg_dict.get('rate', 1.),
-                                                     scale_err=bg_dict.get('rate_unc', 0.))
+                                                           name=bg_dict['name'],
+                                                           scale=bg_dict.get('rate', 1.),
+                                                           scale_err=bg_dict.get('rate_unc', 0.))
 
                 unreg_unfolder.do_unfolding(0)
                 unreg_unfolder.get_output(hist_name="unreg_unfolded_1d")
@@ -860,11 +846,13 @@ if __name__ == "__main__":
                                                     pt_bin_edges_underflow_gen=unfolder.pt_bin_edges_underflow_gen,
                                                     output_dir=this_output_dir)
 
+                # thing to be fitted
                 template_maker.set_input(unreg_unfolder.input_hist_gen_binning_bg_subtracted)
 
+                # templates to do the fitting, and to create the truth-level distribution
                 template_maker.add_mc_template(name=region['mc_label'],
-                                               hist_reco=hist_mc_reco_gen_binning_bg_subtracted,
-                                               hist_gen=hist_mc_gen,
+                                               hist_reco=hist_mc_reco_gen_binning_all_bg_subtracted,
+                                               hist_gen=hist_mc_gen_all,
                                                colour=ROOT.kRed)
                 template_maker.add_mc_template(name=region['alt_mc_label'],
                                                hist_reco=alt_hist_mc_reco_bg_subtracted_gen_binning,
@@ -1062,27 +1050,22 @@ if __name__ == "__main__":
 
                     # Set what is to be unfolded
                     # --------------------------------------------------------------
-                    input_hist = jk_dict['input_reco']
+                    jk_input_hist = jk_dict['input_reco']
 
-                    jk_hist_mc_reco = input_hist.Clone()
+                    jk_hist_mc_reco = jk_input_hist.Clone()
 
                     # fakes-subtracted version
-                    jk_hist_fakes = hist_fakes_reco_fraction.Clone("hist_fakes_jk_%d" % jk_ind)
-                    jk_hist_fakes.Multiply(jk_hist_mc_reco)
-                    jk_hist_mc_reco_bg_subtracted = jk_hist_mc_reco.Clone()
-                    jk_hist_mc_reco_bg_subtracted.Add(jk_hist_fakes, -1)
+                    jk_hist_mc_reco_bg_subtracted, jk_hist_fakes = subtract_background(jk_hist_mc_reco, hist_fake_fraction)
 
                     # gen-binned versions of detector-level plots
                     # this is tricky - they don't exist in the ROOT file, so we'll have to construct it ourselves
                     # luckily only needed for regularisation template so not too crucial
                     jk_hist_mc_reco_gen_binning = jk_unfolder.convert_reco_binned_hist_to_gen_binned(jk_hist_mc_reco)
-                    jk_hist_fakes_gen_binning = jk_unfolder.convert_reco_binned_hist_to_gen_binned(jk_hist_fakes)
-                    jk_hist_mc_reco_bg_subtracted_gen_binning = jk_hist_mc_reco_gen_binning.Clone()
-                    jk_hist_mc_reco_bg_subtracted_gen_binning.Add(jk_hist_fakes_gen_binning, -1)
-                    # print(jk_hist_mc_reco_gen_binning)
-                    # print(jk_hist_mc_reco_bg_subtracted_gen_binning)
+                    
+                    # fakes-subtracted version                    
+                    jk_hist_mc_reco_bg_subtracted_gen_binning, jk_hist_fakes_gen_binning = subtract_background(jk_hist_mc_reco_gen_binning, hist_fake_fraction_gen_binning)
 
-                    jk_unfolder.set_input(input_hist=input_hist,
+                    jk_unfolder.set_input(input_hist=jk_input_hist,
                                           input_hist_gen_binning=jk_hist_mc_reco_gen_binning,
                                           hist_truth=jk_dict['input_gen'].Clone(),
                                           hist_mc_reco=jk_hist_mc_reco,
@@ -1093,9 +1076,8 @@ if __name__ == "__main__":
 
                     # Subtract fakes (treat as background)
                     # --------------------------------------------------------------
-                    if SUBTRACT_FAKES:
-                        jk_unfolder.subtract_background(jk_hist_fakes, "Signal fakes", scale=1., scale_err=0.0)
-                        jk_unfolder.subtract_background_gen_binning(jk_hist_fakes_gen_binning, "Signal fakes", scale=1., scale_err=0.0)
+                    jk_unfolder.subtract_background(jk_hist_fakes, "Signal fakes", scale=1., scale_err=0.0)
+                    jk_unfolder.subtract_background_gen_binning(jk_hist_fakes_gen_binning, "Signal fakes", scale=1., scale_err=0.0)
 
                     # Do regularisation
                     # --------------------------------------------------------------
@@ -1123,8 +1105,8 @@ if __name__ == "__main__":
                         jk_template_maker.set_input(jk_unfolder.input_hist_gen_binning_bg_subtracted)
 
                         jk_template_maker.add_mc_template(name=region['mc_label'],
-                                                          hist_reco=hist_mc_reco_gen_binning_bg_subtracted,
-                                                          hist_gen=hist_mc_gen,
+                                                          hist_reco=hist_mc_reco_gen_binning_all_bg_subtracted,
+                                                          hist_gen=hist_mc_gen_all,
                                                           colour=ROOT.kRed)
                         jk_template_maker.add_mc_template(name=region['alt_mc_label'],
                                                           hist_reco=alt_hist_mc_reco_bg_subtracted_gen_binning,
@@ -1235,7 +1217,7 @@ if __name__ == "__main__":
                                                       title=title,
                                                       other_contributions=jk_contributions,
                                                       subplot_title='#splitline{Variation /}{nominal}')
-                    
+
                     # Compared to respective truths
                     jk_contributions = [
                         Contribution(mdict['unfolder'].get_unfolded_with_ematrix_stat(),
@@ -1305,20 +1287,19 @@ if __name__ == "__main__":
                     # Set what is to be unfolded
                     # --------------------------------------------------------------
                     # Same input as nominal unfolder, since we only change responsematrix
-                    jk_unfolder.set_input(input_hist=reco_1d,
-                                          input_hist_gen_binning=reco_1d_gen_binning,
-                                          hist_truth=hist_mc_gen,
-                                          hist_mc_reco=hist_mc_reco,
-                                          hist_mc_reco_bg_subtracted=hist_mc_reco_bg_subtracted,
-                                          hist_mc_reco_gen_binning=hist_mc_reco_gen_binning,
-                                          hist_mc_reco_gen_binning_bg_subtracted=hist_mc_reco_gen_binning_bg_subtracted,
+                    jk_unfolder.set_input(input_hist=unfolder.input_hist,
+                                          input_hist_gen_binning=unfolder.input_hist_gen_binning,
+                                          hist_truth=unfolder.hist_truth.Clone(),
+                                          hist_mc_reco=unfolder.hist_mc_reco.Clone(),
+                                          hist_mc_reco_bg_subtracted=unfolder.hist_mc_reco_bg_subtracted.Clone(),
+                                          hist_mc_reco_gen_binning=unfolder.hist_mc_reco_gen_binning.Clone(),
+                                          hist_mc_reco_gen_binning_bg_subtracted=unfolder.hist_mc_reco_gen_binning_bg_subtracted.Clone(),
                                           bias_factor=args.biasFactor)
 
-                    # Subtract fakes (treat as background)
+                    # Subtract fakes (treat as background), same as nominal
                     # --------------------------------------------------------------
-                    if SUBTRACT_FAKES:
-                        jk_unfolder.subtract_background(hist_fakes_reco, "Signal fakes", scale=1., scale_err=0.0)
-                        jk_unfolder.subtract_background_gen_binning(hist_fakes_reco_gen_binning, "Signal fakes", scale=1., scale_err=0.0)
+                    jk_unfolder.subtract_background(hist_fakes_reco, "Signal fakes", scale=1., scale_err=0.0)
+                    jk_unfolder.subtract_background_gen_binning(hist_fakes_reco_gen_binning, "Signal fakes", scale=1., scale_err=0.0)
 
                     # Do regularisation
                     # --------------------------------------------------------------
@@ -1442,10 +1423,10 @@ if __name__ == "__main__":
             #                                 hist_mc_reco_gen_binning_bg_subtracted=unfolder.hist_mc_reco_gen_binning_bg_subtracted.Clone(),
             #                                 bias_factor=args.biasFactor)
 
-            #     # Subtract fakes (treat as background)
+            #     # Subtract fakes (treat as background), same as nominal
             #     # --------------------------------------------------------------
-            #     if SUBTRACT_FAKES:
-            #         exp_syst_unfolder.subtract_background(hist_fakes_reco, "fakes")
+            #     exp_syst_unfolder.subtract_background(hist_fakes_reco, "fakes")
+            #     exp_syst_unfolder.subtract_background_gen_binning(hist_fakes_reco_gen_binning, "fakes")
 
             #     # Do unfolding!
             #     # --------------------------------------------------------------
@@ -1610,55 +1591,45 @@ if __name__ == "__main__":
                                                append=append,
                                                title=title)
 
-            if SUBTRACT_FAKES:
-                # same plot but with bg-subtracted reco (incl fakes)
-                unfolder_plotter.draw_detector_1d(do_reco_data_bg_sub=not MC_INPUT,
-                                                  do_reco_bg=SUBTRACT_FAKES,
-                                                  do_reco_mc_bg_sub=True,
-                                                  output_dir=this_output_dir,
-                                                  append='bg_fakes_subtracted_%s' % append,
-                                                  title=title)
+            # same plot but with bg-subtracted reco
+            unfolder_plotter.draw_detector_1d(do_reco_data_bg_sub=not MC_INPUT,
+                                              do_reco_bg=True,
+                                              do_reco_mc_bg_sub=True,
+                                              output_dir=this_output_dir,
+                                              append='bg_fakes_subtracted_%s' % append,
+                                              title=title)
 
-                # same but with generator-binning
-                unfolder_plotter.draw_generator_1d(do_reco_data=False,
-                                                   do_reco_data_bg_sub=not MC_INPUT,
-                                                   do_reco_bg=True,
-                                                   do_reco_mc=False,
-                                                   do_reco_mc_bg_sub=True,
-                                                   do_truth_mc=True,
-                                                   output_dir=this_output_dir,
-                                                   append='bg_fakes_subtracted_%s' % append,
-                                                   title=title)
+            # same but with generator-binning
+            unfolder_plotter.draw_generator_1d(do_reco_data=False,
+                                               do_reco_data_bg_sub=not MC_INPUT,
+                                               do_reco_bg=True,
+                                               do_reco_mc=False,
+                                               do_reco_mc_bg_sub=True,
+                                               do_truth_mc=True,
+                                               output_dir=this_output_dir,
+                                               append='bg_fakes_subtracted_%s' % append,
+                                               title=title)
 
             # Draw projections of response matrix vs 1D hist to check normalisation OK
             # Only makes sense if the same MC events go into matrix & 1D plot
             # ------------------------------------------------------------------
             if not MC_SPLIT:
-                proj_reco = unfolder.response_map.ProjectionY("proj_reco_%s" % (append))
-
+                # on gen axis
                 proj_gen = unfolder.response_map.ProjectionX("proj_gen_%s" % (append))
                 draw_projection_comparison(unfolder.hist_truth, proj_gen,
                                            title="%s\n%s region" % (jet_algo, region['label']),
                                            xtitle="%s, Generator binning" % (angle_str),
                                            output_filename="%s/projection_gen_%s.%s" % (this_output_dir, append, OUTPUT_FMT))
 
-                # print("projection reco #bins:", proj_reco.GetNbinsX())
-                # print("response map # bins x:", unfolder.response_map.GetNbinsX())
-                # print("response map # bins y:", unfolder.response_map.GetNbinsY())
-                if SUBTRACT_FAKES:
-                    # print("reco bg subtracted #bins:", hist_mc_reco_bg_subtracted.GetNbinsX())
-                    # Do the same but with backgrounds subtracted from the 1D
-                    draw_projection_comparison(hist_mc_reco_bg_subtracted, proj_reco,
-                                               title="%s\n%s region" % (jet_algo, region['label']),
-                                               xtitle="%s, Detector binning" % (angle_str),
-                                               output_filename="%s/projection_reco_bg_subtracted_%s.%s" % (this_output_dir, append, OUTPUT_FMT))
-                else:
-                    draw_projection_comparison(hist_mc_reco, proj_reco,
-                           title="%s\n%s region" % (jet_algo, region['label']),
-                           xtitle="%s, Detector binning" % (angle_str),
-                           output_filename="%s/projection_reco_%s.%s" % (this_output_dir, append, OUTPUT_FMT),
-                           print_bin_comparison=False)
+                # on detector axis
+                proj_reco = unfolder.response_map.ProjectionY("proj_reco_%s" % (append))
+                draw_projection_comparison(hist_mc_reco_bg_subtracted, proj_reco,
+                                           title="%s\n%s region" % (jet_algo, region['label']),
+                                           xtitle="%s, Detector binning" % (angle_str),
+                                           output_filename="%s/projection_reco_bg_subtracted_%s.%s" % (this_output_dir, append, OUTPUT_FMT))
 
+            # Draw big 1D plot of unfolded shifted exp systs
+            # ------------------------------------------------------------------
             if len(region['experimental_systematics']) > 0 and MC_INPUT:
                 # Do a big absolute 1D plot for sanity
                 syst_contributions = [
@@ -1753,7 +1724,6 @@ if __name__ == "__main__":
             # ------------------------------------------------------------------
             # UNFOLDING WITH ALTERNATIVE RESPONSE MATRIX
             # ------------------------------------------------------------------
-
             if args.useAltResponse:
                 print("*" * 80)
                 print("*** Unfolding with alternate response matrix ***")
@@ -1798,8 +1768,8 @@ if __name__ == "__main__":
 
                 # Set what is to be unfolded - same as main unfolder
                 # --------------------------------------------------------------
-                alt_unfolder.set_input(input_hist=reco_1d,
-                                       input_hist_gen_binning=reco_1d_gen_binning,
+                alt_unfolder.set_input(input_hist=unfolder.input_hist,
+                                       input_hist_gen_binning=unfolder.input_hist_gen_binning,
                                        hist_truth=unfolder.hist_truth.Clone(),
                                        hist_mc_reco=unfolder.hist_mc_reco.Clone(),
                                        hist_mc_reco_bg_subtracted=unfolder.hist_mc_reco_bg_subtracted.Clone(),
@@ -1807,11 +1777,10 @@ if __name__ == "__main__":
                                        hist_mc_reco_gen_binning_bg_subtracted=unfolder.hist_mc_reco_gen_binning_bg_subtracted.Clone(),
                                        bias_factor=args.biasFactor)
 
-                # Subtract fakes (treat as background)
+                # Subtract fakes (treat as background), same as nominal
                 # --------------------------------------------------------------
-                if SUBTRACT_FAKES:
-                    alt_unfolder.subtract_background(hist_fakes_reco, "fakes")
-                    alt_unfolder.subtract_background(hist_fakes_reco_gen_binning, "fakes")
+                alt_unfolder.subtract_background(hist_fakes_reco, "fakes")
+                alt_unfolder.subtract_background(hist_fakes_reco_gen_binning, "fakes")
 
                 # Do regularisation
                 # --------------------------------------------------------------
@@ -1853,27 +1822,27 @@ if __name__ == "__main__":
                 alt_unfolder.get_output(hist_name="alt_unfolded_1d")
                 alt_unfolder._post_process()
 
-                if SUBTRACT_FAKES:
-                    title = "%s\n%s region, %s, %s response map" % (jet_algo, region['label'], angle_str, region['alt_mc_label'])
-                    alt_unfolder_plotter.draw_detector_1d(do_reco_data_bg_sub=not MC_INPUT,
-                                                          do_reco_bg=SUBTRACT_FAKES,
-                                                          do_reco_mc_bg_sub=True,
-                                                          output_dir=alt_output_dir,
-                                                          append='bg_fakes_subtracted_%s' % append,
-                                                          title=title)
-
-                    # same but with generator-binning
-                    alt_unfolder_plotter.draw_generator_1d(do_reco_data=False,
-                                                           do_reco_data_bg_sub=not MC_INPUT,
-                                                           do_reco_bg=True,
-                                                           do_reco_mc=False,
-                                                           do_reco_mc_bg_sub=True,
-                                                           do_truth_mc=True,
-                                                           output_dir=alt_output_dir,
-                                                           append='bg_fakes_subtracted_%s' % append,
-                                                           title=title)
-
+                # Draw 1D & 2D plots
+                # --------------------------------------------------------------
                 alt_title = "%s\n%s region, %s, %s response map" % (jet_algo, region['label'], angle_str, region['alt_mc_label'])
+                alt_unfolder_plotter.draw_detector_1d(do_reco_data_bg_sub=not MC_INPUT,
+                                                      do_reco_bg=True,
+                                                      do_reco_mc_bg_sub=True,
+                                                      output_dir=alt_output_dir,
+                                                      append='bg_fakes_subtracted_%s' % append,
+                                                      title=title)
+
+                # same but with generator-binning
+                alt_unfolder_plotter.draw_generator_1d(do_reco_data=False,
+                                                       do_reco_data_bg_sub=not MC_INPUT,
+                                                       do_reco_bg=True,
+                                                       do_reco_mc=False,
+                                                       do_reco_mc_bg_sub=True,
+                                                       do_truth_mc=True,
+                                                       output_dir=alt_output_dir,
+                                                       append='bg_fakes_subtracted_%s' % append,
+                                                       title=title)
+
                 alt_unfolder_plotter.draw_unfolded_1d(title=alt_title, **alt_plot_args)
 
                 title = "Correlation matrix, %s, %s region, %s, %s response map" % (jet_algo, region['label'], angle_str, region['alt_mc_label'])
@@ -1965,20 +1934,19 @@ if __name__ == "__main__":
                     # Set what is to be unfolded
                     # --------------------------------------------------------------
                     # Same input as nominal unfolder, since we only change responsematrix
-                    scale_unfolder.set_input(input_hist=reco_1d,
-                                             input_hist_gen_binning=reco_1d_gen_binning,
-                                             hist_truth=hist_mc_gen,
-                                             hist_mc_reco=hist_mc_reco,
-                                             hist_mc_reco_bg_subtracted=hist_mc_reco_bg_subtracted,
-                                             hist_mc_reco_gen_binning=hist_mc_reco_gen_binning,
-                                             hist_mc_reco_gen_binning_bg_subtracted=hist_mc_reco_gen_binning_bg_subtracted,
+                    scale_unfolder.set_input(input_hist=unfolder.input_hist,
+                                             input_hist_gen_binning=unfolder.input_hist_gen_binning,
+                                             hist_truth=unfolder.hist_truth.Clone(),
+                                             hist_mc_reco=unfolder.hist_mc_reco.Clone(),
+                                             hist_mc_reco_bg_subtracted=unfolder.hist_mc_reco_bg_subtracted.Clone(),
+                                             hist_mc_reco_gen_binning=unfolder.hist_mc_reco_gen_binning.Clone(),
+                                             hist_mc_reco_gen_binning_bg_subtracted=unfolder.hist_mc_reco_gen_binning_bg_subtracted.Clone(),
                                              bias_factor=args.biasFactor)
 
-                    # Subtract fakes (treat as background)
+                    # Subtract fakes (treat as background), same as nominal
                     # --------------------------------------------------------------
-                    if SUBTRACT_FAKES:
-                        scale_unfolder.subtract_background(hist_fakes_reco, "Signal fakes", scale=1., scale_err=0.0)
-                        scale_unfolder.subtract_background_gen_binning(hist_fakes_reco_gen_binning, "Signal fakes", scale=1., scale_err=0.0)
+                    scale_unfolder.subtract_background(hist_fakes_reco, "Signal fakes", scale=1., scale_err=0.0)
+                    scale_unfolder.subtract_background_gen_binning(hist_fakes_reco_gen_binning, "Signal fakes", scale=1., scale_err=0.0)
 
                     # Do regularisation
                     # --------------------------------------------------------------
@@ -2148,8 +2116,7 @@ if __name__ == "__main__":
 
                     syst_output_dir = this_output_dir+"/modelSyst_"+syst_label_no_spaces
                     syst_unfolder_plotter = MyUnfolderPlotter(syst_unfolder, is_data=False)
-                    syst_plot_args = dict(output_dir=syst_output_dir,
-                                          append=append)
+                    syst_plot_args = dict(output_dir=syst_output_dir, append=append)
 
                     # SetEpsMatrix ensures rank properly calculated when inverting
                     # Needed if you get message "rank of matrix E 55 expect 170"
@@ -2167,21 +2134,11 @@ if __name__ == "__main__":
                     hist_syst_gen.Scale(sf)
                     hist_syst_reco_gen_binning.Scale(sf)
 
-                    if SUBTRACT_FAKES:
-                        # Use the background template from the nominal MC
-                        # (since we're only testing different input shapes,
-                        # and our bkg estimate is always from MC)
-                        hist_fakes_syst = hist_fakes_reco_fraction.Clone("hist_fakes_syst_%s" % syst_label_no_spaces)
-                        hist_fakes_syst.Multiply(hist_syst_reco)
-
-                        hist_fakes_syst_gen_binning = hist_fakes_reco_fraction_gen_binning.Clone("hist_fakes_syst_gen_binning_%s" % syst_label_no_spaces)
-                        hist_fakes_syst_gen_binning.Multiply(hist_syst_reco_gen_binning)
-
-                    hist_syst_mc_reco_bg_subtracted = hist_syst_reco.Clone()
-                    hist_syst_mc_reco_bg_subtracted.Add(hist_fakes_syst, -1)
-
-                    hist_syst_mc_reco_gen_binning_bg_subtracted = hist_syst_reco_gen_binning.Clone()
-                    hist_syst_mc_reco_gen_binning_bg_subtracted.Add(hist_fakes_syst_gen_binning, -1)
+                    # Use the background template from the nominal MC
+                    # (since we're only testing different input shapes,
+                    # and our bkg estimate is always from MC)
+                    hist_syst_mc_reco_bg_subtracted, hist_fakes_syst = subtract_background(hist_syst_reco, hist_fake_fraction)
+                    hist_syst_mc_reco_gen_binning_bg_subtracted, hist_fakes_syst_gen_binning = subtract_background(hist_syst_reco_gen_binning, hist_fake_fraction_gen_binning)
 
                     # Set what is to be unfolded
                     # --------------------------------------------------------------
@@ -2196,9 +2153,8 @@ if __name__ == "__main__":
 
                     # Subtract fakes (treat as background)
                     # --------------------------------------------------------------
-                    if SUBTRACT_FAKES:
-                        syst_unfolder.subtract_background(hist_fakes_syst, "fakes")
-                        syst_unfolder.subtract_background_gen_binning(hist_fakes_syst_gen_binning, "fakes")
+                    syst_unfolder.subtract_background(hist_fakes_syst, "fakes")
+                    syst_unfolder.subtract_background_gen_binning(hist_fakes_syst_gen_binning, "fakes")
 
                     # also show nominal bg-subtracted input for comparison
                     ocs = [
@@ -2243,8 +2199,8 @@ if __name__ == "__main__":
                         syst_template_maker.set_input(syst_unfolder.input_hist_gen_binning_bg_subtracted)
 
                         syst_template_maker.add_mc_template(name=region['mc_label'],
-                                                            hist_reco=hist_mc_reco_gen_binning_bg_subtracted,
-                                                            hist_gen=hist_mc_gen,
+                                                            hist_reco=hist_mc_reco_gen_binning_all_bg_subtracted,
+                                                            hist_gen=hist_mc_gen_all,
                                                             colour=ROOT.kRed)
                         syst_template_maker.add_mc_template(name=region['alt_mc_label'],
                                                             hist_reco=alt_hist_mc_reco_bg_subtracted_gen_binning,
@@ -2534,26 +2490,24 @@ if __name__ == "__main__":
 
                     pdf_unfolder_plotter = MyUnfolderPlotter(pdf_unfolder, is_data=not MC_INPUT)
                     pdf_output_dir = this_output_dir+"/pdfSyst/"+pdf_label_no_spaces
-                    pdf_plot_args = dict(output_dir=pdf_output_dir,
-                                         append=append)
+                    pdf_plot_args = dict(output_dir=pdf_output_dir, append=append)
 
                     # Set what is to be unfolded
                     # --------------------------------------------------------------
                     # Same input as nominal unfolder, since we only change responsematrix
-                    pdf_unfolder.set_input(input_hist=reco_1d,
-                                           input_hist_gen_binning=reco_1d_gen_binning,
-                                           hist_truth=hist_mc_gen,
-                                           hist_mc_reco=hist_mc_reco,
-                                           hist_mc_reco_bg_subtracted=hist_mc_reco_bg_subtracted,
-                                           hist_mc_reco_gen_binning=hist_mc_reco_gen_binning,
-                                           hist_mc_reco_gen_binning_bg_subtracted=hist_mc_reco_gen_binning_bg_subtracted,
+                    pdf_unfolder.set_input(input_hist=unfolder.input_hist,
+                                           input_hist_gen_binning=unfolder.input_hist_gen_binning,
+                                           hist_truth=unfolder.hist_truth,
+                                           hist_mc_reco=unfolder.hist_mc_reco,
+                                           hist_mc_reco_bg_subtracted=unfolder.hist_mc_reco_bg_subtracted,
+                                           hist_mc_reco_gen_binning=unfolder.hist_mc_reco_gen_binning,
+                                           hist_mc_reco_gen_binning_bg_subtracted=unfolder.hist_mc_reco_gen_binning_bg_subtracted,
                                            bias_factor=args.biasFactor)
 
                     # Subtract fakes (treat as background)
                     # --------------------------------------------------------------
-                    if SUBTRACT_FAKES:
-                        pdf_unfolder.subtract_background(hist_fakes_reco, "Signal fakes", scale=1., scale_err=0.0)
-                        pdf_unfolder.subtract_background_gen_binning(hist_fakes_reco_gen_binning, "Signal fakes", scale=1., scale_err=0.0)
+                    pdf_unfolder.subtract_background(hist_fakes_reco, "Signal fakes", scale=1., scale_err=0.0)
+                    pdf_unfolder.subtract_background_gen_binning(hist_fakes_reco_gen_binning, "Signal fakes", scale=1., scale_err=0.0)
 
                     # Do any regularization
                     # --------------------------------------------------------------
