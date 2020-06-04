@@ -276,7 +276,7 @@ class GenPtBinnedPlotter(object):
             # unnormalised version
             entries = [
                 Contribution(mc_gen_hist_bin,
-                             label="Generator (%s)" % (self.region['mc_label']),
+                             label="Generator",
                              line_color=self.plot_colours['gen_colour'], line_width=self.line_width,
                              marker_color=self.plot_colours['gen_colour'], marker_size=0),
                 Contribution(unfolded_hist_bin_total_errors,
@@ -296,6 +296,7 @@ class GenPtBinnedPlotter(object):
                         ytitle=self.setup.pt_bin_unnormalised_differential_label,
                         title=self.get_pt_bin_title(bin_edge_low, bin_edge_high),
                         **self.pt_bin_plot_args)
+            plot.subplot_title = "* / Generator"
             self._modify_plot(plot)
             plot.plot("NOSTACK E1")
             plot.save("%s/unfolded_unnormalised_%s_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
@@ -309,7 +310,7 @@ class GenPtBinnedPlotter(object):
 
             entries = [
                 Contribution(mc_gen_hist_bin,
-                             label=self.region['mc_label'],
+                             label="Generator",
                              line_color=self.plot_colours['gen_colour'], line_width=self.line_width,
                              marker_color=self.plot_colours['gen_colour'], marker_size=0),
                 Contribution(unfolded_hist_bin_total_errors,
