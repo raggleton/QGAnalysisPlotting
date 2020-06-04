@@ -735,7 +735,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
                     L_matrix_entries.append(L_args)
                     self.AddRegularisationCondition(*L_args)
                     nr_counter += 1
-                    print(value_pt_down, value_pt_cen, value_pt_up)
+                    print(L_args)
 
                     # value_pt_down = unfolded_max/ref_hist.GetBinContent(bin_ind_pt_down)
                     # value_pt_up = unfolded_max/ref_hist.GetBinContent(bin_ind_pt_up)
@@ -787,7 +787,72 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
                     L_matrix_entries.append(L_args)
                     self.AddRegularisationCondition(*L_args)
                     nr_counter += 1
-                    print(value_lambda_down, value_lambda_cen, value_lambda_up)
+                    print(L_args)
+
+        self.L_matrix_entries = L_matrix_entries
+
+    def setup_L_matrix_derivative(self, ref_hist, axis="both"):
+        """Setup custom L matrix for derivative regularisation.
+
+        ref_hist is the reference hist to determine factors for differential
+
+        axis should be one of "both", "pt", or "angle",
+        to determine along which axis/es the curvature is calculated.
+        """
+        gen_node = self.generator_distribution
+        nr_counter = 0
+
+        # unfolded_max = ref_hist.GetMaximum()
+
+        L_matrix_entries = []
+
+        # Add regularisation across pt bins, per lambda bin
+        if axis in ["both", "pt"]:
+            for ilambda in range(len(self.variable_bin_edges_gen[:-1])):
+                for ipt in range(len(self.pt_bin_edges_gen[:-2])):
+                    lambda_cen = self.variable_bin_edges_gen[ilambda] + 0.000001  # add a tiny bit to make sure we're in the bin properly (I can never remember if included or not)
+
+                    bin_ind_pt_down = gen_node.GetGlobalBinNumber(lambda_cen, self.pt_bin_edges_gen[ipt] + 0.000001)
+                    bin_ind_pt_up = gen_node.GetGlobalBinNumber(lambda_cen, self.pt_bin_edges_gen[ipt+1] + 0.000001)
+
+                    print("Adding L matrix entry", nr_counter)
+                    print('lambda:', self.variable_bin_edges_gen[ilambda], 'pt:', (self.pt_bin_edges_gen[ipt], self.pt_bin_edges_gen[ipt+1]))
+
+                    val_down = ref_hist.GetBinContent(bin_ind_pt_down)
+                    value_pt_down = 1./val_down if val_down != 0 else 0
+
+                    val_up = ref_hist.GetBinContent(bin_ind_pt_up)
+                    value_pt_up = 1./val_up if val_up != 0 else 0
+
+                    L_args = [bin_ind_pt_down, -value_pt_down, bin_ind_pt_up, value_pt_up]
+                    L_matrix_entries.append(L_args)
+                    self.AddRegularisationCondition(*L_args)
+                    nr_counter += 1
+                    print(L_args)
+
+        # Add regularisation across lambda bins, per pt bin
+        if axis in ["both", "angle"]:
+            for ipt in range(len(self.pt_bin_edges_gen[:-1])):
+                for ilambda in range(len(self.variable_bin_edges_gen[:-2])):
+                    pt_cen = self.pt_bin_edges_gen[ipt] + 0.000001  # add a tiny bit to make sure we're in the bin properly (I can never remember if included or not)
+
+                    bin_ind_lambda_down = gen_node.GetGlobalBinNumber(self.variable_bin_edges_gen[ilambda] + 0.000001, pt_cen)
+                    bin_ind_lambda_up = gen_node.GetGlobalBinNumber(self.variable_bin_edges_gen[ilambda+1] + 0.000001, pt_cen)
+
+                    print("Adding L matrix entry", nr_counter)
+                    print('pt:', self.pt_bin_edges_gen[ipt], 'lambda:', (self.variable_bin_edges_gen[ilambda], self.variable_bin_edges_gen[ilambda+1]))
+
+                    val_down = ref_hist.GetBinContent(bin_ind_lambda_down)
+                    value_lambda_down = 1./val_down if val_down != 0 else 0
+
+                    val_up = ref_hist.GetBinContent(bin_ind_lambda_up)
+                    value_lambda_up = 1./val_up if val_up != 0 else 0
+
+                    L_args = [bin_ind_lambda_down, -value_lambda_down, bin_ind_lambda_up, value_lambda_up]
+                    L_matrix_entries.append(L_args)
+                    self.AddRegularisationCondition(*L_args)
+                    nr_counter += 1
+                    print(L_args)
 
         self.L_matrix_entries = L_matrix_entries
 
