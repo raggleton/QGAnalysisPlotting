@@ -159,7 +159,7 @@ class MyUnfolderPlotter(object):
         return arrows
 
 
-    def plot_bias_vector(self, output_dir='.', append="", title=""):
+    def plot_bias_vector(self, do_unfolded=True, output_dir='.', append="", title=""):
         """Plot bias vector used in regularisation (if it exists)"""
         if append != "":
             append = "_%s" % (append)
@@ -167,17 +167,35 @@ class MyUnfolderPlotter(object):
         bias_hist = self.unfolder.get_bias_vector()
         entries = [
             Contribution(bias_hist,
-                         label="Bias histogram",
-                         line_color=ROOT.kBlack, line_width=1,
-                         marker_color=ROOT.kBlack, marker_size=0,
+                         label="Bias",
+                         line_color=ROOT.kBlack,
+                         line_width=1,
+                         marker_color=ROOT.kBlack,
+                         marker_size=0,
                          normalise_hist=False),
         ]
+        if do_unfolded:
+            for i in range(1, bias_hist.GetNbinsX()+1):
+                print("unfolded-bias [%d]" % i, self.unfolder.unfolded.GetBinContent(i) - bias_hist.GetBinContent(i))
+            entries.append(
+                Contribution(self.unfolder.get_output(),
+                             label="Unfolded",
+                             line_color=ROOT.kRed,
+                             line_width=1,
+                             line_style=2,
+                             marker_color=ROOT.kRed,
+                             marker_size=0,
+                             normalise_hist=False,
+                             subplot=bias_hist)
+            )
+
         plot = Plot(entries,
                     what='hist',
                     title=title,
                     xtitle="Generator bin",
-                    ytitle="Bias",
-                    has_data=False)
+                    ytitle="N",
+                    has_data=self.is_data,
+                    subplot_title="Unfolded / bias" if do_unfolded else None)
         plot.default_canvas_size = (800, 600)
         plot.plot("NOSTACK HIST")
         plot.set_logy(do_more_labels=False)
@@ -436,25 +454,26 @@ class MyUnfolderPlotter(object):
     def draw_L_matrix(self, output_dir='.', append="", title=""):
         """Draw L matrix used for regularisation"""
         Lmatrix = self.unfolder.GetL("hist_Lmatrix_%s" % (append), title)
-        cu.set_log_french_flag_palette()
 
         canv = MyUnfolderPlotter.generate_2d_canvas()
+        canv.SetGridy()
         this_title = "%s;%s;%s" % (title, "Generator bin", "n_{R} bin")
         Lmatrix.SetTitle(this_title)
-        h_lim = max(abs(Lmatrix.GetMinimum()), Lmatrix.GetMaximum())
-        Lmatrix.SetMaximum(-h_lim)
-        Lmatrix.SetMaximum(h_lim)
+        cu.symmetrize_h2d_z_limits(Lmatrix)
+        # h_lim = max(abs(Lmatrix.GetMinimum()), Lmatrix.GetMaximum())
+        # Lmatrix.SetMaximum(-h_lim)
+        # Lmatrix.SetMaximum(h_lim)
         Lmatrix.GetYaxis().SetTitleOffset(1.5)
         Lmatrix.GetXaxis().SetTitleOffset(1.5)
         Lmatrix.SetContour(512)
+        cu.set_log_french_flag_palette()
         Lmatrix.Draw("COL1 Z CJUST")
         l, t = self.draw_pt_binning_lines(Lmatrix, which='gen', axis='x',
                                           do_underflow=True,
                                           do_labels_inside=True,
                                           labels_inside_align='higher',
                                           do_labels_outside=False)
-        Lmatrix.SetMaximum(-h_lim)
-        Lmatrix.SetMaximum(h_lim)
+        cu.symmetrize_h2d_z_limits(Lmatrix)
         output_filename = "%s/L_matrix_%s.%s" % (output_dir, append, self.output_fmt)
         cu.check_dir_exists_create(output_dir)
         canv.SaveAs(output_filename)
@@ -490,7 +509,33 @@ class MyUnfolderPlotter(object):
                     title=title,
                     xtitle="n_{R} bin",
                     ytitle="L(x-f_{b}x_{0})",
-                    has_data=False)
+                    has_data=self.is_data)
+        plot.default_canvas_size = (800, 600)
+        plot.y_padding_max_linear = 1.4
+        plot.y_padding_min_linear = 1.1
+        plot.left_margin = 0.15
+        plot.plot("HISTE")
+        plot.save(output_filename)
+
+    def draw_x_minus_bias(self, output_dir='.', append="", title=""):
+        """Draw (x - bias_scale*bias_vec)
+
+        Can only do once you have unfolded!
+        """
+        x_hist = self.unfolder.get_output().Clone(cu.get_unique_str())
+        cu.remove_th1_errors(x_hist)
+        bias_hist = self.unfolder.get_bias_vector()
+
+        output_filename = "%s/x_minus_bias_%s.%s" % (output_dir, append, self.output_fmt)
+        x_hist.Add(bias_hist, -1)
+        conts = [Contribution(x_hist)]
+        plot = Plot(conts,
+                    what='hist',
+                    title=title,
+                    xtitle="Generator bin",
+                    ytitle="x-f_{b}x_{0}",
+                    has_data=self.is_data)
+        plot.default_canvas_size = (800, 600)
         plot.y_padding_max_linear = 1.4
         plot.y_padding_min_linear = 1.1
         plot.left_margin = 0.15

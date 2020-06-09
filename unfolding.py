@@ -1066,8 +1066,8 @@ if __name__ == "__main__":
                     # this is tricky - they don't exist in the ROOT file, so we'll have to construct it ourselves
                     # luckily only needed for regularisation template so not too crucial
                     jk_hist_mc_reco_gen_binning = jk_unfolder.convert_reco_binned_hist_to_gen_binned(jk_hist_mc_reco)
-                    
-                    # fakes-subtracted version                    
+
+                    # fakes-subtracted version
                     jk_hist_mc_reco_bg_subtracted_gen_binning, jk_hist_fakes_gen_binning = subtract_background(jk_hist_mc_reco_gen_binning, hist_fake_fraction_gen_binning)
 
                     jk_unfolder.set_input(input_hist=jk_input_hist,
@@ -1194,6 +1194,10 @@ if __name__ == "__main__":
                                                              append='jk_with_template',
                                                              title='',
                                                              subplot_title="* / Generator")
+
+                        jk_unfolder_plotter.plot_bias_vector(title=jk_title, **jk_plot_args)
+                        jk_unfolder_plotter.draw_x_minus_bias(title=jk_title, **jk_plot_args)
+                        jk_unfolder_plotter.draw_Lx_minus_bias(title=jk_title, **jk_plot_args)
 
                     # save memory, in the Unfolder already
                     del region['jackknife_input_variations'][jk_ind]['input_reco']
@@ -1661,6 +1665,7 @@ if __name__ == "__main__":
             # ------------------------------------------------------------------
             if REGULARIZE != "None":
                 unfolder_plotter.plot_bias_vector(title=title, **plot_args)
+                unfolder_plotter.draw_x_minus_bias(title=title, **plot_args)
 
             title = "Response matrix, %s, %s region, %s" % (jet_algo, region['label'], angle_str)
             unfolder_plotter.draw_response_matrix(title=title, **plot_args)
@@ -2293,6 +2298,9 @@ if __name__ == "__main__":
                                                                append='syst_with_template',
                                                                title='',
                                                                subplot_title="* / Generator")
+
+                        syst_unfolder_plotter.plot_bias_vector(title=syst_title, **syst_plot_args)
+                        syst_unfolder_plotter.draw_x_minus_bias(title=syst_title, **syst_plot_args)
 
                     region['model_systematics'][ind]['unfolder'] = syst_unfolder
 
