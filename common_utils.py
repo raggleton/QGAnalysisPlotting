@@ -437,10 +437,13 @@ def set_log_french_flag_palette():
     # Set max & min such that 0 is in the middle
     delta = 1E-20
     # TODO: actually have log colour scale?
-    stops = [ 0.00, 0.5-(0*delta), 0.5+delta, 0.5+(2*delta), 1.00 ]
-    red =   [ 0.00, 0.00, 0.50, 0.98, 1.00]
-    green = [ 0.00, 1.00, 0.93, 0.86, 0.00 ]
-    blue =  [ 1.00, 1.00, 0.98, 0.96, 0.00 ]
+    stops = [ 0.00, 0.5-(delta), 0.5, 0.5+(delta), 1.00 ]
+    # red =   [ 0.00, 0.00, 0.50, 0.98, 1.00]
+    # green = [ 0.00, 1.00, 0.93, 0.86, 0.00 ]
+    # blue =  [ 1.00, 1.00, 0.98, 0.96, 0.00 ]
+    red =   [ 0.00, 0.00, 1.00, 0.98, 1.00]
+    green = [ 0.00, 1.00, 1.00, 0.86, 0.00 ]
+    blue =  [ 1.00, 1.00, 1.00, 0.96, 0.00 ]
     stopsArray = array('d', stops)
     redArray = array('d', red)
     greenArray = array('d', green)
