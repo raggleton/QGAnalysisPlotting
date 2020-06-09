@@ -886,6 +886,11 @@ if __name__ == "__main__":
                                                         subplot_title="* / Generator",
                                                         subplot_limits=(0, 2))
 
+                if MC_INPUT:
+                    # do check by fitting at gen level and comparing
+                    template_maker.set_input_gen(unreg_unfolder.hist_truth)
+                    template_maker.check_template_at_gen()
+
                 # Setup our L matrix
                 # ------------------------------------------------------------------
                 # ref_hist = unreg_unfolder.hist_truth
@@ -1117,6 +1122,11 @@ if __name__ == "__main__":
                         jk_unfolder.truth_template = jk_truth_template
                         jk_unfolder.hist_bin_chopper.add_obj("truth_template", jk_unfolder.truth_template)
                         jk_unfolder.hist_bin_chopper.add_obj("alt_hist_truth", alt_hist_mc_gen)
+
+                        if MC_INPUT:
+                            # do check by fitting at gen level and comparing
+                            jk_template_maker.set_input_gen(jk_unfolder.hist_truth)
+                            jk_template_maker.check_template_at_gen()
 
                         jk_unfolder.SetBias(jk_unfolder.truth_template)
                         jk_unfolder.setup_L_matrix_curvature(ref_hist=jk_unfolder.truth_template, axis=args.regularizeAxis)
@@ -2211,6 +2221,11 @@ if __name__ == "__main__":
                         syst_unfolder.truth_template = syst_truth_template
                         syst_unfolder.hist_bin_chopper.add_obj("truth_template", syst_unfolder.truth_template)
                         syst_unfolder.hist_bin_chopper.add_obj("alt_hist_truth", alt_hist_mc_gen)
+
+                        if MC_INPUT:
+                            # do check by fitting at gen level and comparing
+                            syst_template_maker.set_input_gen(syst_unfolder.hist_truth)
+                            syst_template_maker.check_template_at_gen()
 
                         syst_unfolder.SetBias(syst_unfolder.truth_template)
                         syst_unfolder.setup_L_matrix_curvature(ref_hist=syst_unfolder.truth_template, axis=args.regularizeAxis)

@@ -253,6 +253,8 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
 
         self.L_matrix_entries = []  # set in setup_L_matrix_curvature()
 
+        self.truth_template = None  # set by TruthTemplateMaker, for regularisation
+
         # For producing normalised distributions
         self.hist_bin_chopper = HistBinChopper(generator_binning=self.generator_binning.FindNode("generatordistribution"),
                                                detector_binning=self.detector_binning.FindNode("detectordistribution"))
@@ -3373,18 +3375,29 @@ class TruthTemplateMaker(object):
         self.hist_bin_chopper_uflow = HistBinChopper(generator_binning=self.generator_binning.FindNode("generatordistribution_underflow"),
                                                      detector_binning=self.detector_binning.FindNode("detectordistribution_underflow"))
 
-        self.templates = []
+        self.templates = []  # store MC template to be fitted
         self.data_label_reco = "hist_data_reco"
+        self.data_label_gen = "hist_data_gen"
+        # for fitting to reco level
         self.fits = []
         self.fit_results = []
-        self.components = []
+        # for fitting to gen level as cross-check
+        self.fits_gen = []
+        self.fit_results_gen = []
+
+        self.components = []  # scaled MC components for each pT bin
         self.output_dir = output_dir  # for plots
-        self.truth_template = None
+        self.truth_template = None  # final 1D template
 
     def set_input(self, data_hist_reco):
         """Set thing that gets fitted. Should be at detector-level, but with gen binning"""
         self.hist_bin_chopper_signal.add_obj(self.data_label_reco, data_hist_reco)
         self.hist_bin_chopper_uflow.add_obj(self.data_label_reco, data_hist_reco)
+
+    def set_input_gen(self, data_hist_gen):
+        """Set thing to be fitted at gen level - for cross-checking with MC"""
+        self.hist_bin_chopper_signal.add_obj(self.data_label_gen, data_hist_gen)
+        self.hist_bin_chopper_uflow.add_obj(self.data_label_gen, data_hist_gen)
 
     def add_mc_template(self, name, hist_reco, hist_gen, colour=None):
         """Add MC template to be part of the fit.
@@ -3415,13 +3428,6 @@ class TruthTemplateMaker(object):
         return sum([pars[i]*h.GetBinContent(h.GetXaxis().FindFixBin(xx))
                     for i, h in enumerate(hists)])
 
-        # w1 = pars[0]
-        # w2 = pars[1]
-        # # get content of the histograms for this point
-        # y1 = hist1.GetBinContent(hist1.GetXaxis().FindFixBin(xx));
-        # y2 = hist2.GetBinContent(hist2.GetXaxis().FindFixBin(xx));
-        # return w1*y1 + w2*y2
-
     def create_template(self):
         """Create gen level template using MCs, by fitting to data at detector level
 
@@ -3436,21 +3442,21 @@ class TruthTemplateMaker(object):
         # plot scale factors vs pt bin
         first_bin = self.pt_bin_edges_underflow_gen[0]
         last_bin = self.pt_bin_edges_gen[-1]
-        self.plot_fit_results_vs_pt_bin("Fit to reco data %g < p_{T} < %G GeV" % (first_bin, last_bin),
+        self.plot_fit_results_vs_pt_bin("Fit to reco data, %g < p_{T} < %G GeV" % (first_bin, last_bin),
                                         os.path.join(self.output_dir, "reco_gen_bin_fit_factors.pdf"))
         self.construct_truth_template()
         return self.truth_template
 
-    def plot_fit(self, hist_data, mc_hists, labels, title, filename):
+    def plot_fit(self, hist_data, mc_hists, labels, title, filename, other_contributions=None):
         canv = ROOT.TCanvas(cu.get_unique_str(), "", 800, 600)
         this_hist_data = hist_data.Clone("Data")
         this_hist_data.SetMarkerStyle(cu.Marker.get('triangleUp'))
         # draw first to get stats box as not drawn with THStack
         this_hist_data.Draw()
         canv.Update()
+        all_func_hists = []
         stats = this_hist_data.GetListOfFunctions().FindObject("stats")
         func = this_hist_data.GetListOfFunctions().At(0)
-
         hist_fit = hist_data.Clone("Fit")
         for i in range(1, hist_data.GetNbinsX()+1):
             hist_fit.SetBinContent(i, func.Eval(hist_data.GetBinCenter(i)))
@@ -3473,14 +3479,17 @@ class TruthTemplateMaker(object):
                          line_width=lw,
                          marker_color=ROOT.kBlack,
                          marker_style=cu.Marker.get('triangleUp')),
-            Contribution(hist_fit,
-                         label="Fit",
-                         line_color=ROOT.kAzure+1,
-                         line_width=lw,
-                         line_style=2,
-                         marker_color=ROOT.kAzure+1,
-                         subplot=hist_data)
+                Contribution(hist_fit,
+                             label=hist_fit.GetName(),
+                             line_color=ROOT.kAzure+1,
+                             line_width=lw,
+                             line_style=2,
+                             marker_color=ROOT.kAzure+1,
+                             subplot=hist_data)
         ])
+        
+        if other_contributions:
+            entries.extend(other_contributions)
 
         plot = Plot(entries, what='hist',
                     title=title,
@@ -3488,7 +3497,7 @@ class TruthTemplateMaker(object):
                     ytitle="N / bin width",
                     subplot_type="ratio",
                     subplot_title="Fit / data",
-                    subplot_limits=(0.8, 1.2))
+                    subplot_limits=(0.5, 1.5))
         plot.plot("NOSTACK HIST E")
         plot.main_pad.cd()
         stats.SetBorderSize(0)
@@ -3497,7 +3506,7 @@ class TruthTemplateMaker(object):
         stats.SetY2NDC(0.83)
         stats.SetX2NDC(0.9)
         stats.Draw()
-        plot.legend.SetY2NDC(0.7)
+        plot.legend.SetY2NDC(0.75)
         plot.legend.SetY1NDC(0.5)
         plot.legend.SetX2NDC(0.9)
         plot.save(filename)
@@ -3536,8 +3545,8 @@ class TruthTemplateMaker(object):
             f.SetNpx(10000)
             # Actually do the fit to data
             fit_result = hist_data.Fit(f, "EMS")
-            self.fit_results.append(fit_result)
             self.fits.append(f)
+            self.fit_results.append(fit_result)
             # scaled versions of component hists
             for i in range(n_components):
                 mc_hists[i].Scale(f.GetParameter(i))
@@ -3559,8 +3568,8 @@ class TruthTemplateMaker(object):
             f.SetNpx(10000)
             # Actually do the fit to data
             fit_result = hist_data.Fit(f, "EMS")
-            self.fit_results.append(fit_result)
             self.fits.append(f)
+            self.fit_results.append(fit_result)
             # scaled versions of component hists
             for i in range(n_components):
                 mc_hists[i].Scale(f.GetParameter(i))
@@ -3693,3 +3702,145 @@ class TruthTemplateMaker(object):
         self.truth_template = truth_template
         self.hist_bin_chopper_signal.add_obj("truth_template", self.truth_template)
         self.hist_bin_chopper_uflow.add_obj("truth_template", self.truth_template)
+
+    def check_template_at_gen(self):
+        """Do fits at gen level to input from set_input_gen(), and compare with
+        fit factors from reco fit"""
+        if self.data_label_gen not in self.hist_bin_chopper_signal.objects:
+            raise RuntimeError("No %s: you need to call set_input_gen() first" % self.data_label_gen)
+
+        if self.truth_template is None:
+            raise RuntimeError("No truth template: need to call create_template() first")
+
+        self.do_gen_fits()
+        # plot scale factors vs pt bin, along with reco ones
+        first_bin = self.pt_bin_edges_underflow_gen[0]
+        last_bin = self.pt_bin_edges_gen[-1]
+        self.plot_gen_vs_reco_fit_results_vs_pt_bin("Comparing fit to reco and gen, %g < p_{T} < %G GeV" % (first_bin, last_bin),
+                                                    os.path.join(self.output_dir, "reco_vs_gen_bin_fit_factors.pdf"))
+
+    def do_gen_fits(self):
+        """Do the MC fits to gen-level data one per gen pT bin"""
+
+        # reset result holders
+        self.fits_gen = []
+        self.fit_results_gen = []
+
+        xmin = 0
+        xmax = len(self.variable_bin_edges_gen)-1
+        n_components = len(self.templates)
+
+        if n_components < 2:
+            raise RuntimeError("Cannot do git with < 2 MC components")
+
+        labels = [t['name'] for t in self.templates]
+        # Fit underflow pT bins
+        for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.pt_bin_edges_underflow_gen[:-1], self.pt_bin_edges_underflow_gen[1:])):
+            print("Fitting uflow", bin_edge_low, bin_edge_high)
+            hbc_args = dict(ind=ibin, binning_scheme='generator')
+            hist_data = self.hist_bin_chopper_uflow.get_pt_bin_div_bin_width(self.data_label_gen, **hbc_args).Clone()
+            if hist_data.Integral() == 0:
+                self.fits_gen.append(None)
+                self.fit_results_gen.append(None)
+                print("... empty data, skipping fit")
+                continue
+            mc_hists = [self.hist_bin_chopper_uflow.get_pt_bin_div_bin_width(t['gen_label'], **hbc_args).Clone()
+                        for t in self.templates]
+            # create TF1 using MC histograms
+            f = ROOT.TF1("gen_fit_gen_ubin_%d" % ibin, partial(TruthTemplateMaker.data_distribution_fn, hists=mc_hists), xmin, xmax, n_components)
+            f.SetNpx(10000)
+            # Actually do the fit to data
+            fit_result = hist_data.Fit(f, "EMS")
+            self.fits_gen.append(f)
+            self.fit_results_gen.append(fit_result)
+            # scaled versions of component hists
+            for i in range(n_components):
+                mc_hists[i].Scale(f.GetParameter(i))
+            
+            # Get the fit from reco fit values
+            other_contributions = [
+                Contribution(self.hist_bin_chopper_uflow.get_pt_bin_div_bin_width("truth_template", **hbc_args),
+                             label="Fit using reco fit params",
+                             line_width=2,
+                             line_color=ROOT.kOrange-3,
+                             line_style=3,
+                             subplot=hist_data)
+            ]
+            self.plot_fit(hist_data,
+                          mc_hists,
+                          other_contributions=other_contributions,
+                          labels=labels,
+                          title="Fit to gen data\n%g < p_{T} < %g GeV" % (bin_edge_low, bin_edge_high),
+                          filename=os.path.join(self.output_dir, "gen_fit_gen_bin_uflow_%d.pdf" % ibin))
+
+        # Fit signal pT bins
+        for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.pt_bin_edges_gen[:-1], self.pt_bin_edges_gen[1:])):
+            print("Fitting", bin_edge_low, bin_edge_high)
+            hbc_args = dict(ind=ibin, binning_scheme='generator')
+            hist_data = self.hist_bin_chopper_signal.get_pt_bin_div_bin_width(self.data_label_gen, **hbc_args).Clone()
+            mc_hists = [self.hist_bin_chopper_signal.get_pt_bin_div_bin_width(t['gen_label'], **hbc_args).Clone()
+                        for t in self.templates]
+            # create TF1 using MC histograms
+            f = ROOT.TF1("gen_fit_gen_bin_%d" % ibin, partial(TruthTemplateMaker.data_distribution_fn, hists=mc_hists), xmin, xmax, len(mc_hists))
+            f.SetNpx(10000)
+            # Actually do the fit to data
+            fit_result = hist_data.Fit(f, "EMS")
+            self.fits_gen.append(f)
+            self.fit_results_gen.append(fit_result)
+            # scaled versions of component hists
+            for i in range(n_components):
+                mc_hists[i].Scale(f.GetParameter(i))
+
+            # Get the fit from reco fit values
+            other_contributions = [
+                Contribution(self.hist_bin_chopper_signal.get_pt_bin_div_bin_width("truth_template", **hbc_args),
+                             label="Fit using reco fit params",
+                             line_width=2,
+                             line_color=ROOT.kOrange-3,
+                             line_style=3,
+                             subplot=hist_data)
+            ]
+            self.plot_fit(hist_data,
+                          mc_hists,
+                          other_contributions=other_contributions,
+                          labels=labels,
+                          title="Fit to gen data\n%g < p_{T} < %g GeV" % (bin_edge_low, bin_edge_high),
+                          filename=os.path.join(self.output_dir, "gen_fit_gen_bin_%d.pdf" % ibin))
+
+    def plot_gen_vs_reco_fit_results_vs_pt_bin(self, title, output_filename):
+        n = len(self.fits)
+        x = array('d', list(range(n)))
+        ex = array('d', [0 for f in self.fits])
+        multi_gr = ROOT.TMultiGraph(cu.get_unique_str(), "%s;pt bin index;Fit parameter" % title)
+        marker = cu.Marker()
+        for ind_t, (template, mark) in enumerate(zip(self.templates, marker.cycle())):
+            y = array('d', [f.GetParameter(ind_t) if f else 0 for f in self.fits])
+            ey = array('d', [f.GetParError(ind_t) if f else 0 for f in self.fits])
+            gr = ROOT.TGraphErrors(n, x, y, ex, ey)
+            gr.SetTitle(template['name'] + " [RECO]")
+            gr.SetMarkerStyle(mark)
+            col = template['colour']
+            if col:
+                gr.SetMarkerColor(col)
+                gr.SetLineColor(col)
+            multi_gr.Add(gr)
+
+        for ind_t, (template, mark) in enumerate(zip(self.templates, marker.cycle(filled=False))):
+            y = array('d', [f.GetParameter(ind_t) if f else 0 for f in self.fits_gen])
+            ey = array('d', [f.GetParError(ind_t) if f else 0 for f in self.fits_gen])
+            gr = ROOT.TGraphErrors(n, x, y, ex, ey)
+            gr.SetTitle(template['name'] + " [GEN]")
+            gr.SetMarkerStyle(mark)
+            col = template['colour']
+            if col:
+                gr.SetMarkerColor(col)
+                gr.SetLineColor(col)
+                gr.SetLineStyle(2)
+            multi_gr.Add(gr)
+
+        canv = ROOT.TCanvas(cu.get_unique_str(), "", 800, 600)
+        canv.SetTicks(1, 1)
+        multi_gr.Draw("ALP")
+        multi_leg = ROOT.gPad.BuildLegend()
+        multi_leg.SetFillStyle(0)
+        canv.SaveAs(output_filename)
