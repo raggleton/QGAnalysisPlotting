@@ -730,6 +730,10 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
                     # value_pt_down = bin_factors[bin_ind_pt_down]
                     # value_pt_up = bin_factors[bin_ind_pt_up]
                     value_pt_cen = - (value_pt_down + value_pt_up)
+
+                    val_cen = ref_hist.GetBinContent(bin_ind_cen)
+                    value_pt_cen = -2. / val_cen if val_cen != 0 else 0
+
                     # print(bin_ind_pt_down, value_pt_down, bin_ind_cen, value_pt_cen, bin_ind_pt_up, value_pt_up)
                     L_args = [bin_ind_pt_down, value_pt_down, bin_ind_cen, value_pt_cen, bin_ind_pt_up, value_pt_up]
                     L_matrix_entries.append(L_args)
@@ -781,7 +785,11 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
 
                     # value_lambda_down = bin_factors[bin_ind_lambda_down]
                     # value_lambda_up = bin_factors[bin_ind_lambda_up]
-                    value_lambda_cen = - (value_lambda_down + value_lambda_up)
+                    # value_lambda_cen = - (value_lambda_down + value_lambda_up)
+
+                    val_cen = ref_hist.GetBinContent(bin_ind_cen)
+                    value_lambda_cen = -2. / val_cen if val_cen != 0 else 0
+
                     # print(bin_ind_lambda_down, value_lambda_down, bin_ind_cen, value_lambda_cen, bin_ind_lambda_up, value_lambda_up)
                     L_args = [bin_ind_lambda_down, value_lambda_down, bin_ind_cen, value_lambda_cen, bin_ind_lambda_up, value_lambda_up]
                     L_matrix_entries.append(L_args)
