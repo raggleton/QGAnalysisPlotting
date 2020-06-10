@@ -175,8 +175,6 @@ class MyUnfolderPlotter(object):
                          normalise_hist=False),
         ]
         if do_unfolded:
-            for i in range(1, bias_hist.GetNbinsX()+1):
-                print("unfolded-bias [%d]" % i, self.unfolder.unfolded.GetBinContent(i) - bias_hist.GetBinContent(i))
             entries.append(
                 Contribution(self.unfolder.get_output(),
                              label="Unfolded",
@@ -198,9 +196,10 @@ class MyUnfolderPlotter(object):
                     subplot_title="Unfolded / bias" if do_unfolded else None)
         plot.default_canvas_size = (800, 600)
         plot.plot("NOSTACK HIST")
-        plot.set_logy(do_more_labels=False)
+        plot.set_logy(do_more_labels=False, override_check=True)
         plot.legend.SetY1NDC(0.77)
         plot.legend.SetX2NDC(0.85)
+        l, t = self.draw_pt_binning_lines(plot, which='gen', axis='x')
         output_filename = "%s/bias_hist%s.%s" % (output_dir, append, self.output_fmt)
         plot.save(output_filename)
 
@@ -511,7 +510,7 @@ class MyUnfolderPlotter(object):
                     ytitle="L(x-f_{b}x_{0})",
                     has_data=self.is_data)
         plot.default_canvas_size = (800, 600)
-        plot.y_padding_max_linear = 1.4
+        plot.y_padding_max_linear = 1.7
         plot.y_padding_min_linear = 1.1
         plot.left_margin = 0.15
         plot.plot("HISTE")
@@ -528,6 +527,14 @@ class MyUnfolderPlotter(object):
 
         output_filename = "%s/x_minus_bias_%s.%s" % (output_dir, append, self.output_fmt)
         x_hist.Add(bias_hist, -1)
+        # null bins if no condition in L matrix
+        Lmatrix = self.unfolder.GetL("hist_Lmatrix_%s" % (append), title)
+        L_matrix_np, _ = cu.th2_to_ndarray(Lmatrix)
+        # shapes is (nR, n gen bins)
+        for ix in range(1, x_hist.GetNbinsX()+1):
+            if all(L_matrix_np[:,ix-1] == 0):  # check for 0 regularisation rules that invovle this bin
+                x_hist.SetBinContent(ix, 0)
+
         conts = [Contribution(x_hist)]
         plot = Plot(conts,
                     what='hist',
@@ -536,10 +543,11 @@ class MyUnfolderPlotter(object):
                     ytitle="x-f_{b}x_{0}",
                     has_data=self.is_data)
         plot.default_canvas_size = (800, 600)
-        plot.y_padding_max_linear = 1.4
+        plot.y_padding_max_linear = 1.5
         plot.y_padding_min_linear = 1.1
         plot.left_margin = 0.15
         plot.plot("HISTE")
+        l, t = self.draw_pt_binning_lines(plot, which='gen', axis='x')
         plot.save(output_filename)
 
     def draw_pt_binning_lines(self, plot, which, axis, do_underflow=True, do_labels_inside=True, do_labels_outside=False, labels_inside_align='lower'):
