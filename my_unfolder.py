@@ -3750,7 +3750,7 @@ class TruthTemplateMaker(object):
             f = ROOT.TF1("gen_fit_gen_ubin_%d" % ibin, partial(TruthTemplateMaker.data_distribution_fn, hists=mc_hists), xmin, xmax, n_components)
             f.SetNpx(10000)
             # Actually do the fit to data
-            fit_result = hist_data.Fit(f, "EMS")
+            fit_result = hist_data.Fit(f, "QEMS")
             self.fits_gen.append(f)
             self.fit_results_gen.append(fit_result)
             # scaled versions of component hists
@@ -3784,7 +3784,7 @@ class TruthTemplateMaker(object):
             f = ROOT.TF1("gen_fit_gen_bin_%d" % ibin, partial(TruthTemplateMaker.data_distribution_fn, hists=mc_hists), xmin, xmax, len(mc_hists))
             f.SetNpx(10000)
             # Actually do the fit to data
-            fit_result = hist_data.Fit(f, "EMS")
+            fit_result = hist_data.Fit(f, "QEMS")
             self.fits_gen.append(f)
             self.fit_results_gen.append(fit_result)
             # scaled versions of component hists
