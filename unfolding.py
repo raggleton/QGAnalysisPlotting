@@ -1814,7 +1814,7 @@ if __name__ == "__main__":
                 # Subtract fakes (treat as background), same as nominal
                 # --------------------------------------------------------------
                 alt_unfolder.subtract_background(hist_fakes_reco, "fakes")
-                alt_unfolder.subtract_background(hist_fakes_reco_gen_binning, "fakes")
+                alt_unfolder.subtract_background_gen_binning(hist_fakes_reco_gen_binning, "fakes")
 
                 # Do regularisation
                 # --------------------------------------------------------------
