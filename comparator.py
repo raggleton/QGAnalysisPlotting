@@ -555,8 +555,8 @@ class Plot(object):
                 ymin *= self.y_padding_min_log
             else:
                 print("Warning: log y axis but ymin < 0:", ymin)
-                print("Not changing minimum")
-                ymin = modifier.GetMinimum()
+                print("Getting smallest >0 minimum")
+                ymin = min([o.GetMinimum(1E-20) for o in self.contributions_objs])
         else:
             if ymin < 0:
                 ymin *= self.y_padding_min_linear
