@@ -1449,7 +1449,7 @@ class GenPtBinnedPlotter(object):
                 this_syst = self.unfolder.get_exp_syst(syst_dict['label'])
                 syst_unfolded_hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width(this_syst.syst_shifted_label, **hbc_args)
                 this_syst_hist = _convert_syst_shift_to_error_ratio_hist(syst_unfolded_hist_bin, unfolded_hist_bin_total_errors)
-                is_herwig = "shower" in syst_dict['label'].lower()
+                is_herwig = "shower" in syst_dict['label'].lower() or "herwig" in syst_dict['label'].lower()
                 c = Contribution(this_syst_hist,
                                  label=syst_dict['label'],
                                  line_color=syst_dict['colour'],
@@ -1617,7 +1617,7 @@ class GenPtBinnedPlotter(object):
                 this_syst = self.unfolder.get_exp_syst(syst_dict['label'])
                 syst_unfolded_hist_bin = self.hist_bin_chopper.get_pt_bin_div_bin_width(this_syst.syst_shifted_label, **hbc_args)
                 this_syst_hist = _convert_syst_shift_to_error_ratio_hist(syst_unfolded_hist_bin, unfolded_hist_bin_total_errors)
-                is_herwig = "shower" in syst_dict['label'].lower()
+                is_herwig = "shower" in syst_dict['label'].lower() or "herwig" in syst_dict['label'].lower()
                 c = Contribution(this_syst_hist,
                                  label=syst_dict['label'],
                                  line_color=syst_dict['colour'],
@@ -2429,7 +2429,7 @@ class GenLambdaBinnedPlotter(object):
                 this_syst = self.unfolder.get_exp_syst(syst_dict['label'])
                 syst_unfolded_hist_bin = self.hist_bin_chopper.get_lambda_bin_div_bin_width(this_syst.syst_shifted_label, **hbc_args)
                 this_syst_hist = _convert_syst_shift_to_error_ratio_hist(syst_unfolded_hist_bin, unfolded_hist_bin_total_errors)
-                is_herwig = "shower" in syst_dict['label'].lower()
+                is_herwig = "shower" in syst_dict['label'].lower() or "herwig" in syst_dict['label'].lower()
                 c = Contribution(this_syst_hist,
                                  label=syst_dict['label'],
                                  line_color=syst_dict['colour'],
