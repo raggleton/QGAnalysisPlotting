@@ -159,7 +159,7 @@ class MyUnfolderPlotter(object):
         return arrows
 
 
-    def plot_bias_vector(self, do_unfolded=True, output_dir='.', append="", title=""):
+    def draw_bias_vector(self, do_unfolded=True, output_dir='.', append="", title=""):
         """Plot bias vector used in regularisation (if it exists)"""
         if append != "":
             append = "_%s" % (append)

@@ -1200,7 +1200,7 @@ if __name__ == "__main__":
                                                              title='',
                                                              subplot_title="* / Generator")
 
-                        jk_unfolder_plotter.plot_bias_vector(title=jk_title, **jk_plot_args)
+                        jk_unfolder_plotter.draw_bias_vector(title=jk_title, **jk_plot_args)
                         jk_unfolder_plotter.draw_x_minus_bias(title=jk_title, **jk_plot_args)
                         jk_unfolder_plotter.draw_Lx_minus_bias(title=jk_title, **jk_plot_args)
 
@@ -1669,7 +1669,7 @@ if __name__ == "__main__":
             # Draw matrices
             # ------------------------------------------------------------------
             if REGULARIZE != "None":
-                unfolder_plotter.plot_bias_vector(title=title, **plot_args)
+                unfolder_plotter.draw_bias_vector(title=title, **plot_args)
                 unfolder_plotter.draw_x_minus_bias(title=title, **plot_args)
 
             title = "Response matrix, %s, %s region, %s" % (jet_algo, region['label'], angle_str)
@@ -2304,7 +2304,7 @@ if __name__ == "__main__":
                                                                title='',
                                                                subplot_title="* / Generator")
 
-                        syst_unfolder_plotter.plot_bias_vector(title=syst_title, **syst_plot_args)
+                        syst_unfolder_plotter.draw_bias_vector(title=syst_title, **syst_plot_args)
                         syst_unfolder_plotter.draw_x_minus_bias(title=syst_title, **syst_plot_args)
 
                     region['model_systematics'][ind]['unfolder'] = syst_unfolder
