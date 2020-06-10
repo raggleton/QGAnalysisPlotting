@@ -525,6 +525,7 @@ class GenPtBinnedPlotter(object):
                         title=self.get_pt_bin_title(bin_edge_low, bin_edge_high),
                         **self.pt_bin_plot_args)
             self._modify_plot(plot)
+            plot.subplot_title = "* / Generator"
             plot.plot("NOSTACK E1")
             plot.save("%s/unfolded_%s_with_unreg_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
 
@@ -558,6 +559,7 @@ class GenPtBinnedPlotter(object):
                         title=self.get_pt_bin_title(bin_edge_low, bin_edge_high),
                         **self.pt_bin_plot_args)
             self._modify_plot(plot)
+            plot.subplot_title = "* / Generator"
             plot.plot("NOSTACK E1")
             plot.save("%s/unfolded_unnormalised_%s_with_unreg_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
 
@@ -604,8 +606,9 @@ class GenPtBinnedPlotter(object):
                         title=self.get_pt_bin_title(bin_edge_low, bin_edge_high),
                         **self.pt_bin_plot_args)
             self._modify_plot(plot)
+            plot.subplot_title = "* / Generator"
             plot.plot("NOSTACK E1")
-            plot.save("%s/unfolded_%s_with_template_unreg_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
+            plot.save("%s/unfolded_%s_with_template_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
 
     def plot_unfolded_with_template_unnormalised(self):
         for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
@@ -650,8 +653,9 @@ class GenPtBinnedPlotter(object):
                         title=self.get_pt_bin_title(bin_edge_low, bin_edge_high),
                         **self.pt_bin_plot_args)
             self._modify_plot(plot)
+            plot.subplot_title = "* / Generator"
             plot.plot("NOSTACK E1")
-            plot.save("%s/unfolded_unnormalised_%s_with_template_unreg_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
+            plot.save("%s/unfolded_unnormalised_%s_with_template_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
 
     def plot_unfolded_with_alt_response_normalised(self, alt_unfolder):
         for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
@@ -3229,6 +3233,7 @@ def do_binned_plots_per_region_angle(setup, do_binned_gen_pt, do_binned_gen_lamb
                 print(".......", syst_dict['label'])
                 this_setup = copy(setup)
                 this_setup.output_dir = os.path.join(setup.output_dir, "modelSyst_"+cu.no_space_str(syst_dict['label']))
+                this_setup.region['mc_label'] = syst_dict['label']  # since that's the thing being unfolded
                 syst_gen_pt_binned_plotter = GenPtBinnedPlotter(setup=this_setup,
                                                                 bins=unfolder.pt_bin_edges_gen,
                                                                 hist_bin_chopper=syst_dict['unfolder'].hist_bin_chopper,

@@ -1786,6 +1786,9 @@ if __name__ == "__main__":
                 title = "Response matrix, %s, %s region, %s, %s" % (jet_algo, region['label'], angle_str, region['alt_mc_label'])
                 alt_unfolder_plotter.draw_response_matrix(title=title, **alt_plot_args)
 
+                alt_title = "%s\n%s region, %s, %s response map" % (jet_algo, region['label'], angle_str, region['alt_mc_label'])
+                alt_unfolder_plotter.draw_failed_reco(title=alt_title, **alt_plot_args)
+
                 # Set what is to be unfolded - same as main unfolder
                 # --------------------------------------------------------------
                 alt_unfolder.set_input(input_hist=unfolder.input_hist,
@@ -1844,7 +1847,6 @@ if __name__ == "__main__":
 
                 # Draw 1D & 2D plots
                 # --------------------------------------------------------------
-                alt_title = "%s\n%s region, %s, %s response map" % (jet_algo, region['label'], angle_str, region['alt_mc_label'])
                 alt_unfolder_plotter.draw_detector_1d(do_reco_data_bg_sub=not MC_INPUT,
                                                       do_reco_bg=True,
                                                       do_reco_mc_bg_sub=True,
