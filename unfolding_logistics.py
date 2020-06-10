@@ -184,19 +184,25 @@ def get_unfolding_argparser(description='', parser=None):
     syst_group.add_argument("--doModelSysts",
                             type=lambda x: bool(distutils.util.strtobool(x)),
                             default=False,
-                            help=('Do model systematics (i.e. those that modify input to be unfolded).'
+                            help=('Do model systematics (different inputs to be unfolded).'
                                    + standard_bool_description))
 
     syst_group.add_argument("--doModelSystsOnlyHerwig",
                             type=lambda x: bool(distutils.util.strtobool(x)),
                             default=False,
-                            help=('Do only Herwig model systematics (i.e. those that modify input to be unfolded).'
+                            help=('Do only Herwig model systematics (different inputs to be unfolded).'
                                    + standard_bool_description))
 
     syst_group.add_argument("--doModelSystsOnlyScale",
                             type=lambda x: bool(distutils.util.strtobool(x)),
                             default=False,
-                            help=('Do only scale model systematics (i.e. those that modify input to be unfolded).'
+                            help=('Do only scale model systematics (different inputs to be unfolded).'
+                                   + standard_bool_description))
+
+    syst_group.add_argument("--doModelSystsNotScale",
+                            type=lambda x: bool(distutils.util.strtobool(x)),
+                            default=False,
+                            help=('Do only non-scale model systematics (different inputs to be unfolded).'
                                    + standard_bool_description))
 
     syst_group.add_argument("--doModelSystsFromFile",
@@ -259,12 +265,14 @@ def sanitise_args(args):
         print("Warning: will use experimental systs from --doExperimentalSystsFromFile option only, "
               "ignoring --doExperimentalSysts and --doExperimentalSystsOnlyHerwig")
 
-    if (args.doModelSystsOnlyScale or args.doModelSystsOnlyHerwig or args.doModelSysts) and args.doModelSystsFromFile:
+    if ((args.doModelSystsOnlyScale or args.doModelSystsOnlyHerwig or args.doModelSysts or args.doModelSystsNotScale) 
+        and args.doModelSystsFromFile):
         args.doModelSysts = False
         args.doModelSystsOnlyScale = False
         args.doModelSystsOnlyHerwig = False
+        args.doModelSystsNotScale = False
         print("Warning: will use model systs from --doModelSystsFromFile option only, "
-              "ignoring --doModelSysts, --doModelSystsOnlyHerwig, -- doModelSystsOnlyScale")
+              "ignoring --doModelSysts, --doModelSystsOnlyHerwig, --doModelSystsOnlyScale, --doModelSystsNotScale")
 
     if args.doPDFSystsFromFile and args.doPDFSysts:
         args.doPDFSysts = False
@@ -291,8 +299,7 @@ def get_unfolding_output_dir(args):
     if args.MCinput:
         mc_append += "_split" if args.MCsplit else "_all"
 
-    SUBTRACT_FAKES = True  # this should alwys be True
-    sub_append = "_subFakes" if SUBTRACT_FAKES else ""
+    sub_append = "_subFakes"
 
     append = ""
 
@@ -308,37 +315,40 @@ def get_unfolding_output_dir(args):
     if args.doExperimentalSysts:
         append += "_experimentalSyst"
 
-    if args.doExperimentalSystsOnlyHerwig:
+    elif args.doExperimentalSystsOnlyHerwig:
         args.doExperimentalSysts = True
         append += "_experimentalSystOnlyHerwig"
 
-    if args.doExperimentalSystsFromFile:
+    elif args.doExperimentalSystsFromFile:
         append += "_experimentalSystFromFile"
 
     if args.doScaleSysts:
         append += "_scaleSyst"
-
-    if args.doScaleSystsFromFile:
+    
+    elif args.doScaleSystsFromFile:
         append += "_scaleSystFromFile"
 
     if args.doModelSysts:
         append += "_modelSyst"
-
-    if args.doModelSystsOnlyHerwig:
+    
+    elif args.doModelSystsOnlyHerwig:
         args.doModelSysts = True
         append += "_modelSystOnlyHerwig"
-
+    
     elif args.doModelSystsOnlyScale:
         args.doModelSysts = True
         append += "_modelSystOnlyScale"
+    
+    elif args.doModelSystsNotScale:
+        args.doModelSysts = True
+        append += "_modelSystNotScale"
 
-    if args.doModelSystsFromFile:
+    elif args.doModelSystsFromFile:
         append += "_modelSystFromFile"
 
     if args.doPDFSysts:
         append += "_pdfSyst"
-
-    if args.doPDFSystsFromFile:
+    elif args.doPDFSystsFromFile:
         append += "_pdfSystFromFile"
 
     if args.useAltResponse:
@@ -353,6 +363,7 @@ def get_unfolding_output_dir(args):
             reg_axis_str = '_onlyRegAngle'
         # reg_axis_str += "_onlyBinFactors"
         # reg_axis_str += "_invTruthMoreBins"
+        # reg_axis_str += "_useTemplateFit_derivative"
         reg_axis_str += "_useTemplateFit"
         # reg_axis_str += "_invTruthUseUnfolded"
 

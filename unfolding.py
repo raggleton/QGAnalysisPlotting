@@ -445,6 +445,11 @@ if __name__ == "__main__":
             orig_region['model_systematics'] = [s for s in orig_region['model_systematics']
                                                 if 'mu' in s['label'].lower()]
 
+        elif args.doModelSystsNotScale:
+            # only non-scale related systs
+            orig_region['model_systematics'] = [s for s in orig_region['model_systematics']
+                                                if 'mu' not in s['label'].lower()]
+
         if not (args.doPDFSysts or args.doPDFSystsFromFile):
             orig_region['pdf_systematics'] = []
 

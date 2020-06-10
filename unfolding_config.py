@@ -226,12 +226,12 @@ def get_dijet_config(source_dir, central=True, groomed=False):
             #     "colour": ROOT.kOrange+4,
             #     "unfolder": None,
             # },
-            # {
-            #     "label": "Pythia8",
-            #     "tfile": input_mc_qcd_pythia_tfile,
-            #     "colour": ROOT.kGreen-3,
-            #     "unfolder": None,
-            # },
+            {
+                "label": "Pythia8",
+                "tfile": input_mc_qcd_pythia_tfile,
+                "colour": ROOT.kMagenta+3,
+                "unfolder": None,
+            },
         ],
 
         "pdf_systematics": [
@@ -250,7 +250,7 @@ def get_dijet_config(source_dir, central=True, groomed=False):
                 "tfile": input_mc_qcd_mgpythia_tfile,
                 "colour": ROOT.kCyan+2,
                 "unfolder": None,
-                "variations": range(10),  # list of all the variation #s to be used
+                "variations": range(25),  # list of all the variation #s to be used
             },
         ],
 
@@ -260,7 +260,7 @@ def get_dijet_config(source_dir, central=True, groomed=False):
                 "tfile": input_mc_qcd_mgpythia_tfile,
                 "colour": ROOT.kCyan+2,
                 "unfolder": None,
-                "variations": range(10),  # list of all the variation #s to be used
+                "variations": range(25),  # list of all the variation #s to be used
             },
         ]
 
