@@ -606,6 +606,29 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
 
         return new_hist
 
+    def get_failed_reco(self, as_fraction=True):
+        """Get hist of passGen & !passReco, ie 0th bin
+        
+        as_fraction = True, then divide by all passGen
+        """
+        origin = self.response_map
+        # origin = self.get_probability_matrix()
+        nbins = origin.GetNbinsX()
+        ax = origin.GetXaxis()
+        first_bin = ax.GetBinLowEdge(1)
+        last_bin = ax.GetBinLowEdge(ax.GetNbins()+1)
+        h_failed = ROOT.TH1D("h_failed_"+cu.get_unique_str(), "", nbins, first_bin, last_bin)
+        for i in range(1, nbins+1):
+            h_failed.SetBinContent(i, origin.GetBinContent(i, 0))
+            h_failed.SetBinError(i, origin.GetBinError(i, 0))
+        
+        if as_fraction:
+            h_all = origin.ProjectionX()
+            h_failed.Divide(h_all)
+
+        return h_failed
+
+
     # SETUP REGULARISATION STUFF
     # --------------------------------------------------------------------------
     def calculate_pt_bin_factors(self, which):

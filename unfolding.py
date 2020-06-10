@@ -1789,6 +1789,17 @@ if __name__ == "__main__":
                 alt_title = "%s\n%s region, %s, %s response map" % (jet_algo, region['label'], angle_str, region['alt_mc_label'])
                 alt_unfolder_plotter.draw_failed_reco(title=alt_title, **alt_plot_args)
 
+                # Compare with the nominal one
+                ocs = [Contribution(unfolder.get_failed_reco(as_fraction=True), 
+                                    label=region['mc_label'],
+                                    line_color=ROOT.kBlack,
+                                    subplot=alt_unfolder.get_failed_reco(as_fraction=True)
+                                    )]
+                alt_unfolder_plotter.draw_failed_reco(title=alt_title, 
+                                                      output_dir=alt_output_dir, 
+                                                      other_contributions=ocs,
+                                                      append="compare_nominal_"+append)
+                
                 # Set what is to be unfolded - same as main unfolder
                 # --------------------------------------------------------------
                 alt_unfolder.set_input(input_hist=unfolder.input_hist,
