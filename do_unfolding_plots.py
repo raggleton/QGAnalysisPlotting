@@ -1277,7 +1277,17 @@ class GenPtBinnedPlotter(object):
                 for i in range(1, h.GetNbinsX()+1):
                     h.SetBinError(i, 0)
 
-            entries = []
+            entries = [
+                Contribution(unfolded_hist_bin_total_errors,
+                             label="Unfolded (#tau = %.3g) (total unc.)" % (self.unfolder.tau),
+                             line_color=self.plot_colours['unfolded_total_colour'], line_width=self.line_width, line_style=1,
+                             marker_color=self.plot_colours['unfolded_total_colour'], marker_style=20, marker_size=0.75),
+                Contribution(unfolded_hist_bin_stat_errors,
+                             label="Unfolded (#tau = %.3g) (stat. unc.)" % (self.unfolder.tau),
+                             line_color=self.plot_colours['unfolded_stat_colour'], line_width=self.line_width, line_style=1,
+                             marker_color=self.plot_colours['unfolded_stat_colour'], marker_style=20, marker_size=0.75),
+            ]
+
             for syst_dict in self.region['experimental_systematics']:
                 this_syst = self.unfolder.get_exp_syst(syst_dict['label'])
                 syst_unfolded_hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width(this_syst.syst_shifted_label, **hbc_args)
@@ -1290,18 +1300,6 @@ class GenPtBinnedPlotter(object):
                                  subplot=unfolded_hist_bin_stat_errors)
                 entries.append(c)
 
-            entries.append(
-                Contribution(unfolded_hist_bin_total_errors,
-                             label="Unfolded (#tau = %.3g) (total unc.)" % (self.unfolder.tau),
-                             line_color=self.plot_colours['unfolded_total_colour'], line_width=self.line_width, line_style=1,
-                             marker_color=self.plot_colours['unfolded_total_colour'], marker_style=20, marker_size=0.75),
-            )
-            entries.append(
-                Contribution(unfolded_hist_bin_stat_errors,
-                             label="Unfolded (#tau = %.3g) (stat. unc.)" % (self.unfolder.tau),
-                             line_color=self.plot_colours['unfolded_stat_colour'], line_width=self.line_width, line_style=1,
-                             marker_color=self.plot_colours['unfolded_stat_colour'], marker_style=20, marker_size=0.75),
-            )
             if not self.check_entries(entries, "plot_unfolded_with_exp_systs_normalised %d" % ibin):
                 return
             plot = Plot(entries,
@@ -1338,7 +1336,17 @@ class GenPtBinnedPlotter(object):
                 for i in range(1, h.GetNbinsX()+1):
                     h.SetBinError(i, 0)
 
-            entries = []
+            entries = [
+                Contribution(unfolded_hist_bin_total_errors,
+                             label="Unfolded (#tau = %.3g) (total unc.)" % (self.unfolder.tau),
+                             line_color=self.plot_colours['unfolded_total_colour'], line_width=self.line_width, line_style=1,
+                             marker_color=self.plot_colours['unfolded_total_colour'], marker_style=20, marker_size=0.75),
+                Contribution(unfolded_hist_bin_stat_errors,
+                             label="Unfolded (#tau = %.3g) (stat. unc.)" % (self.unfolder.tau),
+                             line_color=self.plot_colours['unfolded_stat_colour'], line_width=self.line_width, line_style=1,
+                             marker_color=self.plot_colours['unfolded_stat_colour'], marker_style=20, marker_size=0.75),
+            ]
+
             for syst_dict in self.region['experimental_systematics']:
                 this_syst = self.unfolder.get_exp_syst(syst_dict['label'])
                 syst_unfolded_hist_bin = self.hist_bin_chopper.get_pt_bin_div_bin_width(this_syst.syst_shifted_label, **hbc_args)
@@ -1351,18 +1359,6 @@ class GenPtBinnedPlotter(object):
                                  subplot=unfolded_hist_bin_stat_errors)
                 entries.append(c)
 
-            entries.append(
-                Contribution(unfolded_hist_bin_total_errors,
-                             label="Unfolded (#tau = %.3g) (total unc.)" % (self.unfolder.tau),
-                             line_color=self.plot_colours['unfolded_total_colour'], line_width=self.line_width, line_style=1,
-                             marker_color=self.plot_colours['unfolded_total_colour'], marker_style=20, marker_size=0.75),
-            )
-            entries.append(
-                Contribution(unfolded_hist_bin_stat_errors,
-                             label="Unfolded (#tau = %.3g) (stat. unc.)" % (self.unfolder.tau),
-                             line_color=self.plot_colours['unfolded_stat_colour'], line_width=self.line_width, line_style=1,
-                             marker_color=self.plot_colours['unfolded_stat_colour'], marker_style=20, marker_size=0.75),
-            )
             if not self.check_entries(entries, "plot_unfolded_with_exp_systs_normalised %d" % ibin):
                 return
             plot = Plot(entries,
@@ -1453,9 +1449,9 @@ class GenPtBinnedPlotter(object):
                 this_syst = self.unfolder.get_exp_syst(syst_dict['label'])
                 syst_unfolded_hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width(this_syst.syst_shifted_label, **hbc_args)
                 this_syst_hist = _convert_syst_shift_to_error_ratio_hist(syst_unfolded_hist_bin, unfolded_hist_bin_total_errors)
-                is_herwig = "herwig" in syst_dict['label'].lower()
+                is_herwig = "shower" in syst_dict['label'].lower()
                 c = Contribution(this_syst_hist,
-                                 label="Shower & hadronisation" if is_herwig else syst_dict['label'],
+                                 label=syst_dict['label'],
                                  line_color=syst_dict['colour'],
                                  leg_draw_opt="L" if is_herwig else "P",
                                  line_width=self.line_width if is_herwig else 0,
@@ -1621,9 +1617,9 @@ class GenPtBinnedPlotter(object):
                 this_syst = self.unfolder.get_exp_syst(syst_dict['label'])
                 syst_unfolded_hist_bin = self.hist_bin_chopper.get_pt_bin_div_bin_width(this_syst.syst_shifted_label, **hbc_args)
                 this_syst_hist = _convert_syst_shift_to_error_ratio_hist(syst_unfolded_hist_bin, unfolded_hist_bin_total_errors)
-                is_herwig = "herwig" in syst_dict['label'].lower()
+                is_herwig = "shower" in syst_dict['label'].lower()
                 c = Contribution(this_syst_hist,
-                                 label="Shower & hadronisation" if is_herwig else syst_dict['label'],
+                                 label=syst_dict['label'],
                                  line_color=syst_dict['colour'],
                                  leg_draw_opt="L" if is_herwig else "P",
                                  line_width=self.line_width if is_herwig else 0,
@@ -2317,7 +2313,16 @@ class GenLambdaBinnedPlotter(object):
             unfolded_hist_bin_no_errors = unfolded_hist_bin_total_errors.Clone()
             cu.remove_th1_errors(unfolded_hist_bin_no_errors)
 
-            entries = []
+            entries = [
+                Contribution(unfolded_hist_bin_total_errors,
+                             label="Unfolded (#tau = %.3g) (total unc.)" % (self.unfolder.tau),
+                             line_color=self.plot_colours['unfolded_total_colour'], line_width=self.line_width, line_style=1,
+                             marker_color=self.plot_colours['unfolded_total_colour'], marker_style=20, marker_size=0.75),
+                Contribution(unfolded_hist_bin_stat_errors,
+                             label="Unfolded (#tau = %.3g) (stat. unc.)" % (self.unfolder.tau),
+                             line_color=self.plot_colours['unfolded_stat_colour'], line_width=self.line_width, line_style=1,
+                             marker_color=self.plot_colours['unfolded_stat_colour'], marker_style=20, marker_size=0.75),
+            ]
             for syst_dict in self.region['experimental_systematics']:
                 this_syst = self.unfolder.get_exp_syst(syst_dict['label'])
 
@@ -2332,12 +2337,6 @@ class GenLambdaBinnedPlotter(object):
                                  subplot=unfolded_hist_bin_no_errors)
                 entries.append(c)
 
-            entries.append(
-                Contribution(unfolded_hist_bin_stat_errors,
-                             label="Unfolded (#tau = %.3g) (stat. unc.)" % (self.unfolder.tau),
-                             line_color=self.plot_colours['unfolded_stat_colour'], line_width=self.line_width, line_style=1,
-                             marker_color=self.plot_colours['unfolded_stat_colour'], marker_style=20, marker_size=0.75),
-            )
             if not self.check_entries(entries, "plot_unfolded_with_exp_systs_unnormalised %d" % ibin):
                 return
             plot = Plot(entries,
@@ -2430,9 +2429,9 @@ class GenLambdaBinnedPlotter(object):
                 this_syst = self.unfolder.get_exp_syst(syst_dict['label'])
                 syst_unfolded_hist_bin = self.hist_bin_chopper.get_lambda_bin_div_bin_width(this_syst.syst_shifted_label, **hbc_args)
                 this_syst_hist = _convert_syst_shift_to_error_ratio_hist(syst_unfolded_hist_bin, unfolded_hist_bin_total_errors)
-                is_herwig = "herwig" in syst_dict['label'].lower()
+                is_herwig = "shower" in syst_dict['label'].lower()
                 c = Contribution(this_syst_hist,
-                                 label="Shower & hadronisation" if is_herwig else syst_dict['label'],
+                                 label=syst_dict['label'],
                                  line_color=syst_dict['colour'],
                                  leg_draw_opt="L" if is_herwig else "P",
                                  line_width=self.line_width if is_herwig else 0,
@@ -3304,11 +3303,11 @@ def do_binned_plots_per_region_angle(setup, do_binned_gen_pt, do_binned_gen_lamb
         gen_pt_binned_plotter.plot_syst_fraction_normalised()
 
         # FIXME delete this next time, should be done in unfolding.py
-        if has_scale_systs:
-            unfolder.create_scale_syst_uncertainty_per_pt_bin(region['scale_systematics'])
-        if has_pdf_systs:
-            unfolder.create_pdf_syst_uncertainty_per_pt_bin(region['pdf_systematics'])
-        unfolder.setup_absolute_results_per_pt_bin()
+        # if has_scale_systs:
+        #     unfolder.create_scale_syst_uncertainty_per_pt_bin(region['scale_systematics'])
+        # if has_pdf_systs:
+        #     unfolder.create_pdf_syst_uncertainty_per_pt_bin(region['pdf_systematics'])
+        # unfolder.setup_absolute_results_per_pt_bin()
         gen_pt_binned_plotter.plot_syst_fraction_unnormalised()
 
         # # if has_data:
@@ -3361,7 +3360,7 @@ def do_binned_plots_per_region_angle(setup, do_binned_gen_pt, do_binned_gen_lamb
                                                                         hist_bin_chopper=syst_dict['unfolder'].hist_bin_chopper,
                                                                         unfolder=syst_dict['unfolder'])
                 syst_gen_lambda_binned_plotter.plot_unfolded_unnormalised()
-                if unfolder.tau > 0 and unreg_unfolder:
+                if syst_dict['unfolder'].tau > 0:
                     syst_gen_lambda_binned_plotter.hist_bin_chopper.add_obj("unreg_unfolded", syst_dict['unfolder'].unfolded)
                     syst_gen_lambda_binned_plotter.hist_bin_chopper.add_obj("truth_template", syst_dict['unfolder'].truth_template)
                     syst_gen_lambda_binned_plotter.plot_unfolded_with_unreg_unnormalised()
@@ -3393,7 +3392,7 @@ def do_binned_plots_per_region_angle(setup, do_binned_gen_pt, do_binned_gen_lamb
                                                                       hist_bin_chopper=jk_dict['unfolder'].hist_bin_chopper,
                                                                       unfolder=jk_dict['unfolder'])
                 jk_gen_lambda_binned_plotter.plot_unfolded_unnormalised()
-                if unfolder.tau > 0 and unreg_unfolder:
+                if jk_dict['unfolder'].tau > 0:
                     # plot with template since template different to nominal template
                     jk_gen_lambda_binned_plotter.hist_bin_chopper.add_obj("unreg_unfolded", jk_dict['unfolder'].unfolded)
                     jk_gen_lambda_binned_plotter.hist_bin_chopper.add_obj("truth_template", jk_dict['unfolder'].truth_template)
@@ -3413,11 +3412,11 @@ def do_binned_plots_per_region_angle(setup, do_binned_gen_pt, do_binned_gen_lamb
                 jk_gen_lambda_binned_plotter.plot_unfolded_unnormalised()
 
         # bit of a hack, should do it in main unfolding.py script
-        if has_scale_systs:
-            unfolder.create_scale_syst_uncertainty_per_lambda_bin(region['scale_systematics'])
-        if has_pdf_systs:
-            unfolder.create_pdf_syst_uncertainty_per_lambda_bin(region['pdf_systematics'])
-        unfolder.setup_absolute_results_per_lambda_bin()
+        # if has_scale_systs:
+        #     unfolder.create_scale_syst_uncertainty_per_lambda_bin(region['scale_systematics'])
+        # if has_pdf_systs:
+        #     unfolder.create_pdf_syst_uncertainty_per_lambda_bin(region['pdf_systematics'])
+        # unfolder.setup_absolute_results_per_lambda_bin()
 
         print("...doing uncert fraction")
         gen_lambda_binned_plotter.plot_syst_fraction_unnormalised()
