@@ -3532,14 +3532,15 @@ class BigNormalised1DPlotter(object):
 
     @staticmethod
     def _modify_plot(this_plot):
-        this_plot.legend.SetX1(0.6)
+        this_plot.legend.SetX1(0.72)
         this_plot.legend.SetY1(0.72)
         this_plot.legend.SetX2(0.9)
         this_plot.legend.SetY2(0.88)
         if len(this_plot.contributions) > 4:
             this_plot.legend.SetNColumns(2)
         # this_plot.left_margin = 0.16
-        this_plot.left_margin = 0.1
+        this_plot.left_margin = 0.07
+        this_plot.right_margin = 0.038
         this_plot.default_canvas_size = (1200, 700)
         this_plot.y_padding_max_linear = 2
         this_plot.subplot_pad_height = 0.4
@@ -3627,7 +3628,8 @@ class BigNormalised1DPlotter(object):
             t = text.AddText(contents)  # t is a TText
             t.SetTextColor(14)
             t.SetTextAngle(89)
-            t.SetTextSize(0.0275)
+            # t.SetTextSize(0.0275)
+            t.SetTextSize(0.0375)
             if (isinstance(plot, Plot) and not plot.subplot_pad) or not isinstance(plot, Plot):
                 t.SetTextSize(0.02)  # account for the fact that a subplot makes things smaller
             if labels_inside_align == 'lower':
@@ -3655,14 +3657,14 @@ class BigNormalised1DPlotter(object):
 
     def get_mc_truth_kwargs(self):
         return dict(
-            label="Generator (%s)" % (self.setup.region['mc_label']),
+            label=self.setup.region['mc_label'],
             line_color=PLOT_COLOURS['gen_colour'], line_width=self.line_width,
             marker_color=PLOT_COLOURS['gen_colour'], marker_size=0
             )
 
     def get_unfolded_total_err_kwargs(self):
         return dict(
-            label="Unfolded (#tau = %.3g) (total unc.)\n(%s response matrix)" % (self.unfolder.tau, self.setup.region['mc_label']),
+            label="Data (total unc.)",
             line_color=PLOT_COLOURS['unfolded_total_colour'], line_width=self.line_width, line_style=1,
             marker_color=PLOT_COLOURS['unfolded_total_colour']
         )
@@ -3676,8 +3678,8 @@ class BigNormalised1DPlotter(object):
 
     def get_alt_mc_truth_kwargs(self):
         return dict(
-            label="Generator (%s)" % (self.setup.region['alt_mc_label']),
-            line_color=PLOT_COLOURS['alt_gen_colour'], line_width=self.line_width, line_style=2,
+            label=self.setup.region['alt_mc_label'],
+            line_color=PLOT_COLOURS['alt_gen_colour'], line_width=self.line_width, line_style=3,
             marker_color=PLOT_COLOURS['alt_gen_colour'], marker_size=0
         )
 
@@ -3781,15 +3783,18 @@ class BigNormalised1DPlotter(object):
         plot.save("%s/detector_1d_normalised_%s_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, self.setup.output_fmt))
 
     def plot_unfolded_truth_alt_truth(self):
+        data = self.get_big_1d('unfolded', 'generator')
+        data_no_errors = data.Clone()
+        cu.remove_th1_errors(data_no_errors)
         entries = [
+            Contribution(data,
+                         **self.get_unfolded_total_err_kwargs()),
             Contribution(self.get_big_1d('hist_truth', 'generator'),
+                         subplot=data_no_errors,
                          **self.get_mc_truth_kwargs()),
             Contribution(self.get_big_1d('alt_hist_truth', 'generator'),
-                         subplot=self.get_big_1d('hist_truth', 'generator'),
+                         subplot=data_no_errors,
                          **self.get_alt_mc_truth_kwargs()),
-            Contribution(self.get_big_1d('unfolded', 'generator'),
-                         subplot=self.get_big_1d('hist_truth', 'generator'),
-                         **self.get_unfolded_total_err_kwargs()),
         ]
         plot = Plot(entries, 'hist',
                     ytitle=self.get_ytitle(),
@@ -3798,12 +3803,40 @@ class BigNormalised1DPlotter(object):
                     has_data=self.setup.has_data,
                     ylim=self._get_ylim(entries),
                     subplot_type='ratio',
-                    subplot_title="#splitline{* / Gen}{(%s)}" % (self.setup.region['mc_label']),
+                    # subplot_title="#splitline{* / Gen}{(%s)}" % (self.setup.region['mc_label']),
+                    subplot_title="Simulation / data",
                     subplot_limits=self.get_subplot_ylim()
                     )
         self._modify_plot(plot)
-        plot.plot("NOSTACK E")
+        plot.legend.SetNColumns(3)
+        plot.legend.SetX1(0.4)
+        plot.legend.SetY1(0.8)
+        subplot_draw_opts = "NOSTACK E"
+        plot.plot("NOSTACK E", subplot_draw_opts)
+
+        # on subplot, plot shaded region for data uncertainties
+        data_total_ratio = data_no_errors.Clone()
+        data_total_ratio.Divide(data)
+
+        data_total_ratio.SetFillStyle(3154)
+        # data_total_ratio.SetFillColor(PLOT_COLOURS['unfolded_total_colour'])
+        data_total_ratio.SetFillColor(ROOT.kGray+1) # not black, too dark
+        data_total_ratio.SetLineWidth(0)
+        data_total_ratio.SetMarkerSize(0)
+
+        # now draw the data error shaded area
+        # this is a bit hacky - basically draw them on the ratio pad,
+        # then redraw the existing hists & line to get them ontop
+        # note that we use "same" for all - this is to keep the original axes
+        # (we may want to rethink this later?)
+        plot.subplot_pad.cd()
+        draw_opt = "E2 SAME"
+        data_total_ratio.Draw(draw_opt)
+        plot.subplot_container.Draw("SAME" + subplot_draw_opts)
+        plot.subplot_line.Draw()
+
         l, t = self._plot_pt_bins(plot)
+
         plot.save("%s/unfolded_1d_normalised_alt_truth_%s_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, self.setup.output_fmt))
 
     def plot_unfolded_truth_alt_response(self, alt_unfolder):
