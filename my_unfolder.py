@@ -3436,10 +3436,10 @@ class TruthTemplateMaker(object):
             hist_gen=hist_gen,
             colour=colour
         ))
-        self.hist_bin_chopper_signal.add_obj(reco_label, hist_reco)
-        self.hist_bin_chopper_signal.add_obj(gen_label, hist_gen)
-        self.hist_bin_chopper_uflow.add_obj(reco_label, hist_reco)
-        self.hist_bin_chopper_uflow.add_obj(gen_label, hist_gen)
+        self.hist_bin_chopper_signal.add_obj(reco_label, hist_reco.Clone())
+        self.hist_bin_chopper_signal.add_obj(gen_label, hist_gen.Clone())
+        self.hist_bin_chopper_uflow.add_obj(reco_label, hist_reco.Clone())
+        self.hist_bin_chopper_uflow.add_obj(gen_label, hist_gen.Clone())
 
     # Create fit function from templates
     # Should be used with functools.partial
