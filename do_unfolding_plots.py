@@ -1404,6 +1404,10 @@ class GenPtBinnedPlotter(object):
             h_new = h_syst.Clone(h_syst.GetName() + cu.get_unique_str())
             h_new.Divide(h_nominal)
             for ibin in range(1, h_new.GetNbinsX()+1):
+                if h_nominal.GetBinContent(ibin) == 0:
+                    h_new.SetBinContent(ibin, 1)
+                if h_syst.GetBinContent(ibin) < 0:
+                    print("Warning: _convert_syst_shift_to_error_ratio_hist bin", ibin, "of h_syst < 0", h_syst.GetName())
                 h_new.SetBinError(ibin, 0)
             return h_new
 
@@ -1519,6 +1523,8 @@ class GenPtBinnedPlotter(object):
                 ylim[1] = max_total*1.1
             if min_total < ylim[0]:
                 ylim[0] = min_total*0.9
+            ylim[0] = max(-1, ylim[0])
+            ylim[1] = min(5, ylim[1])
             plot = Plot(entries,
                         xtitle=self.setup.particle_title,
                         ytitle='Variation / nominal (on normalised distribution)',
