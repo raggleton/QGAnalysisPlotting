@@ -608,7 +608,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
 
     def get_failed_reco(self, as_fraction=True):
         """Get hist of passGen & !passReco, ie 0th bin
-        
+
         as_fraction = True, then divide by all passGen
         """
         origin = self.response_map
@@ -621,7 +621,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         for i in range(1, nbins+1):
             h_failed.SetBinContent(i, origin.GetBinContent(i, 0))
             h_failed.SetBinError(i, origin.GetBinError(i, 0))
-        
+
         if as_fraction:
             h_all = origin.ProjectionX()
             h_failed.Divide(h_all)
@@ -3502,17 +3502,31 @@ class TruthTemplateMaker(object):
                          line_width=lw,
                          marker_color=ROOT.kBlack,
                          marker_style=cu.Marker.get('triangleUp')),
-                Contribution(hist_fit,
-                             label=hist_fit.GetName(),
-                             line_color=ROOT.kAzure+1,
-                             line_width=lw,
-                             line_style=2,
-                             marker_color=ROOT.kAzure+1,
-                             subplot=hist_data)
+            Contribution(hist_fit,
+                         label=hist_fit.GetName(),
+                         line_color=ROOT.kAzure+1,
+                         line_width=lw,
+                         line_style=2,
+                         marker_color=ROOT.kAzure+1,
+                         subplot=hist_data)
         ])
-        
+
         if other_contributions:
             entries.extend(other_contributions)
+
+        subplot_lim = [0.5, 1.5]
+        # set subplot limits to cover all contributions
+        y_min, y_max = 999, -999
+        for ent in entries:
+            if ent.subplot is None:
+                continue
+            ratio = ent.obj.Clone()
+            ratio.Divide(ent.subplot)
+            y_max = max(y_max, ratio.GetMaximum())
+            y_min = max(y_min, ratio.GetMinimum(1E-20))
+
+        subplot_lim = [min(0.5, y_min), max(1.5, y_max)]
+        # subplot_lim = [y_min, y_max]
 
         plot = Plot(entries, what='hist',
                     title=title,
@@ -3520,7 +3534,7 @@ class TruthTemplateMaker(object):
                     ytitle="N / bin width",
                     subplot_type="ratio",
                     subplot_title="Fit / data",
-                    subplot_limits=(0.5, 1.5))
+                    subplot_limits=subplot_lim)
         plot.plot("NOSTACK HIST E")
         plot.main_pad.cd()
         stats.SetBorderSize(0)
@@ -3779,7 +3793,7 @@ class TruthTemplateMaker(object):
             # scaled versions of component hists
             for i in range(n_components):
                 mc_hists[i].Scale(f.GetParameter(i))
-            
+
             # Get the fit from reco fit values
             other_contributions = [
                 Contribution(self.hist_bin_chopper_uflow.get_pt_bin_div_bin_width("truth_template", **hbc_args),

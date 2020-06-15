@@ -55,13 +55,20 @@ def do_plots(nominal_dir, herwig_dir, output_dir,
     var_prepend = ""
 
     plot_dirname = "Dijet_QG_tighter"
+    # plot_dirname = "Dijet_QG"
+    plot_dirname = "ZPlusJets_QG"
 
     # setup TFiles here to cache things
     main_filename = qgc.QCD_FILENAME
+    main_filename = qgc.DY_FILENAME
     nominal_tfile = cu.TFileCacher(os.path.join(nominal_dir, main_filename))
     herwig_filename = qgc.QCD_HERWIG_FILENAME
+    herwig_filename = qgc.DY_HERWIG_FILENAME
     herwig_tfile = cu.TFileCacher(os.path.join(herwig_dir, herwig_filename)) if herwig_dir else None
-    data_tfile = cu.TFileCacher(os.path.join(nominal_dir, qgc.JETHT_ZB_FILENAME))
+    mg_herwig_tfile = cu.TFileCacher(os.path.join(herwig_dir, qgc.DY_MG_HERWIG_FILENAME)) if herwig_dir else None
+    pythia_tfile = cu.TFileCacher(os.path.join(nominal_dir, qgc.QCD_PYTHIA_ONLY_FILENAME))
+    # data_tfile = cu.TFileCacher(os.path.join(nominal_dir, qgc.JETHT_ZB_FILENAME))
+    data_tfile = cu.TFileCacher(os.path.join(nominal_dir, qgc.SINGLE_MU_FILENAME))
 
     syst_up_tfiles = [cu.TFileCacher(os.path.join(syst_dir, main_filename)) for (syst_dir, _, _) in syst_ups]
     syst_down_tfiles = [cu.TFileCacher(os.path.join(syst_dir, main_filename)) for (syst_dir, _, _) in syst_downs]
@@ -85,7 +92,7 @@ def do_plots(nominal_dir, herwig_dir, output_dir,
             h2d_qcd_mc = nominal_tfile.Get("%s/%s" % (plot_dirname, v))
             qcd_kwargs_mc = dict(line_color=qgc.QCD_COLOUR, line_width=lw, fill_color=qgc.QCD_COLOUR,
                                  marker_color=qgc.QCD_COLOUR, marker_style=cu.Marker.get(qgc.QCD_MARKER), marker_size=0,
-                                 label="Nominal")
+                                 label="MG5+Pythia8")
             nominal_hist = qgp.get_projection_plot(h2d_qcd_mc, start_val, end_val)
             dijet_entries.append((nominal_hist, qcd_kwargs_mc))
 
@@ -99,6 +106,22 @@ def do_plots(nominal_dir, herwig_dir, output_dir,
                                      label="Herwig++",
                                      subplot=nominal_hist)
                 dijet_entries.append((qgp.get_projection_plot(h2d_herwig_qcd_mc, start_val, end_val), qcd_herwig_kwargs_mc))
+
+                h2d_mg_herwig_qcd_mc = mg_herwig_tfile.Get("%s/%s" % (plot_dirname, v))
+                colh = ROOT.kGreen+2
+                qcd_mg_herwig_kwargs_mc = dict(line_color=colh, line_width=lw, fill_color=colh,
+                                     marker_color=colh, marker_style=cu.Marker.get('square'), marker_size=0,
+                                     label="MG+Herwig++",
+                                     subplot=nominal_hist)
+                dijet_entries.append((qgp.get_projection_plot(h2d_mg_herwig_qcd_mc, start_val, end_val), qcd_mg_herwig_kwargs_mc))
+
+            # h2d_pythia_qcd_mc = pythia_tfile.Get("%s/%s" % (plot_dirname, v))
+            # colp = ROOT.kRed
+            # qcd_pythia_kwargs_mc = dict(line_color=colp, line_width=lw, fill_color=colp,
+            #                      marker_color=colp, marker_style=cu.Marker.get('square'), marker_size=0,
+            #                      label="Pythia",
+            #                      subplot=nominal_hist)
+            # dijet_entries.append((qgp.get_projection_plot(h2d_pythia_qcd_mc, start_val, end_val), qcd_pythia_kwargs_mc))
 
             # SHIFT UP
             if syst_ups:
@@ -182,7 +205,7 @@ def do_plots(nominal_dir, herwig_dir, output_dir,
             subplot_limits = (0.9, 1.1)
 
             qgp.do_comparison_plot(dijet_entries,
-                                   "%s/ptBinned/%s_pt%dto%d_dijet.%s" % (output_dir, v, start_val, end_val, OUTPUT_FMT),
+                                   "%s/%s/ptBinned/%s_pt%dto%d_dijet.%s" % (output_dir, plot_dirname, v, start_val, end_val, OUTPUT_FMT),
                                    rebin=rebin,
                                    draw_opt="NOSTACK HIST E",
                                    title="%d < p_{T}^{jet} < %d GeV\n%s" % (start_val, end_val, jet_str),

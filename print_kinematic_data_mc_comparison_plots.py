@@ -184,7 +184,8 @@ def do_all_1D_projection_plots_in_dir(directories, output_dir, components_styles
         # Ignore TH1s
         if not isinstance(objs[0], (ROOT.TH2F, ROOT.TH2D, ROOT.TH2I)):
             logx = obj_name in ["pt_jet", "pt_jet1", "pt_jet2", "pt_mumu", 'gen_ht', 'pt_jet_response_binning', 'pt_genjet_response_binning', 'pt_jet1_unweighted', 'pt_jet_unweighted']
-            do_1D_plot(objs, components_styles_dicts=components_styles_dicts,
+            do_1D_plot(objs, 
+                       components_styles_dicts=components_styles_dicts,
                        draw_opts=draw_opts, do_ratio=do_ratio, normalise_hists=normalise_hists, logy=True,
                        title=jet_config_str, logx=logx,
                        output_filename=os.path.join(output_dir, obj_name+".%s" % (OUTPUT_FMT)))
@@ -288,7 +289,6 @@ def do_dijet_distributions(root_dir):
                                       components_styles_dicts=csd,
                                       jet_config_str=jet_config_str,
                                       bin_by='ave')
-
 
 
 def do_zpj_distributions(root_dir):

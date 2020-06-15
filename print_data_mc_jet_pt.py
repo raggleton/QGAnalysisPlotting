@@ -141,7 +141,7 @@ def do_jet_pt_plot(entries,
                     leg_draw_opt = "E"
                 if data_hist.GetMarkerSize() > 0:
                     leg_draw_opt += "P"
-
+            # make Contribution just to ease styling methods
             cont = Contribution(dummy_gr.Clone(), leg_draw_opt=leg_draw_opt, **entry[1])
             dummy_conts.append(cont)
             plot.legend.AddEntry(cont.obj, cont.label, cont.leg_draw_opt)
@@ -683,7 +683,7 @@ def do_dijet_pt_plots(workdir, do_systematics=True):
 
             exp_hist_up_ratio = exp_hist_up.Clone()
             exp_hist_down_ratio = exp_hist_down.Clone()
-            exp_hist_up_ratio.Add(mg_hist, -1)
+            exp_hist_up_ratio.Add(mg_hist, -1) # error doesnt matter
             exp_hist_up_ratio.Divide(mg_hist)
             exp_hist_down_ratio.Add(mg_hist, -1)
             exp_hist_down_ratio.Divide(mg_hist)
