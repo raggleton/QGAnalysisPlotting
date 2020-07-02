@@ -546,6 +546,8 @@ def get_parser():
     parser.add_argument("-o", "--output",
                         help="Directory to put output plot dirs into",
                         default=".")
+    parser.add_argument("--title",
+                        help="Optional label to put on plot")
     return parser
 
 
