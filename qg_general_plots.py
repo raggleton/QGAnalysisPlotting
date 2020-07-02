@@ -71,7 +71,7 @@ def make_comparison_plot_ingredients(entries, rebin=1, normalise_hist=True, mean
         If there are 0 contributions
     """
     entries = [ent for ent in entries if ent]
-    
+
     # first figure out if there is a plot where the mean relative error
     #  is greater than a certain amount
 
@@ -159,13 +159,13 @@ def make_comparison_plot_ingredients(entries, rebin=1, normalise_hist=True, mean
         else:
             p.legend.SetY1(0.68)
         p.legend.SetY2(0.88)
-    
+
     if mean_rel_error > 0:
         rebin = orig_rebin
     return p
 
 
-def do_comparison_plot(entries, output_filename, rebin=1, draw_opt="NOSTACK HIST E", data_first=False, mean_rel_error=0.4, **plot_kwargs):
+def do_comparison_plot(entries, output_filename, rebin=1, draw_opt="NOSTACK HIST E", data_first=False, mean_rel_error=0.4, logx=False, logy=False, **plot_kwargs):
     """Plot several different objects on a single plot
 
     entries : list of 2-tuples, with (object, dict), where the dict is a set of kwargs passed to the Contribution object
@@ -182,7 +182,15 @@ def do_comparison_plot(entries, output_filename, rebin=1, draw_opt="NOSTACK HIST
             # we'll do the filling of legend ourselves
             plot.do_legend = False
 
+        if logy:
+            plot.y_padding_max_log = 200
+
         plot.plot(draw_opt)
+
+        if logx:
+            plot.set_logx(do_more_labels=False)
+        if logy:
+            plot.set_logy(do_more_labels=False)
 
         # Special case if data first object
         if data_first:
@@ -198,7 +206,7 @@ def do_comparison_plot(entries, output_filename, rebin=1, draw_opt="NOSTACK HIST
             # Using graphs we can get the correct endings on the TLegend entries (!)
             # Yes a massive faff for something so trivial
             dummy_gr = ROOT.TGraphErrors(1, array('d', [1]), array('d', [1]), array('d', [1]), array('d', [1]))
-            dummy_hist = ROOT.TGraphErrors(1, array('d', [1]), array('d', [1]), array('d', [1]), array('d', [1]))
+            # dummy_hist = ROOT.TGraphErrors(1, array('d', [1]), array('d', [1]), array('d', [1]), array('d', [1]))
             # Add them to the legend and draw it
             dummy_conts = []  # stop premature deletion
             for i, entry in enumerate(entries):
@@ -209,6 +217,10 @@ def do_comparison_plot(entries, output_filename, rebin=1, draw_opt="NOSTACK HIST
                         leg_draw_opt = "E"
                     if data_hist.GetMarkerSize() > 0:
                         leg_draw_opt += "P"
+                else:
+                    if entry[1].get('marker_size', 0) > 0:
+                        leg_draw_opt += "P"
+                # print(entry[1])
 
                 cont = Contribution(dummy_gr.Clone(), leg_draw_opt=leg_draw_opt, **entry[1])
                 dummy_conts.append(cont)

@@ -16,7 +16,7 @@ from uuid import uuid1
 # My stuff
 from comparator import Contribution, Plot, grab_obj
 import qg_common as qgc
-import qg_general_plots as qgg
+import qg_general_plots as qgp
 import common_utils as cu
 
 
@@ -62,79 +62,76 @@ def find_first_filled_bin(hist):
 
 
 
-def do_1D_plot(hists, output_filename, components_styles_dicts=None,
-               draw_opts="NOSTACK HISTE", do_ratio=True, logx=False, logy=False,
-               normalise_hists=True, title=""):
+def do_1D_plot(hists,
+               components_styles_dicts,
+               output_filename,
+               do_ratio=True,
+               logx=False, logy=False,
+               normalise_hists=True,
+               title="",
+               data_first=True):
 
     if (len(hists) != len(components_styles_dicts)):
         raise RuntimeError("# hists != # components_styles_dicts (%d vs %d)" % (len(hists), len(components_styles_dicts)))
 
-    hists = [h.Clone(h.GetName() + str(uuid1())) for h in hists]
-    contributions = [Contribution(hist, normalise_hist=normalise_hists, **csd)
-                     for hist, csd in zip(hists, components_styles_dicts)]
-
-    if len(contributions) == 0:
+    if len(hists) == 0:
         return
 
     # Ignore if all empty objs
-    total_entries = sum(c.obj.GetEntries() for c in contributions)
+    total_entries = sum(h.GetEntries() for h in hists)
     if total_entries == 0:
         print("WARNING: all plots have 0 entries")
         return
 
+    do_ratio = (do_ratio and len(hists) > 1)
+
+    entries = [(h.Clone(cu.get_unique_str()), csd)
+               for h, csd in zip(hists, components_styles_dicts)]
+
     min_val = min([h.GetMinimum(0) for h in hists])
     max_val = max([h.GetMaximum() for h in hists])
     # print("Auto y limits:", min_val, max_val)
-    if logy:
-        ylim = [0.5*min_val, 50*max_val]
-    else:
-        # ylim = [0.5*min_val, 1.5*max_val]
-        ylim = [0, 1.5*max_val]
+    ylim = None
+    if not normalise_hists:
+        if logy:
+            ylim = [0.5*min_val, 50*max_val]
+        else:
+            # ylim = [0.5*min_val, 1.5*max_val]
+            ylim = [0, 1.5*max_val]
 
     # Auto calc x limits to avoid lots of empty bins
     high_bin = max([find_largest_filled_bin(h)[0] for h in hists])
     low_bin = max(2, min([find_first_filled_bin(h)[0] for h in hists]))
     xlim = [hists[0].GetBinLowEdge(low_bin-1), hists[0].GetBinLowEdge(high_bin+2)]
 
-    p = Plot(contributions, what='hist',
-             ytitle="#DeltaN/N" if normalise_hists else "N",
-             title=title,
-             xlim=xlim,
-             ylim=ylim,
-             subplot_type="ratio" if do_ratio else None,
-             subplot_title="MC / Data",
-             subplot=contributions[0],
-             # subplot_limits=(0.5, 1.5),
-             subplot_limits=(0, 2) if logy else (0.5, 1.5),
-             )
-    # p.legend.SetX1(0.55)
-    # # p.legend.SetX2(0.95)
-    # p.legend.SetY1(0.7)
-    # p.legend.SetY2(0.85)
-    p.legend.SetX1(0.5)
-    p.legend.SetX2(0.97)
-    if len(contributions) > 4:
-        p.legend.SetY1(0.6)
-    else:
-        p.legend.SetY1(0.7)
-    p.legend.SetY2(0.9)
-    p.plot(draw_opts)
-
-    if logy:
-        p.set_logy(do_more_labels=False)
-    if logx:
-        p.set_logx(do_more_labels=False)
-
-    # p.save(os.path.join(output_dir, obj_name+".%s" % (OUTPUT_FMT)))
-    p.save(output_filename)
+    draw_opt = "NOSTACK HIST E1"
+    subplot_title = "Simulation / Data"
+    subplot_limits = (0, 2) if logy else (0.5, 1.5)
+    qgp.do_comparison_plot(entries,
+                           output_filename,
+                           # rebin=rebin,
+                           draw_opt=draw_opt,
+                           title=title,
+                           xtitle=None,
+                           xlim=xlim,
+                           ylim=ylim,
+                           logx=logx,
+                           logy=logy,
+                           data_first=data_first,
+                           subplot_type='ratio' if do_ratio else None,
+                           subplot_title=subplot_title,
+                           subplot=entries[0][0] if do_ratio else None,
+                           subplot_limits=subplot_limits)
 
 
-def do_all_1D_projection_plots_in_dir(directories, output_dir, components_styles_dicts=None,
-                                      draw_opts="NOSTACK HISTE", do_ratio=True,
+def do_all_1D_projection_plots_in_dir(directories,
+                                      components_styles_dicts,
+                                      output_dir,
+                                      region_str=None,
+                                      do_ratio=True,
                                       normalise_hists=True,
                                       jet_config_str="",
                                       title=None,
-                                      signal_mask=None,
                                       bin_by=None):
     """
     Given a set of TDirs, loop over all 2D hists, do projection hists for chosen bins, and plot all TDir contributions on a canvas for comparison.
@@ -172,6 +169,7 @@ def do_all_1D_projection_plots_in_dir(directories, output_dir, components_styles
                         'pt_jet1_z_pt_jet2_z_ratio',
                         # 'met_sig_vs_pt_jet1'
                         'weight_vs_puHat_genHT_ratio',
+                        'eta_jet_response',
                         ]:
             continue
 
@@ -182,7 +180,7 @@ def do_all_1D_projection_plots_in_dir(directories, output_dir, components_styles
 
         objs = [d.Get(obj_name).Clone(obj_name + str(uuid1())) for d in directories]
 
-        # Ignore TH1s
+        # Do TH1s separately
         if not isinstance(objs[0], (ROOT.TH2F, ROOT.TH2D, ROOT.TH2I)):
             logx = obj_name in ["pt_jet", "pt_jet1", "pt_jet2", "pt_mumu", 'gen_ht', 'pt_jet_response_binning', 'pt_genjet_response_binning', 'pt_jet1_unweighted', 'pt_jet_unweighted']
             rebin = 1
@@ -190,13 +188,21 @@ def do_all_1D_projection_plots_in_dir(directories, output_dir, components_styles
                 rebin = 10
             for obj in objs:
                 obj.Rebin(rebin)
-            this_title = jet_config_str
+
+            this_title = (("{jet_algo}\n"
+                           "{region_label}\n")
+                           .format(jet_algo=jet_config_str,
+                                   region_label=region_str))
             if title is not None:
-                this_title += "\n%s" % title
-            do_1D_plot(objs, 
+                this_title += "\n%s" % (title)
+
+            do_1D_plot(objs,
                        components_styles_dicts=components_styles_dicts,
-                       draw_opts=draw_opts, do_ratio=do_ratio, normalise_hists=normalise_hists, logy=True,
-                       title=this_title, logx=logx,
+                       do_ratio=do_ratio,
+                       normalise_hists=normalise_hists,
+                       logx=logx,
+                       logy=True,
+                       title=this_title,
                        output_filename=os.path.join(output_dir, obj_name+".%s" % (OUTPUT_FMT)))
         else:
 
@@ -227,25 +233,36 @@ def do_all_1D_projection_plots_in_dir(directories, output_dir, components_styles
                     rebin = 2
                 if "reliso" in obj_name:
                     rebin = 2
-                hists = [qgg.get_projection_plot(ob, pt_min, pt_max).Rebin(rebin) for ob in objs]
+                hists = [qgp.get_projection_plot(ob, pt_min, pt_max).Rebin(rebin) for ob in objs]
 
-                if bin_by == "ave":
-                    # title = "#splitline{%s}{%d < #LT p_{T}^{jet} #GT < %d GeV}" % (jet_config_str, pt_min, pt_max)
-                    this_title = "%s\n%d < #LT p_{T}^{jet} #GT < %d GeV" % (jet_config_str, pt_min, pt_max)
-                elif bin_by == "Z":
-                    this_title = "#splitline{%s}{%d < p_{T}^{Z} < %d GeV}" % (jet_config_str, pt_min, pt_max)
-
-                if title is not None:
-                    this_title += "\n%s" % title
+                def _title(region_str, start_val, end_val):
+                    pt_var_str = "p_{T}^{jet}"
+                    if bin_by == "ave":
+                        pt_var_str = "#LT p_{T}^{jet} #GT"
+                    elif bin_by == "Z":
+                        pt_var_str = "p_{T}^{Z}"
+                    s = (("{jet_algo}\n"
+                          "{region_label}\n"
+                          "{bin_edge_low:g} < {pt_str} < {bin_edge_high:g} GeV")
+                          .format(
+                            jet_algo=jet_config_str,
+                            region_label=region_str,
+                            pt_str=pt_var_str,
+                            bin_edge_low=start_val,
+                            bin_edge_high=end_val))
+                    if title is not None:
+                        s = "%s\n%s" % (s, title)
+                    return s
 
                 logx = 'pt_jet_response' in obj_name
 
-                do_1D_plot(hists, components_styles_dicts=components_styles_dicts,
-                           draw_opts=draw_opts, do_ratio=do_ratio,
-                           normalise_hists=normalise_hists, 
+                do_1D_plot(hists,
+                           components_styles_dicts=components_styles_dicts,
+                           do_ratio=do_ratio,
+                           normalise_hists=normalise_hists,
                            logx=logx,
                            logy=False,
-                           title=this_title,
+                           title=_title(region_str, pt_min, pt_max),
                            output_filename=os.path.join(output_dir, obj_name+"_pt%dto%d.%s" % (pt_min, pt_max, OUTPUT_FMT)))
 
 
@@ -275,7 +292,7 @@ def do_dijet_distributions(root_dir, title):
     zb_col = ROOT.kGreen+2
     msize = 0.75
     csd = [
-        {"label": "Data", "line_color": data_col, "fill_color": data_col, "marker_color": data_col, "marker_style": 20, "fill_style": 0, "marker_size": msize},
+        {"label": "Data", "line_color": data_col, "fill_color": data_col, "marker_color": data_col, "marker_style": 20, "fill_style": 0, "marker_size": msize, 'line_width': 2},
         {"label": "QCD MC [MG+PY8]", "line_color": mc_col, "fill_color": mc_col, "marker_color": mc_col, "marker_style": 22, "fill_style": 0, "marker_size": msize},
         # {"label": "QCD MC [PY8]", "line_color": mc_col2, "fill_color": mc_col2, "marker_color": mc_col2, "marker_style": 21, "fill_style": 0, "marker_size": msize},
         {"label": "QCD MC [H++]", "line_color": mc_col3, "fill_color": mc_col3, "marker_color": mc_col3, "marker_style": 23, "fill_style": 0, "marker_size": msize},
@@ -290,6 +307,7 @@ def do_dijet_distributions(root_dir, title):
     #                                   # output_dir=os.path.join(root_dir, "Dijet_data_mc_kin_comparison_absolute_everything"),
     # #                                   # output_dir=os.path.join(root_dir, "Dijet_data_mc_kin_comparison_absolute_all"),
     #                                   components_styles_dicts=csd,
+                                        # region_str=qgc.Dijet_LABEL,
     #                                   jet_config_str=jet_config_str,
     #                                   normalise_hists=False,
     #                                   bin_by='ave')
@@ -301,6 +319,17 @@ def do_dijet_distributions(root_dir, title):
                                       # output_dir=os.path.join(root_dir, "Dijet_data_mc_kin_comparison_normalised_both"),
                                       # output_dir=os.path.join(root_dir, "Dijet_data_mc_kin_comparison_normalised_all"),
                                       components_styles_dicts=csd,
+                                      region_str=qgc.Dijet_LABEL,
+                                      jet_config_str=jet_config_str,
+                                      title=title,
+                                      bin_by='ave')
+
+    # Do eta-ordered
+    directories = [cu.get_from_tfile(rf, "Dijet_eta_ordered") for rf in root_files[:]]
+    do_all_1D_projection_plots_in_dir(directories=directories,
+                                      output_dir=os.path.join(root_dir, "Dijet_data_mc_kin_comparison_eta_ordered_normalised"),
+                                      components_styles_dicts=csd,
+                                      region_str=qgc.Dijet_LABEL,
                                       jet_config_str=jet_config_str,
                                       title=title,
                                       bin_by='ave')
@@ -334,6 +363,7 @@ def do_zpj_distributions(root_dir, title):
     #                                   components_styles_dicts=csd,
     #                                   jet_config_str=jet_config_str,
     #                                   normalise_hists=False,
+                                        # region_str=qgc.ZpJ_LABEL,
     #                                   bin_by='Z')
 
     # Compare shapes
@@ -345,6 +375,7 @@ def do_zpj_distributions(root_dir, title):
                                       title=title,
                                       components_styles_dicts=csd,
                                       normalise_hists=True,
+                                      region_str=qgc.ZpJ_LABEL,
                                       bin_by='Z')
 
     # Preselection hists
@@ -356,6 +387,7 @@ def do_zpj_distributions(root_dir, title):
     #                                   jet_config_str=jet_config_str,
     #                                   components_styles_dicts=csd,
     #                                   normalise_hists=True,
+    #                                   region_str=qgc.ZpJ_LABEL,
     #                                   bin_by='Z')
 
 

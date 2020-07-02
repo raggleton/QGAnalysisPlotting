@@ -302,8 +302,6 @@ def do_plots(root_dir, title):
                 if gr_append is not "":
                     xlabel = "Groomed " + ang.name + " (" + ang.lambda_str + ")"
 
-                # dj central only
-                # dont' try to do multiple signal regions per plot, it looks rubbish
                 def _title(region_str, start_val, end_val):
                     pt_var_str = "p_{T}^{jet}"
                     s = (("{jet_algo}\n"
@@ -320,6 +318,8 @@ def do_plots(root_dir, title):
                     return s
 
                 draw_opt = "NOSTACK HIST E1"
+                # dj central only
+                # dont' try to do multiple signal regions per plot, it looks rubbish
                 if len(dijet_cen_entries) > 0:
                     qgp.do_comparison_plot(dijet_cen_entries,
                                            "%s/ptBinned/%s_pt%dto%d_dijet_central.%s" % (plot_dir, v, start_val, end_val, OUTPUT_FMT),
