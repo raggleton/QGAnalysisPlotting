@@ -293,7 +293,7 @@ def do_plots(root_dir, title):
                 # elif "lha" in v_lower:
                     # ylim = (0, 5)
 
-                plot_dir = os.path.join(root_dir, "plots_dy_vs_qcd_mc_vs_data%s" % (gr_append))
+                plot_dir = os.path.join(root_dir, "plots_lambda_mc_vs_data%s" % (gr_append))
 
                 subplot_title = "Simulation / Data"
                 subplot_limits = (0, 2)
