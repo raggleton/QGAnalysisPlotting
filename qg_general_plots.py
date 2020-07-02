@@ -104,6 +104,8 @@ def make_comparison_plot_ingredients(entries, rebin=1, normalise_hist=True, mean
         raise RuntimeError("0 contributions for this plot")
 
     if data_first:
+        plot_kwargs['has_data'] = True
+
         # Modify data Contribution to have no  lines
         # We'll redraw it at the end with the proper ones ontop
         conts[0].line_width = 0
@@ -142,7 +144,6 @@ def make_comparison_plot_ingredients(entries, rebin=1, normalise_hist=True, mean
     p = Plot(conts, what="hist",
              ytitle=ytitle,
              legend=do_legend,
-             has_data=data_first,
              **plot_kwargs)
     if do_legend:
         # ensure legend big enough, but not too big, depending on how long entries are
@@ -370,6 +371,7 @@ def do_all_exclusive_plots_comparison(sources,
                                       do_flav_tagged=True,
                                       show_region_labels=True,
                                       has_data=False,
+                                      data_first=False,
                                       ofmt="pdf"):
     """Do 1D plots, comparing various sources. Looping over pt_bins, for each source, plots DY & QCD samples.
 
@@ -612,6 +614,7 @@ def do_all_exclusive_plots_comparison(sources,
                                xlim=xlim,
                                ylim=ylim,
                                has_data=has_data,
+                               data_first=data_first,
                                subplot=subplot,
                                subplot_type=subplot_type,
                                subplot_title=subplot_title,
@@ -629,6 +632,7 @@ def do_all_exclusive_plots_comparison(sources,
                                    title=plot_title,
                                    xtitle=x_title,
                                    xlim=xlim,
+                                   data_first=data_first,
                                    has_data=has_data,
                                    subplot=subplot,
                                    subplot_type=subplot_type,
