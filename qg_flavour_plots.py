@@ -211,7 +211,8 @@ def compare_flavour_fractions_vs_pt(input_files, dirnames, pt_bins, labels, flav
         '1-g': 'Non-gluon',
     }
     flav_str = flav_str_dict[flav]
-    ytitle = "Fraction of %s flavour genjets" % flav_str.lower()
+    append = " genjets" if var_prepend == "gen" else ""
+    ytitle = "Fraction of %s flavour%s" % (flav_str.lower(), append)
     p = Plot(contribs,
              what='graph',
              xtitle=xtitle,
