@@ -50,7 +50,7 @@ def do_plots(root_dir):
     radius, pus = cu.get_jet_config_from_dirname(root_dir)
     jet_str = "AK%s PF %s" % (radius.upper(), pus.upper())
 
-    for gr_append in ["", "_groomed"]:
+    for gr_append in ["", "_groomed"][:1]:
         if gr_append == "_groomed":
             print("Doing groomed plots...")
         else:
@@ -60,22 +60,29 @@ def do_plots(root_dir):
         dj_cen_dirname = "Dijet_QG_central_tighter%s" % (gr_append)
         dj_fwd_dirname = "Dijet_QG_forward_tighter%s" % (gr_append)
 
+        # tfiles = {
+        #     "data_run_B": cu.open_root_file(os.path.join(root_dir, "uhh2.AnalysisModuleRunner.DATA.Data_JetHT_RunB.root")),
+        #     "data_run_C": cu.open_root_file(os.path.join(root_dir, "uhh2.AnalysisModuleRunner.DATA.Data_JetHT_RunC.root")),
+        #     "data_run_D": cu.open_root_file(os.path.join(root_dir, "uhh2.AnalysisModuleRunner.DATA.Data_JetHT_RunD.root")),
+        #     "data_run_E": cu.open_root_file(os.path.join(root_dir, "uhh2.AnalysisModuleRunner.DATA.Data_JetHT_RunE.root")),
+        #     "data_run_F": cu.open_root_file(os.path.join(root_dir, "uhh2.AnalysisModuleRunner.DATA.Data_JetHT_RunF.root")),
+        #     "data_run_G": cu.open_root_file(os.path.join(root_dir, "uhh2.AnalysisModuleRunner.DATA.Data_JetHT_RunG.root")),
+        #     "data_run_H": cu.open_root_file(os.path.join(root_dir, "uhh2.AnalysisModuleRunner.DATA.Data_JetHT_RunH.root")),
+        # }
+
         tfiles = {
-            "data_run_B": cu.open_root_file(os.path.join(root_dir, "uhh2.AnalysisModuleRunner.DATA.Data_JetHT_RunB.root")),
-            "data_run_C": cu.open_root_file(os.path.join(root_dir, "uhh2.AnalysisModuleRunner.DATA.Data_JetHT_RunC.root")),
-            "data_run_D": cu.open_root_file(os.path.join(root_dir, "uhh2.AnalysisModuleRunner.DATA.Data_JetHT_RunD.root")),
-            "data_run_E": cu.open_root_file(os.path.join(root_dir, "uhh2.AnalysisModuleRunner.DATA.Data_JetHT_RunE.root")),
-            "data_run_F": cu.open_root_file(os.path.join(root_dir, "uhh2.AnalysisModuleRunner.DATA.Data_JetHT_RunF.root")),
-            "data_run_G": cu.open_root_file(os.path.join(root_dir, "uhh2.AnalysisModuleRunner.DATA.Data_JetHT_RunG.root")),
-            "data_run_H": cu.open_root_file(os.path.join(root_dir, "uhh2.AnalysisModuleRunner.DATA.Data_JetHT_RunH.root")),
+            "data_run_B": cu.open_root_file(os.path.join(root_dir, "uhh2.AnalysisModuleRunner.DATA.Data_JetHT_ZeroBias_RunB.root")),
+            "data_run_C": cu.open_root_file(os.path.join(root_dir, "uhh2.AnalysisModuleRunner.DATA.Data_JetHT_ZeroBias_RunC.root")),
+            "data_run_D": cu.open_root_file(os.path.join(root_dir, "uhh2.AnalysisModuleRunner.DATA.Data_JetHT_ZeroBias_RunD.root")),
+            "data_run_E": cu.open_root_file(os.path.join(root_dir, "uhh2.AnalysisModuleRunner.DATA.Data_JetHT_ZeroBias_RunE.root")),
+            "data_run_F": cu.open_root_file(os.path.join(root_dir, "uhh2.AnalysisModuleRunner.DATA.Data_JetHT_ZeroBias_RunF.root")),
+            "data_run_G": cu.open_root_file(os.path.join(root_dir, "uhh2.AnalysisModuleRunner.DATA.Data_JetHT_ZeroBias_RunG.root")),
+            "data_run_H": cu.open_root_file(os.path.join(root_dir, "uhh2.AnalysisModuleRunner.DATA.Data_JetHT_ZeroBias_RunH.root")),
         }
 
         for ang in var_list[:]:
             print("...Doing", ang.name)
             v = "%s%s_vs_pt" % (var_prepend, ang.var)
-            zpj_2d_entries = []
-            dijet_cen_2d_entries = []
-            dijet_fwd_2d_entries = []
 
             zpj_1d_entries = []
             dijet_cen_1d_entries = []
@@ -102,87 +109,114 @@ def do_plots(root_dir):
                     ROOT.kGreen+3
                 ]
 
-                # create reference hists, for Run G+H
+                # --------------------------------------------------------------
+                # Create reference hists, for Run G+H
+                # --------------------------------------------------------------
+                ####################
+                # DIJET CENTRAL REGION
+                ####################
                 h2d_qcd_cen_data_g = cu.get_from_tfile(tfiles['data_run_G'], "%s/%s" % (dj_cen_dirname, v))
                 h2d_qcd_cen_data_h = cu.get_from_tfile(tfiles['data_run_H'], "%s/%s" % (dj_cen_dirname, v))
                 colour = colours[0]
                 qcd_cen_kwargs_data = dict(line_color=colour, line_width=data_line_width, fill_color=colour,
                                            marker_color=colour, marker_style=cu.Marker.get(qgc.QCD_MARKER), marker_size=0,
-                                           label="Run G+H")
+                                           label="Runs G+H")
                 dijet_cen_data_hist_g = qgp.get_projection_plot(h2d_qcd_cen_data_g, start_val, end_val)
                 dijet_cen_data_hist_h = qgp.get_projection_plot(h2d_qcd_cen_data_h, start_val, end_val)
                 dijet_cen_data_hist_g.Add(dijet_cen_data_hist_h)
-                entries.append((dijet_cen_data_hist_g, qcd_cen_kwargs_data))
                 dijet_cen_entries.append((dijet_cen_data_hist_g, qcd_cen_kwargs_data))
-                if pt_ind == 0:
-                    dijet_cen_2d_entries.append((h2d_qcd_cen_data_g, qcd_cen_kwargs_data))
-                    dijet_cen_2d_entries.append((h2d_qcd_cen_data_h, qcd_cen_kwargs_data))
 
+                ####################
+                # DIJET FORWARD REGION
+                ####################
                 h2d_qcd_fwd_data_g = cu.get_from_tfile(tfiles['data_run_G'], "%s/%s" % (dj_fwd_dirname, v))
                 h2d_qcd_fwd_data_h = cu.get_from_tfile(tfiles['data_run_H'], "%s/%s" % (dj_fwd_dirname, v))
                 qcd_fwd_kwargs_data = dict(line_color=colour, line_width=data_line_width, fill_color=colour,
                                            marker_color=colour, marker_style=cu.Marker.get(qgc.QCD_MARKER), marker_size=0,
-                                           label="Run G+H")
+                                           label="Runs G+H")
                 dijet_fwd_data_hist_g = qgp.get_projection_plot(h2d_qcd_fwd_data_g, start_val, end_val)
                 dijet_fwd_data_hist_h = qgp.get_projection_plot(h2d_qcd_fwd_data_h, start_val, end_val)
                 dijet_fwd_data_hist_g.Add(dijet_fwd_data_hist_h)
-                entries.append((dijet_fwd_data_hist_g, qcd_fwd_kwargs_data))
                 dijet_fwd_entries.append((dijet_fwd_data_hist_g, qcd_fwd_kwargs_data))
-                if pt_ind == 0:
-                    dijet_fwd_2d_entries.append((h2d_qcd_fwd_data_g, qcd_fwd_kwargs_data))
-                    dijet_fwd_2d_entries.append((h2d_qcd_fwd_data_h, qcd_fwd_kwargs_data))
 
+
+                # --------------------------------------------------------------
+                # FOR SUMMED B-F:
+                # --------------------------------------------------------------
+                dijet_cen_data_hist_btof, dijet_fwd_data_hist_btof = None, None
                 runs = ["B", "C", "D", "E", "F"]
-                for run, colour, mark in zip(runs, colours[1:], cu.Marker().cycle()):
+                for run in runs:
 
-                    ####################
                     # DIJET CENTRAL REGION
-                    ####################
-                    # JETHT DATA
                     h2d_qcd_cen_data = cu.get_from_tfile(tfiles['data_run_%s' % run], "%s/%s" % (dj_cen_dirname, v))
-                    qcd_cen_kwargs_data = dict(line_color=colour, line_width=data_line_width, fill_color=colour,
-                                               marker_color=colour, marker_style=mark, marker_size=msize,
-                                               label="Run %s" % run,
-                                               subplot=dijet_cen_data_hist_g)
-                    dijet_cen_data_hist = qgp.get_projection_plot(h2d_qcd_cen_data, start_val, end_val)
-                    entries.append((dijet_cen_data_hist, qcd_cen_kwargs_data))
-                    dijet_cen_entries.append((dijet_cen_data_hist, qcd_cen_kwargs_data))
-                    if pt_ind == 0:
-                        dijet_cen_2d_entries.append((h2d_qcd_cen_data, qcd_cen_kwargs_data))
+                    this_dijet_cen_data_hist = qgp.get_projection_plot(h2d_qcd_cen_data, start_val, end_val)
+                    if dijet_cen_data_hist_btof is None:
+                        dijet_cen_data_hist_btof = this_dijet_cen_data_hist.Clone()
+                    else:
+                        dijet_cen_data_hist_btof.Add(this_dijet_cen_data_hist)
 
-                    ####################
+
                     # DIJET FORWARD REGION
-                    ####################
-                    # JETHT DATA
                     h2d_qcd_fwd_data = cu.get_from_tfile(tfiles['data_run_%s' % run], "%s/%s" % (dj_fwd_dirname, v))  # use already merged jetht+zb
-                    qcd_fwd_kwargs_data = dict(line_color=colour, line_width=data_line_width, fill_color=colour,
-                                               marker_color=colour, marker_style=mark, marker_size=msize,
-                                               label="Run %s" % run,
-                                               subplot=dijet_fwd_data_hist_g)
-                    dijet_fwd_data_hist = qgp.get_projection_plot(h2d_qcd_fwd_data, start_val, end_val)
-                    entries.append((dijet_fwd_data_hist, qcd_fwd_kwargs_data))
-                    dijet_fwd_entries.append((dijet_fwd_data_hist, qcd_fwd_kwargs_data))
-                    if pt_ind == 0:
-                        dijet_fwd_2d_entries.append((h2d_qcd_fwd_data, qcd_fwd_kwargs_data))
+                    this_dijet_fwd_data_hist = qgp.get_projection_plot(h2d_qcd_fwd_data, start_val, end_val)
+                    if dijet_fwd_data_hist_btof is None:
+                        dijet_fwd_data_hist_btof = this_dijet_fwd_data_hist.Clone()
+                    else:
+                        dijet_fwd_data_hist_btof.Add(this_dijet_fwd_data_hist)
 
-                    ####################
-                    # Z+JETS REGION
-                    ####################
+                colour = colours[1]
+                mark = cu.Marker.get('circle')
+                btof_cen_kwargs_data = dict(line_color=colour, line_width=data_line_width, fill_color=colour,
+                                            marker_color=colour, marker_style=mark, marker_size=msize,
+                                            label="Runs %s-%s" % (runs[0], runs[-1]),
+                                            subplot=dijet_cen_data_hist_g)
+                dijet_cen_entries.append((dijet_cen_data_hist_btof, btof_cen_kwargs_data))
 
-                    # SINGLE MU DATA
-                    # h2d_dyj_data = cu.get_from_tfile(os.path.join(root_dir, "uhh2.AnalysisModuleRunner.DATA.Data_SingleMu_Run%s.root" % run), "%s/%s" % (zpj_dirname, v))
-                    # dy_kwargs_data = dict(line_color=qgc.colour, line_width=data_line_width, fill_color=qgc.colour,
-                    #                       marker_color=qgc.colour, marker_style=cu.Marker.get(qgc.DY_MARKER), marker_size=msize,
-                    #                       label="SingleMu Run %s" % run)
-                    # zpj_data_hist = qgp.get_projection_plot(h2d_dyj_data, start_val, end_val)
-                    # entries.append((zpj_data_hist, dy_kwargs_data))
-                    # zpj_entries.append((zpj_data_hist, dy_kwargs_data))
-                    # if pt_ind == 0:
-                    #     zpj_2d_entries.append((h2d_dyj_data, dy_kwargs_data))
+                btof_fwd_kwargs_data = dict(line_color=colour, line_width=data_line_width, fill_color=colour,
+                                            marker_color=colour, marker_style=mark, marker_size=msize,
+                                            label="Runs %s-%s" % (runs[0], runs[-1]),
+                                            subplot=dijet_fwd_data_hist_g)
+                dijet_fwd_entries.append((dijet_fwd_data_hist_btof, btof_fwd_kwargs_data))
 
-                    # zpj_1d_entries.append(zpj_entries)
-                    # dijet_cen_1d_entries.append(dijet_cen_entries)
-                    # dijet_fwd_1d_entries.append(dijet_fwd_entries)
+                # FOR INDIVIDUAL RUN PERIODS:
+                # runs = ["B", "C", "D", "E", "F"]
+                # for run, colour, mark in zip(runs, colours[1:], cu.Marker().cycle()):
+
+                #     ####################
+                #     # DIJET CENTRAL REGION
+                #     ####################
+                #     # JETHT DATA
+                #     h2d_qcd_cen_data = cu.get_from_tfile(tfiles['data_run_%s' % run], "%s/%s" % (dj_cen_dirname, v))
+                #     qcd_cen_kwargs_data = dict(line_color=colour, line_width=data_line_width, fill_color=colour,
+                #                                marker_color=colour, marker_style=mark, marker_size=msize,
+                #                                label="Run %s" % run,
+                #                                subplot=dijet_cen_data_hist_g)
+                #     dijet_cen_data_hist = qgp.get_projection_plot(h2d_qcd_cen_data, start_val, end_val)
+                #     dijet_cen_entries.append((dijet_cen_data_hist, qcd_cen_kwargs_data))
+
+                #     ####################
+                #     # DIJET FORWARD REGION
+                #     ####################
+                #     # JETHT DATA
+                #     h2d_qcd_fwd_data = cu.get_from_tfile(tfiles['data_run_%s' % run], "%s/%s" % (dj_fwd_dirname, v))  # use already merged jetht+zb
+                #     qcd_fwd_kwargs_data = dict(line_color=colour, line_width=data_line_width, fill_color=colour,
+                #                                marker_color=colour, marker_style=mark, marker_size=msize,
+                #                                label="Run %s" % run,
+                #                                subplot=dijet_fwd_data_hist_g)
+                #     dijet_fwd_data_hist = qgp.get_projection_plot(h2d_qcd_fwd_data, start_val, end_val)
+                #     dijet_fwd_entries.append((dijet_fwd_data_hist, qcd_fwd_kwargs_data))
+
+                #     ####################
+                #     # Z+JETS REGION
+                #     ####################
+
+                #     # SINGLE MU DATA
+                #     # h2d_dyj_data = cu.get_from_tfile(os.path.join(root_dir, "uhh2.AnalysisModuleRunner.DATA.Data_SingleMu_Run%s.root" % run), "%s/%s" % (zpj_dirname, v))
+                #     # dy_kwargs_data = dict(line_color=qgc.colour, line_width=data_line_width, fill_color=qgc.colour,
+                #     #                       marker_color=qgc.colour, marker_style=cu.Marker.get(qgc.DY_MARKER), marker_size=msize,
+                #     #                       label="SingleMu Run %s" % run)
+                #     # zpj_data_hist = qgp.get_projection_plot(h2d_dyj_data, start_val, end_val)
+                #     # zpj_entries.append((zpj_data_hist, dy_kwargs_data))
 
                 #################
                 # SETUP PLOTTING
@@ -214,8 +248,10 @@ def do_plots(root_dir):
                     # ylim = (0, 5)
 
                 plot_dir = os.path.join(root_dir, "plots_run_dependent%s" % (gr_append))
+                plot_dir = os.path.join(root_dir, "plots_run_dependent_btof%s" % (gr_append))
 
                 subplot_title = "Run * / G+H"
+                subplot_title = "B-F / G+H"
                 subplot_limits = (0.5, 1.5)
 
                 xlabel = ang.name + " (" + ang.lambda_str + ")"
