@@ -388,6 +388,7 @@ def do_all_exclusive_plots_comparison(sources,
         'zpj_style': dict of style options for this Contribution if Z+jets (optional, applied after 'style' dict)
         'qcd_cen_style': dict of style options for this Contribution if dijet central (optional, applied after 'style' dict)
         'qcd_fwd_style': dict of style options for this Contribution if dijet forward (optional, applied after 'style' dict)
+        'subplot': index of dict that should be the subplot
     }
 
     If zpj_dirname, dj_cen_dirname, dj_fwd_dirname blank, those contributions will not be plotted.
@@ -395,7 +396,7 @@ def do_all_exclusive_plots_comparison(sources,
     `title` is appended after pt bin title.
     `show_region_labels` adds region label to legend
     """
-    var_list = var_list or qgc.COMMON_VARS_WITH_FLAV
+    var_list = var_list or qgc.COMMON_VARS
     pt_bins = pt_bins or qgc.PT_BINS
 
     if isinstance(sources, dict):
