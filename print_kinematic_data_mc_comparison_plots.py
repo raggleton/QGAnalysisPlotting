@@ -1,6 +1,11 @@
 #!/usr/bin/env python
 
-"""produce plots comparing different kinematics between data & MC"""
+"""Print kinematics plots, comparing samples.
+
+Does comparison plots for data & MC, separately.
+
+Make sure jetht and zerobias are hadded into same file
+"""
 
 import ROOT
 from MyStyle import My_Style
@@ -12,6 +17,8 @@ import numpy as np
 np.seterr(all='raise')
 from array import array
 from uuid import uuid1
+import argparse
+from copy import copy, deepcopy
 
 # My stuff
 from comparator import Contribution, Plot, grab_obj
@@ -38,6 +45,10 @@ ROOT.gErrorIgnoreLevel = ROOT.kWarning
 
 # Control output format
 OUTPUT_FMT = "pdf"
+
+
+def exists_in_all(filename, dirs):
+    return all([os.path.isfile(os.path.join(d, filename)) for d in dirs])
 
 
 def get_list_of_obj(directory):
@@ -69,8 +80,11 @@ def do_1D_plot(hists, output_filename, components_styles_dicts=None,
     if (len(hists) != len(components_styles_dicts)):
         raise RuntimeError("# hists != # components_styles_dicts (%d vs %d)" % (len(hists), len(components_styles_dicts)))
 
-    hists = [h.Clone(h.GetName() + str(uuid1())) for h in hists]
-    contributions = [Contribution(hist, normalise_hist=normalise_hists, **csd)
+    hists = [h.Clone(cu.get_unique_str()) for h in hists]
+    contributions = [Contribution(hist, 
+                                  normalise_hist=normalise_hists, 
+                                  label=csd.get('label', 'x'), 
+                                  **csd.get('style', {}))
                      for hist, csd in zip(hists, components_styles_dicts)]
 
     if len(contributions) == 0:
@@ -102,7 +116,7 @@ def do_1D_plot(hists, output_filename, components_styles_dicts=None,
              xlim=xlim,
              ylim=ylim,
              subplot_type="ratio" if do_ratio else None,
-             subplot_title="MC / Data",
+             subplot_title="* / %s" % contributions[0].label,
              subplot=contributions[0],
              # subplot_limits=(0.5, 1.5),
              subplot_limits=(0, 2) if logy else (0.5, 1.5),
@@ -129,11 +143,13 @@ def do_1D_plot(hists, output_filename, components_styles_dicts=None,
     p.save(output_filename)
 
 
-def do_all_1D_projection_plots_in_dir(directories, output_dir, components_styles_dicts=None,
-                                      draw_opts="NOSTACK HISTE", do_ratio=True,
+def do_all_1D_projection_plots_in_dir(directories,
+                                      output_dir,
+                                      components_styles_dicts=None,
+                                      draw_opts="NOSTACK HISTE",
+                                      do_ratio=True,
                                       normalise_hists=True,
                                       jet_config_str="",
-                                      signal_mask=None,
                                       bin_by=None):
     """
     Given a set of TDirs, loop over all 2D hists, do projection hists for chosen bins, and plot all TDir contributions on a canvas for comparison.
@@ -184,7 +200,12 @@ def do_all_1D_projection_plots_in_dir(directories, output_dir, components_styles
         # Ignore TH1s
         if not isinstance(objs[0], (ROOT.TH2F, ROOT.TH2D, ROOT.TH2I)):
             logx = obj_name in ["pt_jet", "pt_jet1", "pt_jet2", "pt_mumu", 'gen_ht', 'pt_jet_response_binning', 'pt_genjet_response_binning', 'pt_jet1_unweighted', 'pt_jet_unweighted']
-            do_1D_plot(objs, 
+            rebin = 1
+            if obj_name in ['pt_jet', 'pt_jet1', 'pt_jet2', 'pt_mumu']:
+                rebin = 10
+            for obj in objs:
+                obj.Rebin(rebin)
+            do_1D_plot(objs,
                        components_styles_dicts=components_styles_dicts,
                        draw_opts=draw_opts, do_ratio=do_ratio, normalise_hists=normalise_hists, logy=True,
                        title=jet_config_str, logx=logx,
@@ -229,127 +250,133 @@ def do_all_1D_projection_plots_in_dir(directories, output_dir, components_styles
 
                 do_1D_plot(hists, components_styles_dicts=components_styles_dicts,
                            draw_opts=draw_opts, do_ratio=do_ratio,
-                           normalise_hists=normalise_hists, 
+                           normalise_hists=normalise_hists,
                            logx=logx,
                            logy=False,
                            title=title,
                            output_filename=os.path.join(output_dir, obj_name+"_pt%dto%d.%s" % (pt_min, pt_max, OUTPUT_FMT)))
 
 
-def do_dijet_distributions(root_dir):
-    """Do plots comparing different different inputs in dijet region"""
-    # root_files = [qgc.ZB_FILENAME, qgc.JETHT_FILENAME, qgc.QCD_FILENAME][:]
-    # root_files = [qgc.ZB_FILENAME, qgc.JETHT_FILENAME, qgc.QCD_PYTHIA_ONLY_FILENAME][:]
-    # root_files = [qgc.ZB_FILENAME, qgc.JETHT_FILENAME, qgc.QCD_FILENAME][:]
-    # root_files = [qgc.ZB_FILENAME, qgc.JETHT_FILENAME, qgc.QCD_FILENAME, qgc.QCD_PYTHIA_ONLY_FILENAME][:]
-    root_files = [qgc.JETHT_ZB_FILENAME, qgc.QCD_FILENAME, qgc.QCD_PYTHIA_ONLY_FILENAME, qgc.QCD_HERWIG_FILENAME][:]
-    # root_files = [qgc.JETHT_ZB_FILENAME, qgc.QCD_FILENAME, qgc.QCD_HERWIG_FILENAME][:]
-    # root_files = [qgc.ZB_FILENAME, qgc.JETHT_FILENAME, qgc.QCD_FILENAME, qgc.ZPJ_ALL_FILENAME][:]
-    root_files = [cu.open_root_file(os.path.join(root_dir, r)) for r in root_files]
+def do_comparison_plots(workdir_label_pairs, output_dir):
+    dirnames = [w[0] for w in workdir_label_pairs]
 
-    # herwig_dir = "workdir_ak4chs_herwig_newFlav_withPUreweight_withMuSF"
-    # herwig_dir = "workdir_ak4chs_herwig_newFlav_withPUreweight_withMuSF_noExtraJetCuts"
-    # root_files.append(cu.open_root_file(os.path.join(herwig_dir, qgc.QCD_FILENAME)))
+    # templates, we'll change the filename/dir as per instance
+    total_len = len(workdir_label_pairs)
+    mark = cu.Marker()
+    sources = [
+       {
+           # "root_dir": wd,
+           'label': label,
+           "style": {
+               'line_style': 1,
+               'line_color': cu.get_colour_seq(ind, total_len),
+               'marker_color': cu.get_colour_seq(ind, total_len),
+               'marker_style': m,
+               'marker_size': 0.75,
+           }
 
-    # directories = [cu.get_from_tfile(rf, "Dijet") for rf in root_files]
-    directories = [cu.get_from_tfile(rf, "Dijet_tighter") for rf in root_files[:]]
-    # directories.extend([cu.get_from_tfile(rf, "Dijet_tighter") for rf in root_files[1:]])
-    mc_col = qgc.QCD_COLOUR
-    mc_col2 = qgc.QCD_COLOURS[2]
-    mc_col3 = qgc.QCD_COLOURS[3]
-    data_col = qgc.JETHT_COLOUR
-    zb_col = ROOT.kGreen+2
-    msize = 0.75
-    csd = [
-        {"label": "Data", "line_color": data_col, "fill_color": data_col, "marker_color": data_col, "marker_style": 20, "fill_style": 0, "marker_size": msize},
-        {"label": "QCD MC [MG+PY8]", "line_color": mc_col, "fill_color": mc_col, "marker_color": mc_col, "marker_style": 22, "fill_style": 0, "marker_size": msize},
-        {"label": "QCD MC [PY8]", "line_color": mc_col2, "fill_color": mc_col2, "marker_color": mc_col2, "marker_style": 21, "fill_style": 0, "marker_size": msize},
-        {"label": "QCD MC [H++]", "line_color": mc_col3, "fill_color": mc_col3, "marker_color": mc_col3, "marker_style": 23, "fill_style": 0, "marker_size": msize},
+       }
+       for ind, ((wd, label), m) in enumerate(zip(workdir_label_pairs, mark.cycle()))
     ]
-    jet_config_str = qgc.extract_jet_config(root_dir)
 
-    # Compare yields
-    # do_all_1D_projection_plots_in_dir(directories=directories,
-    #                                   output_dir=os.path.join(root_dir, "Dijet_data_mc_kin_comparison_absolute"),
-    # #                                   # output_dir=os.path.join(root_dir, "Dijet_data_mc_kin_comparison_absolute_pythiaOnly"),
-    #                                   # output_dir=os.path.join(root_dir, "Dijet_data_mc_kin_comparison_absolute_both"),
-    #                                   # output_dir=os.path.join(root_dir, "Dijet_data_mc_kin_comparison_absolute_everything"),
-    # #                                   # output_dir=os.path.join(root_dir, "Dijet_data_mc_kin_comparison_absolute_all"),
-    #                                   components_styles_dicts=csd,
-    #                                   jet_config_str=jet_config_str,
-    #                                   normalise_hists=False,
-    #                                   bin_by='ave')
+    jet_config_str = qgc.extract_jet_config(dirnames[0])
+    if len(dirnames) >1 and qgc.extract_jet_config(dirnames[1]) != jet_config_str:
+        print("Conflicting jet config str, not adding")
+        jet_config_str = None
 
-    # Compare shapes
-    do_all_1D_projection_plots_in_dir(directories=directories,
-                                      output_dir=os.path.join(root_dir, "Dijet_data_mc_kin_comparison_normalised"),
-                                      # output_dir=os.path.join(root_dir, "Dijet_data_mc_kin_comparison_normalised_pythiaOnly"),
-                                      # output_dir=os.path.join(root_dir, "Dijet_data_mc_kin_comparison_normalised_both"),
-                                      # output_dir=os.path.join(root_dir, "Dijet_data_mc_kin_comparison_normalised_all"),
-                                      components_styles_dicts=csd,
-                                      jet_config_str=jet_config_str,
-                                      bin_by='ave')
+    # COMPARE NOMINAL QCD
+    if exists_in_all(qgc.QCD_FILENAME, dirnames):
+        root_files = [cu.open_root_file(os.path.join(d, qgc.QCD_FILENAME)) for d in dirnames]
+        directories = [cu.get_from_tfile(rf, "Dijet_tighter") for rf in root_files]
+
+        this_sources = deepcopy(sources)
+        for s in this_sources:
+            s['label'] = "QCD [MG+PY8] [%s]" % s['label']
+
+        do_all_1D_projection_plots_in_dir(directories=directories,
+                                          components_styles_dicts=this_sources,
+                                          output_dir=os.path.join(output_dir, "plots_qcd_compare_dijet_tighter_kinematics_normalised"),
+                                          jet_config_str=jet_config_str,
+                                          normalise_hists=True,
+                                          bin_by='ave')
+
+        directories = [cu.get_from_tfile(rf, "Dijet_eta_ordered") for rf in root_files]
+        do_all_1D_projection_plots_in_dir(directories=directories,
+                                          components_styles_dicts=this_sources,
+                                          output_dir=os.path.join(output_dir, "plots_qcd_compare_dijet_eta_ordered_kinematics_normalised"),
+                                          jet_config_str=jet_config_str,
+                                          normalise_hists=True,
+                                          bin_by='ave')
 
 
-def do_zpj_distributions(root_dir):
-    """Do plots comparing different different inputs in Z+jet region"""
-    root_files = [qgc.SINGLE_MU_FILENAME, qgc.DY_FILENAME, qgc.DY_HERWIG_FILENAME, qgc.DY_MG_HERWIG_FILENAME]
-    root_files = [cu.open_root_file(os.path.join(root_dir, r)) for r in root_files]
+    # COMPARE NOMINAL DY
+    # if exists_in_all(qgc.DY_FILENAME, dirnames):
+    #     pass
 
-    directories = [cu.get_from_tfile(rf, "ZPlusJets") for rf in root_files]
-    mc_col = qgc.DY_COLOUR
-    mc_col2 = qgc.DY_COLOURS[2]
-    mc_col3 = qgc.DY_COLOURS[3]
-    data_col = qgc.SINGLE_MU_COLOUR
-    msize = 0.75
-    csd = [
-        {"label": "Data", "line_color": data_col, "fill_color": data_col, "marker_color": data_col, "marker_style": 20, "fill_style": 0, "marker_size": msize},
-        {"label": "DY+Jets MC [MG+PY8]", "line_color": mc_col, "fill_color": mc_col, "marker_color": mc_col, "marker_style": 21, "fill_style": 0, "marker_size": msize},
-        {"label": "DY+Jets MC [H++]", "line_color": mc_col3, "fill_color": mc_col3, "marker_color": mc_col3, "marker_style": 23, "fill_style": 0, "marker_size": msize},
-        {"label": "DY+Jets MC [MG+H++]", "line_color": mc_col2, "fill_color": mc_col2, "marker_color": mc_col2, "marker_style": 22, "fill_style": 0, "marker_size": msize},
-    ]
-    jet_config_str = qgc.extract_jet_config(root_dir)
+    # COMPARE JETHT+ZEROBIAS
+    if exists_in_all(qgc.JETHT_ZB_FILENAME, dirnames):
+        root_files = [cu.open_root_file(os.path.join(d, qgc.JETHT_ZB_FILENAME)) for d in dirnames]
+        directories = [cu.get_from_tfile(rf, "Dijet_tighter") for rf in root_files]
 
-    # Compare yields
-    # do_all_1D_projection_plots_in_dir(directories=directories,
-    #                                   output_dir=os.path.join(root_dir, "ZPlusJets_data_mc_kin_comparison_absolute"),
-    #                                   # output_dir=os.path.join(root_dir, "ZPlusJets_data_mc_kin_comparison_absolute_compareKFactor"),
-    #                                   # output_dir=os.path.join(root_dir, "ZPlusJets_data_mc_kin_comparison_absolute_all"),
-    #                                   components_styles_dicts=csd,
-    #                                   jet_config_str=jet_config_str,
-    #                                   normalise_hists=False,
-    #                                   bin_by='Z')
+        this_sources = deepcopy(sources)
+        for s in this_sources:
+            s['label'] = "Data [%s]" % s['label']
 
-    # Compare shapes
-    do_all_1D_projection_plots_in_dir(directories=directories,
-                                      output_dir=os.path.join(root_dir, "ZPlusJets_data_mc_kin_comparison_normalised_compare"),
-                                      # output_dir=os.path.join(root_dir, "ZPlusJets_data_mc_kin_comparison_normalised_compare_KFactor"),
-                                      # output_dir=os.path.join(root_dir, "ZPlusJets_data_mc_kin_comparison_normalised_all"),
-                                      jet_config_str=jet_config_str,
-                                      components_styles_dicts=csd,
-                                      normalise_hists=True,
-                                      bin_by='Z')
+        directories = [cu.get_from_tfile(rf, "Dijet_Presel") for rf in root_files]
+        do_all_1D_projection_plots_in_dir(directories=directories,
+                                          components_styles_dicts=this_sources,
+                                          output_dir=os.path.join(output_dir, "plots_jetht_zb_compare_dijet_presel_kinematics_normalised"),
+                                          jet_config_str=jet_config_str,
+                                          normalise_hists=False,
+                                          bin_by='ave')
 
-    # Preselection hists
-    # directories_presel = directories = [cu.get_from_tfile(rf, "ZPlusJets_Presel") for rf in root_files]
-    # do_all_1D_projection_plots_in_dir(directories=directories,
-    #                                   output_dir=os.path.join(root_dir, "ZPlusJets_Presel_data_mc_kin_comparison_normalised_compare"),
-    #                                   # output_dir=os.path.join(root_dir, "ZPlusJets_data_mc_kin_comparison_normalised_compare_KFactor"),
-    #                                   # output_dir=os.path.join(root_dir, "ZPlusJets_data_mc_kin_comparison_normalised_all"),
-    #                                   jet_config_str=jet_config_str,
-    #                                   components_styles_dicts=csd,
-    #                                   normalise_hists=True,
-    #                                   bin_by='Z')
+        directories = [cu.get_from_tfile(rf, "Dijet_tighter") for rf in root_files]
+        do_all_1D_projection_plots_in_dir(directories=directories,
+                                          components_styles_dicts=this_sources,
+                                          output_dir=os.path.join(output_dir, "plots_jetht_zb_compare_dijet_tighter_kinematics_normalised"),
+                                          jet_config_str=jet_config_str,
+                                          normalise_hists=True,
+                                          bin_by='ave')
 
+        do_all_1D_projection_plots_in_dir(directories=directories,
+                                          components_styles_dicts=this_sources,
+                                          output_dir=os.path.join(output_dir, "plots_jetht_zb_compare_dijet_tighter_kinematics_abs"),
+                                          jet_config_str=jet_config_str,
+                                          normalise_hists=False,
+                                          bin_by='ave')
+
+
+    # COMPARE SINGLEMU
+
+    # COMPARE HERWIG++ QCD
+
+    # COMPARE HERWIG++ DY
 
 
 if __name__ == "__main__":
-    parser = qgc.get_parser()
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--workdir',
+                        required=True,
+                        action='append',
+                        help='Workdir with ROOT files to process. '
+                        'Each --workdir must have a corresponding --label')
+    parser.add_argument('--label',
+                        required=True,
+                        action='append',
+                        help='Label for workdir.')
+    parser.add_argument("-o", "--output",
+                        help="Directory to put output plot dirs into. Default is workdir.",
+                        default=None)
     args = parser.parse_args()
+    print(args)
 
-    for workdir in args.workdirs:
-            do_dijet_distributions(workdir)
+    if args.output is None:
+        args.output = args.workdir[0]
+        print("No output dir specified, using", args.output)
 
-            do_zpj_distributions(workdir)
+    # for workdir in args.workdirs:
+    #     do_dijet_distribution(workdir)
+    #     do_zpj_distributions(workdir)
 
+    do_comparison_plots(list(zip(args.workdir, args.label)), output_dir=args.output)
     sys.exit(0)
