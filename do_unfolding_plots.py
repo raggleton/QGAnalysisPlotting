@@ -140,41 +140,6 @@ PLOT_COLOURS = dict(
 )
 
 
-def calc_auto_xlim(entries):
-    """Figure out x axis range that includes all non-0 bins from all Contributions"""
-    if len(entries) == 0:
-        return None
-    if not isinstance(entries[0], Contribution):
-        raise TypeError("calc_auto_xlim: `entries` should be a list of Contributions")
-
-    x_min = 9999999999
-    x_max = -9999999999
-    for ent in entries:
-        obj = ent.obj
-        if not isinstance(obj, ROOT.TH1):
-            raise TypeError("Cannot handle obj in calc_auto_xlim")
-        xax = obj.GetXaxis()
-        nbins = obj.GetNbinsX()
-        found_min = False
-        for i in range(1, nbins+1):
-            val = obj.GetBinContent(i)
-            if not found_min:
-                # find the first non-empty bin
-                if val != 0:
-                    x_min = min(xax.GetBinLowEdge(i), x_min)
-                    found_min = True
-            else:
-                # find the first empty bin
-                if val == 0:
-                    x_max = max(xax.GetBinLowEdge(i), x_max)
-                    break
-    if x_max > x_min:
-        return (x_min, x_max)
-    else:
-        # default x max
-        return None
-
-
 def calc_chi2_stats(one_hist, other_hist, cov_matrix):
     one_vec, one_err = cu.th1_to_ndarray(one_hist, False)
     # print(one_err)
@@ -392,12 +357,9 @@ class GenPtBinnedPlotter(object):
                 nbins = unfolded_hist_bin_total_errors.GetNbinsX()
                 reduced_chi2 = mc_stats[0] / nbins
                 alt_reduced_chi2 = alt_mc_stats[0] / nbins
-                def nsf(num, n=1):
-                    """n-Significant Figures"""
-                    numstr = ("{0:.%ie}" % (n-1)).format(num)
-                    return float(numstr)
-                this_mc_style['label'] += "\n(#chi^{2} / N_{bins} = %g)" % nsf(reduced_chi2, 2)
-                this_alt_mc_style['label'] += "\n(#chi^{2} / N_{bins} = %g)" % nsf(alt_reduced_chi2, 2)
+
+                this_mc_style['label'] += "\n(#chi^{2} / N_{bins} = %g)" % cu.nsf(reduced_chi2, 2)
+                this_alt_mc_style['label'] += "\n(#chi^{2} / N_{bins} = %g)" % cu.nsf(alt_reduced_chi2, 2)
 
             mc_entries = [
                 Contribution(mc_gen_hist_bin, subplot=data_no_errors, **this_mc_style),
@@ -418,7 +380,7 @@ class GenPtBinnedPlotter(object):
                         ytitle=self.setup.pt_bin_normalised_differential_label,
                         title=self.get_pt_bin_title(bin_edge_low, bin_edge_high),
                         legend=True,
-                        xlim=calc_auto_xlim(entries[2:3]),  # set x lim to where data is non-0
+                        xlim=qgp.calc_auto_xlim(entries[2:3]),  # set x lim to where data is non-0
                         **self.pt_bin_plot_args)
 
             plot.subplot_title = "Simulation / data"
@@ -1515,7 +1477,7 @@ class GenPtBinnedPlotter(object):
 
             if not self.check_entries(entries, "plot_syst_fraction_normalised %d" % ibin):
                 return
-            xlim = calc_auto_xlim(entries)
+            xlim = qgp.calc_auto_xlim(entries)
             ylim = [0.8, 1.45] if "Dijet" in self.setup.region['name'] else [0.3, 1.9]
             min_total = _convert_error_bars_to_error_ratio_hist(unfolded_hist_bin_total_errors, -1).GetMinimum()
             max_total = _convert_error_bars_to_error_ratio_hist(unfolded_hist_bin_total_errors).GetMaximum()
@@ -1684,7 +1646,7 @@ class GenPtBinnedPlotter(object):
 
             if not self.check_entries(entries, "plot_syst_fraction_normalised %d" % ibin):
                 return
-            xlim = calc_auto_xlim(entries)
+            xlim = qgp.calc_auto_xlim(entries)
             ylim = [0.8, 1.45] if "Dijet" in self.setup.region['name'] else [0.3, 1.9]
             min_total = _convert_error_bars_to_error_ratio_hist(unfolded_hist_bin_total_errors, -1).GetMinimum()
             max_total = _convert_error_bars_to_error_ratio_hist(unfolded_hist_bin_total_errors).GetMaximum()
@@ -2497,7 +2459,7 @@ class GenLambdaBinnedPlotter(object):
 
             if not self.check_entries(entries, "plot_syst_fraction_unnormalised %d" % ibin):
                 return
-            xlim = calc_auto_xlim(entries)
+            xlim = qgp.calc_auto_xlim(entries)
             ylim = [0.7, 1.5] if "Dijet" in self.setup.region['name'] else [0.3, 1.9]
             min_total = entries[-1].obj.GetMinimum()
             max_total = entries[-2].obj.GetMaximum()
@@ -2683,7 +2645,7 @@ class RecoPtBinnedPlotter(object):
                         what="hist",
                         title=self.get_pt_bin_title(bin_edge_low, bin_edge_high),
                         has_data=self.setup.has_data,
-                        xlim=calc_auto_xlim(entries[0:1]),  # reduce x axis to where reference prediction is non-0
+                        xlim=qgp.calc_auto_xlim(entries[0:1]),  # reduce x axis to where reference prediction is non-0
                         subplot_type='ratio',
                         subplot_title='Simulation / data',
                         subplot_limits=(0, 2.75))
