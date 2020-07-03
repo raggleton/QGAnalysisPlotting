@@ -120,7 +120,7 @@ class MyUnfolderPlotter(object):
 
         if draw_bin_lines_x:
             lx, tx = self.draw_pt_binning_lines(h2d,
-                                                which='gen' if 'gen' in xtitle.lower() else 'reco',
+                                                which='gen' if 'gen' in xtitle.lower() or "particle" in xtitle.lower() else 'reco',
                                                 axis='x',
                                                 do_underflow=True,
                                                 do_labels_inside=False,
@@ -128,7 +128,7 @@ class MyUnfolderPlotter(object):
 
         if draw_bin_lines_y:
             ly, ty = self.draw_pt_binning_lines(h2d,
-                                                which='gen' if 'gen' in ytitle.lower() else 'reco',
+                                                which='gen' if 'gen' in ytitle.lower() or "particle" in ytitle.lower() else 'reco',
                                                 axis='y',
                                                 do_underflow=True,
                                                 do_labels_inside=False,
@@ -235,6 +235,25 @@ class MyUnfolderPlotter(object):
                           canvas_size=(800, 700),
                           xtitle='Generator bin',
                           ytitle='Detector bin')
+
+    def draw_jacobian(self, output_dir=".", append="", title=""):
+        output_filename = "%s/jacobian_%s_logZ.%s" % (output_dir, append, self.output_fmt)
+        self.draw_2d_hist(self.unfolder.get_jacobian_th2(),
+                          title=title,
+                          output_filename=output_filename,
+                          draw_bin_lines_x=True,
+                          draw_bin_lines_y=True,
+                          equal_pos_neg_z=False,
+                          canvas_size=(800, 700))
+        output_filename = "%s/jacobian_%s_linZ.%s" % (output_dir, append, self.output_fmt)
+        self.draw_2d_hist(self.unfolder.get_jacobian_th2(),
+                          title=title,
+                          output_filename=output_filename,
+                          draw_bin_lines_x=True,
+                          draw_bin_lines_y=True,
+                          logz=False,
+                          equal_pos_neg_z=False,
+                          canvas_size=(800, 700))
 
     # TODO: generalise to some "draw_2d_hist()"?
     def draw_error_matrix_input(self, output_dir='.', append="", title=""):
@@ -1257,8 +1276,8 @@ class MyUnfolderPlotter(object):
         plot.default_canvas_size = (800, 600)
         plot.plot("NOSTACK HISTE")
         # plot.set_logy(do_more_labels=False)
-        l, t = self.draw_pt_binning_lines(plot, 
-                                          which='gen', 
+        l, t = self.draw_pt_binning_lines(plot,
+                                          which='gen',
                                           axis='x',
                                           do_underflow=True,
                                           do_labels_inside=True,

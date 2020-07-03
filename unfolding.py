@@ -2699,6 +2699,9 @@ if __name__ == "__main__":
             unfolder.setup_absolute_results_per_pt_bin()
             unfolder.setup_absolute_results_per_lambda_bin()
 
+            unfolder.create_normalisation_jacobian_np()
+            unfolder_plotter.draw_jacobian(title="Jacobian", **plot_args)
+
             region['unfolder'] = unfolder
 
             # ------------------------------------------------------------------

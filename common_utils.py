@@ -524,6 +524,8 @@ def nsf(num, n=1):
     """Get n-Significant figures from float"""
     numstr = ("{0:.%ie}" % (n-1)).format(num)
     return float(numstr)
+
+
 # Various methods to convert between ROOT things and numpy
 # ------------------------------------------------------------------------------
 
@@ -665,10 +667,10 @@ def th2_to_ndarray(hist_A, oflow_x=False, oflow_y=False):
     return result, errors
 
 
-def ndarray_to_th2(data):
+def ndarray_to_th2(data, offset=0):
     nbinsy, nbinsx = data.shape
-    binsx = array('d', list(range(1, nbinsx+2)))
-    binsy = array('d', list(range(1, nbinsy+2)))
+    binsx = array('d', [x+offset for x in range(1, nbinsx+2)]) # e.g. offset = -0.5 for TUnfold
+    binsy = array('d', [x+offset for x in range(1, nbinsy+2)])
     h = ROOT.TH2D(get_unique_str(), "", nbinsx, binsx, nbinsy, binsy)
     for ix in range(nbinsx):
         for iy in range(nbinsy):

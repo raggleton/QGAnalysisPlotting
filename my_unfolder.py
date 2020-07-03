@@ -1345,6 +1345,69 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             self.response_map_normed_by_detector_pt = normed_response_map
         return self.response_map_normed_by_detector_pt
 
+    def create_normalisation_jacobian_np(self):
+        """Create Jacobian matrix for normalisation
+
+        For transformation of variable x -> y = f(x), then J(i,j) = df_i / dx_j.
+
+        For 1D normalisation, where y_i = x_i / sum(x_j), with N = sum(x_j)
+        that means
+        df_i / dx_j = (N * delta(i,j) - x_i) / N^2  (delta is kroenecker delta)
+
+        For 2D normalisation, it's a block matrix per pT bin.
+        """
+        if getattr(self, "jacobian", None) is None:
+            h = self.get_output()
+            nbins = h.GetNbinsX()
+
+            # to keep track of the possible under/overflow bins
+            nbins_uflow = self.generator_distribution_underflow.GetDistributionNumberOfBins()
+            nbins_signal = self.generator_distribution.GetDistributionNumberOfBins()
+            assert(nbins == nbins_uflow+nbins_signal)
+
+            J = np.zeros(shape=(nbins, nbins))
+
+            pt_axis_ind = 2 # 0 is lambda axis, 1 is pt?
+            nbins_pt_uflow = self.nbins_pt_underflow_gen + int(self.generator_distribution_underflow.HasUnderflow(pt_axis_ind)) + int(self.generator_distribution_underflow.HasOverflow(pt_axis_ind))
+            nbins_pt_signal = self.nbins_pt_gen + int(self.generator_distribution.HasUnderflow(pt_axis_ind)) + int(self.generator_distribution.HasOverflow(pt_axis_ind))
+            nbins_pt = nbins_pt_uflow+nbins_pt_signal
+
+            variable_axis_ind = 0 # 0 is lambda axis, 1 is pt?
+            nbins_variable = self.nbins_variable_gen + int(self.generator_distribution.HasUnderflow(variable_axis_ind)) + int(self.generator_distribution.HasOverflow(variable_axis_ind))
+
+            # print(nbins_pt_uflow, nbins_pt_signal, nbins_variable)
+
+            for pt_ind in range(0, nbins_pt):
+                # normalising by pt bin, so get the integral for this pt bin
+                # +1 cos it's ROOT
+                start_ind = (pt_ind*nbins_variable)+1
+                end_ind = start_ind+nbins_variable-1
+                N = h.Integral(start_ind, end_ind)
+                # print("N", N, "for", start_ind, end_ind)
+                # for i in range(start_ind, end_ind+1):
+                #     print("   i:", i, h.GetBinContent(i))
+                # for each block, iterate over all bins
+                start_x = start_y = nbins_variable * pt_ind
+
+                for var_ind_x in range(0, nbins_variable):
+                    for var_ind_y in range(0, nbins_variable):
+                        bin_ind = (nbins_variable * pt_ind) + var_ind_y
+                        # print(bin_ind)
+                        if var_ind_x == var_ind_y:
+                            val = (N - h.GetBinContent(bin_ind + 1)) / N**2
+                        else:
+                            val = -h.GetBinContent(bin_ind + 1) / N**2
+                        J[start_y + var_ind_y][start_x + var_ind_x] = val
+                        # print("J[%d][%d] =" % (start_y+var_ind_y, start_x+var_ind_x), val)
+
+            self.jacobian = J
+        return self.jacobian
+
+    def get_jacobian_th2(self):
+        if getattr(self, "jacobian_th2", None) is None:
+            self.jacobian_th2 = cu.ndarray_to_th2(self.create_normalisation_jacobian_np(), offset=-0.5)
+        return self.jacobian_th2
+
     # METHODS FOR FORWARD-FOLDING & CHI2 TESTS
     # --------------------------------------------------------------------------
     def get_folded_unfolded(self):
