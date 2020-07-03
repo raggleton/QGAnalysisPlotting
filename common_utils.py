@@ -519,6 +519,11 @@ def print_dict_item_sizes(this_dict, descending=True, recursive=True):
     for k, v in sorted_dict.items():
         print(k, v)
 
+
+def nsf(num, n=1):
+    """Get n-Significant figures from float"""
+    numstr = ("{0:.%ie}" % (n-1)).format(num)
+    return float(numstr)
 # Various methods to convert between ROOT things and numpy
 # ------------------------------------------------------------------------------
 
