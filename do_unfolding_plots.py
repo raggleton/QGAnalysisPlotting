@@ -191,10 +191,11 @@ class GenPtBinnedPlotter(object):
     @staticmethod
     def _modify_plot(this_plot):
         this_plot.legend.SetX1(0.6)
-        this_plot.legend.SetY1(0.68)
+        this_plot.legend.SetY1(0.7)
         this_plot.legend.SetX2(0.98)
         this_plot.legend.SetY2(0.88)
         this_plot.left_margin = 0.16
+        this_plot.y_padding_max_linear = 1.8
 
     @staticmethod
     def check_entries(entries, message=""):
