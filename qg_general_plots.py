@@ -75,30 +75,45 @@ def make_comparison_plot_ingredients(entries, rebin=1, normalise_hist=True, mean
     # first figure out if there is a plot where the mean relative error
     #  is greater than a certain amount
 
+    orig_rebin = rebin
     if mean_rel_error > 0:
         big_mean_rel_err = any([cu.get_hist_mean_rel_error(ent[0]) > mean_rel_error
-                                and ent[0].Integral() > 0
+                                # and ent[0].Integral() > 0
                                 for ent in entries])
+        nbins = entries[0][0].GetNbinsX()
 
-        # If this is the case, rebin the plot. Start by making bins bigger,
-        # but check to find nearest divisor
-        orig_rebin = rebin
-        if big_mean_rel_err:
+        # Get actual visible number of bins - that's what will look good/bad
+        xlim = calc_auto_xlim([e[0] for e in entries])
+        bin_ind_min = entries[0][0].FindFixBin(xlim[0])
+        bin_ind_max = entries[0][0].FindFixBin(xlim[1])
+        nbins_vis = bin_ind_max - bin_ind_min
+
+        # keep looking for the next rebin factor until the mean_rel_error is small enough,
+        # or we have < 50 visible bins, but make sure we have at least a few bins
+        while (big_mean_rel_err or (nbins_vis / rebin) > 50) and ((nbins_vis / rebin) > 4):
+            # If this is the case, rebin the plot. Start by making bins bigger,
+            # but check if divisor
             rebin += 1
 
-            # find some sensible divisor
-            counter = 0
-            while entries[0][0].GetNbinsX() % rebin != 0:
-                rebin += 1
-                counter += 1
-                # if we don't find one, then revert back to original setting
-                if counter == 10:
-                    rebin = orig_rebin
-                    break
+            if entries[0][0].GetNbinsX() % rebin != 0:
+                continue
+
+            # now rebin with this value and re-check mean rel error
+            hist_copies = [ent[0].Clone(cu.get_unique_str()) for ent in entries]
+            for h in hist_copies:
+                h.Rebin(rebin)
+            big_mean_rel_err = any([cu.get_hist_mean_rel_error(h) > mean_rel_error
+                                    for h in hist_copies])
+            # print("New rebin:", rebin)
+
+        # the final rebin value may not be an exact divisor, in which case we reduce it until it is
+        while nbins % rebin != 0:
+            rebin -= 1
+        
+        # print("final rebin:", rebin)
 
     conts = [Contribution(ent[0], normalise_hist=normalise_hist, rebin_hist=rebin, **ent[1])
              for ent in entries]
-             # if cu.get_hist_mean_rel_error(ent[0]) < mean_rel_error and ent[0].Integral() > 0]
 
     # update auto xlim if necessary
     if plot_kwargs.get("xlim", None) == "auto":
