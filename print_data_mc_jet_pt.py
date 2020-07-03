@@ -389,17 +389,17 @@ def do_dijet_pt_plots(workdir, do_systematics=True):
             "colour": ROOT.kBlue-4,
             "linestyle": 2,
         },
-        {
-            "label": "Tracking up",
-            "tfile": os.path.join(source_dir_systs, 'track_directionUp', qgc.QCD_FILENAME),
-            "colour": ROOT.kMagenta+3,
-        },
-        {
-            "label": "Tracking down",
-            "tfile": os.path.join(source_dir_systs, 'track_directionDown', qgc.QCD_FILENAME),
-            "colour": ROOT.kMagenta+3,
-            "linestyle": 2,
-        },
+        # {
+        #     "label": "Tracking up",
+        #     "tfile": os.path.join(source_dir_systs, 'track_directionUp', qgc.QCD_FILENAME),
+        #     "colour": ROOT.kMagenta+3,
+        # },
+        # {
+        #     "label": "Tracking down",
+        #     "tfile": os.path.join(source_dir_systs, 'track_directionDown', qgc.QCD_FILENAME),
+        #     "colour": ROOT.kMagenta+3,
+        #     "linestyle": 2,
+        # },
     ]
 
     scale_systematics = [
@@ -920,17 +920,17 @@ def do_zpj_pt_plots(workdir, do_systematics=True):
             "colour": ROOT.kBlue-4,
             "linestyle": 2,
         },
-        {
-            "label": "Tracking up",
-            "tfile": os.path.join(source_dir_systs, 'track_directionUp', qgc.DY_FILENAME),
-            "colour": ROOT.kMagenta+3,
-        },
-        {
-            "label": "Tracking down",
-            "tfile": os.path.join(source_dir_systs, 'track_directionDown', qgc.DY_FILENAME),
-            "colour": ROOT.kMagenta+3,
-            "linestyle": 2,
-        },
+        # {
+        #     "label": "Tracking up",
+        #     "tfile": os.path.join(source_dir_systs, 'track_directionUp', qgc.DY_FILENAME),
+        #     "colour": ROOT.kMagenta+3,
+        # },
+        # {
+        #     "label": "Tracking down",
+        #     "tfile": os.path.join(source_dir_systs, 'track_directionDown', qgc.DY_FILENAME),
+        #     "colour": ROOT.kMagenta+3,
+        #     "linestyle": 2,
+        # },
     ]
 
     scale_systematics = [
