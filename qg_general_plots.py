@@ -7,7 +7,7 @@ My_Style.cd()
 import bisect
 import os
 from array import array
-from math import sqrt
+from math import sqrt, log10
 
 # My stuff
 from comparator import Contribution, Plot, grab_obj
@@ -188,7 +188,17 @@ def do_comparison_plot(entries, output_filename, rebin=1, draw_opt="NOSTACK HIST
             plot.do_legend = False
 
         if logy:
-            plot.y_padding_max_log = 200
+            # figure out some limits based on logarithmic range
+            ymin = min([e[0].GetMinimum(1E-20) for e in entries if e[0].Integral() > 0])
+            ymax = min([e[0].GetMaximum() for e in entries if e[0].Integral() > 0])
+            pow_min = log10(ymin)
+            pow_max = log10(ymax)
+            pow_range = pow_max - pow_min
+            print(ymin, ymax)
+            print(pow_min, pow_max, pow_range)
+            pow_extra = pow_range / 2
+            plot.y_padding_max_log = 5 * 10**pow_extra
+            print(plot.y_padding_max_log)
 
         plot.plot(draw_opt)
 
