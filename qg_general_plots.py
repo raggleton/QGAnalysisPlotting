@@ -256,18 +256,19 @@ def do_comparison_plot(entries, output_filename, rebin=1, draw_opt="NOSTACK HIST
             data_total_ratio.SetLineWidth(0)
             data_total_ratio.SetMarkerSize(0)
 
-            # now draw the data error shaded area
-            # this is a bit hacky - basically draw them on the ratio pad,
-            # then redraw the existing hists & line to get them ontop
-            # note that we use "same" for all - this is to keep the original axes
-            # (we may want to rethink this later?)
-            plot.subplot_pad.cd()
-            data_draw_opt = "E2 SAME"  # need SAME otherwise axis get rescaled
-            # data_stat_ratio.Draw(data_draw_opt)
-            data_total_ratio.Draw(data_draw_opt)
-            plot.subplot_container.Draw("SAME " + draw_opt)
-            plot.subplot_line.Draw()
-            plot.canvas.cd()
+            if plot_kwargs.get("subplot_type", None) is not None:
+                # now draw the data error shaded area
+                # this is a bit hacky - basically draw them on the ratio pad,
+                # then redraw the existing hists & line to get them ontop
+                # note that we use "same" for all - this is to keep the original axes
+                # (we may want to rethink this later?)
+                plot.subplot_pad.cd()
+                data_draw_opt = "E2 SAME"  # need SAME otherwise axis get rescaled
+                # data_stat_ratio.Draw(data_draw_opt)
+                data_total_ratio.Draw(data_draw_opt)
+                plot.subplot_container.Draw("SAME " + draw_opt)
+                plot.subplot_line.Draw()
+                plot.canvas.cd()
 
         dirname = os.path.dirname(output_filename)
         if not os.path.isdir(dirname):
