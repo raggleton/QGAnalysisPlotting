@@ -29,6 +29,13 @@ ROOT.TH1.SetDefaultSumw2()
 ROOT.gStyle.SetOptStat(0)
 
 
+def get_jet_str(thing):
+    if "gen" in thing.lower():
+        return "genjet"
+    else:
+        return "jet"
+
+
 def get_flavour_fractions(input_file, dirname, pt_bins, var_prepend="", which_jet="both"):
     """Get dict of flav : [fraction for specified pt bins] for a given input file & directory.
 
@@ -147,13 +154,13 @@ def get_flavour_efficiencies(input_file, dirname, pt_bins, var_prepend="", which
     bin_edges += pt_bins[-1][1:]
     bin_edges = array('d', bin_edges)
 
-    h_total = ROOT.TH1D("h_total", ";p_{T}^{jet} [GeV];N", len(pt_bins), bin_edges)
+    h_total = ROOT.TH1D("h_total", ";p_{T}^{%s} [GeV];N" % (get_jet_str(var_prepend)), len(pt_bins), bin_edges)
     for ind, val in enumerate(flav_dict['total'], 1):
         h_total.SetBinContent(ind, val[0])
         h_total.SetBinError(ind, val[1])
 
     for flav_key in [k for k in flav_dict.keys() if k != 'total']:
-        h_flav = ROOT.TH1D("h_%s" % flav_key, ";p_{T}^{jet} [GeV];N", len(pt_bins), bin_edges)
+        h_flav = ROOT.TH1D("h_%s" % flav_key, ";p_{T}^{%s} [GeV];N" % (get_jet_str(var_prepend)), len(pt_bins), bin_edges)
         for ind, val in enumerate(flav_dict[flav_key], 1):
             h_flav.SetBinContent(ind, val[0])
             h_flav.SetBinError(ind, val[1])
@@ -211,8 +218,7 @@ def compare_flavour_fractions_vs_pt(input_files, dirnames, pt_bins, labels, flav
         '1-g': 'Non-gluon',
     }
     flav_str = flav_str_dict[flav]
-    append = " genjets" if var_prepend == "gen" else ""
-    ytitle = "Fraction of %s flavour%s" % (flav_str.lower(), append)
+    ytitle = "Fraction of %s flavour %ss" % (flav_str.lower(), get_jet_str(var_prepend))
     p = Plot(contribs,
              what='graph',
              xtitle=xtitle,
@@ -241,7 +247,7 @@ def do_flavour_fraction_vs_pt(input_file, dirname, pt_bins, output_filename, tit
 
     p_flav = Plot([plot_d, plot_u, plot_s, plot_c, plot_b, plot_g, plot_unknown],
                   what='graph',
-                  xtitle="p_{T}^{genjet} [GeV]",
+                  xtitle="p_{T}^{%s} [GeV]" % get_jet_str(var_prepend),
                   ytitle="Fraction",
                   title=title,
                   xlim=(pt_bins[0][0], pt_bins[-1][1]),
