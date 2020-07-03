@@ -267,25 +267,30 @@ def do_plots(root_dir, title):
                 #################
                 rebin = 2
                 v_lower = v.lower()
-                if "multiplicity" in v_lower:
-                    rebin = 1
-                elif "flavour" in v_lower or "thrust" in v_lower:
-                    rebin = 1
-                elif 'ptd' in v_lower:
-                    rebin = 4
-                elif 'lha_charged' in v_lower:
-                    rebin = 4
+                # if "multiplicity" in v_lower:
+                #     rebin = 1
+                # elif "flavour" in v_lower or "thrust" in v_lower:
+                #     rebin = 1
+                # elif 'ptd' in v_lower:
+                #     rebin = 4
+                # elif 'lha_charged' in v_lower:
+                #     rebin = 4
+                # rebin = 1
 
                 xlim = None
                 if "width" in v_lower or "ptd" in v_lower:
                     xlim = (0, 1)
-                elif"thrust" in v_lower:
+                elif "thrust" in v_lower:
                     xlim = (0, 0.5)
                 elif "multiplicity" in v_lower and "ak4" in root_dir.lower():
                     if end_val <= 150:
                         xlim = (0, 50)
                     else:
                         xlim = (0, 80)
+                
+                auto_xlim = False
+                if "multiplicity" in v_lower or "thrust" in v_lower:
+                    auto_xlim = True
 
                 ylim = [0, None]
                 if "flavour" in v_lower:
@@ -317,6 +322,7 @@ def do_plots(root_dir, title):
                         s = "%s\n%s" % (s, title)
                     return s
 
+                has_data = True
                 draw_opt = "NOSTACK HIST E1"
                 # dj central only
                 # dont' try to do multiple signal regions per plot, it looks rubbish
@@ -327,9 +333,10 @@ def do_plots(root_dir, title):
                                            draw_opt=draw_opt,
                                            title=_title(qgc.Dijet_CEN_LABEL, start_val, end_val),
                                            xtitle=xlabel,
-                                           xlim=xlim,
+                                           xlim=qgp.calc_auto_xlim([d[0] for d in dijet_cen_entries]) if auto_xlim else xlim,
                                            ylim=ylim,
-                                           data_first=True,
+                                           data_first=has_data,
+                                           mean_rel_error=0.4,
                                            subplot_type='ratio',
                                            subplot_title=subplot_title,
                                            subplot_limits=subplot_limits)
@@ -342,9 +349,10 @@ def do_plots(root_dir, title):
                                            draw_opt=draw_opt,
                                            title=_title(qgc.Dijet_FWD_LABEL, start_val, end_val),
                                            xtitle=xlabel,
-                                           xlim=xlim,
+                                           xlim=qgp.calc_auto_xlim([d[0] for d in dijet_fwd_entries]) if auto_xlim else xlim,
                                            ylim=ylim,
-                                           data_first=True,
+                                           data_first=has_data,
+                                           mean_rel_error=0.4,
                                            subplot_type='ratio',
                                            subplot_title=subplot_title,
                                            subplot_limits=subplot_limits)
@@ -369,9 +377,10 @@ def do_plots(root_dir, title):
                                            draw_opt=draw_opt,
                                            title=_title(qgc.ZpJ_LABEL, start_val, end_val),
                                            xtitle=xlabel,
-                                           xlim=xlim,
+                                           xlim=qgp.calc_auto_xlim([d[0] for d in zpj_entries]) if auto_xlim else xlim,
                                            ylim=ylim,
-                                           data_first=True,
+                                           data_first=has_data,
+                                           mean_rel_error=0.4,
                                            subplot_type='ratio',
                                            subplot_title=subplot_title,
                                            subplot_limits=subplot_limits)
@@ -379,54 +388,54 @@ def do_plots(root_dir, title):
 
             # Do overall summary plots across all pt bins
             # ------------------------------------------------------------------
-            # ylim_mean = None
-            # if "width" in v_lower or "ptd" in v_lower:
-            #     ylim_mean = (0, 0.4)
-            # elif"thrust" in v_lower:
-            #     ylim_mean = (0, 0.5)
-            # elif "multiplicity" in v_lower and "ak4" in root_dir.lower():
-            #     ylim_mean = (0, 100)
-            #     ylim_mean = (0, 80)
-            #     if end_val < 150:
-            #         ylim_mean = (0, 50)
-            # ylim_mean=None
-            # ylim_rms=None
+            ylim_mean = None
+            if "width" in v_lower or "ptd" in v_lower:
+                ylim_mean = (0, 0.4)
+            elif"thrust" in v_lower:
+                ylim_mean = (0, 0.5)
+            elif "multiplicity" in v_lower and "ak4" in root_dir.lower():
+                ylim_mean = (0, 100)
+                ylim_mean = (0, 80)
+                if end_val < 150:
+                    ylim_mean = (0, 50)
+            ylim_mean=None
+            ylim_rms=None
 
-            # # Setup variable names for MPL
-            # marker = ""
-            # if "_" in ang.name or "^" in ang.name:
-            #     marker = "$"
-            # var_label = marker + ang.name + marker + " ($%s$)" % ang.lambda_str
-            # if gr_append != "":
-            #     var_label = "Groomed " + marker + ang.name + marker + " ($%s$)" % ang.lambda_str
+            # Setup variable names for MPL
+            marker = ""
+            if "_" in ang.name or "^" in ang.name:
+                marker = "$"
+            var_label = marker + ang.name + marker + " ($%s$)" % ang.lambda_str
+            if gr_append != "":
+                var_label = "Groomed " + marker + ang.name + marker + " ($%s$)" % ang.lambda_str
 
-            # qgp.do_mean_rms_summary_plot(dijet_cen_1d_entries[:],
-            #                              pt_bins[:],
-            #                              "%s/ptBinned/%s_box_dijet_cen_mpl.%s" % (plot_dir, v, OUTPUT_FMT),
-            #                              var_label=var_label,
-            #                              xlim=(50, 2000),
-            #                              ylim_mean=ylim_mean,
-            #                              ylim_rms=ylim_rms,
-            #                              region_title="%s jets in dijet (central)" % (jet_str))
+            qgp.do_mean_rms_summary_plot(dijet_cen_1d_entries[:],
+                                         pt_bins[:],
+                                         "%s/ptBinned/%s_box_dijet_cen_mpl.%s" % (plot_dir, v, OUTPUT_FMT),
+                                         var_label=var_label,
+                                         xlim=(50, 4000),
+                                         ylim_mean=ylim_mean,
+                                         ylim_rms=ylim_rms,
+                                         region_title="%s jets in dijet (central) region" % (jet_str))
 
-            # qgp.do_mean_rms_summary_plot(dijet_fwd_1d_entries[:],
-            #                              pt_bins[:],
-            #                              "%s/ptBinned/%s_box_dijet_fwd_mpl.%s" % (plot_dir, v, OUTPUT_FMT),
-            #                              var_label=var_label,
-            #                              xlim=(50, 2000),
-            #                              ylim_mean=ylim_mean,
-            #                              ylim_rms=ylim_rms,
-            #                              region_title="%s jets in dijet (forward)" % (jet_str))
+            qgp.do_mean_rms_summary_plot(dijet_fwd_1d_entries[:],
+                                         pt_bins[:],
+                                         "%s/ptBinned/%s_box_dijet_fwd_mpl.%s" % (plot_dir, v, OUTPUT_FMT),
+                                         var_label=var_label,
+                                         xlim=(50, 4000),
+                                         ylim_mean=ylim_mean,
+                                         ylim_rms=ylim_rms,
+                                         region_title="%s jets in dijet (forward) region" % (jet_str))
 
-            # # zpj_1d_entries[i][j] is the jth sample in the ith pt bin
-            # qgp.do_mean_rms_summary_plot(zpj_1d_entries[:],
-            #                              pt_bins[:],
-            #                              "%s/ptBinned/%s_box_zpj_mpl.%s" % (plot_dir, v, OUTPUT_FMT),
-            #                              var_label=var_label,
-            #                              xlim=(50, 614),
-            #                              ylim_mean=ylim_mean,
-            #                              ylim_rms=ylim_rms,
-            #                              region_title="%s jets in Z+jets" % (jet_str))
+            # zpj_1d_entries[i][j] is the jth sample in the ith pt bin
+            qgp.do_mean_rms_summary_plot(zpj_1d_entries[:],
+                                         pt_bins[:],
+                                         "%s/ptBinned/%s_box_zpj_mpl.%s" % (plot_dir, v, OUTPUT_FMT),
+                                         var_label=var_label,
+                                         xlim=(50, 614),
+                                         ylim_mean=ylim_mean,
+                                         ylim_rms=ylim_rms,
+                                         region_title="%s jets in Z+jets region" % (jet_str))
 
             # # qgp.do_box_plot(dijet_2d_entries,
             # #                 "%s/ptBinned/%s_box_dijet.%s" % (plot_dir, v, OUTPUT_FMT),

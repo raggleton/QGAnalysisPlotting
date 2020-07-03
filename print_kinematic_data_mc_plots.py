@@ -69,6 +69,7 @@ def do_1D_plot(hists,
                logx=False, logy=False,
                normalise_hists=True,
                title="",
+               xtitle=None,
                data_first=True):
 
     if (len(hists) != len(components_styles_dicts)):
@@ -100,9 +101,11 @@ def do_1D_plot(hists,
             ylim = [0, 1.5*max_val]
 
     # Auto calc x limits to avoid lots of empty bins
-    high_bin = max([find_largest_filled_bin(h)[0] for h in hists])
-    low_bin = max(2, min([find_first_filled_bin(h)[0] for h in hists]))
-    xlim = [hists[0].GetBinLowEdge(low_bin-1), hists[0].GetBinLowEdge(high_bin+2)]
+    # high_bin = max([find_largest_filled_bin(h)[0] for h in hists])
+    # low_bin = max(2, min([find_first_filled_bin(h)[0] for h in hists]))
+    # xlim = [hists[0].GetBinLowEdge(low_bin-1), hists[0].GetBinLowEdge(high_bin+2)]
+    # xlim = qgp.calc_auto_xlim([e[0] for e in entries])
+    xlim = "auto"
 
     draw_opt = "NOSTACK HIST E1"
     subplot_title = "Simulation / Data"
@@ -112,11 +115,12 @@ def do_1D_plot(hists,
                            # rebin=rebin,
                            draw_opt=draw_opt,
                            title=title,
-                           xtitle=None,
+                           xtitle=xtitle,
                            xlim=xlim,
                            ylim=ylim,
                            logx=logx,
                            logy=logy,
+                           mean_rel_error=0.4,
                            data_first=data_first,
                            subplot_type='ratio' if do_ratio else None,
                            subplot_title=subplot_title,
@@ -185,7 +189,7 @@ def do_all_1D_projection_plots_in_dir(directories,
             logx = obj_name in ["pt_jet", "pt_jet1", "pt_jet2", "pt_mumu", 'gen_ht', 'pt_jet_response_binning', 'pt_genjet_response_binning', 'pt_jet1_unweighted', 'pt_jet_unweighted']
             rebin = 1
             if obj_name in ['pt_jet', 'pt_jet1', 'pt_jet2', 'pt_mumu']:
-                rebin = 10
+                rebin = 20
             for obj in objs:
                 obj.Rebin(rebin)
 
@@ -229,11 +233,28 @@ def do_all_1D_projection_plots_in_dir(directories,
                         rebin = 2
                     elif objs[0].GetNbinsX() % 3 == 0 and objs[0].GetNbinsX() >= 60:
                         rebin = 3
+                
                 if obj_name.startswith("m_jj"):
                     rebin = 2
                 if "reliso" in obj_name:
-                    rebin = 2
-                hists = [qgp.get_projection_plot(ob, pt_min, pt_max).Rebin(rebin) for ob in objs]
+                    rebin = 1
+                
+                if "pt_jet1_vs_pt_z" in obj_name:
+                    rebin = 20                
+                
+                if "pt_mu1_vs_pt_z" in obj_name:
+                    rebin = 10
+                    if pt_min > 250:
+                        rebin = 20
+
+                if "pt_mu2_vs_pt_z" in obj_name:
+                    rebin = 10
+                    if pt_min > 250:
+                        rebin = 25
+
+                hists = [qgp.get_projection_plot(ob, pt_min, pt_max) for ob in objs]
+                for h in hists:
+                    h.Rebin(rebin)
 
                 def _title(region_str, start_val, end_val):
                     pt_var_str = "p_{T}^{jet}"
@@ -254,15 +275,27 @@ def do_all_1D_projection_plots_in_dir(directories,
                         s = "%s\n%s" % (s, title)
                     return s
 
-                logx = 'pt_jet_response' in obj_name
+                xtitle = None
+                if "eta_jet1_vs_pt" in obj_name and "eta_ordered" in directories[0].GetName().lower():
+                    xtitle = "y^{forward jet}"
+                elif "eta_jet2_vs_pt" in obj_name and "eta_ordered" in directories[0].GetName().lower():
+                    xtitle = "y^{central jet}"
+
+                logx = any([x in obj_name for x in
+                            ['pt_jet_response', 'pt_jet1_vs_pt_z']])
+
+                logy = any([x in obj_name for x in
+                            ['pt_jet_response', 'pt_jet1_vs_pt_z']])
+
 
                 do_1D_plot(hists,
                            components_styles_dicts=components_styles_dicts,
                            do_ratio=do_ratio,
                            normalise_hists=normalise_hists,
                            logx=logx,
-                           logy=False,
+                           logy=logy,
                            title=_title(region_str, pt_min, pt_max),
+                           xtitle=xtitle,
                            output_filename=os.path.join(output_dir, obj_name+"_pt%dto%d.%s" % (pt_min, pt_max, OUTPUT_FMT)))
 
 
@@ -325,14 +358,14 @@ def do_dijet_distributions(root_dir, title):
                                       bin_by='ave')
 
     # Do eta-ordered
-    directories = [cu.get_from_tfile(rf, "Dijet_eta_ordered") for rf in root_files[:]]
-    do_all_1D_projection_plots_in_dir(directories=directories,
-                                      output_dir=os.path.join(root_dir, "Dijet_data_mc_kin_comparison_eta_ordered_normalised"),
-                                      components_styles_dicts=csd,
-                                      region_str=qgc.Dijet_LABEL,
-                                      jet_config_str=jet_config_str,
-                                      title=title,
-                                      bin_by='ave')
+    # directories = [cu.get_from_tfile(rf, "Dijet_eta_ordered") for rf in root_files[:]]
+    # do_all_1D_projection_plots_in_dir(directories=directories,
+    #                                   output_dir=os.path.join(root_dir, "Dijet_data_mc_kin_comparison_eta_ordered_normalised"),
+    #                                   components_styles_dicts=csd,
+    #                                   region_str=qgc.Dijet_LABEL,
+    #                                   jet_config_str=jet_config_str,
+    #                                   title=title,
+    #                                   bin_by='ave')
 
 
 def do_zpj_distributions(root_dir, title):
@@ -397,8 +430,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     for workdir in args.workdirs:
-            do_dijet_distributions(workdir, args.title)
+        do_dijet_distributions(workdir, args.title)
 
-            # do_zpj_distributions(workdir, args.title)
+        do_zpj_distributions(workdir, args.title)
 
     sys.exit(0)
