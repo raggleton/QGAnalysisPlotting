@@ -162,7 +162,7 @@ def make_comparison_plot_ingredients(entries, rebin=1, normalise_hist=True, mean
         if len(entries) > 4:
             p.legend.SetY1(0.6)
         else:
-            p.legend.SetY1(0.68)
+            p.legend.SetY1(0.72)
         p.legend.SetY2(0.88)
 
     if mean_rel_error > 0:
