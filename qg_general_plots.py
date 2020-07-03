@@ -99,6 +99,11 @@ def make_comparison_plot_ingredients(entries, rebin=1, normalise_hist=True, mean
     conts = [Contribution(ent[0], normalise_hist=normalise_hist, rebin_hist=rebin, **ent[1])
              for ent in entries]
              # if cu.get_hist_mean_rel_error(ent[0]) < mean_rel_error and ent[0].Integral() > 0]
+
+    # update auto xlim if necessary
+    if plot_kwargs.get("xlim", None) == "auto":
+        plot_kwargs['xlim'] = calc_auto_xlim([e[0] for e in entries])
+
     do_legend = len(conts) > 1
     if len(conts) == 0:
         raise RuntimeError("0 contributions for this plot")
@@ -1273,4 +1278,47 @@ def normalise_hist_divide_bin_width(h):
     h_new.SetEntries(h.GetEntries())  # needed as the default is to replace with integral
     return h_new
 
+
+def calc_auto_xlim(entries):
+    """Figure out x axis range that includes all non-0 bins from all Contributions or TH1s"""
+    if len(entries) == 0:
+        return None
+    if not isinstance(entries[0], Contribution) and not isinstance(entries[0], ROOT.TH1):
+        raise TypeError("calc_auto_xlim: `entries` should be a list of Contributions or TH1s")
+
+    x_min = 9999999999
+    x_max = -9999999999
+    for ent in entries:
+        if isinstance(ent, ROOT.TH1):
+            obj = ent
+        else:
+            obj = ent.obj
+        if not isinstance(obj, ROOT.TH1):
+            raise TypeError("Cannot handle obj type %s in calc_auto_xlim" % type(obj))
+        xax = obj.GetXaxis()
+        nbins = obj.GetNbinsX()
+        found_min = False
+        for i in range(1, nbins+2):
+            val = obj.GetBinContent(i)
+            if not found_min:
+                # find the first non-empty bin
+                if val != 0:
+                    x_min = min(xax.GetBinLowEdge(i), x_min)
+                    found_min = True
+        for i in range(nbins+2, 0, -1):
+            val = obj.GetBinContent(i)
+            # find the last empty bin, work from rightmost bin
+            if val != 0:
+                x_max = max(xax.GetBinLowEdge(i+1), x_max)
+                break
+
+    if x_max < x_min:
+        # didn't find high 0 bin, so set to last bin
+        x_max = xax.GetBinLowEdge(nbins+1)
+    if x_max > x_min:
+        return (x_min, x_max)
+    else:
+        print("calc_auto_xlim: max < min wtf")
+        # default x max
+        return None
 
