@@ -143,7 +143,8 @@ class MyUnfolderPlotter(object):
             ROOT.gStyle.SetPalette(self.default_palette)
 
     @staticmethod
-    def mark_zeros(hist, y_low, y_high, colour=ROOT.kGreen+1):
+    def mark_negatives(hist, y_low, y_high, colour=ROOT.kGreen+1):
+        """Add arrows to bins where contents < 0"""
         arrows = []
         for i in range(1, hist.GetNbinsX()+1):
             val = hist.GetBinContent(i)
@@ -158,6 +159,18 @@ class MyUnfolderPlotter(object):
             arrows.append(arrow)  # to keep them plotted
         return arrows
 
+    @staticmethod
+    def _readable_legend(legend):
+        # Good if many vertical binning lines
+        legend.SetFillColorAlpha(ROOT.kWhite, 0.9)
+        legend.SetFillStyle(1001)
+
+    @staticmethod
+    def _modify_plot(plot):
+        plot.default_canvas_size = (800, 500)
+        plot.left_margin = 0.08
+        # plot.left_title_offset_fudge_factor = 7
+        MyUnfolderPlotter._readable_legend(plot.legend)
 
     def draw_bias_vector(self, do_unfolded=True, output_dir='.', append="", title=""):
         """Plot bias vector used in regularisation (if it exists)"""
@@ -417,7 +430,7 @@ class MyUnfolderPlotter(object):
                         ytitle='Background fraction',
                         ylim=(frac_min, frac_max),
                         has_data=False)
-            plot.default_canvas_size = (800, 600)
+            self._modify_plot(plot)
             plot.plot('NOSTACK HIST')
             plot.set_logy()
             plot.legend.SetX1(0.75)
@@ -441,7 +454,7 @@ class MyUnfolderPlotter(object):
                         ytitle='Cumulative background fraction',
                         ylim=(frac_min, frac_max),
                         has_data=False)
-            plot.default_canvas_size = (800, 600)
+            self._modify_plot(plot)
             plot.reverse_legend = True
             ROOT.gStyle.SetPalette(ROOT.kCMYK)
             # ROOT.gStyle.SetPalette(ROOT.kPastel)
@@ -528,7 +541,7 @@ class MyUnfolderPlotter(object):
                     xtitle="n_{R} bin",
                     ytitle="L(x-f_{b}x_{0})",
                     has_data=self.is_data)
-        plot.default_canvas_size = (800, 600)
+        self._modify_plot(plot)
         plot.y_padding_max_linear = 1.7
         plot.y_padding_min_linear = 1.1
         plot.left_margin = 0.15
@@ -561,7 +574,7 @@ class MyUnfolderPlotter(object):
                     xtitle="Generator bin",
                     ytitle="x-f_{b}x_{0}",
                     has_data=self.is_data)
-        plot.default_canvas_size = (800, 600)
+        self._modify_plot(plot)
         plot.y_padding_max_linear = 1.5
         plot.y_padding_min_linear = 1.1
         plot.left_margin = 0.15
@@ -794,6 +807,7 @@ class MyUnfolderPlotter(object):
     def draw_unfolded_1d(self, do_gen=True, do_unfolded=True,
                          other_contributions=None,
                          output_dir='.', append='', title='',
+                         mark_negatives=True,
                          subplot_title=None,
                          subplot_limits=(0.75, 1.25)):
         """Simple plot of unfolded & gen, by bin number (ie non physical axes)"""
@@ -833,7 +847,7 @@ class MyUnfolderPlotter(object):
                     subplot_title=subplot_title if subplot_title else '#splitline{Unfolded %s /}{MC Gen}' % label,
                     subplot_limits=subplot_limits,
                     has_data=self.is_data)
-        plot.default_canvas_size = (800, 600)
+        self._modify_plot(plot)
         # plot.text_left_offset = 0.05  # have to bodge this
         if len(entries) < 20:
           plot.plot("NOSTACK HISTE")
@@ -860,9 +874,9 @@ class MyUnfolderPlotter(object):
 
         # mark -ve bins - these shouldn't occur!
         arrows = []
-        if do_unfolded:
+        if do_unfolded and mark_negatives:
             plot.main_pad.cd()
-            arrows = self.mark_zeros(self.unfolder.unfolded, ymin*0.01, ymin*50)
+            arrows = self.mark_negatives(self.unfolder.unfolded, ymin*0.01, ymin*50)
 
         output_filename = "%s/unfolded_%s.%s" % (output_dir, append, self.output_fmt)
         plot.save(output_filename)
@@ -874,7 +888,9 @@ class MyUnfolderPlotter(object):
                         do_reco_mc=False,
                         do_reco_mc_bg_sub=False,
                         other_contributions=None,
-                        output_dir='.', append="", title=""):
+                        mark_negatives=True,
+                        output_dir='.', append="", title="", 
+                        subplot_title='Data / MC'):
         """Plot detector-binned quantities for data & MC, by bin number (ie non physical axes)"""
         entries = []
 
@@ -938,14 +954,18 @@ class MyUnfolderPlotter(object):
                     xtitle="Detector bin number",
                     ytitle="N",
                     subplot_type='ratio' if do_subplot else None,
-                    subplot_title='Data / MC',
+                    subplot_title=subplot_title,
                     subplot_limits=(0.75, 1.25),
                     has_data=(do_reco_data or do_reco_data_bg_sub))
-        plot.default_canvas_size = (800, 600)
+        self._modify_plot(plot)
+
         if len(entries) < 20:
           plot.plot("NOSTACK HISTE")
         else:
           plot.plot("NOSTACK HIST PLC PMC")
+        if not do_subplot:
+            yax = plot.container.GetYaxis()
+            yax.SetTitleOffset(yax.GetTitleOffset()*0.7)
         plot.set_logy(do_more_labels=False)
         ymax = max([o.GetMaximum() for o in plot.contributions_objs])
         plot.container.SetMaximum(ymax * 200)
@@ -970,14 +990,15 @@ class MyUnfolderPlotter(object):
 
         arrows = []
         plot.main_pad.cd()
-        if do_reco_data_bg_sub:
-            arrows.append(self.mark_zeros(reco_data_bg_sub, ymin*0.01, ymin*50))
-        if do_reco_mc_bg_sub:
-            arrows.append(self.mark_zeros(reco_mc_bg_sub, ymin*0.01, ymin*50))
-        if do_reco_data:
-            arrows.append(self.mark_zeros(reco_data, ymin*0.01, ymin*50))
-        if do_reco_mc:
-            arrows.append(self.mark_zeros(reco_mc, ymin*0.01, ymin*50))
+        if mark_negatives:
+            if do_reco_data_bg_sub:
+                arrows.append(self.mark_negatives(reco_data_bg_sub, ymin*0.01, ymin*50))
+            if do_reco_mc_bg_sub:
+                arrows.append(self.mark_negatives(reco_mc_bg_sub, ymin*0.01, ymin*50))
+            if do_reco_data:
+                arrows.append(self.mark_negatives(reco_data, ymin*0.01, ymin*50))
+            if do_reco_mc:
+                arrows.append(self.mark_negatives(reco_mc, ymin*0.01, ymin*50))
 
         if append != "":
             append = "_" + append
@@ -992,7 +1013,9 @@ class MyUnfolderPlotter(object):
                           do_reco_mc_bg_sub=False,
                           do_truth_mc=False,
                           other_contributions=None,
-                          output_dir='.', append="", title=""):
+                          mark_negatives=True,
+                          output_dir='.', append="", title="",
+                          subplot_title='Data / MC'):
         """Plot generator-binned quantities for data & MC, by bin number (ie non physical axes)"""
         entries = []
 
@@ -1061,10 +1084,10 @@ class MyUnfolderPlotter(object):
                     xtitle="Generator bin number",
                     ytitle="N",
                     subplot_type='ratio' if ((do_reco_mc and do_reco_data) or (do_reco_mc_bg_sub and do_reco_data_bg_sub)) else None,
-                    subplot_title='#splitline{Data / MC}{(detector)}',
+                    subplot_title=subplot_title,
                     subplot_limits=(0.75, 1.25),
                     has_data=(do_reco_data or do_reco_data_bg_sub))
-        plot.default_canvas_size = (800, 600)
+        self._modify_plot(plot)
         plot.plot("NOSTACK HISTE")
         plot.set_logy(do_more_labels=False)
         ymax = max([o.GetMaximum() for o in plot.contributions_objs])
@@ -1084,23 +1107,26 @@ class MyUnfolderPlotter(object):
 
         arrows = []
         plot.main_pad.cd()
-        if do_reco_data_bg_sub:
-            arrows.append(self.mark_zeros(reco_data_bg_sub, ymin*0.01, ymin*50))
-        if do_reco_mc_bg_sub:
-            arrows.append(self.mark_zeros(reco_mc_bg_sub, ymin*0.01, ymin*50))
-        if do_reco_data:
-            arrows.append(self.mark_zeros(reco_data, ymin*0.01, ymin*50))
-        if do_reco_mc:
-            arrows.append(self.mark_zeros(reco_mc, ymin*0.01, ymin*50))
+        if mark_negatives:
+            if do_reco_data_bg_sub:
+                arrows.append(self.mark_negatives(reco_data_bg_sub, ymin*0.01, ymin*50))
+            if do_reco_mc_bg_sub:
+                arrows.append(self.mark_negatives(reco_mc_bg_sub, ymin*0.01, ymin*50))
+            if do_reco_data:
+                arrows.append(self.mark_negatives(reco_data, ymin*0.01, ymin*50))
+            if do_reco_mc:
+                arrows.append(self.mark_negatives(reco_mc, ymin*0.01, ymin*50))
 
         output_filename = "%s/detector_gen_binning_%s.%s" % (output_dir, append, self.output_fmt)
         plot.save(output_filename)
 
-    def draw_unfolded_folded(self, output_dir='.', append="", title=""):
-        """Draw big 1D plot of folded unfolded + original input (bg-subtracted if possible)"""
+    def draw_truth_unfolded_folded(self, draw_truth_folded=True, draw_unfolded_folded=True,
+                                   output_dir='.', append="", title=""):
+        """Draw big 1D plot of folded truth, folded unfolded, & original input (bg-subtracted if possible)"""
         entries = []
         reco_data_colour = ROOT.kRed
         reco_folded_colour = ROOT.kAzure+1
+        truth_folded_colour = ROOT.kOrange+1
         reco_mc_colour = ROOT.kGreen+2
 
         hist_reco = self.unfolder.input_hist_bg_subtracted
@@ -1111,48 +1137,49 @@ class MyUnfolderPlotter(object):
         if hist_reco:
             entries.append(
                 Contribution(hist_reco,
-                             label="Unfolding input (background-subtracted)" if is_bg_subtracted else "Unfolding input",
+                             label="Unfolding input (bg-subtracted)" if is_bg_subtracted else "Unfolding input",
                              line_color=reco_data_colour if self.is_data else reco_mc_colour, line_width=1,
-                             marker_color=reco_data_colour if self.is_data else reco_mc_colour, marker_size=0.6, marker_style=20,
+                             marker_color=reco_data_colour if self.is_data else reco_mc_colour, marker_size=0, marker_style=20,
                              normalise_hist=False)
             )
 
-        hist_folded = self.unfolder.get_folded_unfolded()
-        if hist_folded:
+        hist_folded_unfolded = self.unfolder.get_folded_unfolded()
+        if hist_folded_unfolded and draw_unfolded_folded:
+            tau_str = "" if self.unfolder.tau == 0 else " (#tau = %.3g)" % (self.unfolder.tau)
             entries.append(
-                Contribution(hist_folded, label="Folded unfolded result (#tau = %.3g)" % (self.unfolder.tau),
+                Contribution(hist_folded_unfolded, label="Folded unfolded result%s" % tau_str,
                              line_color=reco_folded_colour, line_width=1,
                              marker_color=reco_folded_colour, marker_size=0,
                              normalise_hist=False,
                              subplot=hist_reco)
             )
-            # if you want to cross-check TUnfold:
-            # entries.append(
-            #     Contribution(self.unfolder.folded_unfolded_tunfold, label="Folded unfolded result from TUnfold (#tau = %.3g)" % (self.unfolder.tau),
-            #                  line_color=reco_mc_colour, line_width=1, line_style=2,
-            #                  marker_color=reco_mc_colour, marker_size=0,
-            #                  normalise_hist=False,
-            #                  subplot=hist_reco)
-            #     )
-
+        hist_folded_truth = self.unfolder.get_folded_mc_truth()
+        if hist_folded_truth and draw_truth_folded:
+            entries.append(
+                Contribution(hist_folded_truth, label="Folded MC truth",
+                             line_color=truth_folded_colour, line_width=1,
+                             marker_color=truth_folded_colour, marker_size=0,
+                             normalise_hist=False,
+                             subplot=hist_reco)
+                )
         plot = Plot(entries,
                     what='hist',
                     title=title,
-                    xtitle="Detector binning",
+                    xtitle="Detector bin number",
                     ytitle="N",
                     subplot_type='ratio',
                     subplot_title='#splitline{Folded /}{Unfolding input}',
-                    subplot_limits=(0.75, 1.25),
+                    subplot_limits=(0.5, 1.5) if self.is_data else (0.75, 1.25),
                     has_data=self.is_data)
-        plot.default_canvas_size = (800, 600)
         # print("Doing folded unfolded")
+        self._modify_plot(plot)
         plot.plot("NOSTACK HIST")
         plot.main_pad.SetLogy(1)
         # plot.set_logy(do_more_labels=False, override_check=True)
         ymax = max([o.GetMaximum() for o in plot.contributions_objs])
         plot.container.SetMaximum(ymax * 200)
         plot.container.SetMinimum(1E-1)
-        plot.legend.SetY1NDC(0.77)
+        plot.legend.SetY1NDC(0.7)
         plot.legend.SetX1NDC(0.6)
         plot.legend.SetX2NDC(0.88)
         plot.legend.SetY2NDC(0.87)
@@ -1161,68 +1188,9 @@ class MyUnfolderPlotter(object):
                                           do_underflow=True,
                                           do_labels_inside=True,
                                           do_labels_outside=False)
-        output_filename = "%s/folded_unfolded_%s.%s" % (output_dir, append, self.output_fmt)
-        plot.save(output_filename)
-
-    def draw_truth_folded(self, output_dir='.', append="", title=""):
-        """Draw big 1D plot of folded truth + original input (bg-subtracted if possible)"""
-        # TODO assimilate with draw_unfolded_folded()
-        entries = []
-
-        reco_data_colour = ROOT.kRed
-        reco_folded_colour = ROOT.kAzure+1
-        reco_mc_colour = ROOT.kGreen+2
-
-        hist_reco = self.unfolder.input_hist_bg_subtracted
-        is_bg_subtracted = True
-        if not hist_reco:
-            hist_reco = self.input_hist
-            is_bg_subtracted = False
-        if hist_reco:
-            entries.append(
-                Contribution(hist_reco,
-                             label="Unfolding input (background-subtracted)" if is_bg_subtracted else "Unfolding input",
-                             line_color=reco_mc_colour, line_width=1,
-                             marker_color=reco_mc_colour,  marker_size=0.6, marker_style=20,
-                             normalise_hist=False)
-                )
-
-        hist_folded = self.unfolder.get_folded_mc_truth()
-        if hist_folded:
-            entries.append(
-                Contribution(hist_folded, label="Folded generator",
-                             line_color=reco_folded_colour, line_width=1,
-                             marker_color=reco_folded_colour, marker_size=0,
-                             normalise_hist=False,
-                             subplot=hist_reco)
-                )
-
-        plot = Plot(entries,
-                    what='hist',
-                    title=title,
-                    xtitle="Detector binning",
-                    ytitle="N",
-                    subplot_type='ratio',
-                    subplot_title='#splitline{Folded gen/}{Unfolding input}',
-                    subplot_limits=(0.75, 1.25),
-                    has_data=self.is_data)
-        plot.default_canvas_size = (800, 600)
-        plot.plot("NOSTACK HIST")
-        plot.main_pad.SetLogy(1)
-        ymax = max([o.GetMaximum() for o in plot.contributions_objs])
-        plot.container.SetMaximum(ymax * 200)
-        # plot.container.SetMinimum(1E-8)
-        plot.legend.SetY1NDC(0.77)
-        plot.legend.SetX1NDC(0.6)
-        plot.legend.SetX2NDC(0.88)
-        plot.legend.SetY2NDC(0.87)
-
-
-        l, t = self.draw_pt_binning_lines(plot, which='reco', axis='x',
-                                          do_underflow=True,
-                                          do_labels_inside=True,
-                                          do_labels_outside=False)
-        output_filename = "%s/folded_gen_%s.%s" % (output_dir, append, self.output_fmt)
+        name = "truth_" if draw_truth_folded else ""
+        name += "unfolded_" if draw_unfolded_folded else ""
+        output_filename = "%s/folded_%s%s.%s" % (output_dir, name, append, self.output_fmt)
         plot.save(output_filename)
 
     def draw_failed_reco(self, output_dir='.', append="", title="", other_contributions=None):
@@ -1245,7 +1213,7 @@ class MyUnfolderPlotter(object):
         #             has_data=False,
         #             subplot_title='Failed / All',
         #             subplot_limits=(0, 1))
-        # plot.default_canvas_size = (800, 600)
+        # self._modify_plot(plot)
         # plot.plot("NOSTACK HISTE")
         # plot.set_logy(do_more_labels=False)
         # l, t = self.draw_pt_binning_lines(plot, which='gen', axis='x',
@@ -1273,7 +1241,7 @@ class MyUnfolderPlotter(object):
                     subplot_type="ratio" if other_contributions else None,
                     subplot_title='ratio',
                     subplot_limits=(0.5, 1.5))
-        plot.default_canvas_size = (800, 600)
+        self._modify_plot(plot)
         plot.plot("NOSTACK HISTE")
         # plot.set_logy(do_more_labels=False)
         l, t = self.draw_pt_binning_lines(plot,

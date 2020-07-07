@@ -276,6 +276,7 @@ class Plot(object):
         self.y_padding_max_log = 10  # factor to auto extend y upper limit for log scale
         self.y_padding_min_linear = 1.4 # factor to auto extend y lower limit for linear scale
         self.y_padding_min_log = 0.1  # factor to auto extend y lower limit for log scale
+        self.y_padding_mode = 'abs'  # abs = times max/min, range = times range, add/subtract on
         self.do_legend = legend
         self.legend = ROOT.TLegend(0.65, 0.6, 0.94, 0.85) if legend else None
         if self.do_legend:
@@ -288,6 +289,7 @@ class Plot(object):
         # self.default_canvas_size = (800, 600)
         self.right_margin = 0.04
         self.left_margin = 0.12 # use ROOT default
+        self.left_title_offset_fudge_factor = 7
         self.text_left_offset = self.left_margin * (0.055/0.12)
         self.text_left_offset = 0
         self.top_margin = 0.1
@@ -450,7 +452,7 @@ class Plot(object):
         yax.SetLabelOffset(yax.GetLabelOffset()/factor)
         yax.SetTitleSize(yax.GetTitleSize()/factor)
         # magic numbers: 0.1 is the default margin, but scaling against that gives too much, so we knock it down by a bit
-        yax.SetTitleOffset(yax.GetTitleOffset()*factor*(0.7*self.left_margin/0.1))
+        yax.SetTitleOffset(yax.GetTitleOffset()*factor*(self.left_title_offset_fudge_factor*self.left_margin))
         # container.GetYaxis().SetTickLength(0.03/factor)
 
     def set_logx(self, state=True, do_more_labels=True):
@@ -829,6 +831,7 @@ class Plot(object):
                 self.subplot_line.SetLineWidth(self.subplot_line_width)
                 self.subplot_line.SetLineColor(self.subplot_line_color)
                 self.subplot_line.Draw()
+                self.subplot_container.Draw(subplot_draw_opts + "SAME")  # redraw contributions on top of line
 
             # Some resizing of subplot things
             self._rescale_plot_labels(self.subplot_container, self.subplot_pad.GetAbsHNDC())  # use actual height since add in fudges

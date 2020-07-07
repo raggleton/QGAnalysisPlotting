@@ -1714,13 +1714,7 @@ if __name__ == "__main__":
             # ------------------------------------------------------------------
             # Do it on the unfolded result
             title = "%s\n%s region, %s" % (jet_algo, region['label'], angle_str)
-            unfolder_plotter.draw_unfolded_folded(title=title, **plot_args)
-
-            if MC_INPUT:
-                # Folded MC truth
-                title = "%s\n%s region, %s" % (jet_algo, region['label'], angle_str)
-                unfolder_plotter.draw_truth_folded(title=title, **plot_args)
-
+            unfolder_plotter.draw_truth_unfolded_folded(draw_truth_folded=False, title=title, **plot_args)
 
             # Do some bottom-line tests
             # ------------------------------------------------------------------
