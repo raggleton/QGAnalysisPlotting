@@ -2445,7 +2445,9 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
     def create_absolute_scale_uncertainty(self, scale_systs):
         """Create scale shift, shifted results, & cov matrix, on absolute result"""
         # TODO: better to not store indiv hists in class?
-        if getattr(self, 'scale_shift', None) is None:
+        # if getattr(self, 'scale_shift', None) is None:
+        if not self.has_exp_syst("Scale"):
+            print("Setting up absolute scale ucnert")
             nominal = self.get_output()
             shift = nominal.Clone("abs_scale_shift")
             shifted_up = nominal.Clone("abs_scale_shifted_up")
@@ -2484,7 +2486,10 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
     def create_absolute_pdf_uncertianty(self, pdf_systs):
         """Create pdf shift, shifted results,  & cov matrix on absolute result"""
         # TODO: better to not store indiv hists in class?
-        if getattr(self, 'pdf_shift', None) is None:
+        
+        # if getattr(self, 'pdf_shift', None) is None:
+        if not self.has_exp_syst("PDF"):
+            print("Setting up absolute PDF ucnert")
             nominal = self.get_output()
             shift = nominal.Clone("abs_pdf_shift")
             shifted_up = nominal.Clone("abs_pdf_shifted_up")
@@ -2517,8 +2522,6 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             pdf_syst.syst_ematrix = cov_hist
             self.exp_systs.append(pdf_syst)
             self.ematrix_pdf = cov_hist
-
-            self.exp_systs.append(pdf_syst)
 
         # TODO use ExpSystematic obj
         return self.pdf_shift, self.pdf_shifted_up, self.pdf_shifted_down
