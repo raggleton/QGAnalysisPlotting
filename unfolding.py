@@ -2696,20 +2696,19 @@ if __name__ == "__main__":
             unfolder.create_normalisation_jacobian_np()
             unfolder_plotter.draw_jacobian(title="Jacobian", **plot_args)
 
-            # if len(region['scale_systematics']) > 0:
-            #     unfolder.create_absolute_scale_shift(region['scale_systematics'])
-            #     unfolder.get_ematrix_scale()
-            #     unfolder_plotter.draw_error_matrix_scale(title="Scale error matrix", **plot_args)
+            if len(region['scale_systematics']) > 0:
+                unfolder.create_absolute_scale_uncertainty(region['scale_systematics'])
+                unfolder_plotter.draw_error_matrix_scale(title="Scale error matrix", **plot_args)
 
-            # if len(region['pdf_systematics']) > 0:
-            #     unfolder.create_absolute_pdf_shift(region['pdf_systematics'])
-            #     unfolder.get_ematrix_pdf()
-            #     unfolder_plotter.draw_error_matrix_pdf(title="PDF error matrix", **plot_args)
+            if len(region['pdf_systematics']) > 0:
+                unfolder.create_absolute_pdf_uncertianty(region['pdf_systematics'])
+                unfolder_plotter.draw_error_matrix_pdf(title="PDF error matrix", **plot_args)
 
-            # unfolder_plotter.draw_error_matrix_total_abs(title="Total absolute error matrix", **plot_args)
-
-            # unfolder.get_error_hist_total_normalised()
-            # unfolder_plotter.draw_error_matrix_total_norm(title="Total normalised error matrix", **plot_args)
+            unfolder.create_absolute_total_uncertainty()
+            unfolder_plotter.draw_error_matrix_total_abs(title="Total absolute error matrix", **plot_args)
+            
+            unfolder.normalise_all_systs()
+            unfolder_plotter.draw_error_matrix_total_norm(title="Total normalised error matrix", **plot_args)
 
             region['unfolder'] = unfolder
 

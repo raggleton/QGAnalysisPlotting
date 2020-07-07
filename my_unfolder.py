@@ -241,7 +241,8 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         self.unfolded_stat_err = None  # set in get_unfolded_with_ematrix_stat()
         self.unfolded_rsp_err = None  # set in get_unfolded_with_ematrix_response()
 
-        self.exp_systs = []  # list of ExpSystematic objects to hold experimental systematics
+        self.exp_systs = []  # list of ExpSystematic objects to hold systematics
+        self.exp_systs_normed = []  # list of ExpSystematic objects to hold normalised systematics (created in normalise_all_systs())
 
         # use "generator" for signal + underflow region
         # "generatordistribution" only for ???
@@ -894,6 +895,14 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
     def get_all_exp_syst_labels(self):
         return [x.label for x in self.exp_systs]
 
+    def has_exp_syst(self, label):
+        items = [x for x in self.exp_systs if x.label == label]
+        if len(items) == 0:
+            return False
+        if len(items) > 1:
+            raise ValueError("Found >1 exp systematic with label '%s': %s" % (label, [x.label for x in items]))
+        return True
+
     def get_exp_syst(self, label):
         items = [x for x in self.exp_systs if x.label == label]
         if len(items) == 0:
@@ -908,7 +917,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         self.AddSysError(map_syst, label, self.orientation, ROOT.TUnfoldDensity.kSysErrModeMatrix)
         self.exp_systs.append(this_syst)
 
-    def get_delta_sys_shift(self, syst_label):
+    def get_syst_shift(self, syst_label):
         """Get shift in result due to a particular systeamtic
 
         Label must be same as used to add it in add_sys_error()
@@ -926,17 +935,30 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         return this_syst.syst_shift
 
     def get_syst_shifted_hist(self, syst_label, unfolded=None):
-        """
-        Can specify unfolded hist, default is the one with all errors
+        """Get histogram with systematic shift applied to bin contents
+
+        Can specify starting hist, otherwise assumes unfolded w/no error
         """
         # TODO: syst_label -> ExpSystematic obj
         this_syst = self.get_exp_syst(syst_label)
         if this_syst.syst_shifted is None:
-            hist_shift = self.get_delta_sys_shift(syst_label).Clone(this_syst.syst_shifted_label)
-            unfolded = unfolded or self.get_unfolded_with_ematrix_stat()
+            hist_shift = self.get_syst_shift(syst_label).Clone(this_syst.syst_shifted_label)
+            unfolded = unfolded or self.get_unfolded_with_no_errors()
             hist_shift.Add(unfolded)  # TODO what about errors?
             this_syst.syst_shifted = hist_shift
         return this_syst.syst_shifted
+
+    def get_syst_error_hist(self, syst_label, unfolded=None):
+        """Get histogram with systematic shift as error bars
+
+        Can specify starting hist, otherwise assumes unfolded w/no error
+        """
+        this_syst = self.get_exp_syst(syst_label)
+        if this_syst.syst_error_bar is None:
+            ref = unfolded or self.get_unfolded_with_no_errors()
+            new_hist = self.convert_error_shift_to_error_bars(ref, self.get_syst_shift(syst_label))
+            this_syst.syst_error_bar = new_hist
+        return this_syst.syst_error_bar
 
     # POST-UNFOLDING FUNCTIONS
     # --------------------------------------------------------------------------
@@ -981,9 +1003,10 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         self.get_folded_mc_truth()
         for exp_syst in self.exp_systs:
             # setup all the internal maps
-            self.get_delta_sys_shift(exp_syst.label)
+            self.get_syst_shift(exp_syst.label)
             self.get_ematrix_syst(exp_syst.label)
             self.get_syst_shifted_hist(exp_syst.label)
+            self.get_syst_error_hist(exp_syst.label)
 
         self.hist_bin_chopper.add_obj('hist_truth', self.hist_truth)
         self.hist_bin_chopper.add_obj('unfolded', self.get_output())
@@ -991,11 +1014,13 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         self.hist_bin_chopper.add_obj(self.rsp_uncert_name, self.get_unfolded_with_ematrix_response())
 
     @staticmethod
-    def make_hist_from_diagonal_errors(h2d, do_sqrt=True):
-        """Make 1D hist, with errors set to diagonal elements from h2d
+    def make_hist_from_diagonal_errors(h2d, do_sqrt=True, set_errors=True):
+        """Make 1D hist, with errors or contents set to diagonal elements from h2d
 
         Can be TH2 or numpy.ndarray, cos we have to use both
         Yes that is majorly wack
+
+        set_errors: True to set TH1 bin errors, otherwise sets bin contents
         """
         if isinstance(h2d, ROOT.TH2):
             nbins = h2d.GetNbinsX()
@@ -1004,7 +1029,12 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
                 err = h2d.GetBinContent(i, i)
                 if do_sqrt and err > 0:
                     err = math.sqrt(err)
-                hnew.SetBinError(i, err)
+                if set_errors:
+                    hnew.SetBinContent(i, 0)
+                    hnew.SetBinError(i, err)
+                else:
+                    hnew.SetBinContent(i, err)
+                    hnew.SetBinError(i, 0)
             return hnew
         elif isinstance(h2d, np.ndarray):
             nbins = h2d.shape[0]
@@ -1013,7 +1043,12 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
                 err = h2d[i-1, i-1]
                 if do_sqrt and err > 0:
                     err = math.sqrt(err)
-                hnew.SetBinError(i, err)
+                if set_errors:
+                    hnew.SetBinContent(i, 0)
+                    hnew.SetBinError(i, err)
+                else:
+                    hnew.SetBinContent(i, err)
+                    hnew.SetBinError(i, 0)
             return hnew
 
     @staticmethod
@@ -1051,6 +1086,13 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         """Update unfolded hist with total errors from total error matrix"""
         error_total_1d = self.make_hist_from_diagonal_errors(self.get_ematrix_tunfold_total(), do_sqrt=True) # note that bin contents = 0, only bin errors are non-0
         self.update_hist_bin_error(h_orig=error_total_1d, h_to_be_updated=self.get_output())
+
+    def get_unfolded_with_no_errors(self):
+        """Make copy of unfolded, but with no error bars"""
+        if getattr(self, 'unfolded_no_err', None) is None:
+            self.unfolded_no_err = self.get_output().Clone("unfolded_no_err")
+            cu.remove_th1_errors(self.unfolded_no_err)
+        return self.unfolded_no_err
 
     def get_unfolded_with_ematrix_stat(self):
         """Make copy of unfolded, but only stat errors"""
@@ -1114,7 +1156,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         return getattr(self, cached_attr_name)
 
     def get_ematrix_tunfold_total(self):
-        """Total error matrix from TUnfold, from stat+systs you gave it 
+        """Total error matrix from TUnfold, from stat+systs you gave it
         - doesn't include extras like scale or PDF"""
         if getattr(self, "ematrix_tunfold_total", None) is None:
             self.ematrix_tunfold_total = self.GetEmatrixTotal("ematrix_tunfold_total_"+cu.get_unique_str(), "", self.output_distribution_name, "*[]", self.use_axis_binning)
@@ -1122,7 +1164,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         return self.ematrix_tunfold_total
 
     @property
-    def ematrix_total_ndarray(self):
+    def ematrix_tunfold_total_ndarray(self):
         cached_attr_name = '_ematrix_total_ndarray'
         if not hasattr(self, cached_attr_name):
             arr, _ = cu.th2_to_ndarray(self.get_ematrix_tunfold_total())
@@ -1140,6 +1182,12 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             self.ematrix_stat = this_binning.CreateErrorMatrixHistogram("ematrix_stat_"+cu.get_unique_str(), self.use_axis_binning) #, bin_map, "", "*[]")
             self.GetEmatrix(self.ematrix_stat)
         return self.ematrix_stat
+
+    def get_ematrix_total_absolute(self):
+        return self.get_ematrix_syst("Total")
+
+    def get_ematrix_total_normalised(self):
+        return self.get_ematrix_syst("Total_Norm")
 
     @property
     def ematrix_stat_ndarray(self):
@@ -2083,11 +2131,6 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
 
 
     @staticmethod
-    def remove_error_bars(h):
-        for i in range(1, h.GetNbinsX()+1):
-            h.SetBinError(i, 0)
-
-    @staticmethod
     def convert_error_bars_to_error_shift(h):
         """Create histogram with bin contents equal to error bar on h,
         and 0 error bars"""
@@ -2098,12 +2141,12 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         return h_new
 
     @staticmethod
-    def convert_error_shift_to_error_bars(h_unshifted, h_shifted):
-        """Create histogram with bin contents from h_unshifted,
-        and error bars from bin values of h_shifted"""
-        h = h_unshifted.Clone(cu.get_unique_str())
-        for i in range(1, h_unshifted.GetNbinsX()+1):
-            h.SetBinError(i, h_shifted.GetBinContent(i))
+    def convert_error_shift_to_error_bars(h_nominal, h_shift):
+        """Create histogram with bin contents from h_nominal,
+        and error bars from bin values of h_shift"""
+        h = h_nominal.Clone(cu.get_unique_str())
+        for i in range(1, h_nominal.GetNbinsX()+1):
+            h.SetBinError(i, h_shift.GetBinContent(i))
         return h
 
     def setup_normalised_experimental_systs_per_pt_bin(self):
@@ -2136,7 +2179,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
                 syst_hist = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width(exp_syst.syst_shifted_label, ibin_pt, binning_scheme='generator').Clone()
                 nominal_hist = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded_stat_err', ibin_pt, binning_scheme='generator')
                 syst_hist.Add(nominal_hist, -1)
-                self.remove_error_bars(syst_hist)
+                cu.remove_th1_errors(syst_hist)
                 key = self.hist_bin_chopper._generate_key(exp_syst.syst_shift_label,
                                                           ind=ibin_pt,
                                                           axis='pt',
@@ -2394,14 +2437,22 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             self.jacobian_th2 = cu.ndarray_to_th2(self.create_normalisation_jacobian_np(), offset=-0.5)
         return self.jacobian_th2
 
-    def create_absolute_scale_shift(self, scale_systs):
-        """Create scale shift, and shifted results, on absolute result"""
+    def get_jacobian_np(self):
+        if getattr(self, "jacobian", None) is None:
+            self.jacobian_ = cu.th2_to_ndarray(self.get_jacobian_th2())
+        return self.jacobian
+
+    def create_absolute_scale_uncertainty(self, scale_systs):
+        """Create scale shift, shifted results, & cov matrix, on absolute result"""
+        # TODO: better to not store indiv hists in class?
         if getattr(self, 'scale_shift', None) is None:
             nominal = self.get_output()
             shift = nominal.Clone("abs_scale_shift")
             shifted_up = nominal.Clone("abs_scale_shifted_up")
             shifted_down = nominal.Clone("abs_scale_shifted_down")
             for ix in range(1, shift.GetNbinsX()+1):
+                # for each bin in the output distribution,
+                # get the largest deviation across all scale variations
                 nom = nominal.GetBinContent(ix)
                 this_shift = max([abs(syst['unfolder'].get_output().GetBinContent(ix) - nom)
                              for syst in scale_systs])
@@ -2411,31 +2462,28 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
                 shifted_up.SetBinError(ix, 0)
                 shifted_down.SetBinContent(ix, nom-this_shift)
                 shifted_down.SetBinError(ix, 0)
-            self.scale_shift = shift 
+            self.scale_shift = shift
             self.scale_shifted_up = shifted_up
             self.scale_shifted_down = shifted_down
 
             scale_syst = ExpSystematic(label="Scale")
             scale_syst.syst_shift = shift
             scale_syst.syst_shifted = shifted_up
+
+            # now construct error matrix usinv x * X^T
+            shift_np, _ = cu.th1_to_ndarray(shift)
+            cov_np = shift_np.T @ shift_np
+            assert(cov_np.shape != (1, 1))  # get the dimensions right
+            cov_hist = cu.ndarray_to_th2(cov_np, offset=-0.5)
+            scale_syst.syst_ematrix = cov_hist
             self.exp_systs.append(scale_syst)
+            self.ematrix_scale = cov_hist
 
         return self.scale_shift, self.scale_shifted_up, self.scale_shifted_down
 
-    def get_ematrix_scale(self):
-        """Create scale covariance matrix by doing x^T x, where x is the shift (error)"""
-        if getattr(self, "ematrix_scale", None) is None:
-            # shift, _, _ = self.create_absolute_scale_shift(scale_systs)
-            # shift_np, _ = cu.th1_to_ndarray(shift)
-            scale_syst = self.get_exp_syst("Scale")
-            shift_np, _ = cu.th1_to_ndarray(scale_syst.syst_shift)
-            cov_np = shift_np.T @ shift_np
-            cov_hist = cu.ndarray_to_th2(cov_np, offset=-0.5)
-            self.ematrix_scale = cov_hist
-        return self.ematrix_scale
-
-    def create_absolute_pdf_shift(self, pdf_systs):
-        """Create pdf shift, and shifted results, on absolute result"""
+    def create_absolute_pdf_uncertianty(self, pdf_systs):
+        """Create pdf shift, shifted results,  & cov matrix on absolute result"""
+        # TODO: better to not store indiv hists in class?
         if getattr(self, 'pdf_shift', None) is None:
             nominal = self.get_output()
             shift = nominal.Clone("abs_pdf_shift")
@@ -2453,76 +2501,81 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
                 shifted_up.SetBinError(ix, 0)
                 shifted_down.SetBinContent(ix, nom-rms)
                 shifted_down.SetBinError(ix, 0)
-            self.pdf_shift = shift 
+            self.pdf_shift = shift
             self.pdf_shifted_up = shifted_up
             self.pdf_shifted_down = shifted_down
+
             pdf_syst = ExpSystematic(label="PDF")
             pdf_syst.syst_shift = shift
             pdf_syst.syst_shifted = shifted_up
+
+            # now construct error matrix usinv x * X^T
+            shift_np, _ = cu.th1_to_ndarray(shift)
+            cov_np = shift_np.T @ shift_np
+            assert(cov_np.shape != (1, 1))  # get the dimensions right
+            cov_hist = cu.ndarray_to_th2(cov_np, offset=-0.5)
+            pdf_syst.syst_ematrix = cov_hist
+            self.exp_systs.append(pdf_syst)
+            self.ematrix_pdf = cov_hist
+
             self.exp_systs.append(pdf_syst)
 
         # TODO use ExpSystematic obj
         return self.pdf_shift, self.pdf_shifted_up, self.pdf_shifted_down
 
-    def get_ematrix_pdf(self):
-        """Create PDF covariance matrix by doing x^T x, where x is the shift (error)"""
-        if getattr(self, "ematrix_pdf", None) is None:
-            # shift, _, _ = self.create_absolute_pdf_shift(pdf_systs)
-            # shift_np, _ = cu.th1_to_ndarray(shift)
-            pdf_syst = self.get_exp_syst("PDF")
-            shift_np, _ = cu.th1_to_ndarray(pdf_syst.syst_shift)
-            cov_np = shift_np.T @ shift_np
-            cov_hist = cu.ndarray_to_th2(cov_np, offset=-0.5)
-            self.ematrix_pdf = cov_hist
-        return self.ematrix_pdf
-
-    def get_ematrix_total_absolute(self):
+    def create_absolute_total_uncertainty(self):
         """Get total absolute error matrix from:
-        
+
         - input stats
         - response matrix stats
         - background stats
         - experimental systs
         (above from GetEmatrixTotal())
-        - combined scale syst 
-        - combined pdf syst 
+        - combined scale syst
+        - combined pdf syst
+
+        then create the corresponding shift & shifted distributions
         """
-        if getattr(self, "ematrix_total", None) is None:
-            # stat + rsp stat + exp systs
-            ematrix_total = self.get_ematrix_tunfold_total().Clone("ematrix_total")
+        # stat + rsp stat + exp systs
+        ematrix_total = self.get_ematrix_tunfold_total().Clone("ematrix_total")
+        for n in ["Scale", "PDF"]:
             # scale systs if exists
-            if hasattr(self, "ematrix_scale"):
-                ematrix_total.Add(self.ematrix_scale)
-            # PDF systs if exists
-            if hasattr(self, "ematrix_pdf"):
-                ematrix_total.Add(self.ematrix_pdf)
-            self.ematrix_total = ematrix_total
-        return self.ematrix_total
+            if self.has_exp_syst(n):
+                ematrix_total.Add(self.get_exp_syst(n).syst_ematrix)
+        total_syst = ExpSystematic(label="Total")
+        total_syst.syst_ematrix = ematrix_total
+        total_syst.syst_shift = self.make_hist_from_diagonal_errors(ematrix_total, do_sqrt=True, set_errors=False)
+        # get_syst_shifted_hist() will handle syst_shifted
+        self.exp_systs.append(total_syst)
 
-    def get_ematrix_total_ndarray(self):
-        if getattr(self, "ematrix_total_ndarray", None) is None:
-            self.ematrix_total_ndarray, _ = cu.th2_to_ndarray(self.get_ematrix_total_absolute())
-        return self.ematrix_total_ndarray
+    def normalise_ematrix(self, ematrix):
+        """Generic method to normalise any aboslute cov matrix using Jacobian
 
-    def get_error_hist_total_absolute(self):
-        """Create 1D hist with 0 contents, but absolute error from get_emtarix_total"""
-        if getattr(self, "error_hist_total_abs", None) is None:
-            self.error_hist_total_abs = self.make_hist_from_diagonal_errors(self.get_ematrix_to_absolutetal(), do_sqrt=True)
-        return self.error_hist_total_abs
-    
-    def get_ematrix_total_normalised(self):
-        if getattr(self, 'ematrix_total_norm', None) is None:
-            J = self.create_normalisation_jacobian_np()
-            cov_abs = self.get_ematrix_total_ndarray()
-            cov_norm = J @ cov_abs @ J.T
-            self.ematrix_total_norm = cu.ndarray_to_th2(cov_norm, offset=-0.5)
-        return self.ematrix_total_norm
-    
-    def get_error_hist_total_normalised(self):
-        """Create 1D hist with 0 contents, but error from get_emtarix_total"""
-        if getattr(self, "error_hist_total_norm", None) is None:
-            self.error_hist_total_norm = self.make_hist_from_diagonal_errors(self.get_ematrix_total_normalised(), do_sqrt=True)
-        return self.error_hist_total_norm
+        Can handle numpy array, or TH2
+        """
+        J = self.create_normalisation_jacobian_np()
+        if isinstance(ematrix, ROOT.TH2):
+            cov_abs, _ = cu.th2_to_ndarray(ematrix)
+        else:
+            cov_abs = ematrix
+        cov_norm = J @ cov_abs @ J.T
+        ematrix_norm = cu.ndarray_to_th2(cov_norm, offset=-0.5)
+        return ematrix_norm
+
+    def normalise_all_systs(self):
+        """Create normalised versions of all ExpSystematic stored in this instance"""
+        new_systs = []
+        for exp_syst in self.exp_systs:
+            norm_exp_syst = ExpSystematic(label=exp_syst.label + "_Norm")
+            # normalise the ematrix - everything comes from that
+            norm_exp_syst.syst_ematrix = self.normalise_ematrix(exp_syst.syst_ematrix)
+            norm_exp_syst.syst_shift = self.make_hist_from_diagonal_errors(norm_exp_syst.syst_ematrix, do_sqrt=True, set_errors=False)
+            # the shifted hists and error bar hists don't make sense here
+            # - the normalised errors only apply to normalised bins
+            new_systs.append(norm_exp_syst)
+            self.exp_systs_normed.append(norm_exp_syst)
+        self.exp_systs.extend(new_systs)
+        print([e.label for e in self.exp_systs])
 
     # METHODS FOR ABSOLUTE PER PT BIN RESULTS
     # --------------------------------------------------------------------------
@@ -3549,6 +3602,8 @@ class ExpSystematic(object):
         self.syst_ematrix = syst_ematrix
         self.syst_ematrix_label = 'syst_ematrix_%s' % (self.label_no_spaces)
 
+        # nominal hist with shift as error bar
+        self.syst_error_bar = None
 
 class TruthTemplateMaker(object):
     """Create truth-level data template from fitting MCs templates at detector level,

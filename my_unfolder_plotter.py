@@ -115,8 +115,8 @@ class MyUnfolderPlotter(object):
         if equal_pos_neg_z:
             cu.symmetrize_h2d_z_limits(h2d)
             self.set_french_flag_colours()
-            if logz:
-              cu.set_log_french_flag_palette()
+            # if logz:
+            #   cu.set_log_french_flag_palette()
 
         if draw_bin_lines_x:
             lx, tx = self.draw_pt_binning_lines(h2d,
@@ -377,7 +377,7 @@ class MyUnfolderPlotter(object):
 
     def draw_error_matrix_scale(self, output_dir='.', append="", title=""):
         output_filename = "%s/err_map_scale_%s_logZ.%s" % (output_dir, append, self.output_fmt)
-        self.draw_2d_hist(self.unfolder.get_ematrix_scale(),
+        self.draw_2d_hist(self.unfolder.get_ematrix_syst("Scale"),
                           title=title,
                           output_filename=output_filename,
                           draw_bin_lines_x=True,
@@ -385,7 +385,7 @@ class MyUnfolderPlotter(object):
                           equal_pos_neg_z=True,
                           canvas_size=(800, 700))
         output_filename = "%s/err_map_scale_%s_linZ.%s" % (output_dir, append, self.output_fmt)
-        self.draw_2d_hist(self.unfolder.get_ematrix_scale(),
+        self.draw_2d_hist(self.unfolder.get_ematrix_syst("Scale"),
                           title=title,
                           output_filename=output_filename,
                           draw_bin_lines_x=True,
@@ -396,7 +396,7 @@ class MyUnfolderPlotter(object):
 
     def draw_error_matrix_pdf(self, output_dir='.', append="", title=""):
         output_filename = "%s/err_map_pdf_%s_logZ.%s" % (output_dir, append, self.output_fmt)
-        self.draw_2d_hist(self.unfolder.get_ematrix_pdf(),
+        self.draw_2d_hist(self.unfolder.get_ematrix_syst("PDF"),
                           title=title,
                           output_filename=output_filename,
                           draw_bin_lines_x=True,
@@ -404,7 +404,7 @@ class MyUnfolderPlotter(object):
                           equal_pos_neg_z=True,
                           canvas_size=(800, 700))
         output_filename = "%s/err_map_pdf_%s_linZ.%s" % (output_dir, append, self.output_fmt)
-        self.draw_2d_hist(self.unfolder.get_ematrix_pdf(),
+        self.draw_2d_hist(self.unfolder.get_ematrix_syst("PDF"),
                           title=title,
                           output_filename=output_filename,
                           draw_bin_lines_x=True,
