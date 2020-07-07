@@ -1708,7 +1708,7 @@ if __name__ == "__main__":
                 unfolder_plotter.draw_error_matrix_tau(title=title, **plot_args)
 
             title = "Error matrix (total), %s, %s region, %s" % (jet_algo, region['label'], angle_str)
-            unfolder_plotter.draw_error_matrix_total(title=title, **plot_args)
+            unfolder_plotter.draw_error_matrix_tunfold_total(title=title, **plot_args)
 
             # Do forward-folding to check unfolding
             # ------------------------------------------------------------------
@@ -1879,7 +1879,7 @@ if __name__ == "__main__":
                 alt_unfolder_plotter.draw_error_matrix_stat(title=title, **alt_plot_args)
 
                 title = "Error matrix (total), %s, %s region, %s, %s response map" % (jet_algo, region['label'], angle_str, region['alt_mc_label'])
-                alt_unfolder_plotter.draw_error_matrix_total(title=title, **alt_plot_args)
+                alt_unfolder_plotter.draw_error_matrix_tunfold_total(title=title, **alt_plot_args)
 
                 # Do some more bottom-line tests:
                 # --------------------------------------------------------------
@@ -2695,6 +2695,21 @@ if __name__ == "__main__":
 
             unfolder.create_normalisation_jacobian_np()
             unfolder_plotter.draw_jacobian(title="Jacobian", **plot_args)
+
+            # if len(region['scale_systematics']) > 0:
+            #     unfolder.create_absolute_scale_shift(region['scale_systematics'])
+            #     unfolder.get_ematrix_scale()
+            #     unfolder_plotter.draw_error_matrix_scale(title="Scale error matrix", **plot_args)
+
+            # if len(region['pdf_systematics']) > 0:
+            #     unfolder.create_absolute_pdf_shift(region['pdf_systematics'])
+            #     unfolder.get_ematrix_pdf()
+            #     unfolder_plotter.draw_error_matrix_pdf(title="PDF error matrix", **plot_args)
+
+            # unfolder_plotter.draw_error_matrix_total_abs(title="Total absolute error matrix", **plot_args)
+
+            # unfolder.get_error_hist_total_normalised()
+            # unfolder_plotter.draw_error_matrix_total_norm(title="Total normalised error matrix", **plot_args)
 
             region['unfolder'] = unfolder
 

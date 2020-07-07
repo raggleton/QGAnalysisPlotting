@@ -356,17 +356,93 @@ class MyUnfolderPlotter(object):
                           equal_pos_neg_z=True,
                           canvas_size=(800, 700))
 
-    def draw_error_matrix_total(self, output_dir='.', append="", title=""):
-        output_filename = "%s/err_map_total_%s_logZ.%s" % (output_dir, append, self.output_fmt)
-        self.draw_2d_hist(self.unfolder.get_ematrix_total(),
+    def draw_error_matrix_tunfold_total(self, output_dir='.', append="", title=""):
+        output_filename = "%s/err_map_tunfold_total_%s_logZ.%s" % (output_dir, append, self.output_fmt)
+        self.draw_2d_hist(self.unfolder.get_ematrix_tunfold_total(),
                           title=title,
                           output_filename=output_filename,
                           draw_bin_lines_x=True,
                           draw_bin_lines_y=True,
                           equal_pos_neg_z=True,
                           canvas_size=(800, 700))
-        output_filename = "%s/err_map_total_%s_linZ.%s" % (output_dir, append, self.output_fmt)
-        self.draw_2d_hist(self.unfolder.get_ematrix_total(),
+        output_filename = "%s/err_map_tunfold_total_%s_linZ.%s" % (output_dir, append, self.output_fmt)
+        self.draw_2d_hist(self.unfolder.get_ematrix_tunfold_total(),
+                          title=title,
+                          output_filename=output_filename,
+                          draw_bin_lines_x=True,
+                          draw_bin_lines_y=True,
+                          logz=False,
+                          equal_pos_neg_z=True,
+                          canvas_size=(800, 700))
+
+    def draw_error_matrix_scale(self, output_dir='.', append="", title=""):
+        output_filename = "%s/err_map_scale_%s_logZ.%s" % (output_dir, append, self.output_fmt)
+        self.draw_2d_hist(self.unfolder.get_ematrix_scale(),
+                          title=title,
+                          output_filename=output_filename,
+                          draw_bin_lines_x=True,
+                          draw_bin_lines_y=True,
+                          equal_pos_neg_z=True,
+                          canvas_size=(800, 700))
+        output_filename = "%s/err_map_scale_%s_linZ.%s" % (output_dir, append, self.output_fmt)
+        self.draw_2d_hist(self.unfolder.get_ematrix_scale(),
+                          title=title,
+                          output_filename=output_filename,
+                          draw_bin_lines_x=True,
+                          draw_bin_lines_y=True,
+                          logz=False,
+                          equal_pos_neg_z=True,
+                          canvas_size=(800, 700))
+
+    def draw_error_matrix_pdf(self, output_dir='.', append="", title=""):
+        output_filename = "%s/err_map_pdf_%s_logZ.%s" % (output_dir, append, self.output_fmt)
+        self.draw_2d_hist(self.unfolder.get_ematrix_pdf(),
+                          title=title,
+                          output_filename=output_filename,
+                          draw_bin_lines_x=True,
+                          draw_bin_lines_y=True,
+                          equal_pos_neg_z=True,
+                          canvas_size=(800, 700))
+        output_filename = "%s/err_map_pdf_%s_linZ.%s" % (output_dir, append, self.output_fmt)
+        self.draw_2d_hist(self.unfolder.get_ematrix_pdf(),
+                          title=title,
+                          output_filename=output_filename,
+                          draw_bin_lines_x=True,
+                          draw_bin_lines_y=True,
+                          logz=False,
+                          equal_pos_neg_z=True,
+                          canvas_size=(800, 700))
+
+    def draw_error_matrix_total_abs(self, output_dir='.', append="", title=""):
+        output_filename = "%s/err_map_total_abs_%s_logZ.%s" % (output_dir, append, self.output_fmt)
+        self.draw_2d_hist(self.unfolder.get_ematrix_total_absolute(),
+                          title=title,
+                          output_filename=output_filename,
+                          draw_bin_lines_x=True,
+                          draw_bin_lines_y=True,
+                          equal_pos_neg_z=True,
+                          canvas_size=(800, 700))
+        output_filename = "%s/err_map_total_abs_%s_linZ.%s" % (output_dir, append, self.output_fmt)
+        self.draw_2d_hist(self.unfolder.get_ematrix_total_absolute(),
+                          title=title,
+                          output_filename=output_filename,
+                          draw_bin_lines_x=True,
+                          draw_bin_lines_y=True,
+                          logz=False,
+                          equal_pos_neg_z=True,
+                          canvas_size=(800, 700))
+
+    def draw_error_matrix_total_norm(self, output_dir='.', append="", title=""):
+        output_filename = "%s/err_map_total_norm_%s_logZ.%s" % (output_dir, append, self.output_fmt)
+        self.draw_2d_hist(self.unfolder.get_ematrix_total_normalised(),
+                          title=title,
+                          output_filename=output_filename,
+                          draw_bin_lines_x=True,
+                          draw_bin_lines_y=True,
+                          equal_pos_neg_z=True,
+                          canvas_size=(800, 700))
+        output_filename = "%s/err_map_total_norm_%s_linZ.%s" % (output_dir, append, self.output_fmt)
+        self.draw_2d_hist(self.unfolder.get_ematrix_total_normalised(),
                           title=title,
                           output_filename=output_filename,
                           draw_bin_lines_x=True,

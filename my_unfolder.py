@@ -971,10 +971,10 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         self.get_ematrix_stat_response()
         self.get_ematrix_stat()
         self.get_ematrix_tau()
-        self.get_ematrix_total()
+        self.get_ematrix_tunfold_total()
         self.get_rhoij_total()
         self.get_probability_matrix()
-        self.update_unfolded_with_ematrix_total()
+        self.update_unfolded_with_ematrix_tunfold_total()
         self.get_unfolded_with_ematrix_stat()
         self.get_unfolded_with_ematrix_response()
         self.get_folded_unfolded()
@@ -1047,9 +1047,9 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         for i in range(0, h_orig.GetNbinsX()+2):
             h_to_be_updated.SetBinError(i, h_orig.GetBinError(i))
 
-    def update_unfolded_with_ematrix_total(self):
+    def update_unfolded_with_ematrix_tunfold_total(self):
         """Update unfolded hist with total errors from total error matrix"""
-        error_total_1d = self.make_hist_from_diagonal_errors(self.get_ematrix_total(), do_sqrt=True) # note that bin contents = 0, only bin errors are non-0
+        error_total_1d = self.make_hist_from_diagonal_errors(self.get_ematrix_tunfold_total(), do_sqrt=True) # note that bin contents = 0, only bin errors are non-0
         self.update_hist_bin_error(h_orig=error_total_1d, h_to_be_updated=self.get_output())
 
     def get_unfolded_with_ematrix_stat(self):
@@ -1113,18 +1113,19 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             setattr(self, cached_attr_name, arr)
         return getattr(self, cached_attr_name)
 
-    def get_ematrix_total(self):
-        """Total error matrix, from stat+systs"""
-        if getattr(self, "ematrix_total", None) is None:
-            self.ematrix_total = self.GetEmatrixTotal("ematrix_total_"+cu.get_unique_str(), "", self.output_distribution_name, "*[]", self.use_axis_binning)
-            print("ematrix_total is:", type(self.ematrix_total), "with #xbins:", self.ematrix_total.GetNbinsX())
-        return self.ematrix_total
+    def get_ematrix_tunfold_total(self):
+        """Total error matrix from TUnfold, from stat+systs you gave it 
+        - doesn't include extras like scale or PDF"""
+        if getattr(self, "ematrix_tunfold_total", None) is None:
+            self.ematrix_tunfold_total = self.GetEmatrixTotal("ematrix_tunfold_total_"+cu.get_unique_str(), "", self.output_distribution_name, "*[]", self.use_axis_binning)
+            print("ematrix_tunfold_total is:", type(self.ematrix_tunfold_total), "with #xbins:", self.ematrix_tunfold_total.GetNbinsX())
+        return self.ematrix_tunfold_total
 
     @property
     def ematrix_total_ndarray(self):
         cached_attr_name = '_ematrix_total_ndarray'
         if not hasattr(self, cached_attr_name):
-            arr, _ = cu.th2_to_ndarray(self.get_ematrix_total())
+            arr, _ = cu.th2_to_ndarray(self.get_ematrix_tunfold_total())
             setattr(self, cached_attr_name, arr)
         return getattr(self, cached_attr_name)
 
@@ -1193,7 +1194,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             self.GetEmatrixSysTau(self.ematrix_tau)
         return self.ematrix_tau
 
-    def get_ematrix_total_inv(self):
+    def get_ematrix_tunfold_total_inv(self):
         """Total error matrix inverted, from stat+systs"""
         return self.InvertMSparseSymmPos(self.GetSummedErrorMatrixXX(), False)  # TMatrixDSparse
 
@@ -1345,69 +1346,6 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             self.response_map_normed_by_detector_pt = normed_response_map
         return self.response_map_normed_by_detector_pt
 
-    def create_normalisation_jacobian_np(self):
-        """Create Jacobian matrix for normalisation
-
-        For transformation of variable x -> y = f(x), then J(i,j) = df_i / dx_j.
-
-        For 1D normalisation, where y_i = x_i / sum(x_j), with N = sum(x_j)
-        that means
-        df_i / dx_j = (N * delta(i,j) - x_i) / N^2  (delta is kroenecker delta)
-
-        For 2D normalisation, it's a block matrix per pT bin.
-        """
-        if getattr(self, "jacobian", None) is None:
-            h = self.get_output()
-            nbins = h.GetNbinsX()
-
-            # to keep track of the possible under/overflow bins
-            nbins_uflow = self.generator_distribution_underflow.GetDistributionNumberOfBins()
-            nbins_signal = self.generator_distribution.GetDistributionNumberOfBins()
-            assert(nbins == nbins_uflow+nbins_signal)
-
-            J = np.zeros(shape=(nbins, nbins))
-
-            pt_axis_ind = 2 # 0 is lambda axis, 1 is pt?
-            nbins_pt_uflow = self.nbins_pt_underflow_gen + int(self.generator_distribution_underflow.HasUnderflow(pt_axis_ind)) + int(self.generator_distribution_underflow.HasOverflow(pt_axis_ind))
-            nbins_pt_signal = self.nbins_pt_gen + int(self.generator_distribution.HasUnderflow(pt_axis_ind)) + int(self.generator_distribution.HasOverflow(pt_axis_ind))
-            nbins_pt = nbins_pt_uflow+nbins_pt_signal
-
-            variable_axis_ind = 0 # 0 is lambda axis, 1 is pt?
-            nbins_variable = self.nbins_variable_gen + int(self.generator_distribution.HasUnderflow(variable_axis_ind)) + int(self.generator_distribution.HasOverflow(variable_axis_ind))
-
-            # print(nbins_pt_uflow, nbins_pt_signal, nbins_variable)
-
-            for pt_ind in range(0, nbins_pt):
-                # normalising by pt bin, so get the integral for this pt bin
-                # +1 cos it's ROOT
-                start_ind = (pt_ind*nbins_variable)+1
-                end_ind = start_ind+nbins_variable-1
-                N = h.Integral(start_ind, end_ind)
-                # print("N", N, "for", start_ind, end_ind)
-                # for i in range(start_ind, end_ind+1):
-                #     print("   i:", i, h.GetBinContent(i))
-                # for each block, iterate over all bins
-                start_x = start_y = nbins_variable * pt_ind
-
-                for var_ind_x in range(0, nbins_variable):
-                    for var_ind_y in range(0, nbins_variable):
-                        bin_ind = (nbins_variable * pt_ind) + var_ind_y
-                        # print(bin_ind)
-                        if var_ind_x == var_ind_y:
-                            val = (N - h.GetBinContent(bin_ind + 1)) / N**2
-                        else:
-                            val = -h.GetBinContent(bin_ind + 1) / N**2
-                        J[start_y + var_ind_y][start_x + var_ind_x] = val
-                        # print("J[%d][%d] =" % (start_y+var_ind_y, start_x+var_ind_x), val)
-
-            self.jacobian = J
-        return self.jacobian
-
-    def get_jacobian_th2(self):
-        if getattr(self, "jacobian_th2", None) is None:
-            self.jacobian_th2 = cu.ndarray_to_th2(self.create_normalisation_jacobian_np(), offset=-0.5)
-        return self.jacobian_th2
-
     # METHODS FOR FORWARD-FOLDING & CHI2 TESTS
     # --------------------------------------------------------------------------
     def get_folded_unfolded(self):
@@ -1438,7 +1376,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
 
             # Error propagation: if y = Ax, with covariance matrices Vyy and Vxx,
             # respectively, then Vyy = (A*Vxx)*A^T
-            unfolded_covariance_matrix, _ = cu.th2_to_ndarray((self.get_ematrix_total()), oflow_x=oflow, oflow_y=oflow)
+            unfolded_covariance_matrix, _ = cu.th2_to_ndarray((self.get_ematrix_tunfold_total()), oflow_x=oflow, oflow_y=oflow)
             result = self.probability_ndarray.dot(unfolded_covariance_matrix)
             folded_covariance = result.dot(self.probability_ndarray.T)
             folded_errors = self.make_hist_from_diagonal_errors(folded_covariance)
@@ -2389,6 +2327,202 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
                                                       do_div_bin_width=True,
                                                       binning_scheme='generator')
             self.hist_bin_chopper._cache[key] = h_total
+
+
+    # METHODS FOR JACOBIAN ERRORS
+    # --------------------------------------------------------------------------
+    def create_normalisation_jacobian_np(self):
+        """Create Jacobian matrix for normalisation
+
+        For transformation of variable x -> y = f(x), then J(i,j) = df_i / dx_j.
+
+        For 1D normalisation, where y_i = x_i / sum(x_j), with N = sum(x_j)
+        that means
+        df_i / dx_j = (N * delta(i,j) - x_i) / N^2  (delta is kroenecker delta)
+
+        For 2D normalisation, it's a block matrix per pT bin.
+        """
+        if getattr(self, "jacobian", None) is None:
+            h = self.get_output()
+            nbins = h.GetNbinsX()
+
+            # to keep track of the possible under/overflow bins
+            nbins_uflow = self.generator_distribution_underflow.GetDistributionNumberOfBins()
+            nbins_signal = self.generator_distribution.GetDistributionNumberOfBins()
+            assert(nbins == nbins_uflow+nbins_signal)
+
+            J = np.zeros(shape=(nbins, nbins))
+
+            pt_axis_ind = 2 # 0 is lambda axis, 1 is pt?
+            nbins_pt_uflow = self.nbins_pt_underflow_gen + int(self.generator_distribution_underflow.HasUnderflow(pt_axis_ind)) + int(self.generator_distribution_underflow.HasOverflow(pt_axis_ind))
+            nbins_pt_signal = self.nbins_pt_gen + int(self.generator_distribution.HasUnderflow(pt_axis_ind)) + int(self.generator_distribution.HasOverflow(pt_axis_ind))
+            nbins_pt = nbins_pt_uflow+nbins_pt_signal
+
+            variable_axis_ind = 0 # 0 is lambda axis, 1 is pt?
+            nbins_variable = self.nbins_variable_gen + int(self.generator_distribution.HasUnderflow(variable_axis_ind)) + int(self.generator_distribution.HasOverflow(variable_axis_ind))
+
+            # print(nbins_pt_uflow, nbins_pt_signal, nbins_variable)
+
+            for pt_ind in range(0, nbins_pt):
+                # normalising by pt bin, so get the integral for this pt bin
+                # +1 cos it's ROOT
+                start_ind = (pt_ind*nbins_variable)+1
+                end_ind = start_ind+nbins_variable-1
+                N = h.Integral(start_ind, end_ind)
+                # print("N", N, "for", start_ind, end_ind)
+                # for i in range(start_ind, end_ind+1):
+                #     print("   i:", i, h.GetBinContent(i))
+                # for each block, iterate over all bins
+                start_x = start_y = nbins_variable * pt_ind
+
+                for var_ind_x in range(0, nbins_variable):
+                    for var_ind_y in range(0, nbins_variable):
+                        bin_ind = (nbins_variable * pt_ind) + var_ind_y
+                        # print(bin_ind)
+                        if var_ind_x == var_ind_y:
+                            val = (N - h.GetBinContent(bin_ind + 1)) / N**2
+                        else:
+                            val = -h.GetBinContent(bin_ind + 1) / N**2
+                        J[start_y + var_ind_y][start_x + var_ind_x] = val
+                        # print("J[%d][%d] =" % (start_y+var_ind_y, start_x+var_ind_x), val)
+
+            self.jacobian = J
+        return self.jacobian
+
+    def get_jacobian_th2(self):
+        if getattr(self, "jacobian_th2", None) is None:
+            self.jacobian_th2 = cu.ndarray_to_th2(self.create_normalisation_jacobian_np(), offset=-0.5)
+        return self.jacobian_th2
+
+    def create_absolute_scale_shift(self, scale_systs):
+        """Create scale shift, and shifted results, on absolute result"""
+        if getattr(self, 'scale_shift', None) is None:
+            nominal = self.get_output()
+            shift = nominal.Clone("abs_scale_shift")
+            shifted_up = nominal.Clone("abs_scale_shifted_up")
+            shifted_down = nominal.Clone("abs_scale_shifted_down")
+            for ix in range(1, shift.GetNbinsX()+1):
+                nom = nominal.GetBinContent(ix)
+                this_shift = max([abs(syst['unfolder'].get_output().GetBinContent(ix) - nom)
+                             for syst in scale_systs])
+                shift.SetBinContent(ix, this_shift)
+                shift.SetBinError(ix, 0)
+                shifted_up.SetBinContent(ix, nom+this_shift)
+                shifted_up.SetBinError(ix, 0)
+                shifted_down.SetBinContent(ix, nom-this_shift)
+                shifted_down.SetBinError(ix, 0)
+            self.scale_shift = shift 
+            self.scale_shifted_up = shifted_up
+            self.scale_shifted_down = shifted_down
+
+            scale_syst = ExpSystematic(label="Scale")
+            scale_syst.syst_shift = shift
+            scale_syst.syst_shifted = shifted_up
+            self.exp_systs.append(scale_syst)
+
+        return self.scale_shift, self.scale_shifted_up, self.scale_shifted_down
+
+    def get_ematrix_scale(self):
+        """Create scale covariance matrix by doing x^T x, where x is the shift (error)"""
+        if getattr(self, "ematrix_scale", None) is None:
+            # shift, _, _ = self.create_absolute_scale_shift(scale_systs)
+            # shift_np, _ = cu.th1_to_ndarray(shift)
+            scale_syst = self.get_exp_syst("Scale")
+            shift_np, _ = cu.th1_to_ndarray(scale_syst.syst_shift)
+            cov_np = shift_np.T @ shift_np
+            cov_hist = cu.ndarray_to_th2(cov_np, offset=-0.5)
+            self.ematrix_scale = cov_hist
+        return self.ematrix_scale
+
+    def create_absolute_pdf_shift(self, pdf_systs):
+        """Create pdf shift, and shifted results, on absolute result"""
+        if getattr(self, 'pdf_shift', None) is None:
+            nominal = self.get_output()
+            shift = nominal.Clone("abs_pdf_shift")
+            shifted_up = nominal.Clone("abs_pdf_shifted_up")
+            shifted_down = nominal.Clone("abs_pdf_shifted_down")
+            for ix in range(1, shift.GetNbinsX()+1):
+                nom = nominal.GetBinContent(ix)
+                # error is the RMS of the variations
+                # np.std does sqrt((abs(x - x.mean())**2) / (len(x) - ddof)),
+                # and the PDF4LHC recommendation is N-1 in the denominator
+                rms = np.std([syst['unfolder'].get_output().GetBinContent(ix) for syst in pdf_systs], ddof=1)
+                shift.SetBinContent(ix, rms)
+                shift.SetBinError(ix, 0)
+                shifted_up.SetBinContent(ix, nom+rms)
+                shifted_up.SetBinError(ix, 0)
+                shifted_down.SetBinContent(ix, nom-rms)
+                shifted_down.SetBinError(ix, 0)
+            self.pdf_shift = shift 
+            self.pdf_shifted_up = shifted_up
+            self.pdf_shifted_down = shifted_down
+            pdf_syst = ExpSystematic(label="PDF")
+            pdf_syst.syst_shift = shift
+            pdf_syst.syst_shifted = shifted_up
+            self.exp_systs.append(pdf_syst)
+
+        # TODO use ExpSystematic obj
+        return self.pdf_shift, self.pdf_shifted_up, self.pdf_shifted_down
+
+    def get_ematrix_pdf(self):
+        """Create PDF covariance matrix by doing x^T x, where x is the shift (error)"""
+        if getattr(self, "ematrix_pdf", None) is None:
+            # shift, _, _ = self.create_absolute_pdf_shift(pdf_systs)
+            # shift_np, _ = cu.th1_to_ndarray(shift)
+            pdf_syst = self.get_exp_syst("PDF")
+            shift_np, _ = cu.th1_to_ndarray(pdf_syst.syst_shift)
+            cov_np = shift_np.T @ shift_np
+            cov_hist = cu.ndarray_to_th2(cov_np, offset=-0.5)
+            self.ematrix_pdf = cov_hist
+        return self.ematrix_pdf
+
+    def get_ematrix_total_absolute(self):
+        """Get total absolute error matrix from:
+        
+        - input stats
+        - response matrix stats
+        - background stats
+        - experimental systs
+        (above from GetEmatrixTotal())
+        - combined scale syst 
+        - combined pdf syst 
+        """
+        if getattr(self, "ematrix_total", None) is None:
+            # stat + rsp stat + exp systs
+            ematrix_total = self.get_ematrix_tunfold_total().Clone("ematrix_total")
+            # scale systs if exists
+            if hasattr(self, "ematrix_scale"):
+                ematrix_total.Add(self.ematrix_scale)
+            # PDF systs if exists
+            if hasattr(self, "ematrix_pdf"):
+                ematrix_total.Add(self.ematrix_pdf)
+            self.ematrix_total = ematrix_total
+        return self.ematrix_total
+
+    def get_ematrix_total_ndarray(self):
+        if getattr(self, "ematrix_total_ndarray", None) is None:
+            self.ematrix_total_ndarray, _ = cu.th2_to_ndarray(self.get_ematrix_total_absolute())
+        return self.ematrix_total_ndarray
+
+    def get_error_hist_total_absolute(self):
+        """Create 1D hist with 0 contents, but absolute error from get_emtarix_total"""
+        if getattr(self, "error_hist_total_abs", None) is None:
+            self.error_hist_total_abs = self.make_hist_from_diagonal_errors(self.get_ematrix_to_absolutetal(), do_sqrt=True)
+        return self.error_hist_total_abs
+    
+    def get_ematrix_total_normalised(self):
+        if getattr(self, 'ematrix_total_norm', None) is None:
+            J = self.create_normalisation_jacobian_np()
+            cov_abs = self.get_ematrix_total_ndarray()
+            cov_norm = J @ cov_abs @ J.T
+            self.ematrix_total_norm = cu.ndarray_to_th2(cov_norm, offset=-0.5)
+        return self.ematrix_total_norm
+    
+    def get_error_hist_total_normalised(self):
+        """Create 1D hist with 0 contents, but error from get_emtarix_total"""
+        if getattr(self, "error_hist_total_norm", None) is None:
+            self.error_hist_total_norm = self.make_hist_from_diagonal_errors(self.get_ematrix_total_normalised(), do_sqrt=True)
+        return self.error_hist_total_norm
 
     # METHODS FOR ABSOLUTE PER PT BIN RESULTS
     # --------------------------------------------------------------------------
