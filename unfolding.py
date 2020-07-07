@@ -1551,7 +1551,7 @@ if __name__ == "__main__":
                         new_hist.Add(new_syst_shift)
 
                         # store shifted and shift hists
-                        unfolder.remove_error_bars(new_hist)
+                        cu.remove_th1_errors(new_hist)
                         key = unfolder.hist_bin_chopper._generate_key(exp_syst.syst_shifted_label,
                                                                       ind=ibin,
                                                                       axis='pt',
@@ -1560,7 +1560,7 @@ if __name__ == "__main__":
                                                                       binning_scheme='generator')
                         unfolder.hist_bin_chopper._cache[key] = new_hist
 
-                        unfolder.remove_error_bars(new_syst_shift)
+                        cu.remove_th1_errors(new_syst_shift)
                         key = unfolder.hist_bin_chopper._generate_key(exp_syst.syst_shift_label,
                                                                       ind=ibin,
                                                                       axis='pt',
