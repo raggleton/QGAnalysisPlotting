@@ -55,7 +55,7 @@ ROOT.TH1.SetDefaultSumw2()
 # Define own linestyle for smaller plots
 # linestyle 2 (dashed) has too big dashes
 ROOT.gStyle.SetLineStyleString(22, "8 6")
-ROOT.gStyle.SetLineStyleString(23, "5 8")
+ROOT.gStyle.SetLineStyleString(23, "5 10")
 
 COMMON_STYLE_DICT = {
     "line_width": 2,
@@ -155,6 +155,8 @@ class SummaryPlotter(object):
         if metric not in ["mean", "rms", "delta"]:
             raise ValueError("metric must be one of 'mean', 'rms', 'delta'")
 
+        only_one_region = sum([do_dijet_cen, do_dijet_fwd, do_zpj]) == 1
+
         df = self.df
         mask = ((df['angle'] == angle.var) & (df['jet_algo'] == jet_algo['name']) & (df['isgroomed'] == do_groomed))
         if not mask.any():
@@ -232,72 +234,95 @@ class SummaryPlotter(object):
         m_size = 1
         lw = COMMON_STYLE_DICT['line_width']
         entries = []
-        # Spaces in legend labels are important for padding
+
+        # Create dummy graphs with the same styling to put into the legend,
+        # since graphs get error bar ends, but hists don't
+        dummy_gr = ROOT.TGraphErrors(1, array('d', [1]), array('d', [1]), array('d', [1]), array('d', [1]))
+        dummy_entries = []
+        # NB Spaces in legend labels are important for padding
+
         # Add data
         if metric != 'delta':
             if do_dijet_cen:
-                entries.extend([
-                    Contribution(dijet_central_hist, label=' Dijet (central)',
+                cont_args = dict(label='Data' if only_one_region else ' Dijet (central)',
+                                 leg_draw_opt="LEP",
                                  line_color=dijet_cen_col, line_width=lw,
                                  marker_color=dijet_cen_col, marker_style=cu.Marker.get('circle', True), marker_size=m_size)
-                ])
+                entries.append(Contribution(dijet_central_hist, **cont_args))
+                dummy_entries.append(Contribution(dummy_gr.Clone(), **cont_args))
+
             if do_dijet_fwd:
-                entries.extend([
-                    Contribution(dijet_forward_hist, label=' Dijet (forward)',
+                cont_args = dict(label='Data' if only_one_region else ' Dijet (forward)',
+                                 leg_draw_opt="LEP",
                                  line_color=dijet_fwd_col, line_width=lw,
                                  marker_color=dijet_fwd_col, marker_style=cu.Marker.get('square', True), marker_size=m_size)
-                ])
+                entries.append(Contribution(dijet_forward_hist, **cont_args))
+                dummy_entries.append(Contribution(dummy_gr.Clone(), **cont_args))
+
             if do_zpj:
-                entries.extend([
-                    Contribution(zpj_hist, label=' Z+jets',
+                cont_args = dict(label='Data' if only_one_region else ' Z+jets',
+                                 leg_draw_opt="LEP",
                                  line_color=zpj_col, line_width=lw,
                                  marker_color=zpj_col, marker_style=cu.Marker.get('triangleUp', True), marker_size=m_size)
-                ])
+                entries.append(Contribution(zpj_hist, **cont_args))
+                dummy_entries.append(Contribution(dummy_gr.Clone(), **cont_args))
+
         # Add nominal MC
         if do_dijet_cen:
-            entries.extend([
-                # TODO: make truth plotting optional, also plot alternate generators
-                Contribution(dijet_central_hist_truth, label='#splitline{ Dijet (central)  }{ [%s]}' % (self.mc_label),
+            cont_args = dict(label=self.mc_label if only_one_region else '#splitline{ Dijet (central)  }{ [%s]}' % (self.mc_label),
                              line_color=COMMON_STYLE_DICT['mc_color'], line_width=lw, line_style=COMMON_STYLE_DICT['mc_line_style'],
                              marker_color=COMMON_STYLE_DICT['mc_color'], marker_style=cu.Marker.get('circle', False), marker_size=0,
+                             leg_draw_opt="LE",
                              subplot=dijet_central_hist_no_errors)
-            ])
+            entries.append(Contribution(dijet_central_hist_truth, **cont_args))
+            dummy_entries.append(Contribution(dummy_gr.Clone(), **cont_args))
+
         if do_dijet_fwd:
-            entries.extend([
-                Contribution(dijet_forward_hist_truth, label='#splitline{ Dijet (forward)  }{ [%s]}' % (self.mc_label),
+            cont_args = dict(label=self.mc_label if only_one_region else '#splitline{ Dijet (forward)  }{ [%s]}' % (self.mc_label),
                              line_color=COMMON_STYLE_DICT['mc_color'], line_width=lw, line_style=COMMON_STYLE_DICT['mc_line_style'],
                              marker_color=COMMON_STYLE_DICT['mc_color'], marker_style=cu.Marker.get('square', False), marker_size=0,
+                             leg_draw_opt="LE",
                              subplot=dijet_forward_hist_no_errors)
-            ])
+            entries.append(Contribution(dijet_forward_hist_truth, **cont_args))
+            dummy_entries.append(Contribution(dummy_gr.Clone(), **cont_args))
+
         if do_zpj:
-            entries.extend([
-                Contribution(zpj_hist_truth, label='#splitline{ Z+jets  }{ [%s]}' % (self.mc_label),
+            cont_args = dict(label=self.mc_label if only_one_region else '#splitline{ Z+jets  }{ [%s]}' % (self.mc_label),
                              line_color=COMMON_STYLE_DICT['mc_color'], line_width=lw, line_style=COMMON_STYLE_DICT['mc_line_style'],
                              marker_color=COMMON_STYLE_DICT['mc_color'], marker_style=cu.Marker.get('triangleUp', False), marker_size=0,
+                             leg_draw_opt="LE",
                              subplot=zpj_hist_no_errors)
-            ])
+            entries.append(Contribution(zpj_hist_truth, **cont_args))
+            dummy_entries.append(Contribution(dummy_gr.Clone(), **cont_args))
+
         # add alt MC
         if do_dijet_cen:
-            entries.extend([
-                Contribution(dijet_central_hist_alt_truth, label='#splitline{ Dijet (central)  }{ [%s]}' % (self.alt_mc_label),
+            cont_args = dict(label=self.alt_mc_label if only_one_region else '#splitline{ Dijet (central)  }{ [%s]}' % (self.alt_mc_label),
                              line_color=COMMON_STYLE_DICT['mc_alt_color'], line_width=lw, line_style=COMMON_STYLE_DICT['mc_alt_line_style'],
                              marker_color=COMMON_STYLE_DICT['mc_alt_color'], marker_style=cu.Marker.get('circle', False), marker_size=0,
+                             leg_draw_opt="LE",
                              subplot=dijet_central_hist_no_errors)
-            ])
+            entries.append(Contribution(dijet_central_hist_alt_truth, **cont_args))
+            dummy_entries.append(Contribution(dummy_gr.Clone(), **cont_args))
+
         if do_dijet_fwd:
-            entries.extend([
-                Contribution(dijet_forward_hist_alt_truth, label='#splitline{ Dijet (forward)  }{ [%s]}' % (self.alt_mc_label),
+            cont_args = dict(label=self.alt_mc_label if only_one_region else '#splitline{ Dijet (forward)  }{ [%s]}' % (self.alt_mc_label),
                              line_color=COMMON_STYLE_DICT['mc_alt_color'], line_width=lw, line_style=COMMON_STYLE_DICT['mc_alt_line_style'],
                              marker_color=COMMON_STYLE_DICT['mc_alt_color'], marker_style=cu.Marker.get('square', False), marker_size=0,
+                             leg_draw_opt="LE",
                              subplot=dijet_forward_hist_no_errors)
-            ])
+            entries.append(Contribution(dijet_forward_hist_alt_truth, **cont_args))
+            dummy_entries.append(Contribution(dummy_gr.Clone(), **cont_args))
+
         if do_zpj:
-            entries.extend([
-                Contribution(zpj_hist_alt_truth, label='#splitline{ Z+jets}{ [%s]}' % (self.alt_mc_label),
+            cont_args = dict(label=self.alt_mc_label if only_one_region else '#splitline{ Z+jets}{ [%s]}' % (self.alt_mc_label),
                              line_color=COMMON_STYLE_DICT['mc_alt_color'], line_width=2, line_style=COMMON_STYLE_DICT['mc_alt_line_style'],
                              marker_color=COMMON_STYLE_DICT['mc_alt_color'], marker_style=cu.Marker.get('triangleUp', False), marker_size=0,
-                             subplot=zpj_hist_no_errors),
-            ])
+                             leg_draw_opt="LE",
+                             subplot=zpj_hist_no_errors)
+            entries.append(Contribution(zpj_hist_alt_truth, **cont_args))
+            dummy_entries.append(Contribution(dummy_gr.Clone(), **cont_args))
+
 
         # for plot axis titles
         if metric == "mean":
@@ -307,6 +332,17 @@ class SummaryPlotter(object):
         elif metric == "delta":
             angle_str = "#Delta, %s" % create_angle_label(angle, do_groomed)
 
+        region_str = ""
+        if only_one_region:
+            # only 1 signal region, put it on the title
+            region_str = "\n"
+            if do_dijet_cen:
+                region_str += qgc.Dijet_CEN_LABEL
+            elif do_dijet_fwd:
+                region_str += qgc.Dijet_FWD_LABEL
+            elif do_zpj:
+                region_str += qgc.ZpJ_LABEL
+
         h_max = max([c.obj.GetMaximum() for c in entries])
         h_min = min([c.obj.GetMinimum(1E-10) for c in entries])
         h_range = h_max - h_min
@@ -315,7 +351,7 @@ class SummaryPlotter(object):
                     what='hist',
                     xtitle=COMMON_STYLE_DICT['jet_pt_units_str'],
                     ytitle=angle_str,
-                    title="%s jets" % (jet_algo['label']),
+                    title="%s jets%s" % (jet_algo['label'], region_str),
                     # ylim=(0, h_max*1.75),
                     # ylim=(h_min*0.75, h_max*1.5),
                     ylim=ylim,
@@ -329,9 +365,14 @@ class SummaryPlotter(object):
         plot.title_start_y = 0.85
         plot.title_left_offset = 0.05
         plot.title_font_size = 0.035
-        plot.legend.SetX1(0.55)
-        plot.legend.SetX2(0.78)
-        plot.legend.SetY1(0.68)
+        if only_one_region:
+            plot.legend.SetX1(0.6)
+            plot.legend.SetX2(0.88)
+            plot.legend.SetY1(0.72)
+        else:
+            plot.legend.SetX1(0.55)
+            plot.legend.SetX2(0.78)
+            plot.legend.SetY1(0.68)
         plot.legend.SetY2(0.92)
         if len(entries) > 3:
             plot.legend.SetNColumns(2)
@@ -348,10 +389,26 @@ class SummaryPlotter(object):
         plot.left_margin = 0.16
         plot.subplot_line_style = 1
         plot.y_padding_max_linear = 1.9
+
+        plot.do_legend = False  # do it ourselves manually
         subplot_draw_opts = "NOSTACK E1"
         plot.plot("NOSTACK E1", subplot_draw_opts)
         # plot.get_modifier().GetYaxis().SetTitleOffset(plot.get_modifier().GetYaxis().GetTitleOffset()*1.1)
         plot.set_logx(do_more_labels=False)
+
+        # Do legend manually with graphs to get the right bars on the ends (sigh)
+        for cont in dummy_entries:
+            this_label = cont.label
+            if '\n' not in this_label:
+                plot.legend.AddEntry(cont.obj, this_label, cont.leg_draw_opt)
+            else:
+                for label_ind, label_part in enumerate(this_label.split("\n")):
+                    obj = cont.obj if label_ind == 0 else 0
+                    draw_opt = cont.leg_draw_opt if label_ind == 0 else ""
+                    plot.legend.AddEntry(obj, label_part, draw_opt)
+
+        plot.canvas.cd()
+        plot.legend.Draw()
 
         if metric != 'delta':
             # now draw the data error shaded area
