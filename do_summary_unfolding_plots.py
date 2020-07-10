@@ -140,179 +140,172 @@ class SummaryPlotter(object):
         return h
 
     @staticmethod
-    def _generate_filename_prefix(do_dijet, do_zpj):
+    def _generate_filename_prefix(do_dijet_cen, do_dijet_fwd, do_zpj):
         this_str = ""
-        if do_dijet:
-            this_str += "dijet_"
+        if do_dijet_cen:
+            this_str += "dijet_cen_"
+        if do_dijet_fwd:
+            this_str += "dijet_fwd_"
         if do_zpj:
             this_str += "zpj_"
         return this_str
 
-    def plot_dijet_zpj_means_vs_pt_all(self):
-        """Plot mean vs pt for dijet (cen+fwd) & Z+jet on one plot,
-        per angle, per jet algo, per groomed/ungroomed"""
-        print('plot_dijet_zpj_means_vs_pt_all...')
-        for jet_algo, angle, groomed in product(self.jet_algos, self.angles, [False, True]):
-            print("  ...doing", jet_algo['label'], angle.name, 'groomed' if groomed else 'ungroomed')
-            self.plot_dijet_zpj_means_vs_pt_one_angle_one_jet(angle, jet_algo, do_groomed=groomed, output_dir='%s/plot_dijet_zpj_means_vs_pt_all' % self.output_dir)
+    def plot_dijet_zpj_metric_vs_pt_one_angle_one_jet(self, metric, angle, jet_algo, do_groomed, output_dir, do_zpj=True, do_dijet_cen=True, do_dijet_fwd=True):
+        """Do plot of lambda metric vs pt, for any combo of the dijet cen/fwd and zpj regions, for a given angle/jet algo/grooming"""
+        if metric not in ["mean", "rms", "delta"]:
+            raise ValueError("metric must be one of 'mean', 'rms', 'delta'")
 
-    def plot_dijet_means_vs_pt_all(self):
-        """Plot mean vs pt for dijet (cen+fwd) on one plot,
-        per angle, per jet algo, per groomed/ungroomed"""
-        print('plot_dijet_means_vs_pt_all...')
-        for jet_algo, angle, groomed in product(self.jet_algos, self.angles, [False, True]):
-            print("  ...doing", jet_algo['label'], angle.name, 'groomed' if groomed else 'ungroomed')
-            self.plot_dijet_zpj_means_vs_pt_one_angle_one_jet(angle, jet_algo, do_groomed=groomed, output_dir='%s/plot_dijet_means_vs_pt_all' % self.output_dir, do_zpj=False)
-
-    def plot_zpj_means_vs_pt_all(self):
-        """Plot mean vs pt for zpj on one plot,
-        per angle, per jet algo, per groomed/ungroomed"""
-        print('plot_zpj_means_vs_pt_all...')
-        for jet_algo, angle, groomed in product(self.jet_algos, self.angles, [False, True]):
-            print("  ...doing", jet_algo['label'], angle.name, 'groomed' if groomed else 'ungroomed')
-            self.plot_dijet_zpj_means_vs_pt_one_angle_one_jet(angle, jet_algo, do_groomed=groomed, output_dir='%s/plot_zpj_means_vs_pt_all' % self.output_dir, do_dijet=False)
-
-    def plot_dijet_zpj_means_vs_pt_one_angle_one_jet(self, angle, jet_algo, do_groomed, output_dir, do_zpj=True, do_dijet=True):
-        """Do plot of mean lambda vs pt, for the dijet cen+fwd and zpj regions, for a given angle/jet algo/grooming"""
         df = self.df
         mask = ((df['angle'] == angle.var) & (df['jet_algo'] == jet_algo['name']) & (df['isgroomed'] == do_groomed))
         if not mask.any():
             return
 
-        region_name = 'Dijet_central'
-        if do_groomed:
-            region_name += "_groomed"
-        dijet_central_data = df[mask & (df['region'] == region_name)]
-        dijet_central_hist = self.data_to_hist(dijet_central_data['mean'], dijet_central_data['mean_err'], self.pt_bins_dijet)
-        dijet_central_hist_truth = self.data_to_hist(dijet_central_data['mean_truth'], dijet_central_data['mean_err_truth'], self.pt_bins_dijet)
-        dijet_central_hist_alt_truth = self.data_to_hist(dijet_central_data['mean_alt_truth'], dijet_central_data['mean_err_alt_truth'], self.pt_bins_dijet)
-
-        # if "LHA" in angle.var:
-        #     print(dijet_central_data)
-        #     for i in range(1, dijet_central_hist.GetNbinsX()+1):
-        #         print(i, dijet_central_hist.GetBinContent(i), dijet_central_hist.GetBinError(i))
-
-
-        region_name = 'Dijet_forward'
-        if do_groomed:
-            region_name += "_groomed"
-        dijet_forward_data = df[mask & (df['region'] == region_name)]
-        dijet_forward_hist = self.data_to_hist(dijet_forward_data['mean'], dijet_forward_data['mean_err'], self.pt_bins_dijet)
-        dijet_forward_hist_truth = self.data_to_hist(dijet_forward_data['mean_truth'], dijet_forward_data['mean_err_truth'], self.pt_bins_dijet)
-        dijet_forward_hist_alt_truth = self.data_to_hist(dijet_forward_data['mean_alt_truth'], dijet_forward_data['mean_err_alt_truth'], self.pt_bins_dijet)
-
         dijet_cen_col = COMMON_STYLE_DICT['dijet_cen_color']
+        dijet_central_hist_no_errors = None
+        if do_dijet_cen:
+            region_name = 'Dijet_central'
+            if do_groomed:
+                region_name += "_groomed"
+            dijet_central_data = df[mask & (df['region'] == region_name)]
+            dijet_central_hist_truth = self.data_to_hist(dijet_central_data['%s_truth' % metric], dijet_central_data['%s_err_truth' % metric], self.pt_bins_dijet)
+            dijet_central_hist_alt_truth = self.data_to_hist(dijet_central_data['%s_alt_truth' % metric], dijet_central_data['%s_err_alt_truth' % metric], self.pt_bins_dijet)
+            if metric != 'delta':
+                dijet_central_hist = self.data_to_hist(dijet_central_data[metric], dijet_central_data['%s_err' % metric], self.pt_bins_dijet)
+                # Create copy with 0 error bars, for the ratio subplot
+                # The data will have its own error region
+                dijet_central_hist_no_errors = dijet_central_hist.Clone()
+                cu.remove_th1_errors(dijet_central_hist_no_errors)
+                # Create hists for data with error reigon for ratio
+                # Easiest way to get errors right is to do data (with 0 errors)
+                # and divide by data (with errors), as if you had MC = data with 0 error
+                dijet_central_hist_ratio_error = dijet_central_hist_no_errors.Clone()
+                dijet_central_hist_ratio_error.Divide(dijet_central_hist)
+                dijet_central_hist_ratio_error.SetFillStyle(3245)
+                dijet_central_hist_ratio_error.SetFillColor(dijet_cen_col)
+                dijet_central_hist_ratio_error.SetLineWidth(0)
+                dijet_central_hist_ratio_error.SetMarkerSize(0)
+
         dijet_fwd_col = COMMON_STYLE_DICT['dijet_fwd_color']
+        dijet_forward_hist_no_errors = None
+        if do_dijet_fwd:
+            region_name = 'Dijet_forward'
+            if do_groomed:
+                region_name += "_groomed"
+            dijet_forward_data = df[mask & (df['region'] == region_name)]
+            dijet_forward_hist_truth = self.data_to_hist(dijet_forward_data['%s_truth' % metric], dijet_forward_data['%s_err_truth' % metric], self.pt_bins_dijet)
+            dijet_forward_hist_alt_truth = self.data_to_hist(dijet_forward_data['%s_alt_truth' % metric], dijet_forward_data['%s_err_alt_truth' % metric], self.pt_bins_dijet)
+            if metric != 'delta':
+                dijet_forward_hist = self.data_to_hist(dijet_forward_data[metric], dijet_forward_data['%s_err' % metric], self.pt_bins_dijet)
+                dijet_forward_hist_no_errors = dijet_forward_hist.Clone()
+                cu.remove_th1_errors(dijet_forward_hist.Clone())
+
+                dijet_forward_hist_ratio_error = dijet_forward_hist_no_errors.Clone()
+                dijet_forward_hist_ratio_error.Divide(dijet_forward_hist)
+                dijet_forward_hist_ratio_error.SetFillStyle(3254)
+                dijet_forward_hist_ratio_error.SetFillColor(dijet_fwd_col)
+                dijet_forward_hist_ratio_error.SetLineWidth(0)
+                dijet_forward_hist_ratio_error.SetMarkerSize(0)
+
         zpj_col = COMMON_STYLE_DICT['zpj_color']
-
-        # Create copy with 0 error bars, for the ratio subplot
-        # The data will have its own error region
-        dijet_central_hist_no_errors = dijet_central_hist.Clone()
-        dijet_forward_hist_no_errors = dijet_forward_hist.Clone()
-        for h in [dijet_central_hist_no_errors, dijet_forward_hist_no_errors]:
-            for i in range(1, h.GetNbinsX()+1):
-                h.SetBinError(i, 0)
-
-        # Create hists for data with error reigon for ratio
-        # Easiest way to get errors right is to do data (with 0 errors)
-        # and divide by data (with errors), as if you had MC = data with 0 error
-        dijet_central_hist_ratio_error = dijet_central_hist_no_errors.Clone()
-        dijet_central_hist_ratio_error.Divide(dijet_central_hist)
-        dijet_central_hist_ratio_error.SetFillStyle(3245)
-        dijet_central_hist_ratio_error.SetFillColor(dijet_cen_col)
-        dijet_central_hist_ratio_error.SetLineWidth(0)
-        dijet_central_hist_ratio_error.SetMarkerSize(0)
-
-        dijet_forward_hist_ratio_error = dijet_forward_hist_no_errors.Clone()
-        dijet_forward_hist_ratio_error.Divide(dijet_forward_hist)
-        dijet_forward_hist_ratio_error.SetFillStyle(3254)
-        dijet_forward_hist_ratio_error.SetFillColor(dijet_fwd_col)
-        dijet_forward_hist_ratio_error.SetLineWidth(0)
-        dijet_forward_hist_ratio_error.SetMarkerSize(0)
-
+        zpj_hist_no_errors = None
         if do_zpj:
             region_name = 'ZPlusJets'
             if do_groomed:
                 region_name += "_groomed"
             # drop last pt bin as massive error
             zpj_data = df[mask & (df['region'] == region_name) & (df['pt_bin'] < (len(self.pt_bins_zpj)-3))]
-            zpj_hist = self.data_to_hist(zpj_data['mean'], zpj_data['mean_err'], self.pt_bins_zpj[:-2])
-            zpj_hist_truth = self.data_to_hist(zpj_data['mean_truth'], zpj_data['mean_err_truth'], self.pt_bins_zpj[:-2])
-            zpj_hist_alt_truth = self.data_to_hist(zpj_data['mean_alt_truth'], zpj_data['mean_err_alt_truth'], self.pt_bins_zpj[:-2])
-            # 0 error bar hists & ratio = 1 hists for subplot
-            zpj_hist_no_errors = zpj_hist.Clone()
-            for i in range(1, zpj_hist_no_errors.GetNbinsX()+1):
-                zpj_hist_no_errors.SetBinError(i, 0)
-            zpj_hist_ratio_error = zpj_hist_no_errors.Clone()
-            zpj_hist_ratio_error.Divide(zpj_hist)
-            zpj_hist_ratio_error.SetFillStyle(3003)
-            zpj_hist_ratio_error.SetFillStyle(3254)
-            zpj_hist_ratio_error.SetFillColor(zpj_col)
-            zpj_hist_ratio_error.SetLineWidth(0)
-            zpj_hist_ratio_error.SetMarkerSize(0)
+            zpj_hist_truth = self.data_to_hist(zpj_data['%s_truth' % metric], zpj_data['%s_err_truth' % metric], self.pt_bins_zpj[:-2])
+            zpj_hist_alt_truth = self.data_to_hist(zpj_data['%s_alt_truth' % metric], zpj_data['%s_err_alt_truth' % metric], self.pt_bins_zpj[:-2])
+            if metric != 'delta':
+                zpj_hist = self.data_to_hist(zpj_data[metric], zpj_data['%s_err' % metric], self.pt_bins_zpj[:-2])
+                # 0 error bar hists & ratio = 1 hists for subplot
+                zpj_hist_no_errors = zpj_hist.Clone()
+                cu.remove_th1_errors(zpj_hist_no_errors)
+                zpj_hist_ratio_error = zpj_hist_no_errors.Clone()
+                zpj_hist_ratio_error.Divide(zpj_hist)
+                zpj_hist_ratio_error.SetFillStyle(3003)
+                zpj_hist_ratio_error.SetFillStyle(3254)
+                zpj_hist_ratio_error.SetFillColor(zpj_col)
+                zpj_hist_ratio_error.SetLineWidth(0)
+                zpj_hist_ratio_error.SetMarkerSize(0)
 
         m_size = 1
         lw = COMMON_STYLE_DICT['line_width']
         entries = []
         # Spaces in legend labels are important for padding
         # Add data
-        if do_dijet:
-            entries.extend([
-                Contribution(dijet_central_hist, label=' Dijet (central)',
-                             line_color=dijet_cen_col, line_width=lw,
-                             marker_color=dijet_cen_col, marker_style=cu.Marker.get('circle', True), marker_size=m_size),
-                Contribution(dijet_forward_hist, label=' Dijet (forward)',
-                             line_color=dijet_fwd_col, line_width=lw,
-                             marker_color=dijet_fwd_col, marker_style=cu.Marker.get('square', True), marker_size=m_size),
-            ])
-        if do_zpj:
-            entries.extend([
-                Contribution(zpj_hist, label=' Z+jets',
-                             line_color=zpj_col, line_width=lw,
-                             marker_color=zpj_col, marker_style=cu.Marker.get('triangleUp', True), marker_size=m_size),
-            ])
+        if metric != 'delta':
+            if do_dijet_cen:
+                entries.extend([
+                    Contribution(dijet_central_hist, label=' Dijet (central)',
+                                 line_color=dijet_cen_col, line_width=lw,
+                                 marker_color=dijet_cen_col, marker_style=cu.Marker.get('circle', True), marker_size=m_size)
+                ])
+            if do_dijet_fwd:
+                entries.extend([
+                    Contribution(dijet_forward_hist, label=' Dijet (forward)',
+                                 line_color=dijet_fwd_col, line_width=lw,
+                                 marker_color=dijet_fwd_col, marker_style=cu.Marker.get('square', True), marker_size=m_size)
+                ])
+            if do_zpj:
+                entries.extend([
+                    Contribution(zpj_hist, label=' Z+jets',
+                                 line_color=zpj_col, line_width=lw,
+                                 marker_color=zpj_col, marker_style=cu.Marker.get('triangleUp', True), marker_size=m_size)
+                ])
         # Add nominal MC
-        if do_dijet:
+        if do_dijet_cen:
             entries.extend([
                 # TODO: make truth plotting optional, also plot alternate generators
                 Contribution(dijet_central_hist_truth, label='#splitline{ Dijet (central)  }{ [%s]}' % (self.mc_label),
-                             line_color=dijet_cen_col, line_width=lw, line_style=COMMON_STYLE_DICT['mc_line_style'],
-                             marker_color=dijet_cen_col, marker_style=cu.Marker.get('circle', False), marker_size=0,
-                             subplot=dijet_central_hist_no_errors),
+                             line_color=COMMON_STYLE_DICT['mc_color'], line_width=lw, line_style=COMMON_STYLE_DICT['mc_line_style'],
+                             marker_color=COMMON_STYLE_DICT['mc_color'], marker_style=cu.Marker.get('circle', False), marker_size=0,
+                             subplot=dijet_central_hist_no_errors)
+            ])
+        if do_dijet_fwd:
+            entries.extend([
                 Contribution(dijet_forward_hist_truth, label='#splitline{ Dijet (forward)  }{ [%s]}' % (self.mc_label),
-                             line_color=dijet_fwd_col, line_width=lw, line_style=COMMON_STYLE_DICT['mc_line_style'],
-                             marker_color=dijet_fwd_col, marker_style=cu.Marker.get('square', False), marker_size=0,
-                             subplot=dijet_forward_hist_no_errors),
+                             line_color=COMMON_STYLE_DICT['mc_color'], line_width=lw, line_style=COMMON_STYLE_DICT['mc_line_style'],
+                             marker_color=COMMON_STYLE_DICT['mc_color'], marker_style=cu.Marker.get('square', False), marker_size=0,
+                             subplot=dijet_forward_hist_no_errors)
             ])
         if do_zpj:
             entries.extend([
                 Contribution(zpj_hist_truth, label='#splitline{ Z+jets  }{ [%s]}' % (self.mc_label),
-                             line_color=zpj_col, line_width=lw, line_style=COMMON_STYLE_DICT['mc_line_style'],
-                             marker_color=zpj_col, marker_style=cu.Marker.get('triangleUp', False), marker_size=0,
-                             subplot=zpj_hist_no_errors),
+                             line_color=COMMON_STYLE_DICT['mc_color'], line_width=lw, line_style=COMMON_STYLE_DICT['mc_line_style'],
+                             marker_color=COMMON_STYLE_DICT['mc_color'], marker_style=cu.Marker.get('triangleUp', False), marker_size=0,
+                             subplot=zpj_hist_no_errors)
             ])
         # add alt MC
-        if do_dijet:
+        if do_dijet_cen:
             entries.extend([
                 Contribution(dijet_central_hist_alt_truth, label='#splitline{ Dijet (central)  }{ [%s]}' % (self.alt_mc_label),
-                             line_color=dijet_cen_col, line_width=lw, line_style=COMMON_STYLE_DICT['mc_alt_line_style'],
-                             marker_color=dijet_cen_col, marker_style=cu.Marker.get('circle', False), marker_size=0,
-                             subplot=dijet_central_hist_no_errors),
+                             line_color=COMMON_STYLE_DICT['mc_alt_color'], line_width=lw, line_style=COMMON_STYLE_DICT['mc_alt_line_style'],
+                             marker_color=COMMON_STYLE_DICT['mc_alt_color'], marker_style=cu.Marker.get('circle', False), marker_size=0,
+                             subplot=dijet_central_hist_no_errors)
+            ])
+        if do_dijet_fwd:
+            entries.extend([
                 Contribution(dijet_forward_hist_alt_truth, label='#splitline{ Dijet (forward)  }{ [%s]}' % (self.alt_mc_label),
-                             line_color=dijet_fwd_col, line_width=lw, line_style=COMMON_STYLE_DICT['mc_alt_line_style'],
-                             marker_color=dijet_fwd_col, marker_style=cu.Marker.get('square', False), marker_size=0,
-                             subplot=dijet_forward_hist_no_errors),
+                             line_color=COMMON_STYLE_DICT['mc_alt_color'], line_width=lw, line_style=COMMON_STYLE_DICT['mc_alt_line_style'],
+                             marker_color=COMMON_STYLE_DICT['mc_alt_color'], marker_style=cu.Marker.get('square', False), marker_size=0,
+                             subplot=dijet_forward_hist_no_errors)
             ])
         if do_zpj:
             entries.extend([
                 Contribution(zpj_hist_alt_truth, label='#splitline{ Z+jets}{ [%s]}' % (self.alt_mc_label),
-                             line_color=zpj_col, line_width=2, line_style=COMMON_STYLE_DICT['mc_alt_line_style'],
-                             marker_color=zpj_col, marker_style=cu.Marker.get('triangleUp', False), marker_size=0,
+                             line_color=COMMON_STYLE_DICT['mc_alt_color'], line_width=2, line_style=COMMON_STYLE_DICT['mc_alt_line_style'],
+                             marker_color=COMMON_STYLE_DICT['mc_alt_color'], marker_style=cu.Marker.get('triangleUp', False), marker_size=0,
                              subplot=zpj_hist_no_errors),
             ])
 
         # for plot axis titles
-        angle_str = "#LT %s #GT" % create_angle_label(angle, do_groomed)
+        if metric == "mean":
+            angle_str = "#LT %s #GT" % create_angle_label(angle, do_groomed)
+        elif metric == "rms":
+            angle_str = "RMS %s" % create_angle_label(angle, do_groomed)
+        elif metric == "delta":
+            angle_str = "#Delta, %s" % create_angle_label(angle, do_groomed)
 
         h_max = max([c.obj.GetMaximum() for c in entries])
         h_min = min([c.obj.GetMinimum(1E-10) for c in entries])
@@ -328,8 +321,8 @@ class SummaryPlotter(object):
                     ylim=ylim,
                     has_data=self.has_data,
                     is_preliminary=self.is_preliminary,
-                    subplot_type='ratio',
-                    subplot_title='MC / Data',
+                    subplot_type='ratio' if metric != 'delta' else None,
+                    subplot_title='Simulation / Data',
                     subplot_limits=(0.5, 1.5) if self.has_data else (0.9, 1.1)
                     )
         # plot.default_canvas_size = (700, 600)
@@ -360,33 +353,70 @@ class SummaryPlotter(object):
         # plot.get_modifier().GetYaxis().SetTitleOffset(plot.get_modifier().GetYaxis().GetTitleOffset()*1.1)
         plot.set_logx(do_more_labels=False)
 
-        # now draw the data error shaded area
-        # this is a bit hacky - basically draw them on the ratio pad,
-        # then redraw the existing hists & line to get them ontop
-        # note that we use "same" for all - this is to keep the original axes
-        # (we may want to rethink this later?)
-        plot.subplot_pad.cd()
-        plot.subplot_legend = ROOT.TLegend(0.25, 0.75, 0.47, 0.9)
-        plot.subplot_legend.SetFillStyle(0)
-        draw_opt = "E2 SAME"
-        if do_dijet:
-            dijet_central_hist_ratio_error.Draw(draw_opt)
-            dijet_forward_hist_ratio_error.Draw(draw_opt)
-            plot.subplot_legend.AddEntry(dijet_central_hist_ratio_error, "Data uncert. (central)", "F")
-            plot.subplot_legend.AddEntry(dijet_forward_hist_ratio_error, "Data uncert. (forward)", "F")
-            plot.subplot_legend.SetNColumns(2)
-            plot.subplot_legend.SetX2(0.8)
-        if do_zpj:
-            plot.subplot_legend.AddEntry(zpj_hist_ratio_error, "Data uncert.", "F")
-            zpj_hist_ratio_error.Draw(draw_opt)
-        plot.subplot_container.Draw("SAME" + subplot_draw_opts)
-        plot.subplot_line.Draw()
-        plot.subplot_legend.Draw()
-        plot.canvas.cd()
+        if metric != 'delta':
+            # now draw the data error shaded area
+            # this is a bit hacky - basically draw them on the ratio pad,
+            # then redraw the existing hists & line to get them ontop
+            # note that we use "same" for all - this is to keep the original axes
+            # (we may want to rethink this later?)
+            plot.subplot_pad.cd()
+            plot.subplot_legend = ROOT.TLegend(0.25, 0.75, 0.47, 0.9)
+            plot.subplot_legend.SetFillStyle(0)
+            draw_opt = "E2 SAME"
+            if do_dijet_cen:
+                dijet_central_hist_ratio_error.Draw(draw_opt)
+                plot.subplot_legend.AddEntry(dijet_central_hist_ratio_error, "Data uncert.%s" % (" (central)" if do_dijet_fwd else ""), "F")
+                if do_dijet_fwd:
+                    plot.subplot_legend.SetNColumns(2)
+                    plot.subplot_legend.SetX2(0.8)
+            if do_dijet_fwd:
+                dijet_forward_hist_ratio_error.Draw(draw_opt)
+                plot.subplot_legend.AddEntry(dijet_forward_hist_ratio_error, "Data uncert.%s" % (" (forward)" if do_dijet_cen else ""), "F")
+            if do_zpj:
+                plot.subplot_legend.AddEntry(zpj_hist_ratio_error, "Data uncert.", "F")
+                zpj_hist_ratio_error.Draw(draw_opt)
+            plot.subplot_container.Draw("SAME" + subplot_draw_opts)
+            plot.subplot_line.Draw()
+            plot.subplot_legend.Draw()
+            plot.canvas.cd()
 
-        prefix = self._generate_filename_prefix(do_dijet, do_zpj)
+        prefix = self._generate_filename_prefix(do_dijet_cen, do_dijet_fwd, do_zpj)
         groomed_str = '_groomed' if do_groomed else ''
-        plot.save("%s/%smeans_vs_pt_%s%s_%s.%s" % (output_dir, prefix, angle.var, groomed_str, jet_algo['name'], self.output_fmt))
+        plot.save("{output_dir}/{prefix}{metric}_vs_pt_{angle_var}{groomed_str}_{algo}.{fmt}"
+                    .format(
+                        output_dir=output_dir,
+                        prefix=prefix,
+                        metric=metric,
+                        angle_var=angle.var,
+                        groomed_str=groomed_str,
+                        algo=jet_algo['name'],
+                        fmt=self.output_fmt))
+
+    def plot_dijet_zpj_means_vs_pt_all(self):
+        """Plot mean vs pt for dijet (cen+fwd) & Z+jet on one plot,
+        per angle, per jet algo, per groomed/ungroomed"""
+        print('plot_dijet_zpj_means_vs_pt_all...')
+        for jet_algo, angle, groomed in product(self.jet_algos, self.angles, [False, True]):
+            print("  ...doing", jet_algo['label'], angle.name, 'groomed' if groomed else 'ungroomed')
+            self.plot_dijet_zpj_metric_vs_pt_one_angle_one_jet('mean', angle, jet_algo, do_groomed=groomed, output_dir='%s/plot_dijet_zpj_means_vs_pt_all' % self.output_dir)
+
+    def plot_dijet_means_vs_pt_all(self):
+        """Plot mean vs pt for dijet (cen+fwd, cen, fwd) on one plot,
+        per angle, per jet algo, per groomed/ungroomed"""
+        print('plot_dijet_means_vs_pt_all...')
+        for jet_algo, angle, groomed in product(self.jet_algos, self.angles, [False, True]):
+            print("  ...doing", jet_algo['label'], angle.name, 'groomed' if groomed else 'ungroomed')
+            self.plot_dijet_zpj_metric_vs_pt_one_angle_one_jet('mean', angle, jet_algo, do_groomed=groomed, output_dir='%s/plot_dijet_means_vs_pt_all' % self.output_dir, do_zpj=False)
+            self.plot_dijet_zpj_metric_vs_pt_one_angle_one_jet('mean', angle, jet_algo, do_groomed=groomed, output_dir='%s/plot_dijet_cen_means_vs_pt_all' % self.output_dir, do_zpj=False, do_dijet_fwd=False)
+            self.plot_dijet_zpj_metric_vs_pt_one_angle_one_jet('mean', angle, jet_algo, do_groomed=groomed, output_dir='%s/plot_dijet_fwd_means_vs_pt_all' % self.output_dir, do_zpj=False, do_dijet_cen=False)
+
+    def plot_zpj_means_vs_pt_all(self):
+        """Plot mean vs pt for zpj on one plot,
+        per angle, per jet algo, per groomed/ungroomed"""
+        print('plot_zpj_means_vs_pt_all...')
+        for jet_algo, angle, groomed in product(self.jet_algos, self.angles, [False, True]):
+            print("  ...doing", jet_algo['label'], angle.name, 'groomed' if groomed else 'ungroomed')
+            self.plot_dijet_zpj_metric_vs_pt_one_angle_one_jet('mean', angle, jet_algo, do_groomed=groomed, output_dir='%s/plot_zpj_means_vs_pt_all' % self.output_dir, do_dijet_cen=False, do_dijet_fwd=False)
 
     def plot_dijet_zpj_rms_vs_pt_all(self):
         """Plot RMS vs pt for dijet (cen+fwd) & Z+jet on one plot,
@@ -394,15 +424,17 @@ class SummaryPlotter(object):
         print('plot_dijet_zpj_rms_vs_pt_all...')
         for jet_algo, angle, groomed in product(self.jet_algos, self.angles, [False, True]):
             print("  ...doing", jet_algo['label'], angle.name, 'groomed' if groomed else 'ungroomed')
-            self.plot_dijet_zpj_rms_vs_pt_one_angle_one_jet(angle, jet_algo, do_groomed=groomed, output_dir='%s/plot_dijet_zpj_rms_vs_pt_all' % self.output_dir)
+            self.plot_dijet_zpj_metric_vs_pt_one_angle_one_jet('rms', angle, jet_algo, do_groomed=groomed, output_dir='%s/plot_dijet_zpj_rms_vs_pt_all' % self.output_dir)
 
     def plot_dijet_rms_vs_pt_all(self):
-        """Plot RMS vs pt for dijet (cen+fwd) on one plot,
+        """Plot RMS vs pt for dijet (cen+fwd, cen, fwd) on one plot,
         per angle, per jet algo, per groomed/ungroomed"""
         print('plot_dijet_rms_vs_pt_all...')
         for jet_algo, angle, groomed in product(self.jet_algos, self.angles, [False, True]):
             print("  ...doing", jet_algo['label'], angle.name, 'groomed' if groomed else 'ungroomed')
-            self.plot_dijet_zpj_rms_vs_pt_one_angle_one_jet(angle, jet_algo, do_groomed=groomed, output_dir='%s/plot_dijet_rms_vs_pt_all' % self.output_dir, do_zpj=False)
+            self.plot_dijet_zpj_metric_vs_pt_one_angle_one_jet('rms', angle, jet_algo, do_groomed=groomed, output_dir='%s/plot_dijet_rms_vs_pt_all' % self.output_dir, do_zpj=False)
+            self.plot_dijet_zpj_metric_vs_pt_one_angle_one_jet('rms', angle, jet_algo, do_groomed=groomed, output_dir='%s/plot_dijet_cen_rms_vs_pt_all' % self.output_dir, do_zpj=False, do_dijet_fwd=False)
+            self.plot_dijet_zpj_metric_vs_pt_one_angle_one_jet('rms', angle, jet_algo, do_groomed=groomed, output_dir='%s/plot_dijet_fwd_rms_vs_pt_all' % self.output_dir, do_zpj=False, do_dijet_cen=False)
 
     def plot_zpj_rms_vs_pt_all(self):
         """Plot RMS vs pt for zpj on one plot,
@@ -410,210 +442,7 @@ class SummaryPlotter(object):
         print('plot_zpj_rms_vs_pt_all...')
         for jet_algo, angle, groomed in product(self.jet_algos, self.angles, [False, True]):
             print("  ...doing", jet_algo['label'], angle.name, 'groomed' if groomed else 'ungroomed')
-            self.plot_dijet_zpj_rms_vs_pt_one_angle_one_jet(angle, jet_algo, do_groomed=groomed, output_dir='%s/plot_zpj_rms_vs_pt_all' % self.output_dir, do_dijet=False)
-
-    def plot_dijet_zpj_rms_vs_pt_one_angle_one_jet(self, angle, jet_algo, do_groomed, output_dir, do_zpj=True, do_dijet=True):
-        """Do plot of RMS lambda vs pt, for the dijet cen+fwd and zpj regions, for a given angle/jet algo/grooming"""
-        df = self.df
-        mask = ((df['angle'] == angle.var) & (df['jet_algo'] == jet_algo['name']) & (df['isgroomed'] == do_groomed))
-        if not mask.any():
-            return
-
-        region_name = 'Dijet_central'
-        if do_groomed:
-            region_name += "_groomed"
-        dijet_central_data = df[mask & (df['region'] == region_name)]
-        dijet_central_hist = self.data_to_hist(dijet_central_data['rms'], dijet_central_data['rms_err'], self.pt_bins_dijet)
-        dijet_central_hist_truth = self.data_to_hist(dijet_central_data['rms_truth'], dijet_central_data['rms_err_truth'], self.pt_bins_dijet)
-        dijet_central_hist_alt_truth = self.data_to_hist(dijet_central_data['rms_alt_truth'], dijet_central_data['rms_err_alt_truth'], self.pt_bins_dijet)
-
-        region_name = 'Dijet_forward'
-        if do_groomed:
-            region_name += "_groomed"
-        dijet_forward_data = df[mask & (df['region'] == region_name)]
-        dijet_forward_hist = self.data_to_hist(dijet_forward_data['rms'], dijet_forward_data['rms_err'], self.pt_bins_dijet)
-        dijet_forward_hist_truth = self.data_to_hist(dijet_forward_data['rms_truth'], dijet_forward_data['rms_err_truth'], self.pt_bins_dijet)
-        dijet_forward_hist_alt_truth = self.data_to_hist(dijet_forward_data['rms_alt_truth'], dijet_forward_data['rms_err_alt_truth'], self.pt_bins_dijet)
-
-        dijet_cen_col = COMMON_STYLE_DICT['dijet_cen_color']
-        dijet_fwd_col = COMMON_STYLE_DICT['dijet_fwd_color']
-        zpj_col = COMMON_STYLE_DICT['zpj_color']
-
-        # Create copy with 0 error bars, for the ratio subplot
-        # The data will have its own error region
-        dijet_central_hist_no_errors = dijet_central_hist.Clone()
-        dijet_forward_hist_no_errors = dijet_forward_hist.Clone()
-        for h in [dijet_central_hist_no_errors, dijet_forward_hist_no_errors]:
-            for i in range(1, h.GetNbinsX()+1):
-                h.SetBinError(i, 0)
-
-        # Create hists for data with error reigon for ratio
-        # Easiest way to get errors right is to do data (with 0 errors)
-        # and divide by data (with errors), as if you had MC = data with 0 error
-        dijet_central_hist_ratio_error = dijet_central_hist_no_errors.Clone()
-        dijet_central_hist_ratio_error.Divide(dijet_central_hist)
-        dijet_central_hist_ratio_error.SetFillStyle(3245)
-        dijet_central_hist_ratio_error.SetFillColor(dijet_cen_col)
-        dijet_central_hist_ratio_error.SetLineWidth(0)
-        dijet_central_hist_ratio_error.SetMarkerSize(0)
-
-        dijet_forward_hist_ratio_error = dijet_forward_hist_no_errors.Clone()
-        dijet_forward_hist_ratio_error.Divide(dijet_forward_hist)
-        dijet_forward_hist_ratio_error.SetFillStyle(3254)
-        dijet_forward_hist_ratio_error.SetFillColor(dijet_fwd_col)
-        dijet_forward_hist_ratio_error.SetLineWidth(0)
-        dijet_forward_hist_ratio_error.SetMarkerSize(0)
-
-        if do_zpj:
-            region_name = 'ZPlusJets'
-            if do_groomed:
-                region_name += "_groomed"
-            zpj_data = df[mask & (df['region'] == region_name) & (df['pt_bin'] < (len(self.pt_bins_zpj)-3))]
-            zpj_hist = self.data_to_hist(zpj_data['rms'], zpj_data['rms_err'], self.pt_bins_zpj[:-2])
-            zpj_hist_truth = self.data_to_hist(zpj_data['rms_truth'], zpj_data['rms_err_truth'], self.pt_bins_zpj[:-2])
-            zpj_hist_alt_truth = self.data_to_hist(zpj_data['rms_alt_truth'], zpj_data['rms_err_alt_truth'], self.pt_bins_zpj[:-2])
-            # 0 error bar hists & ratio = 1 hists for subplot
-            zpj_hist_no_errors = zpj_hist.Clone()
-            for i in range(1, zpj_hist_no_errors.GetNbinsX()+1):
-                zpj_hist_no_errors.SetBinError(i, 0)
-            zpj_hist_ratio_error = zpj_hist_no_errors.Clone()
-            zpj_hist_ratio_error.Divide(zpj_hist)
-            zpj_hist_ratio_error.SetFillStyle(3003)
-            zpj_hist_ratio_error.SetFillStyle(3254)
-            zpj_hist_ratio_error.SetFillColor(zpj_col)
-            zpj_hist_ratio_error.SetLineWidth(0)
-            zpj_hist_ratio_error.SetMarkerSize(0)
-
-        m_size = 1
-        lw = COMMON_STYLE_DICT['line_width']
-        entries = []
-        # Spaces in legend labels are important for padding
-        # Add data
-        if do_dijet:
-            entries.extend([
-                Contribution(dijet_central_hist, label=' Dijet (central)',
-                             line_color=dijet_cen_col, line_width=lw,
-                             marker_color=dijet_cen_col, marker_style=cu.Marker.get('circle', True), marker_size=m_size),
-                Contribution(dijet_forward_hist, label=' Dijet (forward)',
-                             line_color=dijet_fwd_col, line_width=lw,
-                             marker_color=dijet_fwd_col, marker_style=cu.Marker.get('square', True), marker_size=m_size),
-            ])
-        if do_zpj:
-            entries.extend([
-                Contribution(zpj_hist, label=' Z+jets',
-                             line_color=zpj_col, line_width=lw,
-                             marker_color=zpj_col, marker_style=cu.Marker.get('triangleUp', True), marker_size=m_size),
-            ])
-        # Add nominal MC
-        if do_dijet:
-            entries.extend([
-                # TODO: make truth plotting optional, also plot alternate generators
-                Contribution(dijet_central_hist_truth, label='#splitline{ Dijet (central)  }{ [%s]}' % (self.mc_label),
-                             line_color=dijet_cen_col, line_width=lw, line_style=COMMON_STYLE_DICT['mc_line_style'],
-                             marker_color=dijet_cen_col, marker_style=cu.Marker.get('circle', False), marker_size=0,
-                             subplot=dijet_central_hist_no_errors),
-                Contribution(dijet_forward_hist_truth, label='#splitline{ Dijet (forward)  }{ [%s]}' % (self.mc_label),
-                             line_color=dijet_fwd_col, line_width=lw, line_style=COMMON_STYLE_DICT['mc_line_style'],
-                             marker_color=dijet_fwd_col, marker_style=cu.Marker.get('square', False), marker_size=0,
-                             subplot=dijet_forward_hist_no_errors),
-            ])
-        if do_zpj:
-            entries.extend([
-                Contribution(zpj_hist_truth, label='#splitline{ Z+jets  }{ [%s]}' % (self.mc_label),
-                             line_color=zpj_col, line_width=lw, line_style=COMMON_STYLE_DICT['mc_line_style'],
-                             marker_color=zpj_col, marker_style=cu.Marker.get('triangleUp', False), marker_size=0,
-                             subplot=zpj_hist_no_errors),
-            ])
-        # add alt MC
-        if do_dijet:
-            entries.extend([
-                Contribution(dijet_central_hist_alt_truth, label='#splitline{ Dijet (central)  }{ [%s]}' % (self.alt_mc_label),
-                             line_color=dijet_cen_col, line_width=lw, line_style=COMMON_STYLE_DICT['mc_alt_line_style'],
-                             marker_color=dijet_cen_col, marker_style=cu.Marker.get('circle', False), marker_size=0,
-                             subplot=dijet_central_hist_no_errors),
-                Contribution(dijet_forward_hist_alt_truth, label='#splitline{ Dijet (forward)  }{ [%s]}' % (self.alt_mc_label),
-                             line_color=dijet_fwd_col, line_width=lw, line_style=COMMON_STYLE_DICT['mc_alt_line_style'],
-                             marker_color=dijet_fwd_col, marker_style=cu.Marker.get('square', False), marker_size=0,
-                             subplot=dijet_forward_hist_no_errors),
-            ])
-        if do_zpj:
-            entries.extend([
-                Contribution(zpj_hist_alt_truth, label='#splitline{ Z+jets}{ [%s]}' % (self.alt_mc_label),
-                             line_color=zpj_col, line_width=lw, line_style=COMMON_STYLE_DICT['mc_alt_line_style'],
-                             marker_color=zpj_col, marker_style=cu.Marker.get('triangleUp', False), marker_size=0,
-                             subplot=zpj_hist_no_errors),
-            ])
-
-        angle_str = "RMS %s" % create_angle_label(angle, do_groomed)
-
-        h_max = max([c.obj.GetMaximum() for c in entries])
-        plot = Plot(entries,
-                    what='hist',
-                    xtitle=COMMON_STYLE_DICT['jet_pt_units_str'],
-                    ytitle=angle_str,
-                    title="%s jets" % (jet_algo['label']),
-                    # ylim=(0, h_max*1.75),
-                    has_data=self.has_data,
-                    is_preliminary=self.is_preliminary,
-                    subplot_type='ratio',
-                    subplot_title='MC / Data',
-                    subplot_limits=(0.5, 1.5) if self.has_data else (0.9, 1.1))
-        # plot.default_canvas_size = (700, 600)
-        plot.title_start_y = 0.85
-        plot.title_left_offset = 0.05
-        plot.title_font_size = 0.035
-        plot.legend.SetX1(0.55)
-        plot.legend.SetX2(0.78)
-        plot.legend.SetY1(0.68)
-        plot.legend.SetY2(0.92)
-        if len(entries) > 3:
-            plot.legend.SetNColumns(2)
-            plot.legend.SetX1(0.50)
-            plot.legend.SetY1(0.68)
-            plot.legend.SetX2(0.92)
-            plot.legend.SetY2(0.92)
-            # plot.legend.SetBorderSize(1)
-            # plot.legend.SetLineColor(ROOT.kBlack)
-            plot.title_left_offset = 0.02
-        if len(entries) > 6:
-            plot.legend.SetNColumns(3)
-        plot.legend.SetY2(0.87)
-        plot.left_margin = 0.16
-        plot.subplot_line_style = 1
-        plot.y_padding_max_linear = 1.9
-        # plot.default_canvas_size = (600, 800)
-        subplot_draw_opts = "NOSTACK E1"
-        plot.plot("NOSTACK E1", subplot_draw_opts)
-        # plot.get_modifier().GetYaxis().SetTitleOffset(plot.get_modifier().GetYaxis().GetTitleOffset()*1.1)
-        plot.set_logx(do_more_labels=False)
-
-         # now draw the data error shaded area
-        # this is a bit hacky - basically draw them on the ratio pad,
-        # then redraw the existing hists & line to get them ontop
-        # note that we use "same" for all - this is to keep the original axes
-        # (we may want to rethink this later?)
-        plot.subplot_pad.cd()
-        plot.subplot_legend = ROOT.TLegend(0.25, 0.75, 0.47, 0.9)
-        plot.subplot_legend.SetFillStyle(0)
-        draw_opt = "E2 SAME"
-        if do_dijet:
-            dijet_central_hist_ratio_error.Draw(draw_opt)
-            dijet_forward_hist_ratio_error.Draw(draw_opt)
-            plot.subplot_legend.AddEntry(dijet_central_hist_ratio_error, "Data uncert. (central)", "F")
-            plot.subplot_legend.AddEntry(dijet_forward_hist_ratio_error, "Data uncert. (forward)", "F")
-            plot.subplot_legend.SetNColumns(2)
-            plot.subplot_legend.SetX2(0.8)
-        if do_zpj:
-            zpj_hist_ratio_error.Draw(draw_opt)
-            plot.subplot_legend.AddEntry(zpj_hist_ratio_error, "Data uncert.", "F")
-        plot.subplot_container.Draw("SAME" + subplot_draw_opts)
-        plot.subplot_line.Draw()
-        plot.subplot_legend.Draw()
-        plot.canvas.cd()
-
-        prefix = self._generate_filename_prefix(do_dijet, do_zpj)
-        groomed_str = '_groomed' if do_groomed else ''
-        plot.save("%s/%srms_vs_pt_%s%s_%s.%s" % (output_dir, prefix, angle.var, groomed_str, jet_algo['name'], self.output_fmt))
+            self.plot_dijet_zpj_metric_vs_pt_one_angle_one_jet('rms', angle, jet_algo, do_groomed=groomed, output_dir='%s/plot_zpj_rms_vs_pt_all' % self.output_dir, do_dijet_cen=False, do_dijet_fwd=False)
 
     def plot_dijet_zpj_delta_vs_pt_all(self):
         """Plot delta vs pt for dijet (cen+fwd) & Z+jet on one plot,
@@ -621,15 +450,17 @@ class SummaryPlotter(object):
         print('plot_dijet_zpj_delta_vs_pt_all...')
         for jet_algo, angle, groomed in product(self.jet_algos, self.angles, [False, True]):
             print("  ...doing", jet_algo['label'], angle.name, 'groomed' if groomed else 'ungroomed')
-            self.plot_dijet_zpj_delta_vs_pt_one_angle_one_jet(angle, jet_algo, do_groomed=groomed, output_dir='%s/plot_dijet_zpj_delta_vs_pt_all' % self.output_dir)
+            self.plot_dijet_zpj_metric_vs_pt_one_angle_one_jet('delta', angle, jet_algo, do_groomed=groomed, output_dir='%s/plot_dijet_zpj_delta_vs_pt_all' % self.output_dir)
 
     def plot_dijet_delta_vs_pt_all(self):
-        """Plot mean vs pt for dijet (cen+fwd) on one plot,
+        """Plot mean vs pt for dijet (cen+fwd, cen, fwd) on one plot,
         per angle, per jet algo, per groomed/ungroomed"""
         print('plot_dijet_delta_vs_pt_all...')
         for jet_algo, angle, groomed in product(self.jet_algos, self.angles, [False, True]):
             print("  ...doing", jet_algo['label'], angle.name, 'groomed' if groomed else 'ungroomed')
-            self.plot_dijet_zpj_delta_vs_pt_one_angle_one_jet(angle, jet_algo, do_groomed=groomed, output_dir='%s/plot_dijet_delta_vs_pt_all' % self.output_dir, do_zpj=False)
+            self.plot_dijet_zpj_metric_vs_pt_one_angle_one_jet('delta', angle, jet_algo, do_groomed=groomed, output_dir='%s/plot_dijet_delta_vs_pt_all' % self.output_dir, do_zpj=False)
+            self.plot_dijet_zpj_metric_vs_pt_one_angle_one_jet('delta', angle, jet_algo, do_groomed=groomed, output_dir='%s/plot_dijet_cen_delta_vs_pt_all' % self.output_dir, do_zpj=False, do_dijet_fwd=False)
+            self.plot_dijet_zpj_metric_vs_pt_one_angle_one_jet('delta', angle, jet_algo, do_groomed=groomed, output_dir='%s/plot_dijet_fwd_delta_vs_pt_all' % self.output_dir, do_zpj=False, do_dijet_cen=False)
 
     def plot_zpj_delta_vs_pt_all(self):
         """Plot mean vs pt for zpj on one plot,
@@ -637,128 +468,7 @@ class SummaryPlotter(object):
         print('plot_zpj_delta_vs_pt_all...')
         for jet_algo, angle, groomed in product(self.jet_algos, self.angles, [False, True]):
             print("  ...doing", jet_algo['label'], angle.name, 'groomed' if groomed else 'ungroomed')
-            self.plot_dijet_zpj_delta_vs_pt_one_angle_one_jet(angle, jet_algo, do_groomed=groomed, output_dir='%s/plot_zpj_delta_vs_pt_all' % self.output_dir, do_dijet=False)
-
-    def plot_dijet_zpj_delta_vs_pt_one_angle_one_jet(self, angle, jet_algo, do_groomed, output_dir, do_zpj=True, do_dijet=True):
-        """Do plot of delta lambda vs pt, for the dijet cen+fwd and zpj regions, for a given angle/jet algo/grooming"""
-        df = self.df
-        mask = ((df['angle'] == angle.var) & (df['jet_algo'] == jet_algo['name']) & (df['isgroomed'] == do_groomed))
-        if not mask.any():
-            return
-
-        region_name = 'Dijet_central'
-        if do_groomed:
-            region_name += "_groomed"
-        dijet_central_data = df[mask & (df['region'] == region_name)]
-        dijet_central_hist_truth = self.data_to_hist(dijet_central_data['delta_truth'], dijet_central_data['delta_err_truth'], self.pt_bins_dijet)
-        dijet_central_hist_alt_truth = self.data_to_hist(dijet_central_data['delta_alt_truth'], dijet_central_data['delta_err_alt_truth'], self.pt_bins_dijet)
-
-        region_name = 'Dijet_forward'
-        if do_groomed:
-            region_name += "_groomed"
-        dijet_forward_data = df[mask & (df['region'] == region_name)]
-        dijet_forward_hist_truth = self.data_to_hist(dijet_forward_data['delta_truth'], dijet_forward_data['delta_err_truth'], self.pt_bins_dijet)
-        dijet_forward_hist_alt_truth = self.data_to_hist(dijet_forward_data['delta_alt_truth'], dijet_forward_data['delta_err_alt_truth'], self.pt_bins_dijet)
-
-        dijet_cen_col = COMMON_STYLE_DICT['dijet_cen_color']
-        dijet_fwd_col = COMMON_STYLE_DICT['dijet_fwd_color']
-        zpj_col = COMMON_STYLE_DICT['zpj_color']
-
-        if do_zpj:
-            region_name = 'ZPlusJets'
-            if do_groomed:
-                region_name += "_groomed"
-            zpj_data = df[mask & (df['region'] == region_name) & (df['pt_bin'] < (len(self.pt_bins_zpj)-3))]
-            zpj_hist_truth = self.data_to_hist(zpj_data['delta_truth'], zpj_data['delta_err_truth'], self.pt_bins_zpj[:-2])
-            zpj_hist_alt_truth = self.data_to_hist(zpj_data['delta_alt_truth'], zpj_data['delta_err_alt_truth'], self.pt_bins_zpj[:-2])
-
-        m_size = 1
-        lw = COMMON_STYLE_DICT['line_width']
-        entries = []
-        # Spaces in legend labels are important for padding
-        # Add nominal MC
-        if do_dijet:
-            entries.extend([
-                # TODO: make truth plotting optional, also plot alternate generators
-                Contribution(dijet_central_hist_truth, label='#splitline{ Dijet (central)  }{ [%s]}' % (self.mc_label),
-                             line_color=dijet_cen_col, line_width=lw, line_style=COMMON_STYLE_DICT['mc_line_style'],
-                             marker_color=dijet_cen_col, marker_style=cu.Marker.get('circle', False), marker_size=0,
-                             ),
-                Contribution(dijet_forward_hist_truth, label='#splitline{ Dijet (forward)  }{ [%s]}' % (self.mc_label),
-                             line_color=dijet_fwd_col, line_width=lw, line_style=COMMON_STYLE_DICT['mc_line_style'],
-                             marker_color=dijet_fwd_col, marker_style=cu.Marker.get('square', False), marker_size=0,
-                             ),
-            ])
-        if do_zpj:
-            entries.extend([
-                Contribution(zpj_hist_truth, label='#splitline{ Z+jets  }{ [%s]}' % (self.mc_label),
-                             line_color=zpj_col, line_width=lw, line_style=COMMON_STYLE_DICT['mc_line_style'],
-                             marker_color=zpj_col, marker_style=cu.Marker.get('triangleUp', False), marker_size=0,
-                             ),
-            ])
-        # add alt MC
-        if do_dijet:
-            entries.extend([
-                Contribution(dijet_central_hist_alt_truth, label='#splitline{ Dijet (central)  }{ [%s]}' % (self.alt_mc_label),
-                             line_color=dijet_cen_col, line_width=lw, line_style=COMMON_STYLE_DICT['mc_alt_line_style'],
-                             marker_color=dijet_cen_col, marker_style=cu.Marker.get('circle', False), marker_size=0,
-                             ),
-                Contribution(dijet_forward_hist_alt_truth, label='#splitline{ Dijet (forward)  }{ [%s]}' % (self.alt_mc_label),
-                             line_color=dijet_fwd_col, line_width=lw, line_style=COMMON_STYLE_DICT['mc_alt_line_style'],
-                             marker_color=dijet_fwd_col, marker_style=cu.Marker.get('square', False), marker_size=0,
-                             ),
-            ])
-        if do_zpj:
-            entries.extend([
-                Contribution(zpj_hist_alt_truth, label='#splitline{ Z+jets}{ [%s]}' % (self.alt_mc_label),
-                             line_color=zpj_col, line_width=lw, line_style=COMMON_STYLE_DICT['mc_alt_line_style'],
-                             marker_color=zpj_col, marker_style=cu.Marker.get('triangleUp', False), marker_size=0,
-                             ),
-            ])
-
-        angle_str = "#Delta, %s" % create_angle_label(angle, do_groomed)
-
-        h_max = max([c.obj.GetMaximum() for c in entries])
-        plot = Plot(entries,
-                    what='hist',
-                    xtitle=COMMON_STYLE_DICT['jet_pt_units_str'],
-                    ytitle=angle_str,
-                    title="%s jets" % (jet_algo['label']),
-                    ylim=(0, h_max*1.75),
-                    has_data=self.has_data,
-                    is_preliminary=self.is_preliminary)
-        # plot.default_canvas_size = (700, 600)
-        plot.title_start_y = 0.85
-        plot.title_left_offset = 0.05
-        plot.title_font_size = 0.035
-        plot.legend.SetX1(0.55)
-        plot.legend.SetX2(0.78)
-        plot.legend.SetY1(0.68)
-        plot.legend.SetY2(0.92)
-        if len(entries) > 3:
-            plot.legend.SetNColumns(2)
-            plot.legend.SetX1(0.50)
-            plot.legend.SetY1(0.68)
-            plot.legend.SetX2(0.92)
-            plot.legend.SetY2(0.92)
-            # plot.legend.SetBorderSize(1)
-            # plot.legend.SetLineColor(ROOT.kBlack)
-            plot.title_left_offset = 0.02
-        if len(entries) > 6:
-            plot.legend.SetNColumns(3)
-        plot.legend.SetY2(0.87)
-        plot.left_margin = 0.16
-        plot.subplot_line_style = 1
-        # plot.y_padding_max_linear = 1.9
-        # plot.y_padding_min_linear = 20
-        # plot.default_canvas_size = (600, 800)
-        plot.plot("NOSTACK HIST E1")
-        # plot.get_modifier().GetYaxis().SetTitleOffset(plot.get_modifier().GetYaxis().GetTitleOffset()*1.1)
-        plot.set_logx(do_more_labels=False)
-
-        prefix = self._generate_filename_prefix(do_dijet, do_zpj)
-        groomed_str = '_groomed' if do_groomed else ''
-        plot.save("%s/%sdelta_vs_pt_%s%s_%s.%s" % (output_dir, prefix, angle.var, groomed_str, jet_algo['name'], self.output_fmt))
+            self.plot_dijet_zpj_metric_vs_pt_one_angle_one_jet('delta', angle, jet_algo, do_groomed=groomed, output_dir='%s/plot_zpj_delta_vs_pt_all' % self.output_dir, do_dijet_cen=False, do_dijet_fwd=False)
 
     @staticmethod
     def _make_hist_from_values(value_error_pairs, bins=None, title="", name="", bin_names=None):
@@ -1993,6 +1703,8 @@ if __name__ == "__main__":
         plotter.plot_dijet_means_vs_pt_all()
         plotter.plot_dijet_rms_vs_pt_all()
         plotter.plot_dijet_delta_vs_pt_all()
+
+        sys.exit()
 
         pt_bins = qgc.PT_UNFOLD_DICT['signal_gen']
         low_pt_bin = np.where(pt_bins == low_pt)[0][0]
