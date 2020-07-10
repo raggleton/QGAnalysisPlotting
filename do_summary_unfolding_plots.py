@@ -183,7 +183,7 @@ class SummaryPlotter(object):
                 dijet_central_hist_ratio_error = dijet_central_hist_no_errors.Clone()
                 dijet_central_hist_ratio_error.Divide(dijet_central_hist)
                 dijet_central_hist_ratio_error.SetFillStyle(3245)
-                dijet_central_hist_ratio_error.SetFillColor(dijet_cen_col)
+                dijet_central_hist_ratio_error.SetFillColor(ROOT.kBlack if only_one_region else dijet_cen_col)
                 dijet_central_hist_ratio_error.SetLineWidth(0)
                 dijet_central_hist_ratio_error.SetMarkerSize(0)
 
@@ -204,7 +204,7 @@ class SummaryPlotter(object):
                 dijet_forward_hist_ratio_error = dijet_forward_hist_no_errors.Clone()
                 dijet_forward_hist_ratio_error.Divide(dijet_forward_hist)
                 dijet_forward_hist_ratio_error.SetFillStyle(3254)
-                dijet_forward_hist_ratio_error.SetFillColor(dijet_fwd_col)
+                dijet_forward_hist_ratio_error.SetFillColor(ROOT.kBlack if only_one_region else dijet_fwd_col)
                 dijet_forward_hist_ratio_error.SetLineWidth(0)
                 dijet_forward_hist_ratio_error.SetMarkerSize(0)
 
@@ -227,7 +227,7 @@ class SummaryPlotter(object):
                 zpj_hist_ratio_error.Divide(zpj_hist)
                 zpj_hist_ratio_error.SetFillStyle(3003)
                 zpj_hist_ratio_error.SetFillStyle(3254)
-                zpj_hist_ratio_error.SetFillColor(zpj_col)
+                zpj_hist_ratio_error.SetFillColor(ROOT.kBlack if only_one_region else zpj_col)
                 zpj_hist_ratio_error.SetLineWidth(0)
                 zpj_hist_ratio_error.SetMarkerSize(0)
 
@@ -246,32 +246,41 @@ class SummaryPlotter(object):
             if do_dijet_cen:
                 cont_args = dict(label='Data' if only_one_region else ' Dijet (central)',
                                  leg_draw_opt="LEP",
-                                 line_color=dijet_cen_col, line_width=lw,
-                                 marker_color=dijet_cen_col, marker_style=cu.Marker.get('circle', True), marker_size=m_size)
+                                 line_color=ROOT.kBlack if only_one_region else dijet_cen_col,
+                                 line_width=lw,
+                                 marker_color=ROOT.kBlack if only_one_region else dijet_cen_col,
+                                 marker_style=cu.Marker.get('circle', True), marker_size=m_size)
                 entries.append(Contribution(dijet_central_hist, **cont_args))
                 dummy_entries.append(Contribution(dummy_gr.Clone(), **cont_args))
 
             if do_dijet_fwd:
                 cont_args = dict(label='Data' if only_one_region else ' Dijet (forward)',
                                  leg_draw_opt="LEP",
-                                 line_color=dijet_fwd_col, line_width=lw,
-                                 marker_color=dijet_fwd_col, marker_style=cu.Marker.get('square', True), marker_size=m_size)
+                                 line_color=ROOT.kBlack if only_one_region else dijet_fwd_col,
+                                 line_width=lw,
+                                 marker_color=ROOT.kBlack if only_one_region else dijet_fwd_col,
+                                 marker_style=cu.Marker.get('square', True), marker_size=m_size)
                 entries.append(Contribution(dijet_forward_hist, **cont_args))
                 dummy_entries.append(Contribution(dummy_gr.Clone(), **cont_args))
 
             if do_zpj:
                 cont_args = dict(label='Data' if only_one_region else ' Z+jets',
                                  leg_draw_opt="LEP",
-                                 line_color=zpj_col, line_width=lw,
-                                 marker_color=zpj_col, marker_style=cu.Marker.get('triangleUp', True), marker_size=m_size)
+                                 line_color=ROOT.kBlack if only_one_region else zpj_col,
+                                 line_width=lw,
+                                 marker_color=ROOT.kBlack if only_one_region else zpj_col,
+                                 marker_style=cu.Marker.get('triangleUp', True), marker_size=m_size)
                 entries.append(Contribution(zpj_hist, **cont_args))
                 dummy_entries.append(Contribution(dummy_gr.Clone(), **cont_args))
 
         # Add nominal MC
         if do_dijet_cen:
             cont_args = dict(label=self.mc_label if only_one_region else '#splitline{ Dijet (central)  }{ [%s]}' % (self.mc_label),
-                             line_color=COMMON_STYLE_DICT['mc_color'], line_width=lw, line_style=COMMON_STYLE_DICT['mc_line_style'],
-                             marker_color=COMMON_STYLE_DICT['mc_color'], marker_style=cu.Marker.get('circle', False), marker_size=0,
+                             line_color=COMMON_STYLE_DICT['mc_color'],
+                             line_width=lw,
+                             line_style=COMMON_STYLE_DICT['mc_line_style'],
+                             marker_color=COMMON_STYLE_DICT['mc_color'],
+                             marker_style=cu.Marker.get('circle', False), marker_size=0,
                              leg_draw_opt="LE",
                              subplot=dijet_central_hist_no_errors)
             entries.append(Contribution(dijet_central_hist_truth, **cont_args))
@@ -279,8 +288,11 @@ class SummaryPlotter(object):
 
         if do_dijet_fwd:
             cont_args = dict(label=self.mc_label if only_one_region else '#splitline{ Dijet (forward)  }{ [%s]}' % (self.mc_label),
-                             line_color=COMMON_STYLE_DICT['mc_color'], line_width=lw, line_style=COMMON_STYLE_DICT['mc_line_style'],
-                             marker_color=COMMON_STYLE_DICT['mc_color'], marker_style=cu.Marker.get('square', False), marker_size=0,
+                             line_color=COMMON_STYLE_DICT['mc_color'],
+                             line_width=lw,
+                             line_style=COMMON_STYLE_DICT['mc_line_style'],
+                             marker_color=COMMON_STYLE_DICT['mc_color'],
+                             marker_style=cu.Marker.get('square', False), marker_size=0,
                              leg_draw_opt="LE",
                              subplot=dijet_forward_hist_no_errors)
             entries.append(Contribution(dijet_forward_hist_truth, **cont_args))
@@ -288,8 +300,11 @@ class SummaryPlotter(object):
 
         if do_zpj:
             cont_args = dict(label=self.mc_label if only_one_region else '#splitline{ Z+jets  }{ [%s]}' % (self.mc_label),
-                             line_color=COMMON_STYLE_DICT['mc_color'], line_width=lw, line_style=COMMON_STYLE_DICT['mc_line_style'],
-                             marker_color=COMMON_STYLE_DICT['mc_color'], marker_style=cu.Marker.get('triangleUp', False), marker_size=0,
+                             line_color=COMMON_STYLE_DICT['mc_color'],
+                             line_width=lw,
+                             line_style=COMMON_STYLE_DICT['mc_line_style'],
+                             marker_color=COMMON_STYLE_DICT['mc_color'],
+                             marker_style=cu.Marker.get('triangleUp', False), marker_size=0,
                              leg_draw_opt="LE",
                              subplot=zpj_hist_no_errors)
             entries.append(Contribution(zpj_hist_truth, **cont_args))
@@ -298,8 +313,11 @@ class SummaryPlotter(object):
         # add alt MC
         if do_dijet_cen:
             cont_args = dict(label=self.alt_mc_label if only_one_region else '#splitline{ Dijet (central)  }{ [%s]}' % (self.alt_mc_label),
-                             line_color=COMMON_STYLE_DICT['mc_alt_color'], line_width=lw, line_style=COMMON_STYLE_DICT['mc_alt_line_style'],
-                             marker_color=COMMON_STYLE_DICT['mc_alt_color'], marker_style=cu.Marker.get('circle', False), marker_size=0,
+                             line_color=COMMON_STYLE_DICT['mc_alt_color'],
+                             line_width=lw,
+                             line_style=COMMON_STYLE_DICT['mc_alt_line_style'],
+                             marker_color=COMMON_STYLE_DICT['mc_alt_color'],
+                             marker_style=cu.Marker.get('circle', False), marker_size=0,
                              leg_draw_opt="LE",
                              subplot=dijet_central_hist_no_errors)
             entries.append(Contribution(dijet_central_hist_alt_truth, **cont_args))
@@ -307,8 +325,11 @@ class SummaryPlotter(object):
 
         if do_dijet_fwd:
             cont_args = dict(label=self.alt_mc_label if only_one_region else '#splitline{ Dijet (forward)  }{ [%s]}' % (self.alt_mc_label),
-                             line_color=COMMON_STYLE_DICT['mc_alt_color'], line_width=lw, line_style=COMMON_STYLE_DICT['mc_alt_line_style'],
-                             marker_color=COMMON_STYLE_DICT['mc_alt_color'], marker_style=cu.Marker.get('square', False), marker_size=0,
+                             line_color=COMMON_STYLE_DICT['mc_alt_color'],
+                             line_width=lw,
+                             line_style=COMMON_STYLE_DICT['mc_alt_line_style'],
+                             marker_color=COMMON_STYLE_DICT['mc_alt_color'],
+                             marker_style=cu.Marker.get('square', False), marker_size=0,
                              leg_draw_opt="LE",
                              subplot=dijet_forward_hist_no_errors)
             entries.append(Contribution(dijet_forward_hist_alt_truth, **cont_args))
@@ -316,8 +337,11 @@ class SummaryPlotter(object):
 
         if do_zpj:
             cont_args = dict(label=self.alt_mc_label if only_one_region else '#splitline{ Z+jets}{ [%s]}' % (self.alt_mc_label),
-                             line_color=COMMON_STYLE_DICT['mc_alt_color'], line_width=2, line_style=COMMON_STYLE_DICT['mc_alt_line_style'],
-                             marker_color=COMMON_STYLE_DICT['mc_alt_color'], marker_style=cu.Marker.get('triangleUp', False), marker_size=0,
+                             line_color=COMMON_STYLE_DICT['mc_alt_color'],
+                             line_width=lw,
+                             line_style=COMMON_STYLE_DICT['mc_alt_line_style'],
+                             marker_color=COMMON_STYLE_DICT['mc_alt_color'],
+                             marker_style=cu.Marker.get('triangleUp', False), marker_size=0,
                              leg_draw_opt="LE",
                              subplot=zpj_hist_no_errors)
             entries.append(Contribution(zpj_hist_alt_truth, **cont_args))
@@ -1761,7 +1785,7 @@ if __name__ == "__main__":
         plotter.plot_dijet_rms_vs_pt_all()
         plotter.plot_dijet_delta_vs_pt_all()
 
-        sys.exit()
+        # sys.exit()
 
         pt_bins = qgc.PT_UNFOLD_DICT['signal_gen']
         low_pt_bin = np.where(pt_bins == low_pt)[0][0]
