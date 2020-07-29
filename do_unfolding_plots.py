@@ -32,6 +32,9 @@ from my_unfolder import MyUnfolder, HistBinChopper, unpickle_region
 from my_unfolder_plotter import MyUnfolderPlotter
 from unfolding_config import get_dijet_config, get_zpj_config
 
+# Use rootpy to throw exceptions on ROOT errors, but need DANGER enabled
+import rootpy
+# import rootpy.logger.magic as M; M.DANGER.enabled = True
 
 ROOT.gErrorIgnoreLevel = ROOT.kError
 ROOT.PyConfig.IgnoreCommandLineOptions = True
