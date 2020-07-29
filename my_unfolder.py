@@ -1014,17 +1014,18 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         self.hist_bin_chopper.add_obj(self.rsp_uncert_name, self.get_unfolded_with_ematrix_response())
 
     @staticmethod
-    def make_hist_from_diagonal_errors(h2d, do_sqrt=True, set_errors=True):
+    def make_hist_from_diagonal_errors(h2d, do_sqrt=True, set_errors=True, offset=0.):
         """Make 1D hist, with errors or contents set to diagonal elements from h2d
 
         Can be TH2 or numpy.ndarray, cos we have to use both
         Yes that is majorly wack
 
         set_errors: True to set TH1 bin errors, otherwise sets bin contents
+        offset is on bin edge from 0 (TUnfold is 0.5)
         """
         if isinstance(h2d, ROOT.TH2):
             nbins = h2d.GetNbinsX()
-            hnew = ROOT.TH1D("h_diag" + cu.get_unique_str(), "", nbins, 0, nbins)
+            hnew = ROOT.TH1D("h_diag" + cu.get_unique_str(), "", nbins, offset, nbins+offset)
             for i in range(1, nbins+1):
                 err = h2d.GetBinContent(i, i)
                 if do_sqrt and err > 0:
@@ -1038,7 +1039,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             return hnew
         elif isinstance(h2d, np.ndarray):
             nbins = h2d.shape[0]
-            hnew = ROOT.TH1D("h_diag" + cu.get_unique_str(), "", nbins, 0, nbins)
+            hnew = ROOT.TH1D("h_diag" + cu.get_unique_str(), "", nbins, offset, nbins+offset)
             for i in range(1, nbins+1):
                 err = h2d[i-1, i-1]
                 if do_sqrt and err > 0:
@@ -1160,7 +1161,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         - doesn't include extras like scale or PDF"""
         if getattr(self, "ematrix_tunfold_total", None) is None:
             self.ematrix_tunfold_total = self.GetEmatrixTotal("ematrix_tunfold_total_"+cu.get_unique_str(), "", self.output_distribution_name, "*[]", self.use_axis_binning)
-            print("ematrix_tunfold_total is:", type(self.ematrix_tunfold_total), "with #xbins:", self.ematrix_tunfold_total.GetNbinsX())
+            print("ematrix_tunfold_total is:", type(self.ematrix_tunfold_total), "with #xbins:", self.ematrix_tunfold_total.GetNbinsX(), "bin1 low edge:", self.ematrix_tunfold_total.GetXaxis().GetBinLowEdge(1))
         return self.ematrix_tunfold_total
 
     @property
