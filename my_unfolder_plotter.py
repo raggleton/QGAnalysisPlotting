@@ -45,7 +45,7 @@ class MyUnfolderPlotter(object):
         self.ff_ncont = 256
         # Set max & min such that 0 is in the middle
         stops = [ 0.00, 0.49, 0.51, 0.52, 1.00 ]
-        red = [ 0.00, 1.00, 1.00, 1.00, 1.00]
+        red = [ 0.00, 1.00, 0.00, 1.00, 1.00]
         green = [ 0.00, 1.00, 1.00, 1.00, 0.00 ]
         blue = [ 1.00, 1.00, 1.00, 1.00, 0.00 ]
         stopsArray = array('d', stops)
@@ -114,7 +114,8 @@ class MyUnfolderPlotter(object):
 
         if equal_pos_neg_z:
             cu.symmetrize_h2d_z_limits(h2d)
-            self.set_french_flag_colours()
+            if not logz:
+                self.set_french_flag_colours()
             # if logz:
             #   cu.set_log_french_flag_palette()
 
@@ -266,6 +267,8 @@ class MyUnfolderPlotter(object):
                           draw_bin_lines_y=True,
                           logz=False,
                           equal_pos_neg_z=False,
+                          z_min=self.unfolder.get_jacobian_th2().GetMinimum()*2,
+                          # z_max=1E-4,
                           canvas_size=(800, 700))
 
     # TODO: generalise to some "draw_2d_hist()"?
@@ -276,7 +279,7 @@ class MyUnfolderPlotter(object):
                           output_filename=output_filename,
                           draw_bin_lines_x=True,
                           draw_bin_lines_y=True,
-                          equal_pos_neg_z=True,
+                          equal_pos_neg_z=False,
                           canvas_size=(800, 700))
         output_filename = "%s/err_map_stat_input_%s_linZ.%s" % (output_dir, append, self.output_fmt)
         self.draw_2d_hist(self.unfolder.get_ematrix_input(),
@@ -295,7 +298,7 @@ class MyUnfolderPlotter(object):
                           output_filename=output_filename,
                           draw_bin_lines_x=True,
                           draw_bin_lines_y=True,
-                          equal_pos_neg_z=True,
+                          equal_pos_neg_z=False,
                           canvas_size=(800, 700))
         output_filename = "%s/err_map_stat_%s_linZ.%s" % (output_dir, append, self.output_fmt)
         self.draw_2d_hist(self.unfolder.get_ematrix_stat(),
@@ -314,7 +317,7 @@ class MyUnfolderPlotter(object):
                           output_filename=output_filename,
                           draw_bin_lines_x=True,
                           draw_bin_lines_y=True,
-                          equal_pos_neg_z=True,
+                          equal_pos_neg_z=False,
                           canvas_size=(800, 700))
         output_filename = "%s/err_map_stat_response_%s_linZ.%s" % (output_dir, append, self.output_fmt)
         self.draw_2d_hist(self.unfolder.get_ematrix_stat_response(),
@@ -344,7 +347,7 @@ class MyUnfolderPlotter(object):
                           output_filename=output_filename,
                           draw_bin_lines_x=True,
                           draw_bin_lines_y=True,
-                          equal_pos_neg_z=True,
+                          equal_pos_neg_z=False,
                           canvas_size=(800, 700))
         output_filename = "%s/err_map_syst_%s_%s_linZ.%s" % (output_dir, syst_label_no_spaces, append, self.output_fmt)
         self.draw_2d_hist(self.unfolder.get_ematrix_syst(syst_label),
@@ -363,7 +366,7 @@ class MyUnfolderPlotter(object):
                           output_filename=output_filename,
                           draw_bin_lines_x=True,
                           draw_bin_lines_y=True,
-                          equal_pos_neg_z=True,
+                          equal_pos_neg_z=False,
                           canvas_size=(800, 700))
         output_filename = "%s/err_map_tunfold_total_%s_linZ.%s" % (output_dir, append, self.output_fmt)
         self.draw_2d_hist(self.unfolder.get_ematrix_tunfold_total(),
@@ -382,7 +385,7 @@ class MyUnfolderPlotter(object):
                           output_filename=output_filename,
                           draw_bin_lines_x=True,
                           draw_bin_lines_y=True,
-                          equal_pos_neg_z=True,
+                          equal_pos_neg_z=False,
                           canvas_size=(800, 700))
         output_filename = "%s/err_map_scale_%s_linZ.%s" % (output_dir, append, self.output_fmt)
         self.draw_2d_hist(self.unfolder.get_ematrix_syst("Scale"),
@@ -401,7 +404,7 @@ class MyUnfolderPlotter(object):
                           output_filename=output_filename,
                           draw_bin_lines_x=True,
                           draw_bin_lines_y=True,
-                          equal_pos_neg_z=True,
+                          equal_pos_neg_z=False,
                           canvas_size=(800, 700))
         output_filename = "%s/err_map_pdf_%s_linZ.%s" % (output_dir, append, self.output_fmt)
         self.draw_2d_hist(self.unfolder.get_ematrix_syst("PDF"),
@@ -420,7 +423,7 @@ class MyUnfolderPlotter(object):
                           output_filename=output_filename,
                           draw_bin_lines_x=True,
                           draw_bin_lines_y=True,
-                          equal_pos_neg_z=True,
+                          equal_pos_neg_z=False,
                           canvas_size=(800, 700))
         output_filename = "%s/err_map_total_abs_%s_linZ.%s" % (output_dir, append, self.output_fmt)
         self.draw_2d_hist(self.unfolder.get_ematrix_total_absolute(),
@@ -439,7 +442,7 @@ class MyUnfolderPlotter(object):
                           output_filename=output_filename,
                           draw_bin_lines_x=True,
                           draw_bin_lines_y=True,
-                          equal_pos_neg_z=True,
+                          equal_pos_neg_z=False,
                           canvas_size=(800, 700))
         output_filename = "%s/err_map_total_norm_%s_linZ.%s" % (output_dir, append, self.output_fmt)
         self.draw_2d_hist(self.unfolder.get_ematrix_total_normalised(),

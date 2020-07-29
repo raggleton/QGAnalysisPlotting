@@ -592,7 +592,7 @@ def th1_to_ndarray(hist_A, oflow_x=False):
     return result, errors
 
 
-def ndarray_to_th1(nd_array, has_oflow_x=False):
+def ndarray_to_th1(nd_array, has_oflow_x=False, offset=0.5):
     """Convert numpy ndarray row vector to TH1, with shape (1, nbins)
 
     Use has_oflow_x to include the under/overflow bins
@@ -603,7 +603,7 @@ def ndarray_to_th1(nd_array, has_oflow_x=False):
         nbins_hist -= 2
 
     # need the 0.5 offset to match TUnfold
-    h = ROOT.TH1F(get_unique_str(), "", nbins_hist, 0.5, nbins_hist+0.5)
+    h = ROOT.TH1F(get_unique_str(), "", nbins_hist, offset, nbins_hist+offset)
 
     x_start = 1
     x_end = nbins_hist
@@ -731,4 +731,11 @@ def print_tmatrixsparse(matrix, name="matrix"):
 def remove_th1_errors(h):
     for i in range(1, h.GetNbinsX()+1):
         h.SetBinError(i, 0)
+
+
+def print_th1_bins(h, print_contents=True, print_errors=True, do_oflow=False):
+    start_bin = 0 if do_oflow else 1
+    end_bin = h.GetNbinsX()+1 if do_oflow else h.GetNbinsX()
+    for ix in range(start_bin, end_bin+1):
+        print(ix, h.GetBinContent(ix) if print_contents else "", "± %f" % h.GetBinError(ix) if print_errors else "")
 

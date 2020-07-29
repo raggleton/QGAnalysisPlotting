@@ -872,7 +872,7 @@ class GenPtBinnedPlotter(object):
             syst_entries.extend([
                 Contribution(mc_gen_hist_bin,
                              label="Generator (%s)" % (self.region['mc_label']),
-                             line_color=self.plot_colours['gen_colour'], line_width=self.line_width,
+                             line_color=self.plot_colours['gen_colour'], line_width=self.line_width, line_style=2,
                              marker_color=self.plot_colours['gen_colour'], marker_size=0),
                 Contribution(unfolded_hist_bin_total_errors,
                              label="Unfolded (#tau = %.3g) (total unc.)" % (self.unfolder.tau),
@@ -933,7 +933,7 @@ class GenPtBinnedPlotter(object):
             syst_entries.extend([
                 Contribution(mc_gen_hist_bin,
                              label="Generator (%s)" % (self.region['mc_label']),
-                             line_color=self.plot_colours['gen_colour'], line_width=self.line_width,
+                             line_color=self.plot_colours['gen_colour'], line_width=self.line_width, line_style=2,
                              marker_color=self.plot_colours['gen_colour'], marker_size=0),
                 Contribution(unfolded_hist_bin_total_errors,
                              label="Unfolded (#tau = %.3g) (total unc.)" % (self.unfolder.tau),
@@ -999,7 +999,7 @@ class GenPtBinnedPlotter(object):
             pdf_entries.extend([
                 Contribution(mc_gen_hist_bin,
                              label="Generator (%s)" % (self.region['mc_label']),
-                             line_color=self.plot_colours['gen_colour'], line_width=self.line_width,
+                             line_color=self.plot_colours['gen_colour'], line_width=self.line_width, line_style=2,
                              marker_color=self.plot_colours['gen_colour'], marker_size=0),
                 Contribution(unfolded_hist_bin_total_errors,
                              label="Unfolded (#tau = %.3g) (total unc.)" % (self.unfolder.tau),
@@ -2145,7 +2145,7 @@ class GenLambdaBinnedPlotter(object):
             syst_entries.extend([
                 Contribution(mc_gen_hist_bin,
                              label="Generator (%s)" % (self.region['mc_label']),
-                             line_color=self.plot_colours['gen_colour'], line_width=self.line_width,
+                             line_color=self.plot_colours['gen_colour'], line_width=self.line_width, line_style=2,
                              marker_color=self.plot_colours['gen_colour'], marker_size=0),
                 Contribution(unfolded_hist_bin_total_errors,
                              label="Nominal unfolded (#tau = %.3g) (total unc.)" % (self.unfolder.tau),
@@ -4088,7 +4088,8 @@ class BigNormalised1DPlotter(object):
 
     def plot_unfolded_model_systs(self):
         all_entries = [Contribution(self.get_big_1d('hist_truth', 'generator'),
-                                     **self.get_mc_truth_kwargs()),
+                                    line_style=2,
+                                    **self.get_mc_truth_kwargs()),
                        Contribution(self.get_big_1d('unfolded_stat_err', 'generator'),
                                     subplot=self.get_big_1d('hist_truth', 'generator'),
                                     **dict(self.get_unfolded_stat_err_kwargs(),
@@ -4098,6 +4099,7 @@ class BigNormalised1DPlotter(object):
         for syst_dict in self.setup.region['model_systematics']:
             entries = [
                         Contribution(self.get_big_1d('hist_truth', 'generator'),
+                                     line_style=2,
                                      **self.get_mc_truth_kwargs()),
                         Contribution(self.get_big_1d('unfolded_stat_err', 'generator'),
                                      subplot=self.get_big_1d('hist_truth', 'generator'),
@@ -4158,7 +4160,8 @@ class BigNormalised1DPlotter(object):
 
     def plot_unfolded_model_systs_only_scale(self):
         all_entries = [Contribution(self.get_big_1d('hist_truth', 'generator'),
-                                     **self.get_mc_truth_kwargs()),
+                                    line_style=2,
+                                    **self.get_mc_truth_kwargs()),
                        Contribution(self.get_big_1d('unfolded_stat_err', 'generator'),
                                     subplot=self.get_big_1d('hist_truth', 'generator'),
                                     **dict(self.get_unfolded_stat_err_kwargs(),

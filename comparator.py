@@ -303,6 +303,7 @@ class Plot(object):
         self.subplot_container = None
         self.subplot_contributions = []
         self.subplot_pad = None
+        self.subplot_maximum = 2.5
         self.subplot_limits = subplot_limits
         self.subplot_pad_height = 0.32
         self.subplot_pad_fudge = 0.01  # to get non-overlapping subplot axis
@@ -808,7 +809,7 @@ class Plot(object):
                         bin_maxs = [0]
                     if len(bin_maxs) == 0:
                         bin_maxs = [0]
-                    self.subplot_container.SetMaximum(min(2.5, max(1.5, 1.*max(bin_maxs))))
+                    self.subplot_container.SetMaximum(min(self.subplot_maximum, max(1.5, 1.1*max(bin_maxs))))
 
                     # Make sure the lower limit is the smallest bin of the contributions,
                     # so long as it is within 0 and 0.5
