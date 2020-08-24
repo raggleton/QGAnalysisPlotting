@@ -42,6 +42,7 @@ def get_unfolding_argparser(description='', parser=None):
     parser.add_argument("--angles",
                         choices=list(qgc.VAR_UNFOLD_DICT.keys()) + ["all"],
                         nargs='+',
+                        required=True,
                         help="Lambda angles to unfold, or 'all' for all of them")
 
     standard_bool_description = (" True values are 'y', 'yes', 't', 'true', 'on' and '1'."
