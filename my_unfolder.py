@@ -87,9 +87,9 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         # inverse cov for chi2 tests
         "vyy_inv_tmatrix",
         "vxx_inv_th2",
-        "vyy_inv_no_bg_th2",
+        "vyy_inv_no_bg_subtraction_th2",
         # cov matr
-        "vyy_no_bg_th2",
+        "vyy_no_bg_subtraction_th2",
     ]
 
     def __init__(self,
@@ -1001,6 +1001,12 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         self.get_unfolded_with_ematrix_response()
         self.get_folded_unfolded()
         self.get_folded_mc_truth()
+        # these 3 for bottom-line tests
+        self.get_vxx_th2()
+        self.get_vxx_inv_th2()
+        self.get_vyy_no_bg_subtraction_th2()
+        self.get_vyy_inv_no_bg_subtraction_th2()
+
         for exp_syst in self.exp_systs:
             # setup all the internal maps
             self.get_syst_shift(exp_syst.label)
@@ -1255,35 +1261,56 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             self.vyy_inv_ndarray = cu.tmatrixdsparse_to_ndarray(self.vyy_inv_tmatrix)
         return self.vyy_inv_ndarray
 
-    def get_vyy_no_bg_th2(self):
+    def get_vyy_no_bg_subtraction_th2(self):
         """Same as get_vyy_inv_ndarray() but before BG-subtraction"""
-        if getattr(self, 'vyy_no_bg_th2', None) is None:
-            self.vyy_no_bg_th2 = self.make_diag_cov_hist_from_errors(self.input_hist, inverse=False)
-        return self.vyy_no_bg_th2
+        if getattr(self, 'vyy_no_bg_subtraction_th2', None) is None:
+            self.vyy_no_bg_subtraction_th2 = self.make_diag_cov_hist_from_errors(self.input_hist, inverse=False)
+        return self.vyy_no_bg_subtraction_th2
 
-    def get_vyy_no_bg_ndarray(self):
-        if getattr(self, 'vyy_no_bg_ndarray', None) is None:
-            self.vyy_no_bg_ndarray, _ = cu.th2_to_ndarray(self.get_vyy_no_bg_th2())
-        return self.vyy_no_bg_ndarray
+    def get_vyy_no_bg_subtraction_ndarray(self):
+        # before bg-subtraction
+        if getattr(self, 'vyy_no_bg_subtraction_ndarray', None) is None:
+            self.vyy_no_bg_subtraction_ndarray, _ = cu.th2_to_ndarray(self.get_vyy_no_bg_subtraction_th2())
+        return self.vyy_no_bg_subtraction_ndarray
 
-    def get_vyy_inv_no_bg_th2(self):
-        if getattr(self, 'vyy_inv_no_bg_th2', None) is None:
-            self.vyy_inv_no_bg_th2 = self.make_diag_cov_hist_from_errors(self.input_hist, inverse=True)
+    def get_vyy_inv_no_bg_subtraction_th2(self):
+        # before bg-subtraction
+        if getattr(self, 'vyy_inv_no_bg_subtraction_th2', None) is None:
+            self.vyy_inv_no_bg_subtraction_th2 = self.make_diag_cov_hist_from_errors(self.input_hist, inverse=True)
             # this_binning = self.detector_binning.FindNode('detector')
-            # self.vyy_inv_no_bg_th2 = this_binning.CreateErrorMatrixHistogram("ematrix_vyyinv_no_bg_"+cu.get_unique_str(), self.use_axis_binning) #, bin_map, "", "*[]")
+            # self.vyy_inv_no_bg_subtraction_th2 = this_binning.CreateErrorMatrixHistogram("ematrix_vyyinv_no_bg_subtraction_"+cu.get_unique_str(), self.use_axis_binning) #, bin_map, "", "*[]")
             # for i in range(1, self.input_hist.GetNbinsX()+1):
             #     bin_err = self.input_hist.GetBinError(i)
             #     new_err = 1./(bin_err*bin_err) if bin_err != 0 else 0
-            #     self.vyy_inv_no_bg_th2.SetBinContent(i, i, new_err)
-        return self.vyy_inv_no_bg_th2
+            #     self.vyy_inv_no_bg_subtraction_th2.SetBinContent(i, i, new_err)
+        return self.vyy_inv_no_bg_subtraction_th2
 
-    def get_vyy_inv_no_bg_ndarray(self):
-        if getattr(self, 'vyy_inv_no_bg_ndarray', None) is None:
-            self.vyy_inv_no_bg_ndarray, _ = cu.th2_to_ndarray(self.get_vyy_inv_no_bg_th2())
-        return self.vyy_inv_no_bg_ndarray
+    def get_vyy_inv_no_bg_subtraction_ndarray(self):
+        if getattr(self, 'vyy_inv_no_bg_subtraction_ndarray', None) is None:
+            self.vyy_inv_no_bg_subtraction_ndarray, _ = cu.th2_to_ndarray(self.get_vyy_inv_no_bg_subtraction_th2())
+        return self.vyy_inv_no_bg_subtraction_ndarray
+
+    def get_vxx_th2(self):
+        if getattr(self, 'vxx_th2', None) is None:
+            print("Getting vxx_th2")
+            # Have to manually create hist first, awkward
+            this_binning = self.generator_binning.FindNode('generator')
+            # I cannot figure out how to make the int** object for bin_map
+            # So we are trusting that the default args for title and axisSteering are correct
+            # Gnahhhhhhh
+            self.vxx_th2 = this_binning.CreateErrorMatrixHistogram("ematrix_vxxinv_"+cu.get_unique_str(), self.use_axis_binning) #, bin_map, "", "*[]")
+            self.ErrorMatrixToHist(self.vxx_th2, self.GetVxx())
+            print('vxx_th2.GetXaxis().GetBinLowEdge(1):', self.vxx_th2.GetXaxis().GetBinLowEdge(1))
+        return self.vxx_th2
+
+    def get_vxx_ndarray(self):
+        if getattr(self, 'vxx_ndarray', None) is None:
+            self.vxx_ndarray, _ = cu.th2_to_ndarray(self.get_vxx_th2())
+        return self.vxx_ndarray
 
     def get_vxx_inv_th2(self):
         if getattr(self, 'vxx_inv_th2', None) is None:
+            print("Getting vxx_inv_th2")
             # Have to manually create hist first, awkward
             this_binning = self.generator_binning.FindNode('generator')
             # I cannot figure out how to make the int** object for bin_map
@@ -1291,6 +1318,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             # Gnahhhhhhh
             self.vxx_inv_th2 = this_binning.CreateErrorMatrixHistogram("ematrix_vxxinv_"+cu.get_unique_str(), self.use_axis_binning) #, bin_map, "", "*[]")
             self.ErrorMatrixToHist(self.vxx_inv_th2, self.GetVxxInv())
+            print('vxx_inv_th2.GetXaxis().GetBinLowEdge(1):', self.vxx_inv_th2.GetXaxis().GetBinLowEdge(1))
         return self.vxx_inv_th2
 
     def get_vxx_inv_ndarray(self):
