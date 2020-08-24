@@ -50,7 +50,15 @@ def cleanup_filepath(filepath):
     thing = os.path.abspath(os.path.expandvars(os.path.expanduser(filepath)))
     if os.path.islink(thing):
         # because otherwise readlink throws if not a link
-        return os.readlink(thing)
+        linkpath = os.readlink(thing)
+        if not os.path.isabs(linkpath):
+            # convert to abs path, otherwise it uses the relpath from the py
+            # file location (which will be wrong)
+            dirname = os.path.dirname(thing)
+            newpath = os.path.join(dirname, linkpath)
+            return newpath
+        else:
+            return linkpath
     else:
         return thing
 
