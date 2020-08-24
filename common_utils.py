@@ -607,7 +607,7 @@ def th1_to_ndarray(hist_A, oflow_x=False):
     return result, errors
 
 
-def ndarray_to_th1(nd_array, has_oflow_x=False, offset=0.5):
+def ndarray_to_th1(nd_array, has_oflow_x=False, offset=0.5, bins=None):
     """Convert numpy ndarray row vector to TH1, with shape (1, nbins)
 
     Use has_oflow_x to include the under/overflow bins
@@ -618,7 +618,12 @@ def ndarray_to_th1(nd_array, has_oflow_x=False, offset=0.5):
         nbins_hist -= 2
 
     # need the 0.5 offset to match TUnfold
-    h = ROOT.TH1F(get_unique_str(), "", nbins_hist, offset, nbins_hist+offset)
+    if bins == None:
+        h = ROOT.TH1F(get_unique_str(), "", nbins_hist, offset, nbins_hist+offset)
+    else:
+        if len(bins) != nbinsx+1:
+            raise IndexError("len(bins) != nbinsx + 1")
+        h = ROOT.TH1F(get_unique_str(), "", nbins_hist, bins)
 
     x_start = 1
     x_end = nbins_hist
