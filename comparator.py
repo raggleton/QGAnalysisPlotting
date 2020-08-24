@@ -303,7 +303,10 @@ class Plot(object):
         self.subplot_container = None
         self.subplot_contributions = []
         self.subplot_pad = None
-        self.subplot_maximum = 2.5
+        self.subplot_maximum_ceil = 2.5  # subplot maximum is always below this...
+        self.subplot_maximum_floor = 1.5 # and at least this...
+        self.subplot_minimum_ceil = 0.5  # subplot minimum is always below this...
+        self.subplot_minimum_floor = 0 # and at least this...
         self.subplot_limits = subplot_limits
         self.subplot_pad_height = 0.32
         self.subplot_pad_fudge = 0.01  # to get non-overlapping subplot axis
@@ -801,7 +804,7 @@ class Plot(object):
                 else:
                     # A more intelligent way?
                     # Make sure that the upper limit is the largest bin of the contributions,
-                    # so long as it is within 1.5 and some upper limit
+                    # so long as it is within subplot_maximum_floor and subplot_maximum_ceil
                     harrays = [cu.th1_to_arr(h)[0] for h in self.subplot_contributions]
                     try:
                         bin_maxs = [np.max(arr[np.nonzero(arr)]) for arr in harrays]
@@ -809,17 +812,17 @@ class Plot(object):
                         bin_maxs = [0]
                     if len(bin_maxs) == 0:
                         bin_maxs = [0]
-                    self.subplot_container.SetMaximum(min(self.subplot_maximum, max(1.5, 1.1*max(bin_maxs))))
+                    self.subplot_container.SetMaximum(min(self.subplot_maximum_ceil, max(self.subplot_maximum_floor, 1.1*max(bin_maxs))))
 
                     # Make sure the lower limit is the smallest bin of the contributions,
-                    # so long as it is within 0 and 0.5
+                    # so long as it is within 0 and subplot_minimum_ceil
                     try:
                         bin_mins = [np.min(arr[np.nonzero(arr)]) for arr in harrays]
                     except ValueError:
                         bin_mins = [0]
                     if len(bin_mins) == 0:
                         bin_mins = [0]
-                    self.subplot_container.SetMinimum(min(0.5, 0.75*min(bin_mins)))
+                    self.subplot_container.SetMinimum(max(self.subplot_minimum_floor, min(self.subplot_minimum_ceil, 0.9*min(bin_mins))))
 
                 # Draw a line at 1
                 xax = modifier.GetXaxis()
