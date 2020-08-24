@@ -740,7 +740,7 @@ class GenPtBinnedPlotter(object):
 
                 # Get binned hists from the scale unfolder, since the error bars may have been setup specially
                 syst_unfolded_hist_bin = syst_unfolder.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded', **hbc_args)
-                
+
                 # syst_truth_hist_bin = syst_unfolder.hist_bin_chopper.get_pt_bin_normed_div_bin_width('hist_truth', **hbc_args)
 
                 syst_entries.extend([
@@ -906,7 +906,7 @@ class GenPtBinnedPlotter(object):
                 plot.legend.SetNColumns(2)
             plot.plot("NOSTACK E1")
             plot.save("%s/unfolded_%s_syst_model_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
-    
+
     def plot_unfolded_with_model_systs_unnormalised(self):
         for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
             syst_entries = []

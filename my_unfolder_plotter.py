@@ -995,7 +995,7 @@ class MyUnfolderPlotter(object):
                         do_reco_mc_bg_sub=False,
                         other_contributions=None,
                         mark_negatives=True,
-                        output_dir='.', append="", title="", 
+                        output_dir='.', append="", title="",
                         subplot_title='Data / MC'):
         """Plot detector-binned quantities for data & MC, by bin number (ie non physical axes)"""
         entries = []

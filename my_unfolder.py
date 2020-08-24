@@ -275,6 +275,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
 
         self.total_ematrix_name = "total_ematrix"
 
+
     @staticmethod
     def construct_tunfold_binning(variable_bin_edges_reco,
                                   variable_bin_edges_gen,
@@ -2712,7 +2713,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
     def create_absolute_pdf_uncertianty(self, pdf_systs):
         """Create pdf shift, shifted results,  & cov matrix on absolute result"""
         # TODO: better to not store indiv hists in class?
-        
+
         # if getattr(self, 'pdf_shift', None) is None:
         if not self.has_exp_syst("PDF"):
             print("Setting up absolute PDF ucnert")
@@ -3636,8 +3637,8 @@ class HistBinChopper(object):
     def get_binning(self, binning_scheme):
         """Get TUnfoldBinning, lambda var bins, pt bins for binning_scheme = 'generator' or 'detector'"""
         if binning_scheme not in ['generator', 'detector']:
-            raise ArgumentError('binning_scheme must be "generator" or "detector"')
-        thing = self.generator_binning if binning_scheme == "generator" else self.detector_binning
+            raise ArgumentError("binning_scheme must be one of 'generator', 'detector'")
+        thing = self.generator_binning if "generator" in binning_scheme else self.detector_binning
         if thing is None:
             raise RuntimeError("No valid TUnfoldBinning object for binning scheme '%s'" % binning_scheme)
         var_bins = self.generator_binning_var_bins if binning_scheme == 'generator' else self.detector_binning_var_bins
@@ -3661,8 +3662,8 @@ class HistBinChopper(object):
         binning, var_bins, pt_bins = self.get_binning(binning_scheme)
         h = ROOT.TH1D("h_%d_%s" % (ibin_pt, cu.get_unique_str()), "", len(var_bins)-1, var_bins)
         for var_ind, var_value in enumerate(var_bins[:-1], 1):
-            this_val = var_value * 1.001  # ensure its inside
-            bin_num = binning.GetGlobalBinNumber(this_val, pt_bins[ibin_pt]*1.001)
+            this_val = var_value * 1.000001  # ensure its inside
+            bin_num = binning.GetGlobalBinNumber(this_val, pt_bins[ibin_pt]*1.000001)
             h.SetBinContent(var_ind, hist1d.GetBinContent(bin_num))
             h.SetBinError(var_ind, hist1d.GetBinError(bin_num))
         return h
