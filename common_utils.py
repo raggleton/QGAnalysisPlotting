@@ -687,11 +687,19 @@ def th2_to_ndarray(hist_A, oflow_x=False, oflow_y=False):
     return result, errors
 
 
-def ndarray_to_th2(data, offset=0):
+def ndarray_to_th2(data, offset=0, binsx=None, binsy=None):
     nbinsy, nbinsx = data.shape
-    binsx = array('d', [x+offset for x in range(1, nbinsx+2)]) # e.g. offset = -0.5 for TUnfold
-    binsy = array('d', [x+offset for x in range(1, nbinsy+2)])
-    h = ROOT.TH2D(get_unique_str(), "", nbinsx, binsx, nbinsy, binsy)
+    bins_x = array('d', [x+offset for x in range(1, nbinsx+2)]) # e.g. offset = -0.5 for TUnfold
+    bins_y = array('d', [x+offset for x in range(1, nbinsy+2)])
+    if binsx is not None:
+        if len(binsx) != nbinsx+1:
+            raise IndexError("binsx wrong size")
+        bins_x = binsx
+    if binsy is not None:
+        if len(binsy) != nbinsy+1:
+            raise IndexError("binsy wrong size")
+        bins_y = binsy
+    h = ROOT.TH2D(get_unique_str(), "", nbinsx, bins_x, nbinsy, bins_y)
     for ix in range(nbinsx):
         for iy in range(nbinsy):
             h.SetBinContent(ix+1, iy+1, data[iy,ix])
