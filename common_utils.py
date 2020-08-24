@@ -510,6 +510,9 @@ def get_dict_item_sizes(this_dict, recursive=True):
             size_dict.update({"%s%s" % (this_key, kk) : vv for kk, vv in tsd.items()})
             # print("new size_dict from dict", size_dict)
         else:
+            if v is None:
+                continue
+            # print(k, v, type(v))
             obj_pkl = pickle.dumps(v)
             size_dict[this_key] = sys.getsizeof(obj_pkl)
             # print("new size_dict", size_dict)
