@@ -45,7 +45,7 @@ class MyUnfolderPlotter(object):
         self.ff_ncont = 256
         # Set max & min such that 0 is in the middle
         stops = [ 0.00, 0.49, 0.51, 0.52, 1.00 ]
-        red = [ 0.00, 1.00, 0.00, 1.00, 1.00]
+        red = [ 0.00, 1.00, 1.00, 1.00, 1.00]
         green = [ 0.00, 1.00, 1.00, 1.00, 0.00 ]
         blue = [ 1.00, 1.00, 1.00, 1.00, 0.00 ]
         stopsArray = array('d', stops)
