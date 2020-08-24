@@ -3816,7 +3816,7 @@ class BigNormalised1DPlotter(object):
     def get_subplot_ylim(self):
         return (0, 2) if self.setup.has_data else (0.7, 1.3)
 
-    def get_big_1d(self, name, binning_scheme='generator', hist_bin_chopper=None, hist_bin_chopper_key=None):
+    def get_big_1d(self, name, binning_scheme='generator', hist_bin_chopper=None, hist_bin_chopper_key=None, do_div_bin_width=True):
         """Getter for big 1D hist - use cached version if available, otherwise create and store in cache
 
         By default uses the main unfolder.hist_bin_chopper to construct the hists
@@ -3825,10 +3825,13 @@ class BigNormalised1DPlotter(object):
         This allows you to do e.g. name="alt_unfolded", hist_bin_chopper_key="unfolded"
         to store the unfolded hist from alt_unfolder in this cache as "alt_unfolded"
         """
-        key = name + '_' + binning_scheme
+        key = name + '_' + binning_scheme + ("_divBinWidth" if do_div_bin_width else "")
         if self._cache_1d.get(key, None) is None:
             hist_bin_chopper_key = hist_bin_chopper_key or name
-            self._cache_1d[key] = self.make_big_1d_normalised_hist(hist_bin_chopper_key, binning_scheme=binning_scheme, hist_bin_chopper=hist_bin_chopper)
+            self._cache_1d[key] = self.make_big_1d_normalised_hist(hist_bin_chopper_key,
+                                                                   binning_scheme=binning_scheme,
+                                                                   hist_bin_chopper=hist_bin_chopper,
+                                                                   do_div_bin_width=do_div_bin_width)
         return self._cache_1d[key]
 
     def plot_unfolded_truth(self):
