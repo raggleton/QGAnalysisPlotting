@@ -32,9 +32,9 @@ from my_unfolder_plotter import MyUnfolderPlotter
 
 
 # This doesn't seem to work...sigh
-np.set_printoptions(edgeitems=3,infstr='Infinity',
-                    linewidth=75, nanstr='nan', precision=8,
-                    suppress=False, threshold=1000, formatter=None)
+np.set_printoptions(edgeitems=3, infstr='Infinity',
+                    linewidth=220, nanstr='nan', precision=6,
+                    suppress=False, threshold=sys.maxsize, formatter=None)
 
 ROOT.PyConfig.IgnoreCommandLineOptions = True
 ROOT.gROOT.SetBatch(1)

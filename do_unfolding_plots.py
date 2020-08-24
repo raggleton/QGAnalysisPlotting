@@ -14,7 +14,7 @@ import sys
 import argparse
 import math
 from array import array
-# import pandas as pd
+import pandas as pd
 from copy import copy, deepcopy
 import numpy as np
 import scipy
@@ -31,6 +31,8 @@ import qg_general_plots as qgp
 from my_unfolder import MyUnfolder, HistBinChopper, unpickle_region
 from my_unfolder_plotter import MyUnfolderPlotter
 from unfolding_config import get_dijet_config, get_zpj_config
+
+pd.set_option('display.max_columns', None)
 
 # Use rootpy to throw exceptions on ROOT errors, but need DANGER enabled
 import rootpy

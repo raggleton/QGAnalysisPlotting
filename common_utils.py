@@ -15,6 +15,10 @@ from itertools import chain
 from collections import OrderedDict
 import pickle
 
+np.set_printoptions(edgeitems=3, infstr='Infinity',
+                    linewidth=220, nanstr='nan', precision=6,
+                    suppress=False, threshold=sys.maxsize, formatter=None)
+
 
 ROOT.PyConfig.IgnoreCommandLineOptions = True
 ROOT.TH1.SetDefaultSumw2(True)
