@@ -767,3 +767,13 @@ def print_th1_bins(h, print_contents=True, print_errors=True, do_oflow=False):
     for ix in range(start_bin, end_bin+1):
         print(ix, h.GetBinContent(ix) if print_contents else "", "± %f" % h.GetBinError(ix) if print_errors else "")
 
+
+def print_th2_bins(h, print_contents=True, print_errors=True, do_oflow=False):
+    start_bin_x = 0 if do_oflow else 1
+    end_bin_x = h.GetNbinsX()+1 if do_oflow else h.GetNbinsX()
+    start_bin_y = 0 if do_oflow else 1
+    end_bin_y = h.GetNbinsY()+1 if do_oflow else h.GetNbinsY()
+    for ix in range(start_bin_x, end_bin_x+1):
+        for iy in range(start_bin_y, end_bin_y+1):
+            print(ix, iy, h.GetBinContent(ix. iy) if print_contents else "", "± %f" % h.GetBinError(ix, iy) if print_errors else "")
+
