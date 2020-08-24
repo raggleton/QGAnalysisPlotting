@@ -3744,12 +3744,17 @@ class BigNormalised1DPlotter(object):
 
         return lines, texts
 
-    def make_big_1d_normalised_hist(self, name, binning_scheme='generator', hist_bin_chopper=None):
+    def make_big_1d_normalised_hist(self, name, binning_scheme='generator', hist_bin_chopper=None, do_div_bin_width=True):
         """Make big 1D plot with normalised distribution per pt bin"""
         hist_bin_chopper = hist_bin_chopper or self.hist_bin_chopper
         h_new = ROOT.TH1D(name + "_1d_all_" + cu.get_unique_str(), "", self.nbins(binning_scheme), self.all_bin_edges(binning_scheme))
         for ibin, _ in enumerate(self.pt_bin_edges(binning_scheme)[:-1]):
-            hist_bin = hist_bin_chopper.get_pt_bin_normed_div_bin_width(name, ibin, binning_scheme=binning_scheme)
+            # hist_bin = hist_bin_chopper.get_pt_bin_normed_div_bin_width(name, ibin, binning_scheme=binning_scheme)
+            hist_bin = hist_bin_chopper.get_bin_plot(name, ibin,
+                                                     axis='pt',
+                                                     do_norm=True,
+                                                     do_div_bin_width=do_div_bin_width,
+                                                     binning_scheme=binning_scheme)
 
             for lbin in range(1, hist_bin.GetNbinsX()+1):
                 global_bin = (ibin * self.num_lambda_bins(binning_scheme)) + lbin
