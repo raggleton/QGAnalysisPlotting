@@ -45,6 +45,7 @@ genht_str = "H_{T}^{Gen}"
 qscale_str = "q scale"
 ptHat_str = "#hat{p}_{T}"
 PU_ptHat_str = "max(#hat{p}_{T}^{PU})"
+jetkT_str = "k_{T}^{parton}"
 
 metric_str_dict = {
     "pt_jet_genHT_ratio" : "%s / %s" % (pt_str, genht_str),
@@ -59,6 +60,10 @@ metric_str_dict = {
     "PU_ptHat_genHT_ratio" : "%s / %s" % (PU_ptHat_str, genht_str),
 
     "PU_ptHat_ptHat_ratio" : "%s / %s" % (PU_ptHat_str, ptHat_str),
+    
+    "PU_ptHat_jetkT_ratio" : "%s / %s" % (PU_ptHat_str, jetkT_str),
+
+    "pt_jet_jetkT_ratio" : "%s / %s" % (pt_str, jetkT_str),
 }
 
 
@@ -75,24 +80,68 @@ def do_var_vs_pt_plot(histname, input_filename, output_filename):
     if h3d.GetEntries() == 0:
         return
     h2d = h3d.Project3D("zy")
+
+    xlabel = h2d.GetXaxis().GetTitle()
+    ylabel = h2d.GetYaxis().GetTitle()
+
+    # find largest var value (ie row) that has a filled bin
+    h2d_ndarray = cu.th2_to_ndarray(h2d)[0]
+
+    xbins = np.array(cu.get_bin_edges(h2d, 'x'))
+    ybins = np.array(cu.get_bin_edges(h2d, 'y'))
+
+    # remove dodgy bins with 0 width cos I was an idiot and duplicated some bins
+    n_deleted = 0
+    # weight bin
+    xax = h2d.GetXaxis()
+    for ix in range(1, h2d.GetNbinsX()+1):
+        if xax.GetBinWidth(ix) == 0:
+            h2d_ndarray = np.delete(h2d_ndarray, ix-1-n_deleted, axis=1)
+            xbins = np.delete(xbins, ix-1-n_deleted, axis=0)
+            n_deleted += 1
+            print("Deleting bin", ix)
+
+    # pt bin
+    n_deleted = 0
+    yax = h2d.GetYaxis()
+    for iy in range(1, h2d.GetNbinsY()+1):
+        if yax.GetBinWidth(iy) == 0:
+            h2d_ndarray = np.delete(h2d_ndarray, iy-1-n_deleted, axis=0)
+            ybins = np.delete(ybins, iy-1-n_deleted, axis=0)
+            n_deleted += 1
+            print("Deleting bin", iy)
+
+    # nonzero returns (row #s)(col #s) of non-zero elements
+    # we only want the largest row #
+    max_filled_row_ind = int(np.nonzero(h2d_ndarray)[0].max())
+    h2d = cu.ndarray_to_th2(h2d_ndarray, binsx=xbins, binsy=ybins)
+
     if "unweighted" in histname:
-        h2d.SetTitle("Unweighted")
+        h2d.SetTitle("Unweighted;%s;%s" % (xlabel, ylabel))
     else:
-        h2d.SetTitle("Weighted")
+        h2d.SetTitle("Weighted;%s;%s" % (xlabel, ylabel))
+
+    h2d.GetYaxis().SetRange(1, max_filled_row_ind+2)  # +1 as ROOT 1-indexed, +1 for padding
     h2d.GetYaxis().SetTitle(get_var_str(histname))
+
     canv = ROOT.TCanvas(cu.get_unique_str(), "", 800, 600)
     canv.SetTicks(1, 1)
-    canv.SetLeftMargin(0.1)
+    canv.SetLeftMargin(0.12)
     canv.SetRightMargin(0.15)
     canv.SetLogz()
-    h2d.Draw("COLZ")
+    # canv.SetLogy()
+    h2d_copy = h2d.Clone()
+    # h2d_copy.Scale(1, "width")
+    h2d_copy.Draw("COLZ")
     canv.SetLogx()
-    h2d.GetXaxis().SetMoreLogLabels()
+    h2d_copy.GetXaxis().SetMoreLogLabels()
     canv.SaveAs(output_filename)
 
     canv.SetLogz(False)
-    h2d_normed = cu.make_normalised_TH2(h2d, norm_axis='x')
+    # h2d.Scale(1, "width")
+    h2d_normed = cu.make_normalised_TH2(h2d, norm_axis='x', recolour=True)
     h2d_normed.Draw("COLZ")
+    h2d_normed.GetXaxis().SetMoreLogLabels()
     # h2d_normed.SetMinimum(1E-5)
     canv.SaveAs(output_filename.replace(".pdf", "_normX.pdf"))
 
@@ -207,8 +256,11 @@ def do_jet_pt_with_var_cuts(histname, cuts, input_filename, output_filename):
             h3 = qgp.hist_divide_bin_width(h2)
         pt_hists.append(h3)
 
+    line_styles = [1, 2, 3]
+    n_line_styles = len(line_styles)
     conts = [Contribution(h, label=" < %g" % cut,
                           line_color=cu.get_colour_seq(ind, len(cuts)),
+                          line_style=line_styles[ind % n_line_styles],
                           marker_color=cu.get_colour_seq(ind, len(cuts)),
                           subplot=pt_hists[-1])
              for ind, (h, cut) in enumerate(zip(pt_hists, cuts))]
@@ -261,8 +313,11 @@ def do_jet_pt_rel_error_with_var_cuts(histname, cuts, input_filename, output_fil
             h3.SetBinError(ibin, 0)
         pt_hists.append(h3)
 
+    line_styles = [1, 2, 3]
+    n_line_styles = len(line_styles)
     conts = [Contribution(h, label=" < %g" % cut,
                           line_color=cu.get_colour_seq(ind, len(cuts)),
+                          line_style=line_styles[ind % n_line_styles],
                           marker_color=cu.get_colour_seq(ind, len(cuts)),
                           subplot=pt_hists[-1])
              for ind, (h, cut) in enumerate(zip(pt_hists, cuts))]
@@ -425,8 +480,8 @@ def do_cut_roc_per_pt(histname, input_filename, output_filename):
                 max_val = val
                 max_bin = icut
 
-        # for icut in range(max_bin + 5, h2d.GetNbinsY()+2):
-        for icut in range(2, h2d.GetNbinsY()+2):
+        for icut in range(max_bin + 5, h2d.GetNbinsY()+2, 2):
+        # for icut in range(2, h2d.GetNbinsY()+2):
             err = array('d', [0])
             count = h2d.IntegralAndError(ibin, ibin+1, 1, icut-1, err)
             if count == 0:
@@ -437,37 +492,81 @@ def do_cut_roc_per_pt(histname, input_filename, output_filename):
             count = h2d_unweighted.IntegralAndError(ibin, ibin+1, 1, icut-1, err)
             data_unweighted.append([count, err[0], h2d.GetYaxis().GetBinLowEdge(icut)])
 
-        cuts = [d[2] for d in data]
+        cuts = np.array([d[2] for d in data][1:])
+        # cuts = np.array([d[2] for d in data])
 
-        weighted_fractions = np.array([d[0] / data[-1][0] for d in data])
-        unweighted_fractions = np.array([d[0] / data_unweighted[-1][0] for d in data_unweighted])
-        gr_count = ROOT.TGraph(len(data), unweighted_fractions, weighted_fractions)
+        weighted_fractions = np.array([abs(d[0]-dd[0]) / dd[0] for d, dd in zip(data[:-1], data[1:])])
+        unweighted_fractions = np.array([abs(d[0]-dd[0]) / dd[0] for d, dd in zip(data_unweighted[:-1], data_unweighted[1:])])
+
+        non_zero_mask = (unweighted_fractions>0) & (weighted_fractions>0)
+        non_zero_weighted = weighted_fractions[non_zero_mask]
+        weight_min_pow = math.floor(math.log10(min(non_zero_weighted))) if len(non_zero_weighted) > 0 else -10
+        weight_max_pow = math.floor(math.log10(max(non_zero_weighted))) if len(non_zero_weighted) > 0 else 0
+        assert(weight_max_pow>=weight_min_pow)
+
+        non_zero_unweighted = unweighted_fractions[non_zero_mask]
+        unweight_min_pow = math.floor(math.log10(min(non_zero_unweighted))) if len(non_zero_unweighted) > 0 else -10
+        unweight_max_pow = math.floor(math.log10(max(non_zero_unweighted))) if len(non_zero_unweighted) > 0 else 0
+        assert(unweight_max_pow>=unweight_min_pow)
+
+        mask = unweighted_fractions < 10**(unweight_min_pow+1)  # last decade of unweighted drops
+        mask &= weighted_fractions > 10**(weight_max_pow-1)  # largest decades of weighted drops
+
+        if np.sum(mask) == 0:
+            continue
+
+        # weighted_fractions = np.array([d[0] / data[-1][0] for d in data])
+        # unweighted_fractions = np.array([d[0] / data_unweighted[-1][0] for d in data_unweighted])
+
+        unweighted_useful = unweighted_fractions[mask & non_zero_mask]
+        weighted_useful = weighted_fractions[mask & non_zero_mask]
+        if "pt_jet_genHT_ratio" in histname and pt_low == 800:
+            print("weight_min_pow:", weight_min_pow)
+            print("weight_max_pow:", weight_max_pow)
+            print("unweight_min_pow:", unweight_min_pow)
+            print("unweight_max_pow:", unweight_max_pow)
+            print("unweight_max_pow:", unweight_max_pow)
+            print("weighted_useful:", weighted_useful)
+            print("unweighted_useful:", unweighted_useful)
+
+        gr_count = ROOT.TGraph(len(unweighted_useful), unweighted_useful, weighted_useful)
         gr_count.SetMarkerColor(ROOT.kRed)
         gr_count.SetMarkerSize(0)
         gr_count.SetMarkerStyle(21)
         gr_count.SetLineColor(ROOT.kRed)
         gr_count.SetTitle("%s, %g < p_{T} < %g GeV;Relative unweighted count;Relative weighted count" % (get_var_str(histname), pt_low, pt_high))
+        gr_count.SetTitle("%s, %g < p_{T} < %g GeV;Unweighted fractional drop;Weighted fractional drop" % (get_var_str(histname), pt_low, pt_high))
 
-        canv.SetLogx(False)
-        canv.SetLogy(False)
 
-        ROOT.TGaxis.SetMaxDigits(2)
+        # add annotations of cuts
+        latexs = []
+        for i, cut in enumerate(cuts[mask * non_zero_mask]):
+            latex = ROOT.TLatex(gr_count.GetX()[i], gr_count.GetY()[i], " < %.2f" % cut)
+            latex.SetTextSize(0.02)
+            latex.SetTextColor(ROOT.kBlue)
+            gr_count.GetListOfFunctions().Add(latex)
+            latexs.append(latex)
 
-        gr_count.Draw("ALP")
+        # canv.SetLogx(False)
+        # canv.SetLogy(False)
 
-        ROOT.TGaxis.SetMaxDigits(2)
-        unweighted_min = 0.9999
+        # ROOT.TGaxis.SetMaxDigits(2)
 
-        # Calculate differences between points
-        unweighted_diffs = unweighted_fractions[1:] - unweighted_fractions[:-1]
-        weighted_diffs = weighted_fractions[1:] - weighted_fractions[:-1]
-        big_diff_inds = []
-        for ind, (u, w) in enumerate(zip(unweighted_diffs, weighted_diffs)):
-            # look for big diff in weighted frac, small diff in unweighted,
-            # with a limit on the minimum size of unweighted frac
-            # (only trying to remove a few events)
-            if u > 0 and w / u > 100 and u < 0.005 and unweighted_fractions[ind] > unweighted_min:
-                big_diff_inds.append(ind)
+        # gr_count.Draw("ALP")
+
+        # ROOT.TGaxis.SetMaxDigits(2)
+        # unweighted_min = 0.9999
+
+        # # Calculate differences between points
+        # unweighted_diffs = unweighted_fractions[1:] - unweighted_fractions[:-1]
+        # weighted_diffs = weighted_fractions[1:] - weighted_fractions[:-1]
+        # big_diff_inds = []
+        # for ind, (u, w) in enumerate(zip(unweighted_diffs, weighted_diffs)):
+        #     # look for big diff in weighted frac, small diff in unweighted,
+        #     # with a limit on the minimum size of unweighted frac
+        #     # (only trying to remove a few events)
+        #     if u > 0 and w / u > 100 and u < 0.005 and unweighted_fractions[ind] > unweighted_min:
+        #         big_diff_inds.append(ind)
 
         # if "pt_jet_genHT_ratio" in histname and pt_low == 186:
         #     for u, w in zip(unweighted_diffs, weighted_diffs):
@@ -475,48 +574,63 @@ def do_cut_roc_per_pt(histname, input_filename, output_filename):
         #     print(big_diff_inds)
 
         # make graph of big diff points, add annotations of cuts
-        if len(big_diff_inds) > 0:
-            gr_big_diffs = ROOT.TGraph(len(big_diff_inds), array('d', [unweighted_fractions[i+1] for i in big_diff_inds]), array('d', [weighted_fractions[i+1] for i in big_diff_inds]))
-            gr_big_diffs.SetLineWidth(0)
-            gr_big_diffs.SetMarkerColor(ROOT.kBlue)
-            gr_big_diffs.SetMarkerStyle(25)
-            latexs = []
-            for i, ind in enumerate(big_diff_inds[:]):
-                latex = ROOT.TLatex(gr_big_diffs.GetX()[i], gr_big_diffs.GetY()[i], " < %.2f" % cuts[ind+1])
-                latex.SetTextSize(0.02)
-                latex.SetTextColor(ROOT.kBlue)
-                gr_big_diffs.GetListOfFunctions().Add(latex)
-                latexs.append(latex)
-            gr_big_diffs.Draw("*")
+        # if len(big_diff_inds) > 0:
+        #     gr_big_diffs = ROOT.TGraph(len(big_diff_inds), array('d', [unweighted_fractions[i+1] for i in big_diff_inds]), array('d', [weighted_fractions[i+1] for i in big_diff_inds]))
+        #     gr_big_diffs.SetLineWidth(0)
+        #     gr_big_diffs.SetMarkerColor(ROOT.kBlue)
+        #     gr_big_diffs.SetMarkerStyle(25)
+        #     latexs = []
+        #     for i, ind in enumerate(big_diff_inds[:]):
+        #         latex = ROOT.TLatex(gr_big_diffs.GetX()[i], gr_big_diffs.GetY()[i], " < %.2f" % cuts[ind+1])
+        #         latex.SetTextSize(0.02)
+        #         latex.SetTextColor(ROOT.kBlue)
+        #         gr_big_diffs.GetListOfFunctions().Add(latex)
+        #         latexs.append(latex)
+        #     gr_big_diffs.Draw("*")
 
-        gr_count.GetXaxis().SetLimits(unweighted_min, 1)
+        # gr_count.GetXaxis().SetLimits(unweighted_min, 1)
 
         # find corresponding value for weighted to set axis range
-        weighted_min = 0
-        for ind, u in enumerate(unweighted_fractions):
-            if u >= unweighted_min:
-                weighted_min = weighted_fractions[ind-1]
-                if ind == len(unweighted_fractions) - 1:
-                    weighted_min = 0
-                break
-        gr_count.GetHistogram().SetMinimum(weighted_min*1.1 - 0.1)
-        gr_count.GetHistogram().SetMaximum(1)
-        canv.SaveAs(output_filename.replace(".pdf", "_count_pt%gto%g.pdf" % (pt_low, pt_high)))
+        # weighted_min = 0
+        # for ind, u in enumerate(unweighted_fractions):
+        #     if u >= unweighted_min:
+        #         weighted_min = weighted_fractions[ind-1]
+        #         if ind == len(unweighted_fractions) - 1:
+        #             weighted_min = 0
+        #         break
+        # gr_count.GetHistogram().SetMinimum(weighted_min*1.1 - 0.1)
+        # gr_count.GetHistogram().SetMaximum(1)
+        # canv.SaveAs(output_filename.replace(".pdf", "_count_pt%gto%g.pdf" % (pt_low, pt_high)))
 
         # do a version zoomed out
         canv.Clear()
-        gr_count.Draw("ALP")
-        unweighted_min = 0.95
-        gr_count.GetXaxis().SetLimits(unweighted_min, 1)
-        weighted_min = 0
-        for ind, u in enumerate(unweighted_fractions):
-            if u >= unweighted_min:
-                weighted_min = weighted_fractions[ind-1]
-                if ind == len(unweighted_fractions) - 1:
-                    weighted_min = 0
-                break
-        gr_count.GetHistogram().SetMinimum(weighted_min*1.1 - 0.1)
-        gr_count.GetHistogram().SetMaximum(1)
+        gr_count.SetMarkerSize(0.5)
+        gr_count.Draw("AP")
+
+        # unweighted_min = 0.
+        # gr_count.GetXaxis().SetLimits(unweighted_min, 1)
+        # weighted_min = 0
+        # for ind, u in enumerate(unweighted_fractions):
+        #     if u >= unweighted_min:
+        #         weighted_min = weighted_fractions[ind-1]
+        #         if ind == len(unweighted_fractions) - 1:
+        #             weighted_min = 0
+        #         break
+        # gr_count.GetHistogram().SetMinimum(weighted_min*1.1 - 0.1)
+
+        gr_count.GetXaxis().SetMoreLogLabels()
+        gr_count.GetYaxis().SetMoreLogLabels()
+
+        weight_min_pow = math.floor(math.log10(min(weighted_useful))) if len(weighted_useful) > 0 else -10
+        weight_max_pow = math.floor(math.log10(max(weighted_useful))) if len(weighted_useful) > 0 else 0
+
+        unweight_min_pow = math.floor(math.log10(min(unweighted_useful))) if len(unweighted_useful) > 0 else -10
+        unweight_max_pow = math.floor(math.log10(max(unweighted_useful))) if len(unweighted_useful) > 0 else 0
+        gr_count.GetHistogram().SetMinimum(10**weight_min_pow)
+        gr_count.GetHistogram().SetMaximum(10**(weight_max_pow+1))
+        gr_count.GetXaxis().SetLimits(10**unweight_min_pow, 10**(unweight_max_pow+1))
+        canv.SetLogy()
+        canv.SetLogx()
         canv.SaveAs(output_filename.replace(".pdf", "_count_pt%gto%g_all.pdf" % (pt_low, pt_high)))
 
 
@@ -555,33 +669,54 @@ if __name__ == "__main__":
 
         "weight_vs_pt_vs_PU_ptHat_ptHat_ratio",
         "weight_vs_pt_vs_PU_ptHat_ptHat_ratio_unweighted",
+
+        "weight_vs_pt_vs_PU_ptHat_jetkT_ratio",
+        "weight_vs_pt_vs_PU_ptHat_jetkT_ratio_unweighted",
+
+        "weight_vs_pt_vs_pt_jet_jetkT_ratio_unweighted",
+        "weight_vs_pt_vs_pt_jet_jetkT_ratio",
     ]
 
-    hist_dirs = ['Weight_Presel', 'Weight_Reco_sel']
+    hist_dirs = ['Weight_Presel', 'Weight_Reco_sel'][1:]
 
     workdirs = [
-        "workdir_102X_v3data_v2mc_ak4puppi_data_fixSelCutOrder_puppiJER_tightJetId_constitPt0MultPt1_weightHists",
-        "workdir_102X_v3data_v2mc_ak8puppi_data_fixSelCutOrder_puppiJER_tightJetId_constitPt0MultPt1_weightHists"
+        # "workdir_102X_v3data_v2mc_ak4puppi_data_fixSelCutOrder_puppiJER_tightJetId_constitPt0MultPt1_weightHists",
+        # "workdir_102X_v3data_v2mc_ak8puppi_data_fixSelCutOrder_puppiJER_tightJetId_constitPt0MultPt1_weightHists",
+        # "workdir_102X_v3data_v2mc_ak4puppi_fixSelCutOrder_puppiJER_tightJetId_constitPt0MultPt1_weightHistsBig_noWeightCuts",
+        # "workdir_102X_v3data_v2mc_ak4puppi_fixSelCutOrder_puppiJER_tightJetId_constitPt0MultPt1_weightHists_PUWeightCuts",
+        # "workdir_102X_v2_ak4puppi_fixSelCutOrder_puppiJER_tightJetId_constitPt0MultPt1_PUWeightCuts",
+        "workdir_102X_v2_ak4puppi_fixSelCutOrder_puppiJER_tightJetId_constitPt0MultPt1_WeightCuts",
     ]
 
 
     qcd_filenames = [
         qgc.QCD_FILENAME,
-        qgc.QCD_PYTHIA_ONLY_FILENAME,
-        qgc.QCD_HERWIG_FILENAME,
+        # qgc.QCD_PYTHIA_ONLY_FILENAME,
+        # qgc.QCD_HERWIG_FILENAME,
+    ]
+
+    dy_filenames = [
+        qgc.DY_FILENAME,
+        qgc.DY_HERWIG_FILENAME,
+        # 'uhh2.AnalysisModuleRunner.MC.MC_HERWIG_DYJetsToLL_JetKtMin170_PartonKtMin300.root'
+        # 'uhh2.AnalysisModuleRunner.MC.MC_MGPYTHIA_DYJetsToLL_M-50_HT-0to70.root'
     ]
 
     # ROOT.gStyle.SetPalette(ROOT.kPastel)
 
     for workdir in workdirs:
-        for qcd_filename in qcd_filenames:
+        # for filename in dy_filenames:
+        for filename in qcd_filenames:
+        # for filename in chain(qcd_filenames, dy_filenames):
 
-            ifile = os.path.join(MAINDIR, workdir, qcd_filename)
+            ifile = os.path.join(MAINDIR, workdir, filename)
+            if not os.path.isfile(ifile):
+                continue
 
             for hist_dir in hist_dirs:
 
                 dir_append = hist_dir.lower().replace("weight_", "")
-                odir = os.path.join(MAINDIR, workdir, "var_jet_pt_weights_%s_%s" % (dir_append, qcd_filename.replace("uhh2.AnalysisModuleRunner.MC.MC_", "").replace(".root", "")))
+                odir = os.path.join(MAINDIR, workdir, "var_jet_pt_weights_%s_%s" % (dir_append, filename.replace("uhh2.AnalysisModuleRunner.MC.MC_", "").replace(".root", "")))
                 cu.check_dir_exists_create(odir)
 
                 # do_weight_vs_pt_plot(input_filename=ifile,
@@ -592,9 +727,14 @@ if __name__ == "__main__":
 
                 for ind, base_hname in enumerate(histnames):
                     hname = os.path.join(hist_dir, base_hname)
-                    # do_var_vs_pt_plot(histname=hname,
-                    #                   input_filename=ifile,
-                    #                   output_filename=os.path.join(odir, base_hname.replace("weight_vs_", "") + ".pdf"))
+                    
+                    tf = cu.open_root_file(ifile)
+                    if not cu.exists_in_file(tf, hname):
+                        continue
+
+                    do_var_vs_pt_plot(histname=hname,
+                                      input_filename=ifile,
+                                      output_filename=os.path.join(odir, base_hname.replace("weight_vs_", "") + ".pdf"))
 
                     # if "_vs_pt_" in hname:
                     #     # skip the _vs_pt_genjet_ since identical, and we collapse that axis anyway
@@ -604,30 +744,34 @@ if __name__ == "__main__":
 
                     cuts = [10, 9, 8, 7, 6, 5, 4, 3, 2]
                     cuts = [10, 8, 6, 4, 3, 2]
+                    cuts = [100, 75, 50, 25, 10, 8, 5, 2]
+                    cuts = [25, 10, 8, 5, 2]
                     if "PU_ptHat" in hname:
                         cuts.extend([1.5, 1, 0.5])
                     if 'pt_genjet_genHT_ratio' in hname:
                         cuts.extend([1.5, 1])
                     if 'pt_jet_genHT_ratio' in hname:
                         cuts.extend([1.5, 1])
-                    # do_jet_pt_with_var_cuts(histname=hname,
-                    #                         cuts=cuts,
-                    #                         input_filename=ifile,
-                    #                         output_filename=os.path.join(odir, base_hname.replace("weight_vs_pt_vs_", "pt_cuts_").replace("weight_vs_pt_genjet_vs_", "pt_genjet_cuts_") + ".pdf"))
+                    do_jet_pt_with_var_cuts(histname=hname,
+                                            cuts=cuts,
+                                            input_filename=ifile,
+                                            output_filename=os.path.join(odir, base_hname.replace("weight_vs_pt_vs_", "pt_cuts_").replace("weight_vs_pt_genjet_vs_", "pt_genjet_cuts_") + ".pdf"))
 
-                    # do_jet_pt_rel_error_with_var_cuts(histname=hname,
-                    #                                   cuts=cuts,
-                    #                                   input_filename=ifile,
-                    #                                   output_filename=os.path.join(odir, base_hname.replace("weight_vs_pt_vs_", "pt_cuts_rel_error_").replace("weight_vs_pt_genjet_vs_", "pt_genjet_rel_error_") + ".pdf"))
+                    do_jet_pt_rel_error_with_var_cuts(histname=hname,
+                                                      cuts=cuts,
+                                                      input_filename=ifile,
+                                                      output_filename=os.path.join(odir, base_hname.replace("weight_vs_pt_vs_", "pt_cuts_rel_error_").replace("weight_vs_pt_genjet_vs_", "pt_genjet_rel_error_") + ".pdf"))
 
                     # do_weight_vs_var_plot_per_pt(histname=hname,
                     #                              input_filename=ifile,
                     #                              output_filename=os.path.join(odir, base_hname.replace("_vs_pt_vs_", "_").replace("_vs_pt_genjet_vs_", "_") + ".pdf"))
 
-                    if "unweighted" not in hname and "_vs_pt_genjet_vs_" not in hname:
+                    # if "unweighted" not in hname and "_vs_pt_genjet_vs_" not in hname:
                     #     do_cut_scan_per_pt(histname=hname,
                     #                        input_filename=ifile,
                     #                        output_filename=os.path.join(odir, base_hname.replace("weight_vs_pt_vs_", "cuts_scan_") + ".pdf"))
-                        do_cut_roc_per_pt(histname=hname,
-                                          input_filename=ifile,
-                                          output_filename=os.path.join(odir, base_hname.replace("weight_vs_pt_vs_", "cuts_roc_") + ".pdf"))
+                        # do_cut_roc_per_pt(histname=hname,
+                        #                   input_filename=ifile,
+                        #                   output_filename=os.path.join(odir, base_hname.replace("weight_vs_pt_vs_", "cuts_roc_") + ".pdf"))
+
+                    tf.Close()
