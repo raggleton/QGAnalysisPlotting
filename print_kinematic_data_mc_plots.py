@@ -70,6 +70,7 @@ def do_1D_plot(hists,
                normalise_hists=True,
                title="",
                xtitle=None,
+               mean_rel_error=0.4,
                data_first=True):
 
     if (len(hists) != len(components_styles_dicts)):
@@ -120,7 +121,7 @@ def do_1D_plot(hists,
                            ylim=ylim,
                            logx=logx,
                            logy=logy,
-                           mean_rel_error=0.4,
+                           mean_rel_error=mean_rel_error,
                            data_first=data_first,
                            subplot_type='ratio' if do_ratio else None,
                            subplot_title=subplot_title,
@@ -187,11 +188,6 @@ def do_all_1D_projection_plots_in_dir(directories,
         # Do TH1s separately
         if not isinstance(objs[0], (ROOT.TH2F, ROOT.TH2D, ROOT.TH2I)):
             logx = obj_name in ["pt_jet", "pt_jet1", "pt_jet2", "pt_mumu", 'gen_ht', 'pt_jet_response_binning', 'pt_genjet_response_binning', 'pt_jet1_unweighted', 'pt_jet_unweighted']
-            rebin = 1
-            if obj_name in ['pt_jet', 'pt_jet1', 'pt_jet2', 'pt_mumu']:
-                rebin = 20
-            for obj in objs:
-                obj.Rebin(rebin)
 
             this_title = (("{jet_algo}\n"
                            "{region_label}\n")
@@ -200,14 +196,43 @@ def do_all_1D_projection_plots_in_dir(directories,
             if title is not None:
                 this_title += "\n%s" % (title)
 
-            do_1D_plot(objs,
-                       components_styles_dicts=components_styles_dicts,
-                       do_ratio=do_ratio,
-                       normalise_hists=normalise_hists,
-                       logx=logx,
-                       logy=True,
-                       title=this_title,
-                       output_filename=os.path.join(output_dir, obj_name+".%s" % (OUTPUT_FMT)))
+            if obj_name in ['pt_jet', 'pt_jet1', 'pt_jet2', 'pt_mumu']:
+                # small rebinned version
+                for obj in objs:
+                    obj.Rebin(1)
+
+            if normalise_hists:
+                do_1D_plot(objs,
+                           components_styles_dicts=components_styles_dicts,
+                           do_ratio=do_ratio,
+                           normalise_hists=normalise_hists,
+                           logx=logx,
+                           logy=True,
+                           title=this_title,
+                           mean_rel_error=-1,
+                           output_filename=os.path.join(output_dir, obj_name+".%s" % (OUTPUT_FMT)))
+
+            # do a rebinned version for some variables
+            if obj_name in ['pt_jet', 'pt_jet1', 'pt_jet2', 'pt_mumu']:
+                for obj in objs:
+                    obj.Rebin(20) # this is multiplied by the previous rebin
+
+                this_title = (("{jet_algo}\n"
+                               "{region_label}\n")
+                               .format(jet_algo=jet_config_str,
+                                       region_label=region_str))
+                if title is not None:
+                    this_title += "\n%s" % (title)
+
+                do_1D_plot(objs,
+                           components_styles_dicts=components_styles_dicts,
+                           do_ratio=do_ratio,
+                           normalise_hists=normalise_hists,
+                           logx=logx,
+                           logy=True,
+                           title=this_title,
+                           output_filename=os.path.join(output_dir, obj_name+"_rebin.%s" % (OUTPUT_FMT)))
+
         else:
 
             for pt_min, pt_max in pt_bins:
@@ -296,6 +321,7 @@ def do_all_1D_projection_plots_in_dir(directories,
                            logy=logy,
                            title=_title(region_str, pt_min, pt_max),
                            xtitle=xtitle,
+                           mean_rel_error=-1,
                            output_filename=os.path.join(output_dir, obj_name+"_pt%dto%d.%s" % (pt_min, pt_max, OUTPUT_FMT)))
 
 
