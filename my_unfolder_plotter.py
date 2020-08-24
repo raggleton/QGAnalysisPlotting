@@ -661,7 +661,15 @@ class MyUnfolderPlotter(object):
         l, t = self.draw_pt_binning_lines(plot, which='gen', axis='x')
         plot.save(output_filename)
 
-    def draw_pt_binning_lines(self, plot, which, axis, do_underflow=True, do_labels_inside=True, do_labels_outside=False, labels_inside_align='lower'):
+    def draw_pt_binning_lines(self, plot,
+                              which,
+                              axis,
+                              do_underflow=True,
+                              do_overflow=True,
+                              do_labels_inside=True,
+                              do_labels_outside=False,
+                              labels_inside_align='lower',
+                              offset=0):
         """Draw lines marking pt bins
 
         You MUST store the return lists of lines and text objects,
@@ -676,13 +684,17 @@ class MyUnfolderPlotter(object):
         axis : str
             "x" or "y"
         do_underflow : bool, optional
-            Include underflow bins
+            Include underflow pT bins
+        do_overflow : bool, optional
+            Include overflow bins for variable
         do_labels_inside : bool, optional
             Add pT bin labels outside the main plot area
         do_labels_outside : bool, optional
             Add pT bin labels outside the main plot area
         labels_inside_align : str, optional
             'lower' or 'higher' ie against bottom/left, or top/right
+        offset : int, optional
+            Extra offset for lines / text
 
         Raises
         ------
@@ -755,11 +767,20 @@ class MyUnfolderPlotter(object):
             plot.main_pad.cd()
 
         # add line + text for each pt bin
-        for pt_val, pt_val_upper in zip(all_pt_bins[:-1], all_pt_bins[1:]):
+        for pt_ind, (pt_val, pt_val_upper) in enumerate(zip(all_pt_bins[:-1], all_pt_bins[1:])):
             # convert value to bin number
             # what a load of rubbish, why cant I just ask generator_binning for it?!
             binning = this_binning.FindNode("%s_underflow" % dist_name) if pt_val < signal_pt_bins[0] else this_binning.FindNode(dist_name)
             pt_bin = binning.GetGlobalBinNumber(first_var+0.000001, pt_val+0.01) - 0.5 # -0.5 for offset, since the bins are centered on the bin number (e.g. bin 81 goes from 80.5 to 81.5)
+            pt_bin_offset = 0 if do_underflow else binning.GetStartBin()
+
+            # remove extra bins due to the lambda overflow, if it exists
+            if not do_overflow and this_binning.FindNode(dist_name).HasOverflow(0):  # axis=0 is lambda
+                oflow_offset = pt_ind+1
+                pt_bin_offset += oflow_offset
+
+            pt_bin -= pt_bin_offset
+            pt_bin += offset
 
             if pt_val > all_pt_bins[0]:  # skip first value, as it probably aligns with lower axis limit
                 if axis == 'x':
@@ -774,6 +795,8 @@ class MyUnfolderPlotter(object):
             # draw text for pt bins
             if do_labels_inside and axis == 'x':
                 pt_bin_higher = binning.GetGlobalBinNumber(last_var-0.00001, pt_val+0.01) - 0.5
+                pt_bin_higher -= pt_bin_offset
+                pt_bin_higher += offset
                 pt_bin_interval = pt_bin_higher - pt_bin
                 text_x = pt_bin + 0.3*(pt_bin_interval)
                 # figure out y location from axes
@@ -824,6 +847,8 @@ class MyUnfolderPlotter(object):
 
             if do_labels_outside and axis == 'x':
                 pt_bin_higher = binning.GetGlobalBinNumber(last_var-0.00001, pt_val+0.01) - 0.5
+                pt_bin_higher -= pt_bin_offset
+                pt_bin_higher += offset
                 pt_bin_interval = pt_bin_higher - pt_bin
                 text_x = pt_bin + 0.15*(pt_bin_interval)
                 text = ROOT.TPaveText(text_x, 0.5*axis_low, text_x + .35*pt_bin_interval, 0.55*axis_low)  # urgh at some point it jsut ignores this and puts it against the axis
@@ -844,6 +869,8 @@ class MyUnfolderPlotter(object):
 
             if do_labels_outside and axis == 'y':
                 pt_bin_higher = binning.GetGlobalBinNumber(last_var-0.00001, pt_val+0.01) - 0.5
+                pt_bin_higher -= pt_bin_offset
+                pt_bin_higher += offset
                 pt_bin_interval = pt_bin_higher - pt_bin
                 text_y = pt_bin + 0.15*(pt_bin_interval)
                 text = ROOT.TPaveText(0.5*axis_low, text_y, 0.5*axis_low, text_y + .35*pt_bin_interval)  # urgh at some point it jsut ignores this and puts it against the axis
