@@ -1140,6 +1140,65 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             self.rhoij_total = self.GetRhoIJtotal("rhoij_total_"+cu.get_unique_str(), "", self.output_distribution_name, "*[]", self.use_axis_binning)
         return self.rhoij_total
 
+    def get_ndarray_signal_region_no_overflow(self, arr, xbinning='generator', ybinning='generator'):
+        """Generic method to create matrix that removes pt underflow bins,
+        and only signal region pt/lambda bins (i.e no over/underflow)
+
+        very slow as we have to manually iterate over all the bins
+        I'm sure there's a quicker way
+
+        Parameters
+        ----------
+        arr : ROOT.TH2, TH1, or numpy.ndarray
+
+        Returns
+        -------
+        numpy.ndarray
+        """
+        if not isinstance(arr, (ROOT.TH2, ROOT.TH1, np.ndarray)):
+            raise TypeError("arr should be TH2/1 or ndarray")
+
+        is_1d = ((isinstance(arr, ROOT.TH1) and not isinstance(arr, ROOT.TH2)) or  # important otherwise TH2 will eval True, as subclass of TH1
+                 (isinstance(arr, np.ndarray) and arr.shape[0] == 1) or
+                 (ybinning is None))
+
+
+        nrows = self.nbins_pt_gen*self.nbins_variable_gen if ybinning == 'generator' else self.nbins_pt_reco*self.nbins_variable_reco
+        if is_1d:
+            nrows = 1
+        ncols = self.nbins_pt_gen*self.nbins_variable_gen if xbinning == 'generator' else self.nbins_pt_reco*self.nbins_variable_reco
+        output_arr = np.zeros(shape=(nrows, ncols))
+
+        x_index = -1
+        x_distribution = self.generator_distribution if xbinning == 'generator' else self.detector_distribution
+        pt_bin_edges_x = self.pt_bin_edges_gen if xbinning == 'generator' else self.pt_bin_edges_reco
+        variable_bin_edges_x = self.variable_bin_edges_gen if xbinning == 'generator' else self.variable_bin_edges_reco
+
+        y_distribution = self.generator_distribution if ybinning == 'generator' else self.detector_distribution
+        pt_bin_edges_y = self.pt_bin_edges_gen if ybinning == 'generator' else self.pt_bin_edges_reco
+        variable_bin_edges_y = self.variable_bin_edges_gen if ybinning == 'generator' else self.variable_bin_edges_reco
+
+        for pt_ind_x, pt_x in enumerate(pt_bin_edges_x[:-1]):
+            for var_ind_x, var_x in enumerate(variable_bin_edges_x[:-1]):
+                global_bin_x = x_distribution.GetGlobalBinNumber(var_x*1.0000001, pt_x*1.0000001)
+                x_index += 1
+                if is_1d:
+                    if isinstance(arr, ROOT.TH1):
+                        output_arr[0, x_index] = arr.GetBinContent(global_bin_x)
+                    else:
+                        output_arr[0, x_index] = arr[0, global_bin_x-1]  # -1 as ndarray 0-index, global bin 1-indexed
+                else:
+                    y_index = -1
+                    for pt_ind_y, pt_y in enumerate(pt_bin_edges_y[:-1]):
+                        for var_ind_y, var_y in enumerate(variable_bin_edges_y[:-1]):
+                            global_bin_y = y_distribution.GetGlobalBinNumber(var_y*1.0000001, pt_y*1.000001)
+                            y_index += 1
+                            if isinstance(arr, ROOT.TH2):
+                                output_arr[y_index, x_index] = arr.GetBinContent(global_bin_x, global_bin_y)
+                            else:
+                                output_arr[y_index, x_index] = arr[global_bin_y-1, global_bin_x-1]  # -1 as ndarray 0-index, global bin 1-indexed
+        return output_arr
+
     # LOTS OF COVARIANCE MATRIX FUNCTIONS
     # --------------------------------------------------------------------------
     def get_ematrix_input(self):
