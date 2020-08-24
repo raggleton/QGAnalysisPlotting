@@ -673,17 +673,6 @@ def th2_to_ndarray(hist_A, oflow_x=False, oflow_y=False):
             result[y_ind][x_ind] = hist_A.GetBinContent(ix, iy)
             errors[y_ind][x_ind] = hist_A.GetBinError(ix, iy)
 
-    # check sparsity
-    # num_empty = np.count_nonzero(result == 0)
-    # num_entries = result.size
-    # sparsity = num_empty / float(num_entries)
-    # print("Converting TH2 to ndarray...")
-    # print("num_empty:", num_empty)
-    # print("num_entries:", num_entries)
-    # print("sparsity:", sparsity)
-    # if (sparsity > 0.5):
-    #     print("Matrix has %d/%d empty entries - consider using sparse matrix (which I don't know how to do yet)" % (num_empty, num_entries))
-
     return result, errors
 
 
