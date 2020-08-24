@@ -580,6 +580,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
     def convert_reco_binned_hist_to_gen_binned(self, hist):
         """Convert a hist with detector level binning to gen level binning"""
         new_hist = self.generator_binning.CreateHistogram(cu.get_unique_str())
+        print('convert_reco_binned_hist_to_gen_binned: bin(1) low edge:', new_hist.GetBinLowEdge(1))
         # Iterate through all the finer reco bins, and for each determine
         # the corresponding gen bin, and add it to it from hist
         for ibin_var, (var_low, var_high) in enumerate(zip(self.variable_bin_edges_reco[:-1], self.variable_bin_edges_reco[1:])):
@@ -977,7 +978,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             self.chi2L = self.GetChi2L()
 
             self.unfolded = self.GetOutput(hist_name, "", self.output_distribution_name, "*[]", self.use_axis_binning)
-            print("self.unfolded is a", type(self.unfolded), "and has", self.unfolded.GetNbinsX(), "x bins")
+            print("self.unfolded is a", type(self.unfolded), "and has", self.unfolded.GetNbinsX(), "x bins, bin1 low edge:", self.unfolded.GetBinLowEdge(1))
 
             # Sanity check incase unfolding went really wrong - e.g. if rank
             # of matrix E is way smaller than what is expected
@@ -1284,7 +1285,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
                 this_syst.syst_ematrix = hist
             else:
                 # TODO: make it ourself from deltaX
-                pass
+                return None
         return this_syst.syst_ematrix
 
     # property or getter?
@@ -1508,7 +1509,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             folded_vec = self.probability_ndarray.dot(unfolded_vector.T)
 
             # Convert vector to TH1
-            self.folded_unfolded = cu.ndarray_to_th1(folded_vec.T, has_oflow_x=oflow)
+            self.folded_unfolded = cu.ndarray_to_th1(folded_vec.T, has_oflow_x=oflow, offset=0.5)
 
             # Error propagation: if y = Ax, with covariance matrices Vyy and Vxx,
             # respectively, then Vyy = (A*Vxx)*A^T
@@ -1530,7 +1531,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         folded_vec = self.probability_ndarray.dot(gen_vec.T)
 
         # Convert vector to TH1
-        folded_mc_truth = cu.ndarray_to_th1(folded_vec.T, has_oflow_x=oflow)
+        folded_mc_truth = cu.ndarray_to_th1(folded_vec.T, has_oflow_x=oflow, offset=0.5)
 
         # Error propagation: if y = Ax, with covariance matrices Vyy and Vxx,
         # respectively, then Vyy = (A*Vxx)*A^T
@@ -1562,7 +1563,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         # nb this is really dodgy as non-square matrices don't have an inverse technically...
         result = rsp_inv_ndarray @ y_ndarray
         # print(result.shape)
-        result_hist = cu.ndarray_to_th1(result.T)
+        result_hist = cu.ndarray_to_th1(result.T, offset=0.5)
 
         # calculate full non-regularised result
         Einv = self.probability_ndarray.T @ vyyinv_ndarray @ self.probability_ndarray
@@ -1589,14 +1590,14 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         canv.SaveAs(os.path.join(output_dir, "E_inv.pdf"))
         canv.Clear()
 
-        rhs_hist = cu.ndarray_to_th1(rhs.T)
+        rhs_hist = cu.ndarray_to_th1(rhs.T, offset=0.5)
         canv.SetRightMargin(0.12)
         rhs_hist.SetTitle("A^{T}V^{-1}_{yy}y;Generator bin;N")
         rhs_hist.Draw("HIST")
 
         canv.SaveAs(os.path.join(output_dir, "rhs.pdf"))
 
-        proper_x_hist = cu.ndarray_to_th1(proper_x.T)
+        proper_x_hist = cu.ndarray_to_th1(proper_x.T, offset=0.5)
 
         unfolded_hist = self.get_output().Clone("bah")
         cu.remove_th1_errors(unfolded_hist)
@@ -1697,7 +1698,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
 
             # Components of delta * V_inv * delta before summing
             components = delta * inter.T
-            components_hist = cu.ndarray_to_th1(components)
+            components_hist = cu.ndarray_to_th1(components, offset=0.5)
             y_max = components_hist.GetMaximum() * 1.2
             entries = [
                 Contribution(components_hist)
@@ -2635,7 +2636,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
                 ematrix_total.Add(self.get_exp_syst(n).syst_ematrix)
         total_syst = ExpSystematic(label="Total")
         total_syst.syst_ematrix = ematrix_total
-        total_syst.syst_shift = self.make_hist_from_diagonal_errors(ematrix_total, do_sqrt=True, set_errors=False)
+        total_syst.syst_shift = self.make_hist_from_diagonal_errors(ematrix_total, do_sqrt=True, set_errors=False, offset=0.5)
         # get_syst_shifted_hist() will handle syst_shifted
         self.exp_systs.append(total_syst)
 
@@ -2660,7 +2661,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             norm_exp_syst = ExpSystematic(label=exp_syst.label + "_Norm")
             # normalise the ematrix - everything comes from that
             norm_exp_syst.syst_ematrix = self.normalise_ematrix(exp_syst.syst_ematrix)
-            norm_exp_syst.syst_shift = self.make_hist_from_diagonal_errors(norm_exp_syst.syst_ematrix, do_sqrt=True, set_errors=False)
+            norm_exp_syst.syst_shift = self.make_hist_from_diagonal_errors(norm_exp_syst.syst_ematrix, do_sqrt=True, set_errors=False, offset=0.5)
             # the shifted hists and error bar hists don't make sense here
             # - the normalised errors only apply to normalised bins
             new_systs.append(norm_exp_syst)
