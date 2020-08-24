@@ -3813,7 +3813,7 @@ class HistBinChopper(object):
 class ExpSystematic(object):
     """Class to hold info about an experimental systematic"""
 
-    def __init__(self, label, syst_map=None, syst_shift=None, syst_shifted=None, syst_ematrix=None):
+    def __init__(self, label, syst_map=None, syst_shift=None, syst_shifted=None, syst_ematrix=None, syst_error_bar=None):
         self.label = label
         self.label_no_spaces = cu.no_space_str(label)
         self.syst_map = syst_map
@@ -3832,7 +3832,9 @@ class ExpSystematic(object):
         self.syst_ematrix_label = 'syst_ematrix_%s' % (self.label_no_spaces)
 
         # nominal hist with shift as error bar
-        self.syst_error_bar = None
+        self.syst_error_bar = syst_error_bar
+        self.syst_error_bar_label = 'syst_err_%s' % (self.label_no_spaces)
+
 
 class TruthTemplateMaker(object):
     """Create truth-level data template from fitting MCs templates at detector level,
