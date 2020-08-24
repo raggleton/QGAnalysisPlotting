@@ -135,7 +135,21 @@ def get_dijet_config(source_dir, central=True, groomed=False):
             #     "tfile": input_mc_qcd_herwig_tfile_reweight,
             #     "colour": ROOT.kOrange+4,
             # },
-
+            # {
+            #     "label": "NNPDF30_lo_as_0118",
+            #     "tfile": os.path.join(source_dir, "uhh2.AnalysisModuleRunner.MC.MC_QCD_NNPDF30_lo_as_0118.root"),
+            #     "colour": 835,
+            # },
+            # {
+            #     "label": "HERAPDF20_LO_EIG",
+            #     "tfile": os.path.join(source_dir, "uhh2.AnalysisModuleRunner.MC.MC_QCD_HERAPDF20_LO_EIG.root"),
+            #     "colour": 592,
+            # },
+            # {
+            #     "label": "CT14lo",
+            #     "tfile": os.path.join(source_dir, "uhh2.AnalysisModuleRunner.MC.MC_QCD_CT14lo.root"),
+            #     "colour": 883,
+            # },
         ],
 
         "scale_systematics": [
