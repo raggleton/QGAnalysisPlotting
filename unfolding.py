@@ -1725,7 +1725,7 @@ if __name__ == "__main__":
             # smeared_chi2, smeared_ndf, smeared_p = unfolder.calculate_chi2(one_hist=unfolder.get_folded_mc_truth(),
             #                                                                other_hist=unfolder.hist_mc_reco_bg_subtracted,
             #                                                                cov_inv_matrix=unfolder.get_vyy_inv_ndarray(),
-            #                                                                # cov_inv_matrix=unfolder.get_vyy_inv_no_bg_ndarray(),
+            #                                                                # cov_inv_matrix=unfolder.get_vyy_inv_no_bg_subtraction_ndarray(),
             #                                                                detector_space=True,
             #                                                                ignore_underflow_bins=True,
             #                                                                debugging_dir=os.path.join(this_output_dir, 'smeared_chi2_debug'))

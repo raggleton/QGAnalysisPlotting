@@ -4496,55 +4496,202 @@ def get_bottom_line_stats(setup):
     """Construct dict of bottom-line (i.e. chi2) stats for this region/angle combo"""
     unfolder = setup.region['unfolder']
 
-    smeared_chi2, smeared_ndf, smeared_p = unfolder.calculate_chi2(one_hist=unfolder.get_folded_mc_truth(),
-                                                                   other_hist=unfolder.hist_mc_reco_bg_subtracted,
-                                                                   cov_inv_matrix=unfolder.get_vyy_inv_ndarray(),
-                                                                   # cov_inv_matrix=unfolder.get_vyy_inv_no_bg_ndarray(),
-                                                                   detector_space=True,
-                                                                   ignore_underflow_bins=True,
-                                                                   debugging_dir=None)
-    print('smeared chi2:', smeared_chi2, smeared_ndf, smeared_chi2/smeared_ndf, smeared_p)
+    # ABOSULTE VERSION
+    # Not sure if this makes sense? Since subject to overall normalisation issues
+    # But we can't do it on the Jacobian-transformed normalised version,
+    # since the Jacobian is singular (i.e. non-invertible)
 
-    unfolded_chi2, unfolded_ndf, unfolded_p = unfolder.calculate_chi2(one_hist=unfolder.unfolded,
-                                                                      other_hist=unfolder.hist_truth,
-                                                                      cov_inv_matrix=unfolder.get_vxx_inv_ndarray(),
+    # TODO: convert detector space to gen binning to match NdF, improve chi2
+
+    # do smeared chi2
+    folded_mc_truth_gen_binning = unfolder.get_ndarray_signal_region_no_overflow(
+                                      unfolder.convert_reco_binned_hist_to_gen_binned(
+                                          unfolder.get_folded_mc_truth()
+                                      ),
+                                      xbinning='generator',
+                                      ybinning=None
+                                  )
+    folded_alt_mc_truth_gen_binning = unfolder.get_ndarray_signal_region_no_overflow(
+                                          unfolder.convert_reco_binned_hist_to_gen_binned(
+                                            unfolder.fold_generator_level(setup.region['alt_hist_mc_gen'])
+                                          ),
+                                          xbinning='generator',
+                                          ybinning=None
+                                      )
+    input_hist_gen_binning_bg_subtracted_signal = unfolder.get_ndarray_signal_region_no_overflow(
+                                                      unfolder.input_hist_gen_binning_bg_subtracted,
+                                                      xbinning='generator',
+                                                      ybinning=None
+                                                  )
+
+    vyy = unfolder.make_diag_cov_hist_from_errors(
+              h1d=unfolder.input_hist_gen_binning_bg_subtracted,
+              inverse=False
+          )
+    vyy_gen_binning = unfolder.get_ndarray_signal_region_no_overflow(
+                          vyy,
+                          xbinning='generator',
+                          ybinning='generator'
+                      )
+
+    vyy_inv = unfolder.make_diag_cov_hist_from_errors(
+                  h1d=unfolder.input_hist_gen_binning_bg_subtracted,
+                  inverse=True
+              )
+    vyy_inv_gen_binning = unfolder.get_ndarray_signal_region_no_overflow(
+                              vyy_inv,
+                              xbinning='generator',
+                              ybinning='generator'
+                          )
+    smeared_chi2, smeared_ndf, smeared_p = unfolder.calculate_chi2(one_hist=folded_mc_truth_gen_binning,
+                                                                   # one_hist=unfolder.get_folded_mc_truth(),
+                                                                   # other_hist=unfolder.input_hist_bg_subtracted,
+                                                                   other_hist=input_hist_gen_binning_bg_subtracted_signal,
+                                                                   # cov_inv_matrix=unfolder.get_vyy_inv_ndarray(),
+                                                                   # cov_inv_matrix=unfolder.get_vyy_inv_no_bg_subtraction_ndarray(),
+                                                                   cov_inv_matrix=vyy_inv_gen_binning,
+                                                                   cov_matrix=vyy_gen_binning,
+                                                                   detector_space=False,
+                                                                   ignore_underflow_bins=False,
+                                                                   has_underflow=False,
+                                                                   debugging_dir=os.path.join(setup.output_dir, "smeared_chi2_gen_binning_signal"))
+                                                                   # debugging_dir=None)
+    print('smeared chi2, mdf, chi2/ndf, p:', smeared_chi2, smeared_ndf, smeared_chi2/smeared_ndf, smeared_p)
+
+    # do for alt model
+    smeared_alt_chi2, smeared_alt_ndf, smeared_alt_p = unfolder.calculate_chi2(one_hist=folded_alt_mc_truth_gen_binning,
+                                                                               # one_hist=unfolder.fold_generator_level(setup.region['alt_hist_mc_gen']),
+                                                                               # other_hist=unfolder.input_hist_bg_subtracted,
+                                                                               other_hist=input_hist_gen_binning_bg_subtracted_signal,
+                                                                               # cov_inv_matrix=unfolder.get_vyy_inv_ndarray(),
+                                                                               # cov_inv_matrix=unfolder.get_vyy_inv_no_bg_subtraction_ndarray(),
+                                                                               cov_inv_matrix=vyy_inv_gen_binning,
+                                                                               detector_space=False,
+                                                                               ignore_underflow_bins=False,
+                                                                               has_underflow=False,
+                                                                               debugging_dir=os.path.join(setup.output_dir, "smeared_alt_chi2_gen_binning_signal"))
+                                                                               # debugging_dir=None)
+    print('smeared alt chi2, mdf, chi2/ndf, p:', smeared_alt_chi2, smeared_alt_ndf, smeared_alt_chi2/smeared_alt_ndf, smeared_alt_p)
+
+    unfolded_signal = unfolder.get_ndarray_signal_region_no_overflow(
+                          unfolder.unfolded,
+                          xbinning='generator',
+                          ybinning=None
+                      )
+    hist_truth_signal = unfolder.get_ndarray_signal_region_no_overflow(
+                            unfolder.hist_truth,
+                            xbinning='generator',
+                            ybinning=None
+                        )
+    hist_alt_truth_signal = unfolder.get_ndarray_signal_region_no_overflow(
+                            setup.region['alt_hist_mc_gen'],
+                            xbinning='generator',
+                            ybinning=None
+                        )
+
+    vxx_total_signal = unfolder.get_ndarray_signal_region_no_overflow(
+                           unfolder.get_ematrix_tunfold_total(),
+                           # unfolder.get_vxx_ndarray(),  # tunfold's version
+                           xbinning='generator',
+                           ybinning='generator'
+                       )
+
+    vxx_total_signal_inv = np.linalg.pinv(vxx_total_signal, 1E-200)  # no need to cut down to signal region
+
+    # tunfold's version
+    # vxx_total_signal_inv = unfolder.get_ndarray_signal_region_no_overflow(
+    #                           unfolder.get_vxx_inv_ndarray(),
+    #                           xbinning='generator',
+    #                           ybinning='generator'
+    #                       )
+
+    # do unfolded chi2
+    unfolded_chi2, unfolded_ndf, unfolded_p = unfolder.calculate_chi2(one_hist=unfolded_signal,
+                                                                      other_hist=hist_truth_signal,
+                                                                      cov_inv_matrix=vxx_total_signal_inv,
+                                                                      cov_matrix=vxx_total_signal,
                                                                       detector_space=False,
-                                                                      ignore_underflow_bins=True,
-                                                                      debugging_dir=None)
-    print('unfolded chi2:', unfolded_chi2, unfolded_ndf, unfolded_chi2/unfolded_ndf, unfolded_p)
+                                                                      ignore_underflow_bins=False,
+                                                                      has_underflow=False,
+                                                                      debugging_dir=os.path.join(setup.output_dir, "unfolded_chi2_signal"))
+                                                                      # debugging_dir=None)
+    print('unfolded chi2, mdf, chi2/ndf, p:', unfolded_chi2, unfolded_ndf, unfolded_chi2/unfolded_ndf, unfolded_p)
 
-    # smeared_alt = unfolder.fold_generator_level(unpack_dict['alt_hist_truth'])
-    # smeared_alt_chi2, smeared_alt_ndf, smeared_alt_p =
+    # do for alt model
+    unfolded_alt_chi2, unfolded_alt_ndf, unfolded_alt_p = unfolder.calculate_chi2(one_hist=unfolded_signal,
+                                                                                  other_hist=hist_alt_truth_signal,
+                                                                                  cov_inv_matrix=vxx_total_signal_inv,
+                                                                                  detector_space=False,
+                                                                                  ignore_underflow_bins=False,
+                                                                                  has_underflow=False,
+                                                                                  debugging_dir=os.path.join(setup.output_dir, "unfolded_alt_chi2_signal"))
+                                                                                  # debugging_dir=None)
+    print('unfolded alt chi2, mdf, chi2/ndf, p:', unfolded_alt_chi2, unfolded_alt_ndf, unfolded_alt_chi2/unfolded_alt_ndf, unfolded_alt_p)
 
     return {
-            "region": setup.region['label'],
-            "is_groomed": "groomed" in setup.region['name'],
-            "angle": setup.angle.var,
-            # "angle": setup.angle_str,
-            "smeared_chi2": smeared_chi2,
-            "smeared_ndf": smeared_ndf,
-            "smeared_chi2ndf": smeared_chi2/smeared_ndf,
-            "smeared_p": smeared_p,
-            "unfolded_chi2": unfolded_chi2,
-            "unfolded_ndf": unfolded_ndf,
-            "unfolded_chi2ndf": unfolded_chi2/unfolded_ndf,
-            "unfolded_p": unfolded_p,
-    }
+                "region": setup.region['label'],
+                "is_groomed": "groomed" in setup.region['name'],
+                "angle": setup.angle.var,
+
+                "smeared_chi2": smeared_chi2,
+                "smeared_ndf": smeared_ndf,
+                "smeared_chi2_ov_ndf": smeared_chi2/smeared_ndf,
+                "smeared_p": smeared_p,
+
+                "smeared_alt_chi2": smeared_alt_chi2,
+                "smeared_alt_ndf": smeared_alt_ndf,
+                "smeared_alt_chi2_ov_ndf": smeared_alt_chi2/smeared_alt_ndf,
+                "smeared_alt_p": smeared_alt_p,
+
+                "unfolded_chi2": unfolded_chi2,
+                "unfolded_ndf": unfolded_ndf,
+                "unfolded_chi2_ov_ndf": unfolded_chi2/unfolded_ndf,
+                "unfolded_p": unfolded_p,
+
+                "unfolded_alt_chi2": unfolded_alt_chi2,
+                "unfolded_alt_ndf": unfolded_alt_ndf,
+                "unfolded_alt_chi2_ov_ndf": unfolded_alt_chi2/unfolded_alt_ndf,
+                "unfolded_alt_p": unfolded_alt_p,
+            }
 
 
 def print_chi2_table(df):
     df_sorted = df.sort_values(by=['region', 'angle'])
-    print(r'\begin{tabular}{c|c|c|c|c|c|c}')
-    print(r"Region & Angle & $\chi_{\text{unfolded}}^2$, $N_{DoF}$, $\chi_{\text{unfolded}}^2 / N_{DoF}$  & $p_{\text{unfolded}}$ & $\chi_{\text{smeared}}^2$, $N_{DoF}$, $\chi_{\text{smeared}}^2 / N_{DoF}$ & $p_{\text{smeared}}$ & $p_{\text{unfolded}} > p_{\text{smeared}}$\\")
+    # print(r'\begin{tabular}{c|c|c|c|c|c|c|c|c|c|c|c}')
+    print(r'\begin{tabular}{c|c|c|c|c|c|c|c}')
+    print(("Region & "
+           "Angle & "
+           r"$\chi_{\text{unfolded}}^2 / N_{DoF}$ & "
+           # r"$p_{\text{unfolded}}$ & "
+           r"$\chi_{\text{unfolded, alt. model}}^2 / N_{DoF}$ & "
+           # r"$p_{\text{unfolded, alt. model}}$ & "
+           r"$\chi_{\text{smeared}}^2 / N_{DoF}$ & "
+           # r"$p_{\text{smeared}}$ & "
+           r"$\chi_{\text{smeared, alt. model}}^2 / N_{DoF}$ & "
+           # r"$p_{\text{smeared, alt. model}}$ & "
+           r"$\chi_{\text{unfolded}}^2 < \chi_{\text{smeared}}^2$ & "
+           r"$\chi_{\text{unfolded, alt. model}}^2 < \chi_{\text{smeared, alt. model}}^2$ \\"))
     print(r"\hline \\")
     for row in df_sorted.itertuples():
         angle_name = row.angle.replace("jet_", "").replace("_charged", " (charged)")
         if row.is_groomed:
             angle_name = "Groomed " + angle_name
-        print("%s & %s & %d / %d = %.3g & %.3g & %d / %d = %.3g & %.3g & %s \\\\" % (row.region, angle_name,
-                                                                                     row.unfolded_chi2, row.unfolded_ndf, row.unfolded_chi2ndf, row.unfolded_p,
-                                                                                     row.smeared_chi2, row.smeared_ndf, row.smeared_chi2ndf, row.smeared_p,
-                                                                                     "V" if row.unfolded_p > row.smeared_p else "X"))
+        # print(dir(row))
+        print(("{region} & "
+               "{angle_name} & "
+               "{unfolded_chi2:.3e} / {unfolded_ndf} = {unfolded_chi2_ov_ndf:.3g} & "
+               # "{unfolded_p:.3e} & "
+               "{unfolded_alt_chi2:.3e} / {unfolded_alt_ndf} = {unfolded_alt_chi2_ov_ndf:.3g} & "
+               # "{unfolded_alt_p:.3e} & "
+               "{smeared_chi2:.3e} / {smeared_ndf} = {smeared_chi2_ov_ndf:.3g} & "
+               # "{smeared_p:.3e} & "
+               "{smeared_alt_chi2:.3e} / {smeared_alt_ndf} = {smeared_alt_chi2_ov_ndf:.3g} & "
+               # "{smeared_alt_p:.3e} & "
+               "{result} & "
+               "{result_alt} \\\\").format(angle_name=angle_name,
+                                           result=r"$\checkmark$" if row.unfolded_chi2 < row.smeared_chi2 else r"$\times$",
+                                           result_alt=r"$\checkmark$" if row.unfolded_alt_chi2 < row.smeared_alt_chi2 else r"$\times$",
+                                           **row._asdict()))
     print(r'\end{tabular}')
 
 
@@ -4578,6 +4725,9 @@ if __name__ == "__main__":
     parser.add_argument("--doBigAbs1DPlots",
                         action='store_true',
                         help='Do big absolute 1D plots')
+    parser.add_argument("--doBottomLineTest",
+                        action='store_true',
+                        help='Do bottom line test')
 
     region_group = parser.add_argument_group('Region selection')
     region_group.add_argument("--doAllRegions",
@@ -4703,15 +4853,17 @@ if __name__ == "__main__":
                 # Do standard 1D absolute plots
                 do_all_big_absolute_1d_plots_per_region_angle(setup)
 
-            # all_chi2_stats.append(get_bottom_line_stats(setup))
+            if args.doBottomLineTest:
+                all_chi2_stats.append(get_bottom_line_stats(setup))
 
             # cleanup object, as it uses loads of memory
             if num_all_iterations > 1:
                 print("...tidying up...")
                 del unpickled_region
 
-    # df_stats = pd.DataFrame(all_chi2_stats)
-    # df_stats['region'] = df_stats['region'].astype('category')
-    # df_stats['angle'] = df_stats['angle'].astype('category')
-    # print(df_stats.head())
-    # print_chi2_table(df_stats)
+    if len(all_chi2_stats) > 0:
+        df_stats = pd.DataFrame(all_chi2_stats)
+        df_stats['region'] = df_stats['region'].astype('category')
+        df_stats['angle'] = df_stats['angle'].astype('category')
+        print(df_stats.head())
+        print_chi2_table(df_stats)

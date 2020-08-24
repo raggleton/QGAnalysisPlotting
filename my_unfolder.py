@@ -1657,13 +1657,18 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         # plot.set_logy(do_more_labels=False)
         plot.save(os.path.join(output_dir, 'tunfold_vs_numpy.pdf'))
 
-    def calculate_chi2(self, one_hist, other_hist, cov_inv_matrix, detector_space=True, ignore_underflow_bins=True, debugging_dir=None):
-        one_vec, _ = cu.th1_to_ndarray(one_hist, False)
-        other_vec, _ = cu.th1_to_ndarray(other_hist, False)
+    def calculate_chi2(self, one_hist, other_hist, cov_inv_matrix, cov_matrix=None, detector_space=True, ignore_underflow_bins=True, has_underflow=True, debugging_dir=None):
+        one_vec = one_hist
+        if isinstance(one_hist, ROOT.TH1):
+            one_vec, _ = cu.th1_to_ndarray(one_hist, False)
+        other_vec = other_hist
+        if isinstance(other_hist, ROOT.TH1):
+            other_vec, _ = cu.th1_to_ndarray(other_hist, False)
         delta = one_vec - other_vec
 
         first_signal_bin = 1
         if ignore_underflow_bins:
+            # set to 0 all the pt underflow bins
             first_signal_bin = self.detector_distribution.GetStartBin() if detector_space else self.generator_distribution.GetStartBin()
             delta[0][:first_signal_bin-1] = 0. # subtract 1 as numpy indices start at 0, hists start at 1
 
@@ -1681,50 +1686,132 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             # print some debugging plots
             debug_plotter = MyUnfolderPlotter(self, False)
             # 1D inputs
+            h_one = one_hist
+            h_other = other_hist
+            if isinstance(one_hist, np.ndarray):
+                h_one = cu.ndarray_to_th1(one_hist, offset=0.5)
+            if isinstance(other_hist, np.ndarray):
+                h_other = cu.ndarray_to_th1(other_hist, offset=0.5)
             entries = [
-                Contribution(one_hist, label='one_hist', line_color=ROOT.kBlack),
-                Contribution(other_hist, label='other_hist', line_color=ROOT.kRed, line_style=2)
+                Contribution(h_one, label='one_hist', line_color=ROOT.kBlack),
+                Contribution(h_other, label='other_hist', line_color=ROOT.kRed, line_style=2)
             ]
             plot = Plot(entries, what='hist', has_data=False,)
             plot.default_canvas_size = (800, 600)
-            plot.plot("NOSTACK HISTE")
-            l,t = debug_plotter.draw_pt_binning_lines(plot, which='reco' if detector_space else 'gen', axis='x')
+            plot.plot("NOSTACK HIST")
+            l,t = debug_plotter.draw_pt_binning_lines(plot,
+                                                      which='reco' if detector_space else 'gen',
+                                                      axis='x',
+                                                      do_underflow=has_underflow,
+                                                      offset=0)
             plot.save(os.path.join(debugging_dir, 'one_other_hists.pdf'))
 
             # Delta, with missing bins if necessary
-            delta_hist = cu.ndarray_to_th1(delta)
+            delta_hist = cu.ndarray_to_th1(delta, offset=0.5)
             entries = [
                 Contribution(delta_hist)
             ]
             plot = Plot(entries,
                         what='hist',
                         xtitle='%s bin' % ('Detector' if detector_space else 'Generator'),
-                        ytitle='one_hist - other_hist',
+                        ytitle='#Delta = one_hist - other_hist',
                         has_data=False,
                         )
             plot.default_canvas_size = (800, 600)
-            plot.plot("NOSTACK HISTE")
-            l,t = debug_plotter.draw_pt_binning_lines(plot, which='reco' if detector_space else 'gen', axis='x')
+            plot.plot("NOSTACK HIST")
+            l,t = debug_plotter.draw_pt_binning_lines(plot,
+                                                      which='reco' if detector_space else 'gen',
+                                                      axis='x',
+                                                      do_underflow=has_underflow,
+                                                      offset=0)
             plot.save(os.path.join(debugging_dir, 'delta.pdf'))
 
-            # Covariance matrix
+            # Inverse Covariance matrix
             canv = ROOT.TCanvas("c", "Inverse covariance matrix V^{-1}", 800, 600)
             obj = cov_inv_matrix
             if not isinstance(cov_inv_matrix, ROOT.TH2):
-                obj = cu.ndarray_to_th2(v_inv)
+                obj = cu.ndarray_to_th2(v_inv, offset=0.5)
+            obj.SetTitle("Inverse covariance matrix V^{-1}")
             obj.Draw("COLZ")
             canv.SetLeftMargin(0.15)
             canv.SetRightMargin(0.18)
+
+            l,t = debug_plotter.draw_pt_binning_lines(obj,
+                                                      which='reco' if detector_space else 'gen',
+                                                      axis='x',
+                                                      do_underflow=has_underflow,
+                                                      do_labels_inside=False,
+                                                      do_labels_outside=True,
+                                                      offset=1)
+            l2,t2 = debug_plotter.draw_pt_binning_lines(obj,
+                                                        which='reco' if detector_space else 'gen',
+                                                        axis='y',
+                                                        do_underflow=has_underflow,
+                                                        do_labels_inside=False,
+                                                        do_labels_outside=True,
+                                                        offset=1)
+            canv.SaveAs(os.path.join(debugging_dir, 'cov_inv_matrix_linZ.pdf'))
+
             canv.SetLogz(1)
             cov_min = obj.GetMinimum(1E-20) / 10
             obj.SetMinimum(cov_min)
             cov_max = obj.GetMaximum() * 5
             obj.SetMaximum(cov_max)
+            canv.SaveAs(os.path.join(debugging_dir, 'cov_inv_matrix_logZ.pdf'))
 
-            l,t = debug_plotter.draw_pt_binning_lines(obj, which='reco' if detector_space else 'gen', axis='x', do_underflow=True, do_labels_inside=False, do_labels_outside=True)
-            l2,t2 = debug_plotter.draw_pt_binning_lines(obj, which='reco' if detector_space else 'gen', axis='y', do_underflow=True, do_labels_inside=False, do_labels_outside=True)
-            canv.SaveAs(os.path.join(debugging_dir, 'cov_inv_matrix.pdf'))
+            # Covariance matrix
+            if cov_matrix is not None:
+                canv = ROOT.TCanvas("cc", "Covariance matrix V", 800, 600)
+                obj = cov_matrix
+                if not isinstance(cov_matrix, ROOT.TH2):
+                    obj = cu.ndarray_to_th2(cov_matrix, offset=0.5)
+                obj.SetTitle("Covariance matrix V")
+                obj.Draw("COLZ")
+                canv.SetLeftMargin(0.15)
+                canv.SetRightMargin(0.18)
 
+                l,t = debug_plotter.draw_pt_binning_lines(obj,
+                                                          which='reco' if detector_space else 'gen',
+                                                          axis='x',
+                                                          do_underflow=has_underflow,
+                                                          do_labels_inside=False,
+                                                          do_labels_outside=True,
+                                                          offset=1)
+                l2,t2 = debug_plotter.draw_pt_binning_lines(obj,
+                                                            which='reco' if detector_space else 'gen',
+                                                            axis='y',
+                                                            do_underflow=has_underflow,
+                                                            do_labels_inside=False,
+                                                            do_labels_outside=True,
+                                                            offset=1)
+                canv.SaveAs(os.path.join(debugging_dir, 'cov_matrix_linZ.pdf'))
+
+                canv.SetLogz(1)
+                cov_min = obj.GetMinimum(1E-20) / 10
+                obj.SetMinimum(cov_min)
+                cov_max = obj.GetMaximum() * 5
+                obj.SetMaximum(cov_max)
+                canv.SaveAs(os.path.join(debugging_dir, 'cov_matrix_logZ.pdf'))
+
+                # Plot product V V^-1 to test inverse quality
+                v = cov_matrix
+                if not isinstance(cov_matrix, np.ndarray):
+                    v = cu.th2_to_ndarray(cov_matrix)[0]
+
+                v_inv = cov_inv_matrix
+                if not isinstance(cov_inv_matrix, np.ndarray):
+                    v_inv = cu.th2_to_ndarray(cov_inv_matrix)[0]
+
+                prod = v @ v_inv
+                print("product shape:", prod.shape)
+                canv.Clear()
+                prod_th2 = cu.ndarray_to_th2(prod)
+                prod_th2.SetTitle("V V^{-1}")
+                prod_th2.Draw("COLZ")
+                canv.SetLogz(False)
+                canv.SaveAs(os.path.join(debugging_dir, "cov_cov_inv_product_linZ.pdf"))
+                canv.SetLogz(True)
+                canv.SaveAs(os.path.join(debugging_dir, "cov_cov_inv_product_logZ.pdf"))
 
             # Components of delta * V_inv * delta before summing
             components = delta * inter.T
@@ -1737,81 +1824,101 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
                         what='hist',
                         xtitle='%s bin' % ('Detector' if detector_space else 'Generator'),
                         ytitle='Component of chi2 (#Delta V^{-1} #Delta)',
-                        ylim=(0, y_max),
+                        # ylim=(0, y_max),
                         has_data=False,
                         )
             plot.default_canvas_size = (800, 600)
             plot.plot("NOSTACK HIST")
-            l,t = debug_plotter.draw_pt_binning_lines(plot, which='reco' if detector_space else 'gen', axis='x')
+            l,t = debug_plotter.draw_pt_binning_lines(plot,
+                                                      which='reco' if detector_space else 'gen',
+                                                      axis='x',
+                                                      do_underflow=has_underflow,
+                                                      offset=0)
             plot.save(os.path.join(debugging_dir, 'components.pdf'))
 
-            pt_bin_edges = self.pt_bin_edges_reco if detector_space else self.pt_bin_edges_gen
+            # pt_bin_edges = self.pt_bin_edges_reco if detector_space else self.pt_bin_edges_gen
 
-            for ibin_pt, (pt_low, pt_high) in enumerate(zip(pt_bin_edges[:-1], pt_bin_edges[1:])):
-                # plot component (delta * V_inv * delta) for this pt bin
-                this_h = self.hist_bin_chopper.get_var_hist_pt_binned(components_hist, ibin_pt, binning_scheme='detector' if detector_space else 'generator')
-                entries = [
-                    Contribution(this_h, label=None)
-                ]
-                plot = Plot(entries,
-                            what='hist',
-                            title='%g < p_{T} %g GeV' % (pt_low, pt_high),
-                            xtitle='lambda variable',
-                            ytitle='Component of chi2 (#Delta V^{-1} #Delta)',
-                            ylim=(0, y_max),
-                            has_data=False,
-                            )
-                plot.default_canvas_size = (800, 600)
-                plot.plot("NOSTACK TEXT HIST")
-                plot.save(os.path.join(debugging_dir, 'components_pt_bin_%d.pdf' % (ibin_pt)))
+            # for ibin_pt, (pt_low, pt_high) in enumerate(zip(pt_bin_edges[:-1], pt_bin_edges[1:])):
+            #     # plot component (delta * V_inv * delta) for this pt bin
+            #     this_h = self.hist_bin_chopper.get_var_hist_pt_binned(components_hist, ibin_pt, binning_scheme='detector' if detector_space else 'generator')
+            #     entries = [
+            #         Contribution(this_h, label=None)
+            #     ]
+            #     plot = Plot(entries,
+            #                 what='hist',
+            #                 title='%g < p_{T} %g GeV' % (pt_low, pt_high),
+            #                 xtitle='lambda variable',
+            #                 ytitle='Component of chi2 (#Delta V^{-1} #Delta)',
+            #                 ylim=(0, y_max),
+            #                 has_data=False,
+            #                 )
+            #     plot.default_canvas_size = (800, 600)
+            #     plot.plot("NOSTACK TEXT HIST")
+            #     plot.save(os.path.join(debugging_dir, 'components_pt_bin_%d.pdf' % (ibin_pt)))
 
-                # plot delta for this pt bin
-                this_delta = self.hist_bin_chopper.get_var_hist_pt_binned(delta_hist, ibin_pt, binning_scheme='detector' if detector_space else 'generator')
-                entries = [
-                    Contribution(this_delta, label=None)
-                ]
-                plot = Plot(entries,
-                            what='hist',
-                            title='%g < p_{T} %g GeV' % (pt_low, pt_high),
-                            xtitle='lambda variable',
-                            ytitle='#Delta',
-                            # ylim=(0, y_max),
-                            has_data=False,
-                            )
-                plot.default_canvas_size = (800, 600)
-                plot.plot("NOSTACK HIST TEXT")
-                plot.save(os.path.join(debugging_dir, 'delta_pt_bin_%d.pdf' % (ibin_pt)))
+            #     # plot delta for this pt bin
+            #     this_delta = self.hist_bin_chopper.get_var_hist_pt_binned(delta_hist, ibin_pt, binning_scheme='detector' if detector_space else 'generator')
+            #     entries = [
+            #         Contribution(this_delta, label=None)
+            #     ]
+            #     plot = Plot(entries,
+            #                 what='hist',
+            #                 title='%g < p_{T} %g GeV' % (pt_low, pt_high),
+            #                 xtitle='lambda variable',
+            #                 ytitle='#Delta',
+            #                 # ylim=(0, y_max),
+            #                 has_data=False,
+            #                 )
+            #     plot.default_canvas_size = (800, 600)
+            #     plot.plot("NOSTACK HIST TEXT")
+            #     plot.save(os.path.join(debugging_dir, 'delta_pt_bin_%d.pdf' % (ibin_pt)))
 
-                # plot cov matrix for this bin
-                binning = self.detector_binning.FindNode("detectordistribution") if detector_space else self.generator_binning.FindNode("generatordistribution")
-                var_bins = np.array(binning.GetDistributionBinning(0))
-                pt_bins = np.array(binning.GetDistributionBinning(1))
-                # -1 since ndarray is 0 index, th2 are 1-indexed
-                start = binning.GetGlobalBinNumber(var_bins[0] * 1.001, pt_bins[ibin_pt]*1.001) - 1
-                end = binning.GetGlobalBinNumber(var_bins[-2] * 1.001, pt_bins[ibin_pt]*1.001) - 1
-                this_cov = cu.ndarray_to_th2(v_inv[start:end+1,start:end+1])
-                canv = ROOT.TCanvas(cu.get_unique_str(), "Inverse covariance matrix V^{-1}", 800, 600)
-                this_cov.SetTitle("Inverse covariance matrix V^{-1} for %g < p_{T} < %g GeV" % (pt_low, pt_high))
-                this_cov.Draw("COLZ TEXT")
-                canv.SetLeftMargin(0.15)
-                canv.SetRightMargin(0.18)
-                # canv.SetLogz(1)
-                # this_cov.SetMinimum(cov_min)
-                # this_cov.SetMaximum(cov_max)
-                canv.SaveAs(os.path.join(debugging_dir, 'cov_inv_matrix_pt_bin_%d.pdf' % (ibin_pt)))
+            #     # plot cov matrix for this bin
+            #     binning = self.detector_binning.FindNode("detectordistribution") if detector_space else self.generator_binning.FindNode("generatordistribution")
+            #     var_bins = np.array(binning.GetDistributionBinning(0))
+            #     pt_bins = np.array(binning.GetDistributionBinning(1))
+            #     # -1 since ndarray is 0 index, th2 are 1-indexed
+            #     start = binning.GetGlobalBinNumber(var_bins[0] * 1.001, pt_bins[ibin_pt]*1.001) - 1
+            #     end = binning.GetGlobalBinNumber(var_bins[-2] * 1.001, pt_bins[ibin_pt]*1.001) - 1
+            #     this_cov = cu.ndarray_to_th2(v_inv[start:end+1,start:end+1])
+            #     canv = ROOT.TCanvas(cu.get_unique_str(), "Inverse covariance matrix V^{-1}", 800, 600)
+            #     this_cov.SetTitle("Inverse covariance matrix V^{-1} for %g < p_{T} < %g GeV" % (pt_low, pt_high))
+            #     this_cov.Draw("COLZ TEXT")
+            #     canv.SetLeftMargin(0.15)
+            #     canv.SetRightMargin(0.18)
+            #     # canv.SetLogz(1)
+            #     # this_cov.SetMinimum(cov_min)
+            #     # this_cov.SetMaximum(cov_max)
+            #     canv.SaveAs(os.path.join(debugging_dir, 'cov_inv_matrix_pt_bin_%d.pdf' % (ibin_pt)))
 
-            # histogram the non-zero components
-            h = ROOT.TH1D("h_components", "", 25 if detector_space else 10, -5, 5)
-            for i, x in enumerate(components[0]):
-                if x > 0:
-                    h.Fill(math.sqrt(x) * np.sign(delta[0][i]))
-            h.Fit('gaus')
+            # histogram the non-zero components, but with their sign
+            # print('components:', components)
+            # new_components = np.sqrt(components[0]) * np.sign(delta[0])
+            # print('new_components:', new_components)
+            # x_low_lim = new_components.min()
+            # x_high_lim = new_components.max()
+            # print(x_low_lim, x_high_lim)
+            # x_range = x_high_lim - x_low_lim
+            # x_high_lim += (0.05 * x_range)
+            # x_low_lim -= (0.05 * x_range)
+            # h = ROOT.TH1D("h_components", "", 25 if detector_space else 10, x_low_lim, x_high_lim)
+            # for i, x in enumerate(components[0]):
+            #     # if x > 0:
+            #     # print(x)
+            #     h.Fill(math.sqrt(x) * np.sign(delta[0][i]))
+            hist, bins = np.histogram(components, bins=10)
+            nbins = len(bins)-1
+            h = ROOT.TH1D("h_components", "", nbins, bins)
+            for i, x in enumerate(hist, 1):
+                h.SetBinContent(i, x)
+            h.Fit('gaus', 'q')
             entries = [
                 Contribution(h)
             ]
             plot = Plot(entries,
                         what='hist',
-                        xtitle='sign(#Delta) #times #sqrt{#Delta V^{-1} #Delta}',
+                        # xtitle='sign(#Delta) #times #sqrt{#Delta V^{-1} #Delta}',
+                        xtitle='#Delta #times V^{-1} #times #Delta',
                         ytitle='N',
                         has_data=False,
                         )
