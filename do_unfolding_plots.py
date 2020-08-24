@@ -4397,6 +4397,33 @@ def do_all_big_absolute_1d_plots_per_region_angle(setup):
                                       append=setup.append,
                                       title=title)
 
+    # put another (without arrows) + alternate in usual plot dir
+    if alt_unfolder is not None:
+        unfolder_plotter.draw_unfolded_1d(output_dir=setup.output_dir,
+                                          mark_negatives=False,
+                                          other_contributions=[
+                                              Contribution(alt_unfolder.get_output(),
+                                                           label="Alt MC",
+                                                           line_color=ROOT.kGreen+2,
+                                                           marker_color=ROOT.kGreen+2,
+                                                           subplot=unfolder.hist_truth)
+                                          ],
+                                          append=setup.append + "_altMC",
+                                          title=title)
+
+    if alt_hist_truth is not None:
+        unfolder_plotter.draw_unfolded_1d(output_dir=setup.output_dir,
+                                          mark_negatives=False,
+                                          other_contributions=[
+                                              Contribution(alt_hist_truth,
+                                                           label="Alt MC",
+                                                           line_color=ROOT.kGreen+2,
+                                                           marker_color=ROOT.kGreen+2,
+                                                           subplot=unfolder.hist_truth)
+                                          ],
+                                          append=setup.append + "_altMCTruth",
+                                          title=title)
+
     # reco using detector binning
     unfolder_plotter.draw_detector_1d(do_reco_mc=True,
                                       do_reco_data=setup.has_data,
@@ -4413,6 +4440,21 @@ def do_all_big_absolute_1d_plots_per_region_angle(setup):
                                       append='bg_fakes_subtracted_%s' % setup.append,
                                       title=title)
 
+    # with alt MC
+    unfolder_plotter.draw_detector_1d(do_reco_data_bg_sub=setup.has_data,
+                                      do_reco_bg=False,
+                                      do_reco_mc_bg_sub=True,
+                                      output_dir=setup.output_dir,
+                                      other_contributions=[
+                                              Contribution(region['alt_hist_mc_reco_bg_subtracted'],
+                                                           label="Alt MC bg-subtracted [detector-level]",
+                                                           line_color=ROOT.kGreen+2,
+                                                           marker_color=ROOT.kGreen+2,
+                                                           subplot=None)
+                                          ],
+                                      append='bg_fakes_subtracted_altMC_%s' % setup.append,
+                                      title=title)
+
 
     # reco using gen binning
     unfolder_plotter.draw_generator_1d(do_reco_data=setup.has_data,
@@ -4425,7 +4467,7 @@ def do_all_big_absolute_1d_plots_per_region_angle(setup):
                                        append=setup.append,
                                        title=title)
 
-    # same but with generator-binning
+    # same but with bg-subtracted generator-binning
     unfolder_plotter.draw_generator_1d(do_reco_data=False,
                                        do_reco_data_bg_sub=setup.has_data,
                                        do_reco_bg=True,
