@@ -210,8 +210,8 @@ def get_exey(graph):
 
 def th2_to_arr(h, do_errors=False):
     """Convert TH2 to 2D numpy array"""
-    arr = np.zeros((h.GetNbinsX(), h.GetNbinsY()), dtype=float)
-    err_arr = np.zeros((h.GetNbinsX(), h.GetNbinsY()), dtype=float)
+    arr = np.zeros((h.GetNbinsY(), h.GetNbinsX()), dtype=float)
+    err_arr = np.zeros((h.GetNbinsY(), h.GetNbinsX()), dtype=float)
     for x_ind in range(1, h.GetNbinsX() + 1):
         for y_ind in range(1, h.GetNbinsY() + 1):
             # arr[x_ind-1][y_ind-1] = h.GetBinContent(x_ind, y_ind)
