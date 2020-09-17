@@ -296,6 +296,23 @@ try:
             raise TypeError('hist_to_values only accepts Histo1D or Scatter2D objects, not %s' % (type(hist)))
 
 
+    def hist_values_to_uarray(bin_areas, bin_centers, bin_errors):
+        """Convert numpy arrays of areas and centers to uncertainties.unumpy.uarray objects,
+        which store value +- error and can be used in *_ucert() methods
+
+        Inputs comes from yoda_hist_to_values()
+
+        Parameters
+        ----------
+        bin_areas : numpy.array
+        bin_centers : numpy.array
+        bin_errors : numpy.array
+        """
+        areas = unp.uarray(bin_areas, bin_errors)
+        centers = unp.uarray(bin_centers, np.zeros_like(bin_centers))
+        return areas, centers
+
+
     def calc_mean_ucert(bin_areas, bin_centers):
         """Calculate mean of hist from value arrays
 
