@@ -3,6 +3,8 @@
 
 """
 Do all the unfolding plots: per pT bin, per lambda bin, summary plot
+
+Input is HDF5 file made by extract_unfolding_summary_stats.py
 """
 
 
@@ -14,20 +16,10 @@ import sys
 import argparse
 import pandas as pd
 import numpy as np
-from itertools import product, chain
+from itertools import product
 from array import array
-from math import sqrt
 from copy import copy
 
-# jax for differentiation to do errors
-import jax.numpy as np
-from jax import grad, jit
-from jax.config import config
-# to debug NaNS - turn off if not debugging as slow
-# config.update("jax_debug_nans", True)
-
-# make things blazingly fast
-import uproot
 
 import ROOT
 from MyStyle import My_Style
@@ -38,8 +30,6 @@ My_Style.cd()
 import common_utils as cu
 import qg_common as qgc
 import qg_general_plots as qgp
-from my_unfolder import MyUnfolder, HistBinChopper, unpickle_region, unpack_slim_unfolding_root_file
-from my_unfolder_plotter import MyUnfolderPlotter
 from unfolding_config import get_dijet_config, get_zpj_config
 
 
@@ -169,6 +159,7 @@ class SummaryPlotter(object):
             if do_groomed:
                 region_name += "_groomed"
             dijet_central_data = df[mask & (df['region'] == region_name)]
+
             dijet_central_hist_truth = self.data_to_hist(dijet_central_data['%s_truth' % metric], dijet_central_data['%s_err_truth' % metric], self.pt_bins_dijet)
             dijet_central_hist_alt_truth = self.data_to_hist(dijet_central_data['%s_alt_truth' % metric], dijet_central_data['%s_err_alt_truth' % metric], self.pt_bins_dijet)
             if metric != 'delta':
@@ -1293,205 +1284,6 @@ class SummaryPlotter(object):
         canvas.Update()
         canvas.SaveAs(output_file)
 
-# ------------------------------------------------------------------------------
-# VARIOUS CALCULATION METHODS
-# ------------------------------------------------------------------------------
-
-def get_bin_widths(hist):
-    return hist.edges[1:] - hist.edges[:-1]
-
-
-def hist_to_arrays(hist):
-    """Convert histogram bins to arrays
-
-    Assumes `hist` is an uproot.TH1 object, not a ROOT.TH1
-
-    Note that this returns bin *areas* and not heights: assume bin contents
-    already divided by bin width.
-
-    Note that errors here are multiplied by the bin width (since they are
-    assumed to have been created by originally dividing by the bin width)
-    """
-    bin_widths = get_bin_widths(hist)
-    bin_areas = hist.values * bin_widths
-    bin_centers = hist.edges[:-1] + (0.5*bin_widths)
-    bin_errors = np.sqrt(hist.variances) * bin_widths
-    return bin_areas, bin_widths, bin_centers, bin_errors
-
-
-def scale_ematrix_by_bin_widths(ematrix, widths):
-    this_widths = widths.reshape(len(widths), 1)
-    return ematrix * this_widths * this_widths.T
-
-# --------------------------------
-# Functions to calculate mean
-# --------------------------------
-def check_hist_for_negatives(hist):
-    areas, widths, centers, errors = hist_to_arrays(hist)
-    for i, x in enumerate(areas, 1):
-        if x < 0:
-            print("WARNING:", hist.name, " has area of bin %d = %f" % (i, x))
-            # raise ValueError("Area of bin %d = %f" % (i, x))
-
-
-def calc_hist_mean(bin_areas, bin_centers):
-    """Calculate mean of hist from value arrays.
-
-    Must use np.X functions for e.g. sum(), square(), to ensure jax can differentiate it
-    """
-    return np.sum(bin_areas * bin_centers) / np.sum(bin_areas)
-
-
-mean_differential = jit(grad(calc_hist_mean, argnums=0))
-
-
-def calc_hist_mean_uncorrelated_error(bin_areas, bin_centers, bin_errors):
-    """Calculate error on mean, assuming uncorrelated errors.
-
-    Uses propagation of uncertainty bia partial differentials,
-    calculated automatically using jax.
-    """
-    # differential wrt bin_areas
-    diffs = mean_differential(bin_areas, bin_centers)
-    err_sq = np.sum(np.square((diffs * bin_errors)))
-    return np.sqrt(err_sq)
-
-
-def calc_hist_mean_correlated_error(bin_areas, bin_centers, error_matrix):
-    """Get error on mean, assuming covariance matrix error_matrix"""
-    diffs = mean_differential(bin_areas, bin_centers)
-    sum_sq = diffs @ error_matrix @ diffs
-    return np.sqrt(sum_sq)
-
-
-def calc_hist_mean_and_uncorrelated_error(hist):
-    """Calculate from hist both mean and its error,
-    assuming uncorrelated uncertainties
-
-    Parameters
-    ----------
-    hist : TH1
-
-    Returns
-    -------
-    float, float
-    """
-    areas, widths, centers, errors = hist_to_arrays(hist)
-    mean = calc_hist_mean(areas, centers)
-    err = calc_hist_mean_uncorrelated_error(areas, centers, errors)
-    return float(mean), float(err)
-
-
-def calc_hist_mean_and_correlated_error(hist, ematrix):
-    areas, widths, centers, errors = hist_to_arrays(hist)
-    mean = calc_hist_mean(areas, centers)
-    err = calc_hist_mean_correlated_error(areas, centers, ematrix)
-    return float(mean), float(err)
-
-# --------------------------------
-# Functions to calculate RMS
-# --------------------------------
-
-def calc_hist_rms(bin_areas, bin_centers):
-    """Calculate RMS of hist from value arrays.
-
-    Must use np.X functions for e.g. sum(), square(), to ensure jax can differentiate it
-    """
-    mean = calc_hist_mean(bin_areas, bin_centers)
-    sum_sq = np.sum(np.square((bin_areas * bin_centers) - mean))
-    return np.sqrt(sum_sq / np.sum(bin_areas))
-
-
-rms_differential = jit(grad(calc_hist_rms, argnums=0))
-
-
-def calc_hist_rms_uncorrelated_error(bin_areas, bin_centers, bin_errors):
-    """Calculate error on RMS, assuming uncorrelated errors.
-
-    Uses propagation of uncertainty bia partial differentials,
-    calculated automatically using jax.
-    """
-    # differential wrt bin_areas
-    diffs = rms_differential(bin_areas, bin_centers)
-    err_sq = np.sum(np.square((diffs * bin_errors)))
-    return np.sqrt(err_sq)
-
-
-def calc_hist_rms_correlated_error(bin_areas, bin_centers, error_matrix):
-    """Get error on rms, assuming covariance matrix error_matrix"""
-    diffs = rms_differential(bin_areas, bin_centers)
-    sum_sq = diffs @ error_matrix @ diffs
-    return np.sqrt(sum_sq)
-
-
-def calc_hist_rms_and_uncorrelated_error(hist):
-    """Calculate from hist both RMS and its error,
-    assuming uncorrelated uncertainties
-
-    Parameters
-    ----------
-    hist : TH1
-
-    Returns
-    -------
-    float, float
-    """
-    areas, widths, centers, errors = hist_to_arrays(hist)
-    rms = calc_hist_rms(areas, centers)
-    err = calc_hist_rms_uncorrelated_error(areas, centers, errors)
-    return float(rms), float(err)
-
-
-def calc_hist_rms_and_correlated_error(hist, ematrix):
-    areas, widths, centers, errors = hist_to_arrays(hist)
-    rms = calc_hist_rms(areas, centers)
-    err = calc_hist_rms_correlated_error(areas, centers, ematrix)
-    return float(rms), float(err)
-
-# --------------------------------
-# Functions to calculate delta
-# --------------------------------
-
-def calc_hist_delta_and_error(hist_a, ematrix_a, hist_b):
-    """Calculate delta between hists, along with its error
-
-    Defined as 0.5 * integral[ (a - b)^2 / (a+b) ]
-    """
-    areas_a, widths_a, centers_a, errors_a = hist_to_arrays(hist_a)
-    areas_b, widths_b, centers_b, errors_b = hist_to_arrays(hist_b)
-    delta = calc_hist_delta(areas_a, areas_b)
-    err = calc_hist_delta_correlated_error(areas_a, ematrix_a, areas_b, errors_b)
-    return float(delta), float(err)
-
-
-def calc_hist_delta(areas_a, areas_b):
-    # do I need bin areas or densities?
-    # I guess since by definition sum(area_a) = 1, areas are needed?!
-    integrand = np.true_divide(np.square(areas_a - areas_b), areas_a + areas_b)
-    # nan_to_num important as divide gives nans if both 0
-    delta = 0.5 * np.sum(np.nan_to_num(integrand))
-    return delta
-
-
-delta_diff = jit(grad(calc_hist_delta, argnums=[0, 1]))
-
-def calc_hist_delta_uncorrelated_error(areas_a, errors_a, areas_b, errors_b):
-    pass
-
-
-def calc_hist_delta_correlated_error(areas_a, ematrix_a, areas_b, errors_b):
-    diffs_a, diffs_b = delta_diff(areas_a, areas_b)
-    # need to do nan_to_num since the differential can return nan...
-    # not sure how to fix "properly" though
-    diffs_a = np.nan_to_num(diffs_a)
-    diffs_b = np.nan_to_num(diffs_b)
-    # for the total, we need to do
-    # diffs_a * ematrix_a * diffs_a + diffs_b*errors_b*diffs_b,
-    # since the errors on a and b have no connections, we can get away with this.
-    err_a_sq = diffs_a.T @ ematrix_a @ diffs_a
-    err_b_sq = np.sum(np.square((diffs_b * errors_b)))
-    return np.sqrt(err_a_sq + err_b_sq)
-
 
 def unpack_slim_unfolding_root_file_uproot(input_tfile, region_name, angle_name, pt_bins):
     tdir = "%s/%s" % (region_name, angle_name)
@@ -1529,203 +1321,34 @@ def unpack_slim_unfolding_root_file_uproot(input_tfile, region_name, angle_name,
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--ak4source",
-                        help="Source directory for AK4 jets (should be the one made by unfolding.py")
-    parser.add_argument("--ak8source",
-                        help="Source directory for AK8 jets (should be the one made by unfolding.py")
     parser.add_argument("--h5input",
-                        help="Read data from H5 input file (from previous running of this script)")
-    parser.add_argument("--h5output",
-                        default=None,
-                        help=("Store data as H5 output file (ignored if --h5input used). "
-                              "Default if <outputDir>/store.h5"))
+                        help="Read data from H5 input file (from running extract_unfolding_summary_stats.py)")
     parser.add_argument("--outputDir",
                         default=None,
                         help='Output directory (default is the source dir')
     args = parser.parse_args()
 
-    # Get data
-    if not any([args.h5input, args.ak4source, args.ak8source]):
-        raise RuntimeError("Need one of --h5input or --ak4input/--ak8input")
+    # Get input data
+    if not any([args.h5input, args.yodaInput]):
+        raise RuntimeError("Need one of --h5input or --yodaInput")
 
-    if args.h5input is None:
-        # ----------------------------------------------------------------------
-        # READ IN DATA FROM UNFOLDING ROOT FILES
-        # ----------------------------------------------------------------------
-        if not args.outputDir and args.ak4source:
-            args.outputDir = os.path.join(args.ak4source, 'SummaryPlots')
-        elif not args.outputDir and args.ak8source:
-            args.outputDir = os.path.join(args.ak8source, 'SummaryPlots')
+    if args.yodaInput and args.yodaLabel and len(args.yodaInput) != len(args.yodaLabel):
+        raise RuntimeError("Number of --yodaInput must match number of --yodaLabel")
 
-        cu.check_dir_exists_create(args.outputDir)
+    # ----------------------------------------------------------------------
+    # READ IN DATA FROM H5 FILE
+    # -----------------------------------------------------------------------
+    print("Reading in from data existing HDF5 file...")
+    if not args.outputDir:
+        args.outputDir = os.path.dirname(os.path.abspath(args.h5input))
 
-        results_dicts = []
+    with pd.HDFStore(args.h5input) as store:
+        df = store['df']
+    print(df.head())
+    print("# entries:", len(df.index))
 
-        jet_algos = []
-        if args.ak4source:
-            jet_algos.append({'src': args.ak4source, 'label': 'AK4 PUPPI', 'name': 'ak4puppi'})
-        if args.ak8source:
-            jet_algos.append({'src': args.ak8source, 'label': 'AK8 PUPPI', 'name': 'ak8puppi'})
 
-        for jet_algo in jet_algos:
-            print("--- Jet algo ---:", jet_algo['label'])
-            source_dir = jet_algo['src']
-            regions = [
-                get_dijet_config(source_dir, central=True, groomed=False),
-                get_dijet_config(source_dir, central=False, groomed=False),
-                get_dijet_config(source_dir, central=True, groomed=True),
-                get_dijet_config(source_dir, central=False, groomed=True),
-                get_zpj_config(source_dir, groomed=False),
-                get_zpj_config(source_dir, groomed=True),
-            ]
 
-            for region in regions:
-                region_dir = os.path.join(source_dir, region['name'])
-                if not os.path.isdir(region_dir):
-                    print("! Warning ! cannot find region dir", region_dir, '- skipping region')
-                    continue
-
-                angles = qgc.COMMON_VARS[:]
-                for angle in angles:
-                    angle_output_dir = "%s/%s" % (region_dir, angle.var)
-                    if not os.path.isdir(angle_output_dir):
-                        print("! Warning ! cannot find angle dir", angle_output_dir, '- skipping angle', angle.var)
-                        continue
-
-                    this_region = copy(region)
-                    # Get region dict from pickle file
-                    # pickle_filename = os.path.join(angle_output_dir, "unfolding_result.pkl")
-                    # unpickled_region = unpickle_region(pickle_filename)
-
-                    # # # check
-                    # if this_region['name'] != unpickled_region['name']:
-                    #     raise RuntimeError("Mismatch region name")
-
-                    # this_region.update(unpickled_region)
-
-                    # Get bare necessary hists from slim ROOT file
-                    # Using pickle one is much slower
-                    root_filename = os.path.join(angle_output_dir, "unfolding_result_slim.root")
-                    pt_bins = qgc.PT_UNFOLD_DICT['signal_zpj_gen'] if 'ZPlusJets' in this_region['name'] else qgc.PT_UNFOLD_DICT['signal_gen']
-                    uproot_file = uproot.open(root_filename)
-                    unfolding_dict = unpack_slim_unfolding_root_file_uproot(uproot_file, this_region['name'], angle.var, pt_bins)
-
-                    # common str to put on filenames, etc.
-                    # don't need angle_prepend as 'groomed' in region name
-                    append = "%s_%s" % (this_region['name'], angle.var)
-                    print("*"*120)
-                    print("Region/var: %s" % (append))
-                    print("*"*120)
-
-                    # ----------------------------------------------------------
-                    # CALCULATE STATS FOR EACH PT BIN
-                    # ----------------------------------------------------------
-                    # Iterate through pt bins, get lambda histogram for that bin,
-                    # derive metrics from it, save
-                    for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(pt_bins[:-1], pt_bins[1:])):
-                        # print("   done pt bin", ibin)
-
-                        # Handle nominal MC hist -> metrics
-                        mc_gen_hist_bin = unfolding_dict['truth_hists'][ibin]
-                        try:
-                            check_hist_for_negatives(mc_gen_hist_bin)
-                        except ValueError as e:
-                            print("-ve value for MC hist in pt bin", ibin, ":", bin_edge_low, "-", bin_edge_high)
-                            raise e
-                        mc_gen_hist_bin_mean, mc_gen_hist_bin_mean_err = calc_hist_mean_and_uncorrelated_error(mc_gen_hist_bin)
-                        mc_gen_hist_bin_rms, mc_gen_hist_bin_rms_err = calc_hist_rms_and_uncorrelated_error(mc_gen_hist_bin)
-
-                        # Handle alt MC hist -> metrics
-                        alt_mc_gen_hist_bin = unfolding_dict['alt_truth_hists'][ibin]
-                        try:
-                            check_hist_for_negatives(alt_mc_gen_hist_bin)
-                        except ValueError as e:
-                            print("-ve value for alt MC hist in pt bin", ibin, ":", bin_edge_low, "-", bin_edge_high)
-                            raise e
-                        alt_mc_gen_hist_bin_mean, alt_mc_gen_hist_bin_mean_err = calc_hist_mean_and_uncorrelated_error(alt_mc_gen_hist_bin)
-                        alt_mc_gen_hist_bin_rms, alt_mc_gen_hist_bin_rms_err = calc_hist_rms_and_uncorrelated_error(alt_mc_gen_hist_bin)
-
-                        # Handle unfolded data hist -> metrics
-                        unfolded_hist_bin_total_errors = unfolding_dict['unfolding_total_err_hists'][ibin]
-                        try:
-                            check_hist_for_negatives(unfolded_hist_bin_total_errors)
-                        except ValueError as e:
-                            print("-ve value for data hist in pt bin", ibin, ":", bin_edge_low, "-", bin_edge_high)
-                            raise e
-                        ematrix = scale_ematrix_by_bin_widths(unfolding_dict['unfolding_total_ematrices'][ibin].values, get_bin_widths(unfolded_hist_bin_total_errors))
-                        unfolded_hist_bin_total_errors_rms, unfolded_hist_bin_total_errors_rms_err = calc_hist_rms_and_correlated_error(unfolded_hist_bin_total_errors, ematrix)
-                        unfolded_hist_bin_total_errors_mean, unfolded_hist_bin_total_errors_mean_err = calc_hist_mean_and_correlated_error(unfolded_hist_bin_total_errors, ematrix)
-
-                        delta_nominal, delta_nominal_err = calc_hist_delta_and_error(unfolded_hist_bin_total_errors, ematrix, mc_gen_hist_bin)
-                        delta_alt, delta_alt_err = calc_hist_delta_and_error(unfolded_hist_bin_total_errors, ematrix, alt_mc_gen_hist_bin)
-
-                        result_dict = {
-                            'jet_algo': jet_algo['name'],
-                            'region': this_region['name'], # TODO remove "_groomed"?
-                            'isgroomed': 'groomed' in this_region['name'].lower(),
-                            'pt_bin': ibin,
-                            'angle': angle.var,
-
-                            'mean': unfolded_hist_bin_total_errors_mean,
-                            'mean_err': unfolded_hist_bin_total_errors_mean_err, # FIXME
-
-                            'mean_truth': mc_gen_hist_bin_mean,
-                            'mean_err_truth': mc_gen_hist_bin_mean_err,
-
-                            'mean_alt_truth': alt_mc_gen_hist_bin_mean,
-                            'mean_err_alt_truth': alt_mc_gen_hist_bin_mean_err,
-
-                            'rms': unfolded_hist_bin_total_errors_rms,
-                            'rms_err': unfolded_hist_bin_total_errors_rms_err, #FIXME
-
-                            'rms_truth': mc_gen_hist_bin_rms,
-                            'rms_err_truth': mc_gen_hist_bin_rms_err,
-
-                            'rms_alt_truth': alt_mc_gen_hist_bin_rms,
-                            'rms_err_alt_truth': alt_mc_gen_hist_bin_rms_err,
-
-                            'delta_truth': delta_nominal,
-                            'delta_err_truth': delta_nominal_err,
-
-                            'delta_alt_truth': delta_alt,
-                            'delta_err_alt_truth': delta_alt_err,
-                        }
-                        results_dicts.append(result_dict)
-
-                    # important to keep memory footprint small
-                    # del unpickled_region
-                    del this_region
-
-        if len(results_dicts) == 0:
-            raise ValueError("No entries to go into dataframe!")
-
-        df = pd.DataFrame(results_dicts)
-        df['jet_algo'] = df['jet_algo'].astype('category')
-        df['region'] = df['region'].astype('category')
-        df['angle'] = df['angle'].astype('category')
-        print(df.head())
-        print(df.tail())
-        print(len(df.index), 'entries in dataframe')
-        print(df.dtypes)
-
-        if args.h5output is None:
-            args.h5output = os.path.join(args.outputDir, "store.h5")
-        print("Saving dataframe to", args.h5output)
-        # need format='table' to store category dtype
-        df.to_hdf(args.h5output, key='df', format='table')
-
-    else:
-        # ----------------------------------------------------------------------
-        # READ IN DATA FROM H5 FILE
-        # -----------------------------------------------------------------------
-        print("Reading in from data existing HDF5 file...")
-        if not args.outputDir:
-            args.outputDir = os.path.dirname(os.path.abspath(args.h5input))
-
-        with pd.HDFStore(args.h5input) as store:
-            df = store['df']
-        print(df.head())
-        print("# entries:", len(df.index))
 
     # Filter only regions/algos/angles in the dataframe, since it could have
     # been modified earlier
