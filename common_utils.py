@@ -416,7 +416,11 @@ class Marker(object):
                 yield self.get(self.shape_state, self.fill_state)
                 self.fill_state = not self.fill_state
         else:
-            for k in chain(Marker.shape_dict.keys()):
+            # start cycle at self.shape_state
+            keys = list(Marker.shape_dict.keys())
+            ind = keys.index(self.shape_state)
+            keys = keys[ind:] + keys[:ind]
+            for k in chain(keys):
                 self.fill_state = filled
                 yield self.get(k, self.fill_state)
                 if cycle_filling:
