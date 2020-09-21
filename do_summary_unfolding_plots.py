@@ -20,6 +20,7 @@ from itertools import product
 from array import array
 from copy import copy
 
+import yoda
 
 import ROOT
 from MyStyle import My_Style
@@ -31,6 +32,8 @@ import common_utils as cu
 import qg_common as qgc
 import qg_general_plots as qgp
 from unfolding_config import get_dijet_config, get_zpj_config
+import rivet_naming as rn
+import metric_calculators as metrics
 
 
 ROOT.gErrorIgnoreLevel = ROOT.kWarning
@@ -68,6 +71,27 @@ COMMON_STYLE_DICT = {
     "mc_alt_line_style": 23,
     "mc_alt_fill_style": 3454,
     "mc_alt_color": ROOT.kAzure+1,
+}
+
+
+
+# some pre-defined sample dicts for YODA files
+SAMPLE_STYLE_DICTS = {
+    "Sherpa": {
+        "color": ROOT.kGreen+2,
+    },
+
+    "Herwig7 CH3": {
+        "color": ROOT.kOrange-3,
+    },
+
+    "Herwig7 CH3 alphaS=0.136": {
+        "color": ROOT.kViolet+3,
+    },
+
+    "Pythia8 CP5": {
+        "color": ROOT.kMagenta-7,
+    }
 }
 
 
@@ -114,8 +138,16 @@ class SummaryPlotter(object):
         self.output_dir = output_dir
         self.has_data = has_data
         self.is_preliminary = True
-        self.mc_label = 'MG5+Pythia8'
+        self.mc_label = 'MG5+Pythia8 CUETP8M1'
         self.alt_mc_label = 'Herwig++'
+        self.other_samples = []
+
+    def add_sample(self, key, label, style_dict):
+        self.other_samples.append({
+            "key": key,
+            "label": label,
+            "style_dict": style_dict
+        })
 
     @staticmethod
     def data_to_hist(data, data_err, bins):
@@ -152,7 +184,9 @@ class SummaryPlotter(object):
         if not mask.any():
             return
 
+        # create hists for dijet central
         dijet_cen_col = COMMON_STYLE_DICT['dijet_cen_color']
+        other_samples_dijet_central_hists = []
         dijet_central_hist_no_errors = None
         if do_dijet_cen:
             region_name = 'Dijet_central'
@@ -162,6 +196,10 @@ class SummaryPlotter(object):
 
             dijet_central_hist_truth = self.data_to_hist(dijet_central_data['%s_truth' % metric], dijet_central_data['%s_err_truth' % metric], self.pt_bins_dijet)
             dijet_central_hist_alt_truth = self.data_to_hist(dijet_central_data['%s_alt_truth' % metric], dijet_central_data['%s_err_alt_truth' % metric], self.pt_bins_dijet)
+            for sample in self.other_samples:
+                hist = self.data_to_hist(dijet_central_data['%s_%s' % (metric, sample['key'])], dijet_central_data['%s_err_%s' % (metric, sample['key'])], self.pt_bins_dijet)
+                other_samples_dijet_central_hists.append(hist)
+
             if metric != 'delta':
                 dijet_central_hist = self.data_to_hist(dijet_central_data[metric], dijet_central_data['%s_err' % metric], self.pt_bins_dijet)
                 # Create copy with 0 error bars, for the ratio subplot
@@ -178,7 +216,9 @@ class SummaryPlotter(object):
                 dijet_central_hist_ratio_error.SetLineWidth(0)
                 dijet_central_hist_ratio_error.SetMarkerSize(0)
 
+        # create hists for dijet forward
         dijet_fwd_col = COMMON_STYLE_DICT['dijet_fwd_color']
+        other_samples_dijet_forward_hists = []
         dijet_forward_hist_no_errors = None
         if do_dijet_fwd:
             region_name = 'Dijet_forward'
@@ -187,6 +227,10 @@ class SummaryPlotter(object):
             dijet_forward_data = df[mask & (df['region'] == region_name)]
             dijet_forward_hist_truth = self.data_to_hist(dijet_forward_data['%s_truth' % metric], dijet_forward_data['%s_err_truth' % metric], self.pt_bins_dijet)
             dijet_forward_hist_alt_truth = self.data_to_hist(dijet_forward_data['%s_alt_truth' % metric], dijet_forward_data['%s_err_alt_truth' % metric], self.pt_bins_dijet)
+            for sample in self.other_samples:
+                hist = self.data_to_hist(dijet_forward_data['%s_%s' % (metric, sample['key'])], dijet_forward_data['%s_err_%s' % (metric, sample['key'])], self.pt_bins_dijet)
+                other_samples_dijet_forward_hists.append(hist)
+
             if metric != 'delta':
                 dijet_forward_hist = self.data_to_hist(dijet_forward_data[metric], dijet_forward_data['%s_err' % metric], self.pt_bins_dijet)
                 dijet_forward_hist_no_errors = dijet_forward_hist.Clone()
@@ -199,18 +243,27 @@ class SummaryPlotter(object):
                 dijet_forward_hist_ratio_error.SetLineWidth(0)
                 dijet_forward_hist_ratio_error.SetMarkerSize(0)
 
+        # create hists for Z+jets
         zpj_col = COMMON_STYLE_DICT['zpj_color']
+        other_samples_zpj_hists = []
         zpj_hist_no_errors = None
         if do_zpj:
             region_name = 'ZPlusJets'
             if do_groomed:
                 region_name += "_groomed"
             # drop last pt bin as massive error
-            zpj_data = df[mask & (df['region'] == region_name) & (df['pt_bin'] < (len(self.pt_bins_zpj)-3))]
-            zpj_hist_truth = self.data_to_hist(zpj_data['%s_truth' % metric], zpj_data['%s_err_truth' % metric], self.pt_bins_zpj[:-2])
-            zpj_hist_alt_truth = self.data_to_hist(zpj_data['%s_alt_truth' % metric], zpj_data['%s_err_alt_truth' % metric], self.pt_bins_zpj[:-2])
+            pt_bins = self.pt_bins_zpj[:-2]
+            zpj_data = df[mask & (df['region'] == region_name) & (df['pt_bin'] < len(pt_bins)-1)]
+            # the -1 is because the last entry in pt_bins is the upper edge of the last bin
+            zpj_hist_truth = self.data_to_hist(zpj_data['%s_truth' % metric], zpj_data['%s_err_truth' % metric], pt_bins)
+            zpj_hist_alt_truth = self.data_to_hist(zpj_data['%s_alt_truth' % metric], zpj_data['%s_err_alt_truth' % metric], pt_bins)
+            for sample in self.other_samples:
+                key = sample['key']
+                hist = self.data_to_hist(zpj_data['%s_%s' % (metric, key)], zpj_data['%s_err_%s' % (metric, key)], pt_bins)
+                other_samples_zpj_hists.append(hist)
+
             if metric != 'delta':
-                zpj_hist = self.data_to_hist(zpj_data[metric], zpj_data['%s_err' % metric], self.pt_bins_zpj[:-2])
+                zpj_hist = self.data_to_hist(zpj_data[metric], zpj_data['%s_err' % metric], pt_bins)
                 # 0 error bar hists & ratio = 1 hists for subplot
                 zpj_hist_no_errors = zpj_hist.Clone()
                 cu.remove_th1_errors(zpj_hist_no_errors)
@@ -240,7 +293,8 @@ class SummaryPlotter(object):
                                  line_color=ROOT.kBlack if only_one_region else dijet_cen_col,
                                  line_width=lw,
                                  marker_color=ROOT.kBlack if only_one_region else dijet_cen_col,
-                                 marker_style=cu.Marker.get('circle', True), marker_size=m_size)
+                                 marker_style=cu.Marker.get('circle', True),
+                                 marker_size=m_size)
                 entries.append(Contribution(dijet_central_hist, **cont_args))
                 dummy_entries.append(Contribution(dummy_gr.Clone(), **cont_args))
 
@@ -250,7 +304,8 @@ class SummaryPlotter(object):
                                  line_color=ROOT.kBlack if only_one_region else dijet_fwd_col,
                                  line_width=lw,
                                  marker_color=ROOT.kBlack if only_one_region else dijet_fwd_col,
-                                 marker_style=cu.Marker.get('square', True), marker_size=m_size)
+                                 marker_style=cu.Marker.get('square', True),
+                                 marker_size=m_size)
                 entries.append(Contribution(dijet_forward_hist, **cont_args))
                 dummy_entries.append(Contribution(dummy_gr.Clone(), **cont_args))
 
@@ -260,7 +315,8 @@ class SummaryPlotter(object):
                                  line_color=ROOT.kBlack if only_one_region else zpj_col,
                                  line_width=lw,
                                  marker_color=ROOT.kBlack if only_one_region else zpj_col,
-                                 marker_style=cu.Marker.get('triangleUp', True), marker_size=m_size)
+                                 marker_style=cu.Marker.get('triangleUp', True),
+                                 marker_size=m_size)
                 entries.append(Contribution(zpj_hist, **cont_args))
                 dummy_entries.append(Contribution(dummy_gr.Clone(), **cont_args))
 
@@ -271,7 +327,8 @@ class SummaryPlotter(object):
                              line_width=lw,
                              line_style=COMMON_STYLE_DICT['mc_line_style'],
                              marker_color=COMMON_STYLE_DICT['mc_color'],
-                             marker_style=cu.Marker.get('circle', False), marker_size=0,
+                             marker_style=cu.Marker.get('circle', False),
+                             marker_size=0,
                              leg_draw_opt="LE",
                              subplot=dijet_central_hist_no_errors)
             entries.append(Contribution(dijet_central_hist_truth, **cont_args))
@@ -283,7 +340,8 @@ class SummaryPlotter(object):
                              line_width=lw,
                              line_style=COMMON_STYLE_DICT['mc_line_style'],
                              marker_color=COMMON_STYLE_DICT['mc_color'],
-                             marker_style=cu.Marker.get('square', False), marker_size=0,
+                             marker_style=cu.Marker.get('square', False),
+                             marker_size=0,
                              leg_draw_opt="LE",
                              subplot=dijet_forward_hist_no_errors)
             entries.append(Contribution(dijet_forward_hist_truth, **cont_args))
@@ -295,7 +353,8 @@ class SummaryPlotter(object):
                              line_width=lw,
                              line_style=COMMON_STYLE_DICT['mc_line_style'],
                              marker_color=COMMON_STYLE_DICT['mc_color'],
-                             marker_style=cu.Marker.get('triangleUp', False), marker_size=0,
+                             marker_style=cu.Marker.get('triangleUp', False),
+                             marker_size=0,
                              leg_draw_opt="LE",
                              subplot=zpj_hist_no_errors)
             entries.append(Contribution(zpj_hist_truth, **cont_args))
@@ -308,7 +367,8 @@ class SummaryPlotter(object):
                              line_width=lw,
                              line_style=COMMON_STYLE_DICT['mc_alt_line_style'],
                              marker_color=COMMON_STYLE_DICT['mc_alt_color'],
-                             marker_style=cu.Marker.get('circle', False), marker_size=0,
+                             marker_style=cu.Marker.get('circle', False),
+                             marker_size=0,
                              leg_draw_opt="LE",
                              subplot=dijet_central_hist_no_errors)
             entries.append(Contribution(dijet_central_hist_alt_truth, **cont_args))
@@ -320,7 +380,8 @@ class SummaryPlotter(object):
                              line_width=lw,
                              line_style=COMMON_STYLE_DICT['mc_alt_line_style'],
                              marker_color=COMMON_STYLE_DICT['mc_alt_color'],
-                             marker_style=cu.Marker.get('square', False), marker_size=0,
+                             marker_style=cu.Marker.get('square', False),
+                             marker_size=0,
                              leg_draw_opt="LE",
                              subplot=dijet_forward_hist_no_errors)
             entries.append(Contribution(dijet_forward_hist_alt_truth, **cont_args))
@@ -332,12 +393,66 @@ class SummaryPlotter(object):
                              line_width=lw,
                              line_style=COMMON_STYLE_DICT['mc_alt_line_style'],
                              marker_color=COMMON_STYLE_DICT['mc_alt_color'],
-                             marker_style=cu.Marker.get('triangleUp', False), marker_size=0,
+                             marker_style=cu.Marker.get('triangleUp', False),
+                             marker_size=0,
                              leg_draw_opt="LE",
                              subplot=zpj_hist_no_errors)
             entries.append(Contribution(zpj_hist_alt_truth, **cont_args))
             dummy_entries.append(Contribution(dummy_gr.Clone(), **cont_args))
 
+        # Add other samples: dijet cen
+        if do_dijet_cen:
+            marker = cu.Marker(shape='triangleDown')
+            for sample, hist, mark in zip(self.other_samples, other_samples_dijet_central_hists, marker.cycle()):
+                style_dict = sample['style_dict']
+                color = style_dict.get('color', COMMON_STYLE_DICT['mc_alt_color'])
+                cont_args = dict(label=sample['label'] if only_one_region else '#splitline{ Dijet (central) }{ [%s]}' % (sample['label']),
+                                 line_color=color,
+                                 line_width=lw,
+                                 line_style=style_dict.get('line_style', COMMON_STYLE_DICT['mc_alt_line_style']),
+                                 marker_color=color,
+                                 marker_style=style_dict.get('marker_style', mark),
+                                 marker_size=style_dict.get('marker_size', 0),
+                                 leg_draw_opt="LE",
+                                 subplot=dijet_central_hist_no_errors)
+                entries.append(Contribution(hist, **cont_args))
+                dummy_entries.append(Contribution(dummy_gr.Clone(), **cont_args))
+
+        # Add other samples: dijet fwd
+        if do_dijet_fwd:
+            marker = cu.Marker(shape='triangleDown')
+            for sample, hist, mark in zip(self.other_samples, other_samples_dijet_forward_hists, marker.cycle()):
+                style_dict = sample['style_dict']
+                color = style_dict.get('color', COMMON_STYLE_DICT['mc_alt_color'])
+                cont_args = dict(label=sample['label'] if only_one_region else '#splitline{ Dijet (forward) }{ [%s]}' % (sample['label']),
+                                 line_color=color,
+                                 line_width=lw,
+                                 line_style=style_dict.get('line_style', COMMON_STYLE_DICT['mc_alt_line_style']),
+                                 marker_color=color,
+                                 marker_style=style_dict.get('marker_style', mark),
+                                 marker_size=style_dict.get('marker_size', 0),
+                                 leg_draw_opt="LE",
+                                 subplot=dijet_forward_hist_no_errors)
+                entries.append(Contribution(hist, **cont_args))
+                dummy_entries.append(Contribution(dummy_gr.Clone(), **cont_args))
+
+        # Add other samples: Z+jet
+        if do_zpj:
+            marker = cu.Marker(shape='triangleDown')
+            for sample, hist, mark in zip(self.other_samples, other_samples_zpj_hists, marker.cycle()):
+                style_dict = sample['style_dict']
+                color = style_dict.get('color', COMMON_STYLE_DICT['mc_alt_color'])
+                cont_args = dict(label=sample['label'] if only_one_region else '#splitline{ Z+jets}{ [%s]}' % (sample['label']),
+                                 line_color=color,
+                                 line_width=lw,
+                                 line_style=style_dict.get('line_style', COMMON_STYLE_DICT['mc_alt_line_style']),
+                                 marker_color=color,
+                                 marker_style=style_dict.get('marker_style', mark),
+                                 marker_size=style_dict.get('marker_size', 0),
+                                 leg_draw_opt="LE",
+                                 subplot=zpj_hist_no_errors)
+                entries.append(Contribution(hist, **cont_args))
+                dummy_entries.append(Contribution(dummy_gr.Clone(), **cont_args))
 
         # for plot axis titles
         if metric == "mean":
@@ -390,6 +505,7 @@ class SummaryPlotter(object):
             plot.legend.SetY1(0.68)
         plot.legend.SetY2(0.92)
         if len(entries) > 3:
+            # TODO: scale with numberof entries
             plot.legend.SetNColumns(2)
             plot.legend.SetX1(0.50)
             plot.legend.SetY1(0.68)
@@ -565,26 +681,35 @@ class SummaryPlotter(object):
         return h
 
     @staticmethod
-    def _style_data_hist(hist):
-        hist.SetLineStyle(COMMON_STYLE_DICT['data_line_style'])
+    def _style_hist(hist, line_style=None, color=None, fill_style=None, marker_size=None):
+        if line_style is not None:
+            hist.SetLineStyle(line_style)
+        if fill_style is not None:
+            hist.SetFillStyle(fill_style)
+        if color is not None:
+            hist.SetLineColor(color)
+            hist.SetFillColor(color)
+            hist.SetMarkerColor(color)
+        if marker_size is not None:
+            hist.SetMarkerSize(marker_size)
 
-    @staticmethod
-    def _style_mc_hist(hist):
-        hist.SetLineStyle(COMMON_STYLE_DICT['mc_line_style'])
-        hist.SetLineColor(COMMON_STYLE_DICT['mc_color'])
-        hist.SetFillStyle(COMMON_STYLE_DICT['mc_fill_style'])
-        hist.SetFillColor(COMMON_STYLE_DICT['mc_color'])
-        hist.SetMarkerColor(COMMON_STYLE_DICT['mc_color'])
-        hist.SetMarkerSize(0)
+    def _style_data_hist(self, hist):
+        self._style_hist(hist,
+                         line_style=COMMON_STYLE_DICT['data_line_style'])
 
-    @staticmethod
-    def _style_alt_mc_hist(hist):
-        hist.SetLineStyle(COMMON_STYLE_DICT['mc_alt_line_style'])
-        hist.SetLineColor(COMMON_STYLE_DICT['mc_alt_color'])
-        hist.SetFillStyle(COMMON_STYLE_DICT['mc_alt_fill_style'])
-        hist.SetFillColor(COMMON_STYLE_DICT['mc_alt_color'])
-        hist.SetMarkerColor(COMMON_STYLE_DICT['mc_alt_color'])
-        hist.SetMarkerSize(0)
+    def _style_mc_hist(self, hist):
+        self._style_hist(hist,
+                         line_style=COMMON_STYLE_DICT['mc_line_style'],
+                         color=COMMON_STYLE_DICT['mc_color'],
+                         fill_style=COMMON_STYLE_DICT['mc_fill_style'],
+                         marker_size=0)
+
+    def _style_alt_mc_hist(self, hist):
+        self._style_hist(hist,
+                         line_style=COMMON_STYLE_DICT['mc_alt_line_style'],
+                         color=COMMON_STYLE_DICT['mc_alt_color'],
+                         fill_style=COMMON_STYLE_DICT['mc_alt_fill_style'],
+                         marker_size=0)
 
     @staticmethod
     def calc_hists_max_min(hists):
@@ -603,7 +728,7 @@ class SummaryPlotter(object):
         respective item in the outer level of the `selections` arg.
         (e.g. each angle).
         Each of the hist list items is itself a list, corresponding to the hists
-        for [data, nominal MC, alt MC].
+        for [data, nominal MC, alt MC, other samples, ...].
 
         Also does styling of hists (as easier here)
         """
@@ -613,10 +738,13 @@ class SummaryPlotter(object):
             mean_entries_data = []
             mean_entries_mc = []
             mean_entries_alt_mc = []
+            # each top-level index is a sample
+            mean_entries_other_samples = [[] for _ in self.other_samples]  # for loop needed to create indepedent lists
 
             rms_entries_data = []
             rms_entries_mc = []
             rms_entries_alt_mc = []
+            rms_entries_other_samples = [[] for _ in self.other_samples]
 
             bin_names = []
 
@@ -636,6 +764,11 @@ class SummaryPlotter(object):
                 rms_entries_mc.append([results['rms_truth'], results['rms_err_truth']])
                 rms_entries_alt_mc.append([results['rms_alt_truth'], results['rms_err_alt_truth']])
 
+                for ind, sample in enumerate(self.other_samples):
+                    key = sample['key']
+                    mean_entries_other_samples[ind].append([results['mean_%s' % key], results['mean_err_%s' % key]])
+                    rms_entries_other_samples[ind].append([results['rms_%s' % key], results['rms_err_%s' % key]])
+
                 bin_names.append(label)
 
             hist_mean_data = self._make_hist_from_values(mean_entries_data, bin_names=bin_names)
@@ -647,6 +780,11 @@ class SummaryPlotter(object):
 
             mean_hists.append([hist_mean_data, hist_mean_mc, hist_mean_alt_mc])
 
+            for sample, entries in zip(self.other_samples, mean_entries_other_samples):
+                hist = self._make_hist_from_values(entries, bin_names=bin_names)
+                self._style_hist(hist, **sample['style_dict'])
+                mean_hists[-1].append(hist)
+
             hist_rms_data = self._make_hist_from_values(rms_entries_data, bin_names=bin_names)
             self._style_data_hist(hist_rms_data)
             hist_rms_mc = self._make_hist_from_values(rms_entries_mc, bin_names=bin_names)
@@ -655,6 +793,11 @@ class SummaryPlotter(object):
             self._style_alt_mc_hist(hist_rms_alt_mc)
 
             rms_hists.append([hist_rms_data, hist_rms_mc, hist_rms_alt_mc])
+
+            for sample, entries in zip(self.other_samples, rms_entries_other_samples):
+                hist = self._make_hist_from_values(entries, bin_names=bin_names)
+                self._style_hist(hist, **sample['style_dict'])
+                rms_hists[-1].append(hist)
 
         return mean_hists, rms_hists
 
@@ -781,9 +924,12 @@ class SummaryPlotter(object):
             in enumerate(zip(selections, mean_pads, mean_hists,  rms_pads, rms_hists)):
             mean_pad.cd()
 
-            mean_hist_group[2].Draw("E1")
-            mean_hist_group[1].Draw("E1 SAME")
-            mean_hist_group[0].Draw("E1 SAME")
+            # Draw hists - reverse order, so data last
+            for ind, mhg in enumerate(mean_hist_group[::-1]):
+                draw_opt = "E1"
+                if ind != 0:
+                    draw_opt += " SAME"
+                mhg.Draw(draw_opt)
 
             mean_draw_hist = mean_hist_group[-1]
             # remove x axis label
@@ -814,9 +960,12 @@ class SummaryPlotter(object):
             mean_draw_hist.SetMaximum(y_up + up_padding)
 
             rms_pad.cd()
-            rms_hist_group[2].Draw("E1")
-            rms_hist_group[1].Draw("E1 SAME")
-            rms_hist_group[0].Draw("E1 SAME")
+            # Draw hists - reverse order, so data last
+            for ind, rhg in enumerate(rms_hist_group[::-1]):
+                draw_opt = "E1"
+                if ind != 0:
+                    draw_opt += " SAME"
+                rhg.Draw(draw_opt)
 
             rms_draw_hist = rms_hist_group[-1]
             xax = rms_draw_hist.GetXaxis()
@@ -920,6 +1069,13 @@ class SummaryPlotter(object):
         leg.AddEntry(dummy_data, "Data" ,"EL")
         leg.AddEntry(dummy_mc, self.mc_label, "EL")
         leg.AddEntry(dummy_alt_mc, self.alt_mc_label, "EL")
+        dummy_other = []  # keep reference
+        for sample in self.other_samples:
+            dummy_sample = dummy_gr.Clone()
+            self._style_hist(dummy_sample, **sample['style_dict'])
+            dummy_other.append(dummy_sample)
+            leg.AddEntry(dummy_sample, sample['label'], "EL")
+
         # Add a dummy entry, otherwise it won't print the label of the last entry
         # No idea why - seems correlated with having > 2 lines in the legend header?
         # Absolute mess
@@ -1319,42 +1475,184 @@ def unpack_slim_unfolding_root_file_uproot(input_tfile, region_name, angle_name,
     )
 
 
+def normalize_areas(areas, errors):
+    """Normalise the areas & errors such that they integrate to unity
+
+    Parameters
+    ----------
+    areas : np.array
+        Bin areas
+    errors : np.array
+        Bin errors
+    """
+
+    integral = areas.sum()
+    if integral > 0:
+        scale_factor = 1./integral
+        areas *= scale_factor
+        errors *= scale_factor
+
+
+def get_yoda_stats_dict(input_filename, key_label, reference_hist=None):
+    """Summary
+
+    Parameters
+    ----------
+    input_filename : TYPE
+        Description
+    key_label : TYPE
+        Description
+    reference_hist : None, optional
+        Description
+
+    Returns
+    -------
+    TYPE
+        Description
+    """
+    yoda_dict = yoda.read(input_filename)
+    hname = list(yoda_dict.keys())[0]
+    is_dijet = rn.DIJET_PATH in hname
+
+    regions = rn.DIJET_REGIONS if is_dijet else rn.ZPJ_REGIONS
+    pt_bins = rn.PT_BINS_DIJET if is_dijet else rn.PT_BINS_ZPJ
+    path = rn.DIJET_PATH if is_dijet else rn.ZPJ_PATH
+    results_dicts = []
+    print("parsing", input_filename)
+    print("regions:", regions)
+    for jet_radius in rn.JET_RADII:
+        algo_name = "%spuppi" % jet_radius.name.lower()
+        for region in regions:
+            for lambda_var in rn.LAMBDA_VARS:
+                for ibin, pt_bin in enumerate(pt_bins):
+                    yoda_name = rn.get_plot_name(jet_radius, region, lambda_var, pt_bin)
+                    yoda_name = "/%s/%s" % (path, yoda_name)
+                    hist = yoda_dict[yoda_name]
+                    areas, widths, centers, errors = metrics.yoda_hist_to_values(hist)
+                    normalize_areas(areas, errors)
+                    areas, centers = metrics.hist_values_to_uarray(areas, centers, errors)
+                    mean_u = metrics.calc_mean_ucert(areas, centers)
+                    mean, mean_err = mean_u.nominal_value, mean_u.std_dev
+                    rms_u = metrics.calc_rms_ucert(areas, centers)
+                    rms, rms_err = rms_u.nominal_value, rms_u.std_dev
+
+                    # FIXME: need delta calculation, needs reference hist
+                    result_dict = {
+                        'jet_algo': algo_name,
+                        'region': region.name,
+                        'isgroomed': region.is_groomed,
+                        'pt_bin': ibin,
+                        'angle': lambda_var.hist_name,
+
+                        'mean_%s' % key_label: mean,
+                        'mean_err_%s' % key_label: mean_err,
+
+                        'rms_%s' % key_label: rms,
+                        'rms_err_%s' % key_label: rms_err,
+
+                        'delta_%s' % key_label: 0,
+                        'delta_err_%s' % key_label: 0,
+                    }
+                    results_dicts.append(result_dict)
+    return results_dicts
+
+
+def dataframe_yoda_key(title):
+    return title.replace(" ", "_").replace("=", "_").replace(".", "p")
+
+
+def convert_df_types(df):
+    df['jet_algo'] = df['jet_algo'].astype('category')
+    df['isgroomed'] = df['isgroomed'].astype('bool')
+    df['region'] = df['region'].astype('category')
+    df['angle'] = df['angle'].astype('category')
+
+
+def create_yoda_dataframe(yoda_stats_dicts):
+    """Create dataframe entries from list of dictionaries of stats"""
+    df = pd.DataFrame(yoda_stats_dicts)
+    convert_df_types(df)
+    return df
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--h5input",
                         help="Read data from H5 input file (from running extract_unfolding_summary_stats.py)")
     parser.add_argument("--outputDir",
                         default=None,
-                        help='Output directory (default is the source dir')
+                        help='Output directory (default is the source dir)')
+    parser.add_argument("--yodaInputDijet",
+                        action='append',
+                        default=[],
+                        help='Yoda input file (from dijet plugin)')
+    parser.add_argument("--yodaInputZPJ",
+                        action='append',
+                        default=[],
+                        help='Yoda input file (from Z+Jet plugin)')
+    parser.add_argument("--yodaLabel",
+                        action='append',
+                        default=[],
+                        help='Yoda input file label')
     args = parser.parse_args()
 
     # Get input data
-    if not any([args.h5input, args.yodaInput]):
-        raise RuntimeError("Need one of --h5input or --yodaInput")
+    if not any([args.h5input, args.yodaInputDijet, args.yodaInputZPJ]):
+        raise RuntimeError("Need one of --h5input or --yodaInputDijet or --yodaInputZPJ")
 
-    if args.yodaInput and args.yodaLabel and len(args.yodaInput) != len(args.yodaLabel):
-        raise RuntimeError("Number of --yodaInput must match number of --yodaLabel")
+    if (len(args.yodaInputDijet) != len(args.yodaLabel)
+        and len(args.yodaInputZPJ) != len(args.yodaLabel)):
+        raise RuntimeError("Number of --yodaInputDijet/yodaInputZPJ must match number of --yodaLabel")
 
     # ----------------------------------------------------------------------
-    # READ IN DATA FROM H5 FILE
+    # Read in data from h5 file
     # -----------------------------------------------------------------------
     print("Reading in from data existing HDF5 file...")
     if not args.outputDir:
-        args.outputDir = os.path.dirname(os.path.abspath(args.h5input))
+        if args.h5input:
+            args.outputDir = os.path.dirname(os.path.abspath(args.h5input))
+        else:
+            args.outputDir = os.getcwd()
+        print("Setting output dir to", args.outputDir)
 
     with pd.HDFStore(args.h5input) as store:
         df = store['df']
     print(df.head())
     print("# entries:", len(df.index))
 
+    # -----------------------------------------------------------------------
+    # Get stats from YODA files, add to dataframe
+    # -----------------------------------------------------------------------
+    if len(args.yodaInputDijet) > 0:
+        for yin_dijet, yin_zpj, ylabel in zip(args.yodaInputDijet, args.yodaInputZPJ, args.yodaLabel):
+            yoda_stats_dicts = []
+            # handle dijet first
+            print("Processing", ylabel, yin_dijet)
+            stats_dict_dijet = get_yoda_stats_dict(yin_dijet, key_label=dataframe_yoda_key(ylabel))
+            yoda_stats_dicts.extend(stats_dict_dijet)
 
+            print("Processing", ylabel, yin_zpj)
+            stats_dict_zpj = get_yoda_stats_dict(yin_zpj, key_label=dataframe_yoda_key(ylabel))
+            yoda_stats_dicts.extend(stats_dict_zpj)
 
+            # Convert to dataframe, merge in with main dataframe
+            df_yoda = create_yoda_dataframe(yoda_stats_dicts)
+            # print("before:", df.head())
+            df = pd.merge(df, df_yoda, how='outer') #, on=['jet_algo', 'region', 'isgroomed', 'pt_bin', 'angle'])
+            # print("after:", df.head())
+            # print(len(df.index))
+
+    convert_df_types(df)
+    print(df.columns)
+    print(df.head())
+    print(df.dtypes)
+    print(len(df.index))
 
     # Filter only regions/algos/angles in the dataframe, since it could have
     # been modified earlier
     all_jet_algos = [
-        {'src': args.ak4source, 'label': 'AK4 PUPPI', 'name': 'ak4puppi'},
-        {'src': args.ak8source, 'label': 'AK8 PUPPI', 'name': 'ak8puppi'}
+        {'label': 'AK4 PUPPI', 'name': 'ak4puppi'},
+        {'label': 'AK8 PUPPI', 'name': 'ak8puppi'}
     ]
     jet_algos = [j for j in all_jet_algos if j['name'] in df['jet_algo'].unique()]
     # print("Plotting jet_algos:", jet_algos)
@@ -1394,6 +1692,14 @@ if __name__ == "__main__":
     has_dijet = any(["Dijet" in r['name'] for r in regions])
     has_zpj = any(["ZPlusJet" in r['name'] for r in regions])
 
+    # Add extra samples
+    for ylabel in args.yodaLabel:
+        if ylabel not in SAMPLE_STYLE_DICTS:
+            print("No entry found in SAMPLE_STYLE_DICTS for", ylabel, ", using defaults")
+        plotter.add_sample(key=dataframe_yoda_key(ylabel),
+                           label=ylabel,
+                           style_dict=SAMPLE_STYLE_DICTS.get(ylabel, dict()))
+
     # For summary plots
     low_pt = 120
     high_pt = 614
@@ -1407,8 +1713,6 @@ if __name__ == "__main__":
         plotter.plot_dijet_means_vs_pt_all()
         plotter.plot_dijet_rms_vs_pt_all()
         plotter.plot_dijet_delta_vs_pt_all()
-
-        # sys.exit()
 
         pt_bins = qgc.PT_UNFOLD_DICT['signal_gen']
         low_pt_bin = np.where(pt_bins == low_pt)[0][0]
