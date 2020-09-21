@@ -3,7 +3,12 @@ Various functions to calculate metrics
 
 Different methods depending on package, input type, etc
 
-Yes it's a bit of a mess
+Yes it's a bit of a mess - I started with jax,
+then realised only uncertainties package came with CMSSW,
+but currently can't get covariance matrices working with uncertainties
+
+Would be nice to unify to one package
+
 """
 
 
@@ -258,6 +263,7 @@ try:
     # since NAF doesn't have any other auto-diff packages,
     # and I cba to write out all the differentials manually
     import uncertainties
+    from uncertainties import ufloat
     from uncertainties import unumpy as unp
 
 
@@ -318,7 +324,10 @@ try:
 
         Input arrays are uncertainties.unumpy.uarray
         """
-        return (bin_areas * bin_centers).sum() / bin_areas.sum()
+        try:
+            return (bin_areas * bin_centers).sum() / bin_areas.sum()
+        except ZeroDivisionError:
+            return ufloat(0.0, 0.0)
 
 
     def calc_rms_ucert(bin_areas, bin_centers):
@@ -331,7 +340,10 @@ try:
         """
         mean = calc_mean_ucert(bin_areas, bin_centers)
         sum_sq = (((bin_areas * bin_centers) - mean)**2).sum()
-        return uncertainties.umath_core.sqrt(sum_sq / bin_areas.sum())
+        try:
+            return uncertainties.umath_core.sqrt(sum_sq / bin_areas.sum())
+        except ZeroDivisionError:
+            return ufloat(0.0, 0.0)
 
 
     def calc_delta_ucert(bin_areas_a, bin_areas_b):
