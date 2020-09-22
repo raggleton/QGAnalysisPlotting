@@ -18,7 +18,7 @@ import numpy as np
 import warnings
 
 
-def get_hist_bin_widths(hist):
+def get_uproot_th1_bin_widths(hist):
     """Get bin widths as numpy array
 
     Parameters
@@ -43,7 +43,7 @@ def uproot_th1_to_arrays(hist):
     Note that errors here are multiplied by the bin width (since they are
     assumed to have been created by originally dividing by the bin width)
     """
-    bin_widths = get_hist_bin_widths(hist)
+    bin_widths = get_uproot_th1_bin_widths(hist)
     bin_areas = hist.values * bin_widths
     bin_centers = hist.edges[:-1] + (0.5*bin_widths)
     bin_errors = np.sqrt(hist.variances) * bin_widths

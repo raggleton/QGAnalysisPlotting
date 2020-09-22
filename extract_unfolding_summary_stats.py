@@ -203,7 +203,7 @@ if __name__ == "__main__":
                     except ValueError as e:
                         print("-ve value for data hist in pt bin", ibin, ":", bin_edge_low, "-", bin_edge_high)
                         raise e
-                    ematrix = scale_ematrix_by_bin_widths(unfolding_dict['unfolding_total_ematrices'][ibin].values, metrics.get_hist_bin_widths(unfolded_hist_bin_total_errors))
+                    ematrix = scale_ematrix_by_bin_widths(unfolding_dict['unfolding_total_ematrices'][ibin].values, metrics.get_uproot_th1_bin_widths(unfolded_hist_bin_total_errors))
                     unfolded_hist_bin_total_errors_mean, unfolded_hist_bin_total_errors_mean_err = metrics.calc_hist_mean_and_correlated_error_jax(unfolded_hist_bin_total_errors, ematrix)
                     unfolded_hist_bin_total_errors_rms, unfolded_hist_bin_total_errors_rms_err = metrics.calc_hist_rms_and_correlated_error_jax(unfolded_hist_bin_total_errors, ematrix)
 
