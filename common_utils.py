@@ -592,7 +592,7 @@ def th1_to_ndarray(hist_A, oflow_x=False):
     ncol = hist_A.GetNbinsX()
     if oflow_x:
         ncol += 2
-    result = np.zeros(shape=(1, ncol), dtype=np.float64)
+    contents = np.zeros(shape=(1, ncol), dtype=np.float64)
     errors = np.zeros(shape=(1, ncol), dtype=np.float64)
 
     # Get ROOT indices to loop over
@@ -604,11 +604,11 @@ def th1_to_ndarray(hist_A, oflow_x=False):
     # x_ind for numpy as always starts at 0
     # ix for ROOT
     for x_ind, ix in enumerate(range(x_start, x_end+1)):
-        result[0][x_ind] = hist_A.GetBinContent(ix)
+        contents[0][x_ind] = hist_A.GetBinContent(ix)
         errors[0][x_ind] = hist_A.GetBinError(ix)
 
     # check sparsity
-    return result, errors
+    return contents, errors
 
 
 def ndarray_to_th1(nd_array, has_oflow_x=False, offset=0.5, bins=None):
@@ -655,9 +655,9 @@ def th2_to_ndarray(hist_A, oflow_x=False, oflow_y=False):
     if oflow_y:
         nrow += 2
 
-    result = np.zeros(shape=(nrow, ncol), dtype=np.float64)
+    contents = np.zeros(shape=(nrow, ncol), dtype=np.float64)
     errors = np.zeros(shape=(nrow, ncol), dtype=np.float64)
-    # access via result[irow][icol]
+    # access via contents[irow][icol]
 
     # Get ROOT indices to loop over
     y_start = 0 if oflow_y else 1
@@ -674,10 +674,10 @@ def th2_to_ndarray(hist_A, oflow_x=False, oflow_y=False):
     # iy, ix for ROOT
     for y_ind, iy in enumerate(range(y_start, y_end+1)):
         for x_ind, ix in enumerate(range(x_start, x_end+1)):
-            result[y_ind][x_ind] = hist_A.GetBinContent(ix, iy)
+            contents[y_ind][x_ind] = hist_A.GetBinContent(ix, iy)
             errors[y_ind][x_ind] = hist_A.GetBinError(ix, iy)
 
-    return result, errors
+    return contents, errors
 
 
 def ndarray_to_th2(data, offset=0, binsx=None, binsy=None):
