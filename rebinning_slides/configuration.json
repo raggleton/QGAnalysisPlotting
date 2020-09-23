@@ -1,0 +1,11 @@
+{
+    "frontpage": {
+        "title": "Binning with $\\lambda$ fix",
+        "subtitle": "",
+        "author": "Robin Aggleton"
+    },
+
+    "slides": 
+        @CONTENTS
+
+}
