@@ -838,7 +838,7 @@ def do_dijet_pt_plots(workdir, do_systematics=True):
                        experimental_syst=None,
                        scale_syst=None,
                        pdf_syst=None,
-                       total_syst=total_gr)
+                       total_syst=total_gr if do_systematics else None)
 
 
 
@@ -1359,7 +1359,7 @@ def do_zpj_pt_plots(workdir, do_systematics=True):
                    experimental_syst=None,
                    scale_syst=None,
                    pdf_syst=None,
-                   total_syst=total_gr
+                   total_syst=total_gr if do_systematics else None
                    )
 
 
@@ -1368,7 +1368,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     for workdir in args.workdirs:
-        do_dijet_pt_plots(workdir)
-        do_zpj_pt_plots(workdir)
+        do_dijet_pt_plots(workdir, do_systematics=False)
+        do_zpj_pt_plots(workdir, do_systematics=False)
 
     sys.exit(0)
