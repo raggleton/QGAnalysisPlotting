@@ -171,11 +171,13 @@ def make_comparison_plot_ingredients(entries, rebin=1, normalise_hist=True, mean
         if max_leg_str < 12:
             p.legend.SetX1(0.65)
         else:
-            p.legend.SetX1(0.5)
+            p.legend.SetX1(0.55)
 
         p.legend.SetX2(0.99)
         if len(entries) > 4:
             p.legend.SetY1(0.6)
+        elif len(entries) > 6:
+            p.legend.SetY1(0.5)
         else:
             p.legend.SetY1(0.72)
         p.legend.SetY2(0.88)
