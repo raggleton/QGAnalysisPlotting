@@ -143,8 +143,11 @@ try:
         Must use jnp.X functions for e.g. sum(), square(), to ensure jax can differentiate it
         """
         mean = calc_mean_jax(bin_areas, bin_centers)
-        sum_sq = jnp.sum(jnp.square((bin_areas * bin_centers) - mean))
-        return jnp.sqrt(sum_sq / jnp.sum(bin_areas))
+        # sum_sq = jnp.sum(jnp.square((bin_areas * bin_centers) - mean))
+        # do E[X^2] - E[X]^2
+        sum_sq = jnp.true_divide(jnp.sum(bin_areas * bin_centers * bin_centers), jnp.sum(bin_areas)) - jnp.square(mean)
+        # sum_sq = jnp.sum(jnp.square((bin_areas * bin_centers) - mean))
+        return jnp.sqrt(sum_sq)
 
 
     rms_differential_jax = jit(grad(calc_rms_jax, argnums=0))
@@ -339,9 +342,11 @@ try:
         Must use uncertainties functions for e.g. square()
         """
         mean = calc_mean_ucert(bin_areas, bin_centers)
-        sum_sq = (((bin_areas * bin_centers) - mean)**2).sum()
+        prod = (bin_areas * bin_centers * bin_centers)
         try:
-            return uncertainties.umath_core.sqrt(sum_sq / bin_areas.sum())
+            # do E[X^2] - E[X]^2
+            sum_sq = (prod.sum() / bin_areas.sum()) - mean**2
+            return  uncertainties.umath_core.sqrt(sum_sq)
         except ZeroDivisionError:
             return ufloat(0.0, 0.0)
 
