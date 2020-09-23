@@ -113,25 +113,25 @@ def construct_all_fine_binnings(var_dict):
         var_dict[angle_name] = angle_dict
 
 
-Angle = namedtuple("Angle", ['var', 'kappa', 'beta', 'name', "lambda_str", "colour"])
+Angle = namedtuple("Angle", ['var', 'kappa', 'beta', 'name', "lambda_str", "colour", "mathmode"])
 COMMON_VARS_WITH_FLAV = [
     # The order here is important: determines that in summary plots
     # Angle("jet_multiplicity", 0, 0, "Multiplicity", "#lambda_{0}^{0}", 2),
-    Angle('jet_LHA', 1, 0.5, "LHA", "#lambda_{0.5}^{1}", 600),
-    Angle('jet_width', 1, 1, "Width", "#lambda_{1}^{1}", 861),
-    Angle('jet_thrust', 1, 2, "Thrust", "#lambda_{2}^{1}", 617),
-    Angle("jet_puppiMultiplicity", 0, 0, "Multiplicity", "#lambda_{0}^{0}", 2),
-    Angle('jet_pTD', 2, 0, "(p_{T}^{D})^{2}", "#lambda_{0}^{2}", 418),
+    Angle('jet_LHA', 1, 0.5, "LHA", "#lambda_{0.5}^{1}", 600, r"\text{LHA}"),
+    Angle('jet_width', 1, 1, "Width", "#lambda_{1}^{1}", 861, r"\text{Width}"),
+    Angle('jet_thrust', 1, 2, "Thrust", "#lambda_{2}^{1}", 617, r"\text{Thrust}"),
+    Angle("jet_puppiMultiplicity", 0, 0, "Multiplicity", "#lambda_{0}^{0}", 2, r"\text{Multiplicity}"),
+    Angle('jet_pTD', 2, 0, "(p_{T}^{D})^{2}", "#lambda_{0}^{2}", 418, r"(p_{T}^{D})^{2}"),
     # charged-only constit
     # Angle("jet_multiplicity_charged", 0, 0, "Multiplicity (charged)", "#lambda_{0}^{0}", 2),
-    Angle('jet_LHA_charged', 1, 0.5, "LHA (charged-only)", "#lambda_{0.5}^{1}", 600),
-    Angle('jet_width_charged', 1, 1, "Width (charged-only)", "#lambda_{1}^{1}", 861),
-    Angle('jet_thrust_charged', 1, 2, "Thrust (charged-only)", "#lambda_{2}^{1}", 617),
-    Angle("jet_puppiMultiplicity_charged", 0, 0, "Multiplicity (charged-only)", "#lambda_{0}^{0}", 2),
-    Angle('jet_pTD_charged', 2, 0, "(p_{T}^{D})^{2} (charged-only)", "#lambda_{0}^{2}", 418),
+    Angle('jet_LHA_charged', 1, 0.5, "LHA (charged-only)", "#lambda_{0.5}^{1}", 600, r"\text{LHA (charged-only)}"),
+    Angle('jet_width_charged', 1, 1, "Width (charged-only)", "#lambda_{1}^{1}", 861, r"\text{Width (charged-only)}"),
+    Angle('jet_thrust_charged', 1, 2, "Thrust (charged-only)", "#lambda_{2}^{1}", 617, r"\text{Thrust (charged-only)}"),
+    Angle("jet_puppiMultiplicity_charged", 0, 0, "Multiplicity (charged-only)", "#lambda_{0}^{0}", 2, r"\text{Multiplicity (charged-only)}"),
+    Angle('jet_pTD_charged', 2, 0, "(p_{T}^{D})^{2} (charged-only)", "#lambda_{0}^{2}", 418, r"(p_{T}^{D})^{2}~\text{(charged-only)}"),
     # Angle('jet_multiplicity', 0, 0, "Multiplicity", "#lambda_{0}^{0}", 2),  # leave last as we don't want it in our RIVET numbering
-    Angle('jet_flavour', 0, 0, "Flavour", "PDGID", 7),
-    Angle("jet_genParton_flavour", 0, 0, "Flavour", "PDGID", 8)
+    Angle('jet_flavour', 0, 0, "Flavour", "PDGID", 7, r"\text{Flavour}"),
+    Angle("jet_genParton_flavour", 0, 0, "Flavour", "PDGID", 8, r"\text{Flavour}")
 ]
 
 COMMON_VARS = COMMON_VARS_WITH_FLAV[:-2]
@@ -151,6 +151,7 @@ PT_UNFOLD_DICT = {
     # "signal_gen": np.array([50, 65, 88, 120, 150, 186, 254, 326, 408, 481, 614, 800, 1000, 2000], dtype='d'),
     "underflow_gen": np.array([15, 30, 38, 50], dtype='d'),
     "signal_zpj_gen": np.array([50, 65, 88, 120, 150, 186, 254, 326, 408, 481, 614, 800, 2000], dtype='d'),
+    # "signal_zpj_gen": np.array([50, 65, 88, 120, 150, 186, 254, 408, 614, 2000], dtype='d'),
     "underflow_zpj_gen": np.array([15, 30, 38, 50], dtype='d'),
 }
 
