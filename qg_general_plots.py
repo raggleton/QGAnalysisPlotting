@@ -1301,6 +1301,12 @@ def hist_divide_bin_width(h):
     """Create copy of hist, but each bin's contents is divide by the bin width"""
     h_new = h.Clone(h.GetName()+"DivideBinWidth")
     h_new.Scale(1., 'width')
+    # if any bin has 0 entries before, it will now have nan, so we need to manually fix that
+    # arghhhhhhhhhhhhhhhhhh
+    for i in range(1, h_new.GetNbinsX()+1):
+        if np.isnan(h_new.GetBinContent(i)):
+            h_new.SetBinContent(i, 0)
+            h_new.SetBinError(i, 0)
     h_new.SetEntries(h.GetEntries())  # needed as the default is to replace with integral
     return h_new
 
@@ -1309,8 +1315,7 @@ def normalise_hist_divide_bin_width(h):
     """Create copy of hist, but each bin's contents is divide by the bin width"""
     h_new = h.Clone(h.GetName()+"DivideBinWidth")
     normalise_hist(h_new)
-    h_new.Scale(1., 'width')
-    h_new.SetEntries(h.GetEntries())  # needed as the default is to replace with integral
+    h_new = hist_divide_bin_width(h_new)
     return h_new
 
 
