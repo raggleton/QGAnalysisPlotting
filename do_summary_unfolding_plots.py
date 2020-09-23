@@ -59,38 +59,56 @@ COMMON_STYLE_DICT = {
 
     "data_line_style": 1,
     "data_color": ROOT.kBlack,
+    "data_marker_style": cu.Marker.get("circle", filled=True),
 
-    "mc_line_style": 22,
+    "marker_size": 1,
+
+    # "mc_line_style": 22,
+    "mc_line_style": 1,
     # format: 3ijk,
     # i=distance between lines,
     # j=angle between 0 and 90 degrees (5 = not drawn),
     # k=angle between 90 and 180 degrees (5 = not drawn)
     "mc_fill_style": 3445,
     "mc_color": ROOT.kBlue+1,
+    "mc_marker_style": cu.Marker.get('square', filled=False),
 
-    "mc_alt_line_style": 23,
+    # "mc_alt_line_style": 22,
+    "mc_alt_line_style": 1,
     "mc_alt_fill_style": 3454,
     "mc_alt_color": ROOT.kAzure+1,
+    "mc_alt_marker_style": cu.Marker.get('triangleUp', filled=False),
 }
-
 
 
 # some pre-defined sample dicts for YODA files
 SAMPLE_STYLE_DICTS = {
     "Sherpa": {
         "color": ROOT.kGreen+2,
+        "label": "Sherpa",
+        "marker_style": cu.Marker.get('triangleDown', filled=False),
+        "marker_size": COMMON_STYLE_DICT['marker_size'] * 1,
     },
 
     "Herwig7 CH3": {
         "color": ROOT.kOrange-3,
+        "label": "Herwig7 CH3",
+        "marker_style": cu.Marker.get('star', filled=False),
+        "marker_size": COMMON_STYLE_DICT['marker_size'] * 1.2, # these shapes always come out small
     },
 
     "Herwig7 CH3 alphaS=0.136": {
-        "color": ROOT.kViolet+3,
+        "color": ROOT.kRed-2,
+        "label": "Herwig7 CH3\n#alpha_{S} = 0.136",
+        "marker_style": cu.Marker.get('diamond', filled=False),
+        "marker_size": COMMON_STYLE_DICT['marker_size'] * 1.2, # these shapes always come out small
     },
 
     "Pythia8 CP5": {
         "color": ROOT.kMagenta-7,
+        "label": "Pythia8 CP5",
+        "marker_style": cu.Marker.get('crossX', filled=False),
+        "marker_size": COMMON_STYLE_DICT['marker_size'] * 1.2, # these shapes always come out small
     }
 }
 
@@ -138,7 +156,7 @@ class SummaryPlotter(object):
         self.output_dir = output_dir
         self.has_data = has_data
         self.is_preliminary = True
-        self.mc_label = 'MG5+Pythia8 CUETP8M1'
+        self.mc_label = 'MG5+Pythia8\nCUETP8M1'
         self.alt_mc_label = 'Herwig++'
         self.other_samples = []
 
@@ -275,7 +293,7 @@ class SummaryPlotter(object):
                 zpj_hist_ratio_error.SetLineWidth(0)
                 zpj_hist_ratio_error.SetMarkerSize(0)
 
-        m_size = 1
+        m_size = COMMON_STYLE_DICT['marker_size']
         lw = COMMON_STYLE_DICT['line_width']
         entries = []
 
@@ -293,7 +311,7 @@ class SummaryPlotter(object):
                                  line_color=ROOT.kBlack if only_one_region else dijet_cen_col,
                                  line_width=lw,
                                  marker_color=ROOT.kBlack if only_one_region else dijet_cen_col,
-                                 marker_style=cu.Marker.get('circle', True),
+                                 marker_style=COMMON_STYLE_DICT['data_marker_style'],
                                  marker_size=m_size)
                 entries.append(Contribution(dijet_central_hist, **cont_args))
                 dummy_entries.append(Contribution(dummy_gr.Clone(), **cont_args))
@@ -304,7 +322,7 @@ class SummaryPlotter(object):
                                  line_color=ROOT.kBlack if only_one_region else dijet_fwd_col,
                                  line_width=lw,
                                  marker_color=ROOT.kBlack if only_one_region else dijet_fwd_col,
-                                 marker_style=cu.Marker.get('square', True),
+                                 marker_style=COMMON_STYLE_DICT['data_marker_style'],
                                  marker_size=m_size)
                 entries.append(Contribution(dijet_forward_hist, **cont_args))
                 dummy_entries.append(Contribution(dummy_gr.Clone(), **cont_args))
@@ -315,7 +333,7 @@ class SummaryPlotter(object):
                                  line_color=ROOT.kBlack if only_one_region else zpj_col,
                                  line_width=lw,
                                  marker_color=ROOT.kBlack if only_one_region else zpj_col,
-                                 marker_style=cu.Marker.get('triangleUp', True),
+                                 marker_style=COMMON_STYLE_DICT['data_marker_style'],
                                  marker_size=m_size)
                 entries.append(Contribution(zpj_hist, **cont_args))
                 dummy_entries.append(Contribution(dummy_gr.Clone(), **cont_args))
@@ -327,9 +345,9 @@ class SummaryPlotter(object):
                              line_width=lw,
                              line_style=COMMON_STYLE_DICT['mc_line_style'],
                              marker_color=COMMON_STYLE_DICT['mc_color'],
-                             marker_style=cu.Marker.get('circle', False),
-                             marker_size=0,
-                             leg_draw_opt="LE",
+                             marker_style=COMMON_STYLE_DICT['mc_marker_style'],
+                             marker_size=m_size,
+                             leg_draw_opt="LE" if m_size == 0 else "EP",
                              subplot=dijet_central_hist_no_errors)
             entries.append(Contribution(dijet_central_hist_truth, **cont_args))
             dummy_entries.append(Contribution(dummy_gr.Clone(), **cont_args))
@@ -340,9 +358,9 @@ class SummaryPlotter(object):
                              line_width=lw,
                              line_style=COMMON_STYLE_DICT['mc_line_style'],
                              marker_color=COMMON_STYLE_DICT['mc_color'],
-                             marker_style=cu.Marker.get('square', False),
-                             marker_size=0,
-                             leg_draw_opt="LE",
+                             marker_style=COMMON_STYLE_DICT['mc_marker_style'],
+                             marker_size=m_size,
+                             leg_draw_opt="LE" if m_size == 0 else "EP",
                              subplot=dijet_forward_hist_no_errors)
             entries.append(Contribution(dijet_forward_hist_truth, **cont_args))
             dummy_entries.append(Contribution(dummy_gr.Clone(), **cont_args))
@@ -353,9 +371,9 @@ class SummaryPlotter(object):
                              line_width=lw,
                              line_style=COMMON_STYLE_DICT['mc_line_style'],
                              marker_color=COMMON_STYLE_DICT['mc_color'],
-                             marker_style=cu.Marker.get('triangleUp', False),
-                             marker_size=0,
-                             leg_draw_opt="LE",
+                             marker_style=COMMON_STYLE_DICT['mc_marker_style'],
+                             marker_size=m_size,
+                             leg_draw_opt="LE" if m_size == 0 else "EP",
                              subplot=zpj_hist_no_errors)
             entries.append(Contribution(zpj_hist_truth, **cont_args))
             dummy_entries.append(Contribution(dummy_gr.Clone(), **cont_args))
@@ -367,9 +385,9 @@ class SummaryPlotter(object):
                              line_width=lw,
                              line_style=COMMON_STYLE_DICT['mc_alt_line_style'],
                              marker_color=COMMON_STYLE_DICT['mc_alt_color'],
-                             marker_style=cu.Marker.get('circle', False),
-                             marker_size=0,
-                             leg_draw_opt="LE",
+                             marker_style=COMMON_STYLE_DICT['mc_alt_marker_style'],
+                             marker_size=m_size,
+                             leg_draw_opt="LE" if m_size == 0 else "EP",
                              subplot=dijet_central_hist_no_errors)
             entries.append(Contribution(dijet_central_hist_alt_truth, **cont_args))
             dummy_entries.append(Contribution(dummy_gr.Clone(), **cont_args))
@@ -380,9 +398,9 @@ class SummaryPlotter(object):
                              line_width=lw,
                              line_style=COMMON_STYLE_DICT['mc_alt_line_style'],
                              marker_color=COMMON_STYLE_DICT['mc_alt_color'],
-                             marker_style=cu.Marker.get('square', False),
-                             marker_size=0,
-                             leg_draw_opt="LE",
+                             marker_style=COMMON_STYLE_DICT['mc_alt_marker_style'],
+                             marker_size=m_size,
+                             leg_draw_opt="LE" if m_size == 0 else "EP",
                              subplot=dijet_forward_hist_no_errors)
             entries.append(Contribution(dijet_forward_hist_alt_truth, **cont_args))
             dummy_entries.append(Contribution(dummy_gr.Clone(), **cont_args))
@@ -393,9 +411,9 @@ class SummaryPlotter(object):
                              line_width=lw,
                              line_style=COMMON_STYLE_DICT['mc_alt_line_style'],
                              marker_color=COMMON_STYLE_DICT['mc_alt_color'],
-                             marker_style=cu.Marker.get('triangleUp', False),
-                             marker_size=0,
-                             leg_draw_opt="LE",
+                             marker_style=COMMON_STYLE_DICT['mc_alt_marker_style'],
+                             marker_size=m_size,
+                             leg_draw_opt="LE" if m_size == 0 else "EP",
                              subplot=zpj_hist_no_errors)
             entries.append(Contribution(zpj_hist_alt_truth, **cont_args))
             dummy_entries.append(Contribution(dummy_gr.Clone(), **cont_args))
@@ -406,14 +424,16 @@ class SummaryPlotter(object):
             for sample, hist, mark in zip(self.other_samples, other_samples_dijet_central_hists, marker.cycle()):
                 style_dict = sample['style_dict']
                 color = style_dict.get('color', COMMON_STYLE_DICT['mc_alt_color'])
-                cont_args = dict(label=sample['label'] if only_one_region else '#splitline{ Dijet (central) }{ [%s]}' % (sample['label']),
+                fancy_label = style_dict.get("label", sample['label'])
+                marker_size = style_dict.get('marker_size', m_size)
+                cont_args = dict(label=fancy_label if only_one_region else '#splitline{ Dijet (central) }{ [%s]}' % (fancy_label),
                                  line_color=color,
                                  line_width=lw,
                                  line_style=style_dict.get('line_style', COMMON_STYLE_DICT['mc_alt_line_style']),
                                  marker_color=color,
                                  marker_style=style_dict.get('marker_style', mark),
-                                 marker_size=style_dict.get('marker_size', 0),
-                                 leg_draw_opt="LE",
+                                 marker_size=marker_size,
+                                 leg_draw_opt="LE" if marker_size == 0 else "EP",
                                  subplot=dijet_central_hist_no_errors)
                 entries.append(Contribution(hist, **cont_args))
                 dummy_entries.append(Contribution(dummy_gr.Clone(), **cont_args))
@@ -424,14 +444,16 @@ class SummaryPlotter(object):
             for sample, hist, mark in zip(self.other_samples, other_samples_dijet_forward_hists, marker.cycle()):
                 style_dict = sample['style_dict']
                 color = style_dict.get('color', COMMON_STYLE_DICT['mc_alt_color'])
-                cont_args = dict(label=sample['label'] if only_one_region else '#splitline{ Dijet (forward) }{ [%s]}' % (sample['label']),
+                fancy_label = style_dict.get("label", sample['label'])
+                marker_size = style_dict.get('marker_size', m_size)
+                cont_args = dict(label=fancy_label if only_one_region else '#splitline{ Dijet (forward) }{ [%s]}' % (fancy_label),
                                  line_color=color,
                                  line_width=lw,
                                  line_style=style_dict.get('line_style', COMMON_STYLE_DICT['mc_alt_line_style']),
                                  marker_color=color,
                                  marker_style=style_dict.get('marker_style', mark),
-                                 marker_size=style_dict.get('marker_size', 0),
-                                 leg_draw_opt="LE",
+                                 marker_size=marker_size,
+                                 leg_draw_opt="LE" if marker_size == 0 else "EP",
                                  subplot=dijet_forward_hist_no_errors)
                 entries.append(Contribution(hist, **cont_args))
                 dummy_entries.append(Contribution(dummy_gr.Clone(), **cont_args))
@@ -442,14 +464,16 @@ class SummaryPlotter(object):
             for sample, hist, mark in zip(self.other_samples, other_samples_zpj_hists, marker.cycle()):
                 style_dict = sample['style_dict']
                 color = style_dict.get('color', COMMON_STYLE_DICT['mc_alt_color'])
-                cont_args = dict(label=sample['label'] if only_one_region else '#splitline{ Z+jets}{ [%s]}' % (sample['label']),
+                fancy_label = style_dict.get("label", sample['label'])
+                marker_size = style_dict.get('marker_size', m_size)
+                cont_args = dict(label=fancy_label if only_one_region else '#splitline{ Z+jets}{ [%s]}' % (fancy_label),
                                  line_color=color,
                                  line_width=lw,
                                  line_style=style_dict.get('line_style', COMMON_STYLE_DICT['mc_alt_line_style']),
                                  marker_color=color,
                                  marker_style=style_dict.get('marker_style', mark),
-                                 marker_size=style_dict.get('marker_size', 0),
-                                 leg_draw_opt="LE",
+                                 marker_size=marker_size,
+                                 leg_draw_opt="LE" if marker_size == 0 else "EP",
                                  subplot=zpj_hist_no_errors)
                 entries.append(Contribution(hist, **cont_args))
                 dummy_entries.append(Contribution(dummy_gr.Clone(), **cont_args))
@@ -507,14 +531,14 @@ class SummaryPlotter(object):
         if len(entries) > 3:
             # TODO: scale with numberof entries
             plot.legend.SetNColumns(2)
-            plot.legend.SetX1(0.50)
-            plot.legend.SetY1(0.68)
+            plot.legend.SetX1(0.58)
+            plot.legend.SetY1(0.6)
             plot.legend.SetX2(0.92)
             plot.legend.SetY2(0.92)
             # plot.legend.SetBorderSize(1)
             # plot.legend.SetLineColor(ROOT.kBlack)
             plot.title_left_offset = 0.03
-        if len(entries) > 6:
+        if len(entries) > 8:
             plot.legend.SetNColumns(3)
         plot.legend.SetY2(0.87)
         plot.left_margin = 0.16
@@ -533,10 +557,12 @@ class SummaryPlotter(object):
             if '\n' not in this_label:
                 plot.legend.AddEntry(cont.obj, this_label, cont.leg_draw_opt)
             else:
-                for label_ind, label_part in enumerate(this_label.split("\n")):
-                    obj = cont.obj if label_ind == 0 else 0
-                    draw_opt = cont.leg_draw_opt if label_ind == 0 else ""
-                    plot.legend.AddEntry(obj, label_part, draw_opt)
+                # use #splitline instead of \n,
+                # since the latter with > 1 columns will go in the wrong place
+                parts = this_label.split("\n")
+                if len(parts) > 2:
+                    raise RuntimeError("Cannot handle > newlines in legend yet - requires nested #splitline")
+                plot.legend.AddEntry(cont.obj, "#splitline{%s}{%s}" % (parts[0], parts[1]), cont.leg_draw_opt)
 
         plot.canvas.cd()
         plot.legend.Draw()
@@ -681,7 +707,8 @@ class SummaryPlotter(object):
         return h
 
     @staticmethod
-    def _style_hist(hist, line_style=None, color=None, fill_style=None, marker_size=None):
+    def _style_hist(hist, line_style=None, color=None, fill_style=None,
+                    marker_size=None, marker_style=None, **kwargs):
         if line_style is not None:
             hist.SetLineStyle(line_style)
         if fill_style is not None:
@@ -692,24 +719,31 @@ class SummaryPlotter(object):
             hist.SetMarkerColor(color)
         if marker_size is not None:
             hist.SetMarkerSize(marker_size)
+        if marker_style is not None:
+            hist.SetMarkerStyle(marker_style)
 
     def _style_data_hist(self, hist):
         self._style_hist(hist,
-                         line_style=COMMON_STYLE_DICT['data_line_style'])
+                         color=COMMON_STYLE_DICT['data_color'],
+                         line_style=COMMON_STYLE_DICT['data_line_style'],
+                         marker_size=COMMON_STYLE_DICT['marker_size'],
+                         marker_style=COMMON_STYLE_DICT['data_marker_style'])
 
     def _style_mc_hist(self, hist):
         self._style_hist(hist,
                          line_style=COMMON_STYLE_DICT['mc_line_style'],
                          color=COMMON_STYLE_DICT['mc_color'],
                          fill_style=COMMON_STYLE_DICT['mc_fill_style'],
-                         marker_size=0)
+                         marker_size=COMMON_STYLE_DICT['marker_size'],
+                         marker_style=COMMON_STYLE_DICT['mc_marker_style'])
 
     def _style_alt_mc_hist(self, hist):
         self._style_hist(hist,
                          line_style=COMMON_STYLE_DICT['mc_alt_line_style'],
                          color=COMMON_STYLE_DICT['mc_alt_color'],
                          fill_style=COMMON_STYLE_DICT['mc_alt_fill_style'],
-                         marker_size=0)
+                         marker_size=COMMON_STYLE_DICT['marker_size'],
+                         marker_style=COMMON_STYLE_DICT['mc_alt_marker_style'])
 
     @staticmethod
     def calc_hists_max_min(hists):
@@ -1066,15 +1100,23 @@ class SummaryPlotter(object):
         self._style_mc_hist(dummy_mc)
         dummy_alt_mc = dummy_gr.Clone()
         self._style_alt_mc_hist(dummy_alt_mc)
-        leg.AddEntry(dummy_data, "Data" ,"EL")
-        leg.AddEntry(dummy_mc, self.mc_label, "EL")
-        leg.AddEntry(dummy_alt_mc, self.alt_mc_label, "EL")
+
+        def _add_entry(obj, label, option):
+            for line_ind, line in enumerate(label.split("\n")):
+                if line_ind == 0:
+                    leg.AddEntry(obj, line, option)
+                else:
+                    leg.AddEntry(0, line, "")
+
+        _add_entry(dummy_data, "Data", "P")
+        _add_entry(dummy_mc, self.mc_label, "P")
+        _add_entry(dummy_alt_mc, self.alt_mc_label, "P")
         dummy_other = []  # keep reference
         for sample in self.other_samples:
             dummy_sample = dummy_gr.Clone()
             self._style_hist(dummy_sample, **sample['style_dict'])
             dummy_other.append(dummy_sample)
-            leg.AddEntry(dummy_sample, sample['label'], "EL")
+            _add_entry(dummy_sample, sample['style_dict'].get('label', sample['label']), "P")
 
         # Add a dummy entry, otherwise it won't print the label of the last entry
         # No idea why - seems correlated with having > 2 lines in the legend header?
