@@ -790,20 +790,42 @@ class SummaryPlotter(object):
                     print(results)
                     raise ValueError("Got != 1 results, check query")
 
-                mean_entries_data.append([results['mean'], results['mean_err']])
-                mean_entries_mc.append([results['mean_truth'], results['mean_err_truth']])
-                mean_entries_alt_mc.append([results['mean_alt_truth'], results['mean_err_alt_truth']])
+                mean_entries_data.append([results['mean'].item(), results['mean_err'].item()])
+                mean_entries_mc.append([results['mean_truth'].item(), results['mean_err_truth'].item()])
+                mean_entries_alt_mc.append([results['mean_alt_truth'].item(), results['mean_err_alt_truth'].item()])
 
-                rms_entries_data.append([results['rms'], results['rms_err']])
-                rms_entries_mc.append([results['rms_truth'], results['rms_err_truth']])
-                rms_entries_alt_mc.append([results['rms_alt_truth'], results['rms_err_alt_truth']])
+                rms_entries_data.append([results['rms'].item(), results['rms_err'].item()])
+                rms_entries_mc.append([results['rms_truth'].item(), results['rms_err_truth'].item()])
+                rms_entries_alt_mc.append([results['rms_alt_truth'].item(), results['rms_err_alt_truth'].item()])
 
                 for ind, sample in enumerate(self.other_samples):
                     key = sample['key']
-                    mean_entries_other_samples[ind].append([results['mean_%s' % key], results['mean_err_%s' % key]])
-                    rms_entries_other_samples[ind].append([results['rms_%s' % key], results['rms_err_%s' % key]])
+                    mean_entries_other_samples[ind].append([results['mean_%s' % key].item(), results['mean_err_%s' % key].item()])
+                    rms_entries_other_samples[ind].append([results['rms_%s' % key].item(), results['rms_err_%s' % key].item()])
 
                 bin_names.append(label)
+
+            # check for dodgy values
+            def _check_values(values, label):
+                arr = np.array(values)
+                if np.any(arr == 0):
+                    print("0 in", label)
+                if np.all(arr == 0):
+                    print("0 for all", label)
+                if np.any(arr < 0):
+                    print("<0 in", label)
+                if np.all(arr < 0):
+                    print("<0 for all", label)
+                if np.isnan(arr).any():
+                    print("nan in", label)
+                    print(arr)
+                if np.isinf(arr).any():
+                    print("inf in", label)
+                    print(arr)
+
+            _check_values(mean_entries_data, "mean_entries_data")
+            _check_values(mean_entries_mc, "mean_entries_mc")
+            _check_values(mean_entries_alt_mc, "mean_entries_alt_mc")
 
             hist_mean_data = self._make_hist_from_values(mean_entries_data, bin_names=bin_names)
             self._style_data_hist(hist_mean_data)
@@ -815,9 +837,14 @@ class SummaryPlotter(object):
             mean_hists.append([hist_mean_data, hist_mean_mc, hist_mean_alt_mc])
 
             for sample, entries in zip(self.other_samples, mean_entries_other_samples):
+                _check_values(entries, "mean_entries_%s" % sample['label'])
                 hist = self._make_hist_from_values(entries, bin_names=bin_names)
                 self._style_hist(hist, **sample['style_dict'])
                 mean_hists[-1].append(hist)
+
+            _check_values(rms_entries_data, "rms_entries_data")
+            _check_values(rms_entries_mc, "rms_entries_mc")
+            _check_values(rms_entries_alt_mc, "rms_entries_alt_mc")
 
             hist_rms_data = self._make_hist_from_values(rms_entries_data, bin_names=bin_names)
             self._style_data_hist(hist_rms_data)
@@ -829,6 +856,7 @@ class SummaryPlotter(object):
             rms_hists.append([hist_rms_data, hist_rms_mc, hist_rms_alt_mc])
 
             for sample, entries in zip(self.other_samples, rms_entries_other_samples):
+                _check_values(entries, "rms_entries_%s" % sample['label'])
                 hist = self._make_hist_from_values(entries, bin_names=bin_names)
                 self._style_hist(hist, **sample['style_dict'])
                 rms_hists[-1].append(hist)
