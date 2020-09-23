@@ -189,14 +189,14 @@ if __name__ == "__main__":
             print(key)
 
             ref_pt_region_dict = [x for x in pt_regions if x['append'] == ref_pt_region][0]
-            var_dict["title"] = "%s\n%s\nRebinned for %s (central+forward)" % (region_label, pt_region_dict['title'], ref_pt_region_dict['title'], dijet_region)
+            var_dict["title"] = "%s\n%s\nRebinned for %s (central+forward)" % (region_label, pt_region_dict['title'], ref_pt_region_dict['title'])
 
             # Use same for central/forward
             # Use Dijet ones for Z+Jets
             ref_region = "Dijet_QG_central_tighter+Dijet_QG_forward_tighter"
 
             # Here we want separate groomed/ungroomed binnings
-            if "groomed" in source_plot_dir_name:
+            if "groomed" in total_plot_dir_name:
                 if args.groomedRef == "groomed":
                     # Use groomed for groomed
                     ref_region = ref_region.replace("_tighter", "_tighter_groomed")
@@ -216,7 +216,7 @@ if __name__ == "__main__":
             if args.target:
                 var_dict['title'] += " (target %s)" % (args.target)
 
-            key = key.replace(source_plot_dir_name, ref_region)
+            key = key.replace(total_plot_dir_name, ref_region)
             print(key)
             new_binning = binning_dict[key]
             print(new_binning)

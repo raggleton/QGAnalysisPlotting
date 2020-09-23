@@ -452,7 +452,7 @@ def make_plots(h2d, var_dict, plot_dir, append="",
             contents, errors = cu.th1_to_ndarray(h_reco)
             centers = cu.get_th1_bin_centers(h_reco)
             areas, centers = metrics.hist_values_to_uarray(bin_areas=contents, bin_centers=centers, bin_errors=errors)
-            print(areas, areas.sum())
+            # print(areas, areas.sum())
             mean_u = metrics.calc_mean_ucert(areas, centers)
             mean, mean_err = mean_u.nominal_value, mean_u.std_dev
             rms_u = metrics.calc_rms_ucert(areas, centers)
