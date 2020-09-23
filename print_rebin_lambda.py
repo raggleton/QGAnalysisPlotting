@@ -35,7 +35,7 @@ import qg_general_plots as qgg
 import qg_common as qgc
 from comparator import Contribution, Plot
 import common_utils as cu
-from determine_lambda_binning import rebin_2d_hist, make_rebinned_2d_hist, make_plots
+from determine_lambda_binning import rebin_2d_hist, make_rebinned_2d_hist, make_plots, get_summed_hists
 
 ROOT.gStyle.SetPaintTextFormat(".3f")
 
@@ -116,8 +116,14 @@ if __name__ == "__main__":
     source_plot_dir_names = None
     region_labels = None
     if "qcd" in args.input.lower():
-        source_plot_dir_names = ["Dijet_QG_central_tighter", "Dijet_QG_forward_tighter", "Dijet_QG_central_tighter_groomed", "Dijet_QG_forward_tighter_groomed"]
-        region_labels = [qgc.QCD_Dijet_CEN_LABEL, qgc.QCD_Dijet_FWD_LABEL, qgc.QCD_Dijet_CEN_GROOMED_LABEL, qgc.QCD_Dijet_FWD_GROOMED_LABEL]
+        source_plot_dir_names = ["Dijet_QG_central_tighter", "Dijet_QG_forward_tighter", 
+                                 "Dijet_QG_central_tighter_groomed", "Dijet_QG_forward_tighter_groomed", 
+                                 ("Dijet_QG_central_tighter", "Dijet_QG_forward_tighter"), # do sum over these regions
+                                 ("Dijet_QG_central_tighter_groomed", "Dijet_QG_forward_tighter_groomed")][-2:]
+        region_labels = [qgc.QCD_Dijet_CEN_LABEL, qgc.QCD_Dijet_FWD_LABEL, 
+                         qgc.QCD_Dijet_CEN_GROOMED_LABEL, qgc.QCD_Dijet_FWD_GROOMED_LABEL, 
+                         qgc.Dijet_LABEL,
+                         qgc.Dijet_GROOMED_LABEL][-2:]
     elif "dyjetstoll" in args.input.lower():
         source_plot_dir_names = ["ZPlusJets_QG", "ZPlusJets_QG_groomed"]
         region_labels = [qgc.DY_ZpJ_LABEL, qgc.DY_ZpJ_GROOMED_LABEL]
@@ -150,15 +156,25 @@ if __name__ == "__main__":
     for angle, (source_plot_dir_name, region_label), pt_region_dict in product(qgc.COMMON_VARS[:],
                                                                                zip(source_plot_dir_names, region_labels),
                                                                                pt_regions):
-        var_prepend = "groomed " if "groomed" in source_plot_dir_name else ""
+        multi_region = not isinstance(source_plot_dir_name, str)
+        if multi_region:
+            var_prepend = "groomed " if "groomed" in source_plot_dir_name[0] else ""
+            total_plot_dir_name = "+".join(source_plot_dir_name)
+        else:
+            var_prepend = "groomed " if "groomed" in source_plot_dir_name else ""
+            total_plot_dir_name = source_plot_dir_name
         print(angle, source_plot_dir_name, region_label, pt_region_dict['title'])
 
         var_dict = {
-            "name": "%s/%s%s" % (source_plot_dir_name, angle.var, pt_region_dict['append']),
+            "name": "%s/%s%s" % (total_plot_dir_name, angle.var, pt_region_dict['append']),
             "var_label": "%s%s (%s)" % (var_prepend, angle.name, angle.lambda_str),
             "title": "", # setup later
         }
-        h2d_orig = cu.get_from_tfile(input_tfile, var_dict['name'] + "_response")
+        if multi_region:
+            names = ["%s/%s%s_response" % (sname, angle.var, pt_region_dict['append']) for sname in source_plot_dir_name]
+            h2d_orig = get_summed_hists(input_tfile, names)
+        else:
+            h2d_orig = cu.get_from_tfile(input_tfile, var_dict['name'] + "_response")
 
         # Get desired binning
         # -------------------
