@@ -139,7 +139,7 @@ def create_angle_label(angle, do_groomed=False):
 class SummaryPlotter(object):
     """Do lots of summary plots"""
 
-    def __init__(self, jet_algos, regions, angles, pt_bins_dijet, pt_bins_zpj, df, output_dir, has_data):
+    def __init__(self, jet_algos, regions, angles, pt_bins_dijet, pt_bins_zpj, df, output_dir, has_data, only_yoda_data):
         if len(jet_algos) == 0:
             raise RuntimeError("jet_algos is empty")
         self.jet_algos = jet_algos
@@ -159,6 +159,8 @@ class SummaryPlotter(object):
         self.mc_label = 'MG5+Pythia8\nCUETP8M1'
         self.alt_mc_label = 'Herwig++'
         self.other_samples = []
+        self.only_yoda_data = only_yoda_data
+        self.filename_append = "_onlyYodaData" if self.only_yoda_data else ""
 
     def add_sample(self, key, label, style_dict):
         self.other_samples.append({
@@ -212,8 +214,10 @@ class SummaryPlotter(object):
                 region_name += "_groomed"
             dijet_central_data = df[mask & (df['region'] == region_name)]
 
-            dijet_central_hist_truth = self.data_to_hist(dijet_central_data['%s_truth' % metric], dijet_central_data['%s_err_truth' % metric], self.pt_bins_dijet)
-            dijet_central_hist_alt_truth = self.data_to_hist(dijet_central_data['%s_alt_truth' % metric], dijet_central_data['%s_err_alt_truth' % metric], self.pt_bins_dijet)
+            if not self.only_yoda_data:
+                dijet_central_hist_truth = self.data_to_hist(dijet_central_data['%s_truth' % metric], dijet_central_data['%s_err_truth' % metric], self.pt_bins_dijet)
+                dijet_central_hist_alt_truth = self.data_to_hist(dijet_central_data['%s_alt_truth' % metric], dijet_central_data['%s_err_alt_truth' % metric], self.pt_bins_dijet)
+
             for sample in self.other_samples:
                 hist = self.data_to_hist(dijet_central_data['%s_%s' % (metric, sample['key'])], dijet_central_data['%s_err_%s' % (metric, sample['key'])], self.pt_bins_dijet)
                 other_samples_dijet_central_hists.append(hist)
@@ -243,8 +247,11 @@ class SummaryPlotter(object):
             if do_groomed:
                 region_name += "_groomed"
             dijet_forward_data = df[mask & (df['region'] == region_name)]
-            dijet_forward_hist_truth = self.data_to_hist(dijet_forward_data['%s_truth' % metric], dijet_forward_data['%s_err_truth' % metric], self.pt_bins_dijet)
-            dijet_forward_hist_alt_truth = self.data_to_hist(dijet_forward_data['%s_alt_truth' % metric], dijet_forward_data['%s_err_alt_truth' % metric], self.pt_bins_dijet)
+
+            if not self.only_yoda_data:
+                dijet_forward_hist_truth = self.data_to_hist(dijet_forward_data['%s_truth' % metric], dijet_forward_data['%s_err_truth' % metric], self.pt_bins_dijet)
+                dijet_forward_hist_alt_truth = self.data_to_hist(dijet_forward_data['%s_alt_truth' % metric], dijet_forward_data['%s_err_alt_truth' % metric], self.pt_bins_dijet)
+
             for sample in self.other_samples:
                 hist = self.data_to_hist(dijet_forward_data['%s_%s' % (metric, sample['key'])], dijet_forward_data['%s_err_%s' % (metric, sample['key'])], self.pt_bins_dijet)
                 other_samples_dijet_forward_hists.append(hist)
@@ -273,8 +280,10 @@ class SummaryPlotter(object):
             pt_bins = self.pt_bins_zpj[:-2]
             zpj_data = df[mask & (df['region'] == region_name) & (df['pt_bin'] < len(pt_bins)-1)]
             # the -1 is because the last entry in pt_bins is the upper edge of the last bin
-            zpj_hist_truth = self.data_to_hist(zpj_data['%s_truth' % metric], zpj_data['%s_err_truth' % metric], pt_bins)
-            zpj_hist_alt_truth = self.data_to_hist(zpj_data['%s_alt_truth' % metric], zpj_data['%s_err_alt_truth' % metric], pt_bins)
+            if not self.only_yoda_data:
+                zpj_hist_truth = self.data_to_hist(zpj_data['%s_truth' % metric], zpj_data['%s_err_truth' % metric], pt_bins)
+                zpj_hist_alt_truth = self.data_to_hist(zpj_data['%s_alt_truth' % metric], zpj_data['%s_err_alt_truth' % metric], pt_bins)
+
             for sample in self.other_samples:
                 key = sample['key']
                 hist = self.data_to_hist(zpj_data['%s_%s' % (metric, key)], zpj_data['%s_err_%s' % (metric, key)], pt_bins)
@@ -338,85 +347,86 @@ class SummaryPlotter(object):
                 entries.append(Contribution(zpj_hist, **cont_args))
                 dummy_entries.append(Contribution(dummy_gr.Clone(), **cont_args))
 
-        # Add nominal MC
-        if do_dijet_cen:
-            cont_args = dict(label=self.mc_label if only_one_region else '#splitline{ Dijet (central)  }{ [%s]}' % (self.mc_label),
-                             line_color=COMMON_STYLE_DICT['mc_color'],
-                             line_width=lw,
-                             line_style=COMMON_STYLE_DICT['mc_line_style'],
-                             marker_color=COMMON_STYLE_DICT['mc_color'],
-                             marker_style=COMMON_STYLE_DICT['mc_marker_style'],
-                             marker_size=m_size,
-                             leg_draw_opt="LE" if m_size == 0 else "EP",
-                             subplot=dijet_central_hist_no_errors)
-            entries.append(Contribution(dijet_central_hist_truth, **cont_args))
-            dummy_entries.append(Contribution(dummy_gr.Clone(), **cont_args))
+        if not self.only_yoda_data:
+            # Add nominal MC
+            if do_dijet_cen:
+                cont_args = dict(label=self.mc_label if only_one_region else '#splitline{ Dijet (central)  }{ [%s]}' % (self.mc_label),
+                                 line_color=COMMON_STYLE_DICT['mc_color'],
+                                 line_width=lw,
+                                 line_style=COMMON_STYLE_DICT['mc_line_style'],
+                                 marker_color=COMMON_STYLE_DICT['mc_color'],
+                                 marker_style=COMMON_STYLE_DICT['mc_marker_style'],
+                                 marker_size=m_size,
+                                 leg_draw_opt="LE" if m_size == 0 else "EP",
+                                 subplot=dijet_central_hist_no_errors)
+                entries.append(Contribution(dijet_central_hist_truth, **cont_args))
+                dummy_entries.append(Contribution(dummy_gr.Clone(), **cont_args))
 
-        if do_dijet_fwd:
-            cont_args = dict(label=self.mc_label if only_one_region else '#splitline{ Dijet (forward)  }{ [%s]}' % (self.mc_label),
-                             line_color=COMMON_STYLE_DICT['mc_color'],
-                             line_width=lw,
-                             line_style=COMMON_STYLE_DICT['mc_line_style'],
-                             marker_color=COMMON_STYLE_DICT['mc_color'],
-                             marker_style=COMMON_STYLE_DICT['mc_marker_style'],
-                             marker_size=m_size,
-                             leg_draw_opt="LE" if m_size == 0 else "EP",
-                             subplot=dijet_forward_hist_no_errors)
-            entries.append(Contribution(dijet_forward_hist_truth, **cont_args))
-            dummy_entries.append(Contribution(dummy_gr.Clone(), **cont_args))
+            if do_dijet_fwd:
+                cont_args = dict(label=self.mc_label if only_one_region else '#splitline{ Dijet (forward)  }{ [%s]}' % (self.mc_label),
+                                 line_color=COMMON_STYLE_DICT['mc_color'],
+                                 line_width=lw,
+                                 line_style=COMMON_STYLE_DICT['mc_line_style'],
+                                 marker_color=COMMON_STYLE_DICT['mc_color'],
+                                 marker_style=COMMON_STYLE_DICT['mc_marker_style'],
+                                 marker_size=m_size,
+                                 leg_draw_opt="LE" if m_size == 0 else "EP",
+                                 subplot=dijet_forward_hist_no_errors)
+                entries.append(Contribution(dijet_forward_hist_truth, **cont_args))
+                dummy_entries.append(Contribution(dummy_gr.Clone(), **cont_args))
 
-        if do_zpj:
-            cont_args = dict(label=self.mc_label if only_one_region else '#splitline{ Z+jets  }{ [%s]}' % (self.mc_label),
-                             line_color=COMMON_STYLE_DICT['mc_color'],
-                             line_width=lw,
-                             line_style=COMMON_STYLE_DICT['mc_line_style'],
-                             marker_color=COMMON_STYLE_DICT['mc_color'],
-                             marker_style=COMMON_STYLE_DICT['mc_marker_style'],
-                             marker_size=m_size,
-                             leg_draw_opt="LE" if m_size == 0 else "EP",
-                             subplot=zpj_hist_no_errors)
-            entries.append(Contribution(zpj_hist_truth, **cont_args))
-            dummy_entries.append(Contribution(dummy_gr.Clone(), **cont_args))
+            if do_zpj:
+                cont_args = dict(label=self.mc_label if only_one_region else '#splitline{ Z+jets  }{ [%s]}' % (self.mc_label),
+                                 line_color=COMMON_STYLE_DICT['mc_color'],
+                                 line_width=lw,
+                                 line_style=COMMON_STYLE_DICT['mc_line_style'],
+                                 marker_color=COMMON_STYLE_DICT['mc_color'],
+                                 marker_style=COMMON_STYLE_DICT['mc_marker_style'],
+                                 marker_size=m_size,
+                                 leg_draw_opt="LE" if m_size == 0 else "EP",
+                                 subplot=zpj_hist_no_errors)
+                entries.append(Contribution(zpj_hist_truth, **cont_args))
+                dummy_entries.append(Contribution(dummy_gr.Clone(), **cont_args))
 
-        # add alt MC
-        if do_dijet_cen:
-            cont_args = dict(label=self.alt_mc_label if only_one_region else '#splitline{ Dijet (central)  }{ [%s]}' % (self.alt_mc_label),
-                             line_color=COMMON_STYLE_DICT['mc_alt_color'],
-                             line_width=lw,
-                             line_style=COMMON_STYLE_DICT['mc_alt_line_style'],
-                             marker_color=COMMON_STYLE_DICT['mc_alt_color'],
-                             marker_style=COMMON_STYLE_DICT['mc_alt_marker_style'],
-                             marker_size=m_size,
-                             leg_draw_opt="LE" if m_size == 0 else "EP",
-                             subplot=dijet_central_hist_no_errors)
-            entries.append(Contribution(dijet_central_hist_alt_truth, **cont_args))
-            dummy_entries.append(Contribution(dummy_gr.Clone(), **cont_args))
+            # add alt MC
+            if do_dijet_cen:
+                cont_args = dict(label=self.alt_mc_label if only_one_region else '#splitline{ Dijet (central)  }{ [%s]}' % (self.alt_mc_label),
+                                 line_color=COMMON_STYLE_DICT['mc_alt_color'],
+                                 line_width=lw,
+                                 line_style=COMMON_STYLE_DICT['mc_alt_line_style'],
+                                 marker_color=COMMON_STYLE_DICT['mc_alt_color'],
+                                 marker_style=COMMON_STYLE_DICT['mc_alt_marker_style'],
+                                 marker_size=m_size,
+                                 leg_draw_opt="LE" if m_size == 0 else "EP",
+                                 subplot=dijet_central_hist_no_errors)
+                entries.append(Contribution(dijet_central_hist_alt_truth, **cont_args))
+                dummy_entries.append(Contribution(dummy_gr.Clone(), **cont_args))
 
-        if do_dijet_fwd:
-            cont_args = dict(label=self.alt_mc_label if only_one_region else '#splitline{ Dijet (forward)  }{ [%s]}' % (self.alt_mc_label),
-                             line_color=COMMON_STYLE_DICT['mc_alt_color'],
-                             line_width=lw,
-                             line_style=COMMON_STYLE_DICT['mc_alt_line_style'],
-                             marker_color=COMMON_STYLE_DICT['mc_alt_color'],
-                             marker_style=COMMON_STYLE_DICT['mc_alt_marker_style'],
-                             marker_size=m_size,
-                             leg_draw_opt="LE" if m_size == 0 else "EP",
-                             subplot=dijet_forward_hist_no_errors)
-            entries.append(Contribution(dijet_forward_hist_alt_truth, **cont_args))
-            dummy_entries.append(Contribution(dummy_gr.Clone(), **cont_args))
+            if do_dijet_fwd:
+                cont_args = dict(label=self.alt_mc_label if only_one_region else '#splitline{ Dijet (forward)  }{ [%s]}' % (self.alt_mc_label),
+                                 line_color=COMMON_STYLE_DICT['mc_alt_color'],
+                                 line_width=lw,
+                                 line_style=COMMON_STYLE_DICT['mc_alt_line_style'],
+                                 marker_color=COMMON_STYLE_DICT['mc_alt_color'],
+                                 marker_style=COMMON_STYLE_DICT['mc_alt_marker_style'],
+                                 marker_size=m_size,
+                                 leg_draw_opt="LE" if m_size == 0 else "EP",
+                                 subplot=dijet_forward_hist_no_errors)
+                entries.append(Contribution(dijet_forward_hist_alt_truth, **cont_args))
+                dummy_entries.append(Contribution(dummy_gr.Clone(), **cont_args))
 
-        if do_zpj:
-            cont_args = dict(label=self.alt_mc_label if only_one_region else '#splitline{ Z+jets}{ [%s]}' % (self.alt_mc_label),
-                             line_color=COMMON_STYLE_DICT['mc_alt_color'],
-                             line_width=lw,
-                             line_style=COMMON_STYLE_DICT['mc_alt_line_style'],
-                             marker_color=COMMON_STYLE_DICT['mc_alt_color'],
-                             marker_style=COMMON_STYLE_DICT['mc_alt_marker_style'],
-                             marker_size=m_size,
-                             leg_draw_opt="LE" if m_size == 0 else "EP",
-                             subplot=zpj_hist_no_errors)
-            entries.append(Contribution(zpj_hist_alt_truth, **cont_args))
-            dummy_entries.append(Contribution(dummy_gr.Clone(), **cont_args))
+            if do_zpj:
+                cont_args = dict(label=self.alt_mc_label if only_one_region else '#splitline{ Z+jets}{ [%s]}' % (self.alt_mc_label),
+                                 line_color=COMMON_STYLE_DICT['mc_alt_color'],
+                                 line_width=lw,
+                                 line_style=COMMON_STYLE_DICT['mc_alt_line_style'],
+                                 marker_color=COMMON_STYLE_DICT['mc_alt_color'],
+                                 marker_style=COMMON_STYLE_DICT['mc_alt_marker_style'],
+                                 marker_size=m_size,
+                                 leg_draw_opt="LE" if m_size == 0 else "EP",
+                                 subplot=zpj_hist_no_errors)
+                entries.append(Contribution(zpj_hist_alt_truth, **cont_args))
+                dummy_entries.append(Contribution(dummy_gr.Clone(), **cont_args))
 
         # Add other samples: dijet cen
         if do_dijet_cen:
@@ -596,7 +606,7 @@ class SummaryPlotter(object):
 
         prefix = self._generate_filename_prefix(do_dijet_cen, do_dijet_fwd, do_zpj)
         groomed_str = '_groomed' if do_groomed else ''
-        plot.save("{output_dir}/{prefix}{metric}_vs_pt_{angle_var}{groomed_str}_{algo}.{fmt}"
+        plot.save("{output_dir}/{prefix}{metric}_vs_pt_{angle_var}{groomed_str}_{algo}{append}.{fmt}"
                     .format(
                         output_dir=output_dir,
                         prefix=prefix,
@@ -604,7 +614,8 @@ class SummaryPlotter(object):
                         angle_var=angle.var,
                         groomed_str=groomed_str,
                         algo=jet_algo['name'],
-                        fmt=self.output_fmt))
+                        fmt=self.output_fmt,
+                        append=self.filename_append))
 
     def plot_dijet_zpj_means_vs_pt_all(self):
         """Plot mean vs pt for dijet (cen+fwd) & Z+jet on one plot,
@@ -791,12 +802,15 @@ class SummaryPlotter(object):
                     raise ValueError("Got != 1 results, check query")
 
                 mean_entries_data.append([results['mean'].item(), results['mean_err'].item()])
-                mean_entries_mc.append([results['mean_truth'].item(), results['mean_err_truth'].item()])
-                mean_entries_alt_mc.append([results['mean_alt_truth'].item(), results['mean_err_alt_truth'].item()])
 
                 rms_entries_data.append([results['rms'].item(), results['rms_err'].item()])
-                rms_entries_mc.append([results['rms_truth'].item(), results['rms_err_truth'].item()])
-                rms_entries_alt_mc.append([results['rms_alt_truth'].item(), results['rms_err_alt_truth'].item()])
+
+                if not self.only_yoda_data:
+                    mean_entries_mc.append([results['mean_truth'].item(), results['mean_err_truth'].item()])
+                    mean_entries_alt_mc.append([results['mean_alt_truth'].item(), results['mean_err_alt_truth'].item()])
+
+                    rms_entries_mc.append([results['rms_truth'].item(), results['rms_err_truth'].item()])
+                    rms_entries_alt_mc.append([results['rms_alt_truth'].item(), results['rms_err_alt_truth'].item()])
 
                 for ind, sample in enumerate(self.other_samples):
                     key = sample['key']
@@ -824,42 +838,55 @@ class SummaryPlotter(object):
                     print(arr)
 
             _check_values(mean_entries_data, "mean_entries_data")
-            _check_values(mean_entries_mc, "mean_entries_mc")
-            _check_values(mean_entries_alt_mc, "mean_entries_alt_mc")
-
             hist_mean_data = self._make_hist_from_values(mean_entries_data, bin_names=bin_names)
             self._style_data_hist(hist_mean_data)
-            hist_mean_mc = self._make_hist_from_values(mean_entries_mc, bin_names=bin_names)
-            self._style_mc_hist(hist_mean_mc)
-            hist_mean_alt_mc = self._make_hist_from_values(mean_entries_alt_mc, bin_names=bin_names)
-            self._style_alt_mc_hist(hist_mean_alt_mc)
 
-            mean_hists.append([hist_mean_data, hist_mean_mc, hist_mean_alt_mc])
+            hists = [hist_mean_data]
+
+            if not self.only_yoda_data:
+                _check_values(mean_entries_mc, "mean_entries_mc")
+                hist_mean_mc = self._make_hist_from_values(mean_entries_mc, bin_names=bin_names)
+                self._style_mc_hist(hist_mean_mc)
+                hists.append(hist_mean_mc)
+
+                _check_values(mean_entries_alt_mc, "mean_entries_alt_mc")
+                hist_mean_alt_mc = self._make_hist_from_values(mean_entries_alt_mc, bin_names=bin_names)
+                self._style_alt_mc_hist(hist_mean_alt_mc)
+                hists.append(hist_mean_alt_mc)
 
             for sample, entries in zip(self.other_samples, mean_entries_other_samples):
                 _check_values(entries, "mean_entries_%s" % sample['label'])
                 hist = self._make_hist_from_values(entries, bin_names=bin_names)
                 self._style_hist(hist, **sample['style_dict'])
-                mean_hists[-1].append(hist)
+                hists.append(hist)
+
+            mean_hists.append(hists)
 
             _check_values(rms_entries_data, "rms_entries_data")
-            _check_values(rms_entries_mc, "rms_entries_mc")
-            _check_values(rms_entries_alt_mc, "rms_entries_alt_mc")
-
             hist_rms_data = self._make_hist_from_values(rms_entries_data, bin_names=bin_names)
             self._style_data_hist(hist_rms_data)
-            hist_rms_mc = self._make_hist_from_values(rms_entries_mc, bin_names=bin_names)
-            self._style_mc_hist(hist_rms_mc)
-            hist_rms_alt_mc = self._make_hist_from_values(rms_entries_alt_mc, bin_names=bin_names)
-            self._style_alt_mc_hist(hist_rms_alt_mc)
 
-            rms_hists.append([hist_rms_data, hist_rms_mc, hist_rms_alt_mc])
+            hists = [hist_rms_data]
+
+            if not self.only_yoda_data:
+                _check_values(rms_entries_mc, "rms_entries_mc")
+                hist_rms_mc = self._make_hist_from_values(rms_entries_mc, bin_names=bin_names)
+                self._style_mc_hist(hist_rms_mc)
+                hists.append(hist_rms_mc)
+
+                _check_values(rms_entries_alt_mc, "rms_entries_alt_mc")
+                hist_rms_alt_mc = self._make_hist_from_values(rms_entries_alt_mc, bin_names=bin_names)
+                self._style_alt_mc_hist(hist_rms_alt_mc)
+                hists.append(hist_rms_alt_mc)
+
 
             for sample, entries in zip(self.other_samples, rms_entries_other_samples):
                 _check_values(entries, "rms_entries_%s" % sample['label'])
                 hist = self._make_hist_from_values(entries, bin_names=bin_names)
                 self._style_hist(hist, **sample['style_dict'])
-                rms_hists[-1].append(hist)
+                hists.append(hist)
+
+            rms_hists.append(hists)
 
         return mean_hists, rms_hists
 
@@ -895,6 +922,7 @@ class SummaryPlotter(object):
         We also manually put in the y axis titles, and the angle names, as
         individual text elements, just so we can control their position exactly.
         """
+        print("Plotting mean_rms_bins_summary for", legend_header)
         # Get data for plots
         mean_hists, rms_hists = self.construct_mean_rms_hist_groups(selections)
 
@@ -1130,15 +1158,25 @@ class SummaryPlotter(object):
         self._style_alt_mc_hist(dummy_alt_mc)
 
         def _add_entry(obj, label, option):
-            for line_ind, line in enumerate(label.split("\n")):
-                if line_ind == 0:
-                    leg.AddEntry(obj, line, option)
-                else:
-                    leg.AddEntry(0, line, "")
+            parts = label.split("\n")
+            if len(parts) == 1:
+                leg.AddEntry(obj, label, option)
+            elif len(parts) == 2:
+                leg.AddEntry(obj, "#splitline{%s}{%s}" % (parts[0], parts[1]), option)
+            else:
+                raise RuntimeError("Cannot handle > 1 \n in legend label")
+
+            # for line_ind, line in enumerate(label.split("\n")):
+            #     if line_ind == 0:
+            #         leg.AddEntry(obj, line, option)
+            #     else:
+            #         leg.AddEntry(0, line, "")
 
         _add_entry(dummy_data, "Data", "P")
-        _add_entry(dummy_mc, self.mc_label, "P")
-        _add_entry(dummy_alt_mc, self.alt_mc_label, "P")
+        if not self.only_yoda_data:
+            _add_entry(dummy_mc, self.mc_label, "P")
+            _add_entry(dummy_alt_mc, self.alt_mc_label, "P")
+
         dummy_other = []  # keep reference
         for sample in self.other_samples:
             dummy_sample = dummy_gr.Clone()
@@ -1260,6 +1298,8 @@ class SummaryPlotter(object):
                 entries_nominal.append([results['delta_truth'], results['delta_err_truth']])
                 entries_alt.append([results['delta_alt_truth'], results['delta_err_alt_truth']])
 
+                # FIXME: add other_samples
+
                 bin_names.append(label)
 
             hist_delta_nominal = self._make_hist_from_values(entries_nominal, bin_names=bin_names)
@@ -1275,6 +1315,7 @@ class SummaryPlotter(object):
 
     def plot_delta_bins_summary(self, selections, output_file, legend_header=None):
         """"""
+        print("Plotting delta_bins_summary for", legend_header)
         # Get data for plots
         delta_hists = self.construct_delta_hist_groups(selections)
 
@@ -1338,6 +1379,7 @@ class SummaryPlotter(object):
         # Now draw the histograms
         for isel, (selection_group, pad, hist_group) in enumerate(zip(selections, pads, delta_hists)):
             pad.cd()
+            # FIXME add other_samples
             hist_group[0].Draw("E1")
             hist_group[1].Draw("E1 SAME")
 
@@ -1664,6 +1706,9 @@ if __name__ == "__main__":
                         action='append',
                         default=[],
                         help='Yoda input file label')
+    parser.add_argument("--onlyYodaData",
+                        action='store_true',
+                        help='Only plot data & Yoda inputs (ignore MG+Py, H++)')
     args = parser.parse_args()
 
     # Get input data
@@ -1754,7 +1799,8 @@ if __name__ == "__main__":
                              qgc.PT_UNFOLD_DICT['signal_zpj_gen'],
                              df,
                              args.outputDir,
-                             has_data=True)
+                             has_data=True,
+                             only_yoda_data=args.onlyYodaData)
 
     has_dijet = any(["Dijet" in r['name'] for r in regions])
     has_zpj = any(["ZPlusJet" in r['name'] for r in regions])
@@ -1778,6 +1824,8 @@ if __name__ == "__main__":
 
     DO_X_VS_PT_PLOTS = True
     DO_OVERALL_SUMMARY_PLOTS = True
+
+    filename_append = plotter.filename_append
 
     if has_dijet:
         if DO_X_VS_PT_PLOTS:
@@ -1827,28 +1875,28 @@ if __name__ == "__main__":
             plotter.plot_mean_rms_bins_summary(
                 selections=selections,
                 legend_header=legend_header,
-                output_file=os.path.join(args.outputDir, "dijet_central_mean_rms_summary.pdf")
+                output_file=os.path.join(args.outputDir, "dijet_central_mean_rms_summary%s.pdf" % (filename_append))
             )
 
             legend_header = "Dijet (central) region"
             plotter.plot_delta_bins_summary(
                 selections=selections,
                 legend_header=legend_header,
-                output_file=os.path.join(args.outputDir, "dijet_central_delta_summary.pdf")
+                output_file=os.path.join(args.outputDir, "dijet_central_delta_summary%s.pdf" % (filename_append))
             )
 
             legend_header = "Gluon-enriched jets\nDijet (central) region"
             plotter.plot_mean_rms_bins_summary(
                 selections=selections,
                 legend_header=legend_header,
-                output_file=os.path.join(args.outputDir, "gluon_mean_rms_summary.pdf")
+                output_file=os.path.join(args.outputDir, "gluon_mean_rms_summary%s.pdf" % (filename_append))
             )
 
             legend_header = "Gluon-enriched jets\nDijet (central) region"
             plotter.plot_delta_bins_summary(
                 selections=selections,
                 legend_header=legend_header,
-                output_file=os.path.join(args.outputDir, "gluon_delta_summary.pdf")
+                output_file=os.path.join(args.outputDir, "gluon_delta_summary%s.pdf" % (filename_append))
             )
 
             # DIJET FORWARD
@@ -1885,13 +1933,13 @@ if __name__ == "__main__":
             plotter.plot_mean_rms_bins_summary(
                 selections=selections,
                 legend_header=legend_header,
-                output_file=os.path.join(args.outputDir, "dijet_forward_mean_rms_summary.pdf")
+                output_file=os.path.join(args.outputDir, "dijet_forward_mean_rms_summary%s.pdf" % (filename_append))
             )
 
             plotter.plot_delta_bins_summary(
                 selections=selections,
                 legend_header=legend_header,
-                output_file=os.path.join(args.outputDir, "dijet_forward_delta_summary.pdf")
+                output_file=os.path.join(args.outputDir, "dijet_forward_delta_summary%s.pdf" % (filename_append))
             )
 
     if has_zpj:
@@ -1941,13 +1989,13 @@ if __name__ == "__main__":
             plotter.plot_mean_rms_bins_summary(
                 selections=selections,
                 legend_header=legend_header,
-                output_file=os.path.join(args.outputDir, "zpj_mean_rms_summary.pdf")
+                output_file=os.path.join(args.outputDir, "zpj_mean_rms_summary%s.pdf" % (filename_append))
             )
 
             plotter.plot_delta_bins_summary(
                 selections=selections,
                 legend_header=legend_header,
-                output_file=os.path.join(args.outputDir, "zpj_delta_summary.pdf")
+                output_file=os.path.join(args.outputDir, "zpj_delta_summary%s.pdf" % (filename_append))
             )
 
     if has_dijet and has_zpj and DO_OVERALL_SUMMARY_PLOTS:
@@ -1994,10 +2042,10 @@ if __name__ == "__main__":
         plotter.plot_mean_rms_bins_summary(
             selections=selections,
             legend_header=legend_header,
-            output_file=os.path.join(args.outputDir, "quark_mean_rms_summary.pdf")
+            output_file=os.path.join(args.outputDir, "quark_mean_rms_summary%s.pdf" % (filename_append))
         )
         plotter.plot_delta_bins_summary(
             selections=selections,
             legend_header=legend_header,
-            output_file=os.path.join(args.outputDir, "quark_delta_summary.pdf")
+            output_file=os.path.join(args.outputDir, "quark_delta_summary%s.pdf" % (filename_append))
         )
