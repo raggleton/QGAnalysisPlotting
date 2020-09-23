@@ -35,6 +35,7 @@ import qg_general_plots as qgp
 import qg_common as qgc
 from comparator import Contribution, Plot
 import common_utils as cu
+import metric_calculators as metrics
 
 ROOT.gStyle.SetPaintTextFormat(".3f")
 
@@ -338,7 +339,8 @@ def make_rebinned_2d_hist(h2d, new_binning, use_half_width_y=False):
 
 
 def make_plots(h2d, var_dict, plot_dir, append="",
-               plot_migrations=True, plot_reco=True, plot_gen=True):
+               plot_migrations=True, plot_reco=True, plot_gen=True,
+               true_mean=None, true_rms=None):
     """Plot a 2D hist, with copies renormalised by row and by column.
 
     Also optionally plot migrations as 1D plot,
@@ -446,22 +448,41 @@ def make_plots(h2d, var_dict, plot_dir, append="",
         if plot_reco:
             h_reco = h2d.ProjectionY(cu.get_unique_str(), 0, -1, "e")
             h_reco.Scale(1./h_reco.Integral())
+            # Get rebinned mean/RMS to add to plot
+            contents, errors = cu.th1_to_ndarray(h_reco)
+            centers = cu.get_th1_bin_centers(h_reco)
+            areas, centers = metrics.hist_values_to_uarray(bin_areas=contents, bin_centers=centers, bin_errors=errors)
+            print(areas, areas.sum())
+            mean_u = metrics.calc_mean_ucert(areas, centers)
+            mean, mean_err = mean_u.nominal_value, mean_u.std_dev
+            rms_u = metrics.calc_rms_ucert(areas, centers)
+            rms, rms_err = rms_u.nominal_value, rms_u.std_dev
+
             h_reco_div_bin_width = qgp.hist_divide_bin_width(h_reco)
-            conts.append(Contribution(h_reco_div_bin_width, label="Reco", normalise_hist=False,
+            conts.append(Contribution(h_reco_div_bin_width, label="Reco\n(mean = %.3f+-%.3f)\n(RMS = %.3f+-%.3f)" % (mean, mean_err, rms, rms_err), normalise_hist=False,
                                       line_color=ROOT.kRed, line_width=2))
         if plot_gen:
             h_gen = h2d.ProjectionX(cu.get_unique_str(), 0, -1, "e")
             h_gen.Scale(1./h_gen.Integral())
+            # Get rebinned mean/RMS to add to plot
+            contents, errors = cu.th1_to_ndarray(h_gen)
+            centers = cu.get_th1_bin_centers(h_gen)
+            areas, centers = metrics.hist_values_to_uarray(bin_areas=contents, bin_centers=centers, bin_errors=errors)
+            mean_u = metrics.calc_mean_ucert(areas, centers)
+            mean, mean_err = mean_u.nominal_value, mean_u.std_dev
+            rms_u = metrics.calc_rms_ucert(areas, centers)
+            rms, rms_err = rms_u.nominal_value, rms_u.std_dev
+
             h_gen_div_bin_width = qgp.hist_divide_bin_width(h_gen)
-            conts.append(Contribution(h_gen_div_bin_width, label="Gen", normalise_hist=False,
+            conts.append(Contribution(h_gen_div_bin_width, label="Gen\n(mean = %.3f+-%.3f)\n(RMS = %.3f+-%.3f)" % (mean, mean_err, rms, rms_err), normalise_hist=False,
                                       line_color=ROOT.kBlue, line_width=2, line_style=2 if plot_reco else 1))
 
         plot = Plot(conts, what='hist', has_data=False,
                     title=var_dict.get('title', ''),
                     xtitle=var_dict['var_label'], ytitle='p.d.f.')
         plot.default_canvas_size = (700, 600)
-        plot.legend.SetX1(0.75)
-        plot.legend.SetY1(0.75)
+        plot.legend.SetX1(0.65)
+        plot.legend.SetY1(0.65)
         plot.plot("NOSTACK HISTE")
         bits = []
         if plot_reco:

@@ -587,6 +587,11 @@ def th2_to_tmatrixd(hist, include_uflow=False, include_oflow=False):
     return m
 
 
+def get_th1_bin_centers(h):
+    centers = np.array([h.GetBinLowEdge(i) + 0.5*h.GetBinWidth(i) for i in range(1, h.GetNbinsX()+1)])
+    return centers
+
+
 def th1_to_ndarray(hist_A, oflow_x=False):
     """Convert TH1 to numpy ndarray"""
     ncol = hist_A.GetNbinsX()
