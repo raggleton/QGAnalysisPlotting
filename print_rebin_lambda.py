@@ -3,7 +3,7 @@
 """Make 1D lambda hists & rebin according to custom rebinning.
 Also make 1D migration summary plots.
 
-Uses txt file from determine_lambda_binning.py
+Uses txt file from determine_lambda_binning.py, or python file (qg_common.py)
 """
 
 
@@ -81,8 +81,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('input',
                         help='Input ROOT file to rebin.')
-    parser.add_argument('binningFile',
-                        help='Txt file with binning')
+    parser.add_argument('--binningFile',
+                        help='Txt file with binning. Default is binning in qg_common.py')
     parser.add_argument("--outputDir",
                         help="Directory to put output plot dirs into",
                         default=None)
@@ -124,7 +124,10 @@ if __name__ == "__main__":
     else:
         raise RuntimeError("No idea which region we're using")
 
-    binning_dict = load_binning_dict(args.binningFile)
+    use_txt_binning = False
+    if args.binningFile is not None:
+        use_txt_binning = True
+        binning_dict = load_binning_dict(args.binningFile)
 
     pt_regions = [
         {
@@ -159,45 +162,60 @@ if __name__ == "__main__":
 
         # Get desired binning
         # -------------------
-        # This has all the logic for deciding what is the "reference" region
-        key = var_dict['name']
+        if use_txt_binning:
+            # This has all the logic for deciding what is the "reference" region
+            key = var_dict['name']
+            print(key)
 
-        # Use one pt region for all pt regions
-        ref_pt_region = get_reference_pt_region(var_dict['name'])
-        key = key.replace(pt_region_dict['append'], ref_pt_region)
+            # Use one pt region for all pt regions
+            ref_pt_region = get_reference_pt_region(var_dict['name'])
+            key = key.replace(pt_region_dict['append'], ref_pt_region)
+            print(key)
 
-        ref_pt_region_dict = [x for x in pt_regions if x['append'] == ref_pt_region][0]
-        dijet_region = "forward"
-        var_dict["title"] = "%s\n%s\nRebinned for %s (%s)" % (region_label, pt_region_dict['title'], ref_pt_region_dict['title'], dijet_region)
+            ref_pt_region_dict = [x for x in pt_regions if x['append'] == ref_pt_region][0]
+            var_dict["title"] = "%s\n%s\nRebinned for %s (central+forward)" % (region_label, pt_region_dict['title'], ref_pt_region_dict['title'], dijet_region)
 
-        # Use same for central/forward
-        # Use Dijet ones for Z+Jets
-        ref_region = "Dijet_QG_%s_tighter" % (dijet_region)
+            # Use same for central/forward
+            # Use Dijet ones for Z+Jets
+            ref_region = "Dijet_QG_central_tighter+Dijet_QG_forward_tighter"
 
-        # Here we want separate groomed/ungroomed binnings
-        if "groomed" in source_plot_dir_name:
-            if args.groomedRef == "groomed":
-                # Use groomed for groomed
-                ref_region += "_groomed"
-                var_dict['title'] += " (groomed)"
+            # Here we want separate groomed/ungroomed binnings
+            if "groomed" in source_plot_dir_name:
+                if args.groomedRef == "groomed":
+                    # Use groomed for groomed
+                    ref_region = ref_region.replace("_tighter", "_tighter_groomed")
+                    var_dict['title'] += " (groomed)"
+                else:
+                    # Use ungroomed for groomed
+                    var_dict['title'] += " (ungroomed)"
             else:
-                # Use ungroomed for groomed
-                var_dict['title'] += " (ungroomed)"
+                if args.ungroomedRef == "groomed":
+                    # Use groomed for ungroomed as well
+                    ref_region = ref_region.replace("_tighter", "_tighter_groomed")
+                    var_dict['title'] += " (groomed)"
+                else:
+                    # Use ungroomed for ungroomed
+                    var_dict['title'] += " (ungroomed)"
+
+            if args.target:
+                var_dict['title'] += " (target %s)" % (args.target)
+
+            key = key.replace(source_plot_dir_name, ref_region)
+            print(key)
+            new_binning = binning_dict[key]
+            print(new_binning)
+
         else:
-            if args.ungroomedRef == "groomed":
-                # Use groomed for ungroomed as well
-                ref_region += "_groomed"
-                var_dict['title'] += " (groomed)"
-            else:
-                # Use ungroomed for ungroomed
-                var_dict['title'] += " (ungroomed)"
+            # Get common binning scheme from qg_common
+            var_binning_key = angle.var
+            new_binning = qgc.VAR_UNFOLD_DICT[var_binning_key]['gen']
+            # convert to pairs of bin edges
+            new_binning = list(zip(new_binning[:-1], new_binning[1:]))
+            print(new_binning)
 
-        if args.target:
-            var_dict['title'] += " (target %s)" % (args.target)
-
-        key = key.replace(source_plot_dir_name, ref_region)
-
-        new_binning = binning_dict[key]
+            var_dict["title"] = "%s\n%s\nRebinned using existing binning" % (region_label, pt_region_dict['title'])
+            if args.target:
+                var_dict['title'] += " (target %s)" % (args.target)
 
         # Rebin 2D heatmap
         # ----------------
@@ -208,7 +226,7 @@ if __name__ == "__main__":
         make_plots(h2d_rebin,
                    var_dict,
                    plot_dir=plot_dir,
-                   append="rebinned_for%s" % (ref_pt_region),
+                   append="rebinned_for%s" % (ref_pt_region) if use_txt_binning else "rebinned",
                    plot_migrations=True,
                    plot_reco=True,
                    plot_gen=True)
