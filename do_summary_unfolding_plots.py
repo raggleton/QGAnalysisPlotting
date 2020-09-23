@@ -620,7 +620,7 @@ class SummaryPlotter(object):
         print('plot_dijet_means_vs_pt_all...')
         for jet_algo, angle, groomed in product(self.jet_algos, self.angles, [False, True]):
             print("  ...doing", jet_algo['label'], angle.name, 'groomed' if groomed else 'ungroomed')
-            self.plot_dijet_zpj_metric_vs_pt_one_angle_one_jet('mean', angle, jet_algo, do_groomed=groomed, output_dir='%s/plot_dijet_means_vs_pt_all' % self.output_dir, do_zpj=False)
+            # self.plot_dijet_zpj_metric_vs_pt_one_angle_one_jet('mean', angle, jet_algo, do_groomed=groomed, output_dir='%s/plot_dijet_means_vs_pt_all' % self.output_dir, do_zpj=False)
             self.plot_dijet_zpj_metric_vs_pt_one_angle_one_jet('mean', angle, jet_algo, do_groomed=groomed, output_dir='%s/plot_dijet_cen_means_vs_pt_all' % self.output_dir, do_zpj=False, do_dijet_fwd=False)
             self.plot_dijet_zpj_metric_vs_pt_one_angle_one_jet('mean', angle, jet_algo, do_groomed=groomed, output_dir='%s/plot_dijet_fwd_means_vs_pt_all' % self.output_dir, do_zpj=False, do_dijet_cen=False)
 
@@ -646,7 +646,7 @@ class SummaryPlotter(object):
         print('plot_dijet_rms_vs_pt_all...')
         for jet_algo, angle, groomed in product(self.jet_algos, self.angles, [False, True]):
             print("  ...doing", jet_algo['label'], angle.name, 'groomed' if groomed else 'ungroomed')
-            self.plot_dijet_zpj_metric_vs_pt_one_angle_one_jet('rms', angle, jet_algo, do_groomed=groomed, output_dir='%s/plot_dijet_rms_vs_pt_all' % self.output_dir, do_zpj=False)
+            # self.plot_dijet_zpj_metric_vs_pt_one_angle_one_jet('rms', angle, jet_algo, do_groomed=groomed, output_dir='%s/plot_dijet_rms_vs_pt_all' % self.output_dir, do_zpj=False)
             self.plot_dijet_zpj_metric_vs_pt_one_angle_one_jet('rms', angle, jet_algo, do_groomed=groomed, output_dir='%s/plot_dijet_cen_rms_vs_pt_all' % self.output_dir, do_zpj=False, do_dijet_fwd=False)
             self.plot_dijet_zpj_metric_vs_pt_one_angle_one_jet('rms', angle, jet_algo, do_groomed=groomed, output_dir='%s/plot_dijet_fwd_rms_vs_pt_all' % self.output_dir, do_zpj=False, do_dijet_cen=False)
 
@@ -672,7 +672,7 @@ class SummaryPlotter(object):
         print('plot_dijet_delta_vs_pt_all...')
         for jet_algo, angle, groomed in product(self.jet_algos, self.angles, [False, True]):
             print("  ...doing", jet_algo['label'], angle.name, 'groomed' if groomed else 'ungroomed')
-            self.plot_dijet_zpj_metric_vs_pt_one_angle_one_jet('delta', angle, jet_algo, do_groomed=groomed, output_dir='%s/plot_dijet_delta_vs_pt_all' % self.output_dir, do_zpj=False)
+            # self.plot_dijet_zpj_metric_vs_pt_one_angle_one_jet('delta', angle, jet_algo, do_groomed=groomed, output_dir='%s/plot_dijet_delta_vs_pt_all' % self.output_dir, do_zpj=False)
             self.plot_dijet_zpj_metric_vs_pt_one_angle_one_jet('delta', angle, jet_algo, do_groomed=groomed, output_dir='%s/plot_dijet_cen_delta_vs_pt_all' % self.output_dir, do_zpj=False, do_dijet_fwd=False)
             self.plot_dijet_zpj_metric_vs_pt_one_angle_one_jet('delta', angle, jet_algo, do_groomed=groomed, output_dir='%s/plot_dijet_fwd_delta_vs_pt_all' % self.output_dir, do_zpj=False, do_dijet_cen=False)
 
