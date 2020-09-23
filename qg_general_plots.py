@@ -254,7 +254,14 @@ def do_comparison_plot(entries, output_filename, rebin=1, draw_opt="NOSTACK HIST
 
                 cont = Contribution(dummy_gr.Clone(), leg_draw_opt=leg_draw_opt, **entry[1])
                 dummy_conts.append(cont)
-                plot.legend.AddEntry(cont.obj, cont.label, cont.leg_draw_opt)
+                
+                # Split text by newline \n
+                # Add an entry for each line
+                for i, substr in enumerate(cont.label.split("\n")):
+                    if i == 0:
+                        plot.legend.AddEntry(cont.obj, substr, cont.leg_draw_opt)
+                    else:
+                        plot.legend.AddEntry(0, substr, "")
 
             plot.canvas.cd()
             plot.legend.Draw()
