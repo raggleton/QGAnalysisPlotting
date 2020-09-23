@@ -429,7 +429,7 @@ if __name__ == "__main__":
             if args.doExperimentalSystsOnlyHerwig:
                 # only herwig related systs
                 orig_region['experimental_systematics'] = [s for s in orig_region['experimental_systematics']
-                                                           if 'herwig' in s['label'].lower()]
+                                                           if 'herwig' in s['label'].lower() or 'shower' in s['label'].lower()]
 
         else:
             orig_region['experimental_systematics'] = []
