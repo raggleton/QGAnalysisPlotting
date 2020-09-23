@@ -295,19 +295,20 @@ def rebin_2d_hist(h2d, new_binning_x, new_binning_y):
         for yind, ybin in enumerate(new_binning_y, 1):
             # Find all the old bins that correspond to this new bin, get their contents
             new_bin_content = 0
-            new_bin_error = 0
+            new_bin_error_sq = 0
             # TODO handle error - reset to sqrt(N)?
             for xind_orig, xbin_orig in enumerate(bins_x_orig[:-1], 1):
                 for yind_orig, ybin_orig in enumerate(bins_y_orig[:-1], 1):
                     if (xbin_orig >= xbin[0] and xbin_orig < xbin[1] and
                         ybin_orig >= ybin[0] and ybin_orig < ybin[1]):
                         new_bin_content += h2d.GetBinContent(xind_orig, yind_orig)
+                        new_bin_error_sq += pow(h2d.GetBinError(xind_orig, yind_orig), 2)
                         # print("For new bin", xbin, ybin, "using contents from", xbin_orig, bins_x_orig[xind_orig], ybin_orig, bins_y_orig[yind_orig])
                         # print("orig bin", xind_orig, yind_orig)
 
             new_hist.SetBinContent(xind, yind, new_bin_content)
             # print("Setting bin", xind, yind)
-            new_hist.SetBinError(xind, yind, new_bin_error)
+            new_hist.SetBinError(xind, yind, sqrt(new_bin_error_sq))
 
     return new_hist
 
@@ -384,7 +385,7 @@ def make_plots(h2d, var_dict, plot_dir, append="",
 
     # Plot 2D map, renormalized by row
     canv.SetLogz(0)
-    h2d_renorm_y = cu.make_normalised_TH2(h2d, 'Y', recolour=False, do_errors=False)
+    h2d_renorm_y = cu.make_normalised_TH2(h2d, 'Y', recolour=False, do_errors=True)
     marker_size = 0.8
     h2d_renorm_y.SetMarkerSize(marker_size)
     h2d_renorm_y.SetMaximum(1)
@@ -410,7 +411,7 @@ def make_plots(h2d, var_dict, plot_dir, append="",
     # Plot 2D map, renormalized by column
     canv.Clear()
     canv.SetLogz(0)
-    h2d_renorm_x = cu.make_normalised_TH2(h2d, 'X', recolour=False, do_errors=False)
+    h2d_renorm_x = cu.make_normalised_TH2(h2d, 'X', recolour=False, do_errors=True)
     h2d_renorm_x.SetMarkerSize(marker_size)
     h2d_renorm_x.SetMaximum(1)
     h2d_renorm_x.SetMinimum(1E-3)
@@ -622,11 +623,11 @@ if __name__ == "__main__":
                            plot_migrations=True, plot_reco=True, plot_gen=True)
 
                 # Cache renormed plots here for migration plots
-                h2d_renorm_x = cu.make_normalised_TH2(h2d_rebin, 'X', recolour=False, do_errors=False)
+                h2d_renorm_x = cu.make_normalised_TH2(h2d_rebin, 'X', recolour=False, do_errors=True)
                 output_tfile.WriteTObject(h2d_renorm_x)  # we want renormalised by col for doing folding
                 response_maps_dict[var_dict['name']+"_renormX"] = h2d_renorm_x
 
-                h2d_renorm_y = cu.make_normalised_TH2(h2d_rebin, 'Y', recolour=False, do_errors=False)
+                h2d_renorm_y = cu.make_normalised_TH2(h2d_rebin, 'Y', recolour=False, do_errors=True)
                 output_tfile.WriteTObject(h2d_renorm_y)  # save anyway for completeness
                 response_maps_dict[var_dict['name']+"_renormY"] = h2d_renorm_y
 
@@ -650,9 +651,9 @@ if __name__ == "__main__":
 
                         make_plots(h2d_rebin_other, var_dict, plot_dir=plot_dir+"_"+other_label.replace(" ", "_"), append="rebinned", plot_migrations=True)
 
-                        h2d_renorm_x_other = cu.make_normalised_TH2(h2d_rebin_other, 'X', recolour=False, do_errors=False)
+                        h2d_renorm_x_other = cu.make_normalised_TH2(h2d_rebin_other, 'X', recolour=False, do_errors=True)
                         tfile_other_out.WriteTObject(h2d_renorm_x_other)
-                        h2d_renorm_y_other = cu.make_normalised_TH2(h2d_rebin_other, 'Y', recolour=False, do_errors=False)
+                        h2d_renorm_y_other = cu.make_normalised_TH2(h2d_rebin_other, 'Y', recolour=False, do_errors=True)
                         contributions_other = qgp.migration_plot_components(h2d_renorm_x_other, h2d_renorm_y_other, var_dict['var_label'])
                         for ind, c in enumerate(contributions_other):
                             c.obj.SetLineStyle(ind+2)
@@ -830,9 +831,9 @@ if __name__ == "__main__":
                             this_var_dict['title'] += "\n[%s]" % other_label
                             make_plots(h2d_rebin_other, this_var_dict, plot_dir=plot_dir+"_"+other_label.replace(" ", "_"), append="rebinned_for%s" % (reference_pt_region), plot_migrations=True)
 
-                            h2d_renorm_x_other = cu.make_normalised_TH2(h2d_rebin_other, 'X', recolour=False, do_errors=False)
+                            h2d_renorm_x_other = cu.make_normalised_TH2(h2d_rebin_other, 'X', recolour=False, do_errors=True)
                             tfile_other_out.WriteTObject(h2d_renorm_x_other)
-                            h2d_renorm_y_other = cu.make_normalised_TH2(h2d_rebin_other, 'Y', recolour=False, do_errors=False)
+                            h2d_renorm_y_other = cu.make_normalised_TH2(h2d_rebin_other, 'Y', recolour=False, do_errors=True)
                             contributions_other = qgp.migration_plot_components(h2d_renorm_x_other, h2d_renorm_y_other, var_dict['var_label'])
                             for ind, c in enumerate(contributions_other):
                                 # c.obj.SetLineStyle(ind+2)
