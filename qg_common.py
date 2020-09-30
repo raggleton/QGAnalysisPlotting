@@ -373,15 +373,20 @@ VAR_UNFOLD_DICT_TARGET0p6 = {
 }
 
 # new version of WTA, cen+fwd dijet, target 0.5
+# from ./workdir_ak4puppi_data_target0p5_ZReweight_wta_groomed_fwdcenDijet_betterLargeWeightVeto_noPtHatCut_noPtReweight_noZjet2Cut_zPt30_trkSF_wtaAK_fixPrescales_sameGenCuts/determine_lambda_binning_target0p5/binning_uhh2.AnalysisModuleRunner.MC.MC_QCD.txt
 VAR_UNFOLD_DICT_TARGET0p5 = {
     'jet_puppiMultiplicity': {
         # 'gen': np.array([0.0, 10, 15, 20, 27, 50, 75, 100, 150], dtype='d'),
         'gen': np.array([0.0, 10, 15, 20, 30, 50, 75, 100, 150], dtype='d'),
+        # 'gen': np.array([0.0, 10, 26, 50, 76, 150 ], dtype='d'),
+        # 'gen': np.array([0,  4,  8, 12, 16, 20, 24, 28, 32, 36, 40, 50,  60,  70,  80,  90, 100, 110, 120, 130, 140, 150], dtype='d'),  # super fine
         'reco': None
     },
     'jet_pTD': {
         # 'gen': np.array([0.0, 0.07, 0.1, 0.15, 0.24, 0.45, 1.0], dtype='d'),
         'gen': np.array([0.0, 0.07, 0.1, 0.15, 0.24, 1.0], dtype='d'),
+        # 'gen': np.array([0.0, 0.07, 0.1, 0.15, 0.22, 1.0], dtype='d'), # widen last bin
+        # 'gen': np.array([0.0, 0.04, 0.08, 0.12, 0.14, 0.18, 0.22, 0.26, 0.32, 1.0], dtype='d'),  # super fine
         'reco': None
     },
     'jet_LHA': {
@@ -404,11 +409,15 @@ VAR_UNFOLD_DICT_TARGET0p5 = {
     'jet_puppiMultiplicity_charged': {
         # 'gen': np.array([0.0, 2.0, 3.0, 4.0, 5.0, 7.0, 9.0, 11.0, 13.0, 15.0, 18.0, 21.0, 25.0, 32.0, 91, 150.0], dtype='d'),
         'gen': np.array([0.0, 3.0, 5.0, 7.0, 10.0, 13.0, 16.0, 20.0, 30, 50, 75, 100, 150.0], dtype='d'),
+        # 'gen': np.array([0, 4, 6, 8, 10, 14, 18, 26, 50, 76, 150], dtype='d'), # wide
+        # 'gen': np.array([0,  4,  8, 12, 16, 20, 24, 28, 32, 36, 40, 50,  60,  70,  80,  90, 100, 110, 120, 130, 140, 150 ], dtype='d'), # super fine binning
         'reco': None
     },
     'jet_pTD_charged': {
         # 'gen': np.array([0.0, 0.08, 0.1, 0.12, 0.14, 0.17, 0.2, 0.24, 0.29, 0.34, 0.4, 0.47, 0.55, 0.65, 0.76, 0.89, 1.0], dtype='d'),
         'gen': np.array([0.0, 0.07, 0.09, 0.11, 0.14, 0.18, 0.23, 0.3, 0.39, 0.51, 0.64, 1.0], dtype='d'),
+        # 'gen': np.array([0.0, 0.09, 0.11, 0.14, 0.18, 0.23, 0.3, 0.39, 0.51, 0.64, 1.0], dtype='d'),
+        # 'gen': np.array([    0.0, 0.04, 0.08, 0.12, 0.14, 0.18, 0.22, 0.28, 0.32, 0.36, 0.4, 0.44, 0.48, 0.52, 0.6, 1.0], dtype='d'), # super fine
         'reco': None
     },
     'jet_LHA_charged': {
@@ -429,12 +438,58 @@ VAR_UNFOLD_DICT_TARGET0p5 = {
     },
 }
 
+# new version of WTA, cen+fwd dijet, target 0.5, pt>0 (except multiplicity), softdrop, fix lambda
+# from ./workdir_102X_v3data_v2mc_ak4puppi_fixSelCutOrder_puppiJER_tightJetId_constitPt0MultPt1_WeightCuts_fixLambda/determine_lambda_binning_target0p5/binning_uhh2.AnalysisModuleRunner.MC.MC_QCD.txt
+VAR_UNFOLD_DICT_TARGET0p5 = {
+    'jet_puppiMultiplicity': {
+        'gen': np.array([0, 10, 15, 20, 30, 50, 75, 100, 150], dtype='d'),
+        'reco': None
+    },
+    'jet_pTD': {
+        'gen': np.array([0.0, 0.06, 0.09, 0.13, 0.19, 0.3, 1.0], dtype='d'),
+        'reco': None
+    },
+    'jet_LHA': {
+        'gen': np.array([0.0, 0.17, 0.25, 0.32, 0.38, 0.45, 0.52, 0.59, 0.66, 1.0], dtype='d'),
+        'reco': None
+    },
+    'jet_width': {
+        'gen': np.array([ 0.0, 0.105, 0.165, 0.23, 0.305, 0.38, 0.46, 0.55, 1.0], dtype='d'),
+        'reco': None
+    },
+    'jet_thrust': {
+        'gen': np.array([0.0, 0.05, 0.09, 0.15, 0.205, 0.26, 1.0], dtype='d'),
+        'reco': None
+    },
+
+    'jet_puppiMultiplicity_charged': {
+        'gen': np.array([0, 3, 5.0, 8.0, 11.0, 14.0, 18.0, 22.0, 26.0, 31.0, 37.0, 45.0, 150.0], dtype='d'),
+        'reco': None
+    },
+    'jet_pTD_charged': {
+        'gen': np.array([0.0, 0.06, 0.08, 0.1, 0.13, 0.17, 0.22, 0.28, 0.36, 0.47, 0.59, 0.73, 1.0], dtype='d'),
+        'reco': None
+    },
+    'jet_LHA_charged': {
+        'gen': np.array([0.0, 0.05, 0.09, 0.14, 0.19, 0.25, 0.32, 0.39, 0.47, 0.55, 0.63, 0.72, 1.0], dtype='d'),
+        'reco': None
+    },
+    'jet_width_charged': {
+        'gen': np.array([0.0, 0.01, 0.025, 0.045, 0.075, 0.11, 0.155, 0.21, 0.275, 0.34, 0.41, 0.485, 0.575, 1.0], dtype='d'),
+        'reco': None
+    },
+    'jet_thrust_charged': {
+        'gen': np.array([0.0, 0.005, 0.015, 0.03, 0.055, 0.09, 0.125, 0.16, 0.195, 0.23, 0.27, 0.315, 0.375, 1.0], dtype='d'),
+        'reco': None
+    },
+}
+
+
+# construct_all_fine_binnings(VAR_UNFOLD_DICT_TARGET0p6)
+# VAR_UNFOLD_DICT = VAR_UNFOLD_DICT_TARGET0p6
 
 construct_all_fine_binnings(VAR_UNFOLD_DICT_TARGET0p5)
-construct_all_fine_binnings(VAR_UNFOLD_DICT_TARGET0p6)
-
 VAR_UNFOLD_DICT = VAR_UNFOLD_DICT_TARGET0p5
-# VAR_UNFOLD_DICT = VAR_UNFOLD_DICT_TARGET0p6
 
 # Common labels for legends etc
 ZpJ_LABEL = "Z+jets region"
