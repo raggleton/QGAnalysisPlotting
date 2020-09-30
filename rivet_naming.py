@@ -139,23 +139,19 @@ def get_plot_name(jet_radius, region, lambda_variable, pt_bin):
 
     radius_ind = _get_index(JET_RADII, jet_radius, "jet radii")
 
+    is_zpj = False
     try:
         region_ind = _get_index(DIJET_REGIONS, region, "dijet regions")
     except ValueError:
         try:
             region_ind = _get_index(ZPJ_REGIONS, region, "Z+jet regions")
+            is_zpj = True
         except ValueError:
             raise ValueError("Cannot find region ('%s') in either list of dijet or Z+J regions" % (region))
 
     lambda_ind = _get_index(LAMBDA_VARS, lambda_variable, "lambda variables")
 
-    try:
-        pt_ind = _get_index(PT_BINS_DIJET, pt_bin, "dijet pt bins")
-    except ValueError:
-        try:
-            pt_ind = _get_index(PT_BINS_ZPJ, pt_bin, "z+j pt bins")
-        except ValueError:
-            raise ValueError("Cannot find pt bin ('%s') in either list of dijet or Z+J pt bins" % (pt_bin))
+    pt_ind = _get_index(PT_BINS_ZPJ if is_zpj else PT_BINS_DIJET, pt_bin, "pt bins")
 
     channel_ind = (10*radius_ind) + region_ind
     name = "d{:0>2}-x{:0>2}-y{:0>2}".format(channel_ind, lambda_ind, pt_ind)
