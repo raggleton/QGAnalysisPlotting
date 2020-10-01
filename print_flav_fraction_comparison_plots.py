@@ -197,9 +197,9 @@ if __name__ == '__main__':
                                       plot_dir=os.path.join(adir, "flav_fractions%s" % ("_gen" if args.gen else "")),
                                       var_prepend="gen" if args.gen else "",
                                       # zpj_dirname=None,
-                                      zpj_dirname="ZPlusJets_QG",
-                                      dj_cen_dirname="Dijet_QG_central_tighter",
-                                      dj_fwd_dirname="Dijet_QG_forward_tighter")
+                                      zpj_dirname="ZPlusJets_QG" if args.zpj else None,
+                                      dj_cen_dirname="Dijet_QG_central_tighter" if args.dj else None,
+                                      dj_fwd_dirname="Dijet_QG_forward_tighter" if args.dj else None)
 
     if len(args.dir) > 1:
         # Now comparison across all inputs
