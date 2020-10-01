@@ -32,7 +32,7 @@ from my_unfolder_plotter import MyUnfolderPlotter
 from unfolding_regularisation_classes import TauScanner, LCurveScanner
 from unfolding_config import get_dijet_config, get_zpj_config
 from do_unfolding_plots import Setup, do_binned_plots_per_region_angle, do_all_big_normalised_1d_plots_per_region_angle
-from unfolding_logistics import get_unfolding_argparser, get_unfolding_output_dir, sanitise_args
+from unfolding_logistics import get_unfolding_argparser, get_unfolding_output_dir, sanitise_args, AREA_OPT_DICT
 
 # Use rootpy to throw exceptions on ROOT errors, but need DANGER enabled
 import rootpy
@@ -578,7 +578,7 @@ if __name__ == "__main__":
             #                             pt_bin_edges_underflow_reco=pt_bin_edges_underflow_reco,
             #                             pt_bin_edges_underflow_gen=pt_bin_edges_underflow_gen,
             #                             orientation=ROOT.TUnfold.kHistMapOutputHoriz,
-            #                             constraintMode=args.areaConstraint,
+            #                             constraintMode=AREA_OPT_DICT[args.areaConstraint],
             #                             # regMode=ROOT.TUnfold.kRegModeCurvature,
             #                             # densityFlags=ROOT.TUnfoldDensity.kDensityModeBinWidth, # important as we have varying bin sizes!
             #                             regMode=ROOT.TUnfold.kRegModeNone,
@@ -606,7 +606,7 @@ if __name__ == "__main__":
                                   pt_bin_edges_underflow_reco=pt_bin_edges_underflow_reco,
                                   pt_bin_edges_underflow_gen=pt_bin_edges_underflow_gen,
                                   orientation=ROOT.TUnfold.kHistMapOutputHoriz,
-                                  constraintMode=args.areaConstraint,
+                                  constraintMode=AREA_OPT_DICT[args.areaConstraint],
                                   # regMode=ROOT.TUnfold.kRegModeCurvature,
                                   # densityFlags=ROOT.TUnfoldDensity.kDensityModeBinWidth, # important as we have varying bin sizes!
                                   regMode=ROOT.TUnfold.kRegModeNone,

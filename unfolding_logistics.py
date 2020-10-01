@@ -24,7 +24,6 @@ ROOT.TH1.SetDefaultSumw2()
 
 
 AREA_OPT_DICT = {'Area': ROOT.TUnfold.kEConstraintArea, 'None': ROOT.TUnfold.kEConstraintNone}
-AREA_OPT_INV_DICT = {v: k for k, v in AREA_OPT_DICT.items()}
 
 
 def get_unfolding_argparser(description='', parser=None):
@@ -59,8 +58,7 @@ def get_unfolding_argparser(description='', parser=None):
 
     parser.add_argument("--areaConstraint",
                         default='None',
-                        type=lambda x: AREA_OPT_DICT[x],
-                        choices=AREA_OPT_DICT.keys(),
+                        choices=list(AREA_OPT_DICT.keys()),  # can't use type to convert with choices specified
                         help='Area constraint.')
 
     # SIGNAL REGION OPTIONS
@@ -377,7 +375,7 @@ def get_unfolding_output_dir(args):
     str_parts = dict(
         regularize_str=regularize_str,
         mc_append=mc_append,
-        area=AREA_OPT_INV_DICT[args.areaConstraint],
+        area=args.areaConstraint,
         append=append,
         sub_append=sub_append,
     )
