@@ -30,7 +30,7 @@ import qg_common as qgc
 import qg_general_plots as qgp
 from my_unfolder import MyUnfolder, HistBinChopper, unpickle_region
 from my_unfolder_plotter import MyUnfolderPlotter
-from unfolding_config import get_dijet_config, get_zpj_config
+from unfolding_config import setup_regions_from_argparse
 
 pd.set_option('display.max_columns', None)
 
@@ -42,34 +42,6 @@ ROOT.gErrorIgnoreLevel = ROOT.kError
 ROOT.PyConfig.IgnoreCommandLineOptions = True
 ROOT.gROOT.SetBatch(1)
 ROOT.TH1.SetDefaultSumw2()
-
-
-def setup_regions(args):
-    regions = []
-    if args.doDijetCentral:
-        dijet_region_central_dict = get_dijet_config(args.source, central=True, groomed=False)
-        regions.append(dijet_region_central_dict)
-
-    if args.doDijetForward:
-        dijet_region_forward_dict = get_dijet_config(args.source, central=False, groomed=False)
-        regions.append(dijet_region_forward_dict)
-
-    if args.doDijetCentralGroomed:
-        dijet_region_central_groomed_dict = get_dijet_config(args.source, central=True, groomed=True)
-        regions.append(dijet_region_central_groomed_dict)
-
-    if args.doDijetForwardGroomed:
-        dijet_region_forward_groomed_dict = get_dijet_config(args.source, central=False, groomed=True)
-        regions.append(dijet_region_forward_groomed_dict)
-
-    if args.doZPJ:
-        zpj_region_dict = get_zpj_config(args.source, groomed=False)
-        regions.append(zpj_region_dict)
-
-    if args.doZPJGroomed:
-        zpj_region_groomed_dict = get_zpj_config(args.source, groomed=True)
-        regions.append(zpj_region_groomed_dict)
-    return regions
 
 
 class Setup(object):
@@ -4803,7 +4775,7 @@ if __name__ == "__main__":
         for x in ['doDijetCentral', 'doDijetForward', 'doDijetCentralGroomed', 'doDijetForwardGroomed', 'doZPJ', 'doZPJGroomed']:
             setattr(args, x, True)
 
-    regions = setup_regions(args)
+    regions = setup_regions_from_argparse(args)
     if len(regions) == 0:
         raise RuntimeError("Need at least 1 region")
 
@@ -4862,7 +4834,6 @@ if __name__ == "__main__":
             # use region dict from unpickling
             # don't use update(), mega slow
             this_region = unpickled_region
-            this_region['mc_label'] = 'MG5+Pythia8'
 
             # MAKE ALL THE PLOTS
             # ------------------------------------------------------------------

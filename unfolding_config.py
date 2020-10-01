@@ -595,3 +595,72 @@ def get_zpj_config(source_dir, groomed=False):
         this_dict['name'] = 'ZPlusJets_groomed'
         this_dict['label'] = 'Z+jets'
         return this_dict
+
+
+
+def setup_regions_from_argparse(args):
+    """Utility method for argparser, to setup list of region(s) based on args
+
+    Assumes args object is setup like:
+        parser.add_argument("source",
+                            help="Source directory with ROOT files")
+        region_group = parser.add_argument_group('Region selection')
+        region_group.add_argument("--doAllRegions",
+                                  action='store_true',
+                                  help='Do unfolding for all regions (dijet, Z+J, groomed, ungroomed)')
+        region_group.add_argument("--doDijetCentral",
+                                  action='store_true',
+                                  help='Do unfolding for dijet (central) jets')
+        region_group.add_argument("--doDijetForward",
+                                  action='store_true',
+                                  help='Do unfolding for dijet (forward) jets')
+        region_group.add_argument("--doDijetCentralGroomed",
+                                  action='store_true',
+                                  help='Do unfolding for groomed dijet (central) jets')
+        region_group.add_argument("--doDijetForwardGroomed",
+                                  action='store_true',
+                                  help='Do unfolding for groomed dijet (forward) jets')
+        region_group.add_argument("--doZPJ",
+                                  action='store_true',
+                                  help='Do unfolding for Z+jet jets')
+        region_group.add_argument("--doZPJGroomed",
+                                  action='store_true',
+                                  help='Do unfolding for groomed Z+jet jets')
+    """
+    return setup_regions(do_dijet_central=args.doDijetCentral,
+                         do_dijet_forward=args.doDijetForward,
+                         do_dijet_central_groomed=args.doDijetCentralGroomed,
+                         do_dijet_forward_groomed=args.doDijetForwardGroomed,
+                         do_zpj=args.doZPJ,
+                         do_zpj_groomed=args.doZPJGroomed,
+                         source=args.source)
+
+
+def setup_regions(do_dijet_central,
+                  do_dijet_forward,
+                  do_dijet_central_groomed,
+                  do_dijet_forward_groomed,
+                  do_zpj,
+                  do_zpj_groomed,
+                  source):
+    """Setup list of region(s)"""
+    regions = []
+    if do_dijet_central:
+        regions.append(get_dijet_config(source, central=True, groomed=False))
+
+    if do_dijet_forward:
+        regions.append(get_dijet_config(source, central=False, groomed=False))
+
+    if do_dijet_central_groomed:
+        regions.append(get_dijet_config(source, central=True, groomed=True))
+
+    if do_dijet_forward_groomed:
+        regions.append(get_dijet_config(source, central=False, groomed=True))
+
+    if do_zpj:
+        regions.append(get_zpj_config(source, groomed=False))
+
+    if do_zpj_groomed:
+        regions.append(get_zpj_config(source, groomed=True))
+
+    return regions
