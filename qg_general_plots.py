@@ -130,7 +130,7 @@ def make_comparison_plot_ingredients(entries, rebin=1, normalise_hist=True, mean
         # We'll redraw it at the end with the proper ones ontop
         conts[0].line_width = 0
         conts[0].marker_size = 0.01
-        conts[0]._update_styles()
+        conts[0].update_obj_styling()
 
         # For subplot to ensure only MC errors drawn, not MC+data
         data_obj = entries[0][0]

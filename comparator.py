@@ -161,7 +161,7 @@ class Contribution(object):
         self.subplot_marker_color = subplot_marker_color or self.marker_color
         self.subplot_marker_style = subplot_marker_style or self.marker_style
 
-        self._update_styles()
+        self.update_obj_styling()
 
         if rebin_hist and rebin_hist != 1:
             self.obj.Rebin(rebin_hist) # Does this handle 2D hists?
@@ -178,19 +178,24 @@ class Contribution(object):
         if isinstance(self.obj, ROOT.TH1) or isinstance(self.obj, ROOT.TH2):
             self.obj.SetDirectory(0)
 
-    def _update_styles(self):
-        self.obj.SetLineWidth(self.line_width)
-        self.obj.SetLineColor(self.line_color)
-        self.obj.SetLineStyle(self.line_style)
-        self.obj.SetFillColor(self.fill_color)
-        self.obj.SetFillStyle(self.fill_style)
-        self.obj.SetMarkerSize(self.marker_size)
-        self.obj.SetMarkerColor(self.marker_color)
-        self.obj.SetMarkerStyle(self.marker_style)
+    def update_obj_styling(self, obj=None):
+        """Update object's styling using instance variables
+        If no object is specified, applied to self.obj
+        """
+        if obj is None:
+            obj = self.obj
+        obj.SetLineWidth(self.line_width)
+        obj.SetLineColor(self.line_color)
+        obj.SetLineStyle(self.line_style)
+        obj.SetFillColor(self.fill_color)
+        obj.SetFillStyle(self.fill_style)
+        obj.SetMarkerSize(self.marker_size)
+        obj.SetMarkerColor(self.marker_color)
+        obj.SetMarkerStyle(self.marker_style)
 
         # Match fit to hist styles
-        if self.fit_match_style and self.obj.GetListOfFunctions().GetSize() == 1:
-            func = self.obj.GetListOfFunctions().At(0)
+        if self.fit_match_style and obj.GetListOfFunctions().GetSize() == 1:
+            func = obj.GetListOfFunctions().At(0)
             func.SetLineStyle(self.line_style)
             func.SetLineWidth(self.line_width)
             func.SetLineColor(self.line_color)
