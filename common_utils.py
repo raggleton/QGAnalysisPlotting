@@ -588,8 +588,15 @@ def th2_to_tmatrixd(hist, include_uflow=False, include_oflow=False):
 
 
 def get_th1_bin_centers(h):
+    # TODO maintain same shape(1, n) as in th1_to_array?
     centers = np.array([h.GetBinLowEdge(i) + 0.5*h.GetBinWidth(i) for i in range(1, h.GetNbinsX()+1)])
     return centers
+
+
+def get_th1_bin_widths(h):
+    # TODO maintain same shape(1, n) as in th1_to_array?
+    widths = np.array([h.GetBinWidth(i) for i in range(1, h.GetNbinsX()+1)])
+    return widths
 
 
 def th1_to_ndarray(hist_A, oflow_x=False):
