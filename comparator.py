@@ -287,6 +287,7 @@ class Plot(object):
         if self.do_legend:
             self._style_legend()
         self.reverse_legend = False
+        self.splitline_legend = False  # if True, use splitline instead of extra entries for \n. Only works with 1 \n occurence
         self.do_extend = extend
         self.container = None
         self.canvas = None
@@ -436,13 +437,22 @@ class Plot(object):
                             opt += "F"
 
                 # Split text by newline \n
-                # Add an entry for each line
-                for i, substr in enumerate(contrib.label.split("\n")):
-                    if i == 0:
-                        self.legend.AddEntry(contrib.obj, substr, opt)
+                # self.splitline_legend controls whether to use #splitline or multiple AddEntry
+                if "\n" in contrib.label:
+                    parts = contrib.label.split("\n")
+                    if self.splitline_legend:
+                        if len(parts) > 2:
+                            raise ValueError(r"Cannot have splitline_legend=True and > 1 \n in legend label")
+                        self.legend.AddEntry(contrib.obj, "#splitline{%s}{%s}" % (parts[0], parts[1]), opt)
                     else:
-                        self.legend.AddEntry(0, substr, "")
-
+                        # Add an entry for each line
+                        for i, substr in enumerate(parts):
+                            if i == 0:
+                                self.legend.AddEntry(contrib.obj, substr, opt)
+                            else:
+                                self.legend.AddEntry(0, substr, "")
+                else:
+                    self.legend.AddEntry(contrib.obj, contrib.label, opt)
 
     def _style_legend(self):
         # self.legend.SetBorderSize(0)
