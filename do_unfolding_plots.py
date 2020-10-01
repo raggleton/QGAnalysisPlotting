@@ -273,6 +273,7 @@ class GenPtBinnedPlotter(object):
             plot = Plot(entries,
                         ytitle=self.setup.pt_bin_normalised_differential_label,
                         title=self.get_pt_bin_title(bin_edge_low, bin_edge_high),
+                        xlim=qgp.calc_auto_xlim(entries[2:3]),
                         **self.pt_bin_plot_args)
             self._modify_plot(plot)
             plot.subplot_title = "* / Generator"
@@ -463,6 +464,7 @@ class GenPtBinnedPlotter(object):
             plot = Plot(entries,
                         ytitle=self.setup.pt_bin_normalised_differential_label,
                         title=self.get_pt_bin_title(bin_edge_low, bin_edge_high),
+                        xlim=qgp.calc_auto_xlim(entries),
                         **self.pt_bin_plot_args)
             self._modify_plot(plot)
             plot.subplot_title = "* / Generator"
@@ -497,6 +499,7 @@ class GenPtBinnedPlotter(object):
             plot = Plot(entries,
                         ytitle=self.setup.pt_bin_unnormalised_differential_label,
                         title=self.get_pt_bin_title(bin_edge_low, bin_edge_high),
+                        xlim=qgp.calc_auto_xlim(entries),
                         **self.pt_bin_plot_args)
             self._modify_plot(plot)
             plot.subplot_title = "* / Generator"
@@ -544,6 +547,7 @@ class GenPtBinnedPlotter(object):
             plot = Plot(entries,
                         ytitle=self.setup.pt_bin_normalised_differential_label,
                         title=self.get_pt_bin_title(bin_edge_low, bin_edge_high),
+                        xlim=qgp.calc_auto_xlim(entries),
                         **self.pt_bin_plot_args)
             self._modify_plot(plot)
             plot.subplot_title = "* / Generator"
@@ -591,6 +595,7 @@ class GenPtBinnedPlotter(object):
             plot = Plot(entries,
                         ytitle=self.setup.pt_bin_unnormalised_differential_label,
                         title=self.get_pt_bin_title(bin_edge_low, bin_edge_high),
+                        xlim=qgp.calc_auto_xlim(entries),
                         **self.pt_bin_plot_args)
             self._modify_plot(plot)
             plot.subplot_title = "* / Generator"
@@ -644,6 +649,7 @@ class GenPtBinnedPlotter(object):
             plot = Plot(entries,
                         ytitle=self.setup.pt_bin_normalised_differential_label,
                         title=self.get_pt_bin_title(bin_edge_low, bin_edge_high),
+                        xlim=qgp.calc_auto_xlim(entries),
                         **self.pt_bin_plot_args)
             self._modify_plot(plot)
             plot.plot("NOSTACK E1")
@@ -694,6 +700,7 @@ class GenPtBinnedPlotter(object):
             plot = Plot(entries,
                         ytitle=self.setup.pt_bin_normalised_differential_label,
                         title=self.get_pt_bin_title(bin_edge_low, bin_edge_high),
+                        xlim=qgp.calc_auto_xlim(entries),
                         **this_plot_args)
             self._modify_plot(plot)
             plot.plot("NOSTACK E1")
