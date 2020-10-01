@@ -155,25 +155,25 @@ def get_dijet_config(source_dir, central=True, groomed=False):
         "scale_systematics": [
             {
                 "label": "muR up, muF nominal",
-                "tfile": os.path.join(source_dir_systs, 'ScaleVariationMuRUp_ScaleVariationMuFNom', qgc.QCD_FILENAME),
+                "tfile": os.path.join(source_dir_systs, 'ScaleVariationMuRUp_ScaleVariationMuFNominal', qgc.QCD_FILENAME),
                 "colour": ROOT.kAzure,
                 "unfolder": None,
             },
             {
                 "label": "muR down, muF nominal",
-                "tfile": os.path.join(source_dir_systs, 'ScaleVariationMuRDown_ScaleVariationMuFNom', qgc.QCD_FILENAME),
+                "tfile": os.path.join(source_dir_systs, 'ScaleVariationMuRDown_ScaleVariationMuFNominal', qgc.QCD_FILENAME),
                 "colour": ROOT.kAzure+1,
                 "unfolder": None,
             },
             {
                 "label": "muR nominal, muF up",
-                "tfile": os.path.join(source_dir_systs, 'ScaleVariationMuRNom_ScaleVariationMuFUp', qgc.QCD_FILENAME),
+                "tfile": os.path.join(source_dir_systs, 'ScaleVariationMuRNominal_ScaleVariationMuFUp', qgc.QCD_FILENAME),
                 "colour": ROOT.kAzure+2,
                 "unfolder": None,
             },
             {
                 "label": "muR nominal, muF down",
-                "tfile": os.path.join(source_dir_systs, 'ScaleVariationMuRNom_ScaleVariationMuFDown', qgc.QCD_FILENAME),
+                "tfile": os.path.join(source_dir_systs, 'ScaleVariationMuRNominal_ScaleVariationMuFDown', qgc.QCD_FILENAME),
                 "colour": ROOT.kAzure+3,
                 "unfolder": None,
             },
@@ -194,25 +194,25 @@ def get_dijet_config(source_dir, central=True, groomed=False):
         "model_systematics": [
             {
                 "label": "muR up, muF nominal",
-                "tfile": os.path.join(source_dir_systs, 'ScaleVariationMuRUp_ScaleVariationMuFNom', qgc.QCD_FILENAME),
+                "tfile": os.path.join(source_dir_systs, 'ScaleVariationMuRUp_ScaleVariationMuFNominal', qgc.QCD_FILENAME),
                 "colour": ROOT.kAzure,
                 "unfolder": None,
             },
             {
                 "label": "muR down, muF nominal",
-                "tfile": os.path.join(source_dir_systs, 'ScaleVariationMuRDown_ScaleVariationMuFNom', qgc.QCD_FILENAME),
+                "tfile": os.path.join(source_dir_systs, 'ScaleVariationMuRDown_ScaleVariationMuFNominal', qgc.QCD_FILENAME),
                 "colour": ROOT.kAzure+1,
                 "unfolder": None,
             },
             {
                 "label": "muR nominal, muF up",
-                "tfile": os.path.join(source_dir_systs, 'ScaleVariationMuRNom_ScaleVariationMuFUp', qgc.QCD_FILENAME),
+                "tfile": os.path.join(source_dir_systs, 'ScaleVariationMuRNominal_ScaleVariationMuFUp', qgc.QCD_FILENAME),
                 "colour": ROOT.kAzure+2,
                 "unfolder": None,
             },
             {
                 "label": "muR nominal, muF down",
-                "tfile": os.path.join(source_dir_systs, 'ScaleVariationMuRNom_ScaleVariationMuFDown', qgc.QCD_FILENAME),
+                "tfile": os.path.join(source_dir_systs, 'ScaleVariationMuRNominal_ScaleVariationMuFDown', qgc.QCD_FILENAME),
                 "colour": ROOT.kAzure+3,
                 "unfolder": None,
             },
@@ -469,25 +469,25 @@ def get_zpj_config(source_dir, groomed=False):
         "scale_systematics": [
             {
                 "label": "muR up, muF nominal",
-                "tfile": os.path.join(source_dir_systs, 'ScaleVariationMuRUp_ScaleVariationMuFNom', qgc.DY_FILENAME),
+                "tfile": os.path.join(source_dir_systs, 'ScaleVariationMuRUp_ScaleVariationMuFNominal', qgc.DY_FILENAME),
                 "colour": ROOT.kAzure,
                 "unfolder": None,
             },
             {
                 "label": "muR down, muF nominal",
-                "tfile": os.path.join(source_dir_systs, 'ScaleVariationMuRDown_ScaleVariationMuFNom', qgc.DY_FILENAME),
+                "tfile": os.path.join(source_dir_systs, 'ScaleVariationMuRDown_ScaleVariationMuFNominal', qgc.DY_FILENAME),
                 "colour": ROOT.kAzure+1,
                 "unfolder": None,
             },
             {
                 "label": "muR nominal, muF up",
-                "tfile": os.path.join(source_dir_systs, 'ScaleVariationMuRNom_ScaleVariationMuFUp', qgc.DY_FILENAME),
+                "tfile": os.path.join(source_dir_systs, 'ScaleVariationMuRNominal_ScaleVariationMuFUp', qgc.DY_FILENAME),
                 "colour": ROOT.kAzure+2,
                 "unfolder": None,
             },
             {
                 "label": "muR nominal, muF down",
-                "tfile": os.path.join(source_dir_systs, 'ScaleVariationMuRNom_ScaleVariationMuFDown', qgc.DY_FILENAME),
+                "tfile": os.path.join(source_dir_systs, 'ScaleVariationMuRNominal_ScaleVariationMuFDown', qgc.DY_FILENAME),
                 "colour": ROOT.kAzure+3,
                 "unfolder": None,
             },
@@ -508,25 +508,25 @@ def get_zpj_config(source_dir, groomed=False):
         "model_systematics": [
             {
                 "label": "muR up, muF nominal",
-                "tfile": os.path.join(source_dir_systs, 'ScaleVariationMuRUp_ScaleVariationMuFNom', qgc.DY_FILENAME),
+                "tfile": os.path.join(source_dir_systs, 'ScaleVariationMuRUp_ScaleVariationMuFNominal', qgc.DY_FILENAME),
                 "colour": ROOT.kAzure,
                 "unfolder": None,
             },
             {
                 "label": "muR down, muF nominal",
-                "tfile": os.path.join(source_dir_systs, 'ScaleVariationMuRDown_ScaleVariationMuFNom', qgc.DY_FILENAME),
+                "tfile": os.path.join(source_dir_systs, 'ScaleVariationMuRDown_ScaleVariationMuFNominal', qgc.DY_FILENAME),
                 "colour": ROOT.kAzure+1,
                 "unfolder": None,
             },
             {
                 "label": "muR nominal, muF up",
-                "tfile": os.path.join(source_dir_systs, 'ScaleVariationMuRNom_ScaleVariationMuFUp', qgc.DY_FILENAME),
+                "tfile": os.path.join(source_dir_systs, 'ScaleVariationMuRNominal_ScaleVariationMuFUp', qgc.DY_FILENAME),
                 "colour": ROOT.kAzure+2,
                 "unfolder": None,
             },
             {
                 "label": "muR nominal, muF down",
-                "tfile": os.path.join(source_dir_systs, 'ScaleVariationMuRNom_ScaleVariationMuFDown', qgc.DY_FILENAME),
+                "tfile": os.path.join(source_dir_systs, 'ScaleVariationMuRNominal_ScaleVariationMuFDown', qgc.DY_FILENAME),
                 "colour": ROOT.kAzure+3,
                 "unfolder": None,
             },
@@ -555,7 +555,7 @@ def get_zpj_config(source_dir, groomed=False):
                 "unfolder": None,
             },
         ],
-        
+
         "pdf_systematics": [
             {
                 "label": "PDF",
