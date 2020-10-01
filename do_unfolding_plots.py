@@ -225,12 +225,12 @@ class GenPtBinnedPlotter(object):
                 Contribution(unfolded_hist_bin_total_errors,
                              label="Unfolded (#tau = %.3g) (total unc.)" % (self.unfolder.tau),
                              line_color=self.plot_colours['unfolded_total_colour'], line_width=self.line_width, line_style=1,
-                             marker_color=self.plot_colours['unfolded_total_colour'],# marker_style=20, marker_size=0.75,
+                             marker_color=self.plot_colours['unfolded_total_colour'],# marker_style=cu.Marker.get('circle'), marker_size=0.75,
                              subplot=mc_gen_hist_bin),
                 Contribution(unfolded_hist_bin_stat_errors,
                              label="Unfolded (#tau = %.3g) (stat. unc.)" % (self.unfolder.tau),
                              line_color=self.plot_colours['unfolded_stat_colour'], line_width=self.line_width, line_style=1,
-                             marker_color=self.plot_colours['unfolded_stat_colour'], marker_style=20, marker_size=0.75,
+                             marker_color=self.plot_colours['unfolded_stat_colour'], marker_style=cu.Marker.get('circle'), marker_size=0.75,
                              subplot=mc_gen_hist_bin),
             ]
             if not self.check_entries(entries, "plot_unfolded_unnormalised %d" % (ibin)):
@@ -259,12 +259,12 @@ class GenPtBinnedPlotter(object):
                 Contribution(unfolded_hist_bin_total_errors,
                              label="Data (total unc.)",
                              line_color=self.plot_colours['unfolded_total_colour'], line_width=self.line_width, line_style=1,
-                             marker_color=self.plot_colours['unfolded_total_colour'],# marker_style=20, marker_size=0.75,
+                             marker_color=self.plot_colours['unfolded_total_colour'],# marker_style=cu.Marker.get('circle'), marker_size=0.75,
                              subplot=mc_gen_hist_bin),
                 Contribution(unfolded_hist_bin_stat_errors,
                              label="Data (stat. unc.)",
                              line_color=self.plot_colours['unfolded_stat_colour'], line_width=self.line_width, line_style=1,
-                             marker_color=self.plot_colours['unfolded_stat_colour'], marker_style=20, marker_size=0.75,
+                             marker_color=self.plot_colours['unfolded_stat_colour'], marker_style=cu.Marker.get('circle'), marker_size=0.75,
                              subplot=mc_gen_hist_bin),
             ]
             if not self.check_entries(entries, "plot_unfolded_normalised_pt_bin %d" % (ibin)):
@@ -283,10 +283,10 @@ class GenPtBinnedPlotter(object):
     def plot_unfolded_with_alt_truth_normalised(self, do_chi2=False):
         data_total_errors_style = dict(label="Data (total unc.)",
                                        line_color=self.plot_colours['unfolded_total_colour'], line_width=self.line_width, line_style=1,
-                                       marker_color=self.plot_colours['unfolded_total_colour'], marker_style=20, marker_size=0.75)
+                                       marker_color=self.plot_colours['unfolded_total_colour'], marker_style=cu.Marker.get('circle'), marker_size=0.75)
         data_stat_errors_style = dict(label="Data (stat. unc.)",
                                       line_color=self.plot_colours['unfolded_stat_colour'], line_width=self.line_width, line_style=1,
-                                      marker_color=self.plot_colours['unfolded_stat_colour'], marker_style=20, marker_size=0.0001)  # you need a non-0 marker to get the horizontal bars at the end of errors
+                                      marker_color=self.plot_colours['unfolded_stat_colour'], marker_style=cu.Marker.get('circle'), marker_size=0.0001)  # you need a non-0 marker to get the horizontal bars at the end of errors
 
         mc_style = dict(label=self.region['mc_label'],
                          line_color=self.plot_colours['gen_colour'], line_width=self.line_width,
@@ -451,12 +451,12 @@ class GenPtBinnedPlotter(object):
                 Contribution(unfolded_hist_bin_total_errors,
                              label="Unfolded (#tau = %.3g) (total unc.)" % (self.unfolder.tau),
                              line_color=self.plot_colours['unfolded_total_colour'], line_width=self.line_width, line_style=1,
-                             marker_color=self.plot_colours['unfolded_total_colour'], #marker_style=20, marker_size=0.75,
+                             marker_color=self.plot_colours['unfolded_total_colour'], #marker_style=cu.Marker.get('circle'), marker_size=0.75,
                              subplot=mc_gen_hist_bin),
                 Contribution(unreg_unfolded_hist_bin_total_errors,
                              label="Unfolded (#tau = 0) (total unc.)",
                              line_color=self.plot_colours['unfolded_unreg_colour'], line_width=self.line_width, line_style=1,
-                             marker_color=self.plot_colours['unfolded_unreg_colour'], #marker_style=20, marker_size=0.75,
+                             marker_color=self.plot_colours['unfolded_unreg_colour'], #marker_style=cu.Marker.get('circle'), marker_size=0.75,
                              subplot=mc_gen_hist_bin),
             ]
             if not self.check_entries(entries, "plot_unfolded_with_unreg_normalised_pt_bin %d" % (ibin)):
@@ -486,12 +486,12 @@ class GenPtBinnedPlotter(object):
                 Contribution(unfolded_hist_bin_total_errors,
                              label="Unfolded (#tau = %.3g) (total unc.)" % (self.unfolder.tau),
                              line_color=self.plot_colours['unfolded_total_colour'], line_width=self.line_width, line_style=1,
-                             marker_color=self.plot_colours['unfolded_total_colour'], #marker_style=20, marker_size=0.75,
+                             marker_color=self.plot_colours['unfolded_total_colour'], #marker_style=cu.Marker.get('circle'), marker_size=0.75,
                              subplot=mc_gen_hist_bin),
                 Contribution(unreg_unfolded_hist_bin_total_errors,
                              label="Unfolded (#tau = 0) (total unc.)",
                              line_color=self.plot_colours['unfolded_unreg_colour'], line_width=self.line_width, line_style=1,
-                             marker_color=self.plot_colours['unfolded_unreg_colour'], #marker_style=20, marker_size=0.75,
+                             marker_color=self.plot_colours['unfolded_unreg_colour'], #marker_style=cu.Marker.get('circle'), marker_size=0.75,
                              subplot=mc_gen_hist_bin),
             ]
             if not self.check_entries(entries, "plot_unfolded_with_unreg_unnormalised_pt_bin %d" % (ibin)):
@@ -528,17 +528,17 @@ class GenPtBinnedPlotter(object):
                 Contribution(unfolded_hist_bin_total_errors,
                              label="Unfolded (#tau = %.3g) (total unc.)" % (self.unfolder.tau),
                              line_color=self.plot_colours['unfolded_total_colour'], line_width=self.line_width, line_style=1,
-                             marker_color=self.plot_colours['unfolded_total_colour'], #marker_style=20, marker_size=0.75,
+                             marker_color=self.plot_colours['unfolded_total_colour'], #marker_style=cu.Marker.get('circle'), marker_size=0.75,
                              subplot=mc_gen_hist_bin),
                 # Contribution(unreg_unfolded_hist_bin_total_errors,
                 #              label="Unfolded (#tau = 0) (total unc.)",
                 #              line_color=self.plot_colours['unfolded_unreg_colour'], line_width=self.line_width, line_style=1,
-                #              marker_color=self.plot_colours['unfolded_unreg_colour'], #marker_style=20, marker_size=0.75,
+                #              marker_color=self.plot_colours['unfolded_unreg_colour'], #marker_style=cu.Marker.get('circle'), marker_size=0.75,
                 #              subplot=mc_gen_hist_bin),
                 Contribution(template_hist_bin_total_errors,
                              label="Template",
                              line_color=self.plot_colours['template_colour'], line_width=self.line_width, line_style=1,
-                             marker_color=self.plot_colours['template_colour'], #marker_style=20, marker_size=0.75,
+                             marker_color=self.plot_colours['template_colour'], #marker_style=cu.Marker.get('circle'), marker_size=0.75,
                              subplot=mc_gen_hist_bin),
 
             ]
@@ -576,17 +576,17 @@ class GenPtBinnedPlotter(object):
                 Contribution(unfolded_hist_bin_total_errors,
                              label="Unfolded (#tau = %.3g) (total unc.)" % (self.unfolder.tau),
                              line_color=self.plot_colours['unfolded_total_colour'], line_width=self.line_width, line_style=1,
-                             marker_color=self.plot_colours['unfolded_total_colour'], #marker_style=20, marker_size=0.75,
+                             marker_color=self.plot_colours['unfolded_total_colour'], #marker_style=cu.Marker.get('circle'), marker_size=0.75,
                              subplot=mc_gen_hist_bin),
                 # Contribution(unreg_unfolded_hist_bin_total_errors,
                 #              label="Unfolded (#tau = 0) (total unc.)",
                 #              line_color=self.plot_colours['unfolded_unreg_colour'], line_width=self.line_width, line_style=1,
-                #              marker_color=self.plot_colours['unfolded_unreg_colour'], #marker_style=20, marker_size=0.75,
+                #              marker_color=self.plot_colours['unfolded_unreg_colour'], #marker_style=cu.Marker.get('circle'), marker_size=0.75,
                 #              subplot=mc_gen_hist_bin),
                 Contribution(template_hist_bin_total_errors,
                              label="Template",
                              line_color=self.plot_colours['template_colour'], line_width=self.line_width, line_style=1,
-                             marker_color=self.plot_colours['template_colour'], #marker_style=20, marker_size=0.75,
+                             marker_color=self.plot_colours['template_colour'], #marker_style=cu.Marker.get('circle'), marker_size=0.75,
                              subplot=mc_gen_hist_bin),
 
             ]
@@ -626,22 +626,22 @@ class GenPtBinnedPlotter(object):
                 Contribution(unfolded_hist_bin_total_errors,
                              label="Unfolded (#tau = %.3g) (total unc.)\n(%s response matrix)" % (self.unfolder.tau, self.region['mc_label']),
                              line_color=self.plot_colours['unfolded_total_colour'], line_width=self.line_width, line_style=1,
-                             marker_color=self.plot_colours['unfolded_total_colour'], #marker_style=20, marker_size=0.75,
+                             marker_color=self.plot_colours['unfolded_total_colour'], #marker_style=cu.Marker.get('circle'), marker_size=0.75,
                              subplot=mc_gen_hist_bin),
                 Contribution(unfolded_hist_bin_stat_errors,
                              label="Unfolded (#tau = %.3g) (stat. unc.)\n(%s response matrix)" % (self.unfolder.tau, self.region['mc_label']),
                              line_color=self.plot_colours['unfolded_stat_colour'], line_width=self.line_width, line_style=1,
-                             marker_color=self.plot_colours['unfolded_stat_colour'], marker_style=20, marker_size=0.75,
+                             marker_color=self.plot_colours['unfolded_stat_colour'], marker_style=cu.Marker.get('circle'), marker_size=0.75,
                              subplot=mc_gen_hist_bin),
                 Contribution(alt_unfolded_hist_bin_total_errors,
                              label="Unfolded (#tau = %.3g) (total unc.)\n(%s response matrix)" % (alt_unfolder.tau, self.region['alt_mc_label']),
                              line_color=self.plot_colours['alt_unfolded_total_colour'], line_width=self.line_width, line_style=1,
-                             marker_color=self.plot_colours['alt_unfolded_total_colour'], #marker_style=20, marker_size=0.75,
+                             marker_color=self.plot_colours['alt_unfolded_total_colour'], #marker_style=cu.Marker.get('circle'), marker_size=0.75,
                              subplot=mc_gen_hist_bin),
                 Contribution(alt_unfolded_hist_bin_stat_errors,
                              label="Unfolded (#tau = %.3g) (stat. unc.)\n(%s response matrix)" % (alt_unfolder.tau, self.region['alt_mc_label']),
                              line_color=self.plot_colours['alt_unfolded_colour'], line_width=self.line_width, line_style=1,
-                             marker_color=self.plot_colours['alt_unfolded_colour'], #marker_style=20, marker_size=0.75,
+                             marker_color=self.plot_colours['alt_unfolded_colour'], #marker_style=cu.Marker.get('circle'), marker_size=0.75,
                              subplot=mc_gen_hist_bin),
             ]
             if not self.check_entries(entries, "plot_unfolded_with_unreg_normalised_pt_bin %d" % (ibin)):
@@ -680,17 +680,17 @@ class GenPtBinnedPlotter(object):
                 Contribution(unfolded_hist_bin_total_errors,
                              label="Unfolded (#tau = %.3g) (total unc.)\n(%s response matrix)" % (self.unfolder.tau, self.region['mc_label']),
                              line_color=self.plot_colours['unfolded_total_colour'], line_width=self.line_width, line_style=1,
-                             marker_color=self.plot_colours['unfolded_total_colour'], #marker_style=20, marker_size=0.75,
+                             marker_color=self.plot_colours['unfolded_total_colour'], #marker_style=cu.Marker.get('circle'), marker_size=0.75,
                              subplot=mc_gen_hist_bin),
                 Contribution(unfolded_hist_bin_stat_errors,
                              label="Unfolded (#tau = %.3g) (stat. unc.)\n(%s response matrix)" % (self.unfolder.tau, self.region['mc_label']),
                              line_color=self.plot_colours['unfolded_stat_colour'], line_width=self.line_width, line_style=1,
-                             marker_color=self.plot_colours['unfolded_stat_colour'], marker_style=20, marker_size=0.75,
+                             marker_color=self.plot_colours['unfolded_stat_colour'], marker_style=cu.Marker.get('circle'), marker_size=0.75,
                              subplot=mc_gen_hist_bin),
                 Contribution(alt_unfolded_hist_bin_total_errors,
                              label="Unfolded (#tau = %.3g) (stat. unc.)\n(%s response matrix)" % (alt_unfolder.tau, self.region['alt_mc_label']),
                              line_color=self.plot_colours['alt_unfolded_colour'], line_width=self.line_width, line_style=1,
-                             marker_color=self.plot_colours['alt_unfolded_colour'], #marker_style=20, marker_size=0.75,
+                             marker_color=self.plot_colours['alt_unfolded_colour'], #marker_style=cu.Marker.get('circle'), marker_size=0.75,
                              subplot=mc_gen_hist_bin),
             ]
             if not self.check_entries(entries, "plot_unfolded_with_unreg_normalised_pt_bin %d" % (ibin)):
@@ -746,7 +746,7 @@ class GenPtBinnedPlotter(object):
                 Contribution(unfolded_hist_bin_total_errors,
                              label="Nominal unfolded (#tau = %.3g) (total unc.)" % (self.unfolder.tau),
                              line_color=self.plot_colours['unfolded_total_colour'], line_width=self.line_width, line_style=1,
-                             marker_color=self.plot_colours['unfolded_total_colour'], #marker_style=20, marker_size=0.75,
+                             marker_color=self.plot_colours['unfolded_total_colour'], #marker_style=cu.Marker.get('circle'), marker_size=0.75,
                              subplot=mc_gen_hist_bin),
             ])
             if not self.check_entries(syst_entries, "plot_unfolded_with_scale_systs_normalised_pt_bin %d" % (ibin)):
@@ -802,7 +802,7 @@ class GenPtBinnedPlotter(object):
                 Contribution(unfolded_hist_bin_total_errors,
                              label="Nominal unfolded (#tau = %.3g) (total unc.)" % (self.unfolder.tau),
                              line_color=self.plot_colours['unfolded_total_colour'], line_width=self.line_width, line_style=1,
-                             marker_color=self.plot_colours['unfolded_total_colour'], #marker_style=20, marker_size=0.75,
+                             marker_color=self.plot_colours['unfolded_total_colour'], #marker_style=cu.Marker.get('circle'), marker_size=0.75,
                              subplot=mc_gen_hist_bin),
             ])
             if not self.check_entries(syst_entries, "plot_unfolded_with_scale_systs_unormalised_pt_bin %d" % (ibin)):
@@ -861,7 +861,7 @@ class GenPtBinnedPlotter(object):
                 Contribution(unfolded_hist_bin_total_errors,
                              label="Unfolded (#tau = %.3g) (total unc.)" % (self.unfolder.tau),
                              line_color=self.plot_colours['unfolded_total_colour'], line_width=self.line_width, line_style=1,
-                             marker_color=self.plot_colours['unfolded_total_colour'], #marker_style=20, marker_size=0.75,
+                             marker_color=self.plot_colours['unfolded_total_colour'], #marker_style=cu.Marker.get('circle'), marker_size=0.75,
                              subplot=mc_gen_hist_bin),
             ])
             if not self.check_entries(syst_entries, "plot_unfolded_with_model_systs_normalised_pt_bin %d" % (ibin)):
@@ -922,7 +922,7 @@ class GenPtBinnedPlotter(object):
                 Contribution(unfolded_hist_bin_total_errors,
                              label="Unfolded (#tau = %.3g) (total unc.)" % (self.unfolder.tau),
                              line_color=self.plot_colours['unfolded_total_colour'], line_width=self.line_width, line_style=1,
-                             marker_color=self.plot_colours['unfolded_total_colour'], #marker_style=20, marker_size=0.75,
+                             marker_color=self.plot_colours['unfolded_total_colour'], #marker_style=cu.Marker.get('circle'), marker_size=0.75,
                              subplot=mc_gen_hist_bin),
             ])
             if not self.check_entries(syst_entries, "plot_unfolded_with_model_systs_unnormalised_pt_bin %d" % (ibin)):
@@ -988,7 +988,7 @@ class GenPtBinnedPlotter(object):
                 Contribution(unfolded_hist_bin_total_errors,
                              label="Unfolded (#tau = %.3g) (total unc.)" % (self.unfolder.tau),
                              line_color=self.plot_colours['unfolded_total_colour'], line_width=self.line_width, line_style=1,
-                             marker_color=self.plot_colours['unfolded_total_colour'], #marker_style=20, marker_size=0.75,
+                             marker_color=self.plot_colours['unfolded_total_colour'], #marker_style=cu.Marker.get('circle'), marker_size=0.75,
                              subplot=mc_gen_hist_bin),
             ])
             if not self.check_entries(pdf_entries, "plot_unfolded_with_pdf_systs_normalised_pt_bin %d" % (ibin)):
@@ -1050,7 +1050,7 @@ class GenPtBinnedPlotter(object):
                 Contribution(unfolded_hist_bin_total_errors,
                              label="Unfolded (#tau = %.3g) (total unc.)" % (self.unfolder.tau),
                              line_color=self.plot_colours['unfolded_total_colour'], line_width=self.line_width, line_style=1,
-                             marker_color=self.plot_colours['unfolded_total_colour'], #marker_style=20, marker_size=0.75,
+                             marker_color=self.plot_colours['unfolded_total_colour'], #marker_style=cu.Marker.get('circle'), marker_size=0.75,
                              subplot=mc_gen_hist_bin),
             ])
             if not self.check_entries(pdf_entries, "plot_unfolded_with_pdf_systs_unnormalised_pt_bin %d" % (ibin)):
@@ -1110,7 +1110,7 @@ class GenPtBinnedPlotter(object):
                 Contribution(unfolded_hist_bin_total_errors,
                              label="Unfolded (#tau = %.3g) (total unc.)" % (self.unfolder.tau),
                              line_color=self.plot_colours['unfolded_total_colour'], line_width=self.line_width, line_style=1,
-                             marker_color=self.plot_colours['unfolded_total_colour'], #marker_style=20, marker_size=0.75,
+                             marker_color=self.plot_colours['unfolded_total_colour'], #marker_style=cu.Marker.get('circle'), marker_size=0.75,
                              subplot=mc_gen_hist_bin),
             ])
             if not self.check_entries(entries, "plot_unfolded_with_jackknife_input_normalised_pt_bin %d" % (ibin)):
@@ -1165,7 +1165,7 @@ class GenPtBinnedPlotter(object):
                 Contribution(unfolded_hist_bin_total_errors,
                              label="Unfolded (#tau = %.3g) (total unc.)" % (self.unfolder.tau),
                              line_color=self.plot_colours['unfolded_total_colour'], line_width=self.line_width, line_style=1,
-                             marker_color=self.plot_colours['unfolded_total_colour'], #marker_style=20, marker_size=0.75,
+                             marker_color=self.plot_colours['unfolded_total_colour'], #marker_style=cu.Marker.get('circle'), marker_size=0.75,
                              subplot=mc_gen_hist_bin),
             ])
             if not self.check_entries(entries, "plot_unfolded_with_jackknife_response_normalised_pt_bin %d" % (ibin)):
@@ -1352,11 +1352,11 @@ class GenPtBinnedPlotter(object):
                 Contribution(unfolded_hist_bin_total_errors,
                              label="Unfolded (#tau = %.3g) (total unc.)" % (self.unfolder.tau),
                              line_color=self.plot_colours['unfolded_total_colour'], line_width=self.line_width, line_style=1,
-                             marker_color=self.plot_colours['unfolded_total_colour'], marker_style=20, marker_size=0.75),
+                             marker_color=self.plot_colours['unfolded_total_colour'], marker_style=cu.Marker.get('circle'), marker_size=0.75),
                 Contribution(unfolded_hist_bin_stat_errors,
                              label="Unfolded (#tau = %.3g) (stat. unc.)" % (self.unfolder.tau),
                              line_color=self.plot_colours['unfolded_stat_colour'], line_width=self.line_width, line_style=1,
-                             marker_color=self.plot_colours['unfolded_stat_colour'], marker_style=20, marker_size=0.75),
+                             marker_color=self.plot_colours['unfolded_stat_colour'], marker_style=cu.Marker.get('circle'), marker_size=0.75),
             ]
 
             for syst_dict in self.region['experimental_systematics']:
@@ -1411,11 +1411,11 @@ class GenPtBinnedPlotter(object):
                 Contribution(unfolded_hist_bin_total_errors,
                              label="Unfolded (#tau = %.3g) (total unc.)" % (self.unfolder.tau),
                              line_color=self.plot_colours['unfolded_total_colour'], line_width=self.line_width, line_style=1,
-                             marker_color=self.plot_colours['unfolded_total_colour'], marker_style=20, marker_size=0.75),
+                             marker_color=self.plot_colours['unfolded_total_colour'], marker_style=cu.Marker.get('circle'), marker_size=0.75),
                 Contribution(unfolded_hist_bin_stat_errors,
                              label="Unfolded (#tau = %.3g) (stat. unc.)" % (self.unfolder.tau),
                              line_color=self.plot_colours['unfolded_stat_colour'], line_width=self.line_width, line_style=1,
-                             marker_color=self.plot_colours['unfolded_stat_colour'], marker_style=20, marker_size=0.75),
+                             marker_color=self.plot_colours['unfolded_stat_colour'], marker_style=cu.Marker.get('circle'), marker_size=0.75),
             ]
 
             for syst_dict in self.region['experimental_systematics']:
@@ -1505,7 +1505,7 @@ class GenPtBinnedPlotter(object):
                 Contribution(total_err,
                              label="Total uncertainty",
                              line_color=self.plot_colours['unfolded_total_colour'], line_width=0, line_style=2,
-                             marker_color=self.plot_colours['unfolded_total_colour'], marker_style=20, marker_size=0,
+                             marker_color=self.plot_colours['unfolded_total_colour'], marker_style=cu.Marker.get('circle'), marker_size=0,
                              fill_style=3154,
                              # fill_style=3005,
                              fill_color=16),
@@ -1513,7 +1513,7 @@ class GenPtBinnedPlotter(object):
                 Contribution(input_stats,
                              label="Data stat.",
                              line_color=self.plot_colours['unfolded_stat_colour'], line_width=0, line_style=3,
-                             marker_color=self.plot_colours['unfolded_stat_colour'], marker_style=20, marker_size=0,
+                             marker_color=self.plot_colours['unfolded_stat_colour'], marker_style=cu.Marker.get('circle'), marker_size=0,
                              fill_style=3245,
                              # fill_style=3003,
                              fill_color=self.plot_colours['unfolded_stat_colour']),
@@ -1542,7 +1542,7 @@ class GenPtBinnedPlotter(object):
                 scale_hist = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width(self.unfolder.scale_uncert_name, **hbc_args)
                 scale_col = self.plot_colours['scale_colour']
                 scale_style = dict(line_color=scale_col, line_width=self.line_width, line_style=2,
-                                   marker_color=scale_col, marker_style=20, marker_size=0,
+                                   marker_color=scale_col, marker_style=cu.Marker.get('circle'), marker_size=0,
                                    fill_style=0, fill_color=15)
                 entries.extend([
                     Contribution(_convert_error_bars_to_error_ratio_hist(scale_hist),
@@ -1558,7 +1558,7 @@ class GenPtBinnedPlotter(object):
                 pdf_hist = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width(self.unfolder.pdf_uncert_name, **hbc_args)
                 pdf_col = self.plot_colours['pdf_colour']
                 pdf_style = dict(line_color=pdf_col, line_width=self.line_width, line_style=6,
-                                 marker_color=pdf_col, marker_style=20, marker_size=0,
+                                 marker_color=pdf_col, marker_style=cu.Marker.get('circle'), marker_size=0,
                                  fill_style=0, fill_color=15)
                 entries.extend([
                     Contribution(_convert_error_bars_to_error_ratio_hist(pdf_hist),
@@ -1572,7 +1572,7 @@ class GenPtBinnedPlotter(object):
 
             rsp_col = self.plot_colours['rsp_colour']
             rsp_style = dict(line_color=rsp_col, line_width=self.line_width, line_style=3,
-                             marker_color=rsp_col, marker_style=20, marker_size=0,
+                             marker_color=rsp_col, marker_style=cu.Marker.get('circle'), marker_size=0,
                              fill_style=0, fill_color=rsp_col)
             entries.extend([
                 # RESPONSE UNCERT
@@ -1675,7 +1675,7 @@ class GenPtBinnedPlotter(object):
                 Contribution(total_err,
                              label="Total uncertainty",
                              line_color=self.plot_colours['unfolded_total_colour'], line_width=0, line_style=2,
-                             marker_color=self.plot_colours['unfolded_total_colour'], marker_style=20, marker_size=0,
+                             marker_color=self.plot_colours['unfolded_total_colour'], marker_style=cu.Marker.get('circle'), marker_size=0,
                              fill_style=3154,
                              # fill_style=3005,
                              fill_color=16),
@@ -1683,7 +1683,7 @@ class GenPtBinnedPlotter(object):
                 Contribution(input_stats,
                              label="Data stat.",
                              line_color=self.plot_colours['unfolded_stat_colour'], line_width=0, line_style=3,
-                             marker_color=self.plot_colours['unfolded_stat_colour'], marker_style=20, marker_size=0,
+                             marker_color=self.plot_colours['unfolded_stat_colour'], marker_style=cu.Marker.get('circle'), marker_size=0,
                              fill_style=3245,
                              # fill_style=3003,
                              fill_color=self.plot_colours['unfolded_stat_colour']),
@@ -1712,7 +1712,7 @@ class GenPtBinnedPlotter(object):
                 scale_hist = self.hist_bin_chopper.get_pt_bin_div_bin_width(self.unfolder.scale_uncert_name, **hbc_args)
                 scale_col = self.plot_colours['scale_colour']
                 scale_style = dict(line_color=scale_col, line_width=self.line_width, line_style=2,
-                                   marker_color=scale_col, marker_style=20, marker_size=0,
+                                   marker_color=scale_col, marker_style=cu.Marker.get('circle'), marker_size=0,
                                    fill_style=0, fill_color=15)
                 entries.extend([
                     Contribution(_convert_error_bars_to_error_ratio_hist(scale_hist),
@@ -1728,7 +1728,7 @@ class GenPtBinnedPlotter(object):
                 pdf_hist = self.hist_bin_chopper.get_pt_bin_div_bin_width(self.unfolder.pdf_uncert_name, **hbc_args)
                 pdf_col = self.plot_colours['pdf_colour']
                 pdf_style = dict(line_color=pdf_col, line_width=self.line_width, line_style=6,
-                                 marker_color=pdf_col, marker_style=20, marker_size=0,
+                                 marker_color=pdf_col, marker_style=cu.Marker.get('circle'), marker_size=0,
                                  fill_style=0, fill_color=15)
                 entries.extend([
                     Contribution(_convert_error_bars_to_error_ratio_hist(pdf_hist),
@@ -1741,7 +1741,7 @@ class GenPtBinnedPlotter(object):
 
             rsp_col = self.plot_colours['rsp_colour']
             rsp_style = dict(line_color=rsp_col, line_width=self.line_width, line_style=3,
-                             marker_color=rsp_col, marker_style=20, marker_size=0,
+                             marker_color=rsp_col, marker_style=cu.Marker.get('circle'), marker_size=0,
                              fill_style=0, fill_color=rsp_col)
             entries.extend([
                 # RESPONSE UNCERT
@@ -1818,7 +1818,7 @@ class GenPtBinnedPlotter(object):
                 Contribution(input_hist_bin,
                              label="Data (bg-subtracted)",
                              line_color=self.plot_colours['reco_data_colour'], line_width=self.line_width,
-                             marker_color=self.plot_colours['reco_data_colour'], marker_style=20, marker_size=0.75,
+                             marker_color=self.plot_colours['reco_data_colour'], marker_style=cu.Marker.get('circle'), marker_size=0.75,
                              subplot=None if alt_detector else mc_hist_bin)
             )
             if not self.check_entries(entries, "plot_detector_normalised_bg_subtracted %d" % (ibin)):
@@ -1954,12 +1954,12 @@ class GenLambdaBinnedPlotter(object):
                 Contribution(unfolded_hist_bin_total_errors,
                              label="Unfolded (#tau = %.3g) (total unc.)" % (self.unfolder.tau),
                              line_color=self.plot_colours['unfolded_total_colour'], line_width=self.line_width, line_style=1,
-                             marker_color=self.plot_colours['unfolded_total_colour'],# marker_style=20, marker_size=0.75,
+                             marker_color=self.plot_colours['unfolded_total_colour'],# marker_style=cu.Marker.get('circle'), marker_size=0.75,
                              subplot=mc_gen_hist_bin),
                 Contribution(unfolded_hist_bin_stat_errors,
                              label="Unfolded (#tau = %.3g) (stat. unc.)" % (self.unfolder.tau),
                              line_color=self.plot_colours['unfolded_stat_colour'], line_width=self.line_width, line_style=1,
-                             marker_color=self.plot_colours['unfolded_stat_colour'], marker_style=20, marker_size=0.75,
+                             marker_color=self.plot_colours['unfolded_stat_colour'], marker_style=cu.Marker.get('circle'), marker_size=0.75,
                              subplot=mc_gen_hist_bin),
             ]
             if not self.check_entries(entries, "plot_unfolded_unnormalised %d" % (ibin)):
@@ -1990,12 +1990,12 @@ class GenLambdaBinnedPlotter(object):
                 Contribution(unfolded_hist_bin_total_errors,
                              label="Unfolded (#tau = %.3g) (total unc.)" % (self.unfolder.tau),
                              line_color=self.plot_colours['unfolded_total_colour'], line_width=self.line_width, line_style=1,
-                             marker_color=self.plot_colours['unfolded_total_colour'],# marker_style=20, marker_size=0.75,
+                             marker_color=self.plot_colours['unfolded_total_colour'],# marker_style=cu.Marker.get('circle'), marker_size=0.75,
                              subplot=mc_gen_hist_bin),
                 Contribution(unreg_unfolded_hist_bin_total_errors,
                              label="Unfolded (#tau = 0) (total unc.)",
                              line_color=self.plot_colours['unfolded_unreg_colour'], line_width=self.line_width, line_style=1,
-                             marker_color=self.plot_colours['unfolded_unreg_colour'], #marker_style=20, marker_size=0.75,
+                             marker_color=self.plot_colours['unfolded_unreg_colour'], #marker_style=cu.Marker.get('circle'), marker_size=0.75,
                              subplot=mc_gen_hist_bin),
             ]
             if not self.check_entries(entries, "plot_unfolded_with_unreg_unnormalised %d" % (ibin)):
@@ -2032,17 +2032,17 @@ class GenLambdaBinnedPlotter(object):
                 Contribution(unfolded_hist_bin_total_errors,
                              label="Unfolded (#tau = %.3g) (total unc.)" % (self.unfolder.tau),
                              line_color=self.plot_colours['unfolded_total_colour'], line_width=self.line_width, line_style=1,
-                             marker_color=self.plot_colours['unfolded_total_colour'], #marker_style=20, marker_size=0.75,
+                             marker_color=self.plot_colours['unfolded_total_colour'], #marker_style=cu.Marker.get('circle'), marker_size=0.75,
                              subplot=mc_gen_hist_bin),
                 Contribution(unreg_unfolded_hist_bin_total_errors,
                              label="Unfolded (#tau = 0) (total unc.)",
                              line_color=self.plot_colours['unfolded_unreg_colour'], line_width=self.line_width, line_style=1,
-                             marker_color=self.plot_colours['unfolded_unreg_colour'], #marker_style=20, marker_size=0.75,
+                             marker_color=self.plot_colours['unfolded_unreg_colour'], #marker_style=cu.Marker.get('circle'), marker_size=0.75,
                              subplot=mc_gen_hist_bin),
                 Contribution(template_hist_bin_total_errors,
                              label="Template",
                              line_color=self.plot_colours['template_colour'], line_width=self.line_width, line_style=1,
-                             marker_color=self.plot_colours['template_colour'], #marker_style=20, marker_size=0.75,
+                             marker_color=self.plot_colours['template_colour'], #marker_style=cu.Marker.get('circle'), marker_size=0.75,
                              subplot=mc_gen_hist_bin),
 
             ]
@@ -2078,17 +2078,17 @@ class GenLambdaBinnedPlotter(object):
                 Contribution(unfolded_hist_bin_total_errors,
                              label="Unfolded (#tau = %.3g) (total unc.)\n(%s response matrix)" % (self.unfolder.tau, self.region['mc_label']),
                              line_color=self.plot_colours['unfolded_total_colour'], line_width=self.line_width, line_style=1,
-                             marker_color=self.plot_colours['unfolded_total_colour'], #marker_style=20, marker_size=0.75,
+                             marker_color=self.plot_colours['unfolded_total_colour'], #marker_style=cu.Marker.get('circle'), marker_size=0.75,
                              subplot=mc_gen_hist_bin),
                 Contribution(unfolded_hist_bin_stat_errors,
                              label="Unfolded (#tau = %.3g) (stat. unc.)\n(%s response matrix)" % (self.unfolder.tau, self.region['mc_label']),
                              line_color=self.plot_colours['unfolded_stat_colour'], line_width=self.line_width, line_style=1,
-                             marker_color=self.plot_colours['unfolded_stat_colour'], marker_style=20, marker_size=0.75,
+                             marker_color=self.plot_colours['unfolded_stat_colour'], marker_style=cu.Marker.get('circle'), marker_size=0.75,
                              subplot=mc_gen_hist_bin),
                 Contribution(alt_unfolded_hist_bin_total_errors,
                              label="Unfolded (#tau = %.3g) (stat. unc.)\n(%s response matrix)" % (alt_unfolder.tau, self.region['alt_mc_label']),
                              line_color=self.plot_colours['alt_unfolded_colour'], line_width=self.line_width, line_style=1,
-                             marker_color=self.plot_colours['alt_unfolded_colour'], #marker_style=20, marker_size=0.75,
+                             marker_color=self.plot_colours['alt_unfolded_colour'], #marker_style=cu.Marker.get('circle'), marker_size=0.75,
                              subplot=mc_gen_hist_bin),
             ]
             if not self.check_entries(entries, "plot_unfolded_with_alt_response_unnormalised %d" % (ibin)):
@@ -2134,7 +2134,7 @@ class GenLambdaBinnedPlotter(object):
                 Contribution(unfolded_hist_bin_total_errors,
                              label="Nominal unfolded (#tau = %.3g) (total unc.)" % (self.unfolder.tau),
                              line_color=self.plot_colours['unfolded_total_colour'], line_width=self.line_width, line_style=1,
-                             marker_color=self.plot_colours['unfolded_total_colour'], #marker_style=20, marker_size=0.75,
+                             marker_color=self.plot_colours['unfolded_total_colour'], #marker_style=cu.Marker.get('circle'), marker_size=0.75,
                              subplot=mc_gen_hist_bin),
             ])
             if not self.check_entries(syst_entries, "plot_unfolded_with_scale_systs_unnormalised %d" % (ibin)):
@@ -2193,7 +2193,7 @@ class GenLambdaBinnedPlotter(object):
                 Contribution(unfolded_hist_bin_total_errors,
                              label="Unfolded (#tau = %.3g) (total unc.)" % (self.unfolder.tau),
                              line_color=self.plot_colours['unfolded_total_colour'], line_width=self.line_width, line_style=1,
-                             marker_color=self.plot_colours['unfolded_total_colour'], #marker_style=20, marker_size=0.75,
+                             marker_color=self.plot_colours['unfolded_total_colour'], #marker_style=cu.Marker.get('circle'), marker_size=0.75,
                              subplot=mc_gen_hist_bin),
             ])
             if not self.check_entries(syst_entries, "plot_unfolded_with_model_systs_unnormalised %d" % (ibin)):
@@ -2256,7 +2256,7 @@ class GenLambdaBinnedPlotter(object):
                 Contribution(unfolded_hist_bin_total_errors,
                              label="Unfolded (#tau = %.3g) (total unc.)" % (self.unfolder.tau),
                              line_color=self.plot_colours['unfolded_total_colour'], line_width=self.line_width, line_style=1,
-                             marker_color=self.plot_colours['unfolded_total_colour'], #marker_style=20, marker_size=0.75,
+                             marker_color=self.plot_colours['unfolded_total_colour'], #marker_style=cu.Marker.get('circle'), marker_size=0.75,
                              subplot=mc_gen_hist_bin),
             ])
             if not self.check_entries(pdf_entries, "plot_unfolded_with_pdf_systs_unnormalised %d" % (ibin)):
@@ -2394,11 +2394,11 @@ class GenLambdaBinnedPlotter(object):
                 Contribution(unfolded_hist_bin_total_errors,
                              label="Unfolded (#tau = %.3g) (total unc.)" % (self.unfolder.tau),
                              line_color=self.plot_colours['unfolded_total_colour'], line_width=self.line_width, line_style=1,
-                             marker_color=self.plot_colours['unfolded_total_colour'], marker_style=20, marker_size=0.75),
+                             marker_color=self.plot_colours['unfolded_total_colour'], marker_style=cu.Marker.get('circle'), marker_size=0.75),
                 Contribution(unfolded_hist_bin_stat_errors,
                              label="Unfolded (#tau = %.3g) (stat. unc.)" % (self.unfolder.tau),
                              line_color=self.plot_colours['unfolded_stat_colour'], line_width=self.line_width, line_style=1,
-                             marker_color=self.plot_colours['unfolded_stat_colour'], marker_style=20, marker_size=0.75),
+                             marker_color=self.plot_colours['unfolded_stat_colour'], marker_style=cu.Marker.get('circle'), marker_size=0.75),
             ]
             for syst_dict in self.region['experimental_systematics']:
                 this_syst = self.unfolder.get_exp_syst(syst_dict['label'])
@@ -2487,7 +2487,7 @@ class GenLambdaBinnedPlotter(object):
                 Contribution(total_err,
                              label="Total uncertainty",
                              line_color=self.plot_colours['unfolded_total_colour'], line_width=0, line_style=2,
-                             marker_color=self.plot_colours['unfolded_total_colour'], marker_style=20, marker_size=0,
+                             marker_color=self.plot_colours['unfolded_total_colour'], marker_style=cu.Marker.get('circle'), marker_size=0,
                              fill_style=3154,
                              # fill_style=3005,
                              fill_color=16),
@@ -2495,7 +2495,7 @@ class GenLambdaBinnedPlotter(object):
                 Contribution(input_stats,
                              label="Data stat.",
                              line_color=self.plot_colours['unfolded_stat_colour'], line_width=0, line_style=3,
-                             marker_color=self.plot_colours['unfolded_stat_colour'], marker_style=20, marker_size=0,
+                             marker_color=self.plot_colours['unfolded_stat_colour'], marker_style=cu.Marker.get('circle'), marker_size=0,
                              fill_style=3245,
                              # fill_style=3003,
                              fill_color=self.plot_colours['unfolded_stat_colour']),
@@ -2524,7 +2524,7 @@ class GenLambdaBinnedPlotter(object):
                 scale_hist = self.hist_bin_chopper.get_lambda_bin_div_bin_width(self.unfolder.scale_uncert_name, **hbc_args)
                 scale_col = self.plot_colours['scale_colour']
                 scale_style = dict(line_color=scale_col, line_width=self.line_width, line_style=2,
-                                   marker_color=scale_col, marker_style=20, marker_size=0,
+                                   marker_color=scale_col, marker_style=cu.Marker.get('circle'), marker_size=0,
                                    fill_style=0, fill_color=15)
                 entries.extend([
                     Contribution(_convert_error_bars_to_error_ratio_hist(scale_hist),
@@ -2540,7 +2540,7 @@ class GenLambdaBinnedPlotter(object):
                 pdf_hist = self.hist_bin_chopper.get_lambda_bin_div_bin_width(self.unfolder.pdf_uncert_name, **hbc_args)
                 pdf_col = self.plot_colours['pdf_colour']
                 pdf_style = dict(line_color=pdf_col, line_width=self.line_width, line_style=6,
-                                 marker_color=pdf_col, marker_style=20, marker_size=0,
+                                 marker_color=pdf_col, marker_style=cu.Marker.get('circle'), marker_size=0,
                                  fill_style=0, fill_color=15)
                 entries.extend([
                     Contribution(_convert_error_bars_to_error_ratio_hist(pdf_hist),
@@ -2554,7 +2554,7 @@ class GenLambdaBinnedPlotter(object):
 
             rsp_col = self.plot_colours['rsp_colour']
             rsp_style = dict(line_color=rsp_col, line_width=self.line_width, line_style=3,
-                             marker_color=rsp_col, marker_style=20, marker_size=0,
+                             marker_color=rsp_col, marker_style=cu.Marker.get('circle'), marker_size=0,
                              fill_style=0, fill_color=rsp_col)
             entries.extend([
                 # RESPONSE UNCERT
@@ -2629,7 +2629,7 @@ class GenLambdaBinnedPlotter(object):
             entries.append(Contribution(input_hist_bin,
                              label="Data (bg-subtracted)",
                              line_color=self.plot_colours['reco_data_colour'], line_width=self.line_width,
-                             marker_color=self.plot_colours['reco_data_colour'], marker_style=20, marker_size=0.75,
+                             marker_color=self.plot_colours['reco_data_colour'], marker_style=cu.Marker.get('circle'), marker_size=0.75,
                              subplot=None if alt_detector else mc_hist_bin)
             )
             if not self.check_entries(entries, "plot_detector_unnormalised %d" % (ibin)):
@@ -2712,7 +2712,7 @@ class RecoPtBinnedPlotter(object):
     def plot_detector_normalised(self, alt_detector=None):
         data_total_errors_style = dict(label="Data",
                                        line_color=self.plot_colours['reco_data_colour'], line_width=self.line_width, line_style=1,
-                                       marker_color=self.plot_colours['reco_data_colour'], marker_style=20, marker_size=0.75)
+                                       marker_color=self.plot_colours['reco_data_colour'], marker_style=cu.Marker.get('circle'), marker_size=0.75)
 
         mc_style = dict( label=self.region['mc_label'],
                          line_color=self.plot_colours['reco_mc_colour'], line_width=self.line_width,
@@ -2821,7 +2821,7 @@ class RecoPtBinnedPlotter(object):
     def plot_detector_normalised_bg_subtracted(self, alt_detector=None):
         data_total_errors_style = dict(label="Data (bg-subtracted)",
                                        line_color=self.plot_colours['reco_data_colour'], line_width=self.line_width, line_style=1,
-                                       marker_color=self.plot_colours['reco_data_colour'], marker_style=20, marker_size=0.75)
+                                       marker_color=self.plot_colours['reco_data_colour'], marker_style=cu.Marker.get('circle'), marker_size=0.75)
 
         mc_style = dict( label="%s (bg-subtracted)" % self.region['mc_label'],
                          line_color=self.plot_colours['reco_mc_colour'], line_width=self.line_width,
@@ -2924,11 +2924,11 @@ class RecoPtBinnedPlotter(object):
                 Contribution(input_hist_bin,
                              label="Unfolding input (bg-subtracted)",
                              line_color=self.plot_colours['reco_unfolding_input_colour'], line_width=self.line_width,
-                             marker_color=self.plot_colours['reco_unfolding_input_colour'], marker_style=20, marker_size=0),
+                             marker_color=self.plot_colours['reco_unfolding_input_colour'], marker_style=cu.Marker.get('circle'), marker_size=0),
                 Contribution(folded_unfolded_hist_bin,
                              label="Folded unfolded",
                              line_color=self.plot_colours['reco_folded_unfolded_colour'], line_width=self.line_width,
-                             marker_color=self.plot_colours['reco_folded_unfolded_colour'], marker_style=20, marker_size=0.75,
+                             marker_color=self.plot_colours['reco_folded_unfolded_colour'], marker_style=cu.Marker.get('circle'), marker_size=0.75,
                              subplot=input_hist_bin),
             ]
             if not self.check_entries(entries, "plot_folded_unfolded_normalised %d" % (ibin)):
@@ -2956,16 +2956,16 @@ class RecoPtBinnedPlotter(object):
                 Contribution(mc_reco_hist_bin,
                              label="MC (reco, bg-subtracted)",
                              line_color=self.plot_colours['reco_mc_colour'], line_width=self.line_width,
-                             marker_color=self.plot_colours['reco_mc_colour'], marker_style=20, marker_size=0),
+                             marker_color=self.plot_colours['reco_mc_colour'], marker_style=cu.Marker.get('circle'), marker_size=0),
                 Contribution(input_hist_bin,
                              label="Unfolding input (bg-subtracted)",
                              line_color=self.plot_colours['reco_unfolding_input_colour'], line_width=self.line_width,
-                             marker_color=self.plot_colours['reco_unfolding_input_colour'], marker_style=20, marker_size=0,
+                             marker_color=self.plot_colours['reco_unfolding_input_colour'], marker_style=cu.Marker.get('circle'), marker_size=0,
                              subplot=mc_reco_hist_bin),
                 Contribution(folded_unfolded_hist_bin,
                              label="Folded unfolded",
                              line_color=self.plot_colours['reco_folded_unfolded_colour'], line_width=self.line_width,
-                             marker_color=self.plot_colours['reco_folded_unfolded_colour'],marker_style=20, marker_size=0.75,
+                             marker_color=self.plot_colours['reco_folded_unfolded_colour'],marker_style=cu.Marker.get('circle'), marker_size=0.75,
                              subplot=mc_reco_hist_bin),
             ]
             if not self.check_entries(entries, "plot_folded_unfolded_normalised %d" % (ibin)):
@@ -2992,11 +2992,11 @@ class RecoPtBinnedPlotter(object):
                 Contribution(mc_reco_hist_bin,
                              label="MC (reco, bg-subtracted)",
                              line_color=self.plot_colours['reco_mc_colour'], line_width=self.line_width,
-                             marker_color=self.plot_colours['reco_mc_colour'], marker_style=20, marker_size=0),
+                             marker_color=self.plot_colours['reco_mc_colour'], marker_style=cu.Marker.get('circle'), marker_size=0),
                 Contribution(folded_mc_truth_hist_bin,
                              label="Folded gen",
                              line_color=self.plot_colours['reco_folded_mc_truth_colour'], line_width=self.line_width,
-                             marker_color=self.plot_colours['reco_folded_mc_truth_colour'], marker_style=20, marker_size=0.75,
+                             marker_color=self.plot_colours['reco_folded_mc_truth_colour'], marker_style=cu.Marker.get('circle'), marker_size=0.75,
                              subplot=mc_reco_hist_bin),
             ]
             if not self.check_entries(entries, "plot_folded_gen_normalised %d" % (ibin)):
@@ -3022,7 +3022,7 @@ class RecoPtBinnedPlotter(object):
                 Contribution(mc_reco_hist_bin,
                              label="MC (reco, bg-subtracted)",
                              line_color=self.plot_colours['reco_mc_colour'], line_width=self.line_width,
-                             marker_color=self.plot_colours['reco_mc_colour'], marker_style=20, marker_size=0),
+                             marker_color=self.plot_colours['reco_mc_colour'], marker_style=cu.Marker.get('circle'), marker_size=0),
             ]
             # add model variations
             for model_dict in self.region['model_systematics']:
@@ -3072,7 +3072,7 @@ class RecoPtBinnedPlotter(object):
                 Contribution(mc_reco_hist_bin,
                              label="MC (reco, bg-subtracted)",
                              line_color=self.plot_colours['reco_mc_colour'], line_width=self.line_width,
-                             marker_color=self.plot_colours['reco_mc_colour'], marker_style=20, marker_size=0),
+                             marker_color=self.plot_colours['reco_mc_colour'], marker_style=cu.Marker.get('circle'), marker_size=0),
             ]
             # add model variations
             for model_dict in self.region['model_systematics']:
@@ -3122,7 +3122,7 @@ class RecoPtBinnedPlotter(object):
                 Contribution(mc_reco_hist_bin,
                              label="MC (reco, bg-subtracted)",
                              line_color=self.plot_colours['reco_mc_colour'], line_width=self.line_width,
-                             marker_color=self.plot_colours['reco_mc_colour'], marker_style=20, marker_size=0),
+                             marker_color=self.plot_colours['reco_mc_colour'], marker_style=cu.Marker.get('circle'), marker_size=0),
             ]
             # add PDF variations
             for pdf_dict in self.region['pdf_systematics']:
@@ -3172,7 +3172,7 @@ class RecoPtBinnedPlotter(object):
                 Contribution(mc_reco_hist_bin,
                              label="MC (reco, bg-subtracted)",
                              line_color=self.plot_colours['reco_mc_colour'], line_width=self.line_width,
-                             marker_color=self.plot_colours['reco_mc_colour'], marker_style=20, marker_size=0),
+                             marker_color=self.plot_colours['reco_mc_colour'], marker_style=cu.Marker.get('circle'), marker_size=0),
             ]
             # add PDF variations
             for pdf_dict in self.region['pdf_systematics']:
@@ -3762,7 +3762,7 @@ class BigNormalised1DPlotter(object):
         return dict(
             label="Unfolded %s %s(%s response matrix)" % (src_type, tau_str, self.setup.region['mc_label']),
             line_color=PLOT_COLOURS['unfolded_stat_colour'], line_width=self.line_width, line_style=1,
-            marker_color=PLOT_COLOURS['unfolded_stat_colour'], marker_style=20, marker_size=0
+            marker_color=PLOT_COLOURS['unfolded_stat_colour'], marker_style=cu.Marker.get('circle'), marker_size=0
         )
 
     def get_alt_mc_truth_kwargs(self):
@@ -3850,7 +3850,7 @@ class BigNormalised1DPlotter(object):
             Contribution(self.get_big_1d("input_hist_bg_subtracted", 'detector'),
                          label="Data bg-subtracted [detector-level]",
                          line_color=ROOT.kBlack, line_width=0,
-                         marker_color=ROOT.kBlack, marker_size=0.6, marker_style=20,
+                         marker_color=ROOT.kBlack, marker_size=0.6, marker_style=cu.Marker.get('circle'),
                          normalise_hist=False, subplot=self.get_big_1d("hist_mc_reco_bg_subtracted", 'detector'),
                          subplot_line_width=1),
         )
