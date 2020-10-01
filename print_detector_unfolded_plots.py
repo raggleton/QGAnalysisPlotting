@@ -44,6 +44,12 @@ ROOT.gROOT.SetBatch(1)
 ROOT.TH1.SetDefaultSumw2()
 
 
+# Define own linestyle for smaller plots
+# linestyle 2 (dashed) has too big dashes
+ROOT.gStyle.SetLineStyleString(22, "8 6")
+ROOT.gStyle.SetLineStyleString(23, "5 10")
+
+
 def scale_ematrix_by_bin_widths(ematrix, widths):
     this_widths = widths.reshape(len(widths), 1)
     return ematrix * this_widths * this_widths.T
@@ -107,6 +113,7 @@ class DijetZPJGenPtBinnedPlotter(object):
             zpj_colour=ROOT.kBlue
         )
         self.line_width = 2
+        self.line_style_detector = 22
 
 
     @staticmethod
@@ -149,7 +156,7 @@ class DijetZPJGenPtBinnedPlotter(object):
             # kerning necessary as it puts massive space around #pm
             # but the first #kern doesn't affect the space after #pm as much (?!),
             # so I have to add another one with harder kerning
-            mean_template = 'Mean = {:.2g}#kern[-0.2dx]{{ #pm}}#kern[-0.5dx]{{ }}{:.1g}'
+            mean_template = 'Mean = {:.2f}#kern[-0.2dx]{{ #pm}}#kern[-0.5dx]{{ }}{:.1g}'
             if do_dijet:
                 # get detector-level data
                 detector_hist = self.dijet_hbc.get_pt_bin_normed_div_bin_width('input_hist_gen_binning_bg_subtracted', **hbc_args)
@@ -185,7 +192,7 @@ class DijetZPJGenPtBinnedPlotter(object):
                                             label='Detector-level\n%s' % (mean_template.format(detector_mean, detector_mean_err)),
                                             line_color=self.plot_colours['dijet_colour'],
                                             line_width=self.line_width,
-                                            line_style=2,
+                                            line_style=self.line_style_detector,
                                             marker_color=self.plot_colours['dijet_colour'],
                                             marker_style=cu.Marker.get('circle', filled=False),
                                             marker_size=0.75))
@@ -230,7 +237,7 @@ class DijetZPJGenPtBinnedPlotter(object):
                                             label='Detector-level\n%s' % (mean_template.format(detector_mean, detector_mean_err)),
                                             line_color=self.plot_colours['zpj_colour'],
                                             line_width=self.line_width,
-                                            line_style=2,
+                                            line_style=self.line_style_detector,
                                             marker_color=self.plot_colours['zpj_colour'],
                                             marker_style=cu.Marker.get('square', filled=False),
                                             marker_size=0.75))
@@ -254,6 +261,7 @@ class DijetZPJGenPtBinnedPlotter(object):
                         has_data=self.has_data,
                         ylim=[0, None],
                         )
+            plot.default_canvas_size = (600, 600)
             plot.left_margin = 0.2
             plot.left_title_offset_fudge_factor = 8
             plot.y_padding_max_linear = 1.8
@@ -271,14 +279,14 @@ class DijetZPJGenPtBinnedPlotter(object):
             dummy_gr = ROOT.TGraphErrors(1, array('d', [1]), array('d', [1]), array('d', [1]), array('d', [1]))
             dummies = []  # to stop garbage collection
             label_height = 0.03
-            legend_height = 0.13
-            legend_x1 = 0.52
-            legend_x2 = 0.9
+            legend_height = 0.17
+            legend_x1 = 0.58
+            legend_x2 = 0.85
             label_left_offset = 0.01
             label_text_size = 0.037
             label_top = 0.85
             legend_text_size = 0.032
-            inter_region_offset = 0.02
+            inter_region_offset = 0.025
             if do_dijet:
                 dijet_legend = plot.legend.Clone()
                 dijet_legend.SetX1(legend_x1)
