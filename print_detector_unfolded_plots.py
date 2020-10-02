@@ -149,6 +149,40 @@ class DijetZPJGenPtBinnedPlotter(object):
                 ))
         return title
 
+    @staticmethod
+    def get_uncorrelated_mean_err(hist, is_density=True):
+        contents, errors = cu.th1_to_ndarray(hist)
+        centers = cu.get_th1_bin_centers(hist)
+        if is_density:
+            # need to multiply by widths, since the original hist has bin contents divided by width
+            widths = cu.get_th1_bin_widths(hist)
+            bin_areas = contents*widths
+            bin_errors = errors*widths
+        else:
+            bin_areas = contents
+            bin_errors = errors
+        # convert to uncertainty arrays
+        areas, centers = metrics.hist_values_to_uarray(bin_areas=bin_areas, bin_centers=centers, bin_errors=bin_errors)
+        mean_u = metrics.calc_mean_ucert(areas, centers)
+        return mean_u.nominal_value, mean_u.std_dev
+
+    @staticmethod
+    def get_correlated_mean_err(hist, ematrix, is_density=True):
+        contents, _ = cu.th1_to_ndarray(hist)
+        contents = contents.reshape(-1)  # necessary for jax to avoid shape discrepancy
+        centers = cu.get_th1_bin_centers(hist)
+        cov_matrix, _ = cu.th2_to_ndarray(ematrix)
+        if is_density:
+            widths = cu.get_th1_bin_widths(hist)
+            bin_areas = contents*widths
+            # need to scale ematrix by bin areas
+            cov_matrix = scale_ematrix_by_bin_widths(cov_matrix, widths)
+        else:
+            bin_areas = contents
+        mean = float(metrics.calc_mean_jax(bin_areas, centers))
+        mean_err = float(metrics.calc_mean_cov_matrix_jax(bin_areas, centers, cov_matrix))
+        return mean, mean_err
+
     def plot_detector_unfolded(self, do_dijet=True, do_zpj=True):
         for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
             hbc_args = dict(ind=ibin, binning_scheme='generator')
@@ -160,77 +194,39 @@ class DijetZPJGenPtBinnedPlotter(object):
             if do_dijet:
                 # get detector-level data
                 detector_hist = self.dijet_hbc.get_pt_bin_normed_div_bin_width('input_hist_gen_binning_bg_subtracted', **hbc_args)
-                # Get mean to add to plot
-                contents, errors = cu.th1_to_ndarray(detector_hist)
-                widths = cu.get_th1_bin_widths(detector_hist)
-                centers = cu.get_th1_bin_centers(detector_hist)
-                # need to multiply by widths, since the original hist has bin contents divided by width
-                bin_areas = contents*widths
-                # print("Detector bin areas:", bin_areas)
-                # print("Detector bin areas * centers:", bin_areas * centers)
-                areas, centers = metrics.hist_values_to_uarray(bin_areas=bin_areas, bin_centers=centers, bin_errors=errors*widths)
-                mean_u = metrics.calc_mean_ucert(areas, centers)
-                detector_mean, detector_mean_err = mean_u.nominal_value, mean_u.std_dev
+                detector_mean, detector_mean_err = self.get_uncorrelated_mean_err(detector_hist, is_density=True)
 
                 # get unfolded data
                 unfolded_hist = self.dijet_hbc.get_pt_bin_normed_div_bin_width("unfolded", **hbc_args)
-                contents, _ = cu.th1_to_ndarray(unfolded_hist)
-                contents = contents.reshape(-1)  # necessary for jax to avoid shape discrepancy
-                centers = cu.get_th1_bin_centers(unfolded_hist)
-                bin_areas = contents*widths
-                # print("Unfolded bin areas:", bin_areas)
-                # print("Unfolded bin areas * centers:", bin_areas * centers)
-
                 cov_matrix = self.dijet_hbc.get_pt_bin_normed_div_bin_width(self.dijet_region['unfolder'].total_ematrix_name, **hbc_args)
-                unfolded_ematrix, _ = cu.th2_to_ndarray(cov_matrix)
-                # need to scale ematrix by bin areas
-                unfolded_ematrix = scale_ematrix_by_bin_widths(unfolded_ematrix, widths)
-                unfolded_mean = float(metrics.calc_mean_jax(bin_areas, centers))
-                unfolded_mean_err = float(metrics.calc_mean_cov_matrix_jax(bin_areas, centers, unfolded_ematrix))
+                unfolded_mean, unfolded_mean_err = self.get_correlated_mean_err(unfolded_hist, cov_matrix, is_density=True)
 
                 dijet_entries.append(Contribution(detector_hist,
-                                            label='Detector-level\n%s' % (mean_template.format(detector_mean, detector_mean_err)),
-                                            line_color=self.plot_colours['dijet_colour'],
-                                            line_width=self.line_width,
-                                            line_style=self.line_style_detector,
-                                            marker_color=self.plot_colours['dijet_colour'],
-                                            marker_style=cu.Marker.get('circle', filled=False),
-                                            marker_size=0.75))
+                                                  label='Detector-level\n%s' % (mean_template.format(detector_mean, detector_mean_err)),
+                                                  line_color=self.plot_colours['dijet_colour'],
+                                                  line_width=self.line_width,
+                                                  line_style=self.line_style_detector,
+                                                  marker_color=self.plot_colours['dijet_colour'],
+                                                  marker_style=cu.Marker.get('circle', filled=False),
+                                                  marker_size=0.75))
                 dijet_entries.append(Contribution(unfolded_hist,
-                                            label='Particle-level\n%s' % (mean_template.format(unfolded_mean, unfolded_mean_err)),
-                                            line_color=self.plot_colours['dijet_colour'],
-                                            line_width=self.line_width,
-                                            line_style=1,
-                                            marker_color=self.plot_colours['dijet_colour'],
-                                            marker_style=cu.Marker.get('circle', filled=True),
-                                            marker_size=0.75))
+                                                  label='Particle-level\n%s' % (mean_template.format(unfolded_mean, unfolded_mean_err)),
+                                                  line_color=self.plot_colours['dijet_colour'],
+                                                  line_width=self.line_width,
+                                                  line_style=1,
+                                                  marker_color=self.plot_colours['dijet_colour'],
+                                                  marker_style=cu.Marker.get('circle', filled=True),
+                                                  marker_size=0.75))
             zpj_entries = []
             if do_zpj:
                 # get detector-level data
                 detector_hist = self.zpj_hbc.get_pt_bin_normed_div_bin_width('input_hist_gen_binning_bg_subtracted', **hbc_args)
-                # Get mean to add to plot
-                contents, errors = cu.th1_to_ndarray(detector_hist)
-                widths = cu.get_th1_bin_widths(detector_hist)
-                centers = cu.get_th1_bin_centers(detector_hist)
-                # need to multiply by widths, since the original hist has bin contents divided by width
-                bin_areas = contents*widths
-                areas, centers = metrics.hist_values_to_uarray(bin_areas=contents*widths, bin_centers=centers, bin_errors=errors*widths)
-                mean_u = metrics.calc_mean_ucert(areas, centers)
-                detector_mean, detector_mean_err = mean_u.nominal_value, mean_u.std_dev
+                detector_mean, detector_mean_err = self.get_uncorrelated_mean_err(detector_hist, is_density=True)
 
                 # get unfolded data
                 unfolded_hist = self.zpj_hbc.get_pt_bin_normed_div_bin_width("unfolded", **hbc_args)
-                contents, _ = cu.th1_to_ndarray(unfolded_hist)
-                contents = contents.reshape(-1)  # necessary for jax to avoid shape discrepancy
-                centers = cu.get_th1_bin_centers(unfolded_hist)
-                bin_areas = contents*widths
-
                 cov_matrix = self.zpj_hbc.get_pt_bin_normed_div_bin_width(self.zpj_region['unfolder'].total_ematrix_name, **hbc_args)
-                unfolded_ematrix, _ = cu.th2_to_ndarray(cov_matrix)
-                # need to scale ematrix by bin areas
-                unfolded_ematrix = scale_ematrix_by_bin_widths(unfolded_ematrix, widths)
-                unfolded_mean = float(metrics.calc_mean_jax(bin_areas, centers))
-                unfolded_mean_err = float(metrics.calc_mean_cov_matrix_jax(bin_areas, centers, unfolded_ematrix))
+                unfolded_mean, unfolded_mean_err = self.get_correlated_mean_err(unfolded_hist, cov_matrix, is_density=True)
 
 
                 zpj_entries.append(Contribution(detector_hist,
