@@ -285,7 +285,7 @@ def do_all_1D_projection_plots_in_dir(directories,
                     pt_var_str = "p_{T}^{jet}"
                     if bin_by == "ave":
                         pt_var_str = "#LT p_{T}^{jet} #GT"
-                    elif bin_by == "Z":
+                    elif bin_by == "Z" and "_vs_pt_jet" not in obj_name:
                         pt_var_str = "p_{T}^{Z}"
                     s = (("{jet_algo}\n"
                           "{region_label}\n"
