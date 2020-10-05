@@ -34,6 +34,7 @@ import qg_general_plots as qgp
 from unfolding_config import get_dijet_config, get_zpj_config
 import rivet_naming as rn
 import metric_calculators as metrics
+from extract_rivet_summary_stats import get_dataframe_from_yoda_inputs, dataframe_yoda_key, convert_df_types
 
 
 ROOT.gErrorIgnoreLevel = ROOT.kWarning
@@ -1587,110 +1588,12 @@ def unpack_slim_unfolding_root_file_uproot(input_tfile, region_name, angle_name,
     )
 
 
-def normalize_areas(areas, errors):
-    """Normalise the areas & errors such that they integrate to unity
-
-    Parameters
-    ----------
-    areas : np.array
-        Bin areas
-    errors : np.array
-        Bin errors
-    """
-
-    integral = areas.sum()
-    if integral > 0:
-        scale_factor = 1./integral
-        areas *= scale_factor
-        errors *= scale_factor
-
-
-def get_yoda_stats_dict(input_filename, key_label, reference_hist=None):
-    """Summary
-
-    Parameters
-    ----------
-    input_filename : TYPE
-        Description
-    key_label : TYPE
-        Description
-    reference_hist : None, optional
-        Description
-
-    Returns
-    -------
-    TYPE
-        Description
-    """
-    yoda_dict = yoda.read(input_filename)
-    hname = list(yoda_dict.keys())[0]
-    is_dijet = rn.DIJET_PATH in hname
-
-    regions = rn.DIJET_REGIONS if is_dijet else rn.ZPJ_REGIONS
-    pt_bins = rn.PT_BINS_DIJET if is_dijet else rn.PT_BINS_ZPJ
-    path = rn.DIJET_PATH if is_dijet else rn.ZPJ_PATH
-    results_dicts = []
-    print("parsing", input_filename)
-    print("regions:", regions)
-    for jet_radius in rn.JET_RADII:
-        algo_name = "%spuppi" % jet_radius.name.lower()
-        for region in regions:
-            for lambda_var in rn.LAMBDA_VARS:
-                for ibin, pt_bin in enumerate(pt_bins):
-                    yoda_name = rn.get_plot_name(jet_radius, region, lambda_var, pt_bin)
-                    yoda_name = "/%s/%s" % (path, yoda_name)
-                    hist = yoda_dict[yoda_name]
-                    areas, widths, centers, errors = metrics.yoda_hist_to_values(hist)
-                    normalize_areas(areas, errors)
-                    areas, centers = metrics.hist_values_to_uarray(areas, centers, errors)
-                    mean_u = metrics.calc_mean_ucert(areas, centers)
-                    mean, mean_err = mean_u.nominal_value, mean_u.std_dev
-                    rms_u = metrics.calc_rms_ucert(areas, centers)
-                    rms, rms_err = rms_u.nominal_value, rms_u.std_dev
-
-                    # FIXME: need delta calculation, needs reference hist
-                    result_dict = {
-                        'jet_algo': algo_name,
-                        'region': region.name,
-                        'isgroomed': region.is_groomed,
-                        'pt_bin': ibin,
-                        'angle': lambda_var.hist_name,
-
-                        'mean_%s' % key_label: mean,
-                        'mean_err_%s' % key_label: mean_err,
-
-                        'rms_%s' % key_label: rms,
-                        'rms_err_%s' % key_label: rms_err,
-
-                        'delta_%s' % key_label: 0,
-                        'delta_err_%s' % key_label: 0,
-                    }
-                    results_dicts.append(result_dict)
-    return results_dicts
-
-
-def dataframe_yoda_key(title):
-    return title.replace(" ", "_").replace("=", "_").replace(".", "p")
-
-
-def convert_df_types(df):
-    df['jet_algo'] = df['jet_algo'].astype('category')
-    df['isgroomed'] = df['isgroomed'].astype('bool')
-    df['region'] = df['region'].astype('category')
-    df['angle'] = df['angle'].astype('category')
-
-
-def create_yoda_dataframe(yoda_stats_dicts):
-    """Create dataframe entries from list of dictionaries of stats"""
-    df = pd.DataFrame(yoda_stats_dicts)
-    convert_df_types(df)
-    return df
-
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--h5input",
-                        help="Read data from H5 input file (from running extract_unfolding_summary_stats.py)")
+                        help="Read analysis data from H5 input file (from running extract_unfolding_summary_stats.py)")
+    parser.add_argument("--h5inputRivet",
+                        help="Read RIVET data from H5 input file (from running extract_rivet_summary_stats.py)")
     parser.add_argument("--outputDir",
                         default=None,
                         help='Output directory (default is the source dir)')
@@ -1712,17 +1615,13 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # Get input data
-    if not any([args.h5input, args.yodaInputDijet, args.yodaInputZPJ]):
-        raise RuntimeError("Need one of --h5input or --yodaInputDijet or --yodaInputZPJ")
+    if not any([args.h5input, args.h5inputRivet, args.yodaInputDijet, args.yodaInputZPJ]):
+        raise RuntimeError("Need one of --h5input, --h5inputRivet, --yodaInputDijet, or --yodaInputZPJ")
 
     if (len(args.yodaInputDijet) != len(args.yodaLabel)
         and len(args.yodaInputZPJ) != len(args.yodaLabel)):
         raise RuntimeError("Number of --yodaInputDijet/yodaInputZPJ must match number of --yodaLabel")
 
-    # ----------------------------------------------------------------------
-    # Read in data from h5 file
-    # -----------------------------------------------------------------------
-    print("Reading in from data existing HDF5 file...")
     if not args.outputDir:
         if args.h5input:
             args.outputDir = os.path.dirname(os.path.abspath(args.h5input))
@@ -1730,35 +1629,39 @@ if __name__ == "__main__":
             args.outputDir = os.getcwd()
         print("Setting output dir to", args.outputDir)
 
+    # ----------------------------------------------------------------------
+    # Read in data from h5 file
+    # -----------------------------------------------------------------------
+    print("Reading in unfolding data from existing HDF5 file...")
     with pd.HDFStore(args.h5input) as store:
         df = store['df']
     print(df.head())
     print("# entries:", len(df.index))
 
+    if args.h5inputRivet:
+        print("Reading in RIVET data from existing HDF5 file...")
+        with pd.HDFStore(args.h5inputRivet) as store:
+            df_rivet = store['df']
+        print(df_rivet.head())
+        print("# Rivet entries:", len(df_rivet.index))
+        # Figure out YODA entries from column names
+        mean_columns = [c.replace("mean_err_", '') for c in df_rivet.columns if 'mean_err_' in c]
+        print(mean_columns)
+        args.yodaLabel = mean_columns
+        df = pd.merge(df, df_rivet, how='outer')
+
     # -----------------------------------------------------------------------
     # Get stats from YODA files, add to dataframe
     # -----------------------------------------------------------------------
     if len(args.yodaInputDijet) > 0:
-        for yin_dijet, yin_zpj, ylabel in zip(args.yodaInputDijet, args.yodaInputZPJ, args.yodaLabel):
-            yoda_stats_dicts = []
-            # handle dijet first
-            print("Processing", ylabel, yin_dijet)
-            stats_dict_dijet = get_yoda_stats_dict(yin_dijet, key_label=dataframe_yoda_key(ylabel))
-            yoda_stats_dicts.extend(stats_dict_dijet)
-
-            print("Processing", ylabel, yin_zpj)
-            stats_dict_zpj = get_yoda_stats_dict(yin_zpj, key_label=dataframe_yoda_key(ylabel))
-            yoda_stats_dicts.extend(stats_dict_zpj)
-
-            # Convert to dataframe, merge in with main dataframe
-            df_yoda = create_yoda_dataframe(yoda_stats_dicts)
-            df = pd.merge(df, df_yoda, how='outer') #, on=['jet_algo', 'region', 'isgroomed', 'pt_bin', 'angle'])
+        df_rivet = get_dataframe_from_yoda_inputs(zip(args.yodaInputDijet, args.yodaInputZPJ, args.yodaLabel))
+        df = pd.merge(df, df_rivet, how='outer')
 
     convert_df_types(df)
     print(df.columns)
     print(df.head())
     print(df.dtypes)
-    print(len(df.index))
+    print(len(df.index), 'entries in dataframe')
 
     # Filter only regions/algos/angles in the dataframe, since it could have
     # been modified earlier
