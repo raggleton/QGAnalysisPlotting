@@ -114,17 +114,17 @@ def get_dijet_config(source_dir, central=True, groomed=False):
                 "colour": ROOT.kBlue-4,
                 "linestyle": 2,
             },
-            {
-                "label": "Tracking up",
-                "tfile": os.path.join(source_dir_systs, 'track_directionUp', qgc.QCD_FILENAME),
-                "colour": ROOT.kMagenta+3,
-            },
-            {
-                "label": "Tracking down",
-                "tfile": os.path.join(source_dir_systs, 'track_directionDown', qgc.QCD_FILENAME),
-                "colour": ROOT.kMagenta+3,
-                "linestyle": 2,
-            },
+            # {
+            #     "label": "Tracking up",
+            #     "tfile": os.path.join(source_dir_systs, 'track_directionUp', qgc.QCD_FILENAME),
+            #     "colour": ROOT.kMagenta+3,
+            # },
+            # {
+            #     "label": "Tracking down",
+            #     "tfile": os.path.join(source_dir_systs, 'track_directionDown', qgc.QCD_FILENAME),
+            #     "colour": ROOT.kMagenta+3,
+            #     "linestyle": 2,
+            # },
             {
                 "label": "Shower & hadronization",
                 "tfile": input_mc_qcd_herwig_tfile,
@@ -442,17 +442,17 @@ def get_zpj_config(source_dir, groomed=False):
                 "colour": ROOT.kBlue-4,
                 "linestyle": 2,
             },
-            {
-                "label": "Tracking up",
-                "tfile": os.path.join(source_dir_systs, 'track_directionUp', qgc.DY_FILENAME),
-                "colour": ROOT.kMagenta+3,
-            },
-            {
-                "label": "Tracking down",
-                "tfile": os.path.join(source_dir_systs, 'track_directionDown', qgc.DY_FILENAME),
-                "colour": ROOT.kMagenta+3,
-                "linestyle": 2,
-            },
+            # {
+            #     "label": "Tracking up",
+            #     "tfile": os.path.join(source_dir_systs, 'track_directionUp', qgc.DY_FILENAME),
+            #     "colour": ROOT.kMagenta+3,
+            # },
+            # {
+            #     "label": "Tracking down",
+            #     "tfile": os.path.join(source_dir_systs, 'track_directionDown', qgc.DY_FILENAME),
+            #     "colour": ROOT.kMagenta+3,
+            #     "linestyle": 2,
+            # },
             # {
             #     "label": "MG+Herwig++",
             #     "tfile": input_mc_dy_mgherwig_tfile,
