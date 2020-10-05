@@ -1007,7 +1007,7 @@ if __name__ == "__main__":
             unfolder._post_process()
 
             # Check result with numpy
-            unfolder.do_numpy_comparison(output_dir=this_output_dir)
+            # unfolder.do_numpy_comparison(output_dir=this_output_dir)
 
             # ------------------------------------------------------------------
             # CALCULATE JACKKNIFED UNCERTAINTIES
@@ -1513,7 +1513,8 @@ if __name__ == "__main__":
                 reference_unfolder = exp_syst_region['unfolder']
                 ref_unfolded = reference_unfolder.unfolded
 
-                for exp_syst in reference_unfolder.exp_systs:
+                for exp_syst_dict in exp_syst_region.experimental_systematics:
+                # for exp_syst in reference_unfolder.exp_systs:
                     # For each systematic source, we figure out the
                     # relative shift compared to the original nominal result,
                     # for each normalised distribution (i.e. per pt bin).
@@ -1521,7 +1522,7 @@ if __name__ == "__main__":
                     # Note that this is different to taking the total shift,
                     # calculating its fractional diff, and then then applying it
                     # to the new nominal result?
-
+                    exp_syst = reference_unfolder.get_exp_syst(exp_syst_dict['label'])
                     this_exp_syst = ExpSystematic(label=exp_syst.label,
                                                   syst_map=exp_syst.syst_map,
                                                   # copy the old shift/shifted, although no longer relevant here
@@ -1589,7 +1590,8 @@ if __name__ == "__main__":
                                                       if syst_dict['label'] in reference_unfolder.get_all_exp_syst_labels()]
 
             else:
-                unfolder.setup_normalised_experimental_systs_per_pt_bin()
+                if not args.jacobian:
+                    unfolder.setup_normalised_experimental_systs_per_pt_bin()
 
             # Draw big 1D distributions
             # ------------------------------------------------------------------
@@ -1788,16 +1790,16 @@ if __name__ == "__main__":
                 alt_unfolder_plotter.draw_failed_reco(title=alt_title, **alt_plot_args)
 
                 # Compare with the nominal one
-                ocs = [Contribution(unfolder.get_failed_reco(as_fraction=True), 
+                ocs = [Contribution(unfolder.get_failed_reco(as_fraction=True),
                                     label=region['mc_label'],
                                     line_color=ROOT.kBlack,
                                     subplot=alt_unfolder.get_failed_reco(as_fraction=True)
                                     )]
-                alt_unfolder_plotter.draw_failed_reco(title=alt_title, 
-                                                      output_dir=alt_output_dir, 
+                alt_unfolder_plotter.draw_failed_reco(title=alt_title,
+                                                      output_dir=alt_output_dir,
                                                       other_contributions=ocs,
                                                       append="compare_nominal_"+append)
-                
+
                 # Set what is to be unfolded - same as main unfolder
                 # --------------------------------------------------------------
                 alt_unfolder.set_input(input_hist=unfolder.input_hist,
@@ -2020,7 +2022,8 @@ if __name__ == "__main__":
                     scale_unfolder.do_unfolding(scale_tau)
                     scale_unfolder.get_output(hist_name="scale_%s_unfolded_1d" % (scale_label_no_spaces))
                     scale_unfolder._post_process()
-                    scale_unfolder.setup_normalised_results_per_pt_bin()
+                    if not args.jacobian:
+                        scale_unfolder.setup_normalised_results_per_pt_bin()
 
                     # Plot absolute 1D result
                     scale_title = "%s\n%s region, %s, %s input" % (jet_algo, region['label'], angle_str, scale_label)
@@ -2030,12 +2033,13 @@ if __name__ == "__main__":
                     del scale_dict['response_map']  # save memory
                     scale_dict['unfolder'] = scale_unfolder
 
-                unfolder.create_normalised_scale_syst_uncertainty_per_pt_bin(region['scale_systematics'])
-                unfolder.create_normalised_scale_syst_ematrices_per_pt_bin()
+                if not args.jacobian:
+                    unfolder.create_normalised_scale_syst_uncertainty_per_pt_bin(region['scale_systematics'])
+                    unfolder.create_normalised_scale_syst_ematrices_per_pt_bin()
 
-                unfolder.create_scale_syst_uncertainty_per_pt_bin(region['scale_systematics'])
+                    unfolder.create_scale_syst_uncertainty_per_pt_bin(region['scale_systematics'])
 
-                unfolder.create_scale_syst_uncertainty_per_lambda_bin(region['scale_systematics'])
+                    unfolder.create_scale_syst_uncertainty_per_lambda_bin(region['scale_systematics'])
 
             # ------------------------------------------------------------------
             # LOAD SCALE VARIATIONS FROM ANOTHER FILE
@@ -2289,7 +2293,8 @@ if __name__ == "__main__":
                     syst_unfolder.do_unfolding(syst_tau)
                     syst_unfolder.get_output(hist_name="syst_%s_unfolded_1d" % (syst_label_no_spaces))
                     syst_unfolder._post_process()
-                    syst_unfolder.setup_normalised_results_per_pt_bin()
+                    if not args.jacobian:
+                        syst_unfolder.setup_normalised_results_per_pt_bin()
 
                     syst_title = "%s\n%s region, %s, %s input" % (jet_algo, region['label'], angle_str, syst_label)
                     syst_unfolder_plotter.draw_unfolded_1d(title=syst_title, **syst_plot_args)
@@ -2589,7 +2594,8 @@ if __name__ == "__main__":
                     pdf_unfolder.get_output(hist_name="syst_%s_unfolded_1d" % (pdf_label_no_spaces))
                     pdf_unfolder._post_process()
 
-                    pdf_unfolder.setup_normalised_results_per_pt_bin()
+                    if not args.jacobian:
+                        pdf_unfolder.setup_normalised_results_per_pt_bin()
 
                     pdf_title = "%s\n%s region, %s\n%s response matrix" % (jet_algo, region['label'], angle_str, pdf_label)
                     pdf_unfolder_plotter.draw_unfolded_1d(title=pdf_title, **pdf_plot_args)
@@ -2597,12 +2603,13 @@ if __name__ == "__main__":
                     del region['pdf_systematics'][ind]['response_map']  # save memory
                     region['pdf_systematics'][ind]['unfolder'] = pdf_unfolder
 
-                unfolder.create_normalised_pdf_syst_uncertainty_per_pt_bin(region['pdf_systematics'])
-                unfolder.create_normalised_pdf_syst_ematrices_per_pt_bin()
+                if not args.jacobian:
+                    unfolder.create_normalised_pdf_syst_uncertainty_per_pt_bin(region['pdf_systematics'])
+                    unfolder.create_normalised_pdf_syst_ematrices_per_pt_bin()
 
-                unfolder.create_pdf_syst_uncertainty_per_pt_bin(region['pdf_systematics'])
+                    unfolder.create_pdf_syst_uncertainty_per_pt_bin(region['pdf_systematics'])
 
-                unfolder.create_pdf_syst_uncertainty_per_lambda_bin(region['pdf_systematics'])
+                    unfolder.create_pdf_syst_uncertainty_per_lambda_bin(region['pdf_systematics'])
 
             # Load PDF syst from another reference file, and calc fractional
             # uncertainty, apply to this unfolded result
@@ -2641,7 +2648,8 @@ if __name__ == "__main__":
                         pdf_syst.SetBinError(i, rel_err * pdf_syst.GetBinContent(i))
                     unfolder.hist_bin_chopper._cache[key] = pdf_syst
 
-                unfolder.create_normalised_pdf_syst_ematrices_per_pt_bin()
+                if not args.jacobian:
+                    unfolder.create_normalised_pdf_syst_ematrices_per_pt_bin()
 
 
             if len(region['pdf_systematics']) > 0 and MC_INPUT:
@@ -2692,27 +2700,32 @@ if __name__ == "__main__":
             # ------------------------------------------------------------------
             # Finally update absolute/normalised results
             # ------------------------------------------------------------------
-            unfolder.setup_normalised_results_per_pt_bin()
+            if not args.jacobian:
+                unfolder.setup_normalised_results_per_pt_bin()
 
-            unfolder.setup_absolute_results_per_pt_bin()
-            unfolder.setup_absolute_results_per_lambda_bin()
+                unfolder.setup_absolute_results_per_pt_bin()
+                unfolder.setup_absolute_results_per_lambda_bin()
 
-            unfolder.create_normalisation_jacobian_np()
-            unfolder_plotter.draw_jacobian(title="Jacobian", **plot_args)
+            else:
+                unfolder.create_normalisation_jacobian_np()
+                unfolder_plotter.draw_jacobian(title="Jacobian", **plot_args)
 
-            if len(region['scale_systematics']) > 0:
-                unfolder.create_absolute_scale_uncertainty(region['scale_systematics'])
-                unfolder_plotter.draw_error_matrix_scale(title="Scale error matrix", **plot_args)
+                if len(region['scale_systematics']) > 0:
+                    unfolder.create_absolute_scale_uncertainty(region['scale_systematics'])
+                    unfolder_plotter.draw_error_matrix_scale(title="Scale error matrix", **plot_args)
 
-            if len(region['pdf_systematics']) > 0:
-                unfolder.create_absolute_pdf_uncertianty(region['pdf_systematics'])
-                unfolder_plotter.draw_error_matrix_pdf(title="PDF error matrix", **plot_args)
+                if len(region['pdf_systematics']) > 0:
+                    unfolder.create_absolute_pdf_uncertianty(region['pdf_systematics'])
+                    unfolder_plotter.draw_error_matrix_pdf(title="PDF error matrix", **plot_args)
 
-            unfolder.create_absolute_total_uncertainty()
-            unfolder_plotter.draw_error_matrix_total_abs(title="Total absolute error matrix", **plot_args)
-            
-            unfolder.normalise_all_systs()
-            unfolder_plotter.draw_error_matrix_total_norm(title="Total normalised error matrix", **plot_args)
+                unfolder.create_absolute_total_uncertainty()
+                unfolder_plotter.draw_error_matrix_total_abs(title="Total absolute error matrix", **plot_args)
+
+                unfolder.setup_absolute_results()
+                unfolder.normalise_all_systs()
+                unfolder_plotter.draw_error_matrix_total_norm(title="Total normalised error matrix", **plot_args)
+
+                unfolder.setup_normalised_results()
 
             region['unfolder'] = unfolder
 
@@ -2726,7 +2739,7 @@ if __name__ == "__main__":
             print("-"*80)
 
             pickle_filename = os.path.join("%s/unfolding_result.pkl" % (this_output_dir))
-            pickle_region(region, pickle_filename, infos=True, convert_tfile_to_str=True)
+            pickle_region(region, pickle_filename, infos=False, convert_tfile_to_str=True)
             print(">> Saved to pickle file", pickle_filename)
             print("")
 
@@ -2736,23 +2749,23 @@ if __name__ == "__main__":
             unfolder.save_unfolded_binned_hists_to_tfile(this_slim_tdir)
 
             # test the pickle file by un-pickling it
-            print("Testing pickled file...")
-            data = unpickle_region(pickle_filename)
-            print("")
-            print("...unpickled data:")
-            print("    ", data)
-            print("")
-            # print("...data['unfolder'].hist_bin_chopper.objects:")
-            # print("    ", data['unfolder'].hist_bin_chopper.objects)
+            # print("Testing pickled file...")
+            # data = unpickle_region(pickle_filename)
             # print("")
-            print("unpickled region attr sizes:")
-            print("-"*80)
-            cu.print_dict_item_sizes(data)
-            print("-"*80)
-            print("unpickled unfolder attr sizes:")
-            print("-"*80)
-            cu.print_dict_item_sizes(data['unfolder'].__dict__)
-            print("-"*80)
+            # print("...unpickled data:")
+            # print("    ", data)
+            # print("")
+            # # print("...data['unfolder'].hist_bin_chopper.objects:")
+            # # print("    ", data['unfolder'].hist_bin_chopper.objects)
+            # # print("")
+            # print("unpickled region attr sizes:")
+            # print("-"*80)
+            # cu.print_dict_item_sizes(data)
+            # print("-"*80)
+            # print("unpickled unfolder attr sizes:")
+            # print("-"*80)
+            # cu.print_dict_item_sizes(data['unfolder'].__dict__)
+            # print("-"*80)
 
             # ------------------------------------------------------------------
             # PLOT LOTS OF THINGS
@@ -2765,8 +2778,8 @@ if __name__ == "__main__":
                               has_data=not MC_INPUT)
                 hbc = do_binned_plots_per_region_angle(setup,
                                                        do_binned_gen_pt=True,
-                                                       do_binned_gen_lambda=True,
-                                                       do_binned_reco_pt=True)
+                                                       do_binned_gen_lambda=not args.jacobian,
+                                                       do_binned_reco_pt=not args.jacobian)
 
                 do_all_big_normalised_1d_plots_per_region_angle(setup, hbc)
 

@@ -248,8 +248,30 @@ class GenPtBinnedPlotter(object):
         for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
             hbc_args = dict(ind=ibin, binning_scheme='generator')
             mc_gen_hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('hist_truth', **hbc_args)
+            key = self.hist_bin_chopper._generate_key("unfolded_stat_err",
+                                                      ind=ibin,
+                                                      axis='pt',
+                                                      do_norm=True,
+                                                      do_div_bin_width=True,
+                                                      binning_scheme='generator')
+            # print("plot_unfolded_normalised", key)
             unfolded_hist_bin_stat_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded_stat_err', **hbc_args)
-            unfolded_hist_bin_total_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded', **hbc_args)
+            # cu.print_th1_bins(unfolded_hist_bin_stat_errors)
+
+            if 'syst_err_Total' in self.hist_bin_chopper.objects:
+                key = self.hist_bin_chopper._generate_key("syst_err_Total",
+                                                          ind=ibin,
+                                                          axis='pt',
+                                                          do_norm=True,
+                                                          do_div_bin_width=True,
+                                                          binning_scheme='generator')
+
+                print("plot_unfolded_normalised", key)
+                unfolded_hist_bin_total_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('syst_err_Total', **hbc_args)
+            else:
+                # print("plot_unfolded_normalised total")
+                unfolded_hist_bin_total_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded', **hbc_args)
+            # cu.print_th1_bins(unfolded_hist_bin_total_errors)
 
             entries = [
                 Contribution(mc_gen_hist_bin,

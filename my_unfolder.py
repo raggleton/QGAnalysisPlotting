@@ -260,7 +260,12 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         self.hist_bin_chopper = HistBinChopper(generator_binning=self.generator_binning.FindNode("generatordistribution"),
                                                detector_binning=self.detector_binning.FindNode("detectordistribution"))
 
+        self.hist_bin_chopper_uflow = HistBinChopper(generator_binning=self.generator_binning.FindNode("generatordistribution_underflow"),
+                                                     detector_binning=self.detector_binning.FindNode("detectordistribution_underflow"))
+
         # For setting/getting various uncerts from HistBinChopper
+        self.no_uncert_name = "unfolded_no_err"
+
         self.stat_uncert_name = 'unfolded_stat_err'
         self.stat_ematrix_name = "stat_ematrix"
 
@@ -589,6 +594,8 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         print('convert_reco_binned_hist_to_gen_binned: bin(1) low edge:', new_hist.GetBinLowEdge(1))
         # Iterate through all the finer reco bins, and for each determine
         # the corresponding gen bin, and add it to it from hist
+        #
+        # TODO: account for overflow in each axis?
         for ibin_var, (var_low, var_high) in enumerate(zip(self.variable_bin_edges_reco[:-1], self.variable_bin_edges_reco[1:])):
             for ibin_pt, (pt_low, pt_high) in enumerate(zip(self.pt_bin_edges_underflow_reco[:-1], self.pt_bin_edges_underflow_reco[1:])):
                 gen_bin = self.generator_distribution_underflow.GetGlobalBinNumber(var_low*1.000001, pt_low*1.0000001)
@@ -1123,6 +1130,15 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             self.unfolded_rsp_err = self.get_output().Clone("unfolded_rsp_err")
             self.update_hist_bin_error(h_orig=error_stat_response, h_to_be_updated=self.unfolded_rsp_err)
         return self.unfolded_rsp_err
+
+    def get_unfolded_with_ematrix_total(self):
+        """Create unfolded with error bars from total uncertainties"""
+        return self.get_syst_error_hist('Total')
+        if getattr(self, 'unfolded_total_err', None) is None:
+            error_stat_response = self.make_hist_from_diagonal_errors(self.get_ematrix_total_absolute(), do_sqrt=True) # note that bin contents need to be correct, otherwise won't normalise correctly
+            self.unfolded_total_err = self.get_output().Clone("unfolded_total_err")
+            self.update_hist_bin_error(h_orig=error_stat_response, h_to_be_updated=self.unfolded_total_err)
+        return self.unfolded_total_err
 
     def get_bias_vector(self):
         if getattr(self, "bias_vector", None) is None:
@@ -2654,10 +2670,15 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
                     for var_ind_y in range(0, nbins_variable):
                         bin_ind = (nbins_variable * pt_ind) + var_ind_y
                         # print(bin_ind)
+                        bin_content = h.GetBinContent(bin_ind + 1)
+                        if bin_content < 0:
+                            # protection incase of -ve bins
+                            print("Warning: jacobian had -ve bin content (%f) for index %d" % (bin_content, bin_ind+1))
+                            bin_content = 0
                         if var_ind_x == var_ind_y:
-                            val = (N - h.GetBinContent(bin_ind + 1)) / N**2
+                            val = (N - bin_content) / N**2
                         else:
-                            val = -h.GetBinContent(bin_ind + 1) / N**2
+                            val = -bin_content / N**2
                         J[start_y + var_ind_y][start_x + var_ind_x] = val
                         # print("J[%d][%d] =" % (start_y+var_ind_y, start_x+var_ind_x), val)
 
@@ -2811,6 +2832,148 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             self.exp_systs_normed.append(norm_exp_syst)
         self.exp_systs.extend(new_systs)
         print([e.label for e in self.exp_systs])
+
+    def setup_absolute_results(self):
+        """Load up HistBinChopper to with absolute results"""
+        print("setup_absolute_results()")
+        self.hist_bin_chopper.add_obj(self.no_uncert_name, self.get_unfolded_with_no_errors())
+
+        # stat unc
+        self.hist_bin_chopper.add_obj(self.stat_uncert_name, self.get_unfolded_with_ematrix_stat())
+
+        # rsp unc
+        self.hist_bin_chopper.add_obj(self.rsp_uncert_name, self.get_unfolded_with_ematrix_response())
+
+        # all the exp syst ones, including scale, pdf, total
+        for exp_syst in self.exp_systs:
+            label = exp_syst.label
+            print("... exp_syst:", label)
+            if "_Norm" in label:
+                continue
+            # with shift as error bar
+            self.hist_bin_chopper.add_obj(exp_syst.syst_error_bar_label, self.get_syst_error_hist(label))
+            # shifted
+            self.hist_bin_chopper.add_obj(exp_syst.syst_shifted_label, self.get_syst_shifted_hist(label, self.get_unfolded_with_no_errors()))
+            if label == "Total":
+                print("get_pt_bin_normed_div_bin_width(%s):"% exp_syst.syst_error_bar_label)
+                h = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width(exp_syst.syst_error_bar_label, ind=0, binning_scheme='generator')
+                # cu.print_th1_bins(h)
+                h_abs = self.hist_bin_chopper.get_pt_bin(exp_syst.syst_error_bar_label, ind=0, binning_scheme='generator')
+                # cu.print_th1_bins(h_abs)
+                N = h_abs.Integral()
+                # print("N:", N)
+                # print("Jacobian diagonals vs 1/N:")
+                # for ix in range(1, h_abs.GetNbinsX()+1):
+                #     print(ix, (N-h_abs.GetBinContent(ix))/(N**2), 1./N)
+
+    def setup_normalised_results(self):
+        # For each pt bin, we get the nominal result
+        # Then we add / set error bar using the already-calculated normalised shifts
+        print("setup_normalised_results()")
+
+        # need to create normalised stat and rsp uncert, and add to HBC
+        ematrix_stat_norm = self.normalise_ematrix(self.get_ematrix_stat())
+        hist_stat_norm_shift = self.make_hist_from_diagonal_errors(ematrix_stat_norm, do_sqrt=True, set_errors=False)
+        hist_stat_norm_err = self.make_hist_from_diagonal_errors(ematrix_stat_norm, do_sqrt=True, set_errors=True)
+        self.hist_bin_chopper.add_obj('norm_stat_shift', hist_stat_norm_shift) # already normed!!
+        self.hist_bin_chopper.add_obj('norm_stat_err', hist_stat_norm_err)
+
+        ematrix_rsp_norm = self.normalise_ematrix(self.get_ematrix_stat_response())
+        hist_rsp_norm_shift = self.make_hist_from_diagonal_errors(ematrix_rsp_norm, do_sqrt=True, set_errors=False)
+        hist_rsp_norm_err = self.make_hist_from_diagonal_errors(ematrix_rsp_norm, do_sqrt=True, set_errors=True)
+        self.hist_bin_chopper.add_obj('norm_rsp_shift', hist_rsp_norm_shift)
+        self.hist_bin_chopper.add_obj('norm_rsp_err', hist_rsp_norm_err)
+
+        # Add objects, will replace cache ourselves
+        for exp_syst in self.exp_systs_normed:
+            label = exp_syst.label
+            unnorm = lambda x : x.replace("_Norm", "")
+            unnorm = lambda x : x  # whyy
+            print("setup_normalised_results(): Adding", unnorm(exp_syst.syst_error_bar_label))
+            self.hist_bin_chopper.add_obj(unnorm(exp_syst.syst_error_bar_label), self.get_syst_error_hist(label))
+            print("setup_normalised_results(): Adding", unnorm(exp_syst.syst_shifted_label))
+            self.hist_bin_chopper.add_obj(unnorm(exp_syst.syst_shifted_label), self.get_syst_shifted_hist(label, self.get_unfolded_with_no_errors()))
+            # add shift?
+
+        for ibin in range(0, self.nbins_pt_gen):
+            # iterate over each generator pt bin, and for each create normalised
+            # hists and fill them
+            # Also store the error matrix for each pt bin
+
+            hbc_args = dict(ind=ibin, binning_scheme='generator')
+
+            # functions to create key for storing the normed results
+            key_gen = partial(self.hist_bin_chopper._generate_key,
+                              ind=ibin,
+                              axis='pt',
+                              do_norm=True,
+                              do_div_bin_width=False,
+                              binning_scheme='generator')
+            key_gen_div_width = partial(self.hist_bin_chopper._generate_key,
+                                        ind=ibin,
+                                        axis='pt',
+                                        do_norm=True,
+                                        do_div_bin_width=True,
+                                        binning_scheme='generator')
+
+            # get normalised unfolded hist for this bin
+            nominal = self.hist_bin_chopper.get_pt_bin_normed(self.no_uncert_name, **hbc_args)
+
+            # unfolded bin contents + stat unc error bars
+            stat_err = self.hist_bin_chopper.get_pt_bin("norm_stat_err", **hbc_args) # NOT get_normed - already normed!
+            stat_err_hist = nominal.Clone(cu.get_unique_str())
+            self.update_hist_bin_error(h_to_be_updated=stat_err_hist, h_orig=stat_err)
+            self.hist_bin_chopper._cache[key_gen(self.stat_uncert_name)] = stat_err_hist
+            # same but div bin width
+            stat_err_hist_div_bin_width = qgp.hist_divide_bin_width(stat_err_hist)
+            print("Updating", key_gen_div_width(self.stat_uncert_name))
+            self.hist_bin_chopper._cache[key_gen_div_width(self.stat_uncert_name)] = stat_err_hist_div_bin_width
+            # cu.print_th1_bins(stat_err_hist_div_bin_width)
+
+            # unfolded bin contents + rsp unc error bars
+            rsp_err = self.hist_bin_chopper.get_pt_bin("norm_rsp_err", **hbc_args) # NOT get_normed - already normed!
+            rsp_err_hist = nominal.Clone(cu.get_unique_str())
+            self.update_hist_bin_error(h_to_be_updated=rsp_err_hist, h_orig=rsp_err)
+            self.hist_bin_chopper._cache[key_gen(self.rsp_uncert_name)] = rsp_err_hist
+            # same but div bin width
+            rsp_err_hist_div_bin_width = qgp.hist_divide_bin_width(rsp_err_hist)
+            print("Updating", key_gen_div_width(self.rsp_uncert_name))
+            self.hist_bin_chopper._cache[key_gen_div_width(self.rsp_uncert_name)] = rsp_err_hist_div_bin_width
+
+            # all the exp syst ones, including scale, pdf, total
+            for exp_syst in self.exp_systs:
+                label = exp_syst.label
+                if "_Norm" not in label:
+                    continue
+
+                # only deal with Normed systs, but for the key generation
+                # we need the un-normed name:
+                unnorm = lambda x : x.replace("_Norm", "")
+
+                # combine normalised unfolded hist contents with already normalised errors
+                this_err_hist = nominal.Clone(cu.get_unique_str())
+                this_err = self.hist_bin_chopper.get_pt_bin(exp_syst.syst_error_bar_label, **hbc_args)
+                self.update_hist_bin_error(h_to_be_updated=this_err_hist, h_orig=this_err)
+                self.hist_bin_chopper._cache[key_gen(unnorm(exp_syst.syst_error_bar_label))] = this_err_hist
+
+                # same but divide by bin width
+                this_err_hist_div_bin_width = qgp.hist_divide_bin_width(this_err_hist)
+                self.hist_bin_chopper._cache[key_gen_div_width(unnorm(exp_syst.syst_error_bar_label))] = this_err_hist_div_bin_width
+
+                # if "Total" in label:
+                    # print("updating", key_gen_div_width(unnorm(exp_syst.syst_error_bar_label)))
+                    # cu.print_th1_bins(this_err_hist_div_bin_width)
+
+                # do shifted version
+                this_shifted_hist = nominal.Clone(cu.get_unique_str())
+                this_shifted = self.hist_bin_chopper.get_pt_bin(exp_syst.syst_error_bar_label, **hbc_args)
+                self.update_hist_bin_error(h_to_be_updated=this_shifted_hist, h_orig=this_shifted)
+                self.hist_bin_chopper._cache[key_gen(unnorm(exp_syst.syst_shifted_label))] = this_shifted_hist
+
+                # same but divide by bin width
+                this_shifted_hist_div_bin_width = qgp.hist_divide_bin_width(this_shifted_hist)
+                self.hist_bin_chopper._cache[key_gen_div_width(unnorm(exp_syst.syst_shifted_label))] = this_err_hist_div_bin_width
+
 
     # METHODS FOR ABSOLUTE PER PT BIN RESULTS
     # --------------------------------------------------------------------------

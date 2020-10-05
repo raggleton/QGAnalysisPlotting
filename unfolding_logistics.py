@@ -61,6 +61,11 @@ def get_unfolding_argparser(description='', parser=None):
                         choices=list(AREA_OPT_DICT.keys()),  # can't use type to convert with choices specified
                         help='Area constraint.')
 
+    parser.add_argument("--jacobian",
+                        action='store_true',
+                        default=False,
+                        help="Use jacobian method to do errors")
+
     # SIGNAL REGION OPTIONS
     # --------------------------------------------------------------------------
     region_group = parser.add_argument_group('Region selection')
@@ -264,7 +269,7 @@ def sanitise_args(args):
         print("Warning: will use experimental systs from --doExperimentalSystsFromFile option only, "
               "ignoring --doExperimentalSysts and --doExperimentalSystsOnlyHerwig")
 
-    if ((args.doModelSystsOnlyScale or args.doModelSystsOnlyHerwig or args.doModelSysts or args.doModelSystsNotScale) 
+    if ((args.doModelSystsOnlyScale or args.doModelSystsOnlyHerwig or args.doModelSysts or args.doModelSystsNotScale)
         and args.doModelSystsFromFile):
         args.doModelSysts = False
         args.doModelSystsOnlyScale = False
@@ -323,21 +328,21 @@ def get_unfolding_output_dir(args):
 
     if args.doScaleSysts:
         append += "_scaleSyst"
-    
+
     elif args.doScaleSystsFromFile:
         append += "_scaleSystFromFile"
 
     if args.doModelSysts:
         append += "_modelSyst"
-    
+
     elif args.doModelSystsOnlyHerwig:
         args.doModelSysts = True
         append += "_modelSystOnlyHerwig"
-    
+
     elif args.doModelSystsOnlyScale:
         args.doModelSysts = True
         append += "_modelSystOnlyScale"
-    
+
     elif args.doModelSystsNotScale:
         args.doModelSysts = True
         append += "_modelSystNotScale"
