@@ -1586,10 +1586,12 @@ if __name__ == "__main__":
                                                                       binning_scheme='generator')
                         unfolder.hist_bin_chopper._cache[key] = syst_ematrix
 
-
                 # update region info
                 region['experimental_systematics'] = [syst_dict for syst_dict in exp_syst_region['experimental_systematics']
                                                       if syst_dict['label'] in reference_unfolder.get_all_exp_syst_labels()]
+
+                # cleanup, save memory
+                del exp_syst_region
 
             else:
                 if not args.jacobian:
@@ -2088,6 +2090,9 @@ if __name__ == "__main__":
 
                 unfolder.create_normalised_scale_syst_ematrices_per_pt_bin()
 
+                # cleanup, save memory
+                del scale_syst_region
+
             # ------------------------------------------------------------------
             # BIG ABSOLUTE PLOT WITH ALL SCALE VARIATIONS
             # ------------------------------------------------------------------
@@ -2328,6 +2333,9 @@ if __name__ == "__main__":
                         syst_unfolder_plotter.draw_x_minus_bias(title=syst_title, **syst_plot_args)
 
                     region['model_systematics'][ind]['unfolder'] = syst_unfolder
+
+                    cu.close_tfile(syst_dict['tfile'])
+                    del syst_dict['tfile']
 
                     # Do 1D plot of nominal vs syst unfolded
                     # --------------------------------------------------------------
@@ -2656,6 +2664,8 @@ if __name__ == "__main__":
                 if not args.jacobian:
                     unfolder.create_normalised_pdf_syst_ematrices_per_pt_bin()
 
+                # cleanup, save memory
+                del pdf_syst_region
 
             if len(region['pdf_systematics']) > 0 and MC_INPUT:
                 # Do a big absolute 1D plot for sanity
