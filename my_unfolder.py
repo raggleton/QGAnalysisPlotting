@@ -1019,8 +1019,8 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         # these 3 for bottom-line tests
         self.get_vxx_th2()
         self.get_vxx_inv_th2()
-        self.get_vyy_no_bg_subtraction_th2()
-        self.get_vyy_inv_no_bg_subtraction_th2()
+        # self.get_vyy_no_bg_subtraction_th2()
+        # self.get_vyy_inv_no_bg_subtraction_th2()
 
         for exp_syst in self.exp_systs:
             # setup all the internal maps
