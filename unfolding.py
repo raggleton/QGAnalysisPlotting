@@ -2491,9 +2491,9 @@ if __name__ == "__main__":
                 # first construct all new systematic variations dicts
                 original_pdf_dict = region['pdf_systematics'][0]
                 original_pdf_dict['label'] = '_PDF_template'  # initial _ to ignore it later on
-                tfile = original_pdf_dict['tfile']
-                if not isinstance(tfile, ROOT.TFile):
-                    tfile = cu.open_root_file(tfile)
+                pdf_tfile = original_pdf_dict['tfile']
+                if not isinstance(pdf_tfile, ROOT.TFile):
+                    pdf_tfile = cu.open_root_file(pdf_tfile)
 
                 region['pdf_systematics']  = []
                 num_vars = len(original_pdf_dict['variations'])
@@ -2501,7 +2501,7 @@ if __name__ == "__main__":
                     region['pdf_systematics'].append(
                         {
                             "label": "PDF_%d" % (pdf_ind),
-                            "response_map": cu.get_from_tfile(tfile, "%s/tu_%s_GenReco_all_PDF_%d" % (region['dirname'], angle_shortname, pdf_ind)),
+                            "response_map": "%s/tu_%s_GenReco_all_PDF_%d" % (region['dirname'], angle_shortname, pdf_ind),  # only store obj name, not obj, as we don't need all simultaneously
                             "colour": cu.get_colour_seq(pdf_ind, num_vars)
                         })
 
@@ -2514,8 +2514,8 @@ if __name__ == "__main__":
                     print("*" * 80)
                     print("*** Unfolding with PDF variation:", pdf_label, "(%d/%d) ***" % (ind+1, len(region['pdf_systematics'])))
                     print("*" * 80)
-
-                    pdf_unfolder = MyUnfolder(response_map=pdf_dict['response_map'],
+                    pdf_response_map = cu.get_from_tfile(pdf_tfile, pdf_dict['response_map'])
+                    pdf_unfolder = MyUnfolder(response_map=pdf_response_map,
                                               variable_bin_edges_reco=unfolder.variable_bin_edges_reco,
                                               variable_bin_edges_gen=unfolder.variable_bin_edges_gen,
                                               variable_name=unfolder.variable_name,
@@ -2613,6 +2613,7 @@ if __name__ == "__main__":
 
                     unfolder.create_pdf_syst_uncertainty_per_lambda_bin(region['pdf_systematics'])
 
+                cu.close_tfile(pdf_tfile)
             # Load PDF syst from another reference file, and calc fractional
             # uncertainty, apply to this unfolded result
             if args.doPDFSystsFromFile is not None:

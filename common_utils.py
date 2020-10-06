@@ -178,6 +178,15 @@ def check_root_obj(obj):
         raise IOError("object is unavailable")
 
 
+def close_tfile(obj):
+    """Close TFile, after checking it's open"""
+    this_obj = obj
+    if isinstance(obj, TFileCacher):
+        this_obj = obj.tfile
+    if isinstance(this_obj, ROOT.TFile) and this_obj.IsOpen():
+        this_obj.Close()
+
+
 def check_exp(n):
     """
     Checks if number has stupidly larger exponent
