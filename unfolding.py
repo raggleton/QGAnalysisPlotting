@@ -2033,6 +2033,8 @@ if __name__ == "__main__":
                     scale_dict['unfolder'] = scale_unfolder
 
                     del scale_dict['response_map']  # save memory
+                    cu.close_tfile(scale_dict['tfile'])
+
                     scale_dict['unfolder'] = scale_unfolder
 
                 if not args.jacobian:
