@@ -2748,6 +2748,12 @@ if __name__ == "__main__":
             # Save everything to pickle / TFile
             # ------------------------------------------------------------------
             print("")
+            print("region sizes:")
+            print("-"*80)
+            cu.print_dict_item_sizes(region, recursive=True)
+            print("-"*80)
+
+            print("")
             print("unfolder attr sizes:")
             print("-"*80)
             cu.print_dict_item_sizes(unfolder.__dict__, recursive=True)
