@@ -4,6 +4,10 @@
 """TUnfold it all
 
 Thanks to Ashley, Dennis
+
+Can profile memory usage with memory_profiler package:
+
+mprof run --interval 0.1 --python unfolding.py <args>
 """
 
 
@@ -49,6 +53,14 @@ ROOT.TH1.AddDirectory(False)  # VERY IMPORTANT - somewhere, closing a TFile for 
 
 # Control plot output format
 OUTPUT_FMT = "pdf"
+
+# When using memory_profiler/mprof, handy to have @profile to mark functions
+# But when running normally we want to pass through without manually commenting out,
+# so define our own decorator instead that does nothing
+if 'profile' not in locals():
+    print("I am memory_profiler @profile decorator, creating my own instead")
+    def profile(func):
+        return func
 
 
 def rm_large_rel_error_bins(hist, relative_err_threshold=-1):
@@ -237,7 +249,12 @@ public:
 ROOT.gInterpreter.ProcessLine(my_binning_xml_code)
 
 
-if __name__ == "__main__":
+@profile
+def main():
+    """Main function to run setup, unfolding, etc.
+
+    In a function, because it's handy for profiling
+    """
     parser = get_unfolding_argparser(description=__doc__)
     args = parser.parse_args()
     print("")
@@ -1011,6 +1028,8 @@ if __name__ == "__main__":
             # Check result with numpy
             # unfolder.do_numpy_comparison(output_dir=this_output_dir)
 
+            prof_end_nominal()
+
             # ------------------------------------------------------------------
             # CALCULATE JACKKNIFED UNCERTAINTIES
             # ------------------------------------------------------------------
@@ -1597,6 +1616,8 @@ if __name__ == "__main__":
                 if not args.jacobian:
                     unfolder.setup_normalised_experimental_systs_per_pt_bin()
 
+            prof_end_exp_systs()
+
             # Draw big 1D distributions
             # ------------------------------------------------------------------
             title = "%s\n%s region, %s" % (jet_algo, region['label'], angle_str)
@@ -2113,6 +2134,8 @@ if __name__ == "__main__":
                                                   other_contributions=scale_contributions,
                                                   subplot_title='#splitline{Variation /}{nominal}')
 
+            prof_end_scale_systs()
+
             # ------------------------------------------------------------------
             # MODEL INPUT VARIATIONS
             # ------------------------------------------------------------------
@@ -2493,6 +2516,7 @@ if __name__ == "__main__":
                                                   other_contributions=model_contributions,
                                                   subplot_title='#splitline{Unfolded /}{Generator}')
 
+            prof_end_model_systs()
 
             # ------------------------------------------------------------------
             # DO PDF VARIATIONS
@@ -2612,8 +2636,12 @@ if __name__ == "__main__":
                     pdf_title = "%s\n%s region, %s\n%s response matrix" % (jet_algo, region['label'], angle_str, pdf_label)
                     pdf_unfolder_plotter.draw_unfolded_1d(title=pdf_title, **pdf_plot_args)
 
+                    prof_end_one_pdf()
+
                     pdf_unfolder.slim_down()
                     region['pdf_systematics'][ind]['unfolder'] = pdf_unfolder
+
+                    prof_end_one_pdf_tidy()
 
                 if not args.jacobian:
                     unfolder.create_normalised_pdf_syst_uncertainty_per_pt_bin(region['pdf_systematics'])
@@ -2624,6 +2652,9 @@ if __name__ == "__main__":
                     unfolder.create_pdf_syst_uncertainty_per_lambda_bin(region['pdf_systematics'])
 
                 cu.close_tfile(pdf_tfile)
+
+            prof_end_pdf_systs()
+
             # Load PDF syst from another reference file, and calc fractional
             # uncertainty, apply to this unfolded result
             if args.doPDFSystsFromFile is not None:
@@ -2743,6 +2774,7 @@ if __name__ == "__main__":
                 unfolder.setup_normalised_results()
 
             region['unfolder'] = unfolder
+            prof_end_all_processing()
 
             # ------------------------------------------------------------------
             # Save everything to pickle / TFile
@@ -2759,11 +2791,13 @@ if __name__ == "__main__":
             cu.print_dict_item_sizes(unfolder.__dict__, recursive=True)
             print("-"*80)
 
+            prof_begin_save_to_pickle()
             pickle_filename = os.path.join("%s/unfolding_result.pkl" % (this_output_dir))
             pickle_region(region, pickle_filename, infos=False, convert_tfile_to_str=True)
             print(">> Saved to pickle file", pickle_filename)
             print("")
 
+            prof_begin_save_to_root()
             print(">> Saving unfolder to ROOT file")
             # print(unfolder.hist_bin_chopper.objects)
             # print(unfolder.hist_bin_chopper._cache)
@@ -2806,3 +2840,50 @@ if __name__ == "__main__":
 
     print("Saved minimal hists to", output_tfile_slim.GetName())
     output_tfile_slim.Close()
+
+
+# these are dummy functions for use with mprof, to mark various points in the program flow
+# takes advantage of the fact that memory_profiler marks times when functions called
+@profile
+def prof_end_nominal():
+    pass
+
+@profile
+def prof_end_exp_systs():
+    pass
+
+@profile
+def prof_end_scale_systs():
+    pass
+
+@profile
+def prof_end_model_systs():
+    pass
+
+@profile
+def prof_end_pdf_systs():
+    pass
+
+@profile
+def prof_end_one_pdf():
+    pass
+
+@profile
+def prof_end_one_pdf_tidy():
+    pass
+
+@profile
+def prof_end_all_processing():
+    pass
+
+@profile
+def prof_begin_save_to_pickle():
+    pass
+
+@profile
+def prof_begin_save_to_root():
+    pass
+
+
+if __name__ == "__main__":
+    main()
