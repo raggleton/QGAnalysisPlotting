@@ -35,8 +35,10 @@ from unfolding_config import setup_regions_from_argparse
 pd.set_option('display.max_columns', None)
 
 # Use rootpy to throw exceptions on ROOT errors, but need DANGER enabled
-import rootpy
-# import rootpy.logger.magic as M; M.DANGER.enabled = True
+# Doesn't work with python 3.8 for now
+if not (sys.version_info.major == 3 and sys.version_info.minor >= 8):
+    import rootpy
+    # import rootpy.logger.magic as M; M.DANGER.enabled = True
 
 ROOT.gErrorIgnoreLevel = ROOT.kError
 ROOT.PyConfig.IgnoreCommandLineOptions = True

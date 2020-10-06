@@ -35,8 +35,10 @@ from do_unfolding_plots import Setup, do_binned_plots_per_region_angle, do_all_b
 from unfolding_logistics import get_unfolding_argparser, get_unfolding_output_dir, sanitise_args, AREA_OPT_DICT
 
 # Use rootpy to throw exceptions on ROOT errors, but need DANGER enabled
-import rootpy
-# import rootpy.logger.magic as M; M.DANGER.enabled = True
+# Doesn't work with python 3.8 for now
+if not (sys.version_info.major == 3 and sys.version_info.minor >= 8):
+    import rootpy
+    # import rootpy.logger.magic as M; M.DANGER.enabled = True
 
 ROOT.gErrorIgnoreLevel = ROOT.kWarning
 # ROOT.gErrorIgnoreLevel = ROOT.kInfo

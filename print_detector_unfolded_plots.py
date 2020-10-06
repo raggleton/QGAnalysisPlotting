@@ -36,7 +36,10 @@ from unfolding_config import get_dijet_config, get_zpj_config
 from do_unfolding_plots import PLOT_COLOURS
 import metric_calculators as metrics
 
-import rootpy
+# Doesn't work with python 3.8 for now
+if not (sys.version_info.major == 3 and sys.version_info.minor >= 8):
+    import rootpy
+    # import rootpy.logger.magic as M; M.DANGER.enabled = True
 
 ROOT.gErrorIgnoreLevel = ROOT.kError
 ROOT.PyConfig.IgnoreCommandLineOptions = True
