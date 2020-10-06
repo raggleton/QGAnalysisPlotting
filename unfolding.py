@@ -680,7 +680,7 @@ if __name__ == "__main__":
                     syst_label_no_spaces = cu.no_space_str(syst_dict['label'])
                     output_filename = "%s/response_map_syst_%s_%s.%s" % (this_output_dir, syst_label_no_spaces, append, unfolder_plotter.output_fmt)
                     title = "%s, %s region, %s, %s" % (jet_algo, region['label'], angle_str, syst_dict['label'])
-                    unfolder_plotter.draw_2d_hist(unfolder.get_exp_syst(syst_dict['label']).syst_map,
+                    unfolder_plotter.draw_2d_hist(map_syst,
                                                   title=title,
                                                   output_filename=output_filename,
                                                   logz=True,
@@ -1526,7 +1526,7 @@ if __name__ == "__main__":
                     # to the new nominal result?
                     # exp_syst = reference_unfolder.get_exp_syst(exp_syst_dict['label'])
                     this_exp_syst = ExpSystematic(label=exp_syst.label,
-                                                  syst_map=exp_syst.syst_map,
+                                                  syst_map=None,
                                                   # copy the old shift/shifted, although no longer relevant here
                                                   syst_shift=exp_syst.syst_shift,
                                                   syst_shifted=exp_syst.syst_shifted)

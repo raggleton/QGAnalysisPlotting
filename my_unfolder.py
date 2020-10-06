@@ -927,7 +927,8 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
 
     def add_sys_error(self, map_syst, label, mode):
         """Add systematic error via response map, arguments as per AddSysError()"""
-        this_syst = ExpSystematic(label=label, syst_map=map_syst)
+        # don't store map, since we don't actually use it, and it wastes memory
+        this_syst = ExpSystematic(label=label, syst_map=None)
         self.AddSysError(map_syst, label, self.orientation, ROOT.TUnfoldDensity.kSysErrModeMatrix)
         self.exp_systs.append(this_syst)
 
