@@ -1511,10 +1511,10 @@ if __name__ == "__main__":
                 exp_syst_region = unpickle_region(this_pkl_filename)
 
                 reference_unfolder = exp_syst_region['unfolder']
-                ref_unfolded = reference_unfolder.unfolded
+                # ref_unfolded = reference_unfolder.unfolded
 
-                for exp_syst_dict in exp_syst_region.experimental_systematics:
-                # for exp_syst in reference_unfolder.exp_systs:
+                # for exp_syst_dict in exp_syst_region.experimental_systematics:
+                for exp_syst in reference_unfolder.exp_systs:
                     # For each systematic source, we figure out the
                     # relative shift compared to the original nominal result,
                     # for each normalised distribution (i.e. per pt bin).
@@ -1522,7 +1522,7 @@ if __name__ == "__main__":
                     # Note that this is different to taking the total shift,
                     # calculating its fractional diff, and then then applying it
                     # to the new nominal result?
-                    exp_syst = reference_unfolder.get_exp_syst(exp_syst_dict['label'])
+                    # exp_syst = reference_unfolder.get_exp_syst(exp_syst_dict['label'])
                     this_exp_syst = ExpSystematic(label=exp_syst.label,
                                                   syst_map=exp_syst.syst_map,
                                                   # copy the old shift/shifted, although no longer relevant here
