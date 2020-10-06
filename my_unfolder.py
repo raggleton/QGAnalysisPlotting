@@ -475,7 +475,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         # method to avoid modifying the original state.
         state = self.__dict__.copy()
         def _del_state(key):
-            if key in state:
+            if key in state and state[key] is not None:
                 del state[key]
         # Remove the large entries from being pickled
         # Normally they can be reconstructed from ROOT objects intstead
@@ -510,6 +510,56 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         this_args = [state.get(a, None) for a in argspec.args if a != "self"]
         # print("this_args:", this_args)
         return (self.__class__, tuple(this_args), state)
+
+    def slim_down(self,
+                  keep_response_map=False,
+                  keep_cov_matrices=False,
+                  keep_1d_hists=False,
+                  keep_backgrounds=False,
+                  keep_folded_hists=False):
+        """Delete various large member objects to reduce its size"""
+
+        def _del_attr(name):
+            if hasattr(self, name) and getattr(self, name) is not None:
+                delattr(self, name)
+
+        if not keep_response_map:
+            for x in ['response_map',
+                      'probability_matrix',
+                      '_probability_ndarray']:
+                _del_attr(x)
+
+        if not keep_cov_matrices:
+            for x in ['vxx_th2',
+                      'vxx_inv_th2',
+                      'ematrix_stat',
+                      'ematrix_tau',
+                      'ematrix_stat_response',
+                      'ematrix_tunfold_total',
+                      'ematrix_input',
+                      'rhoij_total']:
+                _del_attr(x)
+
+        if not keep_1d_hists:
+            for x in ['hist_mc_reco_bg_subtracted',
+                      'input_hist',
+                      'input_hist_bg_subtracted',
+                      'hist_mc_reco',
+                      'hist_mc_reco_gen_binning_bg_subtracted',
+                      'input_hist_gen_binning',
+                      'input_hist_gen_binning_bg_subtracted',
+                      'hist_mc_reco_gen_binning']:
+                _del_attr(x)
+
+        if not keep_backgrounds:
+            self.backgrounds.clear()
+            self.backgrounds_gen_binning.clear()
+
+        if not keep_folded_hists:
+            for x in ['folded_unfolded_tunfold',
+                      'folded_unfolded',
+                      'folded_mc_truth']:
+                _del_attr(x)
 
     # SETUP INPUT, BACKGROUNDS
     # --------------------------------------------------------------------------

@@ -2032,7 +2032,7 @@ if __name__ == "__main__":
                     scale_unfolder_plotter.draw_unfolded_1d(title=scale_title, **scale_plot_args)
                     scale_dict['unfolder'] = scale_unfolder
 
-                    del scale_dict['response_map']  # save memory
+                    scale_unfolder.slim_down(keep_1d_hists=True)
                     cu.close_tfile(scale_dict['tfile'])
 
                     scale_dict['unfolder'] = scale_unfolder
@@ -2604,7 +2604,7 @@ if __name__ == "__main__":
                     pdf_title = "%s\n%s region, %s\n%s response matrix" % (jet_algo, region['label'], angle_str, pdf_label)
                     pdf_unfolder_plotter.draw_unfolded_1d(title=pdf_title, **pdf_plot_args)
 
-                    del region['pdf_systematics'][ind]['response_map']  # save memory
+                    pdf_unfolder.slim_down()
                     region['pdf_systematics'][ind]['unfolder'] = pdf_unfolder
 
                 if not args.jacobian:
