@@ -2236,7 +2236,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         Each has the form:
         {
             "label": "muR up, muF nominal",
-            "tfile": os.path.join(source_dir_systs, 'ScaleVariationMuRUp_ScaleVariationMuFNom', qgc.QCD_FILENAME),
+            "tfile": os.path.join(source_dir_systs, 'ScaleVariationMuRUp_ScaleVariationMuFNominal', qgc.QCD_FILENAME),
             "colour": ROOT.kAzure,
             "unfolder": MyUnfolder,
         }
@@ -2994,7 +2994,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         Each has the form:
         {
             "label": "muR up, muF nominal",
-            "tfile": os.path.join(source_dir_systs, 'ScaleVariationMuRUp_ScaleVariationMuFNom', qgc.QCD_FILENAME),
+            "tfile": os.path.join(source_dir_systs, 'ScaleVariationMuRUp_ScaleVariationMuFNominal', qgc.QCD_FILENAME),
             "colour": ROOT.kAzure,
             "unfolder": MyUnfolder,
         }
@@ -3288,7 +3288,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         Each has the form:
         {
             "label": "muR up, muF nominal",
-            "tfile": os.path.join(source_dir_systs, 'ScaleVariationMuRUp_ScaleVariationMuFNom', qgc.QCD_FILENAME),
+            "tfile": os.path.join(source_dir_systs, 'ScaleVariationMuRUp_ScaleVariationMuFNominal', qgc.QCD_FILENAME),
             "colour": ROOT.kAzure,
             "unfolder": MyUnfolder,
         }

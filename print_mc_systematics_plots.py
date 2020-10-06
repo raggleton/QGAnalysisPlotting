@@ -415,13 +415,13 @@ if __name__ == "__main__":
     if args.doMuScales:
         print('Doing MuScales')
         this_up_shifts = [
-            (os.path.join(systs_dir, 'ScaleVariationMuRUp_ScaleVariationMuFNom'), "#mu_{R} up", ROOT.kAzure+0),
-            (os.path.join(systs_dir, 'ScaleVariationMuRNom_ScaleVariationMuFUp'), "#mu_{F} up", ROOT.kAzure+2),
+            (os.path.join(systs_dir, 'ScaleVariationMuRUp_ScaleVariationMuFNominal'), "#mu_{R} up", ROOT.kAzure+0),
+            (os.path.join(systs_dir, 'ScaleVariationMuRNominal_ScaleVariationMuFUp'), "#mu_{F} up", ROOT.kAzure+2),
             (os.path.join(systs_dir, 'ScaleVariationMuRUp_ScaleVariationMuFUp'), "#mu_{R} & #mu_{F} up", ROOT.kAzure+5),
         ]
         this_down_shifts = [
-            (os.path.join(systs_dir, 'ScaleVariationMuRDown_ScaleVariationMuFNom'), "#mu_{R} down", ROOT.kAzure+1),
-            (os.path.join(systs_dir, 'ScaleVariationMuRNom_ScaleVariationMuFDown'), "#mu_{F} down", ROOT.kAzure+3),
+            (os.path.join(systs_dir, 'ScaleVariationMuRDown_ScaleVariationMuFNominal'), "#mu_{R} down", ROOT.kAzure+1),
+            (os.path.join(systs_dir, 'ScaleVariationMuRNominal_ScaleVariationMuFDown'), "#mu_{F} down", ROOT.kAzure+3),
             (os.path.join(systs_dir, 'ScaleVariationMuRDown_ScaleVariationMuFDown'), "#mu_{R} & #mu_{F} down", ROOT.kAzure+4),
         ]
         do_plots(args.nominal,
