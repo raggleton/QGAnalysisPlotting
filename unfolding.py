@@ -2700,19 +2700,21 @@ def main():
 
             if len(region['pdf_systematics']) > 0 and MC_INPUT:
                 # Do a big absolute 1D plot for sanity
-                pdf_contributions = [
-                    Contribution(pdict['unfolder'].input_hist_bg_subtracted,
-                                 label=pdict['label'],
-                                 line_color=pdict['colour'], line_style=1, line_width=1,
-                                 marker_color=pdict['colour'], marker_size=0, marker_style=21,
-                                 subplot=unfolder.input_hist_bg_subtracted)
-                    for pdict in region['pdf_systematics']
-                ]
-                unfolder_plotter.draw_detector_1d(do_reco_mc_bg_sub=True,
-                                                  output_dir=this_output_dir,
-                                                  append='bg_fakes_subtracted_pdf_systs_%s' % append,
-                                                  title=title,
-                                                  other_contributions=pdf_contributions)
+                
+                # Don't care about inputs, all the same as nominal
+                # pdf_contributions = [
+                #     Contribution(pdict['unfolder'].input_hist_bg_subtracted,
+                #                  label=pdict['label'],
+                #                  line_color=pdict['colour'], line_style=1, line_width=1,
+                #                  marker_color=pdict['colour'], marker_size=0, marker_style=21,
+                #                  subplot=unfolder.input_hist_bg_subtracted)
+                #     for pdict in region['pdf_systematics']
+                # ]
+                # unfolder_plotter.draw_detector_1d(do_reco_mc_bg_sub=True,
+                #                                   output_dir=this_output_dir,
+                #                                   append='bg_fakes_subtracted_pdf_systs_%s' % append,
+                #                                   title=title,
+                #                                   other_contributions=pdf_contributions)
 
                 pdf_contributions = [
                     Contribution(pdict['unfolder'].get_unfolded_with_ematrix_stat(),
