@@ -1439,7 +1439,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
                 sigma_min = min([x for x in sig if x>0])
         return sigma_max, sigma_min
 
-    def print_condition_number(self):
+    def print_condition_number(self, remove_underflow_bins=False, remove_overflow_bins=False):
         """Store & print response matrix condition number and some advice
 
         Defined as sigma_max / max(0, sigma_min), where sigma_{max/min} are the
@@ -1467,31 +1467,33 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             print(" - You probably should look into regularization")
 
         # try a version cutting out underflow bins
-        start_ind_gen = self.generator_distribution.GetStartBin() - 1 # -1 as numpy starts at 0, TUnfold at 1
-        start_ind_det = self.detector_distribution.GetStartBin() - 1 # -1 as numpy starts at 0, TUnfold at 1
-        print("Signal Start ind gen:", start_ind_gen)
-        print("Signal Start ind det:", start_ind_det)
-        print("prob ndarray.shape:", self.probability_ndarray.shape)
-        probability_ndarray_signal_pt = np.copy(self.probability_ndarray)[start_ind_det:, start_ind_gen:]
-        sigma_max, sigma_min = self.calculate_singular_max_min(cu.th2_to_tmatrixd(cu.ndarray_to_th2(probability_ndarray_signal_pt)), non_zero=True)
-        if sigma_min == 0:
-            # avoid DivisionError
-            print("Minmum singular value = 0, condition number = Infinity")
-            num = np.inf
-        else:
-            num = sigma_max / sigma_min
-        print("Condition number without pt < 50 bins:", num)
+        if remove_underflow_bins:
+            start_ind_gen = self.generator_distribution.GetStartBin() - 1 # -1 as numpy starts at 0, TUnfold at 1
+            start_ind_det = self.detector_distribution.GetStartBin() - 1 # -1 as numpy starts at 0, TUnfold at 1
+            print("Signal Start ind gen:", start_ind_gen)
+            print("Signal Start ind det:", start_ind_det)
+            print("prob ndarray.shape:", self.probability_ndarray.shape)
+            probability_ndarray_signal_pt = np.copy(self.probability_ndarray)[start_ind_det:, start_ind_gen:]
+            sigma_max, sigma_min = self.calculate_singular_max_min(cu.th2_to_tmatrixd(cu.ndarray_to_th2(probability_ndarray_signal_pt)), non_zero=True)
+            if sigma_min == 0:
+                # avoid DivisionError
+                print("Minmum singular value = 0, condition number = Infinity")
+                num = np.inf
+            else:
+                num = sigma_max / sigma_min
+            print("Condition number without pt < 50 bins:", num)
 
         # now also do a version removing the overflow bins in each variable & pT:
-        # probability_ndarray_no_oflow = self.get_ndarray_signal_region_no_overflow(self.get_probability_matrix(), xbinning='generator', ybinning='detector')
-        # sigma_max, sigma_min = self.calculate_singular_max_min(cu.th2_to_tmatrixd(cu.ndarray_to_th2(probability_ndarray_no_oflow)), non_zero=True)
-        # if sigma_min == 0:
-        #     # avoid DivisionError
-        #     print("Minmum singular value = 0, condition number = Infinity")
-        #     num = np.inf
-        # else:
-        #     num = sigma_max / sigma_min
-        # print("Condition number without pt < 50 bins and without overflow bins:", num)
+        if remove_overflow_bins:
+            probability_ndarray_no_oflow = self.get_ndarray_signal_region_no_overflow(self.get_probability_matrix(), xbinning='generator', ybinning='detector')
+            sigma_max, sigma_min = self.calculate_singular_max_min(cu.th2_to_tmatrixd(cu.ndarray_to_th2(probability_ndarray_no_oflow)), non_zero=True)
+            if sigma_min == 0:
+                # avoid DivisionError
+                print("Minmum singular value = 0, condition number = Infinity")
+                num = np.inf
+            else:
+                num = sigma_max / sigma_min
+            print("Condition number without pt < 50 bins and without overflow bins:", num)
 
     def get_response_normed_by_detector_pt(self):
         if getattr(self, 'response_map_normed_by_detector_pt', None) is None:
