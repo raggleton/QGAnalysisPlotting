@@ -4505,7 +4505,7 @@ def do_all_big_absolute_1d_plots_per_region_angle(setup):
         ]
         unfolder_plotter.draw_detector_1d(do_reco_mc=True,
                                           output_dir=setup.output_dir,
-                                          append='scale_systs_%s' % append,
+                                          append='scale_systs_%s' % setup.append,
                                           title=title,
                                           other_contributions=scale_contributions,
                                           subplot_title='#splitline{Variation /}{nominal}')
@@ -4520,7 +4520,7 @@ def do_all_big_absolute_1d_plots_per_region_angle(setup):
         ]
         unfolder_plotter.draw_unfolded_1d(do_unfolded=True, do_gen=False,
                                           output_dir=setup.output_dir,
-                                          append='scale_systs_%s' % append,
+                                          append='scale_systs_%s' % setup.append,
                                           title=title,
                                           other_contributions=scale_contributions,
                                           subplot_title='#splitline{Variation /}{nominal}')
@@ -4535,7 +4535,7 @@ def do_all_big_absolute_1d_plots_per_region_angle(setup):
         ]
         unfolder_plotter.draw_generator_1d(do_truth_mc=True,
                                            output_dir=setup.output_dir,
-                                           append='scale_systs_%s' % append,
+                                           append='scale_systs_%s' % setup.append,
                                            title=title,
                                            other_contributions=scale_contributions,
                                            subplot_title='#splitline{Variation /}{nominal}')
@@ -4552,45 +4552,52 @@ def get_bottom_line_stats(setup):
     # TODO: convert detector space to gen binning to match NdF, improve chi2
 
     # do smeared chi2
-    folded_mc_truth_gen_binning = unfolder.get_ndarray_signal_region_no_overflow(
-                                      unfolder.convert_reco_binned_hist_to_gen_binned(
-                                          unfolder.get_folded_mc_truth()
-                                      ),
-                                      xbinning='generator',
-                                      ybinning=None
-                                  )
-    folded_alt_mc_truth_gen_binning = unfolder.get_ndarray_signal_region_no_overflow(
-                                          unfolder.convert_reco_binned_hist_to_gen_binned(
-                                            unfolder.fold_generator_level(setup.region['alt_hist_mc_gen'])
-                                          ),
-                                          xbinning='generator',
-                                          ybinning=None
-                                      )
-    input_hist_gen_binning_bg_subtracted_signal = unfolder.get_ndarray_signal_region_no_overflow(
-                                                      unfolder.input_hist_gen_binning_bg_subtracted,
-                                                      xbinning='generator',
-                                                      ybinning=None
-                                                  )
+    # folded_mc_truth_gen_binning = unfolder.get_ndarray_signal_region_no_overflow(
+    #                                   unfolder.convert_reco_binned_hist_to_gen_binned(
+    #                                       unfolder.get_folded_mc_truth()
+    #                                   ),
+    #                                   xbinning='generator',
+    #                                   ybinning=None
+    #                               )
+    # folded_alt_mc_truth_gen_binning = unfolder.get_ndarray_signal_region_no_overflow(
+    #                                       unfolder.convert_reco_binned_hist_to_gen_binned(
+    #                                         unfolder.fold_generator_level(setup.region['alt_hist_mc_gen'])
+    #                                       ),
+    #                                       xbinning='generator',
+    #                                       ybinning=None
+    #                                   )
+    # input_hist_gen_binning_bg_subtracted_signal = unfolder.get_ndarray_signal_region_no_overflow(
+    #                                                   unfolder.input_hist_gen_binning_bg_subtracted,
+    #                                                   xbinning='generator',
+    #                                                   ybinning=None
+    #                                               )
 
     vyy = unfolder.make_diag_cov_hist_from_errors(
               h1d=unfolder.input_hist_gen_binning_bg_subtracted,
               inverse=False
           )
-    vyy_gen_binning = unfolder.get_ndarray_signal_region_no_overflow(
-                          vyy,
-                          xbinning='generator',
-                          ybinning='generator'
-                      )
+    # vyy_gen_binning = unfolder.get_ndarray_signal_region_no_overflow(
+    #                       vyy,
+    #                       xbinning='generator',
+    #                       ybinning='generator'
+    #                   )
 
     vyy_inv = unfolder.make_diag_cov_hist_from_errors(
                   h1d=unfolder.input_hist_gen_binning_bg_subtracted,
                   inverse=True
               )
-    vyy_inv_gen_binning = unfolder.get_ndarray_signal_region_no_overflow(
-                              vyy_inv,
-                              xbinning='generator',
-                              ybinning='generator'
-                          )
+    # vyy_inv_gen_binning = unfolder.get_ndarray_signal_region_no_overflow(
+    #                           vyy_inv,
+    #                           xbinning='generator',
+    #                           ybinning='generator'
+    #                       )
+
+    folded_mc_truth_gen_binning = unfolder.convert_reco_binned_hist_to_gen_binned(unfolder.get_folded_mc_truth())
+    folded_alt_mc_truth_gen_binning = unfolder.convert_reco_binned_hist_to_gen_binned(unfolder.fold_generator_level(setup.region['alt_hist_mc_gen']))
+    input_hist_gen_binning_bg_subtracted_signal = unfolder.input_hist_gen_binning_bg_subtracted
+    vyy_gen_binning = vyy
+    vyy_inv_gen_binning = vyy_inv
+
     smeared_chi2, smeared_ndf, smeared_p = unfolder.calculate_chi2(one_hist=folded_mc_truth_gen_binning,
                                                                    # one_hist=unfolder.get_folded_mc_truth(),
                                                                    # other_hist=unfolder.input_hist_bg_subtracted,
