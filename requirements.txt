@@ -4,3 +4,5 @@ matplotlib
 pandas
 jax
 uproot
+rootpy
+uncertainties
