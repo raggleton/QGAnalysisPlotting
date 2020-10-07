@@ -48,7 +48,13 @@ ROOT.TH1.SetDefaultSumw2()
 # When using memory_profiler/mprof, handy to have @profile to mark functions
 # But when running normally we want to pass through without manually commenting out,
 # so define our own decorator instead that does nothing
-if 'profile' not in locals():
+# Note that if this module is imported elsewhere,
+# profile will be in __builtins__, not directly in locals()
+# so we check multiple places
+if not any(['profile' in locals(),
+            'profile' in globals(),
+            (isinstance(globals()['__builtins__'], dict) and 'profile' in globals()['__builtins__']),
+            'profile' in dir(__builtins__)]):
     print("I have no memory_profiler @profile decorator in do_unfolding_plots, creating my own instead")
     def profile(func):
         return func
@@ -4885,9 +4891,9 @@ def main():
             # use region dict from unpickling
             # don't use update(), mega slow
             this_region = unpickled_region
-            
+
             prof_start_binned_plots()
-            
+
             # MAKE ALL THE PLOTS
             # ------------------------------------------------------------------
             setup = Setup(jet_algo=jet_algo,
@@ -4981,5 +4987,4 @@ def prof_done_chi2():
 
 
 if __name__ == "__main__":
-
     main()

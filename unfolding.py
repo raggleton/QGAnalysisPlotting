@@ -36,6 +36,7 @@ from my_unfolder_plotter import MyUnfolderPlotter
 from unfolding_regularisation_classes import TauScanner, LCurveScanner
 from unfolding_config import get_dijet_config, get_zpj_config
 from unfolding_logistics import get_unfolding_argparser, get_unfolding_output_dir, sanitise_args, AREA_OPT_DICT
+from do_unfolding_plots import Setup, do_binned_plots_per_region_angle, do_all_big_normalised_1d_plots_per_region_angle
 
 # Use rootpy to throw exceptions on ROOT errors, but need DANGER enabled
 # Doesn't work with python 3.8 for now
@@ -57,7 +58,14 @@ OUTPUT_FMT = "pdf"
 # When using memory_profiler/mprof, handy to have @profile to mark functions
 # But when running normally we want to pass through without manually commenting out,
 # so define our own decorator instead that does nothing
-if 'profile' not in locals():
+# Note that if this module is imported elsewhere,
+# profile will be in __builtins__, not directly in locals(),
+# so we check multiple places
+if not any(['profile' in locals(),
+            'profile' in globals(),
+            (isinstance(globals()['__builtins__'], dict) and 'profile' in globals()['__builtins__']),
+            'profile' in dir(__builtins__)]):
+
     print("I have no memory_profiler @profile decorator in unfolding, creating my own instead")
     def profile(func):
         return func
@@ -2828,9 +2836,6 @@ def main():
             # PLOT LOTS OF THINGS
             # ------------------------------------------------------------------
             if not args.noBinnedPlots:
-                # put here to avoid clashes with profile decorator from do_unfolding_plots
-                from do_unfolding_plots import Setup, do_binned_plots_per_region_angle, do_all_big_normalised_1d_plots_per_region_angle
-
                 setup = Setup(jet_algo=jet_algo,
                               region=region,
                               angle=angle,
