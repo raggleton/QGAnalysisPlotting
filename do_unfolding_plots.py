@@ -45,6 +45,14 @@ ROOT.PyConfig.IgnoreCommandLineOptions = True
 ROOT.gROOT.SetBatch(1)
 ROOT.TH1.SetDefaultSumw2()
 
+# When using memory_profiler/mprof, handy to have @profile to mark functions
+# But when running normally we want to pass through without manually commenting out,
+# so define our own decorator instead that does nothing
+if 'profile' not in locals():
+    print("I have no memory_profiler @profile decorator in do_unfolding_plots, creating my own instead")
+    def profile(func):
+        return func
+
 
 class Setup(object):
     """Loads of common consts, useful for plotting etc"""
@@ -4931,8 +4939,6 @@ def main():
                 del unpickled_region
                 del setup
 
-            prof_done_cleanup()
-
     if len(all_chi2_stats) > 0:
         df_stats = pd.DataFrame(all_chi2_stats)
         df_stats['region'] = df_stats['region'].astype('category')
@@ -4950,7 +4956,7 @@ def prof_unpickle_angle():
     pass
 
 @profile
-def start_binned_plots():
+def prof_start_binned_plots():
     pass
 
 @profile
@@ -4973,18 +4979,7 @@ def prof_done_big_abs_plots():
 def prof_done_chi2():
     pass
 
-@profile
-def prof_done_cleanup():
-    pass
 
 if __name__ == "__main__":
-    # When using memory_profiler/mprof, handy to have @profile to mark functions
-    # But when running normally we want to pass through without manually commenting out,
-    # so define our own decorator instead that does nothing
-    # 
-    # Put in here otherwise clashes when this file is imported
-    if 'profile' not in locals():
-        print("I have no memory_profiler @profile decorator in do_unfolding_plots, creating my own instead")
-        def profile(func):
-            return func
+
     main()

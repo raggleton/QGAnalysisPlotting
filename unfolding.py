@@ -35,7 +35,6 @@ from my_unfolder import MyUnfolder, pickle_region, unpickle_region, ExpSystemati
 from my_unfolder_plotter import MyUnfolderPlotter
 from unfolding_regularisation_classes import TauScanner, LCurveScanner
 from unfolding_config import get_dijet_config, get_zpj_config
-from do_unfolding_plots import Setup, do_binned_plots_per_region_angle, do_all_big_normalised_1d_plots_per_region_angle
 from unfolding_logistics import get_unfolding_argparser, get_unfolding_output_dir, sanitise_args, AREA_OPT_DICT
 
 # Use rootpy to throw exceptions on ROOT errors, but need DANGER enabled
@@ -54,6 +53,14 @@ ROOT.TH1.AddDirectory(False)  # VERY IMPORTANT - somewhere, closing a TFile for 
 # Control plot output format
 OUTPUT_FMT = "pdf"
 
+
+# When using memory_profiler/mprof, handy to have @profile to mark functions
+# But when running normally we want to pass through without manually commenting out,
+# so define our own decorator instead that does nothing
+if 'profile' not in locals():
+    print("I have no memory_profiler @profile decorator in unfolding, creating my own instead")
+    def profile(func):
+        return func
 
 
 def rm_large_rel_error_bins(hist, relative_err_threshold=-1):
@@ -2821,6 +2828,9 @@ def main():
             # PLOT LOTS OF THINGS
             # ------------------------------------------------------------------
             if not args.noBinnedPlots:
+                # put here to avoid clashes with profile decorator from do_unfolding_plots
+                from do_unfolding_plots import Setup, do_binned_plots_per_region_angle, do_all_big_normalised_1d_plots_per_region_angle
+
                 setup = Setup(jet_algo=jet_algo,
                               region=region,
                               angle=angle,
@@ -2881,13 +2891,4 @@ def prof_begin_save_to_root():
 
 
 if __name__ == "__main__":
-    # When using memory_profiler/mprof, handy to have @profile to mark functions
-    # But when running normally we want to pass through without manually commenting out,
-    # so define our own decorator instead that does nothing
-    # Put in here otherwise clashes when this file is imported
-    if 'profile' not in locals():
-        print("I have no memory_profiler @profile decorator in unfolding, creating my own instead")
-        def profile(func):
-            return func
-
     main()
