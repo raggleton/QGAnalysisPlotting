@@ -1291,7 +1291,7 @@ class SummaryPlotter(object):
         self.plot_two_row_bins_summary(selection_groups=gluon_selections,
                                        upper_row_hist_groups=mean_q_vs_g_ratio_hists,
                                        lower_row_hist_groups=mean_q_vs_g_data_vs_mc_ratio_hists,
-                                       upper_row_label="#splitline{Quark mean /}{Gluon mean}",
+                                       upper_row_label="#splitline{Gluon mean /}{Quark mean}",
                                        lower_row_label="#splitline{Simulation /}{     Data}",
                                        output_file=output_file,
                                        legend_header=legend_header)
