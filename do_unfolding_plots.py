@@ -3253,6 +3253,7 @@ class RecoPtBinnedPlotter(object):
             ROOT.gStyle.SetPalette(ROOT.kViridis)
 
 
+@profile
 def do_binned_plots_per_region_angle(setup, do_binned_gen_pt, do_binned_gen_lambda, do_binned_reco_pt):
     """Do individual binned plots, can select which binning(s) to plot over"""
     region = setup.region
@@ -4316,6 +4317,7 @@ class BigNormalised1DPlotter(object):
     #     plot.save("%s/folded_gen_1d_normalised_%s_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, self.setup.output_fmt))
 
 
+@profile
 def do_all_big_normalised_1d_plots_per_region_angle(setup, hist_bin_chopper=None):
     """Do various big 1D plots collating all normalised distributions"""
     region = setup.region
@@ -4379,6 +4381,7 @@ def do_all_big_normalised_1d_plots_per_region_angle(setup, hist_bin_chopper=None
     #     big_plotter.plot_unfolded_pdf_systs()
 
 
+@profile
 def do_all_big_absolute_1d_plots_per_region_angle(setup):
     """Do various big absolute 1d plots"""
     region = setup.region
@@ -4554,6 +4557,8 @@ def do_all_big_absolute_1d_plots_per_region_angle(setup):
                                            other_contributions=scale_contributions,
                                            subplot_title='#splitline{Variation /}{nominal}')
 
+
+@profile
 def get_bottom_line_stats(setup):
     """Construct dict of bottom-line (i.e. chi2) stats for this region/angle combo"""
     unfolder = setup.region['unfolder']
