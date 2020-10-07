@@ -54,13 +54,6 @@ ROOT.TH1.AddDirectory(False)  # VERY IMPORTANT - somewhere, closing a TFile for 
 # Control plot output format
 OUTPUT_FMT = "pdf"
 
-# When using memory_profiler/mprof, handy to have @profile to mark functions
-# But when running normally we want to pass through without manually commenting out,
-# so define our own decorator instead that does nothing
-if 'profile' not in locals():
-    print("I am memory_profiler @profile decorator, creating my own instead")
-    def profile(func):
-        return func
 
 
 def rm_large_rel_error_bins(hist, relative_err_threshold=-1):
@@ -2888,4 +2881,13 @@ def prof_begin_save_to_root():
 
 
 if __name__ == "__main__":
+    # When using memory_profiler/mprof, handy to have @profile to mark functions
+    # But when running normally we want to pass through without manually commenting out,
+    # so define our own decorator instead that does nothing
+    # Put in here otherwise clashes when this file is imported
+    if 'profile' not in locals():
+        print("I have no memory_profiler @profile decorator in unfolding, creating my own instead")
+        def profile(func):
+            return func
+
     main()
