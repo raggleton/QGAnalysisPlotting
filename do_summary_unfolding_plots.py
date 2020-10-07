@@ -1910,6 +1910,9 @@ if __name__ == "__main__":
     ak4_str = "AK4"
     ak8_str = "AK8"
 
+    if not args.h5inputRivet and not args.yodaInputDijet:
+        plotter.filename_append += "_onlyDataNomMC"
+
     filename_append = plotter.filename_append
 
     g_selections, q_selections = None, None
