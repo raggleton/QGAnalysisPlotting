@@ -1788,6 +1788,12 @@ if __name__ == "__main__":
     parser.add_argument("--onlyYodaData",
                         action='store_true',
                         help='Only plot data & Yoda inputs (ignore MG+Py, H++)')
+    parser.add_argument("--doMetricVsPt",
+                        action='store_true',
+                        help='Plot metric vs pT (e.g. mean vs pT)')
+    parser.add_argument("--doSummaryBins",
+                        action='store_true',
+                        help='Plot summary bin plots')
     args = parser.parse_args()
 
     # Get input data
@@ -1797,6 +1803,9 @@ if __name__ == "__main__":
     if (len(args.yodaInputDijet) != len(args.yodaLabel)
         and len(args.yodaInputZPJ) != len(args.yodaLabel)):
         raise RuntimeError("Number of --yodaInputDijet/yodaInputZPJ must match number of --yodaLabel")
+
+    if not any([args.doMetricVsPt, args.doSummaryBins]):
+        raise RuntimeError("You should do at least one of --doMetricVsPt, --doSummaryBins")
 
     if not args.outputDir:
         if args.h5input:
@@ -1901,9 +1910,6 @@ if __name__ == "__main__":
     ak4_str = "AK4"
     ak8_str = "AK8"
 
-    DO_X_VS_PT_PLOTS = False
-    DO_OVERALL_SUMMARY_PLOTS = True
-
     filename_append = plotter.filename_append
 
     g_selections, q_selections = None, None
@@ -1912,7 +1918,7 @@ if __name__ == "__main__":
     groomed_template = "#splitline{{{jet_str}, {pt_str}}}{{         Groomed}}"
 
     if has_dijet:
-        if DO_X_VS_PT_PLOTS:
+        if args.doMetricVsPt:
             plotter.plot_dijet_means_vs_pt_all()
             plotter.plot_dijet_rms_vs_pt_all()
             plotter.plot_dijet_delta_vs_pt_all()
@@ -1925,7 +1931,7 @@ if __name__ == "__main__":
         high_pt_str = "[%g, %g] GeV" % (high_pt, pt_bins[high_pt_bin+1])
         high_pt_str = "[%g, %g] TeV" % (high_pt/1000, pt_bins[high_pt_bin+1]/1000)
 
-        if DO_OVERALL_SUMMARY_PLOTS:
+        if args.doSummaryBins:
             # DIJET CENTRAL/GLUON
             # ---------------------------------------------
             # Create selection queries for mean/RMS/delta summary plots
@@ -2017,7 +2023,7 @@ if __name__ == "__main__":
             )
 
     if has_zpj:
-        if DO_X_VS_PT_PLOTS:
+        if args.doMetricVsPt:
             plotter.plot_zpj_means_vs_pt_all()
             plotter.plot_zpj_rms_vs_pt_all()
             plotter.plot_zpj_delta_vs_pt_all()
@@ -2030,7 +2036,7 @@ if __name__ == "__main__":
         high_pt_bin = np.where(pt_bins == high_pt)[0][0]
         high_pt_str = "[%g, %g] GeV" % (high_pt, pt_bins[high_pt_bin+1])
 
-        if DO_OVERALL_SUMMARY_PLOTS:
+        if args.doSummaryBins:
             selections = []
             for angle in charged_and_neutral_angles:
                 this_angle_str = "%s (%s)" % (angle.name, angle.lambda_str)
@@ -2068,7 +2074,7 @@ if __name__ == "__main__":
                 output_file=os.path.join(args.outputDir, "zpj_delta_summary%s.pdf" % (filename_append))
             )
 
-    if has_dijet and has_zpj and DO_OVERALL_SUMMARY_PLOTS:
+    if has_dijet and has_zpj and args.doSummaryBins:
         low_pt = 120
         pt_bins = qgc.PT_UNFOLD_DICT['signal_gen']
         low_pt_bin = np.where(pt_bins == low_pt)[0][0]
