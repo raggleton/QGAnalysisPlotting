@@ -4750,7 +4750,8 @@ def print_chi2_table(df):
     print(r'\end{tabular}')
 
 
-if __name__ == "__main__":
+@profile
+def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("source",
                         help="Source directory (should be the one made by unfolding.py)")
@@ -4842,6 +4843,8 @@ if __name__ == "__main__":
 
     # Iterate through regions & variables
     for region in regions:
+        prof_start_region()
+
         region_dir = os.path.join(args.source, region['name'])
         if not os.path.isdir(region_dir):
             print("! Warning ! cannot find region dir", region_dir, '- skipping region')
@@ -4859,6 +4862,8 @@ if __name__ == "__main__":
                 print("! Warning ! cannot find angle dir", angle_output_dir, '- skipping angle', angle.var)
                 continue
 
+            prof_unpickle_angle()
+
             # Get region dict from pickle file
             pickle_filename = os.path.join(angle_output_dir, "unfolding_result.pkl")
             unpickled_region = unpickle_region(pickle_filename)
@@ -4872,7 +4877,9 @@ if __name__ == "__main__":
             # use region dict from unpickling
             # don't use update(), mega slow
             this_region = unpickled_region
-
+            
+            prof_start_binned_plots()
+            
             # MAKE ALL THE PLOTS
             # ------------------------------------------------------------------
             setup = Setup(jet_algo=jet_algo,
@@ -4891,6 +4898,7 @@ if __name__ == "__main__":
                                                                     do_binned_gen_pt=args.doBinnedPlotsGenPt,
                                                                     do_binned_gen_lambda=args.doBinnedPlotsGenLambda,
                                                                     do_binned_reco_pt=args.doBinnedPlotsRecoPt)
+            prof_done_binned_plots()
 
             if args.doBigNormed1DPlots:
                 print("...........................................................")
@@ -4900,6 +4908,8 @@ if __name__ == "__main__":
                 # (unlike the standard plot from MyUnfolderPlotter, which is absolute)
                 do_all_big_normalised_1d_plots_per_region_angle(setup, hist_bin_chopper)
 
+            prof_done_big_normed_plots()
+
             if args.doBigAbs1DPlots:
                 print("...........................................................")
                 print(" Doing big absolute 1D plots...")
@@ -4907,13 +4917,21 @@ if __name__ == "__main__":
                 # Do standard 1D absolute plots
                 do_all_big_absolute_1d_plots_per_region_angle(setup)
 
+            prof_done_big_abs_plots()
+
             if args.doBottomLineTest:
                 all_chi2_stats.append(get_bottom_line_stats(setup))
+
+            prof_done_chi2()
 
             # cleanup object, as it uses loads of memory
             if num_all_iterations > 1:
                 print("...tidying up...")
+                del hist_bin_chopper
                 del unpickled_region
+                del setup
+
+            prof_done_cleanup()
 
     if len(all_chi2_stats) > 0:
         df_stats = pd.DataFrame(all_chi2_stats)
@@ -4921,3 +4939,52 @@ if __name__ == "__main__":
         df_stats['angle'] = df_stats['angle'].astype('category')
         print(df_stats.head())
         print_chi2_table(df_stats)
+
+
+@profile
+def prof_start_region():
+    pass
+
+@profile
+def prof_unpickle_angle():
+    pass
+
+@profile
+def start_binned_plots():
+    pass
+
+@profile
+def prof_done_binned_plots():
+    pass
+
+@profile
+def prof_done_binned_plots():
+    pass
+
+@profile
+def prof_done_big_normed_plots():
+    pass
+
+@profile
+def prof_done_big_abs_plots():
+    pass
+
+@profile
+def prof_done_chi2():
+    pass
+
+@profile
+def prof_done_cleanup():
+    pass
+
+if __name__ == "__main__":
+    # When using memory_profiler/mprof, handy to have @profile to mark functions
+    # But when running normally we want to pass through without manually commenting out,
+    # so define our own decorator instead that does nothing
+    # 
+    # Put in here otherwise clashes when this file is imported
+    if 'profile' not in locals():
+        print("I have no memory_profiler @profile decorator in do_unfolding_plots, creating my own instead")
+        def profile(func):
+            return func
+    main()
