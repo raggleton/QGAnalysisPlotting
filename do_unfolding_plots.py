@@ -3349,10 +3349,10 @@ def do_binned_plots_per_region_angle(setup, do_binned_gen_pt, do_binned_gen_lamb
                     syst_gen_pt_binned_plotter.plot_unfolded_with_template_normalised()
                     syst_gen_pt_binned_plotter.plot_unfolded_with_template_unnormalised()
 
-        if has_pdf_systs:
-            print("...doing pdf systs")
-            gen_pt_binned_plotter.plot_unfolded_with_pdf_systs_normalised()
-            gen_pt_binned_plotter.plot_unfolded_with_pdf_systs_unnormalised()
+        # if has_pdf_systs:
+        #     print("...doing pdf systs")
+        #     gen_pt_binned_plotter.plot_unfolded_with_pdf_systs_normalised()
+        #     gen_pt_binned_plotter.plot_unfolded_with_pdf_systs_unnormalised()
             # Do a set of individual plots for these PDF variations
             # for syst_dict in region['pdf_systematics']:
             #     print(".......", syst_dict['label'])
