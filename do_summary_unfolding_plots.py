@@ -1315,7 +1315,8 @@ class SummaryPlotter(object):
                                        lower_row_label="#splitline{Simulation /}{     Data}",
                                        output_file=output_file,
                                        legend_header=legend_header,
-                                       label_every_bin=False)
+                                       label_every_bin=False,
+                                       lower_row_is_ratio=True)
 
 
     def plot_q_g_mean_bins_summary(self, quark_selections, gluon_selections, output_file, legend_header=None):
@@ -1340,6 +1341,31 @@ class SummaryPlotter(object):
                                        legend_header=legend_header,
                                        label_every_bin=False)
 
+
+    @staticmethod
+    def construct_data_ratio_hists(data_hist, other_hists, data_is_denominator=True):
+        """Construct ratio histograms of other/data (if data_is_denominator),
+        or data/other
+
+        Parameters
+        ----------
+        data_hist : TH1
+            Description
+        other_hists : list[TH1]
+            Description
+        data_is_denominator : bool, optional
+            If true, do other/data. Otherwise data/other
+        """
+        new_hists = []
+        for h in other_hists:
+            h_new = h.Clone()
+            if data_is_denominator:
+                h_new.Divide(data_hist)
+            else:
+                h_new.Divide(data_hist, h)
+            new_hists.append(h_new)
+        return new_hists
+
     def plot_two_row_bins_summary(self,
                                   selection_groups,
                                   upper_row_hist_groups,
@@ -1348,7 +1374,8 @@ class SummaryPlotter(object):
                                   legend_header=None,
                                   upper_row_label="",
                                   lower_row_label="",
-                                  label_every_bin=True):
+                                  label_every_bin=True,
+                                  lower_row_is_ratio=False):
         """Plot 2 row summary plot showing values from choice bins
 
         `selection_groups` is a multi-level list
@@ -1402,9 +1429,20 @@ class SummaryPlotter(object):
             Y label for upper row
         lower_row_label : str, optional
             Y label for lower row
-
+        label_every_bin : bool, optional
+            Description
+        lower_row_is_ratio : bool, optional
+            Description
         TODO: move into own class to be more customisable?
+
+        Raises
+        ------
+        RuntimeError
+            Description
         """
+        if lower_row_is_ratio and not self.has_data:
+            raise ValueError("Cannot do lower_row_is_ratio if no data")
+
         gc_stash = [] # to stop stuff being deleted
 
         # Setup canvas and pads
@@ -1496,6 +1534,20 @@ class SummaryPlotter(object):
 
         key_bin_names = ['(%d)' % (i+1) for i in range(_get_nbins(selection_groups[0]))]
 
+        # Construct lower row of hists if doing ratio
+        # Note that we remove data error bars - those get added as a separate hashed region
+        if lower_row_is_ratio:
+            lower_row_hist_groups = []
+            for hist_group in upper_row_hist_groups:
+                # always assumes data is [0]
+                data_hist = hist_group[0]
+                data_no_errors = data_hist.Clone()
+                cu.remove_th1_errors(data_no_errors)
+                new_hist_group = self.construct_data_ratio_hists(data_no_errors, hist_group[1:])
+                lower_row_hist_groups.append(new_hist_group)
+
+        data_total_ratio = None  # for legend
+
         # Now draw the histograms
         for isel, (selection_group, upper_pad, upper_hist_group, lower_pad, lower_hist_group) \
             in enumerate(zip(selection_groups, upper_pads, upper_row_hist_groups, lower_pads, lower_row_hist_groups)):
@@ -1542,14 +1594,49 @@ class SummaryPlotter(object):
             # DO LOWER ROW
             # ------------
             lower_pad.cd()
+
+            draw_opt = "E1"
             for ind, hist in enumerate(lower_hist_group[::-1]):
-                draw_opt = "E1"
-                if ind != 0:
-                    draw_opt += " SAME"
-                hist.Draw(draw_opt)
+                if ind == 0:
+                    hist.Draw(draw_opt)
+                else:
+                    hist.Draw(draw_opt + " SAME")
 
             lower_draw_hist = lower_hist_group[-1]
             xax = lower_draw_hist.GetXaxis()
+
+            if lower_row_is_ratio:
+                # need to have drawn hists already. now draw other things,
+                # then redraw hists on top
+
+                # create line at 1
+                ax_min, ax_max = xax.GetXmin(), xax.GetXmax()
+                line = ROOT.TLine(ax_min, 1, ax_max, 1)
+                line.SetLineWidth(2)
+                line.SetLineStyle(2)
+                line.SetLineColor(ROOT.kBlack)
+                line.Draw()
+                gc_stash.append(line)
+
+                # draw hashed area for data uncertainty
+                # Easiest way to get errors right is to do data (with 0 errors)
+                # and divide by data (with errors), as if you had MC = data with 0 error
+                data_hist = hist_group[0]
+                data_no_errors = data_hist.Clone()
+                cu.remove_th1_errors(data_no_errors)
+                data_total_ratio = data_no_errors.Clone()
+                data_total_ratio.Divide(data_hist)
+                data_total_ratio.SetFillStyle(3754)
+                data_total_ratio.SetFillColor(COMMON_STYLE_DICT['data_color'])
+                data_total_ratio.SetLineWidth(0)
+                data_total_ratio.SetMarkerSize(0)
+                data_total_ratio.Draw("E2 SAME")
+                gc_stash.append(data_total_ratio)
+
+                # now draw all the other hists
+                for ind, hist in enumerate(lower_hist_group):
+                    hist.Draw(draw_opt + "SAME")
+
             xax.CenterLabels()
             xax.LabelsOption("v")
 
@@ -1579,6 +1666,11 @@ class SummaryPlotter(object):
             up_padding = 0.2 * y_range
             lower_draw_hist.SetMinimum(y_down - down_padding)
             lower_draw_hist.SetMaximum(y_up + up_padding)
+            if lower_row_is_ratio:
+                # avoid awkward bit where 1 is right at the top, or not even shown
+                min_ratio_y_max = 1. + y_range*0.1
+                if lower_draw_hist.GetMaximum() < min_ratio_y_max:
+                    lower_draw_hist.SetMaximum(min_ratio_y_max)
 
             # Draw variable name
             var_latex = ROOT.TLatex()
@@ -1598,7 +1690,7 @@ class SummaryPlotter(object):
 
         # Add legend
         # Put legend_header + legend in own TPad
-        leg_y_top = 1-pad_offset_top+0.01
+        leg_y_top = 1-pad_offset_top+0.03
         leg_left = upper_pads[-1].GetAbsXlowNDC() + upper_pads[-1].GetAbsWNDC()
         leg_right = 1-0.005
         leg_y_bottom = leg_y_top-(1.5*upper_pads[0].GetAbsHNDC())
@@ -1620,10 +1712,8 @@ class SummaryPlotter(object):
             n_leg_entries += 2  # mc, alt mc
         if self.has_data:
             n_leg_entries += 1
-
-        ncol = 1
-        if n_leg_entries > 3:
-            ncol = 2
+        if lower_row_is_ratio:
+            n_leg_entries += 1 # for data hashing
 
         # to figure out legend height, account for any #splitline or \n in labels
         multiline_extra = 2.5
@@ -1710,11 +1800,13 @@ class SummaryPlotter(object):
         leg.SetBorderSize(0)
         # leg.SetFillColor(ROOT.kBlue)
         # leg.SetFillStyle(3004)
-        leg.SetTextSize(0.11)
+        leg.SetTextSize(0.1)
         leg.SetEntrySeparation(leg.GetEntrySeparation()*2.5)
+        if lower_row_is_ratio:
+            leg.SetEntrySeparation(leg.GetEntrySeparation()*1.2)
+
         leg.SetMargin(0.12)
         leg.SetTextAlign(12)
-        # leg.SetNColumns(ncol)
         leg.Draw()
 
         canvas.cd()
