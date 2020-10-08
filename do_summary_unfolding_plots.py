@@ -2121,7 +2121,7 @@ if __name__ == "__main__":
 
     normal_template = "{jet_str}, {pt_str}"
     charged_only_template = "{jet_str}, {pt_str},\ncharged-only"
-    groomed_template = "Groomed {jet_str},\n{pt_str}"
+    groomed_template = "{jet_str}, {pt_str},\ngroomed"
 
     gev_template = "p_{{T}}#in  [{:g}, {:g}] GeV"
     tev_template = "p_{{T}}#in  [{:g}, {:g}] TeV"
