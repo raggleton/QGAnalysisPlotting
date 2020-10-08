@@ -604,8 +604,9 @@ class SummaryPlotter(object):
             # note that we use "same" for all - this is to keep the original axes
             # (we may want to rethink this later?)
             plot.subplot_pad.cd()
-            plot.subplot_legend = ROOT.TLegend(0.25, 0.75, 0.47, 0.9)
+            plot.subplot_legend = ROOT.TLegend(0.25, 0.75, 0.65, 0.9)
             plot.subplot_legend.SetFillStyle(0)
+            plot.subplot_legend.SetTextSize(0.095)
             draw_opt = "E2 SAME"
             if do_dijet_cen:
                 dijet_central_hist_ratio_error.Draw(draw_opt)
@@ -619,8 +620,9 @@ class SummaryPlotter(object):
             if do_zpj:
                 plot.subplot_legend.AddEntry(zpj_hist_ratio_error, "Data uncert.", "F")
                 zpj_hist_ratio_error.Draw(draw_opt)
-            plot.subplot_container.Draw("SAME" + subplot_draw_opts)
             plot.subplot_line.Draw()
+            # draw hists after line otherwise ugly overlap
+            plot.subplot_container.Draw("SAME" + subplot_draw_opts)
             plot.subplot_legend.Draw()
             plot.canvas.cd()
 
