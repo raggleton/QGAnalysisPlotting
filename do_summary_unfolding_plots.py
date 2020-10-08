@@ -1732,34 +1732,6 @@ class SummaryPlotter(object):
         leg_entry_spacing = 0.07
         leg = ROOT.TLegend(0., 1 - (leg_entry_spacing*n_leg_entries), 1, 1) # relative to leg_pad
 
-        # legend_header_pt = None
-        # if legend_header:
-        #     # Add title to legend
-        #     # Add ability to do multiple lines by splitting on \n
-        #     # Any line with <b> is bolded
-        #     # Dont account for blank lines
-        #     num_header_lines = len([x for x in legend_header.split("\n") if len(x) > 0])
-        #     line_height = 0.1
-        #     line_height = 0.055
-        #     offset = num_header_lines * line_height
-        #     # move legend down by the height of the new TPaveText
-        #     leg.SetY1(leg.GetY1()-offset)
-        #     leg.SetY2(leg.GetY2()-offset)
-        #     legend_header_pt = ROOT.TPaveText(leg.GetX1(), leg.GetY2(), leg.GetX2(), 0.98, "NDC NB") # this is relative to leg_pad
-        #     legend_header_pt.SetFillStyle(0)
-        #     legend_header_pt.SetBorderSize(0)
-        #     for line in legend_header.split("\n"):
-        #         is_bold = "<b>" in line
-        #         text = legend_header_pt.AddText(line.replace("<b>", ""))
-        #         text.SetTextAlign(11)
-        #         if is_bold:
-        #             text.SetTextFont(62)
-        #             text.SetTextSize(0.1)
-        #         else:
-        #             text.SetTextFont(42)
-        #             text.SetTextSize(0.09)
-        #     legend_header_pt.Draw()
-
         # Replace legend markers with graph to get correct error bar endings
         # Yes this is ridiculous
         dummy_gr = ROOT.TGraphErrors(1, array('d', [1]), array('d', [1]), array('d', [1]), array('d', [1]))
