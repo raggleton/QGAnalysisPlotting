@@ -159,8 +159,8 @@ def get_dataframe_from_yoda_inputs(yoda_input_groups):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--h5output",
-                        default='summary.h5',
-                        help=("Output HDF5 filename. Default is 'summary.h5'"))
+                        default='rivet_summary.h5',
+                        help=("Output HDF5 filename. Default is 'rivet_summary.h5'"))
     parser.add_argument("--yodaInputDijet",
                         action='append',
                         default=[],

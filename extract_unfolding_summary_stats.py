@@ -99,8 +99,8 @@ if __name__ == "__main__":
     parser.add_argument("--ak8source",
                         help="Source directory for AK8 jets (should be the one made by unfolding.py")
     parser.add_argument("--h5output",
-                        default='summary.h5',
-                        help=("Output HDF5 filename. Default is 'summary.h5'"))
+                        default='unfolding_summary.h5',
+                        help=("Output HDF5 filename. Default is 'unfolding_summary.h5'"))
     args = parser.parse_args()
 
     # Get input data
@@ -218,7 +218,7 @@ if __name__ == "__main__":
                         'angle': angle.var,
 
                         'mean': unfolded_hist_bin_total_errors_mean,
-                        'mean_err': unfolded_hist_bin_total_errors_mean_err, # FIXME
+                        'mean_err': unfolded_hist_bin_total_errors_mean_err,
 
                         'mean_truth': mc_gen_hist_bin_mean,
                         'mean_err_truth': mc_gen_hist_bin_mean_err,
@@ -227,7 +227,7 @@ if __name__ == "__main__":
                         'mean_err_alt_truth': alt_mc_gen_hist_bin_mean_err,
 
                         'rms': unfolded_hist_bin_total_errors_rms,
-                        'rms_err': unfolded_hist_bin_total_errors_rms_err, #FIXME
+                        'rms_err': unfolded_hist_bin_total_errors_rms_err,
 
                         'rms_truth': mc_gen_hist_bin_rms,
                         'rms_err_truth': mc_gen_hist_bin_rms_err,
