@@ -160,7 +160,7 @@ def get_flavour_efficiencies(input_file, dirname, pt_bins, var_prepend="", which
         h_total.SetBinError(ind, val[1])
 
     for flav_key in [k for k in flav_dict.keys() if k != 'total']:
-        h_flav = ROOT.TH1D("h_%s" % flav_key, ";p_{T}^{%s} [GeV];N" % (get_jet_str(var_prepend)), len(pt_bins), bin_edges)
+        h_flav = ROOT.TH1D("h_%s" % flav_key, ";p_{T}^{%s} [GeV];N" % (get_jet_str(var_prepend)).title(), len(pt_bins), bin_edges)
         for ind, val in enumerate(flav_dict[flav_key], 1):
             h_flav.SetBinContent(ind, val[0])
             h_flav.SetBinError(ind, val[1])
@@ -227,8 +227,14 @@ def compare_flavour_fractions_vs_pt(input_files, dirnames, pt_bins, labels, flav
              xlim=(pt_bins[0][0], pt_bins[-1][1]),
              ylim=(0, 1),
              has_data=False)
-    p.default_canvas_size = (800, 600)
+    p.default_canvas_size = (600, 600)
     p.plot("ALP")
+    p.main_pad.SetBottomMargin(0.16)
+    p.get_modifier().GetXaxis().SetTitleOffset(1.4)
+    p.get_modifier().GetXaxis().SetTitleSize(.045)
+    p.legend.SetX1(0.56)
+    p.legend.SetY1(0.6)
+    p.legend.SetY2(0.87)
     p.set_logx(do_more_labels=False)
     p.save(output_filename)
 
@@ -247,14 +253,19 @@ def do_flavour_fraction_vs_pt(input_file, dirname, pt_bins, output_filename, tit
 
     p_flav = Plot([plot_d, plot_u, plot_s, plot_c, plot_b, plot_g, plot_unknown],
                   what='graph',
-                  xtitle="p_{T}^{%s} [GeV]" % get_jet_str(var_prepend),
+                  xtitle="p_{T}^{%s} [GeV]" % get_jet_str(var_prepend).title(),
                   ytitle="Fraction",
                   title=title,
                   xlim=(pt_bins[0][0], pt_bins[-1][1]),
                   ylim=[0, 1],
                   has_data=False)
-    # p_flav.default_canvas_size = (800, 600)
-
+    p_flav.default_canvas_size = (600, 600)
     p_flav.plot("ALP")
+    p_flav.main_pad.SetBottomMargin(0.16)
+    p_flav.get_modifier().GetXaxis().SetTitleOffset(1.4)
+    p_flav.get_modifier().GetXaxis().SetTitleSize(.045)
     p_flav.set_logx(do_more_labels=False)
+    p_flav.legend.SetX1(0.56)
+    p_flav.legend.SetY1(0.6)
+    p_flav.legend.SetY2(0.87)
     p_flav.save(output_filename)
