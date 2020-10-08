@@ -1422,7 +1422,7 @@ class SummaryPlotter(object):
         n_pads = len(selection_groups)
 
         # gap between right end of plots and edge of canvas, used for legend
-        right_margin = 0.15
+        right_margin = 0.17
         # pad_left_titles_gap = 0.01 # gap between pad_left_titles and all plots
         pad_to_pad_gap = 0.005  # gap between plot pad columns
         # how far in from the left the first plotting pad starts. used for y axis title
@@ -1638,8 +1638,8 @@ class SummaryPlotter(object):
         # Add legend
         # Put legend_header + legend in own TPad
         leg_y_top = 1-pad_offset_top
-        leg_left = upper_pads[-1].GetAbsXlowNDC() + upper_pads[-1].GetAbsWNDC() + pad_to_pad_gap
-        leg_right = 1-0.02
+        leg_left = upper_pads[-1].GetAbsXlowNDC() + upper_pads[-1].GetAbsWNDC()
+        leg_right = 1-0.01
         leg_y_bottom = leg_y_top-(1.5*upper_pads[0].GetAbsHNDC())
         leg_pad = ROOT.TPad("leg_pad_"+cu.get_unique_str(), "", leg_left, leg_y_bottom, leg_right, leg_y_top)
         ROOT.SetOwnership(leg_pad, False)  # important! otherwise seg fault
@@ -1654,39 +1654,52 @@ class SummaryPlotter(object):
         leg_pad.cd()
         gc_stash.append(leg_pad)
 
-        n_leg_entries = 2 + len(self.other_samples) + 1 # mc, alt_mc, other samples, dummy
+        n_leg_entries = len(self.other_samples) # other samples
+        if not self.only_yoda_data:
+            n_leg_entries += 2  # mc, alt mc
         if self.has_data:
             n_leg_entries += 1
+
+        # to figure out legend height, account for any #splitline or \n in labels
+        multiline_extra = 2
+        for label in [self.mc_label, self.alt_mc_label]:
+            if '#splitline' in label or '\n' in label:
+                n_leg_entries += multiline_extra
+        for sample in self.other_samples:
+            label = sample['style_dict'].get('label', sample['key'])
+            if '#splitline' in label or '\n' in label:
+                n_leg_entries += multiline_extra
+
         leg_entry_spacing = 0.06
         leg = ROOT.TLegend(0., 1 - (leg_entry_spacing*n_leg_entries), 1, 1) # relative to leg_pad
 
-        legend_header_pt = None
-        if legend_header:
-            # Add title to legend
-            # Add ability to do multiple lines by splitting on \n
-            # Any line with <b> is bolded
-            # Dont account for blank lines
-            num_header_lines = len([x for x in legend_header.split("\n") if len(x) > 0])
-            line_height = 0.1
-            line_height = 0.055
-            offset = num_header_lines * line_height
-            # move legend down by the height of the new TPaveText
-            leg.SetY1(leg.GetY1()-offset)
-            leg.SetY2(leg.GetY2()-offset)
-            legend_header_pt = ROOT.TPaveText(leg.GetX1(), leg.GetY2(), leg.GetX2(), 0.98, "NDC NB") # this is relative to leg_pad
-            legend_header_pt.SetFillStyle(0)
-            legend_header_pt.SetBorderSize(0)
-            for line in legend_header.split("\n"):
-                is_bold = "<b>" in line
-                text = legend_header_pt.AddText(line.replace("<b>", ""))
-                text.SetTextAlign(11)
-                if is_bold:
-                    text.SetTextFont(62)
-                    text.SetTextSize(0.1)
-                else:
-                    text.SetTextFont(42)
-                    text.SetTextSize(0.09)
-            legend_header_pt.Draw()
+        # legend_header_pt = None
+        # if legend_header:
+        #     # Add title to legend
+        #     # Add ability to do multiple lines by splitting on \n
+        #     # Any line with <b> is bolded
+        #     # Dont account for blank lines
+        #     num_header_lines = len([x for x in legend_header.split("\n") if len(x) > 0])
+        #     line_height = 0.1
+        #     line_height = 0.055
+        #     offset = num_header_lines * line_height
+        #     # move legend down by the height of the new TPaveText
+        #     leg.SetY1(leg.GetY1()-offset)
+        #     leg.SetY2(leg.GetY2()-offset)
+        #     legend_header_pt = ROOT.TPaveText(leg.GetX1(), leg.GetY2(), leg.GetX2(), 0.98, "NDC NB") # this is relative to leg_pad
+        #     legend_header_pt.SetFillStyle(0)
+        #     legend_header_pt.SetBorderSize(0)
+        #     for line in legend_header.split("\n"):
+        #         is_bold = "<b>" in line
+        #         text = legend_header_pt.AddText(line.replace("<b>", ""))
+        #         text.SetTextAlign(11)
+        #         if is_bold:
+        #             text.SetTextFont(62)
+        #             text.SetTextSize(0.1)
+        #         else:
+        #             text.SetTextFont(42)
+        #             text.SetTextSize(0.09)
+        #     legend_header_pt.Draw()
 
         # Replace legend markers with graph to get correct error bar endings
         # Yes this is ridiculous
@@ -1725,21 +1738,19 @@ class SummaryPlotter(object):
             dummy_sample = dummy_gr.Clone()
             self._style_hist(dummy_sample, **sample['style_dict'])
             dummy_other.append(dummy_sample)
-            _add_entry(dummy_sample, sample['style_dict'].get('label', sample['key']), "P")
+            sample_label = sample['style_dict'].get('label', sample['key'])
+            _add_entry(dummy_sample, sample_label, "P")
 
         # Add a dummy entry, otherwise it won't print the label of the last entry
         # No idea why - seems correlated with having > 2 lines in the legend header?
         # Absolute mess
-        leg.AddEntry(0, "", "")
+        # leg.AddEntry(0, "", "")
         leg.SetFillColor(0)
         leg.SetBorderSize(0)
         # leg.SetFillColor(ROOT.kGreen)
         # leg.SetFillStyle(3004)
-        leg.SetTextSize(0.1)
+        leg.SetTextSize(0.125)
         leg.SetTextAlign(12)
-        # leg.SetEntrySeparation(0.08) # does nothing?!
-        # leg.SetEntrySeparation(0.04)
-        # leg.SetEntrySeparation(0.01)
         leg.Draw()
 
         canvas.cd()
