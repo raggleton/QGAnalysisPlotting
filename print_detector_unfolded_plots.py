@@ -20,6 +20,8 @@ from itertools import chain
 import numpy as np
 from pprint import pprint
 from array import array
+from math import floor, log10
+
 
 import ROOT
 from MyStyle import My_Style
@@ -188,60 +190,130 @@ class DijetZPJGenPtBinnedPlotter(object):
 
     def plot_detector_unfolded(self, do_dijet=True, do_zpj=True):
         for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
-            hbc_args = dict(ind=ibin, binning_scheme='generator')
-            dijet_entries = []
+            hbc_args = dict(ind=ibin, axis='pt', do_norm=True, do_div_bin_width=True, binning_scheme='generator')
+            print("----------pt bin", ibin, "=", bin_edge_low, "-", bin_edge_high)
+
+            def determine_num_dp(values):
+                """Determine correct number of decimal places
+                so that the smallest value has 1 digit
+
+                If smallest > 1, then just returns 0
+                """
+                smallest_value = min([v for v in values if v > 0])
+                print('determine_num_dp', smallest_value)
+                if smallest_value > 1:
+                    return 0
+                # use log10 to figure out exponent, then floor it
+                # e.g. log10(5.5E-3) = -2.25...., floor(-2.25...) = -3
+                n_dp = abs(floor(log10(smallest_value)))
+                return n_dp
+
+            def setup_beta_function(name):
+                fit = ROOT.TF1(name, "[2]*TMath::BetaDist(x,[0],[1])", 0, 1)
+                fit.SetParameter(0, 3)
+                fit.SetParLimits(0, 0, 100)
+                fit.SetParameter(1, 5)
+                fit.SetParLimits(1, 0, 100)
+                fit.SetParameter(2, 0.05)
+                fit.SetParLimits(2, 0, 10)
+                # fit.SetParameter(3, 0)
+                # fit.SetParLimits(3, 0, 10)
+                # fit.SetParameter(4, 1)
+                # fit.SetParLimits(4, 0.1, 10)
+                return fit
+
+            fit_opts = "S"
+
+            # Weird setup here: basically need all the values going into legend first,
+            # to be able to determine the number of decimal points
+            # Then we can actually create the Contributions and plot afterwards
+            dijet_detector_hist, dijet_unfolded_hist = None, None
+            dijet_detector_mean, dijet_detector_mean_err = None, None
+            dijet_unfolded_mean, dijet_unfolded_mean_err = None, None
+            zpj_detector_hist, zpj_unfolded_hist = None, None
+            zpj_detector_mean, zpj_detector_mean_err = None, None
+            zpj_unfolded_mean, zpj_unfolded_mean_err = None, None
+            dijet_entries, zpj_entries = [], []
+            errors = []
+
+            if do_dijet:
+                # get detector-level data
+                dijet_detector_hist = self.dijet_hbc.get_bin_plot('input_hist_gen_binning_bg_subtracted', **hbc_args)
+                dijet_detector_mean, dijet_detector_mean_err = self.get_uncorrelated_mean_err(dijet_detector_hist, is_density=True)
+                errors.append(dijet_detector_mean_err)
+
+                # fit with beta function
+                # dijet_detector_fit = setup_beta_function("beta_fit_dijet_detector")
+                # fit_result = dijet_detector_hist.Fit(dijet_detector_fit, fit_opts, "")
+                # fit_result.Print()
+
+                # get unfolded data
+                dijet_unfolded_hist = self.dijet_hbc.get_bin_plot("unfolded", **hbc_args)
+                dijet_cov_matrix = self.dijet_hbc.get_bin_plot(self.dijet_region['unfolder'].total_ematrix_name, **hbc_args)
+                dijet_unfolded_mean, dijet_unfolded_mean_err = self.get_correlated_mean_err(dijet_unfolded_hist, dijet_cov_matrix, is_density=True)
+                errors.append(dijet_unfolded_mean_err)
+
+                # dijet_unfolded_fit = setup_beta_function("beta_fit_dijet_unfolded")
+                # fit_result = dijet_unfolded_hist.Fit(dijet_unfolded_fit, fit_opts, "")
+                # fit_result.Print()
+
+            if do_zpj:
+                # get detector-level data
+                zpj_detector_hist = self.zpj_hbc.get_bin_plot('input_hist_gen_binning_bg_subtracted', **hbc_args)
+                zpj_detector_mean, zpj_detector_mean_err = self.get_uncorrelated_mean_err(zpj_detector_hist, is_density=True)
+                errors.append(zpj_detector_mean_err)
+
+                # zpj_detector_fit = setup_beta_function("beta_fit_zpj_detector")
+                # fit_result = zpj_detector_hist.Fit(zpj_detector_fit, fit_opts, "")
+                # fit_result.Print()
+
+                # get unfolded data
+                zpj_unfolded_hist = self.zpj_hbc.get_bin_plot("unfolded", **hbc_args)
+                zpj_cov_matrix = self.zpj_hbc.get_bin_plot(self.zpj_region['unfolder'].total_ematrix_name, **hbc_args)
+                zpj_unfolded_mean, zpj_unfolded_mean_err = self.get_correlated_mean_err(zpj_unfolded_hist, zpj_cov_matrix, is_density=True)
+                errors.append(zpj_unfolded_mean_err)
+
+                # zpj_unfolded_fit = setup_beta_function("beta_fit_zpj_unfolded")
+                # fit_result = zpj_unfolded_hist.Fit(zpj_unfolded_fit, fit_opts, "")
+                # fit_result.Print()
+
+            n_dp = determine_num_dp(errors)
+
             # kerning necessary as it puts massive space around #pm
             # but the first #kern doesn't affect the space after #pm as much (?!),
             # so I have to add another one with harder kerning
-            mean_template = 'Mean = {:.2f}#kern[-0.2dx]{{ #pm}}#kern[-0.5dx]{{ }}{:.1g}'
+            # we use %.(n_dp)f as our float format str to ensure the correct number of dp are shown (and not rounded off)
+            mean_template = 'Mean = {:.%df}#kern[-0.2dx]{{ #pm}}#kern[-0.5dx]{{ }}{:.%df}' % (n_dp, n_dp)
+
             if do_dijet:
-                # get detector-level data
-                detector_hist = self.dijet_hbc.get_pt_bin_normed_div_bin_width('input_hist_gen_binning_bg_subtracted', **hbc_args)
-                detector_mean, detector_mean_err = self.get_uncorrelated_mean_err(detector_hist, is_density=True)
-
-                # get unfolded data
-                unfolded_hist = self.dijet_hbc.get_pt_bin_normed_div_bin_width("unfolded", **hbc_args)
-                cov_matrix = self.dijet_hbc.get_pt_bin_normed_div_bin_width(self.dijet_region['unfolder'].total_ematrix_name, **hbc_args)
-                unfolded_mean, unfolded_mean_err = self.get_correlated_mean_err(unfolded_hist, cov_matrix, is_density=True)
-
-                dijet_entries.append(Contribution(detector_hist,
-                                                  label='Detector-level\n%s' % (mean_template.format(detector_mean, detector_mean_err)),
+                dijet_entries.append(Contribution(dijet_detector_hist,
+                                                  label='Detector-level\n%s' % (mean_template.format(round(dijet_detector_mean, n_dp), round(dijet_detector_mean_err, n_dp))),
                                                   line_color=self.plot_colours['dijet_colour'],
                                                   line_width=self.line_width,
                                                   line_style=self.line_style_detector,
                                                   marker_color=self.plot_colours['dijet_colour'],
                                                   marker_style=cu.Marker.get('circle', filled=False),
                                                   marker_size=0.75))
-                dijet_entries.append(Contribution(unfolded_hist,
-                                                  label='Particle-level\n%s' % (mean_template.format(unfolded_mean, unfolded_mean_err)),
+                dijet_entries.append(Contribution(dijet_unfolded_hist,
+                                                  label='Particle-level\n%s' % (mean_template.format(round(dijet_unfolded_mean, n_dp), round(dijet_unfolded_mean_err, n_dp))),
                                                   line_color=self.plot_colours['dijet_colour'],
                                                   line_width=self.line_width,
                                                   line_style=1,
                                                   marker_color=self.plot_colours['dijet_colour'],
                                                   marker_style=cu.Marker.get('circle', filled=True),
                                                   marker_size=0.75))
-            zpj_entries = []
+
             if do_zpj:
-                # get detector-level data
-                detector_hist = self.zpj_hbc.get_pt_bin_normed_div_bin_width('input_hist_gen_binning_bg_subtracted', **hbc_args)
-                detector_mean, detector_mean_err = self.get_uncorrelated_mean_err(detector_hist, is_density=True)
-
-                # get unfolded data
-                unfolded_hist = self.zpj_hbc.get_pt_bin_normed_div_bin_width("unfolded", **hbc_args)
-                cov_matrix = self.zpj_hbc.get_pt_bin_normed_div_bin_width(self.zpj_region['unfolder'].total_ematrix_name, **hbc_args)
-                unfolded_mean, unfolded_mean_err = self.get_correlated_mean_err(unfolded_hist, cov_matrix, is_density=True)
-
-
-                zpj_entries.append(Contribution(detector_hist,
-                                            label='Detector-level\n%s' % (mean_template.format(detector_mean, detector_mean_err)),
+                zpj_entries.append(Contribution(zpj_detector_hist,
+                                            label='Detector-level\n%s' % (mean_template.format(round(zpj_detector_mean, n_dp), round(zpj_detector_mean_err, n_dp))),
                                             line_color=self.plot_colours['zpj_colour'],
                                             line_width=self.line_width,
                                             line_style=self.line_style_detector,
                                             marker_color=self.plot_colours['zpj_colour'],
                                             marker_style=cu.Marker.get('square', filled=False),
                                             marker_size=0.75))
-                zpj_entries.append(Contribution(unfolded_hist,
-                                            label='Particle-level\n%s' % (mean_template.format(unfolded_mean, unfolded_mean_err)),
+                zpj_entries.append(Contribution(zpj_unfolded_hist,
+                                            label='Particle-level\n%s' % (mean_template.format(round(zpj_unfolded_mean, n_dp), round(zpj_unfolded_mean_err, n_dp))),
                                             line_color=self.plot_colours['zpj_colour'],
                                             line_width=self.line_width,
                                             line_style=1,
@@ -279,8 +351,8 @@ class DijetZPJGenPtBinnedPlotter(object):
             dummies = []  # to stop garbage collection
             label_height = 0.03
             legend_height = 0.17
-            legend_x1 = 0.58
-            legend_x2 = 0.85
+            legend_x1 = 0.56
+            legend_x2 = 0.78
             label_left_offset = 0.01
             label_text_size = 0.037
             label_top = 0.85
