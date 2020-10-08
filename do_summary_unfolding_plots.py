@@ -908,7 +908,8 @@ class SummaryPlotter(object):
                                        output_file=output_file,
                                        upper_row_label="Mean",
                                        lower_row_label="RMS",
-                                       legend_header=legend_header)
+                                       legend_header=legend_header,
+                                       label_every_bin=False)
 
     def construct_delta_hist_groups(self, selections):
         """Construct delta hists for plots (nominal MC, & alt MC)
@@ -1294,7 +1295,8 @@ class SummaryPlotter(object):
                                        upper_row_label="#splitline{Gluon mean /}{Quark mean}",
                                        lower_row_label="#splitline{Simulation /}{     Data}",
                                        output_file=output_file,
-                                       legend_header=legend_header)
+                                       legend_header=legend_header,
+                                       label_every_bin=False)
 
 
     def plot_q_g_mean_bins_summary(self, quark_selections, gluon_selections, output_file, legend_header=None):
@@ -1316,7 +1318,8 @@ class SummaryPlotter(object):
                                        upper_row_label="#splitline{Gluon-enriched}{         mean}",  # manually do spacing, since ROOT only left-aligns splitline
                                        lower_row_label="#splitline{Quark-enriched}{         mean}",
                                        output_file=output_file,
-                                       legend_header=legend_header)
+                                       legend_header=legend_header,
+                                       label_every_bin=False)
 
     def plot_two_row_bins_summary(self,
                                   selection_groups,
@@ -1325,7 +1328,8 @@ class SummaryPlotter(object):
                                   output_file,
                                   legend_header=None,
                                   upper_row_label="",
-                                  lower_row_label=""):
+                                  lower_row_label="",
+                                  label_every_bin=True):
         """Plot 2 row summary plot showing values from choice bins
 
         `selection_groups` is a multi-level list
@@ -1413,7 +1417,7 @@ class SummaryPlotter(object):
         pad_right_margin = 0.02
         pad_left_margin = 0.2
 
-        # bottom margin includes space for x axis labels
+        # bottom margin includes space for x axis labels & and text at the bottom
         # note that we apply it BOTH to the upper and lower pads,
         # even though the labels are on the lower pads, since we need the pads
         # to be exactly the same size, in order to get man things the same size,
@@ -1463,6 +1467,15 @@ class SummaryPlotter(object):
             pad_lower.SetTicks(1, 1)
             pad_lower.Draw()
             lower_pads.append(pad_lower)
+
+        def _get_nbins(selection_group):
+            return len(selection_group['selections'])
+
+        if not label_every_bin:
+            if len(set([_get_nbins(selection_groups[i]) for i in range(n_pads)])) > 1:
+                raise RuntimeError("Cannot disable label_every_bin, since differing number of bins")
+
+        key_bin_names = ['(%d)' % (i+1) for i in range(_get_nbins(selection_groups[0]))]
 
         # Now draw the histograms
         for isel, (selection_group, upper_pad, upper_hist_group, lower_pad, lower_hist_group) \
@@ -1531,6 +1544,15 @@ class SummaryPlotter(object):
             yax.SetTickLength(yax.GetTickLength()*factor*tick_fudge)  # extra bit of fudging, probably becasue pads are sligthly different sizes
             yax.SetNdivisions(n_divisions)
 
+            # Instead of labelling every bin, replace with numbers,
+            # and add key to plot
+            if not label_every_bin:
+                for i in range(1, lower_draw_hist.GetNbinsX()+1):
+                    xax.SetBinLabel(i, key_bin_names[i-1])
+                xax.LabelsOption("h")
+                xax.SetLabelSize(xax.GetLabelSize()*1.5)
+                xax.SetLabelOffset(xax.GetLabelOffset()*2)
+
             # Set range using bin contents + error bars
             y_up, y_down = self.calc_hists_max_min(lower_hist_group)
             y_range = y_up - y_down
@@ -1548,10 +1570,49 @@ class SummaryPlotter(object):
             # put in middle of the plot (if 0.5, woud look off-centre)
             var_x = 0.5*(1-pad_right_margin-pad_left_margin) + pad_left_margin
             var_y = 0.03  # do by eye
+            if not label_every_bin:
+                var_y = 0.33
             var_latex.DrawLatexNDC(var_x, var_y, selection_group['label'])
             gc_stash.append(var_latex)
 
         canvas.cd()
+
+        # Add key for bins
+        if not label_every_bin:
+            # the bottom is the offset, plus a little bit
+            # the top of the text is the margin (scaled according to pad height),
+            # minus a bit for labels
+            key_text = ROOT.TPaveText(left_margin+(pad_left_margin*pad_width), pad_offset_bottom+0.02, 1-right_margin, (pad_bottom_margin*pad_height)-0.13, "NB NDC")
+            key_text.SetFillStyle(4000)
+            key_text.SetFillColor(ROOT.kWhite)
+            # key_text.SetFillStyle(1001)
+            # key_text.SetFillColor(ROOT.kYellow)
+            key_text.SetTextAlign(ROOT.kHAlignCenter + ROOT.kVAlignCenter)
+            key_text.SetTextSize(0.04)
+            # generate all the key items
+            text_items = ["%s: %s" % (key_bin, selection[1])
+                          for key_bin, selection
+                          in zip(key_bin_names, selection_groups[0]['selections'])]
+            # if any(["_{" in t for t in text_items]) or any(["^{" in t for t in text_items]):
+            #     # shrink text a little if super or sub script
+            #     key_text.SetTextSize(key_text.GetTextSize()*0.9)
+
+            # figure out manual wrapping, since some labels are short enough
+            # to fit multiple per line
+            wrapped_text_items = []
+            max_line_length = 120
+            for t_ind, t in enumerate(text_items):
+                if t_ind == 0:
+                    wrapped_text_items.append(t)
+                else:
+                    if len(t) + len(wrapped_text_items[-1]) < max_line_length:
+                        wrapped_text_items[-1] = "%s      %s" % (wrapped_text_items[-1], t)
+                    else:
+                        wrapped_text_items.append(t)
+            for t in wrapped_text_items:
+                key_text.AddText(t)
+            key_text.Draw()
+            gc_stash.append(key_text)
 
         # Add legend
         # Put legend_header + legend in own TPad
@@ -1920,6 +1981,12 @@ if __name__ == "__main__":
     charged_only_template = "#splitline{{{jet_str}, {pt_str}}}{{      Charged-only}}"
     groomed_template = "#splitline{{{jet_str}, {pt_str}}}{{         Groomed}}"
 
+    charged_only_template = "{jet_str}, {pt_str}, charged-only"
+    groomed_template = "Groomed {jet_str}, {pt_str}"
+
+    gev_template = "p_{{T}}#in  [{:g}, {:g}] GeV"
+    tev_template = "p_{{T}}#in  [{:g}, {:g}] TeV"
+
     if has_dijet:
         if args.doMetricVsPt:
             plotter.plot_dijet_means_vs_pt_all()
@@ -1928,11 +1995,10 @@ if __name__ == "__main__":
 
         pt_bins = qgc.PT_UNFOLD_DICT['signal_gen']
         low_pt_bin = np.where(pt_bins == low_pt)[0][0]
-        low_pt_str = "[%g, %g] GeV" % (low_pt, pt_bins[low_pt_bin+1])
+        low_pt_str = gev_template.format(low_pt, pt_bins[low_pt_bin+1])
 
         high_pt_bin = np.where(pt_bins == high_pt)[0][0]
-        high_pt_str = "[%g, %g] GeV" % (high_pt, pt_bins[high_pt_bin+1])
-        high_pt_str = "[%g, %g] TeV" % (high_pt/1000, pt_bins[high_pt_bin+1]/1000)
+        high_pt_str = tev_template.format(high_pt/1000, pt_bins[high_pt_bin+1]/1000)
 
         if args.doSummaryBins:
             # DIJET CENTRAL/GLUON
@@ -2033,11 +2099,11 @@ if __name__ == "__main__":
 
         pt_bins = qgc.PT_UNFOLD_DICT['signal_zpj_gen']
         low_pt_bin = np.where(pt_bins == low_pt)[0][0]
-        low_pt_str = "[%g, %g] GeV" % (low_pt, pt_bins[low_pt_bin+1])
+        low_pt_str = gev_template.format(low_pt, pt_bins[low_pt_bin+1])
 
         high_pt = 326
         high_pt_bin = np.where(pt_bins == high_pt)[0][0]
-        high_pt_str = "[%g, %g] GeV" % (high_pt, pt_bins[high_pt_bin+1])
+        high_pt_str = gev_template.format(high_pt, pt_bins[high_pt_bin+1])
 
         if args.doSummaryBins:
             selections = []
@@ -2081,11 +2147,11 @@ if __name__ == "__main__":
         low_pt = 120
         pt_bins = qgc.PT_UNFOLD_DICT['signal_gen']
         low_pt_bin = np.where(pt_bins == low_pt)[0][0]
-        low_pt_str = "[%g, %g] GeV" % (low_pt, pt_bins[low_pt_bin+1])
+        low_pt_str = gev_template.format(low_pt, pt_bins[low_pt_bin+1])
 
         high_pt = 1000
         high_pt_bin = np.where(pt_bins == high_pt)[0][0]
-        high_pt_str = "[%g, %g] TeV" % (high_pt/1000, pt_bins[high_pt_bin+1]/1000)
+        high_pt_str = tev_template.format(high_pt/1000, pt_bins[high_pt_bin+1]/1000)
 
         # QUARK
         # ---------------------------------------------
