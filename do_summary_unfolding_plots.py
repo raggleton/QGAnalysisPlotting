@@ -1577,11 +1577,13 @@ class SummaryPlotter(object):
             yax.SetLabelSize(yax.GetLabelSize()*factor*label_size_fudge)
             label_offset_fudge = 4
             yax.SetLabelOffset(yax.GetLabelOffset()*factor*label_offset_fudge)
-            tick_fudge = 4
+            tick_fudge = 2
             yax.SetTickLength(yax.GetTickLength()*factor*tick_fudge)
-            n_divisions = 1005  # fewer big ticks so less chance of overlapping with lower plot
+            primary = 3
+            secondary = 5
             # n_divisions = 510  # default
-            yax.SetNdivisions(n_divisions)
+            n_divisions_opts = [primary, secondary, 0, True]
+            yax.SetNdivisions(*n_divisions_opts)
 
             # Set range using bin contents + error bars
             y_up, y_down = self.calc_hists_max_min(upper_hist_group)
@@ -1648,7 +1650,7 @@ class SummaryPlotter(object):
             yax.SetLabelSize(yax.GetLabelSize()*factor*label_size_fudge)
             yax.SetLabelOffset(yax.GetLabelOffset()*factor*label_offset_fudge)
             yax.SetTickLength(yax.GetTickLength()*factor*tick_fudge)  # extra bit of fudging, probably becasue pads are sligthly different sizes
-            yax.SetNdivisions(n_divisions)
+            yax.SetNdivisions(*n_divisions_opts)
 
             # Instead of labelling every bin, replace with numbers,
             # and add key to plot
