@@ -565,6 +565,22 @@ class SummaryPlotter(object):
         # plot.get_modifier().GetYaxis().SetTitleOffset(plot.get_modifier().GetYaxis().GetTitleOffset()*1.1)
         plot.set_logx(do_more_labels=False)
 
+        # Calculate automatic subplot limits, accounting for the range of values,
+        # and allowing for the subplot legend
+        if len(plot.subplot_contributions) > 0:
+            min_ratio = min([c.GetMinimum(0) for c in plot.subplot_contributions])
+            max_ratio = max([c.GetMaximum() for c in plot.subplot_contributions])
+            ratio_range = max_ratio - min_ratio
+            # add some padding, fraction of range
+            ratio_padding = 0.15*ratio_range
+            min_ratio -= ratio_padding
+            max_ratio += ratio_padding
+            new_ratio_range = max_ratio - min_ratio
+            # now add on half this range to accommodate subplot legend
+            new_ratio_range += 0.5*new_ratio_range
+            plot.subplot_container.SetMinimum(min_ratio)
+            plot.subplot_container.SetMaximum(min_ratio + new_ratio_range)
+
         # Do legend manually with graphs to get the right bars on the ends (sigh)
         for cont in dummy_entries:
             this_label = cont.label
