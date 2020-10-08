@@ -1787,10 +1787,12 @@ class SummaryPlotter(object):
 
         # TODO: tie together labels and hists from upper_hists
         if self.has_data:
-            _add_entry(dummy_data, "Data", "P")
+            _add_entry(dummy_data, "Data", "LEP")
+            if lower_row_is_ratio:
+                _add_entry(data_total_ratio, "Data uncertainty", "F")
         if not self.only_yoda_data:
-            _add_entry(dummy_mc, self.mc_label, "P")
-            _add_entry(dummy_alt_mc, self.alt_mc_label, "P")
+            _add_entry(dummy_mc, self.mc_label, "LEP")
+            _add_entry(dummy_alt_mc, self.alt_mc_label, "LEP")
 
         dummy_other = []  # keep reference
         for sample in self.other_samples:
@@ -1798,7 +1800,7 @@ class SummaryPlotter(object):
             self._style_hist(dummy_sample, **sample['style_dict'])
             dummy_other.append(dummy_sample)
             sample_label = sample['style_dict'].get('label', sample['key'])
-            _add_entry(dummy_sample, sample_label, "P")
+            _add_entry(dummy_sample, sample_label, "LEP")
 
         leg.SetFillColor(0)
         leg.SetBorderSize(0)
