@@ -1724,20 +1724,6 @@ class SummaryPlotter(object):
             # the bottom is the offset, plus a little bit
             # the top of the text is the margin (scaled according to pad height),
             # minus a bit for labels
-            # generate all the key items
-
-            text_items = []
-            for key_bin, selection in zip(key_bin_names, selection_groups[0]['selections']):
-                key = selection[1]
-                key_str = "%s " % key_bin
-                inset = (len(key_str)+2) * ' '
-                # inset = ''
-                if '\n' not in key and '#splitline' not in key:
-                    text_items.append("%s%s" % (key_str, key))
-                elif '\n' in key:
-                    parts = key.split('\n')
-                    text_items.append("%s%s" % (key_str, parts[0]))
-                    text_items.extend(["%s%s" % (inset, p) for p in parts[1:]])
 
             # this is the bottom of the legend in canvas co-ords,
             # note that leg.GetY1 is relative to leg_pad height, so needs scaling
@@ -1756,6 +1742,20 @@ class SummaryPlotter(object):
             # if you don't set text size, it scales it automatically
             # key_text.SetTextSize(0.047)
             key_text.SetMargin(0.01)
+
+            # generate all the key items
+            text_items = []
+            for key_bin, selection in zip(key_bin_names, selection_groups[0]['selections']):
+                key = selection[1]
+                key_str = "%s " % key_bin
+                inset = (len(key_str)+2) * ' '
+                # inset = ''
+                if '\n' not in key and '#splitline' not in key:
+                    text_items.append("%s%s" % (key_str, key))
+                elif '\n' in key:
+                    parts = key.split('\n')
+                    text_items.append("%s%s" % (key_str, parts[0]))
+                    text_items.extend(["%s%s" % (inset, p) for p in parts[1:]])
 
             for t in text_items:
                 key_text.AddText(t)
@@ -1777,7 +1777,7 @@ class SummaryPlotter(object):
         upper_text.SetTextAlign(ROOT.kHAlignCenter + ROOT.kVAlignCenter)
         text = upper_text.AddText(upper_row_label)
         text.SetTextAngle(90)
-        text_size = 0.04
+        text_size = 0.05
         text.SetTextSize(text_size)
         upper_text.Draw()
 
@@ -1799,7 +1799,7 @@ class SummaryPlotter(object):
         cms_latex = ROOT.TLatex()
         cms_latex.SetTextAlign(ROOT.kHAlignLeft + ROOT.kVAlignBottom)
         cms_latex.SetTextFont(42)
-        cms_latex.SetTextSize(0.04)
+        cms_latex.SetTextSize(0.045)
         # Get the text sitting just above the axes of the mean plot
         # Axes end inside the mean pad at (1-top_margin), but this has
         # to be scaled to canvas NDC
@@ -1823,7 +1823,7 @@ class SummaryPlotter(object):
         # # Get the lumi text aligned to right edge of axes
         # # i.e. 1-pad_right_margin, but remember to scale by pad width
         end_x = 1 - right_margin - (upper_pads[0].GetAbsWNDC() * pad_right_margin)
-        end_x = 0.985  # to match legend
+        # end_x = 0.985  # to match legend
         cms_latex.DrawLatexNDC(end_x, latex_height, " 35.9 fb^{-1} (13 TeV)")
         gc_stash.append(cms_latex)
 
