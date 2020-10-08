@@ -184,7 +184,8 @@ def do_jet_pt_plot(entries,
         data_total_ratio.Draw(data_draw_opt)
 
         # draw small legend for shadings
-        plot.subplot_leg = ROOT.TLegend(0.25, 0.8, 0.7, 0.9)
+        plot.subplot_leg = ROOT.TLegend(0.25, 0.73, 0.9, 0.9)
+        plot.subplot_leg.SetTextSize(0.07)
         plot.subplot_leg.SetFillStyle(0)
         plot.subplot_leg.SetNColumns(2)
         plot.subplot_leg.AddEntry(data_total_ratio, "Data stat. uncert.", "F")
@@ -829,7 +830,7 @@ def do_dijet_pt_plots(workdir, do_systematics=True):
                        xlim=(30, 4000),
                        ylim=(5E-3, 1E14),
                        title=title,
-                       subplot_limits=(0, 2),
+                       subplot_limits=(0, 2.5),
                        data_first=True,
                        normalise_hists=False,
                        # experimental_syst=exp_gr,
@@ -1350,7 +1351,7 @@ def do_zpj_pt_plots(workdir, do_systematics=True):
                    ylim=(5E-2, 1E7),
                    title=title,
                    data_first=True,
-                   subplot_limits=(0, 2),
+                   subplot_limits=(0, 2.5),
                    # subplot_limits=(0.5, 1.5),
                    normalise_hists=False,
                    # experimental_syst=exp_gr,
