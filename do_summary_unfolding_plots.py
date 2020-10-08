@@ -159,7 +159,9 @@ class SummaryPlotter(object):
         self.output_dir = output_dir
         self.has_data = has_data
         self.is_preliminary = True
-        self.mc_label = 'MG5+Pythia8\nCUETP8M1'
+        # use kerning to avoid splitline taking up too much space
+        # lower the whole thing a little to avoid clashing with hashed bit in plots with ratio
+        self.mc_label = '#lower[0.1]{#splitline{MG5+Pythia8}{#lower[-0.15]{CUETP8M1}}}'
         self.alt_mc_label = 'Herwig++'
         self.other_samples = []
         self.only_yoda_data = only_yoda_data
