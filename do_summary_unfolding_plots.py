@@ -534,6 +534,9 @@ class SummaryPlotter(object):
             plot.legend.SetX1(0.6)
             plot.legend.SetX2(0.88)
             plot.legend.SetY1(0.72)
+            for c in entries:
+                if '#splitline' or '\n' in c.label:
+                    plot.legend.SetY1(plot.legend.GetY1() - 0.03)
         else:
             plot.legend.SetX1(0.55)
             plot.legend.SetX2(0.78)
