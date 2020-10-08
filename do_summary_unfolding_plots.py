@@ -543,7 +543,7 @@ class SummaryPlotter(object):
             plot.legend.SetX2(0.78)
             plot.legend.SetY1(0.68)
         plot.legend.SetY2(0.92)
-        if len(entries) > 3:
+        if len(entries) > 4:
             # TODO: scale with numberof entries
             plot.legend.SetNColumns(2)
             plot.legend.SetX1(0.58)
