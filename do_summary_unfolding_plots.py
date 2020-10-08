@@ -62,7 +62,7 @@ COMMON_STYLE_DICT = {
     "data_color": ROOT.kBlack,
     "data_marker_style": cu.Marker.get("circle", filled=True),
 
-    "marker_size": 1,
+    "marker_size": 1.3,
 
     # "mc_line_style": 22,
     "mc_line_style": 1,
@@ -1157,10 +1157,7 @@ class SummaryPlotter(object):
         self._style_alt_mc_hist(dummy_alt_mc)
         leg.AddEntry(dummy_mc, self.mc_label, "EL")
         leg.AddEntry(dummy_alt_mc, self.alt_mc_label, "EL")
-        # Add a dummy entry, otherwise it won't print the label of the last entry
-        # No idea why - seems correlated with having > 2 lines in the legend header?
-        # Absolute mess
-        leg.AddEntry(0, "", "")
+
         leg.SetFillColor(0)
         leg.SetBorderSize(0)
         # leg.SetFillColor(ROOT.kGreen)
@@ -1410,7 +1407,7 @@ class SummaryPlotter(object):
         gc_stash = [] # to stop stuff being deleted
 
         # Setup canvas and pads
-        canvas = ROOT.TCanvas("c_"+cu.get_unique_str(), "", 1200, 600)
+        canvas = ROOT.TCanvas("c_"+cu.get_unique_str(), "", 1600, 600)
         canvas.SetBottomMargin(0.0)
         canvas.SetTopMargin(0.0)
         canvas.SetLeftMargin(0.0)
@@ -1422,9 +1419,9 @@ class SummaryPlotter(object):
         n_pads = len(selection_groups)
 
         # gap between right end of plots and edge of canvas, used for legend
-        right_margin = 0.17
+        right_margin = 0.19
         # pad_left_titles_gap = 0.01 # gap between pad_left_titles and all plots
-        pad_to_pad_gap = 0.005  # gap between plot pad columns
+        pad_to_pad_gap = 0.0025  # gap between plot pad columns
         # how far in from the left the first plotting pad starts. used for y axis title
         left_margin = 0.04
         # figure out width per pad - get total width available, then divide by number of pads
@@ -1435,7 +1432,7 @@ class SummaryPlotter(object):
 
         # per-pad margins: these determine where the hist axes lie,
         # and are fractions of the **pad** width/height, not the global canvas
-        pad_right_margin = 0.02
+        pad_right_margin = 0.04
         pad_left_margin = 0.2
 
         # bottom margin includes space for x axis labels & and text at the bottom
@@ -1444,7 +1441,7 @@ class SummaryPlotter(object):
         # to be exactly the same size, in order to get man things the same size,
         # e.g. ticks, labels, hatching, all of which depend on pad size,
         # and not histogram axes size!
-        pad_bottom_margin = 0.49
+        pad_bottom_margin = 0.49 if label_every_bin else 0.3
 
         # extra bit to add to the top margins of lower and upper pads
         # to ensure y axis numbers don't get cut off
@@ -1585,65 +1582,28 @@ class SummaryPlotter(object):
             # Draw variable name
             var_latex = ROOT.TLatex()
             var_latex.SetTextAlign(ROOT.kHAlignCenter + ROOT.kVAlignBottom)
-            var_latex.SetTextSize(0.1)
+            var_latex.SetTextSize(0.13)
             # var_latex.SetTextFont(42)
             # these are relative to the RMS pad! not the canvas
             # put in middle of the plot (if 0.5, woud look off-centre)
             var_x = 0.5*(1-pad_right_margin-pad_left_margin) + pad_left_margin
             var_y = 0.03  # do by eye
             if not label_every_bin:
-                var_y = 0.33
+                var_y = 0.05
             var_latex.DrawLatexNDC(var_x, var_y, selection_group['label'])
             gc_stash.append(var_latex)
 
         canvas.cd()
 
-        # Add key for bins
-        if not label_every_bin:
-            # the bottom is the offset, plus a little bit
-            # the top of the text is the margin (scaled according to pad height),
-            # minus a bit for labels
-            key_text = ROOT.TPaveText(left_margin+(pad_left_margin*pad_width), pad_offset_bottom+0.02, 1-right_margin, (pad_bottom_margin*pad_height)-0.13, "NB NDC")
-            key_text.SetFillStyle(4000)
-            key_text.SetFillColor(ROOT.kWhite)
-            # key_text.SetFillStyle(1001)
-            # key_text.SetFillColor(ROOT.kYellow)
-            key_text.SetTextAlign(ROOT.kHAlignCenter + ROOT.kVAlignCenter)
-            key_text.SetTextSize(0.04)
-            # generate all the key items
-            text_items = ["%s: %s" % (key_bin, selection[1])
-                          for key_bin, selection
-                          in zip(key_bin_names, selection_groups[0]['selections'])]
-            # if any(["_{" in t for t in text_items]) or any(["^{" in t for t in text_items]):
-            #     # shrink text a little if super or sub script
-            #     key_text.SetTextSize(key_text.GetTextSize()*0.9)
-
-            # figure out manual wrapping, since some labels are short enough
-            # to fit multiple per line
-            wrapped_text_items = []
-            max_line_length = 120
-            for t_ind, t in enumerate(text_items):
-                if t_ind == 0:
-                    wrapped_text_items.append(t)
-                else:
-                    if len(t) + len(wrapped_text_items[-1]) < max_line_length:
-                        wrapped_text_items[-1] = "%s      %s" % (wrapped_text_items[-1], t)
-                    else:
-                        wrapped_text_items.append(t)
-            for t in wrapped_text_items:
-                key_text.AddText(t)
-            key_text.Draw()
-            gc_stash.append(key_text)
-
         # Add legend
         # Put legend_header + legend in own TPad
-        leg_y_top = 1-pad_offset_top
+        leg_y_top = 1-pad_offset_top+0.01
         leg_left = upper_pads[-1].GetAbsXlowNDC() + upper_pads[-1].GetAbsWNDC()
-        leg_right = 1-0.01
+        leg_right = 1-0.005
         leg_y_bottom = leg_y_top-(1.5*upper_pads[0].GetAbsHNDC())
         leg_pad = ROOT.TPad("leg_pad_"+cu.get_unique_str(), "", leg_left, leg_y_bottom, leg_right, leg_y_top)
         ROOT.SetOwnership(leg_pad, False)  # important! otherwise seg fault
-        # leg_pad.SetFillColor(ROOT.kYellow)
+        # leg_pad.SetFillColor(ROOT.kGreen)
         # leg_pad.SetFillStyle(3004)
         # leg_pad.SetFillStyle(4000)
         leg_pad.SetLeftMargin(0)
@@ -1660,8 +1620,12 @@ class SummaryPlotter(object):
         if self.has_data:
             n_leg_entries += 1
 
+        ncol = 1
+        if n_leg_entries > 3:
+            ncol = 2
+
         # to figure out legend height, account for any #splitline or \n in labels
-        multiline_extra = 2
+        multiline_extra = 2.5
         for label in [self.mc_label, self.alt_mc_label]:
             if '#splitline' in label or '\n' in label:
                 n_leg_entries += multiline_extra
@@ -1670,7 +1634,7 @@ class SummaryPlotter(object):
             if '#splitline' in label or '\n' in label:
                 n_leg_entries += multiline_extra
 
-        leg_entry_spacing = 0.06
+        leg_entry_spacing = 0.07
         leg = ROOT.TLegend(0., 1 - (leg_entry_spacing*n_leg_entries), 1, 1) # relative to leg_pad
 
         # legend_header_pt = None
@@ -1741,19 +1705,62 @@ class SummaryPlotter(object):
             sample_label = sample['style_dict'].get('label', sample['key'])
             _add_entry(dummy_sample, sample_label, "P")
 
-        # Add a dummy entry, otherwise it won't print the label of the last entry
-        # No idea why - seems correlated with having > 2 lines in the legend header?
-        # Absolute mess
-        # leg.AddEntry(0, "", "")
         leg.SetFillColor(0)
         leg.SetBorderSize(0)
-        # leg.SetFillColor(ROOT.kGreen)
+        # leg.SetFillColor(ROOT.kBlue)
         # leg.SetFillStyle(3004)
-        leg.SetTextSize(0.125)
+        leg.SetTextSize(0.11)
+        leg.SetEntrySeparation(leg.GetEntrySeparation()*2.5)
+        leg.SetMargin(0.12)
         leg.SetTextAlign(12)
+        # leg.SetNColumns(ncol)
         leg.Draw()
 
         canvas.cd()
+
+        # Add key for bins below legend
+        if not label_every_bin:
+            # the bottom is the offset, plus a little bit
+            # the top of the text is the margin (scaled according to pad height),
+            # minus a bit for labels
+            # generate all the key items
+
+            text_items = []
+            for key_bin, selection in zip(key_bin_names, selection_groups[0]['selections']):
+                key = selection[1]
+                key_str = "%s " % key_bin
+                inset = (len(key_str)+2) * ' '
+                # inset = ''
+                if '\n' not in key and '#splitline' not in key:
+                    text_items.append("%s%s" % (key_str, key))
+                elif '\n' in key:
+                    parts = key.split('\n')
+                    text_items.append("%s%s" % (key_str, parts[0]))
+                    text_items.extend(["%s%s" % (inset, p) for p in parts[1:]])
+
+            # this is the bottom of the legend in canvas co-ords,
+            # note that leg.GetY1 is relative to leg_pad height, so needs scaling
+            # to convert to canvas coords
+            leg_bottom = leg_y_bottom + (leg.GetY1() * (leg_y_top-leg_y_bottom))
+            leg_bottom -= 0.03  # offset
+            # set bottom of key_text to align with bottom axis of plots,
+            # plus some fudging since it doesn't quite align
+            # make X2 off the canvas, since it tends to crop it in a bit
+            key_text = ROOT.TPaveText(leg_left, pad_offset_bottom+(pad_bottom_margin*pad_height)-0.03, 1.005, leg_bottom, "NB NDC")
+            key_text.SetFillStyle(4000)
+            key_text.SetFillColor(ROOT.kWhite)
+            # key_text.SetFillStyle(1001)
+            # key_text.SetFillColor(ROOT.kYellow)
+            key_text.SetTextAlign(ROOT.kHAlignLeft + ROOT.kVAlignBottom)
+            # if you don't set text size, it scales it automatically
+            # key_text.SetTextSize(0.047)
+            key_text.SetMargin(0.01)
+
+            for t in text_items:
+                key_text.AddText(t)
+
+            key_text.Draw()
+            gc_stash.append(key_text)
 
         # Add upper/lower y labels
         text_width = left_margin
@@ -2013,11 +2020,15 @@ if __name__ == "__main__":
     charged_only_template = "#splitline{{{jet_str}, {pt_str}}}{{      Charged-only}}"
     groomed_template = "#splitline{{{jet_str}, {pt_str}}}{{         Groomed}}"
 
-    charged_only_template = "{jet_str}, {pt_str}, charged-only"
-    groomed_template = "Groomed {jet_str}, {pt_str}"
+    normal_template = "{jet_str}, {pt_str}"
+    charged_only_template = "{jet_str}, {pt_str},\ncharged-only"
+    groomed_template = "Groomed {jet_str},\n{pt_str}"
 
     gev_template = "p_{{T}}#in  [{:g}, {:g}] GeV"
     tev_template = "p_{{T}}#in  [{:g}, {:g}] TeV"
+
+    gev_template = "[{:g}, {:g}] GeV"
+    tev_template = "[{:g}, {:g}] TeV"
 
     if has_dijet:
         if args.doMetricVsPt:
@@ -2042,13 +2053,13 @@ if __name__ == "__main__":
                 # this_angle_str = "%s" % (angle.lambda_str)
                 this_selection = [
                     ('jet_algo=="ak4puppi" & pt_bin==%d & ~isgroomed & region=="Dijet_central" & angle=="%s"' % (low_pt_bin, angle.var),
-                        "{jet_str}, {pt_str}".format(jet_str=ak4_str, pt_str=low_pt_str)),
+                        normal_template.format(jet_str=ak4_str, pt_str=low_pt_str)),
 
                     ('jet_algo=="ak4puppi" & pt_bin==%d & ~isgroomed & region=="Dijet_central" & angle=="%s"' % (high_pt_bin, angle.var),
-                        "{jet_str}, {pt_str}".format(jet_str=ak4_str, pt_str=high_pt_str)),
+                        normal_template.format(jet_str=ak4_str, pt_str=high_pt_str)),
 
                     ('jet_algo=="ak8puppi" & pt_bin==%d & ~isgroomed & region=="Dijet_central" & angle=="%s"' % (low_pt_bin, angle.var),
-                        "{jet_str}, {pt_str}".format(jet_str=ak8_str, pt_str=low_pt_str)),
+                        normal_template.format(jet_str=ak8_str, pt_str=low_pt_str)),
 
                     ('jet_algo=="ak4puppi" & pt_bin==%d & ~isgroomed & region=="Dijet_central" & angle=="%s_charged"' % (low_pt_bin, angle.var),
                         charged_only_template.format(jet_str=ak4_str, pt_str=low_pt_str)),
@@ -2094,13 +2105,13 @@ if __name__ == "__main__":
                 # this_angle_str = "%s" % (angle.lambda_str)
                 this_selection = [
                     ('jet_algo=="ak4puppi" & pt_bin==%d & ~isgroomed & region=="Dijet_forward" & angle=="%s"' % (low_pt_bin, angle.var),
-                        "{jet_str}, {pt_str}".format(jet_str=ak4_str, pt_str=low_pt_str)),
+                        normal_template.format(jet_str=ak4_str, pt_str=low_pt_str)),
 
                     ('jet_algo=="ak4puppi" & pt_bin==%d & ~isgroomed & region=="Dijet_forward" & angle=="%s"' % (high_pt_bin, angle.var),
-                        "{jet_str}, {pt_str}".format(jet_str=ak4_str, pt_str=high_pt_str)),
+                        normal_template.format(jet_str=ak4_str, pt_str=high_pt_str)),
 
                     ('jet_algo=="ak8puppi" & pt_bin==%d & ~isgroomed & region=="Dijet_forward" & angle=="%s"' % (low_pt_bin, angle.var),
-                        "{jet_str}, {pt_str}".format(jet_str=ak8_str, pt_str=low_pt_str)),
+                        normal_template.format(jet_str=ak8_str, pt_str=low_pt_str)),
 
                     ('jet_algo=="ak4puppi" & pt_bin==%d & ~isgroomed & region=="Dijet_forward" & angle=="%s_charged"' % (low_pt_bin, angle.var),
                         charged_only_template.format(jet_str=ak4_str, pt_str=low_pt_str)),
@@ -2144,15 +2155,15 @@ if __name__ == "__main__":
                 # this_angle_str = "%s" % (angle.lambda_str)
                 this_selection = [
                     ('jet_algo=="ak4puppi" & pt_bin==%d & ~isgroomed & region=="ZPlusJets" & angle=="%s"' % (low_pt_bin, angle.var),
-                        "{jet_str}, {pt_str}".format(jet_str=ak4_str, pt_str=low_pt_str)),
+                        normal_template.format(jet_str=ak4_str, pt_str=low_pt_str)),
 
                     # ignore high pt bin as not useful - same composition as dijet but fewer stats
                     # ('jet_algo=="ak4puppi" & pt_bin==%d & ~isgroomed & region=="ZPlusJets" & angle=="%s"' % (high_pt_bin, angle.var),
-                    #     "{jet_str}, {pt_str}".format(jet_str=ak4_str, pt_str=high_pt_str)),
+                    #     normal_template.format(jet_str=ak4_str, pt_str=high_pt_str)),
                     #     # "#splitline{{{jet_str}}}{{{pt_str}}}".format(jet_str=ak4_str, pt_str=high_pt_str)),
 
                     ('jet_algo=="ak8puppi" & pt_bin==%d & ~isgroomed & region=="ZPlusJets" & angle=="%s"' % (low_pt_bin, angle.var),
-                        "{jet_str}, {pt_str}".format(jet_str=ak8_str, pt_str=low_pt_str)),
+                        normal_template.format(jet_str=ak8_str, pt_str=low_pt_str)),
 
                     ('jet_algo=="ak4puppi" & pt_bin==%d & ~isgroomed & region=="ZPlusJets" & angle=="%s_charged"' % (low_pt_bin, angle.var),
                         charged_only_template.format(jet_str=ak4_str, pt_str=low_pt_str)),
@@ -2194,13 +2205,13 @@ if __name__ == "__main__":
             # this_angle_str = "%s" % (angle.lambda_str)
             this_selection = [
                 ('jet_algo=="ak4puppi" & pt_bin==%d & ~isgroomed & region=="ZPlusJets" & angle=="%s"' % (low_pt_bin, angle.var),
-                    "{jet_str}, {pt_str}".format(jet_str=ak4_str, pt_str=low_pt_str)),
+                    normal_template.format(jet_str=ak4_str, pt_str=low_pt_str)),
 
                 ('jet_algo=="ak4puppi" & pt_bin==%d & ~isgroomed & region=="Dijet_forward" & angle=="%s"' % (high_pt_bin, angle.var),
-                    "{jet_str}, {pt_str}".format(jet_str=ak4_str, pt_str=high_pt_str)),
+                    normal_template.format(jet_str=ak4_str, pt_str=high_pt_str)),
 
                 ('jet_algo=="ak8puppi" & pt_bin==%d & ~isgroomed & region=="ZPlusJets" & angle=="%s"' % (low_pt_bin, angle.var),
-                    "{jet_str}, {pt_str}".format(jet_str=ak8_str, pt_str=low_pt_str)),
+                    normal_template.format(jet_str=ak8_str, pt_str=low_pt_str)),
 
                 ('jet_algo=="ak4puppi" & pt_bin==%d & ~isgroomed & region=="ZPlusJets" & angle=="%s_charged"' % (low_pt_bin, angle.var),
                     charged_only_template.format(jet_str=ak4_str, pt_str=low_pt_str)),
