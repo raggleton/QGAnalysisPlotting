@@ -107,7 +107,8 @@ SAMPLE_STYLE_DICTS = {
     },
 
     dataframe_yoda_key("Pythia8 CP5"): {
-        "color": ROOT.kMagenta-7,
+        # "color": ROOT.kMagenta-7,
+        "color": ROOT.kViolet-1,
         "label": "Pythia8 CP5",
         "marker_style": cu.Marker.get('crossX', filled=False),
         "marker_size": COMMON_STYLE_DICT['marker_size'] * 1.2, # these shapes always come out small
