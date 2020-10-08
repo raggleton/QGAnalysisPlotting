@@ -177,7 +177,7 @@ class GenPtBinnedPlotter(object):
             subplot_type='ratio',
             subplot_title="* / %s" % (self.region['mc_label']),
             # subplot_limits=(0, 2) if self.setup.has_data else (0.75, 1.25),
-            subplot_limits=(0, 2.75) if self.setup.has_data else (0.75, 1.25),
+            subplot_limits=(0.5, 2.5) if self.setup.has_data else (0.75, 1.25),
         )
         self.unfolder = unfolder
 
@@ -459,17 +459,22 @@ class GenPtBinnedPlotter(object):
 
             # Add subplot legend
             x_left = 0.25
-            y_bottom = 0.78
-            width = 0.45
-            height = 0.12
+            y_bottom = 0.75
+            width = 0.5
+            height = 0.15
             plot.subplot_legend = ROOT.TLegend(x_left, y_bottom, x_left+width, y_bottom+height)
             # plot.subplot_legend = ROOT.TLegend(width, height, width, height)  # automatic placement doesn't work
             plot.subplot_legend.AddEntry(data_total_ratio, "Total uncert.", "F")
             plot.subplot_legend.AddEntry(data_stat_ratio, "Stat. uncert.", "F")
+            plot.subplot_legend.SetTextSize(0.085)
             plot.subplot_legend.SetFillStyle(0)
             plot.subplot_legend.SetNColumns(2)
             plot.subplot_legend.Draw()
-
+            # plot.subplot_container.GetHistogram().GetYaxis().
+            # print(plot.subplot_container.GetYaxis().GetTitle())
+            # plot.subplot_container.GetYaxis().SetTitle("blah"+plot.subplot_container.GetYaxis().GetTitle())
+            ROOT.gPad.Modified()
+            ROOT.gPad.Update()
             plot.canvas.cd()
 
             plot.save("%s/unfolded_%s_alt_truth_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
