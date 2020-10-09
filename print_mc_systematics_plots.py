@@ -99,21 +99,19 @@ def do_plots(nominal_dir, herwig_dir, output_dir,
             # HERWIG MC
             if herwig_dir is not None:
                 h2d_herwig_qcd_mc = herwig_tfile.Get("%s/%s" % (plot_dirname, v))
-                colh = 797
-                colh = ROOT.kBlue-3
-                qcd_herwig_kwargs_mc = dict(line_color=colh, line_width=lw, fill_color=colh,
-                                     marker_color=colh, marker_style=cu.Marker.get('square'), marker_size=0,
+                qcd_herwig_kwargs_mc = dict(line_color=qgc.HERWIGPP_QCD_COLOUR, line_width=lw, fill_color=qgc.HERWIGPP_QCD_COLOUR,
+                                     marker_color=qgc.HERWIGPP_QCD_COLOUR, marker_style=cu.Marker.get('square'), marker_size=0,
                                      label="Herwig++",
                                      subplot=nominal_hist)
                 dijet_entries.append((qgp.get_projection_plot(h2d_herwig_qcd_mc, start_val, end_val), qcd_herwig_kwargs_mc))
 
-                h2d_mg_herwig_qcd_mc = mg_herwig_tfile.Get("%s/%s" % (plot_dirname, v))
-                colh = ROOT.kGreen+2
-                qcd_mg_herwig_kwargs_mc = dict(line_color=colh, line_width=lw, fill_color=colh,
-                                     marker_color=colh, marker_style=cu.Marker.get('square'), marker_size=0,
-                                     label="MG+Herwig++",
-                                     subplot=nominal_hist)
-                dijet_entries.append((qgp.get_projection_plot(h2d_mg_herwig_qcd_mc, start_val, end_val), qcd_mg_herwig_kwargs_mc))
+                # h2d_mg_herwig_qcd_mc = mg_herwig_tfile.Get("%s/%s" % (plot_dirname, v))
+                # colh = ROOT.kGreen+2
+                # qcd_mg_herwig_kwargs_mc = dict(line_color=colh, line_width=lw, fill_color=colh,
+                #                      marker_color=colh, marker_style=cu.Marker.get('square'), marker_size=0,
+                #                      label="MG+Herwig++",
+                #                      subplot=nominal_hist)
+                # dijet_entries.append((qgp.get_projection_plot(h2d_mg_herwig_qcd_mc, start_val, end_val), qcd_mg_herwig_kwargs_mc))
 
             # h2d_pythia_qcd_mc = pythia_tfile.Get("%s/%s" % (plot_dirname, v))
             # colp = ROOT.kRed

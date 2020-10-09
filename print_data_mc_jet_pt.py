@@ -473,7 +473,6 @@ def do_dijet_pt_plots(workdir, do_systematics=True):
 
         mgpy_label = "MG5+Pythia8"
         hpp_label = "Herwig++"
-        col_hpp = qgc.QCD_COLOURS[3]
 
         print(mg_tfile)
         data_hist = cu.get_from_tfile(data_tfile, histname)
@@ -643,8 +642,8 @@ def do_dijet_pt_plots(workdir, do_systematics=True):
             # HERWIG++
             [
                 hpp_hist,
-                dict(line_color=col_hpp, line_width=lw, fill_color=col_hpp,
-                     marker_color=col_hpp, marker_style=cu.Marker.get(qgc.DY_MARKER), marker_size=mc_msize,
+                dict(line_color=qgc.HERWIGPP_QCD_COLOUR, line_width=lw, fill_color=qgc.HERWIGPP_QCD_COLOUR,
+                     marker_color=qgc.HERWIGPP_QCD_COLOUR, marker_style=cu.Marker.get(qgc.DY_MARKER), marker_size=mc_msize,
                      label=hpp_label,
                      subplot=data_hist)
             ]

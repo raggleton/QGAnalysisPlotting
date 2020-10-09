@@ -77,7 +77,8 @@ COMMON_STYLE_DICT = {
     # "mc_alt_line_style": 22,
     "mc_alt_line_style": 1,
     "mc_alt_fill_style": 3454,
-    "mc_alt_color": ROOT.kAzure+1,
+    # "mc_alt_color": ROOT.kAzure+1,
+    "mc_alt_color": qgc.HERWIGPP_QCD_COLOUR,
     "mc_alt_marker_style": cu.Marker.get('triangleUp', filled=False),
 }
 
@@ -108,7 +109,8 @@ SAMPLE_STYLE_DICTS = {
 
     dataframe_yoda_key("Pythia8 CP5"): {
         # "color": ROOT.kMagenta-7,
-        "color": ROOT.kViolet-1,
+        # "color": ROOT.kViolet-1,
+        "color": ROOT.kRed-4,
         "label": "Pythia8 CP5",
         "marker_style": cu.Marker.get('crossX', filled=False),
         "marker_size": COMMON_STYLE_DICT['marker_size'] * 1.2, # these shapes always come out small

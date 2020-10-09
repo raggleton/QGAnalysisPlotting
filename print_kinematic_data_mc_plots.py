@@ -346,7 +346,7 @@ def do_dijet_distributions(root_dir, title):
     # directories.extend([cu.get_from_tfile(rf, "Dijet_tighter") for rf in root_files[1:]])
     mc_col = qgc.QCD_COLOUR
     mc_col2 = qgc.QCD_COLOURS[2]
-    mc_col3 = qgc.QCD_COLOURS[3]
+    # mc_col3 = qgc.QCD_COLOURS[3]
     data_col = qgc.JETHT_COLOUR
     zb_col = ROOT.kGreen+2
     msize = 0.75
@@ -354,7 +354,7 @@ def do_dijet_distributions(root_dir, title):
         {"label": "Data", "line_color": data_col, "fill_color": data_col, "marker_color": data_col, "marker_style": 20, "fill_style": 0, "marker_size": msize, 'line_width': 2},
         {"label": "QCD MC [MG+PY8]", "line_color": mc_col, "fill_color": mc_col, "marker_color": mc_col, "marker_style": 22, "fill_style": 0, "marker_size": msize},
         # {"label": "QCD MC [PY8]", "line_color": mc_col2, "fill_color": mc_col2, "marker_color": mc_col2, "marker_style": 21, "fill_style": 0, "marker_size": msize},
-        {"label": "QCD MC [H++]", "line_color": mc_col3, "fill_color": mc_col3, "marker_color": mc_col3, "marker_style": 23, "fill_style": 0, "marker_size": msize},
+        {"label": "QCD MC [H++]", "line_color": qgc.HERWIGPP_QCD_COLOUR, "fill_color": qgc.HERWIGPP_QCD_COLOUR, "marker_color": qgc.HERWIGPP_QCD_COLOUR, "marker_style": 23, "fill_style": 0, "marker_size": msize},
     ]
     jet_config_str = qgc.extract_jet_config(root_dir)
 

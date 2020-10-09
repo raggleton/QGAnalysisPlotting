@@ -128,7 +128,8 @@ def get_dijet_config(source_dir, central=True, groomed=False):
             {
                 "label": "Shower & hadronization",
                 "tfile": input_mc_qcd_herwig_tfile,
-                "colour": ROOT.kGreen-3,
+                # "colour": ROOT.kGreen-3,
+                "colour": qgc.HERWIGPP_QCD_COLOUR,
             },
             # {
             #     "label": "Herwig++ (reweighted)",
@@ -461,7 +462,8 @@ def get_zpj_config(source_dir, groomed=False):
             {
                 "label": "Shower & hadronization",
                 "tfile": input_mc_dy_herwig_tfile,
-                "colour": ROOT.kGreen-3,
+                # "colour": ROOT.kGreen-3,
+                "colour": qgc.HERWIGPP_QCD_COLOUR,
                 # "colour": 797,
             },
         ],

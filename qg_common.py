@@ -12,10 +12,13 @@ from collections import namedtuple
 # (V.Dark blue & light purple do look a bit diff)
 # Red and blue does look different
 # DY_COLOUR =  880 # kViolet
-DY_COLOUR =  628 # kViolet
-QCD_COLOUR = 867 # kAzure+7, for backwards compatibility
-QCD_CEN_COLOUR = 867 #
-QCD_FWD_COLOUR = 868 #
+DY_COLOUR =  628
+QCD_COLOUR = 867
+QCD_CEN_COLOUR = 867
+QCD_FWD_COLOUR = 868
+
+# kViolet = 880
+HERWIGPP_QCD_COLOUR = 880-2
 
 # SINGLE_MU_COLOUR =  884 # kViolet+3
 SINGLE_MU_COLOUR =  634

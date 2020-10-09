@@ -190,10 +190,9 @@ def do_plots(root_dir, title):
 
                 # HERWIG++ QCD
                 if os.path.isfile(os.path.join(root_dir, qgc.QCD_HERWIG_FILENAME)):
-                    col_hpp = qgc.QCD_COLOURS[3]
                     h2d_qcd_cen_mc_hpp = grab_obj(os.path.join(root_dir, qgc.QCD_HERWIG_FILENAME), "%s/%s" % (dj_cen_dirname, v))
-                    qcd_cen_kwargs_mc_hpp = dict(line_color=col_hpp, line_width=lw, fill_color=col_hpp,
-                                                 marker_color=col_hpp, marker_style=cu.Marker.get(qgc.QCD_MARKER), marker_size=mc_msize,
+                    qcd_cen_kwargs_mc_hpp = dict(line_color=qgc.HERWIGPP_QCD_COLOUR, line_width=lw, fill_color=qgc.HERWIGPP_QCD_COLOUR,
+                                                 marker_color=qgc.HERWIGPP_QCD_COLOUR, marker_style=cu.Marker.get(qgc.QCD_MARKER), marker_size=mc_msize,
                                                  label=hpp_label,
                                                  subplot=dijet_cen_data_hist)
                     dijet_hpp_hist = qgp.get_projection_plot(h2d_qcd_cen_mc_hpp, start_val, end_val)
@@ -246,10 +245,9 @@ def do_plots(root_dir, title):
 
                 # HERWIG++ QCD
                 if os.path.isfile(os.path.join(root_dir, qgc.QCD_HERWIG_FILENAME)):
-                    col_hpp = qgc.QCD_COLOURS[3]
                     h2d_qcd_fwd_mc_hpp = grab_obj(os.path.join(root_dir, qgc.QCD_HERWIG_FILENAME), "%s/%s" % (dj_fwd_dirname, v))
-                    qcd_fwd_kwargs_mc_hpp = dict(line_color=col_hpp, line_width=lw, fill_color=col_hpp,
-                                                 marker_color=col_hpp, marker_style=cu.Marker.get(qgc.QCD_MARKER), marker_size=mc_msize,
+                    qcd_fwd_kwargs_mc_hpp = dict(line_color=qgc.HERWIGPP_QCD_COLOUR, line_width=lw, fill_color=qgc.HERWIGPP_QCD_COLOUR,
+                                                 marker_color=qgc.HERWIGPP_QCD_COLOUR, marker_style=cu.Marker.get(qgc.QCD_MARKER), marker_size=mc_msize,
                                                  label=hpp_label,
                                                  subplot=dijet_fwd_data_hist)
                     dijet_hpp_hist = qgp.get_projection_plot(h2d_qcd_fwd_mc_hpp, start_val, end_val)
