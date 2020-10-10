@@ -232,16 +232,16 @@ def do_plots(root_dir, title):
 
                 # PYTHIA ONLY
                 # if os.path.isfile(os.path.join(root_dir, qgc.QCD_PYTHIA_ONLY_FILENAME)):
-                #     col = qgc.QCD_COLOURS[2]
-                #     h2d_qcd_fwd_mc2 = grab_obj(os.path.join(root_dir, qgc.QCD_PYTHIA_ONLY_FILENAME), "%s/%s" % (dj_fwd_dirname, v))
-                #     qcd_fwd_kwargs_mc2 = dict(line_color=col, line_width=lw, fill_color=col,
-                #                               marker_color=col, marker_style=cu.Marker.get(qgc.QCD_MARKER), marker_size=mc_msize,
-                #                               label="Pythia8",
-                #                               subplot=dijet_fwd_data_hist)
-                #     entries.append((qgp.get_projection_plot(h2d_qcd_fwd_mc2, start_val, end_val), qcd_fwd_kwargs_mc2))
-                #     dijet_fwd_entries.append((qgp.get_projection_plot(h2d_qcd_fwd_mc2, start_val, end_val), qcd_fwd_kwargs_mc2))
-                #     if pt_ind == 0:
-                #         dijet_fwd_2d_entries.append((h2d_qcd_fwd_mc2, qcd_fwd_kwargs_mc2))
+                    # col = qgc.QCD_COLOURS[2]
+                    # h2d_qcd_fwd_mc2 = grab_obj(os.path.join(root_dir, qgc.QCD_PYTHIA_ONLY_FILENAME), "%s/%s" % (dj_fwd_dirname, v))
+                    # qcd_fwd_kwargs_mc2 = dict(line_color=col, line_width=lw, fill_color=col,
+                    #                           marker_color=col, marker_style=cu.Marker.get(qgc.QCD_MARKER), marker_size=mc_msize,
+                    #                           label="Pythia8",
+                    #                           subplot=dijet_fwd_data_hist)
+                    # entries.append((qgp.get_projection_plot(h2d_qcd_fwd_mc2, start_val, end_val), qcd_fwd_kwargs_mc2))
+                    # dijet_fwd_entries.append((qgp.get_projection_plot(h2d_qcd_fwd_mc2, start_val, end_val), qcd_fwd_kwargs_mc2))
+                    # if pt_ind == 0:
+                    #     dijet_fwd_2d_entries.append((h2d_qcd_fwd_mc2, qcd_fwd_kwargs_mc2))
 
                 # HERWIG++ QCD
                 if os.path.isfile(os.path.join(root_dir, qgc.QCD_HERWIG_FILENAME)):

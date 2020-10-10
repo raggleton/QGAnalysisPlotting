@@ -323,9 +323,9 @@ def do_all_1D_projection_plots_in_dir(directories,
 
 def do_dijet_distributions(root_dir, title):
     """Do plots comparing different different inputs in dijet region"""
-    root_files = [qgc.JETHT_ZB_FILENAME, qgc.QCD_FILENAME, qgc.QCD_PYTHIA_ONLY_FILENAME, qgc.QCD_HERWIG_FILENAME]
+    # root_files = [qgc.JETHT_ZB_FILENAME, qgc.QCD_FILENAME, qgc.QCD_PYTHIA_ONLY_FILENAME, qgc.QCD_HERWIG_FILENAME]
     # root_files = [qgc.JETHT_ZB_FILENAME, qgc.QCD_FILENAME, qgc.QCD_PYTHIA_ONLY_FILENAME]
-    # root_files = [qgc.JETHT_ZB_FILENAME, qgc.QCD_FILENAME, qgc.QCD_HERWIG_FILENAME][:]
+    root_files = [qgc.JETHT_ZB_FILENAME, qgc.QCD_FILENAME, qgc.QCD_HERWIG_FILENAME][:]
     # root_files = [qgc.JETHT_ZB_FILENAME, qgc.QCD_FILENAME]
     # root_files = [qgc.JETHT_ZB_FILENAME, qgc.QCD_PYTHIA_ONLY_FILENAME]
     # root_files = [qgc.JETHT_ZB_FILENAME, qgc.QCD_HERWIG_FILENAME]
@@ -347,7 +347,7 @@ def do_dijet_distributions(root_dir, title):
     csd = [
         {"label": "Data", "line_color": data_col, "fill_color": data_col, "marker_color": data_col, "marker_style": 20, "fill_style": 0, "marker_size": msize, 'line_width': 2},
         {"label": "QCD MC [MG+PY8]", "line_color": mc_col, "fill_color": mc_col, "marker_color": mc_col, "marker_style": 22, "fill_style": 0, "marker_size": msize},
-        {"label": "QCD MC [PY8]", "line_color": mc_col2, "fill_color": mc_col2, "marker_color": mc_col2, "marker_style": 21, "fill_style": 0, "marker_size": msize},
+        # {"label": "QCD MC [PY8]", "line_color": mc_col2, "fill_color": mc_col2, "marker_color": mc_col2, "marker_style": 21, "fill_style": 0, "marker_size": msize},
         {"label": "QCD MC [H++]", "line_color": qgc.HERWIGPP_QCD_COLOUR, "fill_color": qgc.HERWIGPP_QCD_COLOUR, "marker_color": qgc.HERWIGPP_QCD_COLOUR, "marker_style": 23, "fill_style": 0, "marker_size": msize},
     ]
     jet_config_str = qgc.extract_jet_config(root_dir)
