@@ -72,9 +72,13 @@ def make_comparison_plot_ingredients(entries, rebin=1, normalise_hist=True, mean
     """
     entries = [ent for ent in entries if ent]
 
+    def _get_this_xlim():
+        data_hist = entries[0][0]
+        return (calc_auto_xlim([data_hist]) if (data_first and data_hist.GetEntries()>0)
+                                            else calc_auto_xlim([e[0] for e in entries]))
+
     # first figure out if there is a plot where the mean relative error
     #  is greater than a certain amount
-
     orig_rebin = rebin
     if mean_rel_error > 0:
         big_mean_rel_err = any([cu.get_hist_mean_rel_error(ent[0]) > mean_rel_error
@@ -83,14 +87,17 @@ def make_comparison_plot_ingredients(entries, rebin=1, normalise_hist=True, mean
         nbins = entries[0][0].GetNbinsX()
 
         # Get actual visible number of bins - that's what will look good/bad
-        xlim = calc_auto_xlim([e[0] for e in entries])
+        # only care about data if it's there
+        xlim = _get_this_xlim()
         bin_ind_min = entries[0][0].FindFixBin(xlim[0])
         bin_ind_max = entries[0][0].FindFixBin(xlim[1])
         nbins_vis = bin_ind_max - bin_ind_min
 
         # keep looking for the next rebin factor until the mean_rel_error is small enough,
         # or we have < 50 visible bins, but make sure we have at least a few bins
-        while (big_mean_rel_err or (nbins_vis / rebin) > 50) and ((nbins_vis / rebin) > 4):
+        min_number_bins = 4
+        max_number_bins = 50
+        while (big_mean_rel_err or (nbins_vis / rebin) > max_number_bins) and ((nbins_vis / rebin) > min_number_bins):
             # If this is the case, rebin the plot. Start by making bins bigger,
             # but check if divisor
             rebin += 1
@@ -109,7 +116,7 @@ def make_comparison_plot_ingredients(entries, rebin=1, normalise_hist=True, mean
         # the final rebin value may not be an exact divisor, in which case we reduce it until it is
         while nbins % rebin != 0:
             rebin -= 1
-        
+
         # print("final rebin:", rebin)
 
     conts = [Contribution(ent[0], normalise_hist=normalise_hist, rebin_hist=rebin, **ent[1])
@@ -117,7 +124,7 @@ def make_comparison_plot_ingredients(entries, rebin=1, normalise_hist=True, mean
 
     # update auto xlim if necessary
     if plot_kwargs.get("xlim", None) == "auto":
-        plot_kwargs['xlim'] = calc_auto_xlim([e[0] for e in entries])
+        plot_kwargs['xlim'] = _get_this_xlim()
 
     do_legend = len(conts) > 1
     if len(conts) == 0:
@@ -200,6 +207,8 @@ def do_comparison_plot(entries, output_filename, rebin=1, draw_opt="NOSTACK HIST
                                                 mean_rel_error=mean_rel_error,
                                                 data_first=data_first,
                                                 **plot_kwargs)
+        plot.subplot_maximum_ceil = 5
+
         if data_first:
             # we'll do the filling of legend ourselves
             plot.do_legend = False
@@ -211,11 +220,11 @@ def do_comparison_plot(entries, output_filename, rebin=1, draw_opt="NOSTACK HIST
             pow_min = log10(ymin)
             pow_max = log10(ymax)
             pow_range = pow_max - pow_min
-            print(ymin, ymax)
-            print(pow_min, pow_max, pow_range)
+            # print(ymin, ymax)
+            # print(pow_min, pow_max, pow_range)
             pow_extra = pow_range / 2
             plot.y_padding_max_log = 5 * 10**pow_extra
-            print(plot.y_padding_max_log)
+            # print(plot.y_padding_max_log)
 
         plot.plot(draw_opt)
 
@@ -256,7 +265,7 @@ def do_comparison_plot(entries, output_filename, rebin=1, draw_opt="NOSTACK HIST
 
                 cont = Contribution(dummy_gr.Clone(), leg_draw_opt=leg_draw_opt, **entry[1])
                 dummy_conts.append(cont)
-                
+
                 # Split text by newline \n
                 # Add an entry for each line
                 for i, substr in enumerate(cont.label.split("\n")):
@@ -1338,14 +1347,14 @@ def calc_auto_xlim(entries):
         xax = obj.GetXaxis()
         nbins = obj.GetNbinsX()
         found_min = False
-        for i in range(1, nbins+2):
+        for i in range(1, nbins+1):
             val = obj.GetBinContent(i)
             if not found_min:
                 # find the first non-empty bin
                 if val != 0:
                     x_min = min(xax.GetBinLowEdge(i), x_min)
                     found_min = True
-        for i in range(nbins+2, 0, -1):
+        for i in range(nbins, 0, -1):
             val = obj.GetBinContent(i)
             # find the last empty bin, work from rightmost bin
             if val != 0:

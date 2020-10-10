@@ -260,7 +260,7 @@ class Plot(object):
         self.title = title or ""
         self.title_start_y = 0.87
         self.title_diff_y = 0.04
-        self.title_left_offset = 0.03
+        self.title_left_offset = 0.03 # only for title in plot
         self.title_font_size = 0.03
         self.cms_text_font_size = 0.035
         self.xtitle = xtitle
@@ -297,7 +297,7 @@ class Plot(object):
         self.left_margin = 0.12 # use ROOT default
         self.left_title_offset_fudge_factor = 7
         self.text_left_offset = self.left_margin * (0.055/0.12)
-        self.text_left_offset = 0
+        self.text_left_offset = 0 # for title and CMS texts together
         self.top_margin = 0.1
         self.main_pad = None
         self.subplot = subplot
@@ -543,10 +543,12 @@ class Plot(object):
         return modifier
 
     def _set_automatic_y_maximum(self):
-        # urgh why doesnt THStack.GetMaximum() return the actual maximum
-        # GetYaxis().GetXmax() doesnt work either
         modifier = self.get_modifier()
-        ymax = max([o.GetMaximum() for o in self.contributions_objs])
+        low_physical, low_bin, high_physical, high_bin = cu.get_visible_axis_range(modifier.GetXaxis())
+        _, _, ymax, _ = cu.get_min_max_bin_contents_multiple_hists(self.contributions_objs,
+                                                                   include_error=True,
+                                                                   start_bin=low_bin,
+                                                                   end_bin=high_bin)
 
         if self.main_pad.GetLogy():
             ymax *= self.y_padding_max_log
@@ -555,13 +557,15 @@ class Plot(object):
         # print("Set y maximum automatically to", ymax)
         modifier.SetMaximum(ymax)
         # dont' save to self.ylim, as it will never auto update if set_logy called
-        # if self.ylim is None:
-        #     self.ylim = [None, None]
-        # self.ylim[1] = ymax
 
     def _set_automatic_y_minimum(self):
         # this is tricky... how to handle various cases like -ve, ignoring 0s
         modifier = self.get_modifier()
+        # low_physical, low_bin, high_physical, high_bin = cu.get_visible_axis_range(modifier.GetXaxis())
+        # min_all, min_bin, max_all, max_bin = cu.get_min_max_bin_contents_multiple_hists(self.contributions_objs,
+        #                                                                                 include_error=True,
+        #                                                                                 start_bin=low_bin,
+        #                                                                                 end_bin=high_bin)
         if isinstance(self.contributions_objs[0], ROOT.TH1):
             ymin = min([o.GetMinimum() for o in self.contributions_objs])
             if ymin >= 0:
@@ -811,41 +815,37 @@ class Plot(object):
 
             if self.subplot_type == "ratio":
                 # Set ratio y limits
-                self.subplot_container.SetMinimum(0)  # use this, not SetRangeUser()
+                # self.subplot_container.SetMinimum(0)  # use this, not SetRangeUser()
+
                 if self.subplot_limits:
                     # User-specified limits
-                    self.subplot_container.SetMinimum(self.subplot_limits[0])  # use this, not SetRangeUser()
-                    self.subplot_container.SetMaximum(self.subplot_limits[1])  # use this, not SetRangeUser()
-                else:
-                    # A more intelligent way?
-                    # Make sure that the upper limit is the largest bin of the contributions,
-                    # so long as it is within subplot_maximum_floor and subplot_maximum_ceil
-                    harrays = [cu.th1_to_arr(h)[0] for h in self.subplot_contributions]
-                    try:
-                        bin_maxs = [np.max(arr[np.nonzero(arr)]) for arr in harrays]
-                    except ValueError:
-                        bin_maxs = [0]
-                    if len(bin_maxs) == 0:
-                        bin_maxs = [0]
-                    self.subplot_container.SetMaximum(min(self.subplot_maximum_ceil, max(self.subplot_maximum_floor, 1.1*max(bin_maxs))))
+                    if self.subplot_limits[0] is not None:
+                        self.subplot_container.SetMinimum(self.subplot_limits[0])  # use this, not SetRangeUser()
+                    if self.subplot_limits[1] is not None:
+                        self.subplot_container.SetMaximum(self.subplot_limits[1])  # use this, not SetRangeUser()
 
-                    # Make sure the lower limit is the smallest bin of the contributions,
-                    # so long as it is within 0 and subplot_minimum_ceil
-                    try:
-                        bin_mins = [np.min(arr[np.nonzero(arr)]) for arr in harrays]
-                    except ValueError:
-                        bin_mins = [0]
-                    if len(bin_mins) == 0:
-                        bin_mins = [0]
-                    self.subplot_container.SetMinimum(max(self.subplot_minimum_floor, min(self.subplot_minimum_ceil, 0.9*min(bin_mins))))
+                if (self.subplot_limits is None) or (self.subplot_limits[0] is None) or (self.subplot_limits[1] is None):
+                    # A more intelligent way?
+                    # Find the min/max across all bins. Limit our range accordingly
+                    low_physical, low_bin, high_physical, high_bin = cu.get_visible_axis_range(modifier.GetXaxis())
+                    min_all, min_bin_num, max_all, max_bin_num = cu.get_min_max_bin_contents_multiple_hists(self.subplot_contributions,
+                                                                                                            include_error=True,
+                                                                                                            ignore_zeros=True,
+                                                                                                            start_bin=low_bin,
+                                                                                                            end_bin=high_bin)
+                    if (self.subplot_limits is None) or (self.subplot_limits[1] is None):
+                        # Make sure that the upper limit is the largest bin of the contributions,
+                        # so long as it is within subplot_maximum_floor and subplot_maximum_ceil
+                        self.subplot_container.SetMaximum(min(self.subplot_maximum_ceil, max(self.subplot_maximum_floor, 1.1*max_all)))
+
+                    if (self.subplot_limits is None) or (self.subplot_limits[0] is None):
+                        # Make sure the lower limit is the smallest bin of the contributions,
+                        # so long as it is within subplot_minimum_floor and subplot_minimum_ceil
+                        self.subplot_container.SetMinimum(max(self.subplot_minimum_floor, min(self.subplot_minimum_ceil, 0.9*min_all)))
 
                 # Draw a line at 1
-                xax = modifier.GetXaxis()
-                ax_min, ax_max = xax.GetXmin(), xax.GetXmax()
-                self.subplot_line = ROOT.TLine(xax.GetXmin(), 1., xax.GetXmax(), 1.)
-                if self.xlim and all([x is not None for x in self.xlim]):
-                    # use user-set limits but ensure within in actual limits
-                    self.subplot_line = ROOT.TLine(max(ax_min, self.xlim[0]), 1., min(ax_max, self.xlim[1]), 1.)
+                low_physical, low_bin, high_physical, high_bin = cu.get_visible_axis_range(modifier.GetXaxis())
+                self.subplot_line = ROOT.TLine(low_physical, 1., high_physical, 1.)
                 self.subplot_line.SetLineStyle(self.subplot_line_style)
                 self.subplot_line.SetLineWidth(self.subplot_line_width)
                 self.subplot_line.SetLineColor(self.subplot_line_color)

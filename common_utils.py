@@ -791,3 +791,75 @@ def print_th2_bins(h, print_contents=True, print_errors=True, do_oflow=False):
         for iy in range(start_bin_y, end_bin_y+1):
             print(ix, iy, h.GetBinContent(ix. iy) if print_contents else "", "± %f" % h.GetBinError(ix, iy) if print_errors else "")
 
+
+def get_min_max_bin_contents(hist, include_error=True, ignore_zeros=True, start_bin=None, end_bin=None):
+    """Get minimum and maximum bin & contents from hist
+
+    Parameters
+    ----------
+    hist : ROOT.TH1
+        Description
+    include_error : bool, optional
+        Include error bars in determining minimum & maximum
+    ignore_zeros : bool, optional
+        If True, then ignore 0s from possible minimum/maximum
+    start_bin : None, optional
+        Only consider bin numbers >= start_bin.
+        If None, start at 1st bin
+    end_bin : None, optional
+        Only consider bin numbers <= end_bin.
+        If None, end at last bin
+
+    Returns
+    -------
+    float, int, float, int
+        Minimum, minimum bin number, maximum, maximum bin number
+    """
+    min_val = 1E100
+    min_bin = 0
+    max_val = -1E100
+    max_bin = 0
+    start_bin = start_bin or 1
+    end_bin = end_bin or hist.GetNbinsX()
+    for i in range(1, end_bin+1):
+        val = hist.GetBinContent(i)
+        err = hist.GetBinError(i) if include_error else 0
+        val_down = val-err
+        val_up = val+err
+        if (ignore_zeros and val_down != 0) or not ignore_zeros:
+            if (val_down < min_val):
+                min_val = val_down
+                min_bin = i
+        if (ignore_zeros and val_up != 0) or not ignore_zeros:
+            if (val_up > max_val):
+                max_val = val_up
+                max_bin = i
+    return min_val, min_bin, max_val, max_bin
+
+
+def get_min_max_bin_contents_multiple_hists(hists, *args, **kwargs):
+    """Do get_min_max_bin_contents across list of hists, getting global min/max & bins
+
+    See get_min_max_bin_contents() for args
+    """
+    results = [get_min_max_bin_contents(h, *args, **kwargs)
+               for h in hists]
+
+    # Get min across all hists, and also the hist bin number corresponding to it
+    all_mins = [m[0] for m in results]
+    min_all = min(all_mins)
+    min_bin = results[all_mins.index(min_all)][1]
+
+    # Get max across all hists, and also the hist bin number corresponding to it
+    all_maxs = [m[2] for m in results]
+    max_all = max(all_maxs)
+    max_bin = results[all_maxs.index(max_all)][3]
+
+    return min_all, min_bin, max_all, max_bin
+
+
+def get_visible_axis_range(axis):
+    # don't use axis.GetXmax(), GetXmin(): they just return the total possible range,
+    # not the visible one
+    return axis.GetBinLowEdge(axis.GetFirst()), axis.GetFirst(), axis.GetBinLowEdge(axis.GetLast()+1), axis.GetLast()
+

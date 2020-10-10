@@ -90,27 +90,23 @@ def do_1D_plot(hists,
     entries = [(h.Clone(cu.get_unique_str()), csd)
                for h, csd in zip(hists, components_styles_dicts)]
 
-    min_val = min([h.GetMinimum(0) for h in hists])
-    max_val = max([h.GetMaximum() for h in hists])
     # print("Auto y limits:", min_val, max_val)
     ylim = None
     if not normalise_hists:
+        min_val, min_bin, max_val, max_bin = cu.get_min_max_bin_contents_multiple_hists(hists)
         if logy:
             ylim = [0.5*min_val, 50*max_val]
         else:
             # ylim = [0.5*min_val, 1.5*max_val]
             ylim = [0, 1.5*max_val]
 
-    # Auto calc x limits to avoid lots of empty bins
-    # high_bin = max([find_largest_filled_bin(h)[0] for h in hists])
-    # low_bin = max(2, min([find_first_filled_bin(h)[0] for h in hists]))
-    # xlim = [hists[0].GetBinLowEdge(low_bin-1), hists[0].GetBinLowEdge(high_bin+2)]
-    # xlim = qgp.calc_auto_xlim([e[0] for e in entries])
-    xlim = "auto"
+    xlim = "auto" # Auto calc x limits to avoid lots of empty bins
 
     draw_opt = "NOSTACK HIST E1"
     subplot_title = "Simulation / Data"
     subplot_limits = (0, 2) if logy else (0.5, 1.5)
+    # subplot_limits = [0.5, None]
+    subplot_limits = None
     qgp.do_comparison_plot(entries,
                            output_filename,
                            # rebin=rebin,
@@ -258,15 +254,15 @@ def do_all_1D_projection_plots_in_dir(directories,
                         rebin = 2
                     elif objs[0].GetNbinsX() % 3 == 0 and objs[0].GetNbinsX() >= 60:
                         rebin = 3
-                
+
                 if obj_name.startswith("m_jj"):
                     rebin = 2
                 if "reliso" in obj_name:
                     rebin = 1
-                
+
                 if "pt_jet1_vs_pt_z" in obj_name:
-                    rebin = 20                
-                
+                    rebin = 20
+
                 if "pt_mu1_vs_pt_z" in obj_name:
                     rebin = 10
                     if pt_min > 250:
@@ -327,14 +323,12 @@ def do_all_1D_projection_plots_in_dir(directories,
 
 def do_dijet_distributions(root_dir, title):
     """Do plots comparing different different inputs in dijet region"""
-    # root_files = [qgc.ZB_FILENAME, qgc.JETHT_FILENAME, qgc.QCD_FILENAME][:]
-    # root_files = [qgc.ZB_FILENAME, qgc.JETHT_FILENAME, qgc.QCD_PYTHIA_ONLY_FILENAME][:]
-    # root_files = [qgc.ZB_FILENAME, qgc.JETHT_FILENAME, qgc.QCD_FILENAME][:]
-    # root_files = [qgc.ZB_FILENAME, qgc.JETHT_FILENAME, qgc.QCD_FILENAME, qgc.QCD_PYTHIA_ONLY_FILENAME][:]
-    # root_files = [qgc.JETHT_ZB_FILENAME, qgc.QCD_FILENAME, qgc.QCD_PYTHIA_ONLY_FILENAME, qgc.QCD_HERWIG_FILENAME][:]
-    root_files = [qgc.JETHT_ZB_FILENAME, qgc.QCD_FILENAME, qgc.QCD_HERWIG_FILENAME][:]
-    # root_files = [qgc.ZB_FILENAME, qgc.JETHT_FILENAME, qgc.QCD_FILENAME, qgc.ZPJ_ALL_FILENAME][:]
+    root_files = [qgc.JETHT_ZB_FILENAME, qgc.QCD_FILENAME, qgc.QCD_PYTHIA_ONLY_FILENAME, qgc.QCD_HERWIG_FILENAME]
+    # root_files = [qgc.JETHT_ZB_FILENAME, qgc.QCD_FILENAME, qgc.QCD_PYTHIA_ONLY_FILENAME]
+    # root_files = [qgc.JETHT_ZB_FILENAME, qgc.QCD_FILENAME, qgc.QCD_HERWIG_FILENAME][:]
     # root_files = [qgc.JETHT_ZB_FILENAME, qgc.QCD_FILENAME]
+    # root_files = [qgc.JETHT_ZB_FILENAME, qgc.QCD_PYTHIA_ONLY_FILENAME]
+    # root_files = [qgc.JETHT_ZB_FILENAME, qgc.QCD_HERWIG_FILENAME]
     root_files = [cu.open_root_file(os.path.join(root_dir, r)) for r in root_files]
 
     # herwig_dir = "workdir_ak4chs_herwig_newFlav_withPUreweight_withMuSF"
@@ -353,7 +347,7 @@ def do_dijet_distributions(root_dir, title):
     csd = [
         {"label": "Data", "line_color": data_col, "fill_color": data_col, "marker_color": data_col, "marker_style": 20, "fill_style": 0, "marker_size": msize, 'line_width': 2},
         {"label": "QCD MC [MG+PY8]", "line_color": mc_col, "fill_color": mc_col, "marker_color": mc_col, "marker_style": 22, "fill_style": 0, "marker_size": msize},
-        # {"label": "QCD MC [PY8]", "line_color": mc_col2, "fill_color": mc_col2, "marker_color": mc_col2, "marker_style": 21, "fill_style": 0, "marker_size": msize},
+        {"label": "QCD MC [PY8]", "line_color": mc_col2, "fill_color": mc_col2, "marker_color": mc_col2, "marker_style": 21, "fill_style": 0, "marker_size": msize},
         {"label": "QCD MC [H++]", "line_color": qgc.HERWIGPP_QCD_COLOUR, "fill_color": qgc.HERWIGPP_QCD_COLOUR, "marker_color": qgc.HERWIGPP_QCD_COLOUR, "marker_style": 23, "fill_style": 0, "marker_size": msize},
     ]
     jet_config_str = qgc.extract_jet_config(root_dir)
@@ -366,7 +360,7 @@ def do_dijet_distributions(root_dir, title):
     #                                   # output_dir=os.path.join(root_dir, "Dijet_data_mc_kin_comparison_absolute_everything"),
     # #                                   # output_dir=os.path.join(root_dir, "Dijet_data_mc_kin_comparison_absolute_all"),
     #                                   components_styles_dicts=csd,
-                                        # region_str=qgc.Dijet_LABEL,
+    #                                   region_str=qgc.Dijet_LABEL,
     #                                   jet_config_str=jet_config_str,
     #                                   normalise_hists=False,
     #                                   bin_by='ave')
@@ -384,19 +378,19 @@ def do_dijet_distributions(root_dir, title):
                                       bin_by='ave')
 
     # Do eta-ordered
-    # directories = [cu.get_from_tfile(rf, "Dijet_eta_ordered") for rf in root_files[:]]
-    # do_all_1D_projection_plots_in_dir(directories=directories,
-    #                                   output_dir=os.path.join(root_dir, "Dijet_data_mc_kin_comparison_eta_ordered_normalised"),
-    #                                   components_styles_dicts=csd,
-    #                                   region_str=qgc.Dijet_LABEL,
-    #                                   jet_config_str=jet_config_str,
-    #                                   title=title,
-    #                                   bin_by='ave')
+    directories = [cu.get_from_tfile(rf, "Dijet_eta_ordered") for rf in root_files[:]]
+    do_all_1D_projection_plots_in_dir(directories=directories,
+                                      output_dir=os.path.join(root_dir, "Dijet_data_mc_kin_comparison_eta_ordered_normalised"),
+                                      components_styles_dicts=csd,
+                                      region_str=qgc.Dijet_LABEL,
+                                      jet_config_str=jet_config_str,
+                                      title=title,
+                                      bin_by='ave')
 
 
 def do_zpj_distributions(root_dir, title):
     """Do plots comparing different different inputs in Z+jet region"""
-    root_files = [qgc.SINGLE_MU_FILENAME, qgc.DY_FILENAME, qgc.DY_HERWIG_FILENAME, qgc.DY_MG_HERWIG_FILENAME]
+    # root_files = [qgc.SINGLE_MU_FILENAME, qgc.DY_FILENAME, qgc.DY_HERWIG_FILENAME, qgc.DY_MG_HERWIG_FILENAME]
     root_files = [qgc.SINGLE_MU_FILENAME, qgc.DY_FILENAME, qgc.DY_HERWIG_FILENAME]
     root_files = [cu.open_root_file(os.path.join(root_dir, r)) for r in root_files]
 
@@ -409,8 +403,8 @@ def do_zpj_distributions(root_dir, title):
     csd = [
         {"label": "Data", "line_color": data_col, "fill_color": data_col, "marker_color": data_col, "marker_style": 20, "fill_style": 0, "marker_size": msize},
         {"label": "DY+Jets MC [MG+PY8]", "line_color": mc_col, "fill_color": mc_col, "marker_color": mc_col, "marker_style": 21, "fill_style": 0, "marker_size": msize},
-        {"label": "DY+Jets MC [H++]", "line_color": mc_col3, "fill_color": mc_col3, "marker_color": mc_col3, "marker_style": 23, "fill_style": 0, "marker_size": msize},
-        # {"label": "DY+Jets MC [MG+H++]", "line_color": mc_col2, "fill_color": mc_col2, "marker_color": mc_col2, "marker_style": 22, "fill_style": 0, "marker_size": msize},
+        {"label": "DY+Jets MC [H++]", "line_color": mc_col2, "fill_color": mc_col2, "marker_color": mc_col2, "marker_style": 23, "fill_style": 0, "marker_size": msize},
+        # {"label": "DY+Jets MC [MG+H++]", "line_color": mc_col3, "fill_color": mc_col3, "marker_color": mc_col3, "marker_style": 22, "fill_style": 0, "marker_size": msize},
     ]
     jet_config_str = qgc.extract_jet_config(root_dir)
 
@@ -422,7 +416,7 @@ def do_zpj_distributions(root_dir, title):
     #                                   components_styles_dicts=csd,
     #                                   jet_config_str=jet_config_str,
     #                                   normalise_hists=False,
-                                        # region_str=qgc.ZpJ_LABEL,
+    #                                   region_str=qgc.ZpJ_LABEL,
     #                                   bin_by='Z')
 
     # Compare shapes
