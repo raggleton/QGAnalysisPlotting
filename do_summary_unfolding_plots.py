@@ -514,10 +514,17 @@ class SummaryPlotter(object):
             elif do_zpj:
                 region_str += qgc.ZpJ_LABEL
 
-        h_max = max([c.obj.GetMaximum() for c in entries])
-        h_min = min([c.obj.GetMinimum(1E-10) for c in entries])
+        # determine y range of main pad
+        # look for global min/max across all contributions
+        h_min, min_bin_num, h_max, max_bin_num = cu.get_min_max_bin_contents_multiple_hists([c.obj for c in entries])
         h_range = h_max - h_min
-        ylim = (max(0, h_min-(h_range*0.2)), h_max + (h_range*0.8))
+        lower_padding = h_range*0.2
+        upper_padding = h_range*0.5
+        # If the maximum overlaps with the legend region (upper 40% end of x axis)
+        # then increase the padding
+        if max_bin_num > 0.6*(entries[-1].obj.GetNbinsX()):
+            upper_padding = h_range * 0.5
+        ylim = (max(0, h_min-lower_padding), h_max + upper_padding)
         plot = Plot(entries,
                     what='hist',
                     xtitle=COMMON_STYLE_DICT['jet_pt_units_str'],
@@ -574,12 +581,13 @@ class SummaryPlotter(object):
         # Calculate automatic subplot limits, accounting for the range of values,
         # and allowing for the subplot legend
         if len(plot.subplot_contributions) > 0:
-            min_ratio = min([c.GetMinimum(0) for c in plot.subplot_contributions])
-            max_ratio = max([c.GetMaximum() for c in plot.subplot_contributions])
+            min_max_all = [cu.get_min_max_bin_contents(c) for c in plot.subplot_contributions]
+            min_ratio = min([m[0] for m in min_max_all])
+            max_ratio = max([m[2] for m in min_max_all])
             ratio_range = max_ratio - min_ratio
             # add some padding, fraction of range
-            ratio_padding = 0.15*ratio_range
-            min_ratio -= ratio_padding
+            ratio_padding = 0.1*ratio_range
+            min_ratio -= 2*ratio_padding  # bit more padding on lower limit as upper has legend space already
             max_ratio += ratio_padding
             new_ratio_range = max_ratio - min_ratio
             # now add on half this range to accommodate subplot legend
