@@ -102,12 +102,13 @@ def do_jet_pt_plot(entries,
     plot.legend.SetX2(0.98)
     plot.legend.SetY2(0.88)
     plot.left_margin = 0.16
+    plot.title_left_offset = 0.05
 
     if data_first:
         # we'll do the filling of legend ourselves
         plot.do_legend = False
 
-    draw_opt = "NOSTACKE HIST E ]["
+    draw_opt = "NOSTACK E HIST E"
     plot.plot(draw_opt)
 
     # avoid x title hitting labels
@@ -314,7 +315,10 @@ def create_pt_hist(hist, binning, binning_uflow, pt_bin_edges, pt_bin_edges_uflo
     return h_new
 
 
-def do_dijet_pt_plots(workdir, do_systematics=True):
+def do_dijet_pt_plots(workdir,
+                      show_total_systematics=True,
+                      show_grouped_systematics=True,
+                      show_individual_systematics=True):
 
     data_tfile = cu.open_root_file(os.path.join(workdir, qgc.JETHT_ZB_FILENAME))
     mg_tfile = cu.open_root_file(os.path.join(workdir, qgc.QCD_FILENAME))
@@ -483,7 +487,7 @@ def do_dijet_pt_plots(workdir, do_systematics=True):
         # For use with tunfold binning, which just has bin indices as x values instead of physical values
         all_pt_bins = np.append(qgc.PT_UNFOLD_DICT['underflow_reco'][:-1], qgc.PT_UNFOLD_DICT['signal_reco'])
         all_pt_bins = np.append(all_pt_bins, 8000)  # the overflow bin
-        print(all_pt_bins)
+        # print(all_pt_bins)
         data_hist = tunfold_to_physical_bins(data_hist, all_pt_bins, divide_by_bin_width=True)
         mg_hist = tunfold_to_physical_bins(mg_hist, all_pt_bins, divide_by_bin_width=True)
         py_hist = tunfold_to_physical_bins(py_hist, all_pt_bins, divide_by_bin_width=True)
@@ -501,7 +505,8 @@ def do_dijet_pt_plots(workdir, do_systematics=True):
         pdf_hist_up, pdf_hist_down = None, None
         total_hist_up, total_hist_down = None, None
 
-        if do_systematics:
+        # Calculate various systematic variations
+        if any([show_total_systematics, show_individual_systematics, show_grouped_systematics]):
             # Calculate total experimental systematic uncertainty
             # ------------------------------------------------------------------
             for exp_dict in experimental_systematics:
@@ -587,9 +592,9 @@ def do_dijet_pt_plots(workdir, do_systematics=True):
                 pdf_hist_up.SetBinError(ix, 0)
                 pdf_hist_down.SetBinContent(ix, max(nominal-rms, 0))
                 pdf_hist_down.SetBinError(ix, 0)
-                print(ix, 'nominal', nominal, 'rms', rms, 'rms/nominal', rms/nominal)
-                if rms > nominal:
-                    print("!!!!!")
+                # print(ix, 'nominal', nominal, 'rms', rms, 'rms/nominal', rms/nominal)
+                # if rms > nominal:
+                #     print("!!!!!")
 
             # Calculate total uncertainty
             # ------------------------------------------------------------------
@@ -612,6 +617,9 @@ def do_dijet_pt_plots(workdir, do_systematics=True):
                 total_hist_down.SetBinContent(ix, nominal - math.sqrt(sum_sq))
                 total_hist_down.SetBinError(ix, 0)
 
+        # Create entries for plot
+        # --------------------------------------------------------------------------
+
         entries = [
             # DATA
             [
@@ -631,13 +639,13 @@ def do_dijet_pt_plots(workdir, do_systematics=True):
             ],
 
             # PYTHIA-only MC
-            [
-                py_hist,
-                dict(line_color=qgc.QCD_COLOURS[2], line_width=lw, fill_color=qgc.QCD_COLOURS[2],
-                     marker_color=qgc.QCD_COLOURS[2], marker_style=cu.Marker.get(qgc.QCD_MARKER), marker_size=mc_msize,
-                     label="Pythia8",
-                     subplot=data_hist)
-            ],
+            # [
+            #     py_hist,
+            #     dict(line_color=qgc.QCD_COLOURS[2], line_width=lw, fill_color=qgc.QCD_COLOURS[2],
+            #          marker_color=qgc.QCD_COLOURS[2], marker_style=cu.Marker.get(qgc.QCD_MARKER), marker_size=mc_msize,
+            #          label="Pythia8",
+            #          subplot=data_hist)
+            # ],
 
             # HERWIG++
             [
@@ -649,174 +657,173 @@ def do_dijet_pt_plots(workdir, do_systematics=True):
             ]
         ]
 
-        if do_systematics:
-            # ADD EXPERIMENTAL ENTRIES
-            # ------------------------------------------------------------------
+        # ADD EXPERIMENTAL ENTRIES
+        # ------------------------------------------------------------------
+        if show_individual_systematics:
             # plot individual variations
-            # for exp_dict in experimental_systematics:
-                # entries.append([exp_dict['hist'],
-                #                 dict(line_color=exp_dict['colour'], line_width=lw, fill_color=exp_dict['colour'],
-                #                      marker_color=exp_dict['colour'], marker_size=0, label=exp_dict['label'],
-                #                      subplot=data_hist
-                #                 )
-                #                ])
+            for exp_dict in experimental_systematics:
+                entries.append([exp_dict['hist'],
+                                dict(line_color=exp_dict['colour'], line_width=lw, fill_color=exp_dict['colour'],
+                                     marker_color=exp_dict['colour'], marker_size=0, label=exp_dict['label'],
+                                     subplot=data_hist)
+                               ])
 
+        if show_grouped_systematics:
+            # plot up/down boundaries
             exp_col = ROOT.kRed+2
             exp_col2 = ROOT.kRed-2
-            # plot up/down boundaries
-            # entries.extend([
-            #     [
-            #         exp_hist_up.Clone(),
-            #         dict(line_color=exp_col, line_width=lw, line_style=1,
-            #              fill_color=exp_col,
-            #              marker_color=exp_col, marker_size=0, label="Exp systs up",
-            #              subplot=data_hist)
-            #     ],
-            #     [
-            #         exp_hist_down.Clone(),
-            #         dict(line_color=exp_col2, line_width=lw, line_style=2,
-            #              fill_color=exp_col2,
-            #              marker_color=exp_col2, marker_size=0, label="Exp systs down",
-            #              subplot=data_hist)
-            #     ],
-            # ])
+            entries.extend([
+                [
+                    exp_hist_up.Clone(),
+                    dict(line_color=exp_col, line_width=lw, line_style=1,
+                         fill_color=exp_col,
+                         marker_color=exp_col, marker_size=0, label="Exp systs up",
+                         subplot=data_hist)
+                ],
+                [
+                    exp_hist_down.Clone(),
+                    dict(line_color=exp_col2, line_width=lw, line_style=2,
+                         fill_color=exp_col2,
+                         marker_color=exp_col2, marker_size=0, label="Exp systs down",
+                         subplot=data_hist)
+                ],
+            ])
 
-            exp_hist_up_ratio = exp_hist_up.Clone()
-            exp_hist_down_ratio = exp_hist_down.Clone()
-            exp_hist_up_ratio.Add(mg_hist, -1) # error doesnt matter
-            exp_hist_up_ratio.Divide(mg_hist)
-            exp_hist_down_ratio.Add(mg_hist, -1)
-            exp_hist_down_ratio.Divide(mg_hist)
-            exp_hist_down_ratio.Scale(-1)
-            n = mg_hist.GetNbinsX()
-            bin_width = [mg_hist.GetBinWidth(i)/2. for i in range(1, n+1)]
-            x = array('d', [mg_hist.GetBinCenter(i) for i in range(1, n+1)])
-            y = array('d', [1 for i in range(1, n+1)])
-            exl = array('d', [bin_width[i-1] for i in range(1, n+1)])
-            exh = array('d', [bin_width[i-1] for i in range(1, n+1)])
-            exp_eyl = array('d', [exp_hist_down_ratio.GetBinContent(i) for i in range(1, n+1)])
-            exp_eyh = array('d', [exp_hist_up_ratio.GetBinContent(i) for i in range(1, n+1)])
-            exp_gr = ROOT.TGraphAsymmErrors(n, x, y, exl, exh, exp_eyl, exp_eyh)
+        exp_hist_up_ratio = exp_hist_up.Clone()
+        exp_hist_down_ratio = exp_hist_down.Clone()
+        exp_hist_up_ratio.Add(mg_hist, -1) # error doesnt matter
+        exp_hist_up_ratio.Divide(mg_hist)
+        exp_hist_down_ratio.Add(mg_hist, -1)
+        exp_hist_down_ratio.Divide(mg_hist)
+        exp_hist_down_ratio.Scale(-1)
+        n = mg_hist.GetNbinsX()
+        bin_width = [mg_hist.GetBinWidth(i)/2. for i in range(1, n+1)]
+        x = array('d', [mg_hist.GetBinCenter(i) for i in range(1, n+1)])
+        y = array('d', [1 for i in range(1, n+1)])
+        exl = array('d', [bin_width[i-1] for i in range(1, n+1)])
+        exh = array('d', [bin_width[i-1] for i in range(1, n+1)])
+        exp_eyl = array('d', [exp_hist_down_ratio.GetBinContent(i) for i in range(1, n+1)])
+        exp_eyh = array('d', [exp_hist_up_ratio.GetBinContent(i) for i in range(1, n+1)])
+        exp_gr = ROOT.TGraphAsymmErrors(n, x, y, exl, exh, exp_eyl, exp_eyh)
 
-            # ADD SCALE ENTRIES
-            # ------------------------------------------------------------------
-            # plot individual variations
-            # for scale_dict in scale_systematics:
-            #     entries.append([scale_dict['hist'],
-            #                     dict(line_color=scale_dict['colour'], line_width=lw, fill_color=scale_dict['colour'],
-            #                          marker_color=scale_dict['colour'], marker_size=0, label=scale_dict['label'],
-            #                          subplot=data_hist
-            #                     )
-            #                    ])
+        # ADD SCALE ENTRIES
+        # ------------------------------------------------------------------
+        if show_individual_systematics:
+            for scale_dict in scale_systematics:
+                entries.append([scale_dict['hist'],
+                                dict(line_color=scale_dict['colour'], line_width=lw, fill_color=scale_dict['colour'],
+                                     marker_color=scale_dict['colour'], marker_size=0, label=scale_dict['label'],
+                                     subplot=data_hist)
+                               ])
 
-            scale_col = ROOT.kAzure+2
+        if show_grouped_systematics:
+            scale_col = ROOT.kGreen+2
             scale_col2 = scale_col
-            # plot up/down boundaries
-            # entries.extend([
-            #     [
-            #         scale_hist_up.Clone(),
-            #         dict(line_color=scale_col, line_width=lw, line_style=1,
-            #              fill_color=scale_col,
-            #              marker_color=scale_col, marker_size=0, label="Scale up",
-            #              subplot=data_hist)
-            #     ],
-            #     [
-            #         scale_hist_down.Clone(),
-            #         dict(line_color=scale_col2, line_width=lw, line_style=2,
-            #              fill_color=scale_col2,
-            #              marker_color=scale_col2, marker_size=0, label="Scale down",
-            #              subplot=data_hist)
-            #     ],
-            # ])
+            entries.extend([
+                [
+                    scale_hist_up.Clone(),
+                    dict(line_color=scale_col, line_width=lw, line_style=1,
+                         fill_color=scale_col,
+                         marker_color=scale_col, marker_size=0, label="Scale up",
+                         subplot=data_hist)
+                ],
+                [
+                    scale_hist_down.Clone(),
+                    dict(line_color=scale_col2, line_width=lw, line_style=2,
+                         fill_color=scale_col2,
+                         marker_color=scale_col2, marker_size=0, label="Scale down",
+                         subplot=data_hist)
+                ],
+            ])
 
-            scale_hist_up_ratio = scale_hist_up.Clone()
-            scale_hist_down_ratio = scale_hist_down.Clone()
-            scale_hist_up_ratio.Add(mg_hist, -1)
-            scale_hist_up_ratio.Divide(mg_hist)
-            scale_hist_down_ratio.Add(mg_hist, -1)
-            scale_hist_down_ratio.Divide(mg_hist)
-            scale_hist_down_ratio.Scale(-1)
-            scale_eyl = array('d', [scale_hist_down_ratio.GetBinContent(i) for i in range(1, n+1)])
-            scale_eyh = array('d', [scale_hist_up_ratio.GetBinContent(i) for i in range(1, n+1)])
-            scale_gr = ROOT.TGraphAsymmErrors(n, x, y, exl, exh, scale_eyl, scale_eyh)
+        scale_hist_up_ratio = scale_hist_up.Clone()
+        scale_hist_down_ratio = scale_hist_down.Clone()
+        scale_hist_up_ratio.Add(mg_hist, -1)
+        scale_hist_up_ratio.Divide(mg_hist)
+        scale_hist_down_ratio.Add(mg_hist, -1)
+        scale_hist_down_ratio.Divide(mg_hist)
+        scale_hist_down_ratio.Scale(-1)
+        scale_eyl = array('d', [scale_hist_down_ratio.GetBinContent(i) for i in range(1, n+1)])
+        scale_eyh = array('d', [scale_hist_up_ratio.GetBinContent(i) for i in range(1, n+1)])
+        scale_gr = ROOT.TGraphAsymmErrors(n, x, y, exl, exh, scale_eyl, scale_eyh)
 
-            # ADD PDF ENTRIES
-            # ------------------------------------------------------------------
-            # print(these_pdf_systematics)
-            # plot individual variations
-            # for pdf_dict in these_pdf_systematics:
-            #     entries.append(
-            #         [
-            #             pdf_dict['hist'],
-            #             dict(label=pdf_dict['label'],
-            #                  line_color=pdf_dict['colour'],
-            #                  # subplot=mg_hist)
-            #                  subplot=data_hist)
-            #         ]
-            #     )
+        # ADD PDF ENTRIES
+        # ------------------------------------------------------------------
+        if show_individual_systematics:
+            for pdf_dict in these_pdf_systematics:
+                entries.append(
+                    [
+                        pdf_dict['hist'],
+                        dict(label=pdf_dict['label'],
+                             line_color=pdf_dict['colour'],
+                             # subplot=mg_hist)
+                             subplot=data_hist)
+                    ]
+                )
 
-            pdf_col = ROOT.kMagenta
+        if show_grouped_systematics:
+            pdf_col = ROOT.kOrange-4
             pdf_col2 = pdf_col
-            # plot up/down boundaries
-            # entries.extend([
-            #     [
-            #         pdf_hist_up.Clone(),
-            #         dict(line_color=pdf_col, line_width=lw, line_style=1,
-            #              fill_color=pdf_col,
-            #              marker_color=pdf_col, marker_size=0, label="PDF up",
-            #              subplot=data_hist)
-            #     ],
-            #     [
-            #         pdf_hist_down.Clone(),
-            #         dict(line_color=pdf_col2, line_width=lw, line_style=2,
-            #              fill_color=pdf_col2,
-            #              marker_color=pdf_col2, marker_size=0, label="PDF down",
-            #              subplot=data_hist)
-            #     ],
-            # ])
+            entries.extend([
+                [
+                    pdf_hist_up.Clone(),
+                    dict(line_color=pdf_col, line_width=lw, line_style=1,
+                         fill_color=pdf_col,
+                         marker_color=pdf_col, marker_size=0, label="PDF up",
+                         subplot=data_hist)
+                ],
+                [
+                    pdf_hist_down.Clone(),
+                    dict(line_color=pdf_col2, line_width=lw, line_style=2,
+                         fill_color=pdf_col2,
+                         marker_color=pdf_col2, marker_size=0, label="PDF down",
+                         subplot=data_hist)
+                ],
+            ])
 
-            pdf_hist_up_ratio = pdf_hist_up.Clone()
-            pdf_hist_down_ratio = pdf_hist_down.Clone()
-            pdf_hist_up_ratio.Add(mg_hist, -1)
-            pdf_hist_up_ratio.Divide(mg_hist)
-            pdf_hist_down_ratio.Add(mg_hist, -1)
-            pdf_hist_down_ratio.Divide(mg_hist)
-            pdf_hist_down_ratio.Scale(-1)
-            pdf_eyl = array('d', [pdf_hist_down_ratio.GetBinContent(i) for i in range(1, n+1)])
-            pdf_eyh = array('d', [pdf_hist_up_ratio.GetBinContent(i) for i in range(1, n+1)])
-            pdf_gr = ROOT.TGraphAsymmErrors(n, x, y, exl, exh, pdf_eyl, pdf_eyh)
+        pdf_hist_up_ratio = pdf_hist_up.Clone()
+        pdf_hist_down_ratio = pdf_hist_down.Clone()
+        pdf_hist_up_ratio.Add(mg_hist, -1)
+        pdf_hist_up_ratio.Divide(mg_hist)
+        pdf_hist_down_ratio.Add(mg_hist, -1)
+        pdf_hist_down_ratio.Divide(mg_hist)
+        pdf_hist_down_ratio.Scale(-1)
+        pdf_eyl = array('d', [pdf_hist_down_ratio.GetBinContent(i) for i in range(1, n+1)])
+        pdf_eyh = array('d', [pdf_hist_up_ratio.GetBinContent(i) for i in range(1, n+1)])
+        pdf_gr = ROOT.TGraphAsymmErrors(n, x, y, exl, exh, pdf_eyl, pdf_eyh)
 
-            # ADD TOTAL
-            # ------------------------------------------------------------------
+        # ADD TOTAL
+        # ------------------------------------------------------------------
+        if show_grouped_systematics:
             total_col = ROOT.kBlack
             total_col2 = total_col
-            # entries.extend([
-            #     [
-            #         total_hist_up.Clone(),
-            #         dict(line_color=total_col, line_width=lw, line_style=1,
-            #              fill_color=total_col,
-            #              marker_color=total_col, marker_size=0, label="Total up",
-            #              subplot=data_hist)
-            #     ],
-            #     [
-            #         total_hist_down.Clone(),
-            #         dict(line_color=total_col2, line_width=lw, line_style=2,
-            #              fill_color=total_col2,
-            #              marker_color=total_col2, marker_size=0, label="Total down",
-            #              subplot=data_hist)
-            #     ],
-            # ])
+            entries.extend([
+                [
+                    total_hist_up.Clone(),
+                    dict(line_color=total_col, line_width=lw, line_style=1,
+                         fill_color=total_col,
+                         marker_color=total_col, marker_size=0, label="Total up",
+                         subplot=data_hist)
+                ],
+                [
+                    total_hist_down.Clone(),
+                    dict(line_color=total_col2, line_width=lw, line_style=2,
+                         fill_color=total_col2,
+                         marker_color=total_col2, marker_size=0, label="Total down",
+                         subplot=data_hist)
+                ],
+            ])
 
-            total_hist_up_ratio = total_hist_up.Clone()
-            total_hist_down_ratio = total_hist_down.Clone()
-            total_hist_up_ratio.Add(mg_hist, -1)
-            total_hist_up_ratio.Divide(mg_hist)
-            total_hist_down_ratio.Add(mg_hist, -1)
-            total_hist_down_ratio.Divide(mg_hist)
-            total_hist_down_ratio.Scale(-1)
-            total_eyl = array('d', [total_hist_down_ratio.GetBinContent(i) for i in range(1, n+1)])
-            total_eyh = array('d', [total_hist_up_ratio.GetBinContent(i) for i in range(1, n+1)])
-            total_gr = ROOT.TGraphAsymmErrors(n, x, y, exl, exh, total_eyl, total_eyh)
+        total_hist_up_ratio = total_hist_up.Clone()
+        total_hist_down_ratio = total_hist_down.Clone()
+        total_hist_up_ratio.Add(mg_hist, -1)
+        total_hist_up_ratio.Divide(mg_hist)
+        total_hist_down_ratio.Add(mg_hist, -1)
+        total_hist_down_ratio.Divide(mg_hist)
+        total_hist_down_ratio.Scale(-1)
+        total_eyl = array('d', [total_hist_down_ratio.GetBinContent(i) for i in range(1, n+1)])
+        total_eyh = array('d', [total_hist_up_ratio.GetBinContent(i) for i in range(1, n+1)])
+        total_gr = ROOT.TGraphAsymmErrors(n, x, y, exl, exh, total_eyl, total_eyh)
 
         radius, pus = cu.get_jet_config_from_dirname(workdir)
         jet_str = "AK%s PF %s" % (radius.upper(), pus.upper())
@@ -838,11 +845,14 @@ def do_dijet_pt_plots(workdir, do_systematics=True):
                        experimental_syst=None,
                        scale_syst=None,
                        pdf_syst=None,
-                       total_syst=total_gr if do_systematics else None)
+                       total_syst=total_gr if show_total_systematics else None)
 
 
 
-def do_zpj_pt_plots(workdir, do_systematics=True):
+def do_zpj_pt_plots(workdir,
+                    show_total_systematics=True,
+                    show_grouped_systematics=True,
+                    show_individual_systematics=True):
 
     single_mu_tfile = cu.open_root_file(os.path.join(workdir, qgc.SINGLE_MU_FILENAME))
     mg_dy_tfile = cu.open_root_file(os.path.join(workdir, qgc.DY_FILENAME))
@@ -1007,7 +1017,7 @@ def do_zpj_pt_plots(workdir, do_systematics=True):
     # For use with tunfold binning, which just has bin indices as x values instead of physical values
     all_pt_bins = np.append(qgc.PT_UNFOLD_DICT['underflow_zpj_reco'][:-1], qgc.PT_UNFOLD_DICT['signal_zpj_reco'])
     all_pt_bins = np.append(all_pt_bins, 8000)  # the overflow bin
-    print(all_pt_bins)
+    # print(all_pt_bins)
     data_hist = tunfold_to_physical_bins(data_hist, all_pt_bins, divide_by_bin_width=True)
     mg_hist = tunfold_to_physical_bins(mg_hist, all_pt_bins, divide_by_bin_width=True)
     hpp_hist = tunfold_to_physical_bins(hpp_hist, all_pt_bins, divide_by_bin_width=True)
@@ -1023,7 +1033,8 @@ def do_zpj_pt_plots(workdir, do_systematics=True):
     pdf_hist_up, pdf_hist_down = None, None
     total_hist_up, total_hist_down = None, None
 
-    if do_systematics:
+    # Calculate various systematic variations
+    if any([show_total_systematics, show_individual_systematics, show_grouped_systematics]):
         # Calculate total experimental systematic uncertainty
         # ------------------------------------------------------------------
         for exp_dict in experimental_systematics:
@@ -1112,9 +1123,9 @@ def do_zpj_pt_plots(workdir, do_systematics=True):
             pdf_hist_up.SetBinError(ix, 0)
             pdf_hist_down.SetBinContent(ix, max(nominal-rms, 0))
             pdf_hist_down.SetBinError(ix, 0)
-            print(ix, 'nominal', nominal, 'rms', rms, 'rms/nominal', rms/nominal)
-            if rms > nominal:
-                print("!!!!!")
+            # print(ix, 'nominal', nominal, 'rms', rms, 'rms/nominal', rms/nominal)
+            # if rms > nominal:
+            #     print("!!!!!")
 
 
         # Calculate total uncertainty
@@ -1138,7 +1149,8 @@ def do_zpj_pt_plots(workdir, do_systematics=True):
             total_hist_down.SetBinContent(ix, nominal - math.sqrt(sum_sq))
             total_hist_down.SetBinError(ix, 0)
 
-
+    # Create entries for plot
+    # --------------------------------------------------------------------------
     entries = [
         # SINGLE MU DATA
         [
@@ -1167,176 +1179,173 @@ def do_zpj_pt_plots(workdir, do_systematics=True):
         ]
     ]
 
-    if do_systematics:
-        # ADD EXPERIMENTAL ENTRIES
-        # ------------------------------------------------------------------
-        # plot individual variations
-        # for exp_dict in experimental_systematics:
-        #     entries.append([exp_dict['hist'],
-        #                     dict(line_color=exp_dict['colour'], line_width=1, fill_color=exp_dict['colour'],
-        #                          marker_color=exp_dict['colour'], marker_size=0, label=exp_dict['label'],
-        #                          line_style=1 if "up" in exp_dict['label'].lower() else 2,
-        #                          subplot=data_hist
-        #                     )
-        #                    ])
+    # ADD EXPERIMENTAL ENTRIES
+    # ------------------------------------------------------------------
+    if show_individual_systematics:
+        for exp_dict in experimental_systematics:
+            entries.append([exp_dict['hist'],
+                            dict(line_color=exp_dict['colour'], line_width=1, fill_color=exp_dict['colour'],
+                                 marker_color=exp_dict['colour'], marker_size=0, label=exp_dict['label'],
+                                 line_style=1 if "up" in exp_dict['label'].lower() else 2,
+                                 subplot=data_hist)
+                           ])
 
+    if show_grouped_systematics:
         exp_col = ROOT.kRed+2
         exp_col2 = ROOT.kRed-2
-        # plot up/down boundaries
-        # entries.extend([
-        #     [
-        #         exp_hist_up.Clone(),
-        #         dict(line_color=exp_col, line_width=lw, line_style=1,
-        #              fill_color=exp_col,
-        #              marker_color=exp_col, marker_size=0, label="Exp systs up",
-        #              subplot=data_hist)
-        #     ],
-        #     [
-        #         exp_hist_down.Clone(),
-        #         dict(line_color=exp_col2, line_width=lw, line_style=2,
-        #              fill_color=exp_col2,
-        #              marker_color=exp_col2, marker_size=0, label="Exp systs down",
-        #              subplot=data_hist)
-        #     ],
-        # ])
+        entries.extend([
+            [
+                exp_hist_up.Clone(),
+                dict(line_color=exp_col, line_width=lw, line_style=1,
+                     fill_color=exp_col,
+                     marker_color=exp_col, marker_size=0, label="Exp systs up",
+                     subplot=data_hist)
+            ],
+            [
+                exp_hist_down.Clone(),
+                dict(line_color=exp_col2, line_width=lw, line_style=2,
+                     fill_color=exp_col2,
+                     marker_color=exp_col2, marker_size=0, label="Exp systs down",
+                     subplot=data_hist)
+            ],
+        ])
 
-        exp_hist_up_ratio = exp_hist_up.Clone()
-        exp_hist_down_ratio = exp_hist_down.Clone()
-        exp_hist_up_ratio.Add(mg_hist, -1)
-        exp_hist_up_ratio.Divide(mg_hist)
-        exp_hist_down_ratio.Add(mg_hist, -1)
-        exp_hist_down_ratio.Divide(mg_hist)
-        exp_hist_down_ratio.Scale(-1)
-        n = mg_hist.GetNbinsX()
-        bin_width = [mg_hist.GetBinWidth(i)/2. for i in range(1, n+1)]
-        x = array('d', [mg_hist.GetBinCenter(i) for i in range(1, n+1)])
-        y = array('d', [1 for i in range(1, n+1)])
-        exl = array('d', [bin_width[i-1] for i in range(1, n+1)])
-        exh = array('d', [bin_width[i-1] for i in range(1, n+1)])
-        exp_eyl = array('d', [exp_hist_down_ratio.GetBinContent(i) for i in range(1, n+1)])
-        exp_eyh = array('d', [exp_hist_up_ratio.GetBinContent(i) for i in range(1, n+1)])
-        exp_gr = ROOT.TGraphAsymmErrors(n, x, y, exl, exh, exp_eyl, exp_eyh)
+    exp_hist_up_ratio = exp_hist_up.Clone()
+    exp_hist_down_ratio = exp_hist_down.Clone()
+    exp_hist_up_ratio.Add(mg_hist, -1)
+    exp_hist_up_ratio.Divide(mg_hist)
+    exp_hist_down_ratio.Add(mg_hist, -1)
+    exp_hist_down_ratio.Divide(mg_hist)
+    exp_hist_down_ratio.Scale(-1)
+    n = mg_hist.GetNbinsX()
+    bin_width = [mg_hist.GetBinWidth(i)/2. for i in range(1, n+1)]
+    x = array('d', [mg_hist.GetBinCenter(i) for i in range(1, n+1)])
+    y = array('d', [1 for i in range(1, n+1)])
+    exl = array('d', [bin_width[i-1] for i in range(1, n+1)])
+    exh = array('d', [bin_width[i-1] for i in range(1, n+1)])
+    exp_eyl = array('d', [exp_hist_down_ratio.GetBinContent(i) for i in range(1, n+1)])
+    exp_eyh = array('d', [exp_hist_up_ratio.GetBinContent(i) for i in range(1, n+1)])
+    exp_gr = ROOT.TGraphAsymmErrors(n, x, y, exl, exh, exp_eyl, exp_eyh)
 
-        # ADD SCALE ENTRIES
-        # ------------------------------------------------------------------
-        # plot individual variations
-        # for scale_dict in scale_systematics:
-        #     entries.append([scale_dict['hist'],
-        #                     dict(line_color=scale_dict['colour'], line_width=lw, fill_color=scale_dict['colour'],
-        #                          marker_color=scale_dict['colour'], marker_size=0, label=scale_dict['label'],
-        #                          subplot=data_hist
-        #                     )
-        #                    ])
+    # ADD SCALE ENTRIES
+    # ------------------------------------------------------------------
+    if show_individual_systematics:
+        for scale_dict in scale_systematics:
+            entries.append([scale_dict['hist'],
+                            dict(line_color=scale_dict['colour'], line_width=lw, fill_color=scale_dict['colour'],
+                                 marker_color=scale_dict['colour'], marker_size=0, label=scale_dict['label'],
+                                 subplot=data_hist)
+                           ])
 
-        scale_col = ROOT.kAzure+2
+    if show_grouped_systematics:
+        scale_col = ROOT.kGreen+2
         scale_col2 = scale_col
-        # plot up/down boundaries
-        # entries.extend([
-        #     [
-        #         scale_hist_up.Clone(),
-        #         dict(line_color=scale_col, line_width=lw, line_style=1,
-        #              fill_color=scale_col,
-        #              marker_color=scale_col, marker_size=0, label="Scale up",
-        #              subplot=data_hist)
-        #     ],
-        #     [
-        #         scale_hist_down.Clone(),
-        #         dict(line_color=scale_col2, line_width=lw, line_style=2,
-        #              fill_color=scale_col2,
-        #              marker_color=scale_col2, marker_size=0, label="Scale down",
-        #              subplot=data_hist)
-        #     ],
-        # ])
+        entries.extend([
+            [
+                scale_hist_up.Clone(),
+                dict(line_color=scale_col, line_width=lw, line_style=1,
+                     fill_color=scale_col,
+                     marker_color=scale_col, marker_size=0, label="Scale up",
+                     subplot=data_hist)
+            ],
+            [
+                scale_hist_down.Clone(),
+                dict(line_color=scale_col2, line_width=lw, line_style=2,
+                     fill_color=scale_col2,
+                     marker_color=scale_col2, marker_size=0, label="Scale down",
+                     subplot=data_hist)
+            ],
+        ])
 
-        scale_hist_up_ratio = scale_hist_up.Clone()
-        scale_hist_down_ratio = scale_hist_down.Clone()
-        scale_hist_up_ratio.Add(mg_hist, -1)
-        scale_hist_up_ratio.Divide(mg_hist)
-        scale_hist_down_ratio.Add(mg_hist, -1)
-        scale_hist_down_ratio.Divide(mg_hist)
-        scale_hist_down_ratio.Scale(-1)
-        scale_eyl = array('d', [scale_hist_down_ratio.GetBinContent(i) for i in range(1, n+1)])
-        scale_eyh = array('d', [scale_hist_up_ratio.GetBinContent(i) for i in range(1, n+1)])
-        scale_gr = ROOT.TGraphAsymmErrors(n, x, y, exl, exh, scale_eyl, scale_eyh)
+    scale_hist_up_ratio = scale_hist_up.Clone()
+    scale_hist_down_ratio = scale_hist_down.Clone()
+    scale_hist_up_ratio.Add(mg_hist, -1)
+    scale_hist_up_ratio.Divide(mg_hist)
+    scale_hist_down_ratio.Add(mg_hist, -1)
+    scale_hist_down_ratio.Divide(mg_hist)
+    scale_hist_down_ratio.Scale(-1)
+    scale_eyl = array('d', [scale_hist_down_ratio.GetBinContent(i) for i in range(1, n+1)])
+    scale_eyh = array('d', [scale_hist_up_ratio.GetBinContent(i) for i in range(1, n+1)])
+    scale_gr = ROOT.TGraphAsymmErrors(n, x, y, exl, exh, scale_eyl, scale_eyh)
 
-        # ADD PDF ENTRIES
-        # ------------------------------------------------------------------
-        # print(these_pdf_systematics)
-        # plot individual variations
-        # for pdf_dict in these_pdf_systematics:
-        #     entries.append(
-        #         [
-        #             pdf_dict['hist'],
-        #             dict(label=pdf_dict['label'],
-        #                  line_color=pdf_dict['colour'],
-        #                  subplot=mg_hist)
-        #         ]
-        #     )
+    # ADD PDF ENTRIES
+    # ------------------------------------------------------------------
+    if show_individual_systematics:
+        for pdf_dict in these_pdf_systematics:
+            entries.append(
+                [
+                    pdf_dict['hist'],
+                    dict(label=pdf_dict['label'],
+                         line_color=pdf_dict['colour'],
+                         subplot=mg_hist)
+                ]
+            )
 
-        pdf_col = ROOT.kMagenta
+    if show_grouped_systematics:
+        pdf_col = ROOT.kOrange-4
         pdf_col2 = pdf_col
-        # plot up/down boundaries
-        # entries.extend([
-        #     [
-        #         pdf_hist_up.Clone(),
-        #         dict(line_color=pdf_col, line_width=lw, line_style=1,
-        #              fill_color=pdf_col,
-        #              marker_color=pdf_col, marker_size=0, label="PDF up",
-        #              subplot=data_hist)
-        #     ],
-        #     [
-        #         pdf_hist_down.Clone(),
-        #         dict(line_color=pdf_col2, line_width=lw, line_style=2,
-        #              fill_color=pdf_col2,
-        #              marker_color=pdf_col2, marker_size=0, label="PDF down",
-        #              subplot=data_hist)
-        #     ],
-        # ])
+        entries.extend([
+            [
+                pdf_hist_up.Clone(),
+                dict(line_color=pdf_col, line_width=lw, line_style=1,
+                     fill_color=pdf_col,
+                     marker_color=pdf_col, marker_size=0, label="PDF up",
+                     subplot=data_hist)
+            ],
+            [
+                pdf_hist_down.Clone(),
+                dict(line_color=pdf_col2, line_width=lw, line_style=2,
+                     fill_color=pdf_col2,
+                     marker_color=pdf_col2, marker_size=0, label="PDF down",
+                     subplot=data_hist)
+            ],
+        ])
 
-        pdf_hist_up_ratio = pdf_hist_up.Clone()
-        pdf_hist_down_ratio = pdf_hist_down.Clone()
-        pdf_hist_up_ratio.Add(mg_hist, -1)
-        pdf_hist_up_ratio.Divide(mg_hist)
-        pdf_hist_down_ratio.Add(mg_hist, -1)
-        pdf_hist_down_ratio.Divide(mg_hist)
-        pdf_hist_down_ratio.Scale(-1)
-        pdf_eyl = array('d', [pdf_hist_down_ratio.GetBinContent(i) for i in range(1, n+1)])
-        pdf_eyh = array('d', [pdf_hist_up_ratio.GetBinContent(i) for i in range(1, n+1)])
-        pdf_gr = ROOT.TGraphAsymmErrors(n, x, y, exl, exh, pdf_eyl, pdf_eyh)
+    pdf_hist_up_ratio = pdf_hist_up.Clone()
+    pdf_hist_down_ratio = pdf_hist_down.Clone()
+    pdf_hist_up_ratio.Add(mg_hist, -1)
+    pdf_hist_up_ratio.Divide(mg_hist)
+    pdf_hist_down_ratio.Add(mg_hist, -1)
+    pdf_hist_down_ratio.Divide(mg_hist)
+    pdf_hist_down_ratio.Scale(-1)
+    pdf_eyl = array('d', [pdf_hist_down_ratio.GetBinContent(i) for i in range(1, n+1)])
+    pdf_eyh = array('d', [pdf_hist_up_ratio.GetBinContent(i) for i in range(1, n+1)])
+    pdf_gr = ROOT.TGraphAsymmErrors(n, x, y, exl, exh, pdf_eyl, pdf_eyh)
 
-        # ADD TOTAL
-        # ------------------------------------------------------------------
+    # ADD TOTAL
+    # ------------------------------------------------------------------
+    if show_grouped_systematics:
         total_col = ROOT.kBlack
         total_col2 = total_col
-        # entries.extend([
-        #     [
-        #         total_hist_up.Clone(),
-        #         dict(line_color=total_col, line_width=lw, line_style=1,
-        #              fill_color=total_col,
-        #              marker_color=total_col, marker_size=0, label="Total up",
-        #              subplot=data_hist)
-        #     ],
-        #     [
-        #         total_hist_down.Clone(),
-        #         dict(line_color=total_col2, line_width=lw, line_style=2,
-        #              fill_color=total_col2,
-        #              marker_color=total_col2, marker_size=0, label="Total down",
-        #              subplot=data_hist)
-        #     ],
-        # ])
+        entries.extend([
+            [
+                total_hist_up.Clone(),
+                dict(line_color=total_col, line_width=lw, line_style=1,
+                     fill_color=total_col,
+                     marker_color=total_col, marker_size=0, label="Total up",
+                     subplot=data_hist)
+            ],
+            [
+                total_hist_down.Clone(),
+                dict(line_color=total_col2, line_width=lw, line_style=2,
+                     fill_color=total_col2,
+                     marker_color=total_col2, marker_size=0, label="Total down",
+                     subplot=data_hist)
+            ],
+        ])
 
-        total_hist_up_ratio = total_hist_up.Clone()
-        total_hist_down_ratio = total_hist_down.Clone()
-        total_hist_up_ratio.Add(mg_hist, -1)
-        total_hist_up_ratio.Divide(mg_hist)
-        total_hist_down_ratio.Add(mg_hist, -1)
-        total_hist_down_ratio.Divide(mg_hist)
-        total_hist_down_ratio.Scale(-1)
-        total_eyl = array('d', [total_hist_down_ratio.GetBinContent(i) for i in range(1, n+1)])
-        total_eyh = array('d', [total_hist_up_ratio.GetBinContent(i) for i in range(1, n+1)])
-        total_gr = ROOT.TGraphAsymmErrors(n, x, y, exl, exh, total_eyl, total_eyh)
+    total_hist_up_ratio = total_hist_up.Clone()
+    total_hist_down_ratio = total_hist_down.Clone()
+    total_hist_up_ratio.Add(mg_hist, -1)
+    total_hist_up_ratio.Divide(mg_hist)
+    total_hist_down_ratio.Add(mg_hist, -1)
+    total_hist_down_ratio.Divide(mg_hist)
+    total_hist_down_ratio.Scale(-1)
+    total_eyl = array('d', [total_hist_down_ratio.GetBinContent(i) for i in range(1, n+1)])
+    total_eyh = array('d', [total_hist_up_ratio.GetBinContent(i) for i in range(1, n+1)])
+    total_gr = ROOT.TGraphAsymmErrors(n, x, y, exl, exh, total_eyl, total_eyh)
 
-    print("data_hist.Integral('width'):", data_hist.Integral("width"))
+    # print("data_hist.Integral('width'):", data_hist.Integral("width"))
 
     radius, pus = cu.get_jet_config_from_dirname(workdir)
     jet_str = "AK%s PF %s" % (radius.upper(), pus.upper())
@@ -1359,7 +1368,7 @@ def do_zpj_pt_plots(workdir, do_systematics=True):
                    experimental_syst=None,
                    scale_syst=None,
                    pdf_syst=None,
-                   total_syst=total_gr if do_systematics else None
+                   total_syst=total_gr if show_total_systematics else None
                    )
 
 
@@ -1368,7 +1377,13 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     for workdir in args.workdirs:
-        do_dijet_pt_plots(workdir, do_systematics=True)
-        do_zpj_pt_plots(workdir, do_systematics=True)
+        do_dijet_pt_plots(workdir,
+                          show_total_systematics=True,
+                          show_grouped_systematics=False,
+                          show_individual_systematics=False)
+        do_zpj_pt_plots(workdir,
+                        show_total_systematics=True,
+                        show_grouped_systematics=False,
+                        show_individual_systematics=False)
 
     sys.exit(0)
