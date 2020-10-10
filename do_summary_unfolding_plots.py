@@ -356,7 +356,7 @@ class SummaryPlotter(object):
         if not self.only_yoda_data:
             # Add nominal MC
             if do_dijet_cen:
-                cont_args = dict(label=self.mc_label if only_one_region else '#splitline{ Dijet (central)  }{ [%s]}' % (self.mc_label),
+                cont_args = dict(label=self.mc_label if only_one_region else '#splitline{ Central dijet  }{ [%s]}' % (self.mc_label),
                                  line_color=COMMON_STYLE_DICT['mc_color'],
                                  line_width=lw,
                                  line_style=COMMON_STYLE_DICT['mc_line_style'],
@@ -369,7 +369,7 @@ class SummaryPlotter(object):
                 dummy_entries.append(Contribution(dummy_gr.Clone(), **cont_args))
 
             if do_dijet_fwd:
-                cont_args = dict(label=self.mc_label if only_one_region else '#splitline{ Dijet (forward)  }{ [%s]}' % (self.mc_label),
+                cont_args = dict(label=self.mc_label if only_one_region else '#splitline{ Forward dijet  }{ [%s]}' % (self.mc_label),
                                  line_color=COMMON_STYLE_DICT['mc_color'],
                                  line_width=lw,
                                  line_style=COMMON_STYLE_DICT['mc_line_style'],
@@ -396,7 +396,7 @@ class SummaryPlotter(object):
 
             # add alt MC
             if do_dijet_cen:
-                cont_args = dict(label=self.alt_mc_label if only_one_region else '#splitline{ Dijet (central)  }{ [%s]}' % (self.alt_mc_label),
+                cont_args = dict(label=self.alt_mc_label if only_one_region else '#splitline{ Central dijet  }{ [%s]}' % (self.alt_mc_label),
                                  line_color=COMMON_STYLE_DICT['mc_alt_color'],
                                  line_width=lw,
                                  line_style=COMMON_STYLE_DICT['mc_alt_line_style'],
@@ -409,7 +409,7 @@ class SummaryPlotter(object):
                 dummy_entries.append(Contribution(dummy_gr.Clone(), **cont_args))
 
             if do_dijet_fwd:
-                cont_args = dict(label=self.alt_mc_label if only_one_region else '#splitline{ Dijet (forward)  }{ [%s]}' % (self.alt_mc_label),
+                cont_args = dict(label=self.alt_mc_label if only_one_region else '#splitline{ Forward dijet  }{ [%s]}' % (self.alt_mc_label),
                                  line_color=COMMON_STYLE_DICT['mc_alt_color'],
                                  line_width=lw,
                                  line_style=COMMON_STYLE_DICT['mc_alt_line_style'],
@@ -442,7 +442,7 @@ class SummaryPlotter(object):
                 color = style_dict.get('color', COMMON_STYLE_DICT['mc_alt_color'])
                 fancy_label = style_dict.get("label", sample['key'])
                 marker_size = style_dict.get('marker_size', m_size)
-                cont_args = dict(label=fancy_label if only_one_region else '#splitline{ Dijet (central) }{ [%s]}' % (fancy_label),
+                cont_args = dict(label=fancy_label if only_one_region else '#splitline{ Central dijet }{ [%s]}' % (fancy_label),
                                  line_color=color,
                                  line_width=lw,
                                  line_style=style_dict.get('line_style', COMMON_STYLE_DICT['mc_alt_line_style']),
@@ -462,7 +462,7 @@ class SummaryPlotter(object):
                 color = style_dict.get('color', COMMON_STYLE_DICT['mc_alt_color'])
                 fancy_label = style_dict.get("label", sample['key'])
                 marker_size = style_dict.get('marker_size', m_size)
-                cont_args = dict(label=fancy_label if only_one_region else '#splitline{ Dijet (forward) }{ [%s]}' % (fancy_label),
+                cont_args = dict(label=fancy_label if only_one_region else '#splitline{ Forward dijet }{ [%s]}' % (fancy_label),
                                  line_color=color,
                                  line_width=lw,
                                  line_style=style_dict.get('line_style', COMMON_STYLE_DICT['mc_alt_line_style']),
@@ -2142,7 +2142,7 @@ if __name__ == "__main__":
                 ]
                 g_selections.append({'label': this_angle_str, 'selections': this_selection})
 
-            dijet_central_legend_header = "<b>Dijet (central) region"
+            dijet_central_legend_header = "Central dijet region"
             plotter.plot_mean_rms_bins_summary(
                 selections=g_selections,
                 legend_header=dijet_central_legend_header,
@@ -2155,7 +2155,7 @@ if __name__ == "__main__":
                 output_file=os.path.join(args.outputDir, "dijet_central_delta_summary%s.pdf" % (filename_append))
             )
 
-            g_legend_header = "<b>Gluon-enriched jets:\nDijet (central) region"
+            g_legend_header = "Gluon-enriched jets:\nCentral dijet region"
             plotter.plot_mean_rms_bins_summary(
                 selections=g_selections,
                 legend_header=g_legend_header,
@@ -2194,7 +2194,7 @@ if __name__ == "__main__":
                 ]
                 selections.append({'label': this_angle_str, 'selections': this_selection})
 
-            dijet_fwd_legend_header = "<b>Dijet (forward) region"
+            dijet_fwd_legend_header = "Forward dijet region"
             plotter.plot_mean_rms_bins_summary(
                 selections=selections,
                 legend_header=dijet_fwd_legend_header,
@@ -2246,7 +2246,7 @@ if __name__ == "__main__":
                 ]
                 selections.append({'label': this_angle_str, 'selections': this_selection})
 
-            zpj_legend_header = "<b>Z+jets region"
+            zpj_legend_header = "Z+jets region"
             plotter.plot_mean_rms_bins_summary(
                 selections=selections,
                 legend_header=zpj_legend_header,
@@ -2294,7 +2294,7 @@ if __name__ == "__main__":
             ]
             q_selections.append({'label': this_angle_str, 'selections': this_selection})
 
-        q_legend_header = "<b>Quark-enriched jets:\n%s:\nZ+jets region\n%s:\nDijet (forward) region" % (low_pt_str, high_pt_str)
+        q_legend_header = "Quark-enriched jets:\n%s:\nZ+jets region\n%s:\nForward dijet region" % (low_pt_str, high_pt_str)
         plotter.plot_mean_rms_bins_summary(
             selections=q_selections,
             legend_header=q_legend_header,
