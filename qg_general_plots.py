@@ -227,7 +227,8 @@ def do_comparison_plot(entries, output_filename, rebin=1, draw_opt="NOSTACK HIST
             # print(plot.y_padding_max_log)
 
         plot.plot(draw_opt)
-
+        plot.get_modifier().GetYaxis().SetTitleOffset(plot.get_modifier().GetYaxis().GetTitleOffset()*1.1)
+        
         if logx:
             plot.set_logx(do_more_labels=False)
         if logy:
