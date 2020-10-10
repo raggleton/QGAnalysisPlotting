@@ -501,7 +501,7 @@ class SummaryPlotter(object):
         elif metric == "rms":
             angle_str = "RMS %s" % create_angle_label(angle, do_groomed)
         elif metric == "delta":
-            angle_str = "#Delta, %s" % create_angle_label(angle, do_groomed)
+            angle_str = "#Delta (Simulation, Data), %s" % create_angle_label(angle, do_groomed)
 
         region_str = ""
         if only_one_region:
@@ -624,13 +624,13 @@ class SummaryPlotter(object):
             draw_opt = "E2 SAME"
             if do_dijet_cen:
                 dijet_central_hist_ratio_error.Draw(draw_opt)
-                plot.subplot_legend.AddEntry(dijet_central_hist_ratio_error, "Data uncert.%s" % (" (central)" if do_dijet_fwd else ""), "F")
+                plot.subplot_legend.AddEntry(dijet_central_hist_ratio_error, "Data uncert%s" % (". (central)" if do_dijet_fwd else "ainty"), "F")
                 if do_dijet_fwd:
                     plot.subplot_legend.SetNColumns(2)
                     plot.subplot_legend.SetX2(0.8)
             if do_dijet_fwd:
                 dijet_forward_hist_ratio_error.Draw(draw_opt)
-                plot.subplot_legend.AddEntry(dijet_forward_hist_ratio_error, "Data uncert.%s" % (" (forward)" if do_dijet_cen else ""), "F")
+                plot.subplot_legend.AddEntry(dijet_forward_hist_ratio_error, "Data uncert%s" % (". (forward)" if do_dijet_cen else "ainty"), "F")
             if do_zpj:
                 plot.subplot_legend.AddEntry(zpj_hist_ratio_error, "Data uncert.", "F")
                 zpj_hist_ratio_error.Draw(draw_opt)
@@ -984,6 +984,11 @@ class SummaryPlotter(object):
 
                 # FIXME: add other_samples
 
+                if "\n" in label:
+                    parts = label.split("\n")
+                    if len(parts)>2:
+                        raise RuntimeError("too many \\n")
+                    label = "#splitline{%s}{%s}" % (parts[0], parts[1])
                 bin_names.append(label)
 
             hist_delta_nominal = self._make_hist_from_values(entries_nominal, bin_names=bin_names)
@@ -1192,7 +1197,7 @@ class SummaryPlotter(object):
         delta_text = ROOT.TPaveText(text_x, text_y, text_x+text_width, text_y_end, "NDC NB")
         delta_text.SetFillStyle(0)
         delta_text.SetBorderSize(0)
-        t_delta = delta_text.AddText("#Delta")
+        t_delta = delta_text.AddText("#Delta (Simulation, Data)")
         t_delta.SetTextAngle(90)
         text_size = 0.06
         t_delta.SetTextSize(text_size)
