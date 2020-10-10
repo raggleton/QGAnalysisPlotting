@@ -76,18 +76,12 @@ def do_all_flavour_fraction_plots(root_dir,
 
 
     dirnames = [dj_cen_dirname, dj_fwd_dirname, zpj_dirname]
-    labels = ["Dijet (central jet)", "Dijet (forward jet)", "Z+jets"]
+    labels = [qgc.Dijet_CEN_LABEL, qgc.Dijet_FWD_LABEL, qgc.ZpJ_LABEL]
     this_dirnames = []
     this_labels = []
-    for d, l in zip(dirnames, labels):
-        if d:
-            this_dirnames.append(d)
-            this_labels.append(l)
     for this_flav in ['g', 'u', 'd', '1-g'][:-1]:
-    # for this_flav in ['b']:
-        # this_flav = "g"
         # Compare gluon fractions across samples/selections
-        input_files = [os.path.join(root_dir, qgc.QCD_FILENAME) if "Dijet" in d else os.path.join(root_dir, qgc.DY_FILENAME) for d in this_dirnames]
+        input_files = [os.path.join(root_dir, qgc.QCD_FILENAME) if "dijet" in d.lower() else os.path.join(root_dir, qgc.DY_FILENAME) for d in dirnames]
         qgf.compare_flavour_fractions_vs_pt(input_files=input_files,
                                             dirnames=dirnames,
                                             pt_bins=pt_bins,
@@ -115,7 +109,7 @@ def do_flavour_fraction_input_comparison_plots(root_dirs, labels, plot_dir="flav
                                             output_filename="%s/dj_g_flav_fraction_compare_central_jet.%s" % (plot_dir, OUTPUT_FMT),
                                             var_prepend=var_prepend,
                                             which_jet="1",
-                                            title="Dijet (central) region",
+                                            title=qgc.Dijet_CEN_LABEL,
                                             xtitle="p_{T}^{%s} [GeV]" % qgf.get_jet_str(var_prepend).title())
         # this_flav = "1-g"
         # dirnames = [dj_cen_dirname]*len(root_dirs)
@@ -141,7 +135,7 @@ def do_flavour_fraction_input_comparison_plots(root_dirs, labels, plot_dir="flav
                                             output_filename="%s/dj_g_flav_fraction_compare_forward_jet.%s" % (plot_dir, OUTPUT_FMT),
                                             var_prepend=var_prepend,
                                             which_jet="1",
-                                            title="Dijet (forward) region",
+                                            title=qgc.Dijet_FWD_LABEL,
                                             xtitle="p_{T}^{%s} [GeV]" % qgf.get_jet_str(var_prepend).title())
         # this_flav = "1-g"
         # dirnames = [dj_fwd_dirname]*len(root_dirs)
