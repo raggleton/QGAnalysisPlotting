@@ -318,41 +318,6 @@ class SummaryPlotter(object):
         dummy_entries = []
         # NB Spaces in legend labels are important for padding
 
-        # Add data
-        if metric != 'delta':
-            if do_dijet_cen:
-                cont_args = dict(label='Data' if only_one_region else ' Dijet (central)',
-                                 leg_draw_opt="LEP",
-                                 line_color=ROOT.kBlack if only_one_region else dijet_cen_col,
-                                 line_width=lw,
-                                 marker_color=ROOT.kBlack if only_one_region else dijet_cen_col,
-                                 marker_style=COMMON_STYLE_DICT['data_marker_style'],
-                                 marker_size=m_size)
-                entries.append(Contribution(dijet_central_hist, **cont_args))
-                dummy_entries.append(Contribution(dummy_gr.Clone(), **cont_args))
-
-            if do_dijet_fwd:
-                cont_args = dict(label='Data' if only_one_region else ' Dijet (forward)',
-                                 leg_draw_opt="LEP",
-                                 line_color=ROOT.kBlack if only_one_region else dijet_fwd_col,
-                                 line_width=lw,
-                                 marker_color=ROOT.kBlack if only_one_region else dijet_fwd_col,
-                                 marker_style=COMMON_STYLE_DICT['data_marker_style'],
-                                 marker_size=m_size)
-                entries.append(Contribution(dijet_forward_hist, **cont_args))
-                dummy_entries.append(Contribution(dummy_gr.Clone(), **cont_args))
-
-            if do_zpj:
-                cont_args = dict(label='Data' if only_one_region else ' Z+jets',
-                                 leg_draw_opt="LEP",
-                                 line_color=ROOT.kBlack if only_one_region else zpj_col,
-                                 line_width=lw,
-                                 marker_color=ROOT.kBlack if only_one_region else zpj_col,
-                                 marker_style=COMMON_STYLE_DICT['data_marker_style'],
-                                 marker_size=m_size)
-                entries.append(Contribution(zpj_hist, **cont_args))
-                dummy_entries.append(Contribution(dummy_gr.Clone(), **cont_args))
-
         if not self.only_yoda_data:
             # Add nominal MC
             if do_dijet_cen:
@@ -493,6 +458,42 @@ class SummaryPlotter(object):
                                  subplot=zpj_hist_no_errors)
                 entries.append(Contribution(hist, **cont_args))
                 dummy_entries.append(Contribution(dummy_gr.Clone(), **cont_args))
+
+        # Add data last so it gets drawn ontop
+        if metric != 'delta':
+            if do_dijet_cen:
+                cont_args = dict(label='Data' if only_one_region else ' Central dijet',
+                                 leg_draw_opt="LEP",
+                                 line_color=ROOT.kBlack if only_one_region else dijet_cen_col,
+                                 line_width=lw,
+                                 marker_color=ROOT.kBlack if only_one_region else dijet_cen_col,
+                                 marker_style=COMMON_STYLE_DICT['data_marker_style'],
+                                 marker_size=m_size)
+                entries.append(Contribution(dijet_central_hist, **cont_args))
+                dummy_entries.insert(0, Contribution(dummy_gr.Clone(), **cont_args))
+
+            if do_dijet_fwd:
+                cont_args = dict(label='Data' if only_one_region else ' Forward dijet',
+                                 leg_draw_opt="LEP",
+                                 line_color=ROOT.kBlack if only_one_region else dijet_fwd_col,
+                                 line_width=lw,
+                                 marker_color=ROOT.kBlack if only_one_region else dijet_fwd_col,
+                                 marker_style=COMMON_STYLE_DICT['data_marker_style'],
+                                 marker_size=m_size)
+                entries.append(Contribution(dijet_forward_hist, **cont_args))
+                dummy_entries.insert(0, Contribution(dummy_gr.Clone(), **cont_args))
+
+            if do_zpj:
+                cont_args = dict(label='Data' if only_one_region else ' Z+jets',
+                                 leg_draw_opt="LEP",
+                                 line_color=ROOT.kBlack if only_one_region else zpj_col,
+                                 line_width=lw,
+                                 marker_color=ROOT.kBlack if only_one_region else zpj_col,
+                                 marker_style=COMMON_STYLE_DICT['data_marker_style'],
+                                 marker_size=m_size)
+                entries.append(Contribution(zpj_hist, **cont_args))
+                dummy_entries.insert(0, Contribution(dummy_gr.Clone(), **cont_args))
+
 
         # for plot axis titles
         if metric == "mean":
