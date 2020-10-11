@@ -57,22 +57,30 @@ ak8_v3_v2_noJER_dir = os.path.join(MAINDIR, "workdir_102X_v2_ak8puppi_mgpythia_f
 ak4_v3_v3_dir = os.path.join(MAINDIR, "workdir_102X_ak4puppi_data_fixSelCutOrder_puppiJER_tightJetId_constitPt0MultPt1")
 ak8_v3_v3_dir = os.path.join(MAINDIR, "workdir_102X_ak8puppi_data_fixSelCutOrder_puppiJER_tightJetId_constitPt0MultPt1")
 
+
+ak4_v3_v2_dir = os.path.join(MAINDIR, "workdir_102X_v3data_v2mc_ak4puppi_fixSelCutOrder_puppiJER_tightJetId_constitPt0MultPt1_WeightCuts_fixLambda_newBinning2_zjAsym")
+ak8_v3_v2_dir = os.path.join(MAINDIR, "workdir_102X_v3data_v2mc_ak8puppi_fixSelCutOrder_puppiJER_tightJetId_constitPt0MultPt1_WeightCuts_fixLambda_newBinning2_zjAsym")
+
+
 def do_data_mc_plot(dirname, histname, output_filename, **plot_kwargs):
     data_file = cu.open_root_file(os.path.join(dirname, qgc.JETHT_ZB_FILENAME))
-    # qcd_file = cu.open_root_file(os.path.join(dirname, qgc.QCD_FILENAME))
-    qcd_file = cu.open_root_file(os.path.join(dirname, qgc.QCD_PYTHIA_ONLY_FILENAME))
+    qcd_file = cu.open_root_file(os.path.join(dirname, qgc.QCD_FILENAME))
+    qcd_py_file = cu.open_root_file(os.path.join(dirname, qgc.QCD_PYTHIA_ONLY_FILENAME))
 
     data_hist = cu.get_from_tfile(data_file, histname)
     qcd_hist = cu.get_from_tfile(qcd_file, histname)
+    qcd_py_hist = cu.get_from_tfile(qcd_py_file, histname)
     conts = [
-        Contribution(data_hist, label="Data", line_color=ROOT.kBlack),
-        Contribution(qcd_hist, label="QCD MC", line_color=ROOT.kRed, subplot=data_hist)
+        Contribution(data_hist, label="Data", line_color=ROOT.kBlack, marker_size=0),
+        Contribution(qcd_hist, label="QCD MG+PYTHIA MC", line_color=ROOT.kRed, subplot=data_hist, marker_size=0),
+        Contribution(qcd_py_hist, label="QCD PYTHIA8 MC", line_color=ROOT.kBlue, subplot=data_hist, marker_size=0),
     ]
     plot = Plot(conts,
                 what='hist',
                 ytitle="N",
                 subplot_type="ratio",
                 subplot_title="Simulation / data",
+                ylim=[1E3, None],
                 **plot_kwargs)
     plot.y_padding_max_log = 500
     plot.legend.SetY1(0.7)
@@ -104,6 +112,7 @@ def do_genht_plot(dirname, output_filename, **plot_kwargs):
 
 
 def do_genht_comparison_plot(dirname_label_pairs, output_filename, **plot_kwargs):
+    """Like do_genht but for multiple samples"""
     qcd_files = [cu.open_root_file(os.path.join(dl[0], qgc.QCD_FILENAME)) for dl in dirname_label_pairs]
     histname = "Dijet_gen/gen_ht"
     qcd_hists = [cu.get_from_tfile(qf, histname) for qf in qcd_files]
@@ -117,12 +126,14 @@ def do_genht_comparison_plot(dirname_label_pairs, output_filename, **plot_kwargs
     plot = Plot(conts,
                 what='hist',
                 ytitle="N",
-                subplot_limits=(0.75, 1.25),
+                # subplot_limits=(0.75, 1.25),
                 subplot_type="ratio",
                 subplot_title="* / %s" % (dirname_label_pairs[0][1]),
+                ylim=[1E6, None],
                 **plot_kwargs)
     plot.y_padding_max_log = 500
     plot.legend.SetY1(0.7)
+    plot.subplot_maximum_ceil = 5
     plot.plot("NOSTACK HIST E")
     plot.set_logx(do_more_labels=False)
     plot.set_logy(do_more_labels=False)
@@ -130,7 +141,7 @@ def do_genht_comparison_plot(dirname_label_pairs, output_filename, **plot_kwargs
     plot.save(output_filename)
 
 
-def do_mc_pt_comparison_plot(dirname_label_pairs, output_filename, **plot_kwargs):
+def do_mc_pt_comparison_plot(dirname_label_pairs, output_filename, qcd_filename, **plot_kwargs):
     # qcd_files = [cu.open_root_file(os.path.join(dl[0], qgc.QCD_FILENAME)) for dl in dirname_label_pairs]
     qcd_files = [cu.open_root_file(os.path.join(dl[0], qgc.QCD_PYTHIA_ONLY_FILENAME)) for dl in dirname_label_pairs]
     histname =  "Dijet_tighter/pt_jet1"
@@ -300,7 +311,7 @@ def do_jetht_trigger_comparison_plot(dirname_label_pairs, output_dir, append="",
                     **plot_kwargs
                     )
         plot.default_canvas_size = (800, 600)
-        plot.subplot_maximum = 5
+        plot.subplot_maximum_ceil = 10
         plot.y_padding_max_log = 500
         plot.legend.SetY1(0.7)
         plot.legend.SetY2(0.88)
@@ -345,7 +356,7 @@ def do_jetht_trigger_comparison_plot(dirname_label_pairs, output_dir, append="",
                     # subplot_limits=(0, 5),
                     **plot_kwargs
                     )
-        plot.subplot_maximum = 5
+        plot.subplot_maximum_ceil = 5
         plot.default_canvas_size = (800, 600)
         plot.y_padding_max_log = 500
         plot.legend.SetY1(0.7)
@@ -443,6 +454,7 @@ def do_zerobias_per_run_comparison_plot(dirname_label_pairs, output_dir, append=
                         subplot_title='* / %s' % dirname_label_pairs[0][1],
                         **plot_kwargs
                         )
+            plot.subplot_maximum_ceil = 10
             plot.default_canvas_size = (800, 600)
             plot.y_padding_max_log = 500
             plot.legend.SetY1(0.7)
@@ -485,7 +497,7 @@ def do_zerobias_per_run_comparison_plot(dirname_label_pairs, output_dir, append=
                         # subplot_limits=(0, 5),
                         **plot_kwargs
                         )
-            plot.subplot_maximum = 5
+            plot.subplot_maximum_ceil = 5
             plot.default_canvas_size = (800, 600)
             plot.y_padding_max_log = 500
             plot.legend.SetY1(0.7)
@@ -499,9 +511,11 @@ def do_zerobias_per_run_comparison_plot(dirname_label_pairs, output_dir, append=
 
 
 def do_jet_pt_vs_genht_plot(dirname, output_filename, title=""):
+    """2D heat map of genHT vs jet pt"""
     canv = ROOT.TCanvas(cu.get_unique_str(), "", 800, 600)
     qcd_file = cu.open_root_file(os.path.join(dirname, qgc.QCD_FILENAME))
     histname = "Dijet_tighter/pt_jet_vs_genHT"
+    canv.SetRightMargin(0.15)
     h = cu.get_from_tfile(qcd_file, histname)
     h.SetTitle(title)
     h.Draw("COLZ")
@@ -511,19 +525,33 @@ def do_jet_pt_vs_genht_plot(dirname, output_filename, title=""):
 
 
 if __name__ == "__main__":
-    odir = "ak4_ak8_data_mc_comparisons_new"
+    odir = os.path.join(ak8_v3_v2_dir, "ak4_ak8_data_mc_comparisons_new")
     histname = "Dijet_tighter/pt_jet1"
+    
     pt_xlim = (20, 1000)
-    do_data_mc_plot(ak4_v2_v2_dir,
-                    histname,
-                    output_filename=os.path.join(odir, "pythia_pt_jet1_ak4_v2_v2.pdf"),
-                    title="AK4, v2 data, v2 MC, old",
-                    xlim=pt_xlim)
     do_data_mc_plot(ak4_v3_v2_dir,
                     histname,
-                    output_filename=os.path.join(odir, "pythia_pt_jet1_ak4_v3_v2.pdf"),
-                    title="AK4, v3 data, v2 MC, new",
+                    output_filename=os.path.join(odir, "pythia_pt_jet1_ak4_v2_v2.pdf"),
+                    title="AK4, v3 data, v2 MC\nNormalised to lumi",
                     xlim=pt_xlim)
+    do_data_mc_plot(ak8_v3_v2_dir,
+                    histname,
+                    output_filename=os.path.join(odir, "pythia_pt_jet1_ak8_v3_v2.pdf"),
+                    title="AK8, v3 data, v2 MC\nNormalised to lumi",
+                    xlim=pt_xlim)
+    
+
+    # pt_xlim = (20, 1000)
+    # do_data_mc_plot(ak4_v2_v2_dir,
+    #                 histname,
+    #                 output_filename=os.path.join(odir, "pythia_pt_jet1_ak4_v2_v2.pdf"),
+    #                 title="AK4, v2 data, v2 MC, old",
+    #                 xlim=pt_xlim)
+    # do_data_mc_plot(ak4_v3_v2_dir,
+    #                 histname,
+    #                 output_filename=os.path.join(odir, "pythia_pt_jet1_ak4_v3_v2.pdf"),
+    #                 title="AK4, v3 data, v2 MC, new",
+    #                 xlim=pt_xlim)
     # do_data_mc_plot(ak4_v3_v3_dir,
     #                 histname,
     #                 output_filename=os.path.join(odir, "pt_jet1_ak4_v3_v3.pdf"),
@@ -540,16 +568,16 @@ if __name__ == "__main__":
     #                 title="AK4, v3 data, v2 MC, old, no JER",
     #                 xlim=pt_xlim)
 
-    do_data_mc_plot(ak8_v2_v2_dir,
-                    histname,
-                    output_filename=os.path.join(odir, "pythia_pt_jet1_ak8_v2_v2.pdf"),
-                    title="AK8, v2 data, v2 MC, old",
-                    xlim=pt_xlim)
-    do_data_mc_plot(ak8_v3_v2_dir,
-                    histname,
-                    output_filename=os.path.join(odir, "pythia_pt_jet1_ak8_v3_v2.pdf"),
-                    title="AK8, v3 data, v2 MC, new",
-                    xlim=pt_xlim)
+    # do_data_mc_plot(ak8_v2_v2_dir,
+    #                 histname,
+    #                 output_filename=os.path.join(odir, "pythia_pt_jet1_ak8_v2_v2.pdf"),
+    #                 title="AK8, v2 data, v2 MC, old",
+    #                 xlim=pt_xlim)
+    # do_data_mc_plot(ak8_v3_v2_dir,
+    #                 histname,
+    #                 output_filename=os.path.join(odir, "pythia_pt_jet1_ak8_v3_v2.pdf"),
+    #                 title="AK8, v3 data, v2 MC, new",
+    #                 xlim=pt_xlim)
     # do_data_mc_plot(ak8_v3_v3_dir,
     #                 histname,
     #                 output_filename=os.path.join(odir, "pt_jet1_ak8_v3_v3.pdf"),
@@ -584,43 +612,45 @@ if __name__ == "__main__":
     #                          xlim=pt_xlim)
 
 
-    do_mc_pt_comparison_plot([
-                                (ak8_v2_v2_dir, "v2 MC old"),
-                                (ak8_v3_v2_dir, "v2 MC new"),
-                                # (ak8_v3_v3_dir, "v3 MC"),
-                                # (ak8_old_v2_noJER_dir, "v2 MC old (noJER)"),
-                                # (ak8_v3_v2_noJER_dir, "v2 MC new (noJER)"),
-                          ],
-                          output_filename=os.path.join(odir, "pythia_mc_pt_compare_ak8.pdf"),
-                          title="AK8",
-                          xlim=pt_xlim)
+    # do_mc_pt_comparison_plot([
+    #                             (ak8_v2_v2_dir, "v2 MC old"),
+    #                             (ak8_v3_v2_dir, "v2 MC new"),
+    #                             # (ak8_v3_v3_dir, "v3 MC"),
+    #                             # (ak8_old_v2_noJER_dir, "v2 MC old (noJER)"),
+    #                             # (ak8_v3_v2_noJER_dir, "v2 MC new (noJER)"),
+    #                       ],
+    #                       output_filename=os.path.join(odir, "pythia_mc_pt_compare_ak8.pdf"),
+    #                       qcd_filename=qgc.QCD_PYTHIA_ONLY_FILENAME,
+    #                       title="AK8",
+    #                       xlim=pt_xlim)
 
-    do_mc_pt_comparison_plot([
-                                (ak4_v2_v2_dir, "v2 MC old"),
-                                (ak4_v3_v2_dir, "v2 MC new"),
-                                # (ak4_v3_v3_dir, "v3 MC"),
-                                # (ak4_old_v2_noJER_dir, "v2 MC old (noJER)"),
-                                # (ak4_v3_v2_noJER_dir, "v2 MC new (noJER)"),
-                          ],
-                          output_filename=os.path.join(odir, "pythia_mc_pt_compare_ak4.pdf"),
-                          title="AK4",
-                          xlim=pt_xlim)
+    # do_mc_pt_comparison_plot([
+    #                             (ak4_v2_v2_dir, "v2 MC old"),
+    #                             (ak4_v3_v2_dir, "v2 MC new"),
+    #                             # (ak4_v3_v3_dir, "v3 MC"),
+    #                             # (ak4_old_v2_noJER_dir, "v2 MC old (noJER)"),
+    #                             # (ak4_v3_v2_noJER_dir, "v2 MC new (noJER)"),
+    #                       ],
+    #                       output_filename=os.path.join(odir, "pythia_mc_pt_compare_ak4.pdf"),
+    #                       qcd_filename=qgc.QCD_PYTHIA_ONLY_FILENAME,
+    #                       title="AK4",
+    #                       xlim=pt_xlim)
 
-    pthat_xlim = (10, 5000)
-    do_pthat_comparison_plot([
-                                (ak4_v2_v2_dir, "v2 MC old"),
-                                (ak4_v3_v2_dir, "v2 MC new"),
-                             ],
-                             output_filename=os.path.join(odir, "pthat_compare_ak4.pdf"),
-                             title="AK4",
-                             xlim=pthat_xlim)
-    do_pthat_comparison_plot([
-                                  (ak8_v2_v2_dir, "v2 MC old"),
-                                  (ak8_v3_v2_dir, "v2 MC new"),
-                             ],
-                             output_filename=os.path.join(odir, "pthat_compare_ak8.pdf"),
-                             title="AK8",
-                             xlim=pthat_xlim)
+    # pthat_xlim = (10, 5000)
+    # do_pthat_comparison_plot([
+    #                             (ak4_v2_v2_dir, "v2 MC old"),
+    #                             (ak4_v3_v2_dir, "v2 MC new"),
+    #                          ],
+    #                          output_filename=os.path.join(odir, "pthat_compare_ak4.pdf"),
+    #                          title="AK4",
+    #                          xlim=pthat_xlim)
+    # do_pthat_comparison_plot([
+    #                               (ak8_v2_v2_dir, "v2 MC old"),
+    #                               (ak8_v3_v2_dir, "v2 MC new"),
+    #                          ],
+    #                          output_filename=os.path.join(odir, "pthat_compare_ak8.pdf"),
+    #                          title="AK8",
+    #                          xlim=pthat_xlim)
 
     # do_genht_plot(ak4_v2_v2_dir,
     #               output_filename=os.path.join(odir, "genht_ak4_v2.pdf"),
@@ -702,3 +732,28 @@ if __name__ == "__main__":
     # do_jet_pt_vs_genht_plot(ak8_v3_v3_dir,
     #                         output_filename=os.path.join(odir, "jet_pt_vs_genht_ak8_v3.pdf"),
     #                         title="AK8 V3 MC")
+
+    # compare per-trigger
+    do_jetht_trigger_comparison_plot([
+                                        (ak4_v3_v2_dir, "AK4, v3 data"),
+                                        (ak8_v3_v2_dir, "AK8, v3 data"),
+                                     ],
+                                     output_dir=odir,
+                                     append="_AK4_AK8",
+                                     title="AK4 vs AK8, v3 Data",
+                                     )
+    
+    do_genht_comparison_plot([
+                                  (ak4_v3_v2_dir, "AK4 v2 MC"),
+                                  (ak8_v3_v2_dir, "AK8 v2 MC"),
+                             ],
+                             output_filename=os.path.join(odir, "genht_compare_ak4_ak8.pdf"),
+                             title="AK4 vs AK8",
+                             xlim=pt_xlim)
+
+    # do_jet_pt_vs_genht_plot(ak4_v3_v2_dir,
+    #                         output_filename=os.path.join(odir, "jet_pt_vs_genht_ak4_v2.pdf"),
+    #                         title="AK4 V2 MC")
+    # do_jet_pt_vs_genht_plot(ak8_v3_v2_dir,
+    #                         output_filename=os.path.join(odir, "jet_pt_vs_genht_ak8_v2.pdf"),
+    #                         title="AK8 V2 MC")
