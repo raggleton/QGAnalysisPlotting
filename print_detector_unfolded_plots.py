@@ -35,7 +35,7 @@ import qg_general_plots as qgp
 from my_unfolder import MyUnfolder, HistBinChopper, unpickle_region
 from my_unfolder_plotter import MyUnfolderPlotter
 from unfolding_config import get_dijet_config, get_zpj_config
-from do_unfolding_plots import PLOT_COLOURS
+# from do_unfolding_plots import PLOT_STYLES
 import metric_calculators as metrics
 
 # Doesn't work with python 3.8 for now
