@@ -103,20 +103,30 @@ class Setup(object):
 
 
 PLOT_COLOURS = dict(
-    gen_colour=ROOT.kRed,
+    # gen_colour=ROOT.kRed,
+    gen_colour=qgc.MGPY_QCD_COLOUR,
+    gen_marker=cu.Marker.get('square', filled=False),
+    gen_marker_size=0.75,
+
     unfolded_basic_colour=ROOT.kAzure+7,
     unfolded_stat_colour=ROOT.kAzure+7,
     unfolded_total_colour=ROOT.kBlack,
     unfolded_unreg_colour=ROOT.kOrange-3,
+
     # alt_gen_colour=ROOT.kOrange-3,
-    alt_gen_colour=ROOT.kViolet+1,
+    # alt_gen_colour=ROOT.kViolet+1,
+    alt_gen_colour=qgc.HERWIGPP_QCD_COLOUR,
     alt_unfolded_colour=ROOT.kOrange-3,
     alt_unfolded_total_colour=ROOT.kOrange-7,
     alt_reco_colour=ROOT.kViolet+1,
     # alt_reco_colour=ROOT.kOrange-3,
+    alt_gen_marker=cu.Marker.get('triangleUp', filled=False),
+    alt_gen_marker_size=0.75,
+
     # reco_mc_colour=ROOT.kGreen+2,
     # reco_mc_colour=ROOT.kAzure-7,
     # reco_data_colour=ROOT.kRed,
+
     reco_data_colour=ROOT.kBlack,
     reco_mc_colour=ROOT.kRed,
     # reco_mc_colour=ROOT.kMagenta+1,
@@ -321,17 +331,24 @@ class GenPtBinnedPlotter(object):
     def plot_unfolded_with_alt_truth_normalised(self, do_chi2=False):
         data_total_errors_style = dict(label="Data (total unc.)",
                                        line_color=self.plot_colours['unfolded_total_colour'], line_width=self.line_width, line_style=1,
-                                       marker_color=self.plot_colours['unfolded_total_colour'], marker_style=cu.Marker.get('circle'), marker_size=0.75)
+                                       marker_color=self.plot_colours['unfolded_total_colour'], marker_style=cu.Marker.get('circle'), marker_size=0.75,
+                                       leg_draw_opt="LEP")
         data_stat_errors_style = dict(label="Data (stat. unc.)",
                                       line_color=self.plot_colours['unfolded_stat_colour'], line_width=self.line_width, line_style=1,
-                                      marker_color=self.plot_colours['unfolded_stat_colour'], marker_style=cu.Marker.get('circle'), marker_size=0.0001)  # you need a non-0 marker to get the horizontal bars at the end of errors
+                                      marker_color=self.plot_colours['unfolded_stat_colour'], marker_style=cu.Marker.get('circle'), marker_size=0.0001,
+                                      leg_draw_opt="LEP")  # you need a non-0 marker to get the horizontal bars at the end of errors
 
         mc_style = dict(label=self.region['mc_label'],
                          line_color=self.plot_colours['gen_colour'], line_width=self.line_width,
-                         marker_color=self.plot_colours['gen_colour'], marker_size=0)
+                         marker_color=self.plot_colours['gen_colour'],
+                         marker_size=self.plot_colours['gen_marker_size'],
+                         marker_style=self.plot_colours['gen_marker'],
+                         leg_draw_opt="LEP" if self.plot_colours['gen_marker_size'] > 0 else "LE")
         alt_mc_style = dict(label=self.region['alt_mc_label'],
-                            line_color=self.plot_colours['alt_gen_colour'], line_width=self.line_width, line_style=2,
-                            marker_color=self.plot_colours['alt_gen_colour'], marker_size=0)
+                            line_color=self.plot_colours['alt_gen_colour'], line_width=self.line_width, line_style=1,
+                            marker_size=self.plot_colours['alt_gen_marker_size'],
+                            marker_style=self.plot_colours['alt_gen_marker'],
+                            leg_draw_opt="LEP" if self.plot_colours['alt_gen_marker_size'] > 0 else "LE")
 
         for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
             hbc_args = dict(ind=ibin, binning_scheme='generator')
@@ -410,10 +427,11 @@ class GenPtBinnedPlotter(object):
 
             # Create dummy graphs with the same styling to put into the legend
             dummy_gr = ROOT.TGraphErrors(1, array('d', [1]), array('d', [1]), array('d', [1]), array('d', [1]))
-            dummy_total_errors = Contribution(dummy_gr.Clone(), leg_draw_opt="LEP", **data_total_errors_style)
-            dummy_stat_errors = Contribution(dummy_gr.Clone(), leg_draw_opt="LE", **data_stat_errors_style)
-            dummy_mc = Contribution(dummy_gr.Clone(), leg_draw_opt="LE", **this_mc_style)
-            dummy_alt_mc = Contribution(dummy_gr.Clone(), leg_draw_opt="LE", **this_alt_mc_style)
+            dummy_total_errors = Contribution(dummy_gr.Clone(), **data_total_errors_style)
+            dummy_stat_errors =  Contribution(dummy_gr.Clone(), **data_stat_errors_style)
+            dummy_mc =           Contribution(dummy_gr.Clone(), **this_mc_style)
+            dummy_alt_mc =       Contribution(dummy_gr.Clone(), **this_alt_mc_style)
+
             # Add them to the legend and draw it
             for cont in [dummy_total_errors, dummy_stat_errors, dummy_mc, dummy_alt_mc]:
                 this_label = cont.label
@@ -454,8 +472,8 @@ class GenPtBinnedPlotter(object):
             draw_opt = "E2 SAME"
             data_stat_ratio.Draw(draw_opt)
             data_total_ratio.Draw(draw_opt)
-            plot.subplot_container.Draw("SAME" + subplot_draw_opts)
             plot.subplot_line.Draw()
+            plot.subplot_container.Draw("SAME" + subplot_draw_opts)
 
             # Add subplot legend
             x_left = 0.25
@@ -470,11 +488,6 @@ class GenPtBinnedPlotter(object):
             plot.subplot_legend.SetFillStyle(0)
             plot.subplot_legend.SetNColumns(2)
             plot.subplot_legend.Draw()
-            # plot.subplot_container.GetHistogram().GetYaxis().
-            # print(plot.subplot_container.GetYaxis().GetTitle())
-            # plot.subplot_container.GetYaxis().SetTitle("blah"+plot.subplot_container.GetYaxis().GetTitle())
-            ROOT.gPad.Modified()
-            ROOT.gPad.Update()
             plot.canvas.cd()
 
             plot.save("%s/unfolded_%s_alt_truth_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))

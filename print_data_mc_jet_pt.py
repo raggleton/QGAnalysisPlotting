@@ -322,7 +322,7 @@ def do_dijet_pt_plots(workdir,
 
     data_tfile = cu.open_root_file(os.path.join(workdir, qgc.JETHT_ZB_FILENAME))
     mg_tfile = cu.open_root_file(os.path.join(workdir, qgc.QCD_FILENAME))
-    py_tfile = cu.open_root_file(os.path.join(workdir, qgc.QCD_PYTHIA_ONLY_FILENAME))
+    # py_tfile = cu.open_root_file(os.path.join(workdir, qgc.QCD_PYTHIA_ONLY_FILENAME))
     hpp_tfile = cu.open_root_file(os.path.join(workdir, qgc.QCD_HERWIG_FILENAME))
 
     source_dir_systs = os.path.join(workdir, "systematics_files")
@@ -481,7 +481,7 @@ def do_dijet_pt_plots(workdir,
         print(mg_tfile)
         data_hist = cu.get_from_tfile(data_tfile, histname)
         mg_hist = cu.get_from_tfile(mg_tfile, histname)
-        py_hist = cu.get_from_tfile(py_tfile, histname)
+        # py_hist = cu.get_from_tfile(py_tfile, histname)
         hpp_hist = cu.get_from_tfile(hpp_tfile, histname)
 
         # For use with tunfold binning, which just has bin indices as x values instead of physical values
@@ -490,13 +490,13 @@ def do_dijet_pt_plots(workdir,
         # print(all_pt_bins)
         data_hist = tunfold_to_physical_bins(data_hist, all_pt_bins, divide_by_bin_width=True)
         mg_hist = tunfold_to_physical_bins(mg_hist, all_pt_bins, divide_by_bin_width=True)
-        py_hist = tunfold_to_physical_bins(py_hist, all_pt_bins, divide_by_bin_width=True)
+        # py_hist = tunfold_to_physical_bins(py_hist, all_pt_bins, divide_by_bin_width=True)
         hpp_hist = tunfold_to_physical_bins(hpp_hist, all_pt_bins, divide_by_bin_width=True)
 
         # Scale to data
         mg_sf = data_hist.Integral()/mg_hist.Integral()
         mg_hist.Scale(mg_sf)
-        py_hist.Scale(data_hist.Integral()/py_hist.Integral())
+        # py_hist.Scale(data_hist.Integral()/py_hist.Integral())
         hpp_hist.Scale(data_hist.Integral()/hpp_hist.Integral())
 
         # Absolute shifted variations
