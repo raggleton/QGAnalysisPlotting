@@ -144,13 +144,10 @@ def create_angle_label(angle, do_groomed=False):
 class SummaryPlotter(object):
     """Do lots of summary plots"""
 
-    def __init__(self, jet_algos, regions, angles, pt_bins_dijet, pt_bins_zpj, df, output_dir, has_data, only_yoda_data):
+    def __init__(self, jet_algos, angles, pt_bins_dijet, pt_bins_zpj, df, output_dir, has_data, only_yoda_data):
         if len(jet_algos) == 0:
             raise RuntimeError("jet_algos is empty")
         self.jet_algos = jet_algos
-        if len(regions) == 0:
-            raise RuntimeError("regions is empty")
-        self.regions = regions
         if len(angles) == 0:
             raise RuntimeError("angles is empty")
         self.angles = angles
@@ -2068,7 +2065,6 @@ if __name__ == "__main__":
     print("* Plotting time!")
     print("*"*120)
     plotter = SummaryPlotter(jet_algos,
-                             regions,
                              angles,
                              qgc.PT_UNFOLD_DICT['signal_gen'],
                              qgc.PT_UNFOLD_DICT['signal_zpj_gen'],
