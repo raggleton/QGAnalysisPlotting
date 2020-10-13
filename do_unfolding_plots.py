@@ -2769,16 +2769,28 @@ class RecoPtBinnedPlotter(object):
 
     def plot_detector_normalised(self, alt_detector=None):
         data_total_errors_style = dict(label="Data",
-                                       line_color=self.plot_styles['reco_data_colour'], line_width=self.line_width, line_style=1,
-                                       marker_color=self.plot_styles['reco_data_colour'], marker_style=cu.Marker.get('circle'), marker_size=0.75)
-
-        mc_style = dict( label=self.region['mc_label'],
-                         line_color=self.plot_styles['reco_mc_colour'], line_width=self.line_width,
-                         marker_color=self.plot_styles['reco_mc_colour'], marker_size=0)
-
+                                       line_color=self.plot_styles['unfolded_total_colour'], 
+                                       line_width=self.line_width, 
+                                       line_style=1,
+                                       marker_color=self.plot_styles['unfolded_total_colour'], 
+                                       marker_style=cu.Marker.get('circle'), 
+                                       marker_size=self.plot_styles['unfolded_marker_size'],
+                                       leg_draw_opt="LEP")
+        mc_style = dict(label=self.region['mc_label'],
+                        line_color=self.plot_styles['gen_colour'], 
+                        line_width=self.line_width,
+                        marker_color=self.plot_styles['gen_colour'],
+                        marker_size=self.plot_styles['gen_marker_size'],
+                        marker_style=self.plot_styles['gen_marker'],
+                        leg_draw_opt="LEP" if self.plot_styles['gen_marker_size'] > 0 else "LE")
         alt_mc_style = dict(label=self.region['alt_mc_label'],
-                            line_color=self.plot_styles['alt_reco_colour'], line_width=self.line_width, #line_style=2,
-                            marker_color=self.plot_styles['alt_reco_colour'], marker_size=0)
+                            line_color=self.plot_styles['alt_gen_colour'], 
+                            line_width=self.line_width, 
+                            line_style=1,
+                            marker_color=self.plot_styles['alt_gen_colour'],
+                            marker_size=self.plot_styles['alt_gen_marker_size'],
+                            marker_style=self.plot_styles['alt_gen_marker'],
+                            leg_draw_opt="LEP" if self.plot_styles['alt_gen_marker_size'] > 0 else "LE")
 
         for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
             hbc_args = dict(ind=ibin, binning_scheme='detector')
@@ -2815,22 +2827,19 @@ class RecoPtBinnedPlotter(object):
                         xlim=qgp.calc_auto_xlim(entries[0:1]),  # reduce x axis to where reference prediction is non-0
                         subplot_type='ratio',
                         subplot_title='Simulation / data',
-                        subplot_limits=(0, 2.75))
+                        subplot_limits=(0.5, 2.5) if self.setup.has_data else (0.75, 1.25))
             self._modify_plot(plot)
 
             # disable adding objects to legend & drawing - we'll do it manually
             plot.do_legend = False
+            # plot.legend.SetY1(0.6)
+            # plot.legend.SetX1(0.59)
+            # plot.legend.SetX2(0.95)
             subplot_draw_opts = "NOSTACK E1"
             plot.plot("NOSTACK E1", subplot_draw_opts)
 
-            # Create dummy graphs with the same styling to put into the legend
-            dummy_gr = ROOT.TGraphErrors(1, array('d', [1]), array('d', [1]), array('d', [1]), array('d', [1]))
-            dummy_data = Contribution(dummy_gr.Clone(), leg_draw_opt="LEP", **data_total_errors_style)
-            dummy_mc = Contribution(dummy_gr.Clone(), leg_draw_opt="LE", **mc_style)
-            dummy_alt_mc = Contribution(dummy_gr.Clone(), leg_draw_opt="LE", **alt_mc_style)
-            # Add them to the legend and draw it
-            for cont in [dummy_data, dummy_mc, dummy_alt_mc]:
-                plot.legend.AddEntry(cont.obj, cont.label, cont.leg_draw_opt)
+            dummy_graphs = qgp.do_fancy_legend(chain(entries[-1:], entries[:-1]), plot, use_splitline=False)
+
             plot.canvas.cd()
             plot.legend.Draw()
 
@@ -2864,11 +2873,11 @@ class RecoPtBinnedPlotter(object):
 
             # Add subplot legend
             x_left = 0.25
-            y_bottom = 0.78
-            width = 0.35
-            height = 0.12
+            y_bottom = 0.77
+            width = 0.55
+            height = 0.13
             plot.subplot_legend = ROOT.TLegend(x_left, y_bottom, x_left+width, y_bottom+height)
-            plot.subplot_legend.AddEntry(data_total_ratio, "Data stat. uncert.", "F")
+            plot.subplot_legend.AddEntry(data_total_ratio, "Data stat. uncertainty", "F")
             plot.subplot_legend.SetFillStyle(0)
             plot.subplot_legend.Draw()
 
