@@ -71,7 +71,7 @@ COMMON_STYLE_DICT = {
     # j=angle between 0 and 90 degrees (5 = not drawn),
     # k=angle between 90 and 180 degrees (5 = not drawn)
     "mc_fill_style": 3445,
-    "mc_color": ROOT.kBlue+1,
+    "mc_color": qgc.MGPY_QCD_COLOUR,
     "mc_marker_style": cu.Marker.get('square', filled=False),
 
     # "mc_alt_line_style": 22,
