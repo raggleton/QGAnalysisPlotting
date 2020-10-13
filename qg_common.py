@@ -29,6 +29,8 @@ JETHT_CEN_COLOUR = 601 # kBlue
 JETHT_FWD_COLOUR = 600 # kBlue
 ZB_COLOUR = 416+1 # kGreen+1
 
+HERWIGPP_DY_COLOUR = 797
+
 # You should use markers as well for colourblindness
 DY_MARKER = 20
 DY_MARKER = 'circle'

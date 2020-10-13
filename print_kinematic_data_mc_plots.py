@@ -395,10 +395,10 @@ def do_zpj_distributions(root_dir, title):
     root_files = [cu.open_root_file(os.path.join(root_dir, r)) for r in root_files]
 
     directories = [cu.get_from_tfile(rf, "ZPlusJets") for rf in root_files]
-    mc_col = qgc.DY_COLOUR
-    mc_col2 = qgc.DY_COLOURS[2]
-    mc_col3 = qgc.DY_COLOURS[3]
     data_col = qgc.SINGLE_MU_COLOUR
+    mc_col = qgc.DY_COLOUR
+    mc_col2 = qgc.HERWIGPP_DY_COLOUR
+    mc_col3 = qgc.DY_COLOURS[3]
     msize = 0.75
     csd = [
         {"label": "Data", "line_color": data_col, "fill_color": data_col, "marker_color": data_col, "marker_style": 20, "fill_style": 0, "marker_size": msize},
