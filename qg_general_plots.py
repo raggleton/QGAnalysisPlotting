@@ -1372,3 +1372,29 @@ def calc_auto_xlim(entries):
         # default x max
         return None
 
+
+def do_fancy_legend(contributions, plot, use_splitline=True):
+    """Fill legend with contributions, using TGraph instead to get marker done correctly
+
+    Actually puts horizontal error bar in legend, whereas for a TH1 it doesn't
+    """
+    dummy_graphs = []
+    dummy_gr = ROOT.TGraphErrors(1, array('d', [1]), array('d', [1]), array('d', [1]), array('d', [1]))
+    for cont in contributions:
+        new_gr = dummy_gr.Clone()
+        cont.update_obj_styling(new_gr)
+        dummy_graphs.append(new_gr)
+
+        if '\n' not in cont.label:
+            plot.legend.AddEntry(new_gr, cont.label, cont.leg_draw_opt)
+        else:
+            if not use_splitline:
+                for label_ind, label_part in enumerate(cont.label.split("\n")):
+                    obj = new_gr if label_ind == 0 else 0
+                    draw_opt = cont.leg_draw_opt if label_ind == 0 else ""
+                    plot.legend.AddEntry(obj, label_part, draw_opt)
+            else:
+                part1, part2 = cont.label.split("\n")
+                new_label = "#splitline{%s}{%s}" % (part1, part2)
+                plot.legend.AddEntry(new_gr, new_label, cont.leg_draw_opt)
+    return dummy_graphs

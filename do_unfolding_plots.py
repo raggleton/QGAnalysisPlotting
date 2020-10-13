@@ -435,26 +435,14 @@ class GenPtBinnedPlotter(object):
 
             # disable adding objects to legend & drawing - we'll do it manually
             plot.do_legend = False
+            plot.legend.SetY1(0.6)
+            plot.legend.SetX1(0.59)
+            plot.legend.SetX2(0.95)
+            # plot.legend.SetEntrySeparation(0.005)
             subplot_draw_opts = "NOSTACK E1"
             plot.plot("NOSTACK E1", subplot_draw_opts)
 
-            # Create dummy graphs with the same styling to put into the legend
-            dummy_gr = ROOT.TGraphErrors(1, array('d', [1]), array('d', [1]), array('d', [1]), array('d', [1]))
-            dummy_total_errors = Contribution(dummy_gr.Clone(), **data_total_errors_style)
-            dummy_stat_errors =  Contribution(dummy_gr.Clone(), **data_stat_errors_style)
-            dummy_mc =           Contribution(dummy_gr.Clone(), **this_mc_style)
-            dummy_alt_mc =       Contribution(dummy_gr.Clone(), **this_alt_mc_style)
-
-            # Add them to the legend and draw it
-            for cont in [dummy_total_errors, dummy_stat_errors, dummy_mc, dummy_alt_mc]:
-                this_label = cont.label
-                if '\n' not in this_label:
-                    plot.legend.AddEntry(cont.obj, this_label, cont.leg_draw_opt)
-                else:
-                    for label_ind, label_part in enumerate(this_label.split("\n")):
-                        obj = cont.obj if label_ind == 0 else 0
-                        draw_opt = cont.leg_draw_opt if label_ind == 0 else ""
-                        plot.legend.AddEntry(obj, label_part, draw_opt)
+            dummy_graphs = qgp.do_fancy_legend(chain(data_entries[:2], mc_entries), plot, use_splitline=False)
 
             plot.canvas.cd()
             plot.legend.Draw()
