@@ -106,12 +106,13 @@ PLOT_STYLES = dict(
     # gen_colour=ROOT.kRed,
     gen_colour=qgc.MGPY_QCD_COLOUR,
     gen_marker=cu.Marker.get('square', filled=False),
-    gen_marker_size=0.75,
+    gen_marker_size=1.1,
 
     unfolded_basic_colour=ROOT.kAzure+7,
     unfolded_stat_colour=ROOT.kAzure+7,
     unfolded_total_colour=ROOT.kBlack,
     unfolded_unreg_colour=ROOT.kOrange-3,
+    unfolded_marker_size=1.1,
 
     # alt_gen_colour=ROOT.kOrange-3,
     # alt_gen_colour=ROOT.kViolet+1,
@@ -121,7 +122,7 @@ PLOT_STYLES = dict(
     alt_reco_colour=ROOT.kViolet+1,
     # alt_reco_colour=ROOT.kOrange-3,
     alt_gen_marker=cu.Marker.get('triangleUp', filled=False),
-    alt_gen_marker_size=0.75,
+    alt_gen_marker_size=1.1,
 
     # reco_mc_colour=ROOT.kGreen+2,
     # reco_mc_colour=ROOT.kAzure-7,
@@ -329,23 +330,35 @@ class GenPtBinnedPlotter(object):
             plot.save("%s/unfolded_%s_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
 
     def plot_unfolded_with_alt_truth_normalised(self, do_chi2=False):
-        data_total_errors_style = dict(label="Data (total unc.)",
-                                       line_color=self.plot_styles['unfolded_total_colour'], line_width=self.line_width, line_style=1,
-                                       marker_color=self.plot_styles['unfolded_total_colour'], marker_style=cu.Marker.get('circle'), marker_size=0.75,
+        data_total_errors_style = dict(label="Data (total uncert.)",
+                                       line_color=self.plot_styles['unfolded_total_colour'], 
+                                       line_width=self.line_width, 
+                                       line_style=1,
+                                       marker_color=self.plot_styles['unfolded_total_colour'], 
+                                       marker_style=cu.Marker.get('circle'), 
+                                       marker_size=self.plot_styles['unfolded_marker_size'],
                                        leg_draw_opt="LEP")
-        data_stat_errors_style = dict(label="Data (stat. unc.)",
-                                      line_color=self.plot_styles['unfolded_stat_colour'], line_width=self.line_width, line_style=1,
-                                      marker_color=self.plot_styles['unfolded_stat_colour'], marker_style=cu.Marker.get('circle'), marker_size=0.0001,
+        data_stat_errors_style = dict(label="Data (stat. uncert.)",
+                                      line_color=self.plot_styles['unfolded_stat_colour'], 
+                                      line_width=self.line_width, 
+                                      line_style=1,
+                                      marker_color=self.plot_styles['unfolded_stat_colour'], 
+                                      marker_style=cu.Marker.get('circle'), 
+                                      marker_size=0.0001,
                                       leg_draw_opt="LEP")  # you need a non-0 marker to get the horizontal bars at the end of errors
 
         mc_style = dict(label=self.region['mc_label'],
-                         line_color=self.plot_styles['gen_colour'], line_width=self.line_width,
-                         marker_color=self.plot_styles['gen_colour'],
-                         marker_size=self.plot_styles['gen_marker_size'],
-                         marker_style=self.plot_styles['gen_marker'],
-                         leg_draw_opt="LEP" if self.plot_styles['gen_marker_size'] > 0 else "LE")
+                        line_color=self.plot_styles['gen_colour'], 
+                        line_width=self.line_width,
+                        marker_color=self.plot_styles['gen_colour'],
+                        marker_size=self.plot_styles['gen_marker_size'],
+                        marker_style=self.plot_styles['gen_marker'],
+                        leg_draw_opt="LEP" if self.plot_styles['gen_marker_size'] > 0 else "LE")
         alt_mc_style = dict(label=self.region['alt_mc_label'],
-                            line_color=self.plot_styles['alt_gen_colour'], line_width=self.line_width, line_style=1,
+                            line_color=self.plot_styles['alt_gen_colour'], 
+                            line_width=self.line_width, 
+                            line_style=1,
+                            marker_color=self.plot_styles['alt_gen_colour'],
                             marker_size=self.plot_styles['alt_gen_marker_size'],
                             marker_style=self.plot_styles['alt_gen_marker'],
                             leg_draw_opt="LEP" if self.plot_styles['alt_gen_marker_size'] > 0 else "LE")
