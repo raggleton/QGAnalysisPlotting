@@ -328,7 +328,7 @@ class SummaryPlotter(object):
                                  marker_color=COMMON_STYLE_DICT['mc_color'],
                                  marker_style=COMMON_STYLE_DICT['mc_marker_style'],
                                  marker_size=m_size,
-                                 leg_draw_opt="LE" if m_size == 0 else "EP",
+                                 leg_draw_opt="LE" if m_size == 0 else "LEP",
                                  subplot=dijet_central_hist_no_errors)
                 entries.append(Contribution(dijet_central_hist_truth, **cont_args))
                 dummy_entries.append(Contribution(dummy_gr.Clone(), **cont_args))
@@ -341,7 +341,7 @@ class SummaryPlotter(object):
                                  marker_color=COMMON_STYLE_DICT['mc_color'],
                                  marker_style=COMMON_STYLE_DICT['mc_marker_style'],
                                  marker_size=m_size,
-                                 leg_draw_opt="LE" if m_size == 0 else "EP",
+                                 leg_draw_opt="LE" if m_size == 0 else "LEP",
                                  subplot=dijet_forward_hist_no_errors)
                 entries.append(Contribution(dijet_forward_hist_truth, **cont_args))
                 dummy_entries.append(Contribution(dummy_gr.Clone(), **cont_args))
@@ -354,7 +354,7 @@ class SummaryPlotter(object):
                                  marker_color=COMMON_STYLE_DICT['mc_color'],
                                  marker_style=COMMON_STYLE_DICT['mc_marker_style'],
                                  marker_size=m_size,
-                                 leg_draw_opt="LE" if m_size == 0 else "EP",
+                                 leg_draw_opt="LE" if m_size == 0 else "LEP",
                                  subplot=zpj_hist_no_errors)
                 entries.append(Contribution(zpj_hist_truth, **cont_args))
                 dummy_entries.append(Contribution(dummy_gr.Clone(), **cont_args))
@@ -368,7 +368,7 @@ class SummaryPlotter(object):
                                  marker_color=COMMON_STYLE_DICT['mc_alt_color'],
                                  marker_style=COMMON_STYLE_DICT['mc_alt_marker_style'],
                                  marker_size=m_size,
-                                 leg_draw_opt="LE" if m_size == 0 else "EP",
+                                 leg_draw_opt="LE" if m_size == 0 else "LEP",
                                  subplot=dijet_central_hist_no_errors)
                 entries.append(Contribution(dijet_central_hist_alt_truth, **cont_args))
                 dummy_entries.append(Contribution(dummy_gr.Clone(), **cont_args))
@@ -381,7 +381,7 @@ class SummaryPlotter(object):
                                  marker_color=COMMON_STYLE_DICT['mc_alt_color'],
                                  marker_style=COMMON_STYLE_DICT['mc_alt_marker_style'],
                                  marker_size=m_size,
-                                 leg_draw_opt="LE" if m_size == 0 else "EP",
+                                 leg_draw_opt="LE" if m_size == 0 else "LEP",
                                  subplot=dijet_forward_hist_no_errors)
                 entries.append(Contribution(dijet_forward_hist_alt_truth, **cont_args))
                 dummy_entries.append(Contribution(dummy_gr.Clone(), **cont_args))
@@ -394,7 +394,7 @@ class SummaryPlotter(object):
                                  marker_color=COMMON_STYLE_DICT['mc_alt_color'],
                                  marker_style=COMMON_STYLE_DICT['mc_alt_marker_style'],
                                  marker_size=m_size,
-                                 leg_draw_opt="LE" if m_size == 0 else "EP",
+                                 leg_draw_opt="LE" if m_size == 0 else "LEP",
                                  subplot=zpj_hist_no_errors)
                 entries.append(Contribution(zpj_hist_alt_truth, **cont_args))
                 dummy_entries.append(Contribution(dummy_gr.Clone(), **cont_args))
@@ -414,7 +414,7 @@ class SummaryPlotter(object):
                                  marker_color=color,
                                  marker_style=style_dict.get('marker_style', mark),
                                  marker_size=marker_size,
-                                 leg_draw_opt="LE" if marker_size == 0 else "EP",
+                                 leg_draw_opt="LE" if marker_size == 0 else "LEP",
                                  subplot=dijet_central_hist_no_errors)
                 entries.append(Contribution(hist, **cont_args))
                 dummy_entries.append(Contribution(dummy_gr.Clone(), **cont_args))
@@ -434,7 +434,7 @@ class SummaryPlotter(object):
                                  marker_color=color,
                                  marker_style=style_dict.get('marker_style', mark),
                                  marker_size=marker_size,
-                                 leg_draw_opt="LE" if marker_size == 0 else "EP",
+                                 leg_draw_opt="LE" if marker_size == 0 else "LEP",
                                  subplot=dijet_forward_hist_no_errors)
                 entries.append(Contribution(hist, **cont_args))
                 dummy_entries.append(Contribution(dummy_gr.Clone(), **cont_args))
@@ -454,6 +454,7 @@ class SummaryPlotter(object):
                                  marker_color=color,
                                  marker_style=style_dict.get('marker_style', mark),
                                  marker_size=marker_size,
+                                 leg_draw_opt="LE" if marker_size == 0 else "LEP",
                                  subplot=zpj_hist_no_errors)
                 entries.append(Contribution(hist, **cont_args))
                 dummy_entries.append(Contribution(dummy_gr.Clone(), **cont_args))
