@@ -1348,7 +1348,7 @@ def do_zpj_pt_plots(workdir,
     # print("data_hist.Integral('width'):", data_hist.Integral("width"))
 
     radius, pus = cu.get_jet_config_from_dirname(workdir)
-    jet_str = "AK%s PF %s" % (radius.upper(), pus.upper())
+    jet_str = "AK%s" % (radius.upper())
     title = "{jet_algo}\n{region_label}".format(jet_algo=jet_str,
                                                   region_label=qgc.ZpJ_LABEL)
 

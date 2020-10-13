@@ -529,7 +529,7 @@ class SummaryPlotter(object):
                     what='hist',
                     xtitle=COMMON_STYLE_DICT['jet_pt_units_str'],
                     ytitle=angle_str,
-                    title="%s jets%s" % (jet_algo['label'], region_str),
+                    title="%s%s" % (jet_algo['label'], region_str),
                     # ylim=(0, h_max*1.75),
                     # ylim=(h_min*0.75, h_max*1.5),
                     ylim=ylim,
@@ -2038,8 +2038,8 @@ if __name__ == "__main__":
     # Filter only regions/algos/angles in the dataframe, since it could have
     # been modified earlier
     all_jet_algos = [
-        {'label': 'AK4 PUPPI', 'name': 'ak4puppi'},
-        {'label': 'AK8 PUPPI', 'name': 'ak8puppi'}
+        {'label': 'AK4', 'name': 'ak4puppi'},
+        {'label': 'AK8', 'name': 'ak8puppi'}
     ]
     jet_algos = [j for j in all_jet_algos if j['name'] in df['jet_algo'].unique()]
     # print("Plotting jet_algos:", jet_algos)

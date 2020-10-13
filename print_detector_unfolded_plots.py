@@ -449,9 +449,9 @@ if __name__ == "__main__":
     if len(angles) == 0:
         raise RuntimeError("Need at least 1 angle")
 
-    jet_algo = "AK4 PF PUPPI"
+    jet_algo = "AK4"
     if "ak8puppi" in args.source:
-        jet_algo = "AK8 PF PUPPI"
+        jet_algo = "AK8"
 
     has_data = not ('_MC_all' in args.source or '_MC_split' in args.source)
 

@@ -30,6 +30,7 @@ ROOT.gStyle.SetOptStat(0)
 
 
 def get_jet_str(thing):
+    return "jet"
     if "gen" in thing.lower():
         return "genjet"
     else:

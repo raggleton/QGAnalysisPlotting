@@ -4872,9 +4872,11 @@ def main():
         for x in ['doBinnedPlotsRecoPt', 'doBinnedPlotsGenLambda', 'doBinnedPlotsGenPt']:
             setattr(args, x, True)
 
-    jet_algo = "AK4 PF PUPPI"
+    # jet_algo = "AK4 PF PUPPI"
+    jet_algo = "AK4"
     if "ak8puppi" in args.source:
-        jet_algo = "AK8 PF PUPPI"
+        # jet_algo = "AK8 PF PUPPI"
+        jet_algo = "AK8"
 
     has_data = not ('_MC_all' in args.source or '_MC_split' in args.source)
 
