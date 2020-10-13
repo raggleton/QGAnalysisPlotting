@@ -72,23 +72,17 @@ class Setup(object):
         self.has_data = has_data
         self.angle = angle
         angle_prepend = "Groomed " if "groomed" in region['name'] else ""
-        this_angle_name = angle.name
-        if (angle_prepend != ""
-            and 'LHA' not in this_angle_name
-            and "_{T}" not in this_angle_name
-            and "PUPPI" not in this_angle_name):
-            # lower case if Groomed..., but be careful of e.g. pTD, LHA
-            this_angle_name = this_angle_name[0].lower() + this_angle_name[1:]
+        lower_angle_name = qgc.lower_angle_name(angle)
         # for plot axis titles
         self.angle_str = "{prepend}{name} ({lambda_str})".format(prepend=angle_prepend,
-                                                                 name=this_angle_name,
+                                                                 name=lower_angle_name,
                                                                  lambda_str=angle.lambda_str)
         # self.particle_title = "Particle-level " + self.angle_str
         self.particle_title = self.angle_str
 
         angle_prepend = "groomed " if "groomed" in region['name'] else ""
         self.detector_title = "Detector-level {prepend}{name} ({lambda_str})".format(prepend=angle_prepend,
-                                                                                     name=this_angle_name,
+                                                                                     name=lower_angle_name,
                                                                                      lambda_str=angle.lambda_str)
         self.pt_bin_normalised_differential_label = "#frac{1}{d#sigma/dp_{T}} #frac{d^{2}#sigma}{dp_{T} d%s}" % (angle.lambda_str)
         self.pt_bin_detector_normalised_differential_label = "#frac{1}{dN/dp_{T}} #frac{d^{2}N}{dp_{T} d%s}" % (angle.lambda_str)

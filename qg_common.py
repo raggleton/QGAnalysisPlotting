@@ -143,6 +143,16 @@ COMMON_VARS_WITH_FLAV = [
 
 COMMON_VARS = COMMON_VARS_WITH_FLAV[:-2]
 
+
+def lower_angle_name(angle):
+    lower_angle_name = angle.name
+    if ('LHA' not in lower_angle_name
+        and "_{T}" not in lower_angle_name
+        and "PUPPI" not in lower_angle_name):
+        lower_angle_name = lower_angle_name[0].lower() + lower_angle_name[1:]
+    return lower_angle_name
+
+
 ANGLE_REBIN_DICT = {
     "jet_puppiMultiplicity": [0.0, 6.0, 9.0, 12.0, 18.0, 150.0],
     'jet_multiplicity': [0.0, 6.0, 9.0, 12.0, 18.0, 150.0],
