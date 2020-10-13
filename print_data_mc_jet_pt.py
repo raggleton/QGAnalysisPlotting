@@ -689,22 +689,23 @@ def do_dijet_pt_plots(workdir,
                 ],
             ])
 
-        exp_hist_up_ratio = exp_hist_up.Clone()
-        exp_hist_down_ratio = exp_hist_down.Clone()
-        exp_hist_up_ratio.Add(mg_hist, -1) # error doesnt matter
-        exp_hist_up_ratio.Divide(mg_hist)
-        exp_hist_down_ratio.Add(mg_hist, -1)
-        exp_hist_down_ratio.Divide(mg_hist)
-        exp_hist_down_ratio.Scale(-1)
         n = mg_hist.GetNbinsX()
         bin_width = [mg_hist.GetBinWidth(i)/2. for i in range(1, n+1)]
         x = array('d', [mg_hist.GetBinCenter(i) for i in range(1, n+1)])
         y = array('d', [1 for i in range(1, n+1)])
         exl = array('d', [bin_width[i-1] for i in range(1, n+1)])
         exh = array('d', [bin_width[i-1] for i in range(1, n+1)])
-        exp_eyl = array('d', [exp_hist_down_ratio.GetBinContent(i) for i in range(1, n+1)])
-        exp_eyh = array('d', [exp_hist_up_ratio.GetBinContent(i) for i in range(1, n+1)])
-        exp_gr = ROOT.TGraphAsymmErrors(n, x, y, exl, exh, exp_eyl, exp_eyh)
+        
+        # exp_hist_up_ratio = exp_hist_up.Clone()
+        # exp_hist_down_ratio = exp_hist_down.Clone()
+        # exp_hist_up_ratio.Add(mg_hist, -1) # error doesnt matter
+        # exp_hist_up_ratio.Divide(mg_hist)
+        # exp_hist_down_ratio.Add(mg_hist, -1)
+        # exp_hist_down_ratio.Divide(mg_hist)
+        # exp_hist_down_ratio.Scale(-1)
+        # exp_eyl = array('d', [exp_hist_down_ratio.GetBinContent(i) for i in range(1, n+1)])
+        # exp_eyh = array('d', [exp_hist_up_ratio.GetBinContent(i) for i in range(1, n+1)])
+        # exp_gr = ROOT.TGraphAsymmErrors(n, x, y, exl, exh, exp_eyl, exp_eyh)
 
         # ADD SCALE ENTRIES
         # ------------------------------------------------------------------
@@ -736,16 +737,16 @@ def do_dijet_pt_plots(workdir,
                 ],
             ])
 
-        scale_hist_up_ratio = scale_hist_up.Clone()
-        scale_hist_down_ratio = scale_hist_down.Clone()
-        scale_hist_up_ratio.Add(mg_hist, -1)
-        scale_hist_up_ratio.Divide(mg_hist)
-        scale_hist_down_ratio.Add(mg_hist, -1)
-        scale_hist_down_ratio.Divide(mg_hist)
-        scale_hist_down_ratio.Scale(-1)
-        scale_eyl = array('d', [scale_hist_down_ratio.GetBinContent(i) for i in range(1, n+1)])
-        scale_eyh = array('d', [scale_hist_up_ratio.GetBinContent(i) for i in range(1, n+1)])
-        scale_gr = ROOT.TGraphAsymmErrors(n, x, y, exl, exh, scale_eyl, scale_eyh)
+        # scale_hist_up_ratio = scale_hist_up.Clone()
+        # scale_hist_down_ratio = scale_hist_down.Clone()
+        # scale_hist_up_ratio.Add(mg_hist, -1)
+        # scale_hist_up_ratio.Divide(mg_hist)
+        # scale_hist_down_ratio.Add(mg_hist, -1)
+        # scale_hist_down_ratio.Divide(mg_hist)
+        # scale_hist_down_ratio.Scale(-1)
+        # scale_eyl = array('d', [scale_hist_down_ratio.GetBinContent(i) for i in range(1, n+1)])
+        # scale_eyh = array('d', [scale_hist_up_ratio.GetBinContent(i) for i in range(1, n+1)])
+        # scale_gr = ROOT.TGraphAsymmErrors(n, x, y, exl, exh, scale_eyl, scale_eyh)
 
         # ADD PDF ENTRIES
         # ------------------------------------------------------------------
@@ -781,16 +782,16 @@ def do_dijet_pt_plots(workdir,
                 ],
             ])
 
-        pdf_hist_up_ratio = pdf_hist_up.Clone()
-        pdf_hist_down_ratio = pdf_hist_down.Clone()
-        pdf_hist_up_ratio.Add(mg_hist, -1)
-        pdf_hist_up_ratio.Divide(mg_hist)
-        pdf_hist_down_ratio.Add(mg_hist, -1)
-        pdf_hist_down_ratio.Divide(mg_hist)
-        pdf_hist_down_ratio.Scale(-1)
-        pdf_eyl = array('d', [pdf_hist_down_ratio.GetBinContent(i) for i in range(1, n+1)])
-        pdf_eyh = array('d', [pdf_hist_up_ratio.GetBinContent(i) for i in range(1, n+1)])
-        pdf_gr = ROOT.TGraphAsymmErrors(n, x, y, exl, exh, pdf_eyl, pdf_eyh)
+        # pdf_hist_up_ratio = pdf_hist_up.Clone()
+        # pdf_hist_down_ratio = pdf_hist_down.Clone()
+        # pdf_hist_up_ratio.Add(mg_hist, -1)
+        # pdf_hist_up_ratio.Divide(mg_hist)
+        # pdf_hist_down_ratio.Add(mg_hist, -1)
+        # pdf_hist_down_ratio.Divide(mg_hist)
+        # pdf_hist_down_ratio.Scale(-1)
+        # pdf_eyl = array('d', [pdf_hist_down_ratio.GetBinContent(i) for i in range(1, n+1)])
+        # pdf_eyh = array('d', [pdf_hist_up_ratio.GetBinContent(i) for i in range(1, n+1)])
+        # pdf_gr = ROOT.TGraphAsymmErrors(n, x, y, exl, exh, pdf_eyl, pdf_eyh)
 
         # ADD TOTAL
         # ------------------------------------------------------------------
@@ -814,19 +815,20 @@ def do_dijet_pt_plots(workdir,
                 ],
             ])
 
-        total_hist_up_ratio = total_hist_up.Clone()
-        total_hist_down_ratio = total_hist_down.Clone()
-        total_hist_up_ratio.Add(mg_hist, -1)
-        total_hist_up_ratio.Divide(mg_hist)
-        total_hist_down_ratio.Add(mg_hist, -1)
-        total_hist_down_ratio.Divide(mg_hist)
-        total_hist_down_ratio.Scale(-1)
-        total_eyl = array('d', [total_hist_down_ratio.GetBinContent(i) for i in range(1, n+1)])
-        total_eyh = array('d', [total_hist_up_ratio.GetBinContent(i) for i in range(1, n+1)])
-        total_gr = ROOT.TGraphAsymmErrors(n, x, y, exl, exh, total_eyl, total_eyh)
+        if show_total_systematics:
+            total_hist_up_ratio = total_hist_up.Clone()
+            total_hist_down_ratio = total_hist_down.Clone()
+            total_hist_up_ratio.Add(mg_hist, -1)
+            total_hist_up_ratio.Divide(mg_hist)
+            total_hist_down_ratio.Add(mg_hist, -1)
+            total_hist_down_ratio.Divide(mg_hist)
+            total_hist_down_ratio.Scale(-1)
+            total_eyl = array('d', [total_hist_down_ratio.GetBinContent(i) for i in range(1, n+1)])
+            total_eyh = array('d', [total_hist_up_ratio.GetBinContent(i) for i in range(1, n+1)])
+            total_gr = ROOT.TGraphAsymmErrors(n, x, y, exl, exh, total_eyl, total_eyh)
 
         radius, pus = cu.get_jet_config_from_dirname(workdir)
-        jet_str = "AK%s PF %s" % (radius.upper(), pus.upper())
+        jet_str = "AK%s" % (radius.upper())
         title = "{jet_algo}\n{region_label}".format(jet_algo=jet_str,
                                                       region_label=region_label)
 
@@ -1210,22 +1212,23 @@ def do_zpj_pt_plots(workdir,
             ],
         ])
 
-    exp_hist_up_ratio = exp_hist_up.Clone()
-    exp_hist_down_ratio = exp_hist_down.Clone()
-    exp_hist_up_ratio.Add(mg_hist, -1)
-    exp_hist_up_ratio.Divide(mg_hist)
-    exp_hist_down_ratio.Add(mg_hist, -1)
-    exp_hist_down_ratio.Divide(mg_hist)
-    exp_hist_down_ratio.Scale(-1)
     n = mg_hist.GetNbinsX()
     bin_width = [mg_hist.GetBinWidth(i)/2. for i in range(1, n+1)]
     x = array('d', [mg_hist.GetBinCenter(i) for i in range(1, n+1)])
     y = array('d', [1 for i in range(1, n+1)])
     exl = array('d', [bin_width[i-1] for i in range(1, n+1)])
     exh = array('d', [bin_width[i-1] for i in range(1, n+1)])
-    exp_eyl = array('d', [exp_hist_down_ratio.GetBinContent(i) for i in range(1, n+1)])
-    exp_eyh = array('d', [exp_hist_up_ratio.GetBinContent(i) for i in range(1, n+1)])
-    exp_gr = ROOT.TGraphAsymmErrors(n, x, y, exl, exh, exp_eyl, exp_eyh)
+    
+    # exp_hist_up_ratio = exp_hist_up.Clone()
+    # exp_hist_down_ratio = exp_hist_down.Clone()
+    # exp_hist_up_ratio.Add(mg_hist, -1)
+    # exp_hist_up_ratio.Divide(mg_hist)
+    # exp_hist_down_ratio.Add(mg_hist, -1)
+    # exp_hist_down_ratio.Divide(mg_hist)
+    # exp_hist_down_ratio.Scale(-1)
+    # exp_eyl = array('d', [exp_hist_down_ratio.GetBinContent(i) for i in range(1, n+1)])
+    # exp_eyh = array('d', [exp_hist_up_ratio.GetBinContent(i) for i in range(1, n+1)])
+    # exp_gr = ROOT.TGraphAsymmErrors(n, x, y, exl, exh, exp_eyl, exp_eyh)
 
     # ADD SCALE ENTRIES
     # ------------------------------------------------------------------
@@ -1257,16 +1260,16 @@ def do_zpj_pt_plots(workdir,
             ],
         ])
 
-    scale_hist_up_ratio = scale_hist_up.Clone()
-    scale_hist_down_ratio = scale_hist_down.Clone()
-    scale_hist_up_ratio.Add(mg_hist, -1)
-    scale_hist_up_ratio.Divide(mg_hist)
-    scale_hist_down_ratio.Add(mg_hist, -1)
-    scale_hist_down_ratio.Divide(mg_hist)
-    scale_hist_down_ratio.Scale(-1)
-    scale_eyl = array('d', [scale_hist_down_ratio.GetBinContent(i) for i in range(1, n+1)])
-    scale_eyh = array('d', [scale_hist_up_ratio.GetBinContent(i) for i in range(1, n+1)])
-    scale_gr = ROOT.TGraphAsymmErrors(n, x, y, exl, exh, scale_eyl, scale_eyh)
+    # scale_hist_up_ratio = scale_hist_up.Clone()
+    # scale_hist_down_ratio = scale_hist_down.Clone()
+    # scale_hist_up_ratio.Add(mg_hist, -1)
+    # scale_hist_up_ratio.Divide(mg_hist)
+    # scale_hist_down_ratio.Add(mg_hist, -1)
+    # scale_hist_down_ratio.Divide(mg_hist)
+    # scale_hist_down_ratio.Scale(-1)
+    # scale_eyl = array('d', [scale_hist_down_ratio.GetBinContent(i) for i in range(1, n+1)])
+    # scale_eyh = array('d', [scale_hist_up_ratio.GetBinContent(i) for i in range(1, n+1)])
+    # scale_gr = ROOT.TGraphAsymmErrors(n, x, y, exl, exh, scale_eyl, scale_eyh)
 
     # ADD PDF ENTRIES
     # ------------------------------------------------------------------
@@ -1301,16 +1304,16 @@ def do_zpj_pt_plots(workdir,
             ],
         ])
 
-    pdf_hist_up_ratio = pdf_hist_up.Clone()
-    pdf_hist_down_ratio = pdf_hist_down.Clone()
-    pdf_hist_up_ratio.Add(mg_hist, -1)
-    pdf_hist_up_ratio.Divide(mg_hist)
-    pdf_hist_down_ratio.Add(mg_hist, -1)
-    pdf_hist_down_ratio.Divide(mg_hist)
-    pdf_hist_down_ratio.Scale(-1)
-    pdf_eyl = array('d', [pdf_hist_down_ratio.GetBinContent(i) for i in range(1, n+1)])
-    pdf_eyh = array('d', [pdf_hist_up_ratio.GetBinContent(i) for i in range(1, n+1)])
-    pdf_gr = ROOT.TGraphAsymmErrors(n, x, y, exl, exh, pdf_eyl, pdf_eyh)
+    # pdf_hist_up_ratio = pdf_hist_up.Clone()
+    # pdf_hist_down_ratio = pdf_hist_down.Clone()
+    # pdf_hist_up_ratio.Add(mg_hist, -1)
+    # pdf_hist_up_ratio.Divide(mg_hist)
+    # pdf_hist_down_ratio.Add(mg_hist, -1)
+    # pdf_hist_down_ratio.Divide(mg_hist)
+    # pdf_hist_down_ratio.Scale(-1)
+    # pdf_eyl = array('d', [pdf_hist_down_ratio.GetBinContent(i) for i in range(1, n+1)])
+    # pdf_eyh = array('d', [pdf_hist_up_ratio.GetBinContent(i) for i in range(1, n+1)])
+    # pdf_gr = ROOT.TGraphAsymmErrors(n, x, y, exl, exh, pdf_eyl, pdf_eyh)
 
     # ADD TOTAL
     # ------------------------------------------------------------------
@@ -1334,16 +1337,17 @@ def do_zpj_pt_plots(workdir,
             ],
         ])
 
-    total_hist_up_ratio = total_hist_up.Clone()
-    total_hist_down_ratio = total_hist_down.Clone()
-    total_hist_up_ratio.Add(mg_hist, -1)
-    total_hist_up_ratio.Divide(mg_hist)
-    total_hist_down_ratio.Add(mg_hist, -1)
-    total_hist_down_ratio.Divide(mg_hist)
-    total_hist_down_ratio.Scale(-1)
-    total_eyl = array('d', [total_hist_down_ratio.GetBinContent(i) for i in range(1, n+1)])
-    total_eyh = array('d', [total_hist_up_ratio.GetBinContent(i) for i in range(1, n+1)])
-    total_gr = ROOT.TGraphAsymmErrors(n, x, y, exl, exh, total_eyl, total_eyh)
+    if show_total_systematics:
+        total_hist_up_ratio = total_hist_up.Clone()
+        total_hist_down_ratio = total_hist_down.Clone()
+        total_hist_up_ratio.Add(mg_hist, -1)
+        total_hist_up_ratio.Divide(mg_hist)
+        total_hist_down_ratio.Add(mg_hist, -1)
+        total_hist_down_ratio.Divide(mg_hist)
+        total_hist_down_ratio.Scale(-1)
+        total_eyl = array('d', [total_hist_down_ratio.GetBinContent(i) for i in range(1, n+1)])
+        total_eyh = array('d', [total_hist_up_ratio.GetBinContent(i) for i in range(1, n+1)])
+        total_gr = ROOT.TGraphAsymmErrors(n, x, y, exl, exh, total_eyl, total_eyh)
 
     # print("data_hist.Integral('width'):", data_hist.Integral("width"))
 
