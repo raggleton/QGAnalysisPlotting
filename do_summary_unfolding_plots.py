@@ -632,7 +632,7 @@ class SummaryPlotter(object):
                 dijet_forward_hist_ratio_error.Draw(draw_opt)
                 plot.subplot_legend.AddEntry(dijet_forward_hist_ratio_error, "Data uncert%s" % (". (forward)" if do_dijet_cen else "ainty"), "F")
             if do_zpj:
-                plot.subplot_legend.AddEntry(zpj_hist_ratio_error, "Data uncert.", "F")
+                plot.subplot_legend.AddEntry(zpj_hist_ratio_error, "Data uncertainty", "F")
                 zpj_hist_ratio_error.Draw(draw_opt)
             plot.subplot_line.Draw()
             # draw hists after line otherwise ugly overlap
