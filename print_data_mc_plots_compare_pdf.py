@@ -506,7 +506,7 @@ def do_plots(root_dir, title):
             #                              xlim=(50, 4000),
             #                              ylim_mean=ylim_mean,
             #                              ylim_rms=ylim_rms,
-            #                              region_title="%s jets in dijet (central) region" % (jet_str))
+            #                              region_title="%s jets in %s" % (jet_str, qgc.Dijet_CEN_LABEL))
 
             # qgp.do_mean_rms_summary_plot(dijet_fwd_1d_entries[:],
             #                              pt_bins[:],
@@ -515,7 +515,7 @@ def do_plots(root_dir, title):
             #                              xlim=(50, 4000),
             #                              ylim_mean=ylim_mean,
             #                              ylim_rms=ylim_rms,
-            #                              region_title="%s jets in dijet (forward) region" % (jet_str))
+            #                              region_title="%s jets in %s" % (jet_str, qgc.Dijet_FWD_LABEL))
 
             # # zpj_1d_entries[i][j] is the jth sample in the ith pt bin
             # qgp.do_mean_rms_summary_plot(zpj_1d_entries[:],
@@ -525,7 +525,7 @@ def do_plots(root_dir, title):
             #                              xlim=(50, 614),
             #                              ylim_mean=ylim_mean,
             #                              ylim_rms=ylim_rms,
-            #                              region_title="%s jets in Z+jets region" % (jet_str))
+            #                              region_title="%s jets in %s" % (jet_str, qgc.ZpJ_LABEL))
 
             # # qgp.do_box_plot(dijet_2d_entries,
             # #                 "%s/ptBinned/%s_box_dijet.%s" % (plot_dir, v, OUTPUT_FMT),

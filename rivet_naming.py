@@ -43,8 +43,8 @@ DIJET_REGIONS = [
 ZPJ_PATH = "CMS_2018_PAS_SMP_18_QGX_ZPJ"
 
 ZPJ_REGIONS = [
-    Region(name="ZPlusJets", label="Z+jets", is_groomed=False),
-    Region(name="ZPlusJets_groomed", label="Z+jets", is_groomed=True),
+    Region(name="ZPlusJets", label="Z+jet", is_groomed=False),
+    Region(name="ZPlusJets_groomed", label="Z+jet", is_groomed=True),
 ]
 
 

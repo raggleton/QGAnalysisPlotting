@@ -43,7 +43,7 @@ def do_all_flavour_fraction_plots(root_dir, plot_dir="flav_fractions", zpj_dirna
     if zpj_dirname:
         # Z+jets
         qgf.do_flavour_fraction_vs_pt(input_file=os.path.join(root_dir, qgc.DY_FILENAME),
-                                      title="Z+jets selection",
+                                      title="Z+jet selection",
                                       dirname=zpj_dirname,
                                       pt_bins=pt_bins,
                                       var_prepend=var_prepend,

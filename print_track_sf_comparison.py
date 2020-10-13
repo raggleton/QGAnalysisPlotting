@@ -402,7 +402,7 @@ if __name__ == "__main__":
                                          xlim=(50, 2000),
                                          ylim_mean=ylim_mean,
                                          ylim_rms=ylim_rms,
-                                         region_title="%s jets in dijet (central)" % (jet_str),
+                                         region_title="%s jets in %s" % (jet_str, qgc.Dijet_CEN_LABEL),
                                          has_data=False,
                                          numerator_label="Var.",
                                          denominator_label="No SF")
@@ -414,7 +414,7 @@ if __name__ == "__main__":
                                          xlim=(50, 2000),
                                          ylim_mean=ylim_mean,
                                          ylim_rms=ylim_rms,
-                                         region_title="%s jets in dijet (forward)" % (jet_str),
+                                         region_title="%s jets in %s" % (jet_str, qgc.Dijet_FWD_LABEL),
                                          has_data=False,
                                          numerator_label="Var.",
                                          denominator_label="No SF")
@@ -427,7 +427,7 @@ if __name__ == "__main__":
                                          xlim=(50, 614),
                                          ylim_mean=ylim_mean,
                                          ylim_rms=ylim_rms,
-                                         region_title="%s jets in Z+jets" % (jet_str),
+                                         region_title="%s jets in %s" % (jet_str, qgc.ZpJ_LABEL),
                                          has_data=False,
                                          numerator_label="Var.",
                                          denominator_label="No SF")

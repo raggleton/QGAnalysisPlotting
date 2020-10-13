@@ -302,7 +302,7 @@ def do_plots(root_dir):
                                          xlim=(50, 614),
                                          ylim_mean=ylim_mean,
                                          ylim_rms=ylim_rms,
-                                         region_title="%s jets in Z+jets" % (jet_str))
+                                         region_title="%s jets in %s" % (jet_str, qgc.ZpJ_LABEL))
 
 
 if __name__ == "__main__":

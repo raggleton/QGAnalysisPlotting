@@ -495,12 +495,12 @@ construct_all_fine_binnings(VAR_UNFOLD_DICT_TARGET0p5)
 VAR_UNFOLD_DICT = VAR_UNFOLD_DICT_TARGET0p5
 
 # Common labels for legends etc
-ZpJ_LABEL = "Z+jets region"
-DY_ZpJ_LABEL = "DY+jets MC, Z+jets region"
-DY_ZpJ_GROOMED_LABEL = "DY+jets MC, Z+jets region\n(groomed)"
-DY_ZpJ_GEN_LABEL = "DY+jets MC, Z+jets region\n(GenJets)"
-DY_ZpJ_QFLAV_LABEL = "DY+jets MC, Z+jets region\n(uds-matched)"
-DY_ZpJ_GFLAV_LABEL = "DY+jets MC, Z+jets region\n(g-matched)"
+ZpJ_LABEL = "Z+jet region"
+DY_ZpJ_LABEL = "DY+jets MC, Z+jet region"
+DY_ZpJ_GROOMED_LABEL = "DY+jets MC, Z+jet region\n(groomed)"
+DY_ZpJ_GEN_LABEL = "DY+jets MC, Z+jet region\n(GenJets)"
+DY_ZpJ_QFLAV_LABEL = "DY+jets MC, Z+jet region\n(uds-matched)"
+DY_ZpJ_GFLAV_LABEL = "DY+jets MC, Z+jet region\n(g-matched)"
 
 DY_Dijet_LABEL = "DY+jets MC, Dijet region"
 DY_Dijet_GEN_LABEL = "DY+jets MC, Dijet region\n(GenJets)"
@@ -508,9 +508,9 @@ DY_Dijet_QFLAV_LABEL = "DY+jets MC, Dijet region\n(uds-matched)"
 DY_Dijet_GFLAV_LABEL = "DY+jets MC, Dijet region\n(g-matched)"
 
 QCD_ZpJ_LABEL = "QCD MC, Z+jet region"
-QCD_ZpJ_GEN_LABEL = "QCD MC, Z+jets region\n(GenJets)"
-QCD_ZpJ_QFLAV_LABEL = "QCD MC, Z+jets region\n(uds-matched)"
-QCD_ZpJ_GFLAV_LABEL = "QCD MC, Z+jets region\n(g-matched)"
+QCD_ZpJ_GEN_LABEL = "QCD MC, Z+jet region\n(GenJets)"
+QCD_ZpJ_QFLAV_LABEL = "QCD MC, Z+jet region\n(uds-matched)"
+QCD_ZpJ_GFLAV_LABEL = "QCD MC, Z+jet region\n(g-matched)"
 
 Dijet_LABEL = "Dijet region"
 Dijet_GROOMED_LABEL = "Dijet region (groomed)"
@@ -533,7 +533,7 @@ QCD_Dijet_FWD_GEN_LABEL = "QCD MC, Forward dijet region\n(GenJets)"
 QCD_Dijet_FWD_QFLAV_LABEL = "QCD MC, Forward dijet region\n(uds-matched)"
 QCD_Dijet_FWD_GFLAV_LABEL = "QCD MC, Forward dijet region\n(g-matched)"
 
-SINGLE_MU_LABEL = "SingleMu, Z+jets region"
+SINGLE_MU_LABEL = "SingleMu, Z+jet region"
 JETHT_LABEL = "JetHT, Dijet region"
 ZB_LABEL = "ZeroBias, Dijet region"
 JETHT_ZB_LABEL = "JetHT+ZeroBias, Dijet region"

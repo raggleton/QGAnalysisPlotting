@@ -284,28 +284,28 @@ def get_dijet_config(source_dir, central=True, groomed=False):
     if central and not groomed:
         this_dict = dijet_region_dict_template.copy()
         this_dict['dirname'] = 'Dijet_QG_Unfold_central_tighter'
-        this_dict['label'] = 'Dijet (central)'
+        this_dict['label'] = qgc.Dijet_CEN_LABEL.replace(" region", "")
         this_dict['name'] = 'Dijet_central'
         return this_dict
 
     elif not central and not groomed:
         this_dict = dijet_region_dict_template.copy()
         this_dict['dirname'] = 'Dijet_QG_Unfold_forward_tighter'
-        this_dict['label'] = 'Dijet (forward)'
+        this_dict['label'] = qgc.Dijet_FWD_LABEL.replace(" region", "")
         this_dict['name'] = 'Dijet_forward'
         return this_dict
 
     elif central and groomed:
         this_dict = dijet_region_dict_template.copy()
         this_dict['dirname'] = 'Dijet_QG_Unfold_central_tighter_groomed'
-        this_dict['label'] = 'Dijet (central)'
+        this_dict['label'] = qgc.Dijet_CEN_LABEL.replace(" region", "")
         this_dict['name'] = 'Dijet_central_groomed'
         return this_dict
 
     elif not central and groomed:
         this_dict = dijet_region_dict_template.copy()
         this_dict['dirname'] = 'Dijet_QG_Unfold_forward_tighter_groomed'
-        this_dict['label'] = 'Dijet (forward)'
+        this_dict['label'] = qgc.Dijet_FWD_LABEL.replace(" region", "")
         this_dict['name'] = 'Dijet_forward_groomed'
         return this_dict
 
@@ -324,7 +324,7 @@ def get_zpj_config(source_dir, groomed=False):
     zpj_region_dict = {
         "name": "ZPlusJets",
         "dirname": "ZPlusJets_QG_Unfold",
-        "label": "Z+jets",
+        "label": qgc.ZpJ_LABEL.replace(" region", ""),
         "data_tfile": input_singlemu_tfile,
 
         "mc_tfile": input_mc_dy_mgpythia_tfile,
@@ -595,7 +595,7 @@ def get_zpj_config(source_dir, groomed=False):
         this_dict = zpj_region_dict.copy()
         this_dict['dirname'] = 'ZPlusJets_QG_Unfold_groomed'
         this_dict['name'] = 'ZPlusJets_groomed'
-        this_dict['label'] = 'Z+jets'
+        this_dict['label'] = qgc.ZpJ_LABEL.replace(" region", "")
         return this_dict
 
 

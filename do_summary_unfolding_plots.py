@@ -321,7 +321,7 @@ class SummaryPlotter(object):
         if not self.only_yoda_data:
             # Add nominal MC
             if do_dijet_cen:
-                cont_args = dict(label=self.mc_label if only_one_region else '#splitline{ Central dijet  }{ [%s]}' % (self.mc_label),
+                cont_args = dict(label=self.mc_label if only_one_region else '#splitline{ %s  }{ [%s]}' % (qgc.Dijet_CEN_LABEL.replace(" region", ""), self.mc_label),
                                  line_color=COMMON_STYLE_DICT['mc_color'],
                                  line_width=lw,
                                  line_style=COMMON_STYLE_DICT['mc_line_style'],
@@ -334,7 +334,7 @@ class SummaryPlotter(object):
                 dummy_entries.append(Contribution(dummy_gr.Clone(), **cont_args))
 
             if do_dijet_fwd:
-                cont_args = dict(label=self.mc_label if only_one_region else '#splitline{ Forward dijet  }{ [%s]}' % (self.mc_label),
+                cont_args = dict(label=self.mc_label if only_one_region else '#splitline{ %s  }{ [%s]}' % (qgc.Dijet_FWD_LABEL.replace(" region", ""), self.mc_label),
                                  line_color=COMMON_STYLE_DICT['mc_color'],
                                  line_width=lw,
                                  line_style=COMMON_STYLE_DICT['mc_line_style'],
@@ -347,7 +347,7 @@ class SummaryPlotter(object):
                 dummy_entries.append(Contribution(dummy_gr.Clone(), **cont_args))
 
             if do_zpj:
-                cont_args = dict(label=self.mc_label if only_one_region else '#splitline{ Z+jets  }{ [%s]}' % (self.mc_label),
+                cont_args = dict(label=self.mc_label if only_one_region else '#splitline{ %s  }{ [%s]}' % (qgc.ZpJ_LABEL.replace(" region", ""), self.mc_label),
                                  line_color=COMMON_STYLE_DICT['mc_color'],
                                  line_width=lw,
                                  line_style=COMMON_STYLE_DICT['mc_line_style'],
@@ -361,7 +361,7 @@ class SummaryPlotter(object):
 
             # add alt MC
             if do_dijet_cen:
-                cont_args = dict(label=self.alt_mc_label if only_one_region else '#splitline{ Central dijet  }{ [%s]}' % (self.alt_mc_label),
+                cont_args = dict(label=self.alt_mc_label if only_one_region else '#splitline{ %s  }{ [%s]}' % (qgc.Dijet_CEN_LABEL.replace(" region", ""), self.alt_mc_label),
                                  line_color=COMMON_STYLE_DICT['mc_alt_color'],
                                  line_width=lw,
                                  line_style=COMMON_STYLE_DICT['mc_alt_line_style'],
@@ -374,7 +374,7 @@ class SummaryPlotter(object):
                 dummy_entries.append(Contribution(dummy_gr.Clone(), **cont_args))
 
             if do_dijet_fwd:
-                cont_args = dict(label=self.alt_mc_label if only_one_region else '#splitline{ Forward dijet  }{ [%s]}' % (self.alt_mc_label),
+                cont_args = dict(label=self.alt_mc_label if only_one_region else '#splitline{ %s  }{ [%s]}' % (qgc.Dijet_FWD_LABEL.replace(" region", ""), self.alt_mc_label),
                                  line_color=COMMON_STYLE_DICT['mc_alt_color'],
                                  line_width=lw,
                                  line_style=COMMON_STYLE_DICT['mc_alt_line_style'],
@@ -387,7 +387,7 @@ class SummaryPlotter(object):
                 dummy_entries.append(Contribution(dummy_gr.Clone(), **cont_args))
 
             if do_zpj:
-                cont_args = dict(label=self.alt_mc_label if only_one_region else '#splitline{ Z+jets}{ [%s]}' % (self.alt_mc_label),
+                cont_args = dict(label=self.alt_mc_label if only_one_region else '#splitline{ %s  }{ [%s]}' % (qgc.ZpJ_LABEL.replace(" region", ""), self.alt_mc_label),
                                  line_color=COMMON_STYLE_DICT['mc_alt_color'],
                                  line_width=lw,
                                  line_style=COMMON_STYLE_DICT['mc_alt_line_style'],
@@ -407,7 +407,7 @@ class SummaryPlotter(object):
                 color = style_dict.get('color', COMMON_STYLE_DICT['mc_alt_color'])
                 fancy_label = style_dict.get("label", sample['key'])
                 marker_size = style_dict.get('marker_size', m_size)
-                cont_args = dict(label=fancy_label if only_one_region else '#splitline{ Central dijet }{ [%s]}' % (fancy_label),
+                cont_args = dict(label=fancy_label if only_one_region else '#splitline{ %s }{ [%s]}' % (qgc.Dijet_CEN_LABEL.replace(" region", ""), fancy_label),
                                  line_color=color,
                                  line_width=lw,
                                  line_style=style_dict.get('line_style', COMMON_STYLE_DICT['mc_alt_line_style']),
@@ -427,7 +427,7 @@ class SummaryPlotter(object):
                 color = style_dict.get('color', COMMON_STYLE_DICT['mc_alt_color'])
                 fancy_label = style_dict.get("label", sample['key'])
                 marker_size = style_dict.get('marker_size', m_size)
-                cont_args = dict(label=fancy_label if only_one_region else '#splitline{ Forward dijet }{ [%s]}' % (fancy_label),
+                cont_args = dict(label=fancy_label if only_one_region else '#splitline{ %s }{ [%s]}' % (qgc.Dijet_FWD_LABEL.replace(" region", ""),fancy_label),
                                  line_color=color,
                                  line_width=lw,
                                  line_style=style_dict.get('line_style', COMMON_STYLE_DICT['mc_alt_line_style']),
@@ -447,14 +447,13 @@ class SummaryPlotter(object):
                 color = style_dict.get('color', COMMON_STYLE_DICT['mc_alt_color'])
                 fancy_label = style_dict.get("label", sample['key'])
                 marker_size = style_dict.get('marker_size', m_size)
-                cont_args = dict(label=fancy_label if only_one_region else '#splitline{ Z+jets}{ [%s]}' % (fancy_label),
+                cont_args = dict(label=fancy_label if only_one_region else '#splitline{ %s}{ [%s]}' % (qgc.ZpJ_LABEL.replace(" region", ""), fancy_label),
                                  line_color=color,
                                  line_width=lw,
                                  line_style=style_dict.get('line_style', COMMON_STYLE_DICT['mc_alt_line_style']),
                                  marker_color=color,
                                  marker_style=style_dict.get('marker_style', mark),
                                  marker_size=marker_size,
-                                 leg_draw_opt="LE" if marker_size == 0 else "EP",
                                  subplot=zpj_hist_no_errors)
                 entries.append(Contribution(hist, **cont_args))
                 dummy_entries.append(Contribution(dummy_gr.Clone(), **cont_args))
@@ -462,7 +461,7 @@ class SummaryPlotter(object):
         # Add data last so it gets drawn ontop
         if metric != 'delta':
             if do_dijet_cen:
-                cont_args = dict(label='Data' if only_one_region else ' Central dijet',
+                cont_args = dict(label='Data' if only_one_region else ' '+qgc.Dijet_CEN_LABEL.replace(" region", ""),
                                  leg_draw_opt="LEP",
                                  line_color=ROOT.kBlack if only_one_region else dijet_cen_col,
                                  line_width=lw,
@@ -473,7 +472,7 @@ class SummaryPlotter(object):
                 dummy_entries.insert(0, Contribution(dummy_gr.Clone(), **cont_args))
 
             if do_dijet_fwd:
-                cont_args = dict(label='Data' if only_one_region else ' Forward dijet',
+                cont_args = dict(label='Data' if only_one_region else ' '+qgc.Dijet_FWD_LABEL.replace(" region", ""),,
                                  leg_draw_opt="LEP",
                                  line_color=ROOT.kBlack if only_one_region else dijet_fwd_col,
                                  line_width=lw,
@@ -484,7 +483,7 @@ class SummaryPlotter(object):
                 dummy_entries.insert(0, Contribution(dummy_gr.Clone(), **cont_args))
 
             if do_zpj:
-                cont_args = dict(label='Data' if only_one_region else ' Z+jets',
+                cont_args = dict(label='Data' if only_one_region else ' '+qgc.ZpJ_LABEL.replace(" region", ""), ,
                                  leg_draw_opt="LEP",
                                  line_color=ROOT.kBlack if only_one_region else zpj_col,
                                  line_width=lw,
@@ -2156,7 +2155,7 @@ if __name__ == "__main__":
                 ]
                 g_selections.append({'label': this_angle_str, 'selections': this_selection})
 
-            dijet_central_legend_header = "Central dijet region"
+            dijet_central_legend_header = qgc.Dijet_CEN_LABEL
             plotter.plot_mean_rms_bins_summary(
                 selections=g_selections,
                 legend_header=dijet_central_legend_header,
@@ -2169,7 +2168,7 @@ if __name__ == "__main__":
                 output_file=os.path.join(args.outputDir, "dijet_central_delta_summary%s.pdf" % (filename_append))
             )
 
-            g_legend_header = "Gluon-enriched jets:\nCentral dijet region"
+            g_legend_header = "Gluon-enriched jets:\n" + qgc.Dijet_CEN_LABEL
             plotter.plot_mean_rms_bins_summary(
                 selections=g_selections,
                 legend_header=g_legend_header,
@@ -2208,7 +2207,7 @@ if __name__ == "__main__":
                 ]
                 selections.append({'label': this_angle_str, 'selections': this_selection})
 
-            dijet_fwd_legend_header = "Forward dijet region"
+            dijet_fwd_legend_header = qgc.Dijet_FWD_LABEL
             plotter.plot_mean_rms_bins_summary(
                 selections=selections,
                 legend_header=dijet_fwd_legend_header,
@@ -2260,7 +2259,7 @@ if __name__ == "__main__":
                 ]
                 selections.append({'label': this_angle_str, 'selections': this_selection})
 
-            zpj_legend_header = "Z+jets region"
+            zpj_legend_header = qgc.ZpJ_LABEL
             plotter.plot_mean_rms_bins_summary(
                 selections=selections,
                 legend_header=zpj_legend_header,
@@ -2308,7 +2307,7 @@ if __name__ == "__main__":
             ]
             q_selections.append({'label': this_angle_str, 'selections': this_selection})
 
-        q_legend_header = "Quark-enriched jets:\n%s:\nZ+jets region\n%s:\nForward dijet region" % (low_pt_str, high_pt_str)
+        q_legend_header = "Quark-enriched jets:\n%s:\n%s\n%s:\n%s" % (low_pt_str, qgc.ZpJ_LABEL, high_pt_str, qgc.Dijet_FWD_LABEL)
         plotter.plot_mean_rms_bins_summary(
             selections=q_selections,
             legend_header=q_legend_header,
