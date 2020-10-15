@@ -1178,7 +1178,7 @@ def do_mean_rms_summary_plot(entries,
 
     # Set overall plot title
     new_var_label = var_label.replace("#", "\\")
-    axes[mean_plot_ind].set_title("Summary for {} region:\n{}".format(region_title, new_var_label), pad=40)
+    axes[mean_plot_ind].set_title("Summary for {}:\n{}".format(region_title, new_var_label), pad=40)
 
     # Add CMS text
     text_height = 1.1

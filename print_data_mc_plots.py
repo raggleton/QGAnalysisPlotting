@@ -407,33 +407,38 @@ def do_plots(root_dir, title):
             if gr_append != "":
                 var_label = "Groomed " + marker + ang.name + marker + " ($%s$)" % ang.lambda_str
 
-            # qgp.do_mean_rms_summary_plot(dijet_cen_1d_entries[:],
-            #                              pt_bins[:],
-            #                              "%s/ptBinned/%s_box_dijet_cen_mpl.%s" % (plot_dir, v, OUTPUT_FMT),
-            #                              var_label=var_label,
-            #                              xlim=(50, 4000),
-            #                              ylim_mean=ylim_mean,
-            #                              ylim_rms=ylim_rms,
-            #                              region_title="%s jets in %s" % (jet_str, qgc.Dijet_CEN_LABEL))
+            # construct a dataframe from the hists
+            # df = construct_dataframe_from_hists(dijet_cen_entries=dijet_cen_1d_entries,
+            #                                     dijet_fwd_entries=dijet_fwd_entries,
+            #                                     zpj_entries=zpj_entries)
+            
+            qgp.do_mean_rms_summary_plot(dijet_cen_1d_entries[:],
+                                         pt_bins[:],
+                                         "%s/ptBinned/%s_box_dijet_cen_mpl.%s" % (plot_dir, v, OUTPUT_FMT),
+                                         var_label=var_label,
+                                         xlim=(50, 4000),
+                                         ylim_mean=ylim_mean,
+                                         ylim_rms=ylim_rms,
+                                         region_title="%s jets in %s" % (jet_str, qgc.Dijet_CEN_LABEL.lower()))
 
-            # qgp.do_mean_rms_summary_plot(dijet_fwd_1d_entries[:],
-            #                              pt_bins[:],
-            #                              "%s/ptBinned/%s_box_dijet_fwd_mpl.%s" % (plot_dir, v, OUTPUT_FMT),
-            #                              var_label=var_label,
-            #                              xlim=(50, 4000),
-            #                              ylim_mean=ylim_mean,
-            #                              ylim_rms=ylim_rms,
-            #                              region_title="%s jets in %s" % (jet_str, qgc.Dijet_FWD_LABEL))
+            qgp.do_mean_rms_summary_plot(dijet_fwd_1d_entries[:],
+                                         pt_bins[:],
+                                         "%s/ptBinned/%s_box_dijet_fwd_mpl.%s" % (plot_dir, v, OUTPUT_FMT),
+                                         var_label=var_label,
+                                         xlim=(50, 4000),
+                                         ylim_mean=ylim_mean,
+                                         ylim_rms=ylim_rms,
+                                         region_title="%s jets in %s" % (jet_str, qgc.Dijet_FWD_LABEL.lower()))
 
-            # # zpj_1d_entries[i][j] is the jth sample in the ith pt bin
-            # qgp.do_mean_rms_summary_plot(zpj_1d_entries[:],
-            #                              pt_bins[:],
-            #                              "%s/ptBinned/%s_box_zpj_mpl.%s" % (plot_dir, v, OUTPUT_FMT),
-            #                              var_label=var_label,
-            #                              xlim=(50, 614),
-            #                              ylim_mean=ylim_mean,
-            #                              ylim_rms=ylim_rms,
-            #                              region_title="%s jets in %s" % (jet_str, qgc.ZpJ_LABEL))
+            # zpj_1d_entries[i][j] is the jth sample in the ith pt bin
+            qgp.do_mean_rms_summary_plot(zpj_1d_entries[:],
+                                         pt_bins[:],
+                                         "%s/ptBinned/%s_box_zpj_mpl.%s" % (plot_dir, v, OUTPUT_FMT),
+                                         var_label=var_label,
+                                         xlim=(50, 614),
+                                         ylim_mean=ylim_mean,
+                                         ylim_rms=ylim_rms,
+                                         region_title="%s jets in %s" % (jet_str, qgc.ZpJ_LABEL))
 
             # # qgp.do_box_plot(dijet_2d_entries,
             # #                 "%s/ptBinned/%s_box_dijet.%s" % (plot_dir, v, OUTPUT_FMT),
