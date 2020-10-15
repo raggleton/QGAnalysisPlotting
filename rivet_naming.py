@@ -33,10 +33,10 @@ DIJET_PATH = "CMS_2018_PAS_SMP_18_QGX_DIJET"
 Region = namedtuple("Region", ["name", "label", "is_groomed"])
 
 DIJET_REGIONS = [
-    Region(name="Dijet_central", label="Dijet (central)", is_groomed=False),
-    Region(name="Dijet_central_groomed", label="Dijet (central)", is_groomed=True),
-    Region(name="Dijet_forward", label="Dijet (forward)", is_groomed=False),
-    Region(name="Dijet_forward_groomed", label="Dijet (forward)", is_groomed=True),
+    Region(name="Dijet_central", label="Central dijet", is_groomed=False),
+    Region(name="Dijet_central_groomed", label="Central dijet", is_groomed=True),
+    Region(name="Dijet_forward", label="Forward dijet", is_groomed=False),
+    Region(name="Dijet_forward_groomed", label="Forward dijet", is_groomed=True),
 ]
 
 
