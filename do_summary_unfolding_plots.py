@@ -514,13 +514,38 @@ class SummaryPlotter(object):
         # look for global min/max across all contributions
         h_min, min_bin_num, h_max, max_bin_num = cu.get_min_max_bin_contents_multiple_hists([c.obj for c in entries])
         h_range = h_max - h_min
-        lower_padding = h_range*0.2
-        upper_padding = h_range*0.5
-        # If the maximum overlaps with the legend region (upper 40% end of x axis)
-        # then increase the padding
-        if max_bin_num > 0.6*(entries[-1].obj.GetNbinsX()):
-            upper_padding = h_range * 0.5
-        ylim = (max(0, h_min-lower_padding), h_max + upper_padding)
+        lower_padding = h_range*0.1
+        upper_padding = h_range*0.15
+        new_h_max = h_max+(6*upper_padding)
+        new_h_min = h_min-lower_padding
+
+        # If the any bin overlaps with the legend region (upper 50% end of x axis)
+        # then increase range so plot sits in lower half or so
+        nbins = entries[-1].obj.GetNbinsX()
+        check_x_bin = int(0.5*nbins) # any bin > this is checked to see if it might overlap w/legend
+        hits_legend = max_bin_num >= check_x_bin  # quick: check if maximum overlaps legend
+        if not hits_legend:
+            # check if any bin, not just the maximum, hits the legend
+            # legend is location is based on a rough fraction of the current y range
+            y_limit = 0.5*(new_h_max-new_h_min) + new_h_min
+            for ent in entries:
+                hist = ent.obj
+                for i in range(check_x_bin, nbins+1):
+                    if (hist.GetBinContent(i) + hist.GetBinError(i)) > y_limit:
+                        hits_legend = True
+                        break
+        
+        # if metric == "mean" and angle.var == "jet_pTD" and jet_algo['name'] == "ak8puppi" and do_groomed:
+        #     print('h_min, min_bin_num, h_max, max_bin_num:', h_min, min_bin_num, h_max, max_bin_num)
+        #     print('0.6*entries[-1].obj.GetNbinsX():', 0.6*entries[-1].obj.GetNbinsX())
+        #     print("hits_legend:", hits_legend)
+
+        if hits_legend:
+            # add more upper headroom, so plot essentially only covers lower half
+            new_h_max = h_max + upper_padding
+            new_h_max += (new_h_max-new_h_min)
+
+        ylim = (max(0, new_h_min), new_h_max)
         plot = Plot(entries,
                     what='hist',
                     xtitle=COMMON_STYLE_DICT['jet_pt_units_str'],
@@ -541,7 +566,7 @@ class SummaryPlotter(object):
         plot.title_font_size = 0.035
         if only_one_region:
             plot.legend.SetX1(0.6)
-            plot.legend.SetX2(0.88)
+            plot.legend.SetX2(0.9)
             plot.legend.SetY1(0.72)
             for c in entries:
                 if '#splitline' or '\n' in c.label:
@@ -549,21 +574,28 @@ class SummaryPlotter(object):
         else:
             plot.legend.SetX1(0.55)
             plot.legend.SetX2(0.78)
-            plot.legend.SetY1(0.68)
-        plot.legend.SetY2(0.92)
+            plot.legend.SetY1(0.72)
+        plot.legend.SetY2(0.95)
+        # plot.legend.SetFillColor(ROOT.kYellow)
+        # plot.legend.SetFillStyle(3200)
+        plot.legend.SetTextSize(0.035)
         if len(entries) > 4:
             # TODO: scale with numberof entries
-            plot.legend.SetNColumns(2)
-            plot.legend.SetX1(0.58)
+            # plot.legend.SetNColumns(2)
+            # plot.legend.SetX1(0.55)
             plot.legend.SetY1(0.6)
-            plot.legend.SetX2(0.92)
-            plot.legend.SetY2(0.92)
+            # plot.legend.SetX2(0.92)
+            plot.legend.SetY2(0.95)
             # plot.legend.SetBorderSize(1)
             # plot.legend.SetLineColor(ROOT.kBlack)
             plot.title_left_offset = 0.03
+            plot.legend.SetTextSize(0.03)
+            plot.legend.SetEntrySeparation(0.01)
         if len(entries) > 8:
             plot.legend.SetNColumns(3)
+            plot.legend.SetTextSize(0.02)
         plot.legend.SetY2(0.87)
+        # plot.legend.SetTextAlign(13)
         plot.left_margin = 0.16
         plot.subplot_line_style = 1
         plot.y_padding_max_linear = 1.9
@@ -1664,7 +1696,6 @@ class SummaryPlotter(object):
             yax.SetLabelSize(yax.GetLabelSize()*factor*label_size_fudge)
             yax.SetLabelOffset(yax.GetLabelOffset()*factor*label_offset_fudge)
             yax.SetTickLength(yax.GetTickLength()*factor*tick_fudge)  # extra bit of fudging, probably becasue pads are sligthly different sizes
-            yax.SetNdivisions(*n_divisions_opts)
 
             # Instead of labelling every bin, replace with numbers,
             # and add key to plot
@@ -1687,6 +1718,9 @@ class SummaryPlotter(object):
                 min_ratio_y_max = 1. + y_range*0.1
                 if lower_draw_hist.GetMaximum() < min_ratio_y_max:
                     lower_draw_hist.SetMaximum(min_ratio_y_max)
+            
+            # 4 is the magic primary number, not 3
+            yax.SetNdivisions(4, 5, 0, True)
 
             # Draw variable name
             var_latex = ROOT.TLatex()
