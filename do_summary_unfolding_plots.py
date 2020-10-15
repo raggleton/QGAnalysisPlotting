@@ -127,14 +127,6 @@ def create_angle_label(angle, do_groomed=False):
             angle_prepend += "C"
         angle_prepend += "harged-only "
 
-    # this_angle_name = angle.name
-    # if (angle_prepend != ""
-    #     and 'LHA' not in this_angle_name
-    #     and "_{T}" not in this_angle_name
-    #     and "PUPPI" not in this_angle_name):
-    #     # lower case if Groomed..., but be careful of e.g. pTD, LHA
-    #     this_angle_name = this_angle_name[0].lower() + this_angle_name[1:]
-
     # for plot axis titles
     angle_str = "{prepend}{lambda_str}".format(prepend=angle_prepend,
                                                  lambda_str=angle.lambda_str)

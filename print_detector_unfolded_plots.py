@@ -83,22 +83,15 @@ class DijetZPJGenPtBinnedPlotter(object):
         self.pt_str = self.pt_var_str + " [GeV]"
 
         angle_prepend = "Groomed " if self.is_groomed else ""
-        this_angle_name = angle.name
-        if (angle_prepend != ""
-            and 'LHA' not in this_angle_name
-            and "_{T}" not in this_angle_name
-            and "PUPPI" not in this_angle_name):
-            # lower case if Groomed..., but be careful of e.g. pTD, LHA
-            this_angle_name = this_angle_name[0].lower() + this_angle_name[1:]
-
+        lower_angle_name = qgc.lower_angle_name(angle)
         self.angle_str = "{prepend}{name} ({lambda_str})".format(prepend=angle_prepend,
-                                                                 name=this_angle_name,
+                                                                 name=lower_angle_name,
                                                                  lambda_str=angle.lambda_str)
         # self.particle_title = "Particle-level " + self.angle_str
         self.particle_title = self.angle_str
 
         self.detector_title = "Detector-level {prepend}{name} ({lambda_str})".format(prepend=angle_prepend.lower(),  # lower as no longer first
-                                                                                     name=this_angle_name,
+                                                                                     name=lower_angle_name,
                                                                                      lambda_str=angle.lambda_str)
         self.pt_bin_normalised_differential_label = "#frac{1}{d#sigma/dp_{T}} #frac{d^{2}#sigma}{dp_{T} d%s}" % (angle.lambda_str)
         self.pt_bin_detector_normalised_differential_label = "#frac{1}{dN/dp_{T}} #frac{d^{2}N}{dp_{T} d%s}" % (angle.lambda_str)

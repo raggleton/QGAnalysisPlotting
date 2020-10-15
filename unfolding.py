@@ -506,14 +506,7 @@ def main():
 
             angle_prepend = "groomed " if "groomed" in region['name'] else ""
             append = "%s_%s" % (region['name'], angle.var)  # common str to put on filenames, etc. don't need angle_prepend as 'groomed' in region name
-            this_angle_name = angle.name
-            if (angle_prepend != ""
-                and this_angle_name != 'LHA'
-                and "_{T}" not in this_angle_name
-                and "PUPPI" not in this_angle_name):
-                # lower case if Groomed..., but be careful of e.g. pTD, LHA
-                this_angle_name = this_angle_name[0].lower() + this_angle_name[1:]
-            angle_str = "%s%s (%s)" % (angle_prepend, this_angle_name, angle.lambda_str)
+            angle_str = "%s%s (%s)" % (angle_prepend, qgc.lower_angle_name(angle), angle.lambda_str)
 
             print("*"*120)
             print("Region/var: %s" % (append))
