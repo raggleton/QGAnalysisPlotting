@@ -4,8 +4,8 @@
 
 
 import argparse
-# from MyStyle import My_Style
-# My_Style.cd()
+from MyStyle import My_Style
+My_Style.cd()
 import os
 os.nice(10)
 from itertools import product
@@ -18,7 +18,7 @@ ROOT.gROOT.SetBatch(1)
 ROOT.TH1.SetDefaultSumw2()
 ROOT.gStyle.SetOptStat(0)
 ROOT.gStyle.SetOptFit(1)
-
+ROOT.gErrorIgnoreLevel = ROOT.kWarning
 
 # My stuff
 from comparator import Contribution, Plot
@@ -39,6 +39,28 @@ def do_response_plot(tdir, plot_dir, var_name, xlabel, log_var=False, rebinx=1, 
     h2d.RebinX(rebinx)
     h2d.RebinY(rebiny)
 
+    pt_regions = [
+        {
+            "append": "_lowPt",
+            "title": "30 < p_{T}^{Reco} < 100 GeV",
+        },
+        {
+            "append": "_midPt",
+            "title": "100 < p_{T}^{Reco} < 250 GeV",
+        },
+        {
+            "append": "_highPt",
+            "title": "p_{T}^{Reco} > 250 GeV",
+        },
+    ]
+
+    pt_bin_name = ""
+    for region in pt_regions:
+        if region['append'] in var_name:
+            pt_bin_name = region['title']
+
+    title = "%s" % (pt_bin_name)
+
     canv = ROOT.TCanvas(cu.get_unique_str(), "", 800, 600)
     draw_opt = "COLZ TEXT"
     draw_opt = "COLZ"
@@ -52,6 +74,7 @@ def do_response_plot(tdir, plot_dir, var_name, xlabel, log_var=False, rebinx=1, 
         canv.SetLogy()
 
     # un normalised
+    h2d.SetTitle(title)
     h2d.Draw(draw_opt)
     xax = h2d.GetXaxis()
     upper_lim = xax.GetBinUpEdge(xax.GetLast())
@@ -74,7 +97,7 @@ def do_response_plot(tdir, plot_dir, var_name, xlabel, log_var=False, rebinx=1, 
 
     #  renorm by row (reco bins)
     canv.SetLogz(0)
-    h2d_renorm_y = cu.make_normalised_TH2(h2d, 'Y', recolour=False, do_errors=True)
+    h2d_renorm_y = cu.make_normalised_TH2(h2d, 'Y', recolour=True, do_errors=True)
     h2d_renorm_y.SetMarkerSize(0.5)
     h2d_renorm_y.SetMaximum(1)
     h2d_renorm_y.Draw(draw_opt)
@@ -102,7 +125,7 @@ def do_response_plot(tdir, plot_dir, var_name, xlabel, log_var=False, rebinx=1, 
     # renorm by column (gen bins)
     canv.Clear()
     canv.SetLogz(0)
-    h2d_renorm_x = cu.make_normalised_TH2(h2d, 'X', recolour=False, do_errors=True)
+    h2d_renorm_x = cu.make_normalised_TH2(h2d, 'X', recolour=True, do_errors=True)
     h2d_renorm_x.SetMarkerSize(0.5)
     h2d_renorm_x.SetMaximum(1)
     h2d_renorm_x.Draw(draw_opt)
@@ -409,8 +432,8 @@ def do_response_plots(in_file, plot_dir, do_these=None):
             log_var=log_var,
             rebinx=rebin,
             rebiny=rebin,
-            do_migration_summary_plots=True,
-            do_resolution_plots=True,
+            do_migration_summary_plots=False,
+            do_resolution_plots=False,
             save_response_hists=False
         )
 
@@ -425,8 +448,8 @@ def do_response_plots(in_file, plot_dir, do_these=None):
             rebinx=rebin,
             rebiny=rebiny,
             do_migration_summary_plots=False,
-            do_resolution_plots=True,
-            save_response_hists=True
+            do_resolution_plots=False,
+            save_response_hists=False
         )
 
         # do_jet_index_plots(tfile.Get(mydir), plot_dir=plot_dir)
@@ -453,14 +476,12 @@ if __name__ == "__main__":
         if "QCD" in in_file:
             do_these = [
                 ("Dijet_QG_tighter/jet_puppiMultiplicity", "PUPPI Multiplicity (#lambda_{0}^{0} (PUPPI))", False, 5),
-                # ("Dijet_QG_tighter/jet_multiplicity", "Multiplicity (#lambda_{0}^{0})", False, 5),
                 ("Dijet_QG_tighter/jet_LHA", "LHA (#lambda_{0.5}^{1})", False, 1),
                 ("Dijet_QG_tighter/jet_pTD", "p_{T}^{D} (#lambda_{0}^{2})", False, 2),
                 ("Dijet_QG_tighter/jet_width", "Width (#lambda_{1}^{1})", False, 2),
                 ("Dijet_QG_tighter/jet_thrust", "Thrust (#lambda_{2}^{1})", False, 2),
 
                 ("Dijet_QG_tighter/jet_puppiMultiplicity_charged", "PUPPI Multiplicity (#lambda_{0}^{0} (PUPPI)) [charged]", False, 5),
-                # ("Dijet_QG_tighter/jet_multiplicity_charged", "Multiplicity (#lambda_{0}^{0}) [charged only]", False, 5),
                 ("Dijet_QG_tighter/jet_LHA_charged", "LHA (#lambda_{0.5}^{1}) [charged only]", False, 2),
                 ("Dijet_QG_tighter/jet_pTD_charged", "p_{T}^{D} (#lambda_{0}^{2}) [charged only]", False, 2),
                 ("Dijet_QG_tighter/jet_width_charged", "Width (#lambda_{1}^{1}) [charged only]", False, 2),
@@ -468,80 +489,83 @@ if __name__ == "__main__":
             ][:]
             do_these = [
                 ("Dijet_QG_tighter/jet_puppiMultiplicity_lowPt", "PUPPI Multiplicity (#lambda_{0}^{0} (PUPPI))", False, 5),
-                # ("Dijet_QG_tighter/jet_multiplicity", "Multiplicity (#lambda_{0}^{0})", False, 5),
-                ("Dijet_QG_tighter/jet_LHA_lowPt", "LHA (#lambda_{0.5}^{1})", False, 1),
+                ("Dijet_QG_tighter/jet_LHA_lowPt", "LHA (#lambda_{0.5}^{1})", False, 2),
                 ("Dijet_QG_tighter/jet_pTD_lowPt", "p_{T}^{D} (#lambda_{0}^{2})", False, 2),
                 ("Dijet_QG_tighter/jet_width_lowPt", "Width (#lambda_{1}^{1})", False, 2),
                 ("Dijet_QG_tighter/jet_thrust_lowPt", "Thrust (#lambda_{2}^{1})", False, 2),
 
                 ("Dijet_QG_tighter/jet_puppiMultiplicity_charged_lowPt", "PUPPI Multiplicity (#lambda_{0}^{0} (PUPPI)) [charged]", False, 5),
-                # ("Dijet_QG_tighter/jet_multiplicity_charged", "Multiplicity (#lambda_{0}^{0}) [charged only]", False, 5),
                 ("Dijet_QG_tighter/jet_LHA_charged_lowPt", "LHA (#lambda_{0.5}^{1}) [charged only]", False, 2),
                 ("Dijet_QG_tighter/jet_pTD_charged_lowPt", "p_{T}^{D} (#lambda_{0}^{2}) [charged only]", False, 2),
                 ("Dijet_QG_tighter/jet_width_charged_lowPt", "Width (#lambda_{1}^{1}) [charged only]", False, 2),
                 ("Dijet_QG_tighter/jet_thrust_charged_lowPt", "Thrust (#lambda_{2}^{1}) [charged only]", False, 2),
             # ][:]
+                ("Dijet_QG_tighter/jet_puppiMultiplicity_midPt", "PUPPI Multiplicity (#lambda_{0}^{0} (PUPPI))", False, 5),
+                ("Dijet_QG_tighter/jet_LHA_midPt", "LHA (#lambda_{0.5}^{1})", False, 2),
+                ("Dijet_QG_tighter/jet_pTD_midPt", "p_{T}^{D} (#lambda_{0}^{2})", False, 2),
+                ("Dijet_QG_tighter/jet_width_midPt", "Width (#lambda_{1}^{1})", False, 2),
+                ("Dijet_QG_tighter/jet_thrust_midPt", "Thrust (#lambda_{2}^{1})", False, 2),
+
+                ("Dijet_QG_tighter/jet_puppiMultiplicity_charged_midPt", "PUPPI Multiplicity (#lambda_{0}^{0} (PUPPI)) [charged]", False, 5),
+                ("Dijet_QG_tighter/jet_LHA_charged_midPt", "LHA (#lambda_{0.5}^{1}) [charged only]", False, 2),
+                ("Dijet_QG_tighter/jet_pTD_charged_midPt", "p_{T}^{D} (#lambda_{0}^{2}) [charged only]", False, 2),
+                ("Dijet_QG_tighter/jet_width_charged_midPt", "Width (#lambda_{1}^{1}) [charged only]", False, 2),
+                ("Dijet_QG_tighter/jet_thrust_charged_midPt", "Thrust (#lambda_{2}^{1}) [charged only]", False, 2),
+            # ][:]
             # do_these = [
                 ("Dijet_QG_tighter/jet_puppiMultiplicity_highPt", "PUPPI Multiplicity (#lambda_{0}^{0} (PUPPI))", False, 5),
-                # ("Dijet_QG_tighter/jet_multiplicity", "Multiplicity (#lambda_{0}^{0})", False, 5),
-                ("Dijet_QG_tighter/jet_LHA_highPt", "LHA (#lambda_{0.5}^{1})", False, 1),
+                ("Dijet_QG_tighter/jet_LHA_highPt", "LHA (#lambda_{0.5}^{1})", False, 2),
                 ("Dijet_QG_tighter/jet_pTD_highPt", "p_{T}^{D} (#lambda_{0}^{2})", False, 2),
                 ("Dijet_QG_tighter/jet_width_highPt", "Width (#lambda_{1}^{1})", False, 2),
                 ("Dijet_QG_tighter/jet_thrust_highPt", "Thrust (#lambda_{2}^{1})", False, 2),
 
                 ("Dijet_QG_tighter/jet_puppiMultiplicity_charged_highPt", "PUPPI Multiplicity (#lambda_{0}^{0} (PUPPI)) [charged]", False, 5),
-                # ("Dijet_QG_tighter/jet_multiplicity_charged", "Multiplicity (#lambda_{0}^{0}) [charged only]", False, 5),
                 ("Dijet_QG_tighter/jet_LHA_charged_highPt", "LHA (#lambda_{0.5}^{1}) [charged only]", False, 2),
                 ("Dijet_QG_tighter/jet_pTD_charged_highPt", "p_{T}^{D} (#lambda_{0}^{2}) [charged only]", False, 2),
                 ("Dijet_QG_tighter/jet_width_charged_highPt", "Width (#lambda_{1}^{1}) [charged only]", False, 2),
                 ("Dijet_QG_tighter/jet_thrust_charged_highPt", "Thrust (#lambda_{2}^{1}) [charged only]", False, 2),
             ][:]
 
-        if "dyjetstoll" in in_file.lower():
-           do_these = [
-                ("ZPlusJets_QG/jet_puppiMultiplicity", "PUPPI Multiplicity (#lambda_{0}^{0} (PUPPI))", False, 5),
-                # ("ZPlusJets_QG/jet_multiplicity", "Multiplicity (#lambda_{0}^{0})", False, 5),
-                ("ZPlusJets_QG/jet_LHA", "LHA (#lambda_{0.5}^{1})", False, 1),
-                ("ZPlusJets_QG/jet_pTD", "p_{T}^{D} (#lambda_{0}^{2})", False, 2),
-                ("ZPlusJets_QG/jet_width", "Width (#lambda_{1}^{1})", False, 2),
-                ("ZPlusJets_QG/jet_thrust", "Thrust (#lambda_{2}^{1})", False, 2),
+        # if "dyjetstoll" in in_file.lower():
+        #    do_these = [
+        #         ("ZPlusJets_QG/jet_puppiMultiplicity", "PUPPI Multiplicity (#lambda_{0}^{0} (PUPPI))", False, 5),
+        #         ("ZPlusJets_QG/jet_LHA", "LHA (#lambda_{0.5}^{1})", False, 1),
+        #         ("ZPlusJets_QG/jet_pTD", "p_{T}^{D} (#lambda_{0}^{2})", False, 2),
+        #         ("ZPlusJets_QG/jet_width", "Width (#lambda_{1}^{1})", False, 2),
+        #         ("ZPlusJets_QG/jet_thrust", "Thrust (#lambda_{2}^{1})", False, 2),
 
-                ("ZPlusJets_QG/jet_puppiMultiplicity_charged", "PUPPI Multiplicity (#lambda_{0}^{0} (PUPPI)) [charged]", False, 5),
-                # ("ZPlusJets_QG/jet_multiplicity_charged", "Multiplicity (#lambda_{0}^{0}) [charged only]", False, 5),
-                ("ZPlusJets_QG/jet_LHA_charged", "LHA (#lambda_{0.5}^{1}) [charged only]", False, 2),
-                ("ZPlusJets_QG/jet_pTD_charged", "p_{T}^{D} (#lambda_{0}^{2}) [charged only]", False, 2),
-                ("ZPlusJets_QG/jet_width_charged", "Width (#lambda_{1}^{1}) [charged only]", False, 2),
-                ("ZPlusJets_QG/jet_thrust_charged", "Thrust (#lambda_{2}^{1}) [charged only]", False, 2),
-            ][:]
-            do_these = [
-                ("ZPlusJets_QG/jet_puppiMultiplicity_lowPt", "PUPPI Multiplicity (#lambda_{0}^{0} (PUPPI))", False, 5),
-                # ("ZPlusJets_QG/jet_multiplicity", "Multiplicity (#lambda_{0}^{0})", False, 5),
-                ("ZPlusJets_QG/jet_LHA_lowPt", "LHA (#lambda_{0.5}^{1})", False, 1),
-                ("ZPlusJets_QG/jet_pTD_lowPt", "p_{T}^{D} (#lambda_{0}^{2})", False, 2),
-                ("ZPlusJets_QG/jet_width_lowPt", "Width (#lambda_{1}^{1})", False, 2),
-                ("ZPlusJets_QG/jet_thrust_lowPt", "Thrust (#lambda_{2}^{1})", False, 2),
+        #         ("ZPlusJets_QG/jet_puppiMultiplicity_charged", "PUPPI Multiplicity (#lambda_{0}^{0} (PUPPI)) [charged]", False, 5),
+        #         ("ZPlusJets_QG/jet_LHA_charged", "LHA (#lambda_{0.5}^{1}) [charged only]", False, 2),
+        #         ("ZPlusJets_QG/jet_pTD_charged", "p_{T}^{D} (#lambda_{0}^{2}) [charged only]", False, 2),
+        #         ("ZPlusJets_QG/jet_width_charged", "Width (#lambda_{1}^{1}) [charged only]", False, 2),
+        #         ("ZPlusJets_QG/jet_thrust_charged", "Thrust (#lambda_{2}^{1}) [charged only]", False, 2),
+        #     ][:]
+            
+        #     do_these = [
+        #         ("ZPlusJets_QG/jet_puppiMultiplicity_lowPt", "PUPPI Multiplicity (#lambda_{0}^{0} (PUPPI))", False, 5),
+        #         ("ZPlusJets_QG/jet_LHA_lowPt", "LHA (#lambda_{0.5}^{1})", False, 1),
+        #         ("ZPlusJets_QG/jet_pTD_lowPt", "p_{T}^{D} (#lambda_{0}^{2})", False, 2),
+        #         ("ZPlusJets_QG/jet_width_lowPt", "Width (#lambda_{1}^{1})", False, 2),
+        #         ("ZPlusJets_QG/jet_thrust_lowPt", "Thrust (#lambda_{2}^{1})", False, 2),
 
-                ("ZPlusJets_QG/jet_puppiMultiplicity_charged_lowPt", "PUPPI Multiplicity (#lambda_{0}^{0} (PUPPI)) [charged]", False, 5),
-                # ("ZPlusJets_QG/jet_multiplicity_charged", "Multiplicity (#lambda_{0}^{0}) [charged only]", False, 5),
-                ("ZPlusJets_QG/jet_LHA_charged_lowPt", "LHA (#lambda_{0.5}^{1}) [charged only]", False, 2),
-                ("ZPlusJets_QG/jet_pTD_charged_lowPt", "p_{T}^{D} (#lambda_{0}^{2}) [charged only]", False, 2),
-                ("ZPlusJets_QG/jet_width_charged_lowPt", "Width (#lambda_{1}^{1}) [charged only]", False, 2),
-                ("ZPlusJets_QG/jet_thrust_charged_lowPt", "Thrust (#lambda_{2}^{1}) [charged only]", False, 2),
-            # ][:]
-            # do_these = [
-                ("ZPlusJets_QG/jet_puppiMultiplicity_highPt", "PUPPI Multiplicity (#lambda_{0}^{0} (PUPPI))", False, 5),
-                # ("ZPlusJets_QG/jet_multiplicity", "Multiplicity (#lambda_{0}^{0})", False, 5),
-                ("ZPlusJets_QG/jet_LHA_highPt", "LHA (#lambda_{0.5}^{1})", False, 1),
-                ("ZPlusJets_QG/jet_pTD_highPt", "p_{T}^{D} (#lambda_{0}^{2})", False, 2),
-                ("ZPlusJets_QG/jet_width_highPt", "Width (#lambda_{1}^{1})", False, 2),
-                ("ZPlusJets_QG/jet_thrust_highPt", "Thrust (#lambda_{2}^{1})", False, 2),
+        #         ("ZPlusJets_QG/jet_puppiMultiplicity_charged_lowPt", "PUPPI Multiplicity (#lambda_{0}^{0} (PUPPI)) [charged]", False, 5),
+        #         ("ZPlusJets_QG/jet_LHA_charged_lowPt", "LHA (#lambda_{0.5}^{1}) [charged only]", False, 2),
+        #         ("ZPlusJets_QG/jet_pTD_charged_lowPt", "p_{T}^{D} (#lambda_{0}^{2}) [charged only]", False, 2),
+        #         ("ZPlusJets_QG/jet_width_charged_lowPt", "Width (#lambda_{1}^{1}) [charged only]", False, 2),
+        #         ("ZPlusJets_QG/jet_thrust_charged_lowPt", "Thrust (#lambda_{2}^{1}) [charged only]", False, 2),
+        #     # ][:]
+        #     # do_these = [
+        #         ("ZPlusJets_QG/jet_puppiMultiplicity_highPt", "PUPPI Multiplicity (#lambda_{0}^{0} (PUPPI))", False, 5),
+        #         ("ZPlusJets_QG/jet_LHA_highPt", "LHA (#lambda_{0.5}^{1})", False, 1),
+        #         ("ZPlusJets_QG/jet_pTD_highPt", "p_{T}^{D} (#lambda_{0}^{2})", False, 2),
+        #         ("ZPlusJets_QG/jet_width_highPt", "Width (#lambda_{1}^{1})", False, 2),
+        #         ("ZPlusJets_QG/jet_thrust_highPt", "Thrust (#lambda_{2}^{1})", False, 2),
 
-                ("ZPlusJets_QG/jet_puppiMultiplicity_charged_highPt", "PUPPI Multiplicity (#lambda_{0}^{0} (PUPPI)) [charged]", False, 5),
-                # ("ZPlusJets_QG/jet_multiplicity_charged", "Multiplicity (#lambda_{0}^{0}) [charged only]", False, 5),
-                ("ZPlusJets_QG/jet_LHA_charged_highPt", "LHA (#lambda_{0.5}^{1}) [charged only]", False, 2),
-                ("ZPlusJets_QG/jet_pTD_charged_highPt", "p_{T}^{D} (#lambda_{0}^{2}) [charged only]", False, 2),
-                ("ZPlusJets_QG/jet_width_charged_highPt", "Width (#lambda_{1}^{1}) [charged only]", False, 2),
-                ("ZPlusJets_QG/jet_thrust_charged_highPt", "Thrust (#lambda_{2}^{1}) [charged only]", False, 2),
-            ][:]
+        #         ("ZPlusJets_QG/jet_puppiMultiplicity_charged_highPt", "PUPPI Multiplicity (#lambda_{0}^{0} (PUPPI)) [charged]", False, 5),
+        #         ("ZPlusJets_QG/jet_LHA_charged_highPt", "LHA (#lambda_{0.5}^{1}) [charged only]", False, 2),
+        #         ("ZPlusJets_QG/jet_pTD_charged_highPt", "p_{T}^{D} (#lambda_{0}^{2}) [charged only]", False, 2),
+        #         ("ZPlusJets_QG/jet_width_charged_highPt", "Width (#lambda_{1}^{1}) [charged only]", False, 2),
+        #         ("ZPlusJets_QG/jet_thrust_charged_highPt", "Thrust (#lambda_{2}^{1}) [charged only]", False, 2),
+        #     ][:]
 
         do_response_plots(in_file, plot_dir=plot_dir, do_these=do_these)
