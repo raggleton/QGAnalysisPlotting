@@ -280,11 +280,11 @@ def do_plots(root_dir, title):
                     xlim = (0, 1)
                 elif "thrust" in v_lower:
                     xlim = (0, 0.5)
-                elif "multiplicity" in v_lower and "ak4" in root_dir.lower():
-                    if end_val <= 150:
-                        xlim = (0, 50)
-                    else:
-                        xlim = (0, 80)
+                # elif "multiplicity" in v_lower and "ak4" in root_dir.lower():
+                #     if end_val <= 150:
+                #         xlim = (0, 50)
+                #     else:
+                #         xlim = (0, 80)
                 
                 auto_xlim = False
                 if "multiplicity" in v_lower or "thrust" in v_lower:
@@ -331,7 +331,7 @@ def do_plots(root_dir, title):
                                            draw_opt=draw_opt,
                                            title=_title(qgc.Dijet_CEN_LABEL, start_val, end_val),
                                            xtitle=xlabel,
-                                           xlim=qgp.calc_auto_xlim([d[0] for d in dijet_cen_entries]) if auto_xlim else xlim,
+                                           xlim='auto' if auto_xlim else xlim, # don't use calc_auto_xlim, since do_comparison_plot will rebin it anyway
                                            ylim=ylim,
                                            data_first=has_data,
                                            mean_rel_error=0.4,
@@ -347,7 +347,7 @@ def do_plots(root_dir, title):
                                            draw_opt=draw_opt,
                                            title=_title(qgc.Dijet_FWD_LABEL, start_val, end_val),
                                            xtitle=xlabel,
-                                           xlim=qgp.calc_auto_xlim([d[0] for d in dijet_fwd_entries]) if auto_xlim else xlim,
+                                           xlim='auto' if auto_xlim else xlim,
                                            ylim=ylim,
                                            data_first=has_data,
                                            mean_rel_error=0.4,
@@ -369,19 +369,19 @@ def do_plots(root_dir, title):
                             # find nearest divisor
                             while (zpj_entries[0][0].GetNbinsX() % rebin != 0):
                                 rebin += 1
-                    qgp.do_comparison_plot(zpj_entries,
-                                           "%s/ptBinned/%s_pt%dto%d_zpj.%s" % (plot_dir, v, start_val, end_val, OUTPUT_FMT),
-                                           rebin=rebin,
-                                           draw_opt=draw_opt,
-                                           title=_title(qgc.ZpJ_LABEL, start_val, end_val),
-                                           xtitle=xlabel,
-                                           xlim=qgp.calc_auto_xlim([d[0] for d in zpj_entries]) if auto_xlim else xlim,
-                                           ylim=ylim,
-                                           data_first=has_data,
-                                           mean_rel_error=0.4,
-                                           subplot_type='ratio',
-                                           subplot_title=subplot_title,
-                                           subplot_limits=subplot_limits)
+                    # qgp.do_comparison_plot(zpj_entries,
+                    #                        "%s/ptBinned/%s_pt%dto%d_zpj.%s" % (plot_dir, v, start_val, end_val, OUTPUT_FMT),
+                    #                        rebin=rebin,
+                    #                        draw_opt=draw_opt,
+                    #                        title=_title(qgc.ZpJ_LABEL, start_val, end_val),
+                    #                        xtitle=xlabel,
+                    #                        xlim=qgp.calc_auto_xlim([d[0] for d in zpj_entries]) if auto_xlim else xlim,
+                    #                        ylim=ylim,
+                    #                        data_first=has_data,
+                    #                        mean_rel_error=0.4,
+                    #                        subplot_type='ratio',
+                    #                        subplot_title=subplot_title,
+                    #                        subplot_limits=subplot_limits)
 
 
             # Do overall summary plots across all pt bins
