@@ -153,6 +153,7 @@ class SummaryPlotter(object):
         # use kerning to avoid splitline taking up too much space
         # lower the whole thing a little to avoid clashing with hashed bit in plots with ratio
         self.mc_label = '#lower[0.1]{#splitline{MG5+Pythia8}{#lower[-0.15]{CUETP8M1}}}'
+        self.mc_label_short = 'MG5+Pythia8'
         self.alt_mc_label = 'Herwig++'
         self.other_samples = []
         self.only_yoda_data = only_yoda_data
@@ -307,10 +308,16 @@ class SummaryPlotter(object):
         dummy_entries = []
         # NB Spaces in legend labels are important for padding
 
+        mc_label = self.mc_label_short
+
+        if len(self.other_samples) > 0:
+            # also write tune if > 1 Pythia
+            mc_label = self.mc_label
+
         if not self.only_yoda_data:
             # Add nominal MC
             if do_dijet_cen:
-                cont_args = dict(label=self.mc_label if only_one_region else '#splitline{ %s  }{ [%s]}' % (qgc.Dijet_CEN_LABEL.replace(" region", ""), self.mc_label),
+                cont_args = dict(label=mc_label if only_one_region else '#splitline{ %s  }{ [%s]}' % (qgc.Dijet_CEN_LABEL.replace(" region", ""), self.mc_label),
                                  line_color=COMMON_STYLE_DICT['mc_color'],
                                  line_width=lw,
                                  line_style=COMMON_STYLE_DICT['mc_line_style'],
@@ -323,7 +330,7 @@ class SummaryPlotter(object):
                 dummy_entries.append(Contribution(dummy_gr.Clone(), **cont_args))
 
             if do_dijet_fwd:
-                cont_args = dict(label=self.mc_label if only_one_region else '#splitline{ %s  }{ [%s]}' % (qgc.Dijet_FWD_LABEL.replace(" region", ""), self.mc_label),
+                cont_args = dict(label=mc_label if only_one_region else '#splitline{ %s  }{ [%s]}' % (qgc.Dijet_FWD_LABEL.replace(" region", ""), self.mc_label),
                                  line_color=COMMON_STYLE_DICT['mc_color'],
                                  line_width=lw,
                                  line_style=COMMON_STYLE_DICT['mc_line_style'],
@@ -336,7 +343,7 @@ class SummaryPlotter(object):
                 dummy_entries.append(Contribution(dummy_gr.Clone(), **cont_args))
 
             if do_zpj:
-                cont_args = dict(label=self.mc_label if only_one_region else '#splitline{ %s  }{ [%s]}' % (qgc.ZpJ_LABEL.replace(" region", ""), self.mc_label),
+                cont_args = dict(label=mc_label if only_one_region else '#splitline{ %s  }{ [%s]}' % (qgc.ZpJ_LABEL.replace(" region", ""), self.mc_label),
                                  line_color=COMMON_STYLE_DICT['mc_color'],
                                  line_width=lw,
                                  line_style=COMMON_STYLE_DICT['mc_line_style'],
@@ -462,7 +469,7 @@ class SummaryPlotter(object):
                 dummy_entries.insert(0, Contribution(dummy_gr.Clone(), **cont_args))
 
             if do_dijet_fwd:
-                cont_args = dict(label='Data' if only_one_region else ' '+qgc.Dijet_FWD_LABEL.replace(" region", ""),,
+                cont_args = dict(label='Data' if only_one_region else ' '+qgc.Dijet_FWD_LABEL.replace(" region", ""),
                                  leg_draw_opt="LEP",
                                  line_color=ROOT.kBlack if only_one_region else dijet_fwd_col,
                                  line_width=lw,
@@ -473,7 +480,7 @@ class SummaryPlotter(object):
                 dummy_entries.insert(0, Contribution(dummy_gr.Clone(), **cont_args))
 
             if do_zpj:
-                cont_args = dict(label='Data' if only_one_region else ' '+qgc.ZpJ_LABEL.replace(" region", ""), ,
+                cont_args = dict(label='Data' if only_one_region else ' '+qgc.ZpJ_LABEL.replace(" region", ""),
                                  leg_draw_opt="LEP",
                                  line_color=ROOT.kBlack if only_one_region else zpj_col,
                                  line_width=lw,
