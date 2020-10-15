@@ -13,6 +13,7 @@ from math import sqrt, log10
 from comparator import Contribution, Plot, grab_obj
 import common_utils as cu
 import qg_common as qgc
+import metric_calculators as metrics
 
 import numpy as np
 import matplotlib as mpl
@@ -1044,10 +1045,20 @@ def do_mean_rms_summary_plot(entries,
                 continue
 
             hist = dataset_entry[0]
-            this_mean.append(hist.GetMean())
-            this_mean_err.append(calc_mean_error(hist))
-            this_rms.append(hist.GetRMS())
-            this_rms_err.append(hist.GetRMSError())
+
+            contents, errors = cu.th1_to_ndarray(hist)
+            # this hist is normalised to unity, so contents.sum() = 1
+            centers = cu.get_th1_bin_centers(hist)
+            areas, centers = metrics.hist_values_to_uarray(bin_areas=contents, bin_centers=centers, bin_errors=errors)
+            mean_u = metrics.calc_mean_ucert(areas, centers)
+            mean, mean_err = mean_u.nominal_value, mean_u.std_dev
+            rms_u = metrics.calc_rms_ucert(areas, centers)
+            rms, rms_err = rms_u.nominal_value, rms_u.std_dev
+
+            this_mean.append(mean)
+            this_mean_err.append(mean_err)
+            this_rms.append(rms)
+            this_rms_err.append(rms_err)
 
         data_means.append(np.array(this_mean, dtype=float))
         data_mean_errs.append(np.array(this_mean_err, dtype=float))
