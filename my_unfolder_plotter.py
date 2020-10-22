@@ -1226,6 +1226,138 @@ class MyUnfolderPlotter(object):
         output_filename = "%s/detector_gen_binning_%s.%s" % (output_dir, append, self.output_fmt)
         plot.save(output_filename)
 
+    @staticmethod
+    def _convert_error_bars_to_error_ratio_hist(h):
+        """Create hist with bin content = bin error / bin value, 0 error"""
+        h_new = h.Clone(h.GetName() + cu.get_unique_str())
+        for ibin in range(1, h_new.GetNbinsX()+1):
+            if h.GetBinContent(ibin) > 0:
+                h_new.SetBinContent(ibin, h.GetBinError(ibin) / h.GetBinContent(ibin))
+            else:
+                if h.GetBinContent(ibin) < 0:
+                    h_new.SetBinContent(ibin, abs(h.GetBinError(ibin) / h.GetBinContent(ibin)))
+                    print("_convert_error_bars_to_error_ratio_hist() warning: bin %d content < 0!" % (ibin))
+                else:
+                    h_new.SetBinContent(ibin, 1)
+            h_new.SetBinError(ibin, 0)
+        return h_new
+
+
+    def draw_rel_uncertainty_1d(self, 
+                                draw_detector=True,
+                                draw_unfolded=True,
+                                output_dir='.',
+                                append="",
+                                title=""):
+        """Draw big 1D plots of relative uncertainty in each bin"""
+        
+        if draw_detector:
+            reco_data = self.unfolder.input_hist
+            reco_data_rel_err = self._convert_error_bars_to_error_ratio_hist(reco_data)
+            
+            reco_data_bg_sub = self.unfolder.input_hist_bg_subtracted
+            reco_data_bg_sub_rel_err = self._convert_error_bars_to_error_ratio_hist(reco_data_bg_sub)
+
+            entries = [
+                Contribution(reco_data_rel_err, label="Unfolding input [detector-level]",
+                             line_color=ROOT.kRed, 
+                             line_width=1,
+                             marker_color=ROOT.kRed, 
+                             marker_size=0.6, 
+                             marker_style=20,
+                             normalise_hist=False),
+                Contribution(reco_data_bg_sub_rel_err, label="Unfolding input bg-subtracted [detector-level]",
+                             line_color=ROOT.kBlue, 
+                             line_width=1,
+                             marker_color=ROOT.kBlue, 
+                             marker_size=0.6, 
+                             marker_style=20,
+                             normalise_hist=False)
+            ]
+
+            plot = Plot(entries,
+                        what='hist',
+                        title=title,
+                        xtitle="Detector bin number",
+                        ytitle="Err(N) / N",
+                        has_data=self.is_data)
+            self._modify_plot(plot)
+
+            plot.plot("NOSTACK HISTE")
+            yax = plot.container.GetYaxis()
+            yax.SetTitleOffset(yax.GetTitleOffset()*0.7)
+            plot.set_logy(do_more_labels=False)
+            ymax = max([o.GetMaximum() for o in plot.contributions_objs])
+            plot.container.SetMaximum(ymax * 200)
+            ymin = max([o.GetMinimum(1E-10) for o in plot.contributions_objs])
+            plot.container.SetMinimum(ymin*0.01)
+            l, t = self.draw_pt_binning_lines(plot, which='reco', axis='x',
+                                              do_underflow=True,
+                                              do_labels_inside=True,
+                                              do_labels_outside=False,
+                                              labels_inside_align='lower'
+                                              )
+            # # plot.container.SetMinimum(0.001)
+            plot.main_pad.cd()
+            plot.legend.SetY1NDC(0.8)
+            plot.legend.SetY2NDC(0.88)
+            plot.legend.SetX1NDC(0.65)
+            plot.legend.SetX2NDC(0.88)
+
+            if append != "":
+                append = "_" + append
+            output_filename = "%s/detector_rel_err_reco_binning%s.%s" % (output_dir, append, self.output_fmt)
+            plot.save(output_filename)
+        
+        if draw_unfolded:
+            unfolded_data = self.unfolder.unfolded
+            unfolded_data_rel_err = self._convert_error_bars_to_error_ratio_hist(unfolded_data)
+
+            entries = [
+                Contribution(unfolded_data_rel_err, label="Unfolded data",
+                             line_color=ROOT.kRed, 
+                             line_width=1,
+                             marker_color=ROOT.kRed, 
+                             marker_size=0.6, 
+                             marker_style=20,
+                             normalise_hist=False),
+            ]
+
+            plot = Plot(entries,
+                        what='hist',
+                        title=title,
+                        xtitle="Generator bin number",
+                        ytitle="Err(N) / N",
+                        has_data=self.is_data)
+            self._modify_plot(plot)
+
+            plot.plot("NOSTACK HISTE")
+            yax = plot.container.GetYaxis()
+            yax.SetTitleOffset(yax.GetTitleOffset()*0.7)
+            plot.set_logy(do_more_labels=False)
+            ymax = max([o.GetMaximum() for o in plot.contributions_objs])
+            plot.container.SetMaximum(ymax * 200)
+            ymin = max([o.GetMinimum(1E-10) for o in plot.contributions_objs])
+            plot.container.SetMinimum(ymin*0.01)
+            l, t = self.draw_pt_binning_lines(plot, which='gen', axis='x',
+                                              do_underflow=True,
+                                              do_labels_inside=True,
+                                              do_labels_outside=False,
+                                              labels_inside_align='lower'
+                                              )
+            # # plot.container.SetMinimum(0.001)
+            plot.main_pad.cd()
+            plot.legend.SetY1NDC(0.78)
+            plot.legend.SetY2NDC(0.88)
+            plot.legend.SetX1NDC(0.65)
+            plot.legend.SetX2NDC(0.88)
+
+            if append != "":
+                append = "_" + append
+            output_filename = "%s/unfolded_rel_err%s.%s" % (output_dir, append, self.output_fmt)
+            plot.save(output_filename)
+
+
     def draw_truth_unfolded_folded(self, draw_truth_folded=True, draw_unfolded_folded=True,
                                    output_dir='.', append="", title=""):
         """Draw big 1D plot of folded truth, folded unfolded, & original input (bg-subtracted if possible)"""

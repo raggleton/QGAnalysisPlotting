@@ -4529,6 +4529,11 @@ def do_all_big_absolute_1d_plots_per_region_angle(setup):
 
     plot_args = dict(output_dir=setup.output_dir, append=setup.append)
 
+    unfolder_plotter.draw_rel_uncertainty_1d(draw_detector=True,
+                                             draw_unfolded=True,
+                                             title=title,
+                                             **plot_args)
+
     # Folded unfolded & folded truth
     unfolder_plotter.draw_truth_unfolded_folded(title=title, **plot_args)
 
