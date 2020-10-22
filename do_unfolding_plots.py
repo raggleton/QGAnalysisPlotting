@@ -1425,12 +1425,14 @@ class GenPtBinnedPlotter(object):
 
             if not self.check_entries(entries, "plot_unfolded_with_exp_systs_normalised %d" % ibin):
                 return
+            xlim = qgp.calc_auto_xlim(entries[0:1])  # only for data
             plot = Plot(entries,
                         xtitle=self.setup.particle_title,
                         ytitle=self.setup.pt_bin_normalised_differential_label,
                         what="hist",
                         title=self.get_pt_bin_title(bin_edge_low, bin_edge_high),
                         has_data=self.setup.has_data,
+                        xlim=xlim,
                         subplot_type='ratio',
                         subplot_title='Syst / nominal',
                         subplot_limits=(0.75, 1.25))
@@ -1484,12 +1486,14 @@ class GenPtBinnedPlotter(object):
 
             if not self.check_entries(entries, "plot_unfolded_with_exp_systs_normalised %d" % ibin):
                 return
+            xlim = qgp.calc_auto_xlim(entries[0:1])  # only for data
             plot = Plot(entries,
                         xtitle=self.setup.particle_title,
                         ytitle=self.setup.pt_bin_unnormalised_differential_label,
                         what="hist",
                         title=self.get_pt_bin_title(bin_edge_low, bin_edge_high),
                         has_data=self.setup.has_data,
+                        xlim=xlim,
                         subplot_type='ratio',
                         subplot_title='Syst / nominal',
                         subplot_limits=(0.75, 1.25))
@@ -1638,7 +1642,8 @@ class GenPtBinnedPlotter(object):
 
             if not self.check_entries(entries, "plot_syst_fraction_normalised %d" % ibin):
                 return
-            xlim = qgp.calc_auto_xlim(entries)
+            # find upper limit where there is no data
+            xlim = qgp.calc_auto_xlim([unfolded_hist_bin_total_errors])
             ylim = [0.8, 1.45] if "Dijet" in self.setup.region['name'] else [0.3, 1.9]
             min_total = _convert_error_bars_to_error_ratio_hist(unfolded_hist_bin_total_errors, -1).GetMinimum()
             max_total = _convert_error_bars_to_error_ratio_hist(unfolded_hist_bin_total_errors).GetMaximum()
@@ -1807,7 +1812,8 @@ class GenPtBinnedPlotter(object):
 
             if not self.check_entries(entries, "plot_syst_fraction_normalised %d" % ibin):
                 return
-            xlim = qgp.calc_auto_xlim(entries)
+            # find upper limit where there is no data
+            xlim = qgp.calc_auto_xlim([unfolded_hist_bin_total_errors])
             ylim = [0.8, 1.45] if "Dijet" in self.setup.region['name'] else [0.3, 1.9]
             min_total = _convert_error_bars_to_error_ratio_hist(unfolded_hist_bin_total_errors, -1).GetMinimum()
             max_total = _convert_error_bars_to_error_ratio_hist(unfolded_hist_bin_total_errors).GetMaximum()
