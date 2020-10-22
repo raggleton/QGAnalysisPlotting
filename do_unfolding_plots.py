@@ -75,7 +75,7 @@ class Setup(object):
         lower_angle_name = qgc.lower_angle_name(angle)
         # for plot axis titles
         self.angle_str = "{prepend}{name} ({lambda_str})".format(prepend=angle_prepend,
-                                                                 name=lower_angle_name,
+                                                                 name=lower_angle_name if angle_prepend != "" else angle.name,
                                                                  lambda_str=angle.lambda_str)
         # self.particle_title = "Particle-level " + self.angle_str
         self.particle_title = self.angle_str
