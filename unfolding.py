@@ -71,7 +71,24 @@ if not any(['profile' in locals(),
         return func
 
 
-def rm_large_rel_error_bins(hist, relative_err_threshold=-1):
+def rm_large_rel_error_bins_th1(hist, relative_err_threshold=-1):
+    """Reset bins in 1D hist to 0 if error/contents exceeds a certain value"""
+    if relative_err_threshold < 0:
+        return hist
+    new_hist = hist.Clone()
+    new_hist.SetDirectory(0)
+    for ix in range(hist.GetNbinsX()+1):
+        val = hist.GetBinContent(ix)
+        err = hist.GetBinError(ix)
+        if val == 0:
+            continue
+        if abs(1.*err/val) > relative_err_threshold:
+            new_hist.SetBinContent(ix, 0)
+            new_hist.SetBinError(ix, 0)
+    return new_hist
+
+
+def rm_large_rel_error_bins_th2(hist, relative_err_threshold=-1):
     """Reset bins in 2D hist to 0 if error/contents exceeds a certain value"""
     if relative_err_threshold < 0:
         return hist
@@ -546,6 +563,7 @@ def main():
 
             # Actual distribution to be unfolded
             reco_1d = hist_mc_reco.Clone() if MC_INPUT else hist_data_reco
+            reco_1d = rm_large_rel_error_bins_th1(reco_1d, -1)
 
             # to construct our "fakes" template, we use the ratio as predicted by MC, and apply it to data
             # this way we ensure we don't have -ve values, and avoid any issue with cross sections
@@ -589,7 +607,7 @@ def main():
 
             # setup one unfolder to get binning
             # TODO: move creation of TUnfoldbinning into own func
-            # dummy_unfolder = MyUnfolder(response_map=rm_large_rel_error_bins(hist_mc_gen_reco_map),
+            # dummy_unfolder = MyUnfolder(response_map=rm_large_rel_error_bins_th2(hist_mc_gen_reco_map),
             #                             variable_bin_edges_reco=angle_bin_edges_reco,
             #                             variable_bin_edges_gen=angle_bin_edges_gen,
             #                             variable_name=variable_name,
@@ -617,7 +635,7 @@ def main():
             #                                    pt_bin_edges_underflow_gen=pt_bin_edges_underflow_gen,)
 
 
-            unfolder = MyUnfolder(response_map=rm_large_rel_error_bins(hist_mc_gen_reco_map),
+            unfolder = MyUnfolder(response_map=rm_large_rel_error_bins_th2(hist_mc_gen_reco_map),
                                   variable_bin_edges_reco=angle_bin_edges_reco,
                                   variable_bin_edges_gen=angle_bin_edges_gen,
                                   variable_name=variable_name,
@@ -685,14 +703,14 @@ def main():
                     #     map_syst = cu.get_from_tfile(syst_dict['tfile'], "%s/tu_%s_GenReco_all" % (region['dirname'], angle_shortname))
                     #     map_syst.Scale(unfolder.response_map.Integral() / map_syst.Integral())
                     #     print("    syst bin", chosen_rsp_bin, map_syst.GetBinContent(*chosen_rsp_bin))
-                    #     unfolder.add_sys_error(rm_large_rel_error_bins(map_syst), syst_dict['label'], ROOT.TUnfoldDensity.kSysErrModeMatrix)
+                    #     unfolder.add_sys_error(rm_large_rel_error_bins_th2(map_syst), syst_dict['label'], ROOT.TUnfoldDensity.kSysErrModeMatrix)
 
                     else:
                         if not isinstance(syst_dict['tfile'], ROOT.TFile):
                             syst_dict['tfile'] = cu.open_root_file(syst_dict['tfile'])
                         map_syst = cu.get_from_tfile(syst_dict['tfile'], "%s/tu_%s_GenReco_all" % (region['dirname'], angle_shortname))
                         print("    syst bin", chosen_rsp_bin, map_syst.GetBinContent(*chosen_rsp_bin))
-                        unfolder.add_sys_error(rm_large_rel_error_bins(map_syst), syst_dict['label'], ROOT.TUnfoldDensity.kSysErrModeMatrix)
+                        unfolder.add_sys_error(rm_large_rel_error_bins_th2(map_syst), syst_dict['label'], ROOT.TUnfoldDensity.kSysErrModeMatrix)
 
                     # Plot the reponse matrix for this systematic
                     syst_label_no_spaces = cu.no_space_str(syst_dict['label'])
@@ -1422,7 +1440,7 @@ def main():
                                                       other_contributions=jk_contributions,
                                                       subplot_title='#splitline{Variation /}{nominal}')
 
-            # Calculate exp systs
+            # Calculate exp systs manually, by unfolding with them separately
             # ------------------------------------------------------------------
             # for syst_ind, syst_dict in enumerate(region['experimental_systematics']):
             #     print("*******************************************************")
@@ -1432,10 +1450,10 @@ def main():
             #         syst_dict['tfile'] = cu.open_root_file(syst_dict['tfile'])
             #     map_syst = cu.get_from_tfile(syst_dict['tfile'], "%s/tu_%s_GenReco_all" % (region['dirname'], angle_shortname))
 
-            #     this_syst = ExpSystematic(label=syst_dict['label'], syst_map=map_syst)
+            #     this_syst = ExpSystematic(label=syst_dict['label'], syst_map=None)
 
             #     # construct unfolder like original but with this response matrix, do unfolding
-            #     exp_syst_unfolder = MyUnfolder(response_map=rm_large_rel_error_bins(map_syst),
+            #     exp_syst_unfolder = MyUnfolder(response_map=rm_large_rel_error_bins_th2(map_syst),
             #                                    variable_bin_edges_reco=unfolder.variable_bin_edges_reco,
             #                                    variable_bin_edges_gen=unfolder.variable_bin_edges_gen,
             #                                    variable_name=unfolder.variable_name,
@@ -1778,7 +1796,7 @@ def main():
                 hist_mc_gen_reco_map_alt = cu.get_from_tfile(region['alt_mc_tfile'], "%s/tu_%s_GenReco_all" % (region['dirname'], angle_shortname))
                 hist_mc_gen_reco_map_alt.Scale(unfolder.response_map.Integral() / hist_mc_gen_reco_map_alt.Integral())  # just for display purposes, doesn't affect result
 
-                alt_unfolder = MyUnfolder(response_map=rm_large_rel_error_bins(hist_mc_gen_reco_map_alt),
+                alt_unfolder = MyUnfolder(response_map=rm_large_rel_error_bins_th2(hist_mc_gen_reco_map_alt),
                                           variable_bin_edges_reco=unfolder.variable_bin_edges_reco,
                                           variable_bin_edges_gen=unfolder.variable_bin_edges_gen,
                                           variable_name=unfolder.variable_name,
