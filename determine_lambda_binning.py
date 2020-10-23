@@ -218,11 +218,30 @@ def concat_row(arr2d, row_ind):
     return arr2d_new
 
 
-def calc_variable_binning_purity_stability(h2d, purity_goal=0.4, stability_goal=0.4):
-    """Determine binning by combining neighbouring bins until we reach desired purity & stability"""
+def calc_variable_binning_purity_stability(h2d, purity_goal=0.4, stability_goal=0.4, integer_binning=False):
+    """Determine binning by combining neighbouring bins until we reach desired purity & stability
+
+    If integer_binning, then ensure only even gaps between bins, such that when
+    they are halved, you get an equal proportion on each side. This ensures
+    the binned variable doesn't have spikes. 
+    It also subtracts 0.5 from each bin edge to ensure integers fall in middle of bin.
+
+    e.g. 10 - 14: becomes [10, 12, 14] when halved, so covers [[10, 12), [12, 14)],
+    which mean for integers: [[10, 11], [12, 13]], and bin widths [2, 2].
+    Thus for a uniform true distribution, get uniform binned distribution
+    (equal number of integers fall into each bin, each bin has same bin width)
+
+    e.g. 10 - 13: becomes [10, 11.5, 13] when halved, so covers [[10, 11.5), [11.5, 13)]
+    which means for integers: [[10, 11], [12]], and bin width [1.5, 1.5].
+    So here the first bin would get double the number of events (for a uniform distribution),
+    despite both bin widths being the same.
+
+    Note that it doesn't matter if the bin edges are integers or half-integers;
+    but they must be consistent.
+    """
     arr2d, _ = cu.th2_to_arr(h2d)
     reco_bin_edges = cu.get_bin_edges(h2d, 'Y')
-    gen_bin_edges = cu.get_bin_edges(h2d, 'X')
+    # gen_bin_edges = cu.get_bin_edges(h2d, 'X')
     # print(reco_bin_edges)
     new_bin_edges = np.array(reco_bin_edges[:])
 
@@ -235,8 +254,10 @@ def calc_variable_binning_purity_stability(h2d, purity_goal=0.4, stability_goal=
         arr2d_renormy = renorm(arr2d, axis=1)  # renormed per y (reco) bin
         purity = arr2d_renormy[bin_ind][bin_ind]  # fraction in a reco bin that are actually from that gen bin
         stability = arr2d_renormx[bin_ind][bin_ind] # fraction in a gen bin that make it to that reco bin
-
-        if purity > purity_goal and stability > stability_goal:
+        # print(purity, stability)
+        if ((purity > purity_goal) and (stability > stability_goal) and
+            ((integer_binning and (new_bin_edges[bin_ind+1]-new_bin_edges[bin_ind]) % 2 == 0)  # check for even interval if integer_binning
+             or not integer_binning)):
             # print("found bin")
             # print(new_bin_edges)
             print("bin_ind:", bin_ind, " = ", new_bin_edges[bin_ind], "-", new_bin_edges[bin_ind+1], "purity: %.3f" % purity, "stability: %.3f" % stability)
@@ -247,18 +268,34 @@ def calc_variable_binning_purity_stability(h2d, purity_goal=0.4, stability_goal=
             # combine rows & columns (use transpose for latter)
             arr2d = concat_row(arr2d, bin_ind)
             arr2d = concat_row(arr2d.T, bin_ind).T
-            new_bin_edges = np.delete(new_bin_edges, bin_ind+1)  # keep track of new binning
+            # keep track of new binning by removing the bin edge we just tried
+            # and found failed the purity/stability requirements
+            new_bin_edges = np.delete(new_bin_edges, bin_ind+1)
+            # print(new_bin_edges)
             continue
 
     # handle last bin: if it fails target, just merge last 2 bins together
     if purity < purity_goal or stability < stability_goal:
-        print("Purity &/ stability not meeting target in last bin - merging ")
+        # print("Purity &/ stability not meeting target in last bin - merging ")
+        # remove the penultimate entry, which would have been the lower edge of the last bin
+        # with the insufficient purity/stability
         new_bin_edges = np.delete(new_bin_edges, -2)
-    # keep [1] to be same as next [0], otherwise you lose a bin later when
-    # making the rebinned TH2
+
+    if integer_binning:
+        # ensure integers fall in centr of bin
+        # this assumes the original bin edges were integers!
+        # if not, comment out this line
+        new_bin_edges-= 0.5
+
+    # convert to bin edge pairs, keeping pair[1] to be same as next_pair[0],
+    # otherwise you lose a bin later when making the rebinned TH2
     these_bins = [list(x) for x in zip(new_bin_edges[:-1], new_bin_edges[1:])]
     # manual hack for last bin
-    these_bins[-1][1] = reco_bin_edges[-1]
+    last_bin = reco_bin_edges[-1]
+    if integer_binning:
+        last_bin -= 0.5
+    these_bins[-1][1] = last_bin
+    print("Final binning:", these_bins)
     return these_bins
 
 
@@ -597,6 +634,8 @@ if __name__ == "__main__":
 
     for angle in qgc.COMMON_VARS[:]:
 
+        integer_binning = "multiplicity" in angle.var.lower()
+
         all_response_maps_dict = {}
 
         for source_plot_dir_name_list, region_label in zip(source_plot_dir_names, region_labels):
@@ -631,7 +670,10 @@ if __name__ == "__main__":
                 # goal = 0.5
                 goal = args.target
                 print("Calculating binning for", var_dict['name'])
-                new_binning = calc_variable_binning_purity_stability(h2d_orig, purity_goal=goal, stability_goal=goal)
+                new_binning = calc_variable_binning_purity_stability(h2d_orig,
+                                                                     purity_goal=goal,
+                                                                     stability_goal=goal,
+                                                                     integer_binning=integer_binning)
                 rebin_results_dict[var_dict['name']] = new_binning
 
                 # Rebin 2D heatmap
