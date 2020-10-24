@@ -254,7 +254,8 @@ VAR_UNFOLD_DICT_TARGET0p5 = {
 # from ./workdir_102X_v3data_v2mc_ak4puppi_fixSelCutOrder_puppiJER_tightJetId_constitPt0MultPt1_WeightCuts_fixLambda/determine_lambda_binning_target0p5/binning_uhh2.AnalysisModuleRunner.MC.MC_QCD.txt
 VAR_UNFOLD_DICT_TARGET0p5 = {
     'jet_puppiMultiplicity': {
-        'gen': np.array([0, 10, 15, 20, 30, 50, 75, 100, 150], dtype='d'),
+        # 'gen': np.array([0, 10, 15, 20, 30, 50, 75, 100, 150], dtype='d'),
+        'gen': np.array([-0.5, 9.5, 15.5, 21.5, 29.5, 39.5, 59.5, 99.5], dtype='d'),
         'reco': None
     },
     'jet_pTD': {
@@ -275,7 +276,8 @@ VAR_UNFOLD_DICT_TARGET0p5 = {
     },
 
     'jet_puppiMultiplicity_charged': {
-        'gen': np.array([0, 3, 5.0, 8.0, 11.0, 14.0, 18.0, 22.0, 26.0, 31.0, 37.0, 45.0, 150.0], dtype='d'),
+        # 'gen': np.array([0, 3, 5.0, 8.0, 11.0, 14.0, 18.0, 22.0, 26.0, 31.0, 37.0, 45.0, 150.0], dtype='d'),
+        'gen': np.array([-0.5, 3.5, 5.5, 9.5, 13.5, 17.5, 21.5, 25.5, 31.5, 37.5, 45.5, 59.5, 99.5], dtype='d'),
         'reco': None
     },
     'jet_pTD_charged': {
