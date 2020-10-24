@@ -648,8 +648,8 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         # TODO: account for overflow in each axis?
         for ibin_var, (var_low, var_high) in enumerate(zip(self.variable_bin_edges_reco[:-1], self.variable_bin_edges_reco[1:])):
             for ibin_pt, (pt_low, pt_high) in enumerate(zip(self.pt_bin_edges_underflow_reco[:-1], self.pt_bin_edges_underflow_reco[1:])):
-                gen_bin = self.generator_distribution_underflow.GetGlobalBinNumber(var_low*1.000001, pt_low*1.0000001)
-                det_bin = self.detector_distribution_underflow.GetGlobalBinNumber(var_low*1.000001, pt_low*1.0000001)
+                gen_bin = self.generator_distribution_underflow.GetGlobalBinNumber(var_low+0.001, pt_low+0.001)
+                det_bin = self.detector_distribution_underflow.GetGlobalBinNumber(var_low+0.001, pt_low+0.001)
                 # print("Converting bin", pt_low, var_low, ":", det_bin, "->", gen_bin)
                 val = new_hist.GetBinContent(gen_bin)
                 val += hist.GetBinContent(det_bin)
@@ -659,8 +659,8 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
                 new_hist.SetBinError(gen_bin, math.sqrt(err2))
 
             for ibin_pt, (pt_low, pt_high) in enumerate(zip(self.pt_bin_edges_reco[:-1], self.pt_bin_edges_reco[1:])):
-                gen_bin = self.generator_distribution.GetGlobalBinNumber(var_low*1.000001, pt_low*1.0000001)
-                det_bin = self.detector_distribution.GetGlobalBinNumber(var_low*1.000001, pt_low*1.0000001)
+                gen_bin = self.generator_distribution.GetGlobalBinNumber(var_low+0.001, pt_low+0.001)
+                det_bin = self.detector_distribution.GetGlobalBinNumber(var_low+0.001, pt_low+0.001)
                 # print("Converting bin", pt_low, var_low, ":", det_bin, "->", gen_bin)
                 val = new_hist.GetBinContent(gen_bin)
                 val += hist.GetBinContent(det_bin)
@@ -727,26 +727,26 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         first_var = self.variable_bin_edges_gen[0]
         last_var = self.variable_bin_edges_gen[-1]
         pt_val = self.pt_bin_edges_gen[0]
-        start_bin = gen_node.GetGlobalBinNumber(first_var+0.00001, pt_val+0.001)
-        end_bin = gen_node.GetGlobalBinNumber(last_var-0.00001, pt_val+0.001)
+        start_bin = gen_node.GetGlobalBinNumber(first_var+0.001, pt_val+0.001)
+        end_bin = gen_node.GetGlobalBinNumber(last_var-0.001, pt_val+0.001)
         first_bin_integral = hist.Integral(start_bin, end_bin)  # ROOTs integral is inclusive of last bin
 
         bin_factors = {}
         # Add 1s for the 1st pt bin
         for var in self.variable_bin_edges_gen[:-1]:
-            this_bin = gen_node.GetGlobalBinNumber(var+0.00001, pt_val+0.001)
+            this_bin = gen_node.GetGlobalBinNumber(var+0.001, pt_val+0.001)
             bin_factors[this_bin] = 1
 
         # Iterate through pt bins, figure out integral, scale according to first bin
         for pt_val in self.pt_bin_edges_gen[1:-1]:
-            start_bin = gen_node.GetGlobalBinNumber(first_var+0.00001, pt_val+0.001)
-            end_bin = gen_node.GetGlobalBinNumber(last_var-0.00001, pt_val+0.001)
+            start_bin = gen_node.GetGlobalBinNumber(first_var+0.001, pt_val+0.001)
+            end_bin = gen_node.GetGlobalBinNumber(last_var-0.001, pt_val+0.001)
             integral = hist.Integral(start_bin, end_bin)
             sf = first_bin_integral / integral
 
             # Store bin factor for each lambda bin
             for var in self.variable_bin_edges_gen[:-1]:
-                this_bin = gen_node.GetGlobalBinNumber(var+0.00001, pt_val+0.001)
+                this_bin = gen_node.GetGlobalBinNumber(var+0.001, pt_val+0.001)
                 bin_factors[this_bin] = sf
 
         return bin_factors
@@ -759,13 +759,13 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         for lambda_ind, lambda_var in enumerate(self.variable_bin_edges_gen[:-1]):
             # underflow region
             for pt_ind, pt_val in enumerate(self.pt_bin_edges_underflow_gen[:-1]):
-                global_bin = self.generator_distribution_underflow.GetGlobalBinNumber(lambda_var+0.00000001, pt_val+0.0000001)
+                global_bin = self.generator_distribution_underflow.GetGlobalBinNumber(lambda_var+0.001, pt_val+0.001)
                 lambda_width = self.variable_bin_edges_gen[lambda_ind+1] - self.variable_bin_edges_gen[lambda_ind]
                 pt_width = self.pt_bin_edges_underflow_gen[pt_ind+1] - self.pt_bin_edges_underflow_gen[pt_ind]
                 results[global_bin] = (lambda_width, pt_width)
             # signal region
             for pt_ind, pt_val in enumerate(self.pt_bin_edges_gen[:-1]):
-                global_bin = self.generator_distribution.GetGlobalBinNumber(lambda_var+0.00000001, pt_val+0.0000001)
+                global_bin = self.generator_distribution.GetGlobalBinNumber(lambda_var+0.001, pt_val+0.001)
                 lambda_width = self.variable_bin_edges_gen[lambda_ind+1] - self.variable_bin_edges_gen[lambda_ind]
                 pt_width = self.pt_bin_edges_gen[pt_ind+1] - self.pt_bin_edges_gen[pt_ind]
                 results[global_bin] = (lambda_width, pt_width)
@@ -790,11 +790,11 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         if axis in ["both", "pt"]:
             for ilambda in range(len(self.variable_bin_edges_gen[:-1])):
                 for ipt in range(len(self.pt_bin_edges_gen[:-3])):
-                    pt_cen = self.pt_bin_edges_gen[ipt+1] + 0.000001  # add a tiny bit to make sure we're in the bin properly (I can never remember if included or not)
-                    lambda_cen = self.variable_bin_edges_gen[ilambda] + 0.000001  # add a tiny bit to make sure we're in the bin properly (I can never remember if included or not)
+                    pt_cen = self.pt_bin_edges_gen[ipt+1]+0.001  # add a tiny bit to make sure we're in the bin properly (I can never remember if included or not)
+                    lambda_cen = self.variable_bin_edges_gen[ilambda]+0.001  # add a tiny bit to make sure we're in the bin properly (I can never remember if included or not)
 
-                    bin_ind_pt_down = gen_node.GetGlobalBinNumber(lambda_cen, self.pt_bin_edges_gen[ipt] + 0.000001)
-                    bin_ind_pt_up = gen_node.GetGlobalBinNumber(lambda_cen, self.pt_bin_edges_gen[ipt+2] + 0.000001)
+                    bin_ind_pt_down = gen_node.GetGlobalBinNumber(lambda_cen, self.pt_bin_edges_gen[ipt]+0.001)
+                    bin_ind_pt_up = gen_node.GetGlobalBinNumber(lambda_cen, self.pt_bin_edges_gen[ipt+2]+0.001)
 
                     bin_ind_cen = gen_node.GetGlobalBinNumber(lambda_cen, pt_cen)
 
@@ -846,11 +846,11 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         if axis in ["both", "angle"]:
             for ipt in range(len(self.pt_bin_edges_gen[:-1])):
                 for ilambda in range(len(self.variable_bin_edges_gen[:-3])):
-                    pt_cen = self.pt_bin_edges_gen[ipt] + 0.000001  # add a tiny bit to make sure we're in the bin properly (I can never remember if included or not)
-                    lambda_cen = self.variable_bin_edges_gen[ilambda+1] + 0.000001  # add a tiny bit to make sure we're in the bin properly (I can never remember if included or not)
+                    pt_cen = self.pt_bin_edges_gen[ipt]+0.001  # add a tiny bit to make sure we're in the bin properly (I can never remember if included or not)
+                    lambda_cen = self.variable_bin_edges_gen[ilambda+1]+0.001  # add a tiny bit to make sure we're in the bin properly (I can never remember if included or not)
 
-                    bin_ind_lambda_down = gen_node.GetGlobalBinNumber(self.variable_bin_edges_gen[ilambda] + 0.000001, pt_cen)
-                    bin_ind_lambda_up = gen_node.GetGlobalBinNumber(self.variable_bin_edges_gen[ilambda+2] + 0.000001, pt_cen)
+                    bin_ind_lambda_down = gen_node.GetGlobalBinNumber(self.variable_bin_edges_gen[ilambda]+0.001, pt_cen)
+                    bin_ind_lambda_up = gen_node.GetGlobalBinNumber(self.variable_bin_edges_gen[ilambda+2]+0.001, pt_cen)
 
                     bin_ind_cen = gen_node.GetGlobalBinNumber(lambda_cen, pt_cen)
 
@@ -908,10 +908,10 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         if axis in ["both", "pt"]:
             for ilambda in range(len(self.variable_bin_edges_gen[:-1])):
                 for ipt in range(len(self.pt_bin_edges_gen[:-2])):
-                    lambda_cen = self.variable_bin_edges_gen[ilambda] + 0.000001  # add a tiny bit to make sure we're in the bin properly (I can never remember if included or not)
+                    lambda_cen = self.variable_bin_edges_gen[ilambda]+0.001  # add a tiny bit to make sure we're in the bin properly (I can never remember if included or not)
 
-                    bin_ind_pt_down = gen_node.GetGlobalBinNumber(lambda_cen, self.pt_bin_edges_gen[ipt] + 0.000001)
-                    bin_ind_pt_up = gen_node.GetGlobalBinNumber(lambda_cen, self.pt_bin_edges_gen[ipt+1] + 0.000001)
+                    bin_ind_pt_down = gen_node.GetGlobalBinNumber(lambda_cen, self.pt_bin_edges_gen[ipt]+0.001)
+                    bin_ind_pt_up = gen_node.GetGlobalBinNumber(lambda_cen, self.pt_bin_edges_gen[ipt+1]+0.001)
 
                     print("Adding L matrix entry", nr_counter)
                     print('lambda:', self.variable_bin_edges_gen[ilambda], 'pt:', (self.pt_bin_edges_gen[ipt], self.pt_bin_edges_gen[ipt+1]))
@@ -932,10 +932,10 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         if axis in ["both", "angle"]:
             for ipt in range(len(self.pt_bin_edges_gen[:-1])):
                 for ilambda in range(len(self.variable_bin_edges_gen[:-2])):
-                    pt_cen = self.pt_bin_edges_gen[ipt] + 0.000001  # add a tiny bit to make sure we're in the bin properly (I can never remember if included or not)
+                    pt_cen = self.pt_bin_edges_gen[ipt]+0.001  # add a tiny bit to make sure we're in the bin properly (I can never remember if included or not)
 
-                    bin_ind_lambda_down = gen_node.GetGlobalBinNumber(self.variable_bin_edges_gen[ilambda] + 0.000001, pt_cen)
-                    bin_ind_lambda_up = gen_node.GetGlobalBinNumber(self.variable_bin_edges_gen[ilambda+1] + 0.000001, pt_cen)
+                    bin_ind_lambda_down = gen_node.GetGlobalBinNumber(self.variable_bin_edges_gen[ilambda]+0.001, pt_cen)
+                    bin_ind_lambda_up = gen_node.GetGlobalBinNumber(self.variable_bin_edges_gen[ilambda+1]+0.001, pt_cen)
 
                     print("Adding L matrix entry", nr_counter)
                     print('pt:', self.pt_bin_edges_gen[ipt], 'lambda:', (self.variable_bin_edges_gen[ilambda], self.variable_bin_edges_gen[ilambda+1]))
@@ -1254,7 +1254,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
 
         for pt_ind_x, pt_x in enumerate(pt_bin_edges_x[:-1]):
             for var_ind_x, var_x in enumerate(variable_bin_edges_x[:-1]):
-                global_bin_x = x_distribution.GetGlobalBinNumber(var_x*1.0000001, pt_x*1.0000001)
+                global_bin_x = x_distribution.GetGlobalBinNumber(var_x+0.001, pt_x+0.001)
                 x_index += 1
                 if is_1d:
                     if isinstance(arr, ROOT.TH1):
@@ -1265,7 +1265,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
                     y_index = -1
                     for pt_ind_y, pt_y in enumerate(pt_bin_edges_y[:-1]):
                         for var_ind_y, var_y in enumerate(variable_bin_edges_y[:-1]):
-                            global_bin_y = y_distribution.GetGlobalBinNumber(var_y*1.0000001, pt_y*1.000001)
+                            global_bin_y = y_distribution.GetGlobalBinNumber(var_y+0.001, pt_y+0.001)
                             y_index += 1
                             if isinstance(arr, ROOT.TH2):
                                 output_arr[y_index, x_index] = arr.GetBinContent(global_bin_x, global_bin_y)
@@ -1556,13 +1556,13 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             for ibin_pt, (pt, pt_next) in enumerate(zip(bins[:-1], bins[1:])):
                 # print(ibin_pt, pt, pt_next)
                 this_sum = 0
-                var = self.variable_bin_edges_reco[0] * 1.00000001
+                var = self.variable_bin_edges_reco[0]+0.001
                 # urgh this is horrible, but crashes if you use self.detector_binning.GetGlobalBinNumber() whyyyy
                 # need separate binning obj for each value, else it misses bins
                 binning = self.detector_distribution_underflow if pt in self.pt_bin_edges_underflow_reco else self.detector_distribution
                 binning_next = self.detector_distribution_underflow if pt_next in self.pt_bin_edges_underflow_reco else self.detector_distribution
-                global_bin_reco = binning.GetGlobalBinNumber(var, pt*1.00001)
-                global_bin_reco_next = binning_next.GetGlobalBinNumber(var, pt_next*1.00001)
+                global_bin_reco = binning.GetGlobalBinNumber(var, pt+0.001)
+                global_bin_reco_next = binning_next.GetGlobalBinNumber(var, pt_next+0.001)
                 # print(ibin_pt, pt, pt_next, global_bin_reco, global_bin_reco_next)
                 for i_reco in range(global_bin_reco, global_bin_reco_next):
                     for global_bin_gen in range(self.response_map.GetNbinsX()+1):
@@ -1572,12 +1572,12 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
 
             # Now set the new bin contents and error bars by scaling using these sums
             for ibin_pt, (pt, pt_next) in enumerate(zip(bins[:-1], bins[1:])):
-                var = self.variable_bin_edges_reco[0] * 1.00000001
+                var = self.variable_bin_edges_reco[0]+0.001
                 # urgh this is horrible, but crashes if you use self.detector_binning.GetGlobalBinNumber() whyyyy
                 binning = self.detector_distribution_underflow if pt in self.pt_bin_edges_underflow_reco else self.detector_distribution
                 binning_next = self.detector_distribution_underflow if pt_next in self.pt_bin_edges_underflow_reco else self.detector_distribution
-                global_bin_reco = binning.GetGlobalBinNumber(var, pt*1.00001)
-                global_bin_reco_next = binning_next.GetGlobalBinNumber(var, pt_next*1.00001)
+                global_bin_reco = binning.GetGlobalBinNumber(var, pt+0.001)
+                global_bin_reco_next = binning_next.GetGlobalBinNumber(var, pt_next+0.001)
                 for i_reco in range(global_bin_reco, global_bin_reco_next):
                     for global_bin_gen in range(self.response_map.GetNbinsX()+1):
                         factor = 1./sums[ibin_pt] if sums[ibin_pt] != 0 else 0
@@ -1953,8 +1953,8 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             #     var_bins = np.array(binning.GetDistributionBinning(0))
             #     pt_bins = np.array(binning.GetDistributionBinning(1))
             #     # -1 since ndarray is 0 index, th2 are 1-indexed
-            #     start = binning.GetGlobalBinNumber(var_bins[0] * 1.001, pt_bins[ibin_pt]*1.001) - 1
-            #     end = binning.GetGlobalBinNumber(var_bins[-2] * 1.001, pt_bins[ibin_pt]*1.001) - 1
+            #     start = binning.GetGlobalBinNumber(var_bins[0]+0.001, pt_bins[ibin_pt]+0.1) - 1
+            #     end = binning.GetGlobalBinNumber(var_bins[-2]+0.001, pt_bins[ibin_pt]+0.1) - 1
             #     this_cov = cu.ndarray_to_th2(v_inv[start:end+1,start:end+1])
             #     canv = ROOT.TCanvas(cu.get_unique_str(), "Inverse covariance matrix V^{-1}", 800, 600)
             #     this_cov.SetTitle("Inverse covariance matrix V^{-1} for %g < p_{T} < %g GeV" % (pt_low, pt_high))
@@ -2566,9 +2566,9 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             binning = self.generator_binning.FindNode("generatordistribution")
             var_bins = self.variable_bin_edges_gen
             # FIXME what to do if non-sequential bin numbers?!
-            # the 1.0001 is to ensure we're def inside this bin
-            start_bin = binning.GetGlobalBinNumber(var_bins[0]*1.0001, pt*1.0001)
-            end_bin = binning.GetGlobalBinNumber(var_bins[-2]*1.0001, pt*1.0001)  # -2 since the last one is the upper edge of the last bin
+            # the 0.001 is to ensure we're def inside this bin
+            start_bin = binning.GetGlobalBinNumber(var_bins[0]+0.001, pt+0.001)
+            end_bin = binning.GetGlobalBinNumber(var_bins[-2]+0.001, pt+0.001)  # -2 since the last one is the upper edge of the last bin
             stat_key = self.hist_bin_chopper._generate_key(self.stat_ematrix_name,
                                                            ind=ibin_pt,
                                                            axis='pt',
@@ -3219,9 +3219,9 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             # binning = self.generator_binning.FindNode("generatordistribution")
             # var_bins = self.variable_bin_edges_gen
             # # FIXME what to do if non-sequential bin numbers?!
-            # # the 1.0001 is to ensure we're def inside this bin
-            # start_bin = binning.GetGlobalBinNumber(var_bins[0]*1.0001, pt*1.0001)
-            # end_bin = binning.GetGlobalBinNumber(var_bins[-2]*1.0001, pt*1.0001)  # -2 since the last one is the upper edge of the last bin
+            # # the 0.001 is to ensure we're def inside this bin
+            # start_bin = binning.GetGlobalBinNumber(var_bins[0]+0.001, pt+0.001)
+            # end_bin = binning.GetGlobalBinNumber(var_bins[-2]+0.001, pt+0.001)  # -2 since the last one is the upper edge of the last bin
             # stat_key = self.hist_bin_chopper._generate_key(self.stat_ematrix_name,
             #                                                ind=ibin_pt,
             #                                                axis='pt',
@@ -3456,9 +3456,9 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             # binning = self.generator_binning.FindNode("generatordistribution")
             # pt_bins = self.pt_bin_edges_gen
             # # FIXME what to do if non-sequential bin numbers?!
-            # # the 1.0001 is to ensure we're def inside this bin
-            # start_bin = binning.GetGlobalBinNumber(var*1.0001, pt_bins[0]*1.0001)
-            # end_bin = binning.GetGlobalBinNumber(var*1.0001, pt_bins[-2]*1.0001)  # -2 since the last one is the upper edge of the last bin
+            # # the 0.001 is to ensure we're def inside this bin
+            # start_bin = binning.GetGlobalBinNumber(var+0.001, pt_bins[0]+0.001)
+            # end_bin = binning.GetGlobalBinNumber(var+0.001, pt_bins[-2]+0.001)  # -2 since the last one is the upper edge of the last bin
             # stat_key = self.hist_bin_chopper._generate_key(self.stat_ematrix_name,
             #                                                ind=ibin_var,
             #                                                axis='lambda',
@@ -3711,8 +3711,8 @@ class HistBinChopper(object):
         binning, var_bins, pt_bins = self.get_binning(binning_scheme)
         h = ROOT.TH1D("h_%d_%s" % (ibin_pt, cu.get_unique_str()), "", len(var_bins)-1, var_bins)
         for var_ind, var_value in enumerate(var_bins[:-1], 1):
-            this_val = var_value * 1.000001  # ensure its inside
-            bin_num = binning.GetGlobalBinNumber(this_val, pt_bins[ibin_pt]*1.000001)
+            this_val = var_value+0.001  # ensure its inside
+            bin_num = binning.GetGlobalBinNumber(this_val, pt_bins[ibin_pt]+0.001)
             h.SetBinContent(var_ind, hist1d.GetBinContent(bin_num))
             h.SetBinError(var_ind, hist1d.GetBinError(bin_num))
         return h
@@ -3723,11 +3723,11 @@ class HistBinChopper(object):
         binning, var_bins, pt_bins = self.get_binning(binning_scheme)
         h = ROOT.TH2D("h2d_%d_%s" % (ibin_pt, cu.get_unique_str()), "", len(var_bins)-1, var_bins, len(var_bins)-1, var_bins)
         for var_ind, var_value in enumerate(var_bins[:-1], 1):
-            this_val = var_value * 1.001  # ensure its inside
-            bin_num = binning.GetGlobalBinNumber(this_val, pt_bins[ibin_pt]*1.001)
+            this_val = var_value+0.001  # ensure its inside
+            bin_num = binning.GetGlobalBinNumber(this_val, pt_bins[ibin_pt]+0.1)
             for var_ind2, var_value2 in enumerate(var_bins[:-1], 1):
-                this_val2 = var_value2 * 1.001  # ensure its inside
-                bin_num2 = binning.GetGlobalBinNumber(this_val2, pt_bins[ibin_pt]*1.001)
+                this_val2 = var_value2+0.001  # ensure its inside
+                bin_num2 = binning.GetGlobalBinNumber(this_val2, pt_bins[ibin_pt]+0.1)
                 h.SetBinContent(var_ind, var_ind2, hist2d.GetBinContent(bin_num, bin_num2))
                 h.SetBinError(var_ind, var_ind2, hist2d.GetBinError(bin_num, bin_num2))
         return h
@@ -3738,8 +3738,8 @@ class HistBinChopper(object):
         binning, var_bins, pt_bins = self.get_binning(binning_scheme)
         h = ROOT.TH1D("h_%d_%s" % (ibin_var, cu.get_unique_str()), "", len(pt_bins)-1, pt_bins)
         for pt_ind, pt_value in enumerate(pt_bins[:-1], 1):
-            this_val = pt_value * 1.001  # ensure its inside
-            bin_num = binning.GetGlobalBinNumber(var_bins[ibin_var]*1.001, this_val)
+            this_val = pt_value+0.001  # ensure its inside
+            bin_num = binning.GetGlobalBinNumber(var_bins[ibin_var]+0.1, this_val)
             h.SetBinContent(pt_ind, hist1d.GetBinContent(bin_num))
             h.SetBinError(pt_ind, hist1d.GetBinError(bin_num))
         return h
@@ -3750,11 +3750,11 @@ class HistBinChopper(object):
         binning, var_bins, pt_bins = self.get_binning(binning_scheme)
         h = ROOT.TH1D("h2d_%d_%s" % (ibin_var, cu.get_unique_str()), "", len(pt_bins)-1, pt_bins)
         for pt_ind, pt_value in enumerate(pt_bins[:-1], 1):
-            this_val = pt_value * 1.001  # ensure its inside
-            bin_num = binning.GetGlobalBinNumber(var_bins[ibin_var]*1.001, this_val)
+            this_val = pt_value+0.001  # ensure its inside
+            bin_num = binning.GetGlobalBinNumber(var_bins[ibin_var]+0.1, this_val)
             for pt_ind2, pt_value2 in enumerate(pt_bins[:-1], 1):
-                this_val2 = pt_value * 1.001  # ensure its inside
-                bin_num2 = binning.GetGlobalBinNumber(var_bins[ibin_var]*1.001, this_val2)
+                this_val2 = pt_value+0.001  # ensure its inside
+                bin_num2 = binning.GetGlobalBinNumber(var_bins[ibin_var]+0.1, this_val2)
                 h.SetBinContent(pt_ind, pt_ind2, hist2d.GetBinContent(bin_num, bin_num2))
                 h.SetBinError(pt_ind, pt_ind2, hist2d.GetBinError(bin_num, bin_num2))
         return h
@@ -4260,8 +4260,8 @@ class TruthTemplateMaker(object):
         print(all_pt_bins)
         for pt_ind, (pt_low, pt_high) in enumerate(zip(all_pt_bins[:-1], all_pt_bins[1:])):
             binning = self.generator_binning.FindNode("generatordistribution_underflow") if pt_low < self.pt_bin_edges_gen[0] else self.generator_binning.FindNode("generatordistribution")
-            start_bin = binning.GetGlobalBinNumber(self.variable_bin_edges_gen[0]*1.00001, pt_low*1.00001)
-            end_bin = binning.GetGlobalBinNumber(self.variable_bin_edges_gen[-1]*1.00001, pt_low*1.00001)
+            start_bin = binning.GetGlobalBinNumber(self.variable_bin_edges_gen[0]+0.001, pt_low+0.001)
+            end_bin = binning.GetGlobalBinNumber(self.variable_bin_edges_gen[-1]+0.001, pt_low+0.001)
             for bin_ind, glob_bin in enumerate(range(start_bin, end_bin+1), 1):
                 # bin_ind refers to bin in the template hist, glob_bin refers to global bin number
                 truth_template.SetBinContent(glob_bin, new_truth_hists[pt_ind].GetBinContent(bin_ind))

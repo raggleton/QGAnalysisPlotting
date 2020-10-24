@@ -199,10 +199,10 @@ def fill_empty_bins(response_map,
             for gen_var in variable_bin_edges_gen[:-1]:
                 # urghhhhhh have to manually choose the TUnfoldBinning object
                 this_gen_binning = generator_binning_uflow if gen_pt < pt_bin_edges_gen[0] else generator_binning_main
-                gen_bin_num = this_gen_binning.GetGlobalBinNumber(gen_var*1.0001, gen_pt*1.0001)
+                gen_bin_num = this_gen_binning.GetGlobalBinNumber(gen_var+0.001, gen_pt+0.001)
                 for reco_var in variable_bin_edges_reco[:-1]:
                     this_reco_binning = detector_binning_uflow if reco_pt < pt_bin_edges_reco[0] else detector_binning_main
-                    reco_bin_num = this_reco_binning.GetGlobalBinNumber(reco_var*1.0001, reco_pt*1.0001)
+                    reco_bin_num = this_reco_binning.GetGlobalBinNumber(reco_var+0.001, reco_pt+0.001)
                     val = response_map.GetBinContent(gen_bin_num, reco_bin_num)
                     if val == 0:
                         empty_bin_indices.append([gen_bin_num, reco_bin_num])
