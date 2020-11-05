@@ -205,7 +205,7 @@ def compare_flavour_fractions_vs_pt(input_files, dirnames, pt_bins, labels, flav
                          label="%s" % (labels[i]),
                          line_color=colours[i], line_width=1,
                          marker_style=20+i, marker_color=colours[i], marker_size=1,
-                         leg_draw_opt="LEP")
+                         leg_draw_opt="LP")
         contribs.append(c)
 
     flav_str_dict = {
@@ -229,7 +229,7 @@ def compare_flavour_fractions_vs_pt(input_files, dirnames, pt_bins, labels, flav
              ylim=(0, 1),
              has_data=False)
     p.default_canvas_size = (600, 600)
-    p.plot("ALP")
+    p.plot("AP")
     p.main_pad.SetBottomMargin(0.16)
     p.get_modifier().GetXaxis().SetTitleOffset(1.4)
     p.get_modifier().GetXaxis().SetTitleSize(.045)
@@ -244,24 +244,25 @@ def do_flavour_fraction_vs_pt(input_file, dirname, pt_bins, output_filename, tit
     """Plot all flavour fractions vs PT for one input file & dirname in the ROOT file"""
     info = get_flavour_efficiencies(input_file, dirname, pt_bins, var_prepend=var_prepend, which_jet=(which_jet if "Dijet" in dirname else "both"))
 
-    plot_u = Contribution(info['u'].CreateGraph(), label="Up", line_color=ROOT.kRed, marker_color=ROOT.kRed, marker_style=20, leg_draw_opt="LEP")
-    plot_d = Contribution(info['d'].CreateGraph(), label="Down", line_color=ROOT.kBlue, marker_color=ROOT.kBlue, marker_style=21, leg_draw_opt="LEP")
-    plot_s = Contribution(info['s'].CreateGraph(), label="Strange", line_color=ROOT.kBlack, marker_color=ROOT.kBlack, marker_style=22, leg_draw_opt="LEP")
-    plot_c = Contribution(info['c'].CreateGraph(), label="Charm", line_color=ROOT.kGreen-3, marker_color=ROOT.kGreen-3, marker_style=23, leg_draw_opt="LEP")
-    plot_b = Contribution(info['b'].CreateGraph(), label="Bottom", line_color=ROOT.kOrange-3, marker_color=ROOT.kOrange-3, marker_style=33, leg_draw_opt="LEP")
-    plot_g = Contribution(info['g'].CreateGraph(), label="Gluon", line_color=ROOT.kViolet, marker_color=ROOT.kViolet, marker_style=29, leg_draw_opt="LEP")
-    plot_unknown = Contribution(info['unknown'].CreateGraph(), label="Unknown", line_color=ROOT.kGray+1, marker_color=ROOT.kGray+1, marker_style=26, leg_draw_opt="LEP")
+    leg_draw_opt = "LP"
+    plot_u = Contribution(info['u'].CreateGraph(), label="Up", line_color=ROOT.kRed, marker_color=ROOT.kRed, marker_style=20, leg_draw_opt=leg_draw_opt)
+    plot_d = Contribution(info['d'].CreateGraph(), label="Down", line_color=ROOT.kBlue, marker_color=ROOT.kBlue, marker_style=21, leg_draw_opt=leg_draw_opt)
+    plot_s = Contribution(info['s'].CreateGraph(), label="Strange", line_color=ROOT.kBlack, marker_color=ROOT.kBlack, marker_style=22, leg_draw_opt=leg_draw_opt)
+    plot_c = Contribution(info['c'].CreateGraph(), label="Charm", line_color=ROOT.kGreen-3, marker_color=ROOT.kGreen-3, marker_style=23, leg_draw_opt=leg_draw_opt)
+    plot_b = Contribution(info['b'].CreateGraph(), label="Bottom", line_color=ROOT.kOrange-3, marker_color=ROOT.kOrange-3, marker_style=33, leg_draw_opt=leg_draw_opt)
+    plot_g = Contribution(info['g'].CreateGraph(), label="Gluon", line_color=ROOT.kViolet, marker_color=ROOT.kViolet, marker_style=29, leg_draw_opt=leg_draw_opt)
+    plot_unknown = Contribution(info['unknown'].CreateGraph(), label="Unknown", line_color=ROOT.kGray+1, marker_color=ROOT.kGray+1, marker_style=26, leg_draw_opt=leg_draw_opt)
 
     p_flav = Plot([plot_d, plot_u, plot_s, plot_c, plot_b, plot_g, plot_unknown],
                   what='graph',
-                  xtitle="p_{T}^{%s} [GeV]" % get_jet_str(var_prepend).title(),
+                  xtitle="p_{T}^{%s} [GeV]" % get_jet_str(var_prepend),
                   ytitle="Fraction",
                   title=title,
                   xlim=(pt_bins[0][0], pt_bins[-1][1]),
                   ylim=[0, 1],
                   has_data=False)
     p_flav.default_canvas_size = (600, 600)
-    p_flav.plot("ALP")
+    p_flav.plot("AP")
     p_flav.main_pad.SetBottomMargin(0.16)
     p_flav.get_modifier().GetXaxis().SetTitleOffset(1.4)
     p_flav.get_modifier().GetXaxis().SetTitleSize(.045)
