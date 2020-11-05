@@ -75,18 +75,18 @@ def get_flavour_fractions(input_file, dirname, pt_bins, var_prepend="", which_je
 
     return flav_dict
 
-def get_flavour_efficiencies(input_file, dirname, pt_bins, var_prepend="", which_jet="both"):
-    """Get dict of flav : [TEfficiency for specified pt bins] for a given input file & directory.
+def get_flavour_efficiencies(input_file, dirname, bins, var_prepend="", which_jet="both", metric="pt"):
+    """Get dict of flav : [TEfficiency for specified bins] for a given input file & directory.
 
     which_jet : "both", 1, 2
         Which jet to look at - both, or one of the two in particular
     """
     jet_str = "" if which_jet == "both" else str(which_jet)
-    h2d_flav = grab_obj(input_file, "%s/%sjet%s_flavour_vs_pt" % (dirname, var_prepend, jet_str))
+    h2d_flav = grab_obj(input_file, "%s/%sjet%s_flavour_vs_%s" % (dirname, var_prepend, jet_str, metric))
 
     flav_dict = {'d': [], 'u': [], 's': [], 'c': [], 'b': [] ,'t': [], 'g': [], 'unknown': [], 'total': []}
 
-    for (pt_min, pt_max) in pt_bins:
+    for (pt_min, pt_max) in bins:
         h_flav = get_projection_plot(h2d_flav, pt_min, pt_max)
 
         total_err = array('d', [-1.])
@@ -103,7 +103,7 @@ def get_flavour_efficiencies(input_file, dirname, pt_bins, var_prepend="", which
         g_num = h_flav.GetBinContent(22)
 
         total = d_num+u_num+s_num+c_num+b_num+t_num+g_num+unknown_num
-
+        print(total, total2)
         if not cu.same_floats(total, total2):
             raise RuntimeError("totals dont match: %.9g vs %.9g" % (total, total2))
 
@@ -151,17 +151,17 @@ def get_flavour_efficiencies(input_file, dirname, pt_bins, var_prepend="", which
         'unknown': None,
     }
 
-    bin_edges = [p[0] for p in pt_bins]
-    bin_edges += pt_bins[-1][1:]
+    bin_edges = [p[0] for p in bins]
+    bin_edges += bins[-1][1:]
     bin_edges = array('d', bin_edges)
 
-    h_total = ROOT.TH1D("h_total", ";p_{T}^{%s} [GeV];N" % (get_jet_str(var_prepend)), len(pt_bins), bin_edges)
+    h_total = ROOT.TH1D("h_total", ";p_{T}^{%s} [GeV];N" % (get_jet_str(var_prepend)), len(bins), bin_edges)
     for ind, val in enumerate(flav_dict['total'], 1):
         h_total.SetBinContent(ind, val[0])
         h_total.SetBinError(ind, val[1])
 
     for flav_key in [k for k in flav_dict.keys() if k != 'total']:
-        h_flav = ROOT.TH1D("h_%s" % flav_key, ";p_{T}^{%s} [GeV];N" % (get_jet_str(var_prepend)).title(), len(pt_bins), bin_edges)
+        h_flav = ROOT.TH1D("h_%s" % flav_key, ";p_{T}^{%s} [GeV];N" % (get_jet_str(var_prepend)).title(), len(bins), bin_edges)
         for ind, val in enumerate(flav_dict[flav_key], 1):
             h_flav.SetBinContent(ind, val[0])
             h_flav.SetBinError(ind, val[1])
@@ -188,7 +188,12 @@ def compare_flavour_fractions_vs_pt(input_files, dirnames, pt_bins, labels, flav
     """
     bin_centers = [0.5*(x[0]+x[1]) for x in pt_bins]
     bin_widths = [0.5*(x[1]-x[0]) for x in pt_bins]
-    info = [get_flavour_efficiencies(ifile, sel, pt_bins, var_prepend=var_prepend, which_jet=(which_jet if "Dijet" in sel else "both"))
+    info = [get_flavour_efficiencies(ifile,
+                                     sel,
+                                     bins=pt_bins,
+                                     var_prepend=var_prepend,
+                                     which_jet=(which_jet if "Dijet" in sel else "both"),
+                                     metric='pt')
             for ifile, sel in zip(input_files, dirnames)]
     contribs = []
     N = len(bin_centers)
@@ -242,7 +247,7 @@ def compare_flavour_fractions_vs_pt(input_files, dirnames, pt_bins, labels, flav
 
 def do_flavour_fraction_vs_pt(input_file, dirname, pt_bins, output_filename, title="", var_prepend="", which_jet="both"):
     """Plot all flavour fractions vs PT for one input file & dirname in the ROOT file"""
-    info = get_flavour_efficiencies(input_file, dirname, pt_bins, var_prepend=var_prepend, which_jet=(which_jet if "Dijet" in dirname else "both"))
+    info = get_flavour_efficiencies(input_file, dirname, bins=pt_bins, var_prepend=var_prepend, which_jet=(which_jet if "Dijet" in dirname else "both"), metric='pt')
 
     leg_draw_opt = "LP"
     plot_u = Contribution(info['u'].CreateGraph(), label="Up", line_color=ROOT.kRed, marker_color=ROOT.kRed, marker_style=20, leg_draw_opt=leg_draw_opt)
@@ -267,7 +272,45 @@ def do_flavour_fraction_vs_pt(input_file, dirname, pt_bins, output_filename, tit
     p_flav.get_modifier().GetXaxis().SetTitleOffset(1.4)
     p_flav.get_modifier().GetXaxis().SetTitleSize(.045)
     p_flav.set_logx(do_more_labels=True, do_exponent=False)
-    p_flav.legend.SetX1(0.56)
+    p_flav.legend.SetX1(0.65)
     p_flav.legend.SetY1(0.65)
     p_flav.legend.SetY2(0.87)
+    p_flav.save(output_filename)
+
+
+def do_flavour_fraction_vs_eta(input_file, dirname, eta_bins, output_filename, title="", var_prepend="", which_jet="both"):
+    """Plot all flavour fractions vs eta for one input file & dirname in the ROOT file"""
+    info = get_flavour_efficiencies(input_file,
+                                    dirname,
+                                    bins=eta_bins,
+                                    var_prepend=var_prepend,
+                                    which_jet="both", # since no jet/jet1/jet2 in hist name
+                                    metric='eta')
+
+    leg_draw_opt = "LP"
+    plot_u = Contribution(info['u'].CreateGraph(), label="Up", line_color=ROOT.kRed, marker_color=ROOT.kRed, marker_style=20, leg_draw_opt=leg_draw_opt)
+    plot_d = Contribution(info['d'].CreateGraph(), label="Down", line_color=ROOT.kBlue, marker_color=ROOT.kBlue, marker_style=21, leg_draw_opt=leg_draw_opt)
+    plot_s = Contribution(info['s'].CreateGraph(), label="Strange", line_color=ROOT.kBlack, marker_color=ROOT.kBlack, marker_style=22, leg_draw_opt=leg_draw_opt)
+    plot_c = Contribution(info['c'].CreateGraph(), label="Charm", line_color=ROOT.kGreen-3, marker_color=ROOT.kGreen-3, marker_style=23, leg_draw_opt=leg_draw_opt)
+    plot_b = Contribution(info['b'].CreateGraph(), label="Bottom", line_color=ROOT.kOrange-3, marker_color=ROOT.kOrange-3, marker_style=33, leg_draw_opt=leg_draw_opt)
+    plot_g = Contribution(info['g'].CreateGraph(), label="Gluon", line_color=ROOT.kViolet, marker_color=ROOT.kViolet, marker_style=29, leg_draw_opt=leg_draw_opt)
+    plot_unknown = Contribution(info['unknown'].CreateGraph(), label="Unknown", line_color=ROOT.kGray+1, marker_color=ROOT.kGray+1, marker_style=26, leg_draw_opt=leg_draw_opt)
+
+    p_flav = Plot([plot_d, plot_u, plot_s, plot_c, plot_b, plot_g, plot_unknown],
+                  what='graph',
+                  xtitle="y^{%s}" % get_jet_str(var_prepend),
+                  ytitle="Fraction",
+                  title=title,
+                  xlim=(eta_bins[0][0], eta_bins[-1][1]),
+                  ylim=[0, 1],
+                  has_data=False)
+    p_flav.default_canvas_size = (600, 600)
+    p_flav.plot("AP")
+    p_flav.main_pad.SetBottomMargin(0.16)
+    p_flav.get_modifier().GetXaxis().SetTitleOffset(1.4)
+    p_flav.get_modifier().GetXaxis().SetTitleSize(.045)
+    # move legend to middle to avoid overlap
+    p_flav.legend.SetX1(0.65)
+    p_flav.legend.SetY1(0.4)
+    p_flav.legend.SetY2(0.62)
     p_flav.save(output_filename)
