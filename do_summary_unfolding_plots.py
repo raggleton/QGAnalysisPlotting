@@ -1999,18 +1999,6 @@ if __name__ == "__main__":
     parser.add_argument("--outputDir",
                         default=None,
                         help='Output directory (default is the source dir)')
-    parser.add_argument("--yodaInputDijet",
-                        action='append',
-                        default=[],
-                        help='Yoda input file (from dijet plugin)')
-    parser.add_argument("--yodaInputZPJ",
-                        action='append',
-                        default=[],
-                        help='Yoda input file (from Z+Jet plugin)')
-    parser.add_argument("--yodaLabel",
-                        action='append',
-                        default=[],
-                        help='Yoda input file label')
     parser.add_argument("--onlyYodaData",
                         action='store_true',
                         help='Only plot data & Yoda inputs (ignore MG+Py, H++)')
@@ -2023,12 +2011,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # Get input data
-    if not any([args.h5input, args.h5inputRivet, args.yodaInputDijet, args.yodaInputZPJ]):
-        raise RuntimeError("Need one of --h5input, --h5inputRivet, --yodaInputDijet, or --yodaInputZPJ")
-
-    if (len(args.yodaInputDijet) != len(args.yodaLabel)
-        and len(args.yodaInputZPJ) != len(args.yodaLabel)):
-        raise RuntimeError("Number of --yodaInputDijet/yodaInputZPJ must match number of --yodaLabel")
+    if not any([args.h5input, args.h5inputRivet]):
+        raise RuntimeError("Need one of --h5input, --h5inputRivet")
 
     if not any([args.doMetricVsPt, args.doSummaryBins]):
         raise RuntimeError("You should do at least one of --doMetricVsPt, --doSummaryBins")
@@ -2041,7 +2025,7 @@ if __name__ == "__main__":
         print("Setting output dir to", args.outputDir)
 
     # ----------------------------------------------------------------------
-    # Read in data from h5 file
+    # Read in data from h5 files
     # -----------------------------------------------------------------------
     print("Reading in unfolding data from existing HDF5 file...")
     with pd.HDFStore(args.h5input) as store:
@@ -2049,6 +2033,7 @@ if __name__ == "__main__":
     print(df.head())
     print("# entries:", len(df.index))
 
+    yoda_labels = None
     if args.h5inputRivet:
         print("Reading in RIVET data from existing HDF5 file...")
         with pd.HDFStore(args.h5inputRivet) as store:
@@ -2058,14 +2043,8 @@ if __name__ == "__main__":
         # Figure out YODA entries from column names
         mean_columns = [c.replace("mean_err_", '') for c in df_rivet.columns if 'mean_err_' in c]
         print(mean_columns)
-        args.yodaLabel = mean_columns
-        df = pd.merge(df, df_rivet, how='outer')
-
-    # -----------------------------------------------------------------------
-    # Get stats from YODA files, add to dataframe
-    # -----------------------------------------------------------------------
-    if len(args.yodaInputDijet) > 0:
-        df_rivet = get_dataframe_from_yoda_inputs(zip(args.yodaInputDijet, args.yodaInputZPJ, args.yodaLabel))
+        yoda_labels = mean_columns
+        print("Setting yoda_labels to", yoda_labels)
         df = pd.merge(df, df_rivet, how='outer')
 
     convert_df_types(df)
@@ -2118,8 +2097,8 @@ if __name__ == "__main__":
     has_dijet = any(["Dijet" in r['name'] for r in regions])
     has_zpj = any(["ZPlusJet" in r['name'] for r in regions])
 
-    # Add extra samples
-    for ylabel in args.yodaLabel:
+    # Add extra samples we got from dataframe
+    for ylabel in yoda_labels:
         ylabel = dataframe_yoda_key(ylabel)
         if ylabel not in SAMPLE_STYLE_DICTS:
             print("No entry found in SAMPLE_STYLE_DICTS for", ylabel, ", using defaults")
