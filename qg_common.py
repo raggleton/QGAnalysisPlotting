@@ -255,7 +255,7 @@ VAR_UNFOLD_DICT_TARGET0p5 = {
 VAR_UNFOLD_DICT_TARGET0p5 = {
     'jet_puppiMultiplicity': {
         # 'gen': np.array([0, 10, 15, 20, 30, 50, 75, 100, 150], dtype='d'),
-        'gen': np.array([-0.5, 9.5, 15.5, 21.5, 29.5, 39.5, 59.5, 99.5], dtype='d'),
+        'gen': np.array([-0.5, 9.5, 15.5, 21.5, 29.5, 39.5, 59.5, 99.5, 149.5], dtype='d'),
         'reco': None
     },
     'jet_pTD': {
