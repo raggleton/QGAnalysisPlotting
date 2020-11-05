@@ -221,7 +221,8 @@ class Plot(object):
                  title=None, xtitle=None, ytitle=None, xlim=None, ylim=None,
                  legend=True, extend=False,
                  subplot=None, subplot_type=None, subplot_title=None, subplot_limits=None,
-                 has_data=True, is_preliminary=True):
+                 has_data=True, is_preliminary=True,
+                 lumi=cu.get_lumi_str(do_dijet=False, do_zpj=True)):
         """
         contributions: list
             List of Contribution objects.
@@ -322,6 +323,7 @@ class Plot(object):
         self.subplot_line_width = 2
         self.subplot_line_color = ROOT.kBlack
         self.has_data = has_data
+        self.lumi = lumi
         self.is_preliminary = is_preliminary
 
     def add_contribution(self, *contribution):
@@ -773,7 +775,7 @@ class Plot(object):
         # cms_latex.DrawLatex(0.14, latex_height, "#font[62]{CMS}#font[52]{ Preliminary}")
         # cms_latex.DrawLatex(0.14, latex_height, "#font[62]{CMS}")
         cms_latex.SetTextAlign(ROOT.kHAlignRight + ROOT.kVAlignBottom)
-        cms_latex.DrawLatex(0.94, latex_height, " 35.9 fb^{-1} (13 TeV)")
+        cms_latex.DrawLatex(0.94, latex_height, " %s fb^{-1} (13 TeV)" % self.lumi)
 
         # Add title to plot
         text_latex = ROOT.TLatex()

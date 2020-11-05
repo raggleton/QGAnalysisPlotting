@@ -67,6 +67,9 @@ class Setup(object):
     def __init__(self, jet_algo, region, angle, output_dir='.', has_data=False, is_ave_pt_binning=False):
         self.jet_algo = jet_algo
         self.region = region
+        do_zpj = "ZPlusJets" in region['name']
+        do_dijet = "Dijet" in region['name']
+        self.lumi = cu.get_lumi_str(do_dijet=do_dijet, do_zpj=do_zpj)
         self.pt_var_str = "#LT p_{T}^{jet} #GT" if is_ave_pt_binning else "p_{T}^{jet}"
         self.pt_str = self.pt_var_str + " [GeV]"
         self.has_data = has_data
@@ -195,6 +198,7 @@ class GenPtBinnedPlotter(object):
         this_plot.legend.SetY2(0.88)
         this_plot.left_margin = 0.16
         this_plot.y_padding_max_linear = 1.8
+        this_plot.lumi = self.setup.lumi
 
     @staticmethod
     def check_entries(entries, message=""):
@@ -1961,6 +1965,7 @@ class GenLambdaBinnedPlotter(object):
         this_plot.legend.SetY2(0.9)
         this_plot.left_margin = 0.16
         this_plot.y_padding_max_log = 5000 # space for title
+        this_plot.lumi = self.setup.lumi
 
     @staticmethod
     def check_entries(entries, message=""):
@@ -2735,6 +2740,7 @@ class RecoPtBinnedPlotter(object):
         this_plot.legend.SetX2(0.98)
         this_plot.legend.SetY2(0.88)
         this_plot.left_margin = 0.16
+        this_plot.lumi = self.setup.lumi
 
     @staticmethod
     def check_entries(entries, message=""):
@@ -3697,6 +3703,7 @@ class BigNormalised1DPlotter(object):
         # Good if many vertical binning lines
         this_plot.legend.SetFillColorAlpha(ROOT.kWhite, 0.9)
         this_plot.legend.SetFillStyle(1001)
+        this_plot.lumi = self.setup.lumi
 
     def _plot_pt_bins(self, plot, binning_scheme='generator'):
         """Plot vertical pt bin lines"""
@@ -4430,7 +4437,9 @@ def do_all_big_absolute_1d_plots_per_region_angle(setup):
     # if has_jackknife_input_vars: print("We have jackknife input variations")
     # if has_jackknife_response_vars: print("We have jackknife response variations")
 
-    unfolder_plotter = MyUnfolderPlotter(unfolder, is_data=setup.has_data)
+    unfolder_plotter = MyUnfolderPlotter(unfolder,
+                                         is_data=setup.has_data,
+                                         lumi=setup.lumi)
 
     print("...doing standard big absolute1D plots")
 

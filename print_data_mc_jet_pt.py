@@ -56,6 +56,7 @@ def do_jet_pt_plot(entries,
                    scale_syst=None,
                    pdf_syst=None,
                    total_syst=None,
+                   lumi=cu.get_lumi_str(do_dijet=False, do_zpj=True)
                    ):
     # entries = [ent for ent in entries if ent]
 
@@ -94,8 +95,9 @@ def do_jet_pt_plot(entries,
                 ytitle="#frac{dN}{dp_{T}} [events / GeV]",
                 title=title,
                 subplot_type='ratio',
-                subplot_title="Simulation / data",
-                subplot_limits=subplot_limits)
+                subplot_title="Simulation / Data",
+                subplot_limits=subplot_limits,
+                lumi=lumi)
     plot.y_padding_max_log = 1E4
     plot.legend.SetX1(0.6)
     plot.legend.SetY1(0.68)
@@ -847,7 +849,8 @@ def do_dijet_pt_plots(workdir,
                        experimental_syst=None,
                        scale_syst=None,
                        pdf_syst=None,
-                       total_syst=total_gr if show_total_systematics else None)
+                       total_syst=total_gr if show_total_systematics else None,
+                       lumi=cu.get_lumi_str(do_dijet=True, do_zpj=False))
 
 
 
@@ -1372,7 +1375,8 @@ def do_zpj_pt_plots(workdir,
                    experimental_syst=None,
                    scale_syst=None,
                    pdf_syst=None,
-                   total_syst=total_gr if show_total_systematics else None
+                   total_syst=total_gr if show_total_systematics else None,
+                   lumi=cu.get_lumi_str(do_dijet=False, do_zpj=True)
                    )
 
 

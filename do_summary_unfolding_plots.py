@@ -569,6 +569,9 @@ class SummaryPlotter(object):
                     subplot_title='Simulation / Data',
                     subplot_limits=(0.5, 1.5) if self.has_data else (0.9, 1.1)
                     )
+        plot.lumi = cu.get_lumi_str(do_dijet=any([do_dijet_fwd, do_dijet_cen]),
+                                    do_zpj=do_zpj)
+
         # plot.default_canvas_size = (700, 600)
         plot.title_start_y = 0.85
         plot.title_left_offset = 0.05
@@ -1269,7 +1272,15 @@ class SummaryPlotter(object):
         # i.e. 1-pad_right_margin, but remember to scale by pad width
         end_x = 1 - right_margin - (pads[0].GetAbsWNDC() * pad_right_margin)
         end_x = 0.985  # to match legend
-        cms_latex.DrawLatexNDC(end_x, latex_height, " 35.9 fb^{-1} (13 TeV)")
+        # Figure out why physical region(s) are in plot, to get correct lumi
+        do_zpj, do_dijet = False, False
+        for sg in selection_groups:
+            if any(["ZPlusJets" in x[0] for x in sg['selections']]):
+                do_zpj = True
+            if any(["Dijet" in x[0] for x in sg['selections']]):
+                do_dijet = True
+                lumi = cu.get_lumi_str(do_dijet=do_dijet, do_zpj=do_zpj)
+        cms_latex.DrawLatexNDC(end_x, latex_height, " %s fb^{-1} (13 TeV)" % lumi)
         gc_stash.append(cms_latex)
 
         canvas.Update()
@@ -1363,7 +1374,7 @@ class SummaryPlotter(object):
         mean_q_vs_g_ratio_hists, rms_q_vs_g_ratio_hists = self.construct_q_vs_g_hist_groups(gluon_selections=gluon_selections,
                                                                                             quark_selections=quark_selections)
         mean_q_vs_g_data_vs_mc_ratio_hists = self.construct_q_vs_g_mc_vs_data_hist_groups(mean_q_vs_g_ratio_hists)
-        self.plot_two_row_bins_summary(selection_groups=gluon_selections,
+        self.plot_two_row_bins_summary(selection_groups=quark_selections[0:1]+gluon_selections[1:], # merge the two to get correct identification of doing dijet and Z+J e.g. for lumi
                                        upper_row_hist_groups=mean_q_vs_g_ratio_hists,
                                        lower_row_hist_groups=mean_q_vs_g_data_vs_mc_ratio_hists,
                                        upper_row_label="#splitline{Gluon mean /}{Quark mean}",
@@ -1387,7 +1398,7 @@ class SummaryPlotter(object):
 
         gluon_mean_hists, _ = self.construct_mean_rms_hist_groups(gluon_selections)
         quark_mean_hists, _ = self.construct_mean_rms_hist_groups(quark_selections)
-        self.plot_two_row_bins_summary(selection_groups=gluon_selections,
+        self.plot_two_row_bins_summary(selection_groups=quark_selections[0:1]+gluon_selections[1:], # merge the two to get correct identification of doing dijet and Z+J e.g. for lumi
                                        upper_row_hist_groups=gluon_mean_hists,
                                        lower_row_hist_groups=quark_mean_hists,
                                        upper_row_label="#splitline{Gluon-enriched}{         mean}",  # manually do spacing, since ROOT only left-aligns splitline
@@ -1949,7 +1960,15 @@ class SummaryPlotter(object):
         # # i.e. 1-pad_right_margin, but remember to scale by pad width
         end_x = 1 - right_margin - (upper_pads[0].GetAbsWNDC() * pad_right_margin)
         # end_x = 0.985  # to match legend
-        cms_latex.DrawLatexNDC(end_x, latex_height, " 35.9 fb^{-1} (13 TeV)")
+        # Figure out why physical region(s) are in plot, to get correct lumi
+        do_zpj, do_dijet = False, False
+        for sg in selection_groups:
+            if any(["ZPlusJets" in x[0] for x in sg['selections']]):
+                do_zpj = True
+            if any(["Dijet" in x[0] for x in sg['selections']]):
+                do_dijet = True
+        lumi = cu.get_lumi_str(do_dijet=do_dijet, do_zpj=do_zpj)
+        cms_latex.DrawLatexNDC(end_x, latex_height, " %s fb^{-1} (13 TeV)" % lumi)
         gc_stash.append(cms_latex)
 
         canvas.Update()

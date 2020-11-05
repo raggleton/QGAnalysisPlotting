@@ -863,3 +863,13 @@ def get_visible_axis_range(axis):
     # not the visible one
     return axis.GetBinLowEdge(axis.GetFirst()), axis.GetFirst(), axis.GetBinLowEdge(axis.GetLast()+1), axis.GetLast()
 
+
+def get_lumi_str(do_dijet=True, do_zpj=True):
+    """Get correct luminosity depending on signal region(s), since dijet prescaled"""
+    lumi = "35.9"
+    if do_zpj and do_dijet:
+        lumi = " #leq35.9"
+    elif not do_zpj and do_dijet:
+        lumi = " <35.9"
+    return lumi
+

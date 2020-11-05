@@ -329,6 +329,7 @@ class DijetZPJGenPtBinnedPlotter(object):
             plot.left_margin = 0.2
             plot.left_title_offset_fudge_factor = 8
             plot.y_padding_max_linear = 1.8
+            plot.lumi = cu.get_lumi_str(do_dijet=do_dijet, do_zpj=do_zpj)
 
             # disable adding objects to legend & drawing - we'll do it manually
             # since we want proper error bar

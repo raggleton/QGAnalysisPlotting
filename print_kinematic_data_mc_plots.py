@@ -66,12 +66,14 @@ def do_1D_plot(hists,
                components_styles_dicts,
                output_filename,
                do_ratio=True,
-               logx=False, logy=False,
+               logx=False,
+               logy=False,
                normalise_hists=True,
                title="",
                xtitle=None,
                mean_rel_error=0.4,
-               data_first=True):
+               data_first=True,
+               lumi=cu.get_lumi_str(do_dijet=False, do_zpj=True)):
 
     if (len(hists) != len(components_styles_dicts)):
         raise RuntimeError("# hists != # components_styles_dicts (%d vs %d)" % (len(hists), len(components_styles_dicts)))
@@ -122,7 +124,8 @@ def do_1D_plot(hists,
                            subplot_type='ratio' if do_ratio else None,
                            subplot_title=subplot_title,
                            subplot=entries[0][0] if do_ratio else None,
-                           subplot_limits=subplot_limits)
+                           subplot_limits=subplot_limits,
+                           lumi=lumi)
 
 
 def do_all_1D_projection_plots_in_dir(directories,
@@ -156,6 +159,10 @@ def do_all_1D_projection_plots_in_dir(directories,
     common_list_of_obj = sorted(list(common_list_of_obj))
 
     pt_bins = qgc.PT_BINS
+
+    lumi = cu.get_lumi_str(do_dijet=False, do_zpj=True)
+    if "dijet" in region_str.lower():
+      lumi = cu.get_lumi_str(do_dijet=True, do_zpj=False)
 
     for obj_name in common_list_of_obj:
 
@@ -206,6 +213,7 @@ def do_all_1D_projection_plots_in_dir(directories,
                            logy=True,
                            title=this_title,
                            mean_rel_error=-1,
+                           lumi=lumi,
                            output_filename=os.path.join(output_dir, obj_name+".%s" % (OUTPUT_FMT)))
 
             # do a rebinned version for some variables
@@ -227,6 +235,7 @@ def do_all_1D_projection_plots_in_dir(directories,
                            logx=logx,
                            logy=True,
                            title=this_title,
+                           lumi=lumi,
                            output_filename=os.path.join(output_dir, obj_name+"_rebin.%s" % (OUTPUT_FMT)))
 
         else:
@@ -318,6 +327,7 @@ def do_all_1D_projection_plots_in_dir(directories,
                            title=_title(region_str, pt_min, pt_max),
                            xtitle=xtitle,
                            mean_rel_error=-1,
+                           lumi=lumi,
                            output_filename=os.path.join(output_dir, obj_name+"_pt%dto%d.%s" % (pt_min, pt_max, OUTPUT_FMT)))
 
 

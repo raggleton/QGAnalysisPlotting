@@ -871,7 +871,8 @@ def do_box_plot(entries, output_filename, xlim=None, ylim=None, transpose=False)
     # cms_latex.DrawLatex(0.14, latex_height, "#font[62]{CMS}#font[52]{ Preliminary Simulation}")
     # cms_latex.DrawLatex(0.14, latex_height, "#font[62]{CMS}")
     cms_latex.SetTextAlign(ROOT.kHAlignRight + ROOT.kVAlignBottom)
-    cms_latex.DrawLatexNDC(0.97, latex_height, " 35.9 fb^{-1} (13 TeV)")
+    lumi = cu.get_lumi_str(do_dijet=False, do_zpj=True)
+    cms_latex.DrawLatexNDC(0.97, latex_height, " %s fb^{-1} (13 TeV)" % lumi)
 
     subplot_title = None
     subplot_pad.cd()
@@ -1189,7 +1190,10 @@ def do_mean_rms_summary_plot(entries,
     else:
         axes[mean_plot_ind].text(0, text_height, "         Preliminary Simulation", horizontalalignment='left', transform=axes[mean_plot_ind].transAxes)
     # Add lumi text
-    axes[mean_plot_ind].text(1, text_height, "35.9 $\\mathrm{fb}^{\\mathrm{-1}}$ (13 TeV)", horizontalalignment='right', transform=axes[mean_plot_ind].transAxes)
+    lumi = cu.get_lumi_str(do_dijet=False, do_zpj=True)
+    if "dijet" in region_title.lower():
+        lumi = cu.get_lumi_str(do_dijet=True, do_zpj=False)
+    axes[mean_plot_ind].text(1, text_height, "%s $\\mathrm{fb}^{\\mathrm{-1}}$ (13 TeV)" % lumi, horizontalalignment='right', transform=axes[mean_plot_ind].transAxes)
 
     # Set axis titles
     axes[mean_plot_ind].set_ylabel('Mean $\\pm$ error')

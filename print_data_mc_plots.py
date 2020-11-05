@@ -337,7 +337,8 @@ def do_plots(root_dir, title):
                                            mean_rel_error=0.4,
                                            subplot_type='ratio',
                                            subplot_title=subplot_title,
-                                           subplot_limits=subplot_limits)
+                                           subplot_limits=subplot_limits,
+                                           lumi=cu.get_lumi_str(do_doijet=True, do_zpj=False))
 
                 # dj forward only
                 if len(dijet_fwd_entries) > 0:
@@ -353,7 +354,8 @@ def do_plots(root_dir, title):
                                            mean_rel_error=0.4,
                                            subplot_type='ratio',
                                            subplot_title=subplot_title,
-                                           subplot_limits=subplot_limits)
+                                           subplot_limits=subplot_limits,
+                                           lumi=cu.get_lumi_str(do_doijet=True, do_zpj=False))
 
                 # zpj only
                 if len(zpj_entries) > 0:
@@ -369,19 +371,20 @@ def do_plots(root_dir, title):
                             # find nearest divisor
                             while (zpj_entries[0][0].GetNbinsX() % rebin != 0):
                                 rebin += 1
-                    # qgp.do_comparison_plot(zpj_entries,
-                    #                        "%s/ptBinned/%s_pt%dto%d_zpj.%s" % (plot_dir, v, start_val, end_val, OUTPUT_FMT),
-                    #                        rebin=rebin,
-                    #                        draw_opt=draw_opt,
-                    #                        title=_title(qgc.ZpJ_LABEL, start_val, end_val),
-                    #                        xtitle=xlabel,
-                    #                        xlim=qgp.calc_auto_xlim([d[0] for d in zpj_entries]) if auto_xlim else xlim,
-                    #                        ylim=ylim,
-                    #                        data_first=has_data,
-                    #                        mean_rel_error=0.4,
-                    #                        subplot_type='ratio',
-                    #                        subplot_title=subplot_title,
-                    #                        subplot_limits=subplot_limits)
+                    qgp.do_comparison_plot(zpj_entries,
+                                           "%s/ptBinned/%s_pt%dto%d_zpj.%s" % (plot_dir, v, start_val, end_val, OUTPUT_FMT),
+                                           rebin=rebin,
+                                           draw_opt=draw_opt,
+                                           title=_title(qgc.ZpJ_LABEL, start_val, end_val),
+                                           xtitle=xlabel,
+                                           xlim=qgp.calc_auto_xlim([d[0] for d in zpj_entries]) if auto_xlim else xlim,
+                                           ylim=ylim,
+                                           data_first=has_data,
+                                           mean_rel_error=0.4,
+                                           subplot_type='ratio',
+                                           subplot_title=subplot_title,
+                                           subplot_limits=subplot_limits,
+                                           lumi=cu.get_lumi_str(do_doijet=False, do_zpj=True))
 
 
             # Do overall summary plots across all pt bins

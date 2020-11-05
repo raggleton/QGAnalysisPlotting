@@ -34,11 +34,15 @@ class MyUnfolderPlotter(object):
 
     """Class to do all sort of plots about a given MyUnfolder obj"""
 
-    def __init__(self, unfolder, is_data=False):
+    def __init__(self,
+                 unfolder,
+                 is_data=False,
+                 lumi=cu.get_lumi_str(do_dijet=False, do_zpj=True)):
         self.unfolder = unfolder
         self.output_fmt = 'pdf'
         self.is_data = is_data
         self.default_palette = ROOT.kBird
+        self.lumi = lumi
 
         # Custom colour scheme - french flag colouring
         NRGBs = 5
@@ -172,6 +176,7 @@ class MyUnfolderPlotter(object):
         plot.left_margin = 0.08
         # plot.left_title_offset_fudge_factor = 7
         MyUnfolderPlotter._readable_legend(plot.legend)
+        plot.lumi = self.lumi
 
     def draw_bias_vector(self, do_unfolded=True, output_dir='.', append="", title=""):
         """Plot bias vector used in regularisation (if it exists)"""
@@ -208,7 +213,8 @@ class MyUnfolderPlotter(object):
                     ytitle="N",
                     has_data=self.is_data,
                     subplot_title="Unfolded / bias" if do_unfolded else None)
-        plot.default_canvas_size = (800, 600)
+        # plot.default_canvas_size = (800, 600)
+        self._modify_plot(plot)
         plot.plot("NOSTACK HIST")
         plot.set_logy(do_more_labels=False, override_check=True)
         plot.legend.SetY1NDC(0.77)
@@ -1576,6 +1582,7 @@ class MyUnfolderPlotter(object):
                           has_data=self.is_data)
         plot_means.y_padding_max_linear = 1.2
         plot_means.legend.SetY2(.88)
+        plot_means.lumi = self.lumi
         plot_means.plot("HISTE NOSTACK")
         plot_means.set_logx()
         plot_means.container.GetYaxis().SetTitleOffset(plot_means.container.GetYaxis().GetTitleOffset()*1.1)
@@ -1592,6 +1599,7 @@ class MyUnfolderPlotter(object):
                         has_data=self.is_data)
         plot_rms.y_padding_max_linear = 1.2
         plot_means.legend.SetY2(.88)
+        plot_rms.lumi = self.lumi
         plot_rms.plot("HISTE NOSTACK")
         plot_rms.set_logx()
         plot_rms.container.GetYaxis().SetTitleOffset(plot_rms.container.GetYaxis().GetTitleOffset()*1.1)

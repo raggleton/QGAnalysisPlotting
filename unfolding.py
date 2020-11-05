@@ -657,7 +657,10 @@ def main():
             ROOT.BinningXMLExporter.ExportXML(unfolder.detector_binning, this_output_dir, "detector_binning.xml", True, True, 2)
             ROOT.BinningXMLExporter.ExportXML(unfolder.generator_binning, this_output_dir, "generator_binning.xml", True, True, 2)
 
-            unfolder_plotter = MyUnfolderPlotter(unfolder, is_data=not MC_INPUT)
+            unfolder_plotter = MyUnfolderPlotter(unfolder,
+                                                 is_data=not MC_INPUT,
+                                                 lumi=cu.get_lumi_str(do_dijet="Dijet" in region['name'],
+                                                                      do_zpj="ZPlusJets" in in region['name']))
             plot_args = dict(output_dir=this_output_dir, append=append)
 
             # SetEpsMatrix ensures rank properly calculated when inverting
