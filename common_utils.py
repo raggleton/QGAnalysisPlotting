@@ -752,7 +752,7 @@ def shift_to_covariance(hist):
 
 def same_floats(a, b, rel_tolerance=1E-5):
     diff = abs(a-b)
-    return diff/max(abs(a), abs(b)) < rel_tolerance
+    return diff/max(1E-100, max(abs(a), abs(b))) < rel_tolerance
 
 
 def print_tmatrixsparse(matrix, name="matrix"):
