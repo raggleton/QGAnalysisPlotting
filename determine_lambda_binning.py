@@ -223,7 +223,7 @@ def calc_variable_binning_purity_stability(h2d, purity_goal=0.4, stability_goal=
 
     If integer_binning, then ensure only even gaps between bins, such that when
     they are halved, you get an equal proportion on each side. This ensures
-    the binned variable doesn't have spikes. 
+    the binned variable doesn't have spikes.
     It also subtracts 0.5 from each bin edge to ensure integers fall in middle of bin.
 
     e.g. 10 - 14: becomes [10, 12, 14] when halved, so covers [[10, 12), [12, 14)],

@@ -2722,7 +2722,6 @@ def main():
 
             if len(region['pdf_systematics']) > 0 and MC_INPUT:
                 # Do a big absolute 1D plot for sanity
-                
                 # Don't care about inputs, all the same as nominal
                 # pdf_contributions = [
                 #     Contribution(pdict['unfolder'].input_hist_bg_subtracted,

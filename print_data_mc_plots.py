@@ -265,8 +265,8 @@ def do_plots(root_dir, title):
                 #################
                 rebin = 2
                 v_lower = v.lower()
-                # if "multiplicity" in v_lower:
-                #     rebin = 1
+                if "multiplicity" in v_lower:
+                    rebin = 1
                 # elif "flavour" in v_lower or "thrust" in v_lower:
                 #     rebin = 1
                 # elif 'ptd' in v_lower:
@@ -285,7 +285,7 @@ def do_plots(root_dir, title):
                 #         xlim = (0, 50)
                 #     else:
                 #         xlim = (0, 80)
-                
+
                 auto_xlim = False
                 if "multiplicity" in v_lower or "thrust" in v_lower:
                     auto_xlim = True
@@ -414,7 +414,7 @@ def do_plots(root_dir, title):
             # df = construct_dataframe_from_hists(dijet_cen_entries=dijet_cen_1d_entries,
             #                                     dijet_fwd_entries=dijet_fwd_entries,
             #                                     zpj_entries=zpj_entries)
-            
+
             qgp.do_mean_rms_summary_plot(dijet_cen_1d_entries[:],
                                          pt_bins[:],
                                          "%s/ptBinned/%s_box_dijet_cen_mpl.%s" % (plot_dir, v, OUTPUT_FMT),

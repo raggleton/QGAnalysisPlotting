@@ -145,7 +145,7 @@ def get_yoda_stats_dict(input_filename,
                     if "d11-x02-y13" in yoda_name:
                         print("d11-x02-y13:", mean, mean_err)
 
-                    if not (0 < mean < 50):
+                    if not (0 < mean < 150):
                         print("WARNING bad mean:", mean, yoda_name)
 
                     delta, delta_err = 0, 0

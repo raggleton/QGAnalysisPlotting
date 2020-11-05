@@ -480,7 +480,7 @@ def do_dijet_pt_plots(workdir,
         mgpy_label = "MG5+Pythia8"
         hpp_label = "Herwig++"
 
-        print(mg_tfile)
+        # print(mg_tfile)
         data_hist = cu.get_from_tfile(data_tfile, histname)
         mg_hist = cu.get_from_tfile(mg_tfile, histname)
         # py_hist = cu.get_from_tfile(py_tfile, histname)

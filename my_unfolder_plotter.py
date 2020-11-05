@@ -1249,34 +1249,34 @@ class MyUnfolderPlotter(object):
         return h_new
 
 
-    def draw_rel_uncertainty_1d(self, 
+    def draw_rel_uncertainty_1d(self,
                                 draw_detector=True,
                                 draw_unfolded=True,
                                 output_dir='.',
                                 append="",
                                 title=""):
         """Draw big 1D plots of relative uncertainty in each bin"""
-        
+
         if draw_detector:
             reco_data = self.unfolder.input_hist
             reco_data_rel_err = self._convert_error_bars_to_error_ratio_hist(reco_data)
-            
+
             reco_data_bg_sub = self.unfolder.input_hist_bg_subtracted
             reco_data_bg_sub_rel_err = self._convert_error_bars_to_error_ratio_hist(reco_data_bg_sub)
 
             entries = [
                 Contribution(reco_data_rel_err, label="Unfolding input [detector-level]",
-                             line_color=ROOT.kRed, 
+                             line_color=ROOT.kRed,
                              line_width=1,
-                             marker_color=ROOT.kRed, 
-                             marker_size=0.6, 
+                             marker_color=ROOT.kRed,
+                             marker_size=0.6,
                              marker_style=20,
                              normalise_hist=False),
                 Contribution(reco_data_bg_sub_rel_err, label="Unfolding input bg-subtracted [detector-level]",
-                             line_color=ROOT.kBlue, 
+                             line_color=ROOT.kBlue,
                              line_width=1,
-                             marker_color=ROOT.kBlue, 
-                             marker_size=0.6, 
+                             marker_color=ROOT.kBlue,
+                             marker_size=0.6,
                              marker_style=20,
                              normalise_hist=False)
             ]
@@ -1314,17 +1314,17 @@ class MyUnfolderPlotter(object):
                 append = "_" + append
             output_filename = "%s/detector_rel_err_reco_binning%s.%s" % (output_dir, append, self.output_fmt)
             plot.save(output_filename)
-        
+
         if draw_unfolded:
             unfolded_data = self.unfolder.unfolded
             unfolded_data_rel_err = self._convert_error_bars_to_error_ratio_hist(unfolded_data)
 
             entries = [
                 Contribution(unfolded_data_rel_err, label="Unfolded data",
-                             line_color=ROOT.kRed, 
+                             line_color=ROOT.kRed,
                              line_width=1,
-                             marker_color=ROOT.kRed, 
-                             marker_size=0.6, 
+                             marker_color=ROOT.kRed,
+                             marker_size=0.6,
                              marker_style=20,
                              normalise_hist=False),
             ]

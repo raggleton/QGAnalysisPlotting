@@ -115,7 +115,7 @@ SAMPLE_STYLE_DICTS = {
         "marker_style": cu.Marker.get('crossX', filled=False),
         "marker_size": COMMON_STYLE_DICT['marker_size'] * 1.2, # these shapes always come out small
     },
-  
+
     dataframe_yoda_key("Pythia8 CP2"): {
         # "color": ROOT.kMagenta-7,
         # "color": ROOT.kViolet-1,
@@ -543,7 +543,7 @@ class SummaryPlotter(object):
                     if (hist.GetBinContent(i) + hist.GetBinError(i)) > y_limit:
                         hits_legend = True
                         break
-        
+
         # if metric == "mean" and angle.var == "jet_pTD" and jet_algo['name'] == "ak8puppi" and do_groomed:
         #     print('h_min, min_bin_num, h_max, max_bin_num:', h_min, min_bin_num, h_max, max_bin_num)
         #     print('0.6*entries[-1].obj.GetNbinsX():', 0.6*entries[-1].obj.GetNbinsX())
@@ -1738,7 +1738,7 @@ class SummaryPlotter(object):
                 min_ratio_y_max = 1. + y_range*0.1
                 if lower_draw_hist.GetMaximum() < min_ratio_y_max:
                     lower_draw_hist.SetMaximum(min_ratio_y_max)
-            
+
             # 4 is the magic primary number, not 3
             yax.SetNdivisions(4, 5, 0, True)
 

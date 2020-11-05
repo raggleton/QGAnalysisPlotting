@@ -330,32 +330,32 @@ class GenPtBinnedPlotter(object):
 
     def plot_unfolded_with_alt_truth_normalised(self, do_chi2=False):
         data_total_errors_style = dict(label="Data (total uncert.)",
-                                       line_color=self.plot_styles['unfolded_total_colour'], 
-                                       line_width=self.line_width, 
+                                       line_color=self.plot_styles['unfolded_total_colour'],
+                                       line_width=self.line_width,
                                        line_style=1,
-                                       marker_color=self.plot_styles['unfolded_total_colour'], 
-                                       marker_style=cu.Marker.get('circle'), 
+                                       marker_color=self.plot_styles['unfolded_total_colour'],
+                                       marker_style=cu.Marker.get('circle'),
                                        marker_size=self.plot_styles['unfolded_marker_size'],
                                        leg_draw_opt="LEP")
         data_stat_errors_style = dict(label="Data (stat. uncert.)",
-                                      line_color=self.plot_styles['unfolded_stat_colour'], 
-                                      line_width=self.line_width, 
+                                      line_color=self.plot_styles['unfolded_stat_colour'],
+                                      line_width=self.line_width,
                                       line_style=1,
-                                      marker_color=self.plot_styles['unfolded_stat_colour'], 
-                                      marker_style=cu.Marker.get('circle'), 
+                                      marker_color=self.plot_styles['unfolded_stat_colour'],
+                                      marker_style=cu.Marker.get('circle'),
                                       marker_size=0.0001,
                                       leg_draw_opt="LEP")  # you need a non-0 marker to get the horizontal bars at the end of errors
 
         mc_style = dict(label=self.region['mc_label'],
-                        line_color=self.plot_styles['gen_colour'], 
+                        line_color=self.plot_styles['gen_colour'],
                         line_width=self.line_width,
                         marker_color=self.plot_styles['gen_colour'],
                         marker_size=self.plot_styles['gen_marker_size'],
                         marker_style=self.plot_styles['gen_marker'],
                         leg_draw_opt="LEP" if self.plot_styles['gen_marker_size'] > 0 else "LE")
         alt_mc_style = dict(label=self.region['alt_mc_label'],
-                            line_color=self.plot_styles['alt_gen_colour'], 
-                            line_width=self.line_width, 
+                            line_color=self.plot_styles['alt_gen_colour'],
+                            line_width=self.line_width,
                             line_style=1,
                             marker_color=self.plot_styles['alt_gen_colour'],
                             marker_size=self.plot_styles['alt_gen_marker_size'],
@@ -1516,7 +1516,7 @@ class GenPtBinnedPlotter(object):
         (basically the subplot from plot_unfolded_with_exp_systs_normalised)
         """
         def _convert_error_bars_to_error_ratio_hist(h, direction=1):
-            """Create hist with bin content = error shift / bin value, 0 error"""
+            """Create hist with bin content = (bin value ± bin error) / bin value, 0 error"""
             h_new = h.Clone(h.GetName() + cu.get_unique_str())
             for ibin in range(1, h_new.GetNbinsX()+1):
                 if h.GetBinContent(ibin) > 0:
@@ -2775,23 +2775,23 @@ class RecoPtBinnedPlotter(object):
 
     def plot_detector_normalised(self, alt_detector=None):
         data_total_errors_style = dict(label="Data",
-                                       line_color=self.plot_styles['unfolded_total_colour'], 
-                                       line_width=self.line_width, 
+                                       line_color=self.plot_styles['unfolded_total_colour'],
+                                       line_width=self.line_width,
                                        line_style=1,
-                                       marker_color=self.plot_styles['unfolded_total_colour'], 
-                                       marker_style=cu.Marker.get('circle'), 
+                                       marker_color=self.plot_styles['unfolded_total_colour'],
+                                       marker_style=cu.Marker.get('circle'),
                                        marker_size=self.plot_styles['unfolded_marker_size'],
                                        leg_draw_opt="LEP")
         mc_style = dict(label=self.region['mc_label'],
-                        line_color=self.plot_styles['gen_colour'], 
+                        line_color=self.plot_styles['gen_colour'],
                         line_width=self.line_width,
                         marker_color=self.plot_styles['gen_colour'],
                         marker_size=self.plot_styles['gen_marker_size'],
                         marker_style=self.plot_styles['gen_marker'],
                         leg_draw_opt="LEP" if self.plot_styles['gen_marker_size'] > 0 else "LE")
         alt_mc_style = dict(label=self.region['alt_mc_label'],
-                            line_color=self.plot_styles['alt_gen_colour'], 
-                            line_width=self.line_width, 
+                            line_color=self.plot_styles['alt_gen_colour'],
+                            line_width=self.line_width,
                             line_style=1,
                             marker_color=self.plot_styles['alt_gen_colour'],
                             marker_size=self.plot_styles['alt_gen_marker_size'],

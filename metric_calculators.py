@@ -119,7 +119,7 @@ try:
         ----------
         hist : uproot.TH1
             Description
-        ematrix : TYPE
+        ematrix : numpy 2D array
             Description
         hist : uproot.TH1
 
