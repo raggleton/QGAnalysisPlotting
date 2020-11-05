@@ -879,37 +879,44 @@ def main():
                 if not (alt_hist_mc_gen and alt_hist_mc_reco_bg_subtracted):
                     raise RuntimeError("Cannot create truth template for regularisation as alt MC missing")
 
-                # Create truth template by fitting MC to data @ detector level
-                # --------------------------------------------------------------
-                # Fit the two MC templates to data to get their fractions
-                # Then use the same at truth level
-                # This template will allow us to setup a more accurate L matrix,
-                # and a bias hist
-                template_maker = TruthTemplateMaker(generator_binning=unfolder.generator_binning,
-                                                    detector_binning=unfolder.detector_binning,
-                                                    variable_bin_edges_reco=unfolder.variable_bin_edges_reco,
-                                                    variable_bin_edges_gen=unfolder.variable_bin_edges_gen,
-                                                    variable_name=unfolder.variable_name,
-                                                    pt_bin_edges_reco=unfolder.pt_bin_edges_reco,
-                                                    pt_bin_edges_gen=unfolder.pt_bin_edges_gen,
-                                                    pt_bin_edges_underflow_reco=unfolder.pt_bin_edges_underflow_reco,
-                                                    pt_bin_edges_underflow_gen=unfolder.pt_bin_edges_underflow_gen,
-                                                    output_dir=this_output_dir)
+                truth_template = hist_mc_gen_all
 
-                # thing to be fitted
-                template_maker.set_input(unreg_unfolder.input_hist_gen_binning_bg_subtracted)
+                if args.biasVector == "template":
+                    # Create truth template by fitting MC to data @ detector level
+                    # --------------------------------------------------------------
+                    # Fit the two MC templates to data to get their fractions
+                    # Then use the same at truth level
+                    # This template will allow us to setup a more accurate L matrix,
+                    # and a bias hist
+                    template_maker = TruthTemplateMaker(generator_binning=unfolder.generator_binning,
+                                                        detector_binning=unfolder.detector_binning,
+                                                        variable_bin_edges_reco=unfolder.variable_bin_edges_reco,
+                                                        variable_bin_edges_gen=unfolder.variable_bin_edges_gen,
+                                                        variable_name=unfolder.variable_name,
+                                                        pt_bin_edges_reco=unfolder.pt_bin_edges_reco,
+                                                        pt_bin_edges_gen=unfolder.pt_bin_edges_gen,
+                                                        pt_bin_edges_underflow_reco=unfolder.pt_bin_edges_underflow_reco,
+                                                        pt_bin_edges_underflow_gen=unfolder.pt_bin_edges_underflow_gen,
+                                                        output_dir=this_output_dir)
 
-                # templates to do the fitting, and to create the truth-level distribution
-                template_maker.add_mc_template(name=region['mc_label'],
-                                               hist_reco=hist_mc_reco_gen_binning_all_bg_subtracted,
-                                               hist_gen=hist_mc_gen_all,
-                                               colour=ROOT.kRed)
-                template_maker.add_mc_template(name=region['alt_mc_label'],
-                                               hist_reco=alt_hist_mc_reco_bg_subtracted_gen_binning,
-                                               hist_gen=alt_hist_mc_gen,
-                                               colour=ROOT.kViolet+1)
+                    # thing to be fitted
+                    template_maker.set_input(unreg_unfolder.input_hist_gen_binning_bg_subtracted)
 
-                truth_template = template_maker.create_template()
+                    # templates to do the fitting, and to create the truth-level distribution
+                    template_maker.add_mc_template(name=region['mc_label'],
+                                                   hist_reco=hist_mc_reco_gen_binning_all_bg_subtracted,
+                                                   hist_gen=hist_mc_gen_all,
+                                                   colour=ROOT.kRed)
+                    template_maker.add_mc_template(name=region['alt_mc_label'],
+                                                   hist_reco=alt_hist_mc_reco_bg_subtracted_gen_binning,
+                                                   hist_gen=alt_hist_mc_gen,
+                                                   colour=ROOT.kViolet+1)
+
+                    truth_template = template_maker.create_template()
+
+                elif args.biasVector == "alttruth":
+                    truth_template = alt_hist_truth
+
                 unfolder.truth_template = truth_template
                 unfolder.hist_bin_chopper.add_obj("truth_template", truth_template)
                 unreg_unfolder.truth_template = truth_template
@@ -1141,36 +1148,40 @@ def main():
                     # Since different input need to redo the template creation
                     jk_tau = 0
                     if REGULARIZE != "None":
+                        jk_truth_template = jk_dict['input_gen']
+                        if args.biasVector == "template":
+                            # Create truth template by fitting MC to data @ detector level
+                            # --------------------------------------------------------------
+                            # Fit the two MC templates to data to get their fractions
+                            # Then use the same at truth level
+                            # This template will allow us to setup a more accurate L matrix,
+                            # and a bias hist
+                            jk_template_maker = TruthTemplateMaker(generator_binning=unfolder.generator_binning,
+                                                                   detector_binning=unfolder.detector_binning,
+                                                                   variable_bin_edges_reco=unfolder.variable_bin_edges_reco,
+                                                                   variable_bin_edges_gen=unfolder.variable_bin_edges_gen,
+                                                                   variable_name=unfolder.variable_name,
+                                                                   pt_bin_edges_reco=unfolder.pt_bin_edges_reco,
+                                                                   pt_bin_edges_gen=unfolder.pt_bin_edges_gen,
+                                                                   pt_bin_edges_underflow_reco=unfolder.pt_bin_edges_underflow_reco,
+                                                                   pt_bin_edges_underflow_gen=unfolder.pt_bin_edges_underflow_gen,
+                                                                   output_dir=jk_output_dir)
 
-                        # Create truth template by fitting MC to data @ detector level
-                        # --------------------------------------------------------------
-                        # Fit the two MC templates to data to get their fractions
-                        # Then use the same at truth level
-                        # This template will allow us to setup a more accurate L matrix,
-                        # and a bias hist
-                        jk_template_maker = TruthTemplateMaker(generator_binning=unfolder.generator_binning,
-                                                               detector_binning=unfolder.detector_binning,
-                                                               variable_bin_edges_reco=unfolder.variable_bin_edges_reco,
-                                                               variable_bin_edges_gen=unfolder.variable_bin_edges_gen,
-                                                               variable_name=unfolder.variable_name,
-                                                               pt_bin_edges_reco=unfolder.pt_bin_edges_reco,
-                                                               pt_bin_edges_gen=unfolder.pt_bin_edges_gen,
-                                                               pt_bin_edges_underflow_reco=unfolder.pt_bin_edges_underflow_reco,
-                                                               pt_bin_edges_underflow_gen=unfolder.pt_bin_edges_underflow_gen,
-                                                               output_dir=jk_output_dir)
+                            jk_template_maker.set_input(jk_unfolder.input_hist_gen_binning_bg_subtracted)
 
-                        jk_template_maker.set_input(jk_unfolder.input_hist_gen_binning_bg_subtracted)
+                            jk_template_maker.add_mc_template(name=region['mc_label'],
+                                                              hist_reco=hist_mc_reco_gen_binning_all_bg_subtracted,
+                                                              hist_gen=hist_mc_gen_all,
+                                                              colour=ROOT.kRed)
+                            jk_template_maker.add_mc_template(name=region['alt_mc_label'],
+                                                              hist_reco=alt_hist_mc_reco_bg_subtracted_gen_binning,
+                                                              hist_gen=alt_hist_mc_gen,
+                                                              colour=ROOT.kViolet+1)
 
-                        jk_template_maker.add_mc_template(name=region['mc_label'],
-                                                          hist_reco=hist_mc_reco_gen_binning_all_bg_subtracted,
-                                                          hist_gen=hist_mc_gen_all,
-                                                          colour=ROOT.kRed)
-                        jk_template_maker.add_mc_template(name=region['alt_mc_label'],
-                                                          hist_reco=alt_hist_mc_reco_bg_subtracted_gen_binning,
-                                                          hist_gen=alt_hist_mc_gen,
-                                                          colour=ROOT.kViolet+1)
+                            jk_truth_template = jk_template_maker.create_template()
+                        elif args.biasVector == "alttruth":
+                            jk_truth_template = alt_hist_mc_gen
 
-                        jk_truth_template = jk_template_maker.create_template()
                         jk_unfolder.truth_template = jk_truth_template
                         jk_unfolder.hist_bin_chopper.add_obj("truth_template", jk_unfolder.truth_template)
                         jk_unfolder.hist_bin_chopper.add_obj("alt_hist_truth", alt_hist_mc_gen)

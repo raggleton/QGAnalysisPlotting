@@ -110,6 +110,11 @@ def get_unfolding_argparser(description='', parser=None):
                                       type=float,
                                       default=0,
                                       help='Bias factor for regularization')
+    regularization_group.add_argument("--biasVector",
+                                      choices=['template', 'truth', 'alttruth'],
+                                      default='template',
+                                      help="Bias vector: template from reco fit, truth MC, alt. truth MC" \
+                                           "Only useful if --biasFactor != 0")
 
     # MC INPUT OPTIONS
     # --------------------------------------------------------------------------
@@ -365,13 +370,15 @@ def get_unfolding_output_dir(args):
             reg_axis_str = '_onlyRegPt'
         elif args.regularizeAxis == 'angle':
             reg_axis_str = '_onlyRegAngle'
-        # reg_axis_str += "_onlyBinFactors"
-        # reg_axis_str += "_invTruthMoreBins"
-        # reg_axis_str += "_useTemplateFit_derivative"
-        reg_axis_str += "_useTemplateFit"
-        # reg_axis_str += "_invTruthUseUnfolded"
 
         if args.biasFactor != 0:
+            if args.biasVector == "template"
+              reg_axis_str += "_useTemplateFit"
+            elif args.biasVector == "truth"
+              reg_axis_str += "_useTruth"
+            elif args.biasVector == "alttruth"
+              reg_axis_str += "_useAltTruth"
+
             bias_str = "_biasFactor%g" % args.biasFactor
             bias_str = bias_str.replace(".", "p")
 
