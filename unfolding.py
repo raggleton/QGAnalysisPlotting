@@ -420,9 +420,9 @@ def main():
     MC_INPUT = args.MCinput
     MC_SPLIT = args.MCsplit if args.MCinput else False
 
-    jet_algo = "AK4 PF PUPPI"
+    jet_algo = "AK4"
     if "ak8puppi" in src_dir:
-        jet_algo = "AK8 PF PUPPI"
+        jet_algo = "AK8"
 
     if args.angles[0] == "all":
         angles = qgc.COMMON_VARS

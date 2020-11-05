@@ -280,7 +280,7 @@ class DijetZPJGenPtBinnedPlotter(object):
 
             if do_dijet:
                 dijet_entries.append(Contribution(dijet_detector_hist,
-                                                  label='Detector-level\n%s' % (mean_template.format(round(dijet_detector_mean, n_dp), round(dijet_detector_mean_err, n_dp))),
+                                                  label='Detector-level (stat. uncert.)\n%s' % (mean_template.format(round(dijet_detector_mean, n_dp), round(dijet_detector_mean_err, n_dp))),
                                                   line_color=self.plot_colours['dijet_colour'],
                                                   line_width=self.line_width,
                                                   line_style=self.line_style_detector,
@@ -298,7 +298,7 @@ class DijetZPJGenPtBinnedPlotter(object):
 
             if do_zpj:
                 zpj_entries.append(Contribution(zpj_detector_hist,
-                                            label='Detector-level\n%s' % (mean_template.format(round(zpj_detector_mean, n_dp), round(zpj_detector_mean_err, n_dp))),
+                                            label='Detector-level (stat. uncert.)\n%s' % (mean_template.format(round(zpj_detector_mean, n_dp), round(zpj_detector_mean_err, n_dp))),
                                             line_color=self.plot_colours['zpj_colour'],
                                             line_width=self.line_width,
                                             line_style=self.line_style_detector,
