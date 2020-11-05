@@ -476,7 +476,7 @@ class Plot(object):
         yax.SetTitleOffset(yax.GetTitleOffset()*factor*(self.left_title_offset_fudge_factor*self.left_margin))
         # container.GetYaxis().SetTickLength(0.03/factor)
 
-    def set_logx(self, state=True, do_more_labels=True):
+    def set_logx(self, state=True, do_more_labels=True, do_exponent=True):
         # Call AFTER plot()
         try:
             self.main_pad.SetLogx(int(state))
@@ -490,17 +490,24 @@ class Plot(object):
             print("")
             raise
 
-        if do_more_labels:
-            if self.container:
-                ax = self.container.GetXaxis()
-                if ax:
+        if state:
+            if do_more_labels:
+                if self.container:
+                    ax = self.container.GetXaxis()
                     ax.SetMoreLogLabels()
-            if self.subplot_container:
-                ax = self.subplot_container.GetXaxis()
-                if ax:
+                if self.subplot_container:
+                    ax = self.subplot_container.GetXaxis()
                     ax.SetMoreLogLabels()
 
-    def set_logy(self, state=True, do_more_labels=True, override_check=False):
+            if not do_exponent:
+                if self.container:
+                    ax = self.container.GetXaxis()
+                    ax.SetNoExponent()
+                if self.subplot_container:
+                    ax = self.subplot_container.GetXaxis()
+                    ax.SetNoExponent()
+
+    def set_logy(self, state=True, do_more_labels=True, override_check=False, do_exponent=True):
         # Call AFTER plot()
         try:
             y_low = self.container.GetHistogram().GetMinimum()
@@ -519,11 +526,17 @@ class Plot(object):
             print("")
             raise
 
-        # Don't make subplot log y...we never want that
-        if self.container:
-            ax = self.container.GetYaxis()
-            if ax and state and do_more_labels:
-                ax.SetMoreLogLabels()
+        if state:
+            # Don't make subplot log y...we never want that
+            if do_more_labels:
+                if self.container:
+                    ax = self.container.GetYaxis()
+                    ax.SetMoreLogLabels()
+
+            if not do_exponent:
+                if self.container:
+                    ax = self.container.GetYaxis()
+                    ax.SetNoExponent()
 
         # update y limits since padding different for log/lin
         if not self.ylim:

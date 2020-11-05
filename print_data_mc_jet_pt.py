@@ -116,7 +116,7 @@ def do_jet_pt_plot(entries,
     # avoid x title hitting labels
     plot.subplot_container.GetXaxis().SetLabelSize(plot.subplot_container.GetXaxis().GetLabelSize()*0.9)
 
-    plot.set_logx(do_more_labels=False)
+    plot.set_logx(do_more_labels=True, do_exponent=False)
     plot.set_logy(do_more_labels=False)
 
     # Special case if data first object

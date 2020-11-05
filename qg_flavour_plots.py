@@ -236,7 +236,7 @@ def compare_flavour_fractions_vs_pt(input_files, dirnames, pt_bins, labels, flav
     p.legend.SetX1(0.56)
     p.legend.SetY1(0.65)
     p.legend.SetY2(0.87)
-    p.set_logx(do_more_labels=False)
+    p.set_logx(do_more_labels=True, do_exponent=False)
     p.save(output_filename)
 
 
@@ -265,7 +265,7 @@ def do_flavour_fraction_vs_pt(input_file, dirname, pt_bins, output_filename, tit
     p_flav.main_pad.SetBottomMargin(0.16)
     p_flav.get_modifier().GetXaxis().SetTitleOffset(1.4)
     p_flav.get_modifier().GetXaxis().SetTitleSize(.045)
-    p_flav.set_logx(do_more_labels=False)
+    p_flav.set_logx(do_more_labels=True, do_exponent=False)
     p_flav.legend.SetX1(0.56)
     p_flav.legend.SetY1(0.65)
     p_flav.legend.SetY2(0.87)
