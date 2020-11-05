@@ -100,8 +100,11 @@ class ComparisonPlotter():
         return True
 
     def get_pt_bin_title(self, bin_edge_low, bin_edge_high):
-        title = (("{jet_algo1}, {region1_label} region\n"
-                  "{jet_algo2}, {region2_label} region\n"
+        region_str = "{jet_algo1}, {region1_label} region\n"
+        if self.region1['label'] != self.region2['label']:
+            region_str += "{jet_algo2}, {region2_label} region\n"
+
+        title = ((region_str + 
                   "{bin_edge_low:g} < {pt_str} < {bin_edge_high:g} GeV")
                  .format(
                     jet_algo1=self.setup1.jet_algo,
@@ -131,7 +134,7 @@ class ComparisonPlotter():
 
             entries = [
                 Contribution(unfolded1_hist_bin_stat_errors,
-                             label="Data (stat. unc.)\n%s" % self.region1['label'],
+                             label="Data (stat. unc.)\n%s" % self.setup1.label,
                              line_color=self.plot_styles['unfolded_stat_colour'],
                              line_width=self.line_width,
                              line_style=1,
@@ -139,7 +142,7 @@ class ComparisonPlotter():
                              marker_style=cu.Marker.get('circle'),
                              marker_size=0.75),
                 Contribution(unfolded2_hist_bin_stat_errors,
-                             label="Data (stat. unc.)\n%s" % self.region2['label'],
+                             label="Data (stat. unc.)\n%s" % self.setup2.label,
                              line_color=self.plot_styles['unfolded_unreg_colour'],
                              line_width=self.line_width,
                              line_style=1,
@@ -182,7 +185,7 @@ def do_comparison_binned_plots_per_region_angle(setup1, setup2):
                                 hist_bin_chopper2=hist_bin_chopper2,
                                 unfolder2=unfolder2)
 
-    plotter.plot_unfolded_normalised_pt_bin_offset(bin_offset_2=-2)
+    plotter.plot_unfolded_normalised_pt_bin_offset(bin_offset_2=0)
 
 
 if __name__ == "__main__":
@@ -312,19 +315,18 @@ if __name__ == "__main__":
             if region['name'] != unpickled_region2['name']:
                 raise RuntimeError("Mismatch region2 name")
 
-            # add custom labels
-            unpickled_region1['label'] = region['label'] + "\n[%s]" % (args.label1)
-            unpickled_region2['label'] = region['label'] + "\n[%s]" % (args.label2)
 
             setup1 = Setup(jet_algo=jet_algo1,
                            region=unpickled_region1,
                            angle=angle,
                            output_dir=os.path.join(args.outputDir, region['name'], angle.var),
                            has_data=has_data1)
+            setup1.label = args.label1  # add custom label
             setup2 = Setup(jet_algo=jet_algo2,
                            region=unpickled_region2,
                            angle=angle,
                            output_dir=os.path.join(args.outputDir, region['name'], angle.var),
                            has_data=has_data2)
+            setup2.label = args.label2
 
             do_comparison_binned_plots_per_region_angle(setup1, setup2)
