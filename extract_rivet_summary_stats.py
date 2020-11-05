@@ -16,13 +16,14 @@ import sys
 import argparse
 import pandas as pd
 import numpy as np
-
+import uproot
 import yoda
 
 # my packages
 import common_utils as cu
 import rivet_naming as rn
 import metric_calculators as metrics
+from extract_unfolding_summary_stats import unpack_slim_unfolding_root_file_uproot, scale_ematrix_by_bin_widths, check_hist_for_negatives
 
 
 def normalize_areas(areas, errors):
@@ -44,7 +45,11 @@ def normalize_areas(areas, errors):
         errors *= scale_factor
 
 
-def get_yoda_stats_dict(input_filename, key_label, reference_hist=None):
+def get_yoda_stats_dict(input_filename,
+                        key_label,
+                        data_ak4_dirname=None,
+                        data_ak8_dirname=None,
+                        ignore_missing=False):
     """Get summary statistics from YODA file full of histograms
 
     Parameters
@@ -53,14 +58,23 @@ def get_yoda_stats_dict(input_filename, key_label, reference_hist=None):
         YODA filename
     key_label : str
         Label to append to column names, e.g. mean_X, rms_err_X
-    reference_hist : None, optional
-        TODO
+    data_ak4_dirname : None, optional
+        Name of directory with AK4 data results for delta calculation
+    data_ak8_dirname : None, optional
+        Name of directory with AK8 data results for delta calculation
+    ignore_missing : bool, optional
+        If True, fill in 0 values for missing hists; otherwise raise KeyError
 
     Returns
     -------
     list(dict)
         List of dicts. Each dict represents one radius/region/angle combination,
         with keys/values as metric names/values
+
+    Raises
+    ------
+    KeyError
+        Description
     """
     yoda_dict = yoda.read(input_filename)
     hname = list(yoda_dict.keys())[0]
@@ -76,9 +90,49 @@ def get_yoda_stats_dict(input_filename, key_label, reference_hist=None):
         algo_name = "%spuppi" % jet_radius.name.lower()
         for region in regions:
             for lambda_var in rn.LAMBDA_VARS:
+
+                # Get data results for delta calculation
+                unfolding_dict = None
+                data_dirname = None
+                if jet_radius.name.lower() == "ak4" and data_ak4_dirname:
+                    data_dirname = data_ak4_dirname
+                elif jet_radius.name.lower() == "ak8" and data_ak8_dirname:
+                    data_dirname = data_ak8_dirname
+                if data_dirname:
+                    angle_output_dir = "%s/%s" % (region.name, lambda_var.hist_name)
+                    root_filename = os.path.join(data_dirname, angle_output_dir, "unfolding_result_slim.root")
+                    uproot_file = uproot.open(root_filename)
+                    unfolding_dict = unpack_slim_unfolding_root_file_uproot(uproot_file, region.name, lambda_var.hist_name, pt_bins)
+
+                # Iterate over each pt bin for this radius/region/var, get metrics
                 for ibin, pt_bin in enumerate(pt_bins):
+                    # print(jet_radius, lambda_var, region, ibin, pt_bin)
+
                     yoda_name = rn.get_plot_name(jet_radius, region, lambda_var, pt_bin)
                     yoda_name = "/%s/%s" % (path, yoda_name)
+                    if yoda_name not in yoda_dict:
+                        if ignore_missing:
+                            print("Warning, missing", yoda_name, "filling with 0s")
+                            result_dict = {
+                                'jet_algo': algo_name,
+                                'region': region.name,
+                                'isgroomed': region.is_groomed,
+                                'pt_bin': ibin,
+                                'angle': lambda_var.hist_name,
+
+                                'mean_%s' % key_label: 0,
+                                'mean_err_%s' % key_label: 0,
+
+                                'rms_%s' % key_label: 0,
+                                'rms_err_%s' % key_label: 0,
+
+                                'delta_%s' % key_label: 0,
+                                'delta_err_%s' % key_label: 0,
+                            }
+                            results_dicts.append(result_dict)
+                        else:
+                            raise KeyError("Missing hist %s" % yoda_name)
+
                     hist = yoda_dict[yoda_name]
                     areas, widths, centers, errors = metrics.yoda_hist_to_values(hist)
                     normalize_areas(areas, errors)
@@ -88,7 +142,27 @@ def get_yoda_stats_dict(input_filename, key_label, reference_hist=None):
                     rms_u = metrics.calc_rms_ucert(areas, centers)
                     rms, rms_err = rms_u.nominal_value, rms_u.std_dev
 
-                    # FIXME: need delta calculation, needs reference hist
+                    if "d11-x02-y13" in yoda_name:
+                        print("d11-x02-y13:", mean, mean_err)
+
+                    if not (0 < mean < 50):
+                        print("WARNING bad mean:", mean, yoda_name)
+
+                    delta, delta_err = 0, 0
+                    if unfolding_dict:
+                        unfolded_hist_bin_total_errors = unfolding_dict['unfolding_total_err_hists'][ibin]
+                        ematrix = scale_ematrix_by_bin_widths(unfolding_dict['unfolding_total_ematrices'][ibin].values,
+                                                              metrics.get_uproot_th1_bin_widths(unfolded_hist_bin_total_errors))
+                        check_hist_for_negatives(unfolded_hist_bin_total_errors)
+                        areas_a, widths_a, centers_a, errors_a = metrics.uproot_th1_to_arrays(unfolded_hist_bin_total_errors)
+                        areas_b, widths_b, centers_b, errors_b = metrics.yoda_hist_to_values(hist)
+                        print(centers_a)
+                        print(widths_a)
+                        print(centers_b)
+                        print(widths_b)
+                        delta = metrics.calc_delta_jax(areas_a, areas_b)
+                        err = metrics.calc_delta_correlated_error_jax(areas_a, ematrix, areas_b, errors_b)
+
                     result_dict = {
                         'jet_algo': algo_name,
                         'region': region.name,
@@ -102,8 +176,8 @@ def get_yoda_stats_dict(input_filename, key_label, reference_hist=None):
                         'rms_%s' % key_label: rms,
                         'rms_err_%s' % key_label: rms_err,
 
-                        'delta_%s' % key_label: 0,
-                        'delta_err_%s' % key_label: 0,
+                        'delta_%s' % key_label: delta,
+                        'delta_err_%s' % key_label: delta_err,
                     }
                     results_dicts.append(result_dict)
     return results_dicts
@@ -129,7 +203,10 @@ def create_yoda_dataframe(yoda_stats_dicts):
     return df
 
 
-def get_dataframe_from_yoda_inputs(yoda_input_groups):
+def get_dataframe_from_yoda_inputs(yoda_input_groups,
+                                   data_ak4_dirname=None,
+                                   data_ak8_dirname=None,
+                                   ignore_missing=False):
     """Create dataframe from yoda input files & labels
 
     Each entry in yoda_input_groups is a [dijet filename, Z+J filename, label]
@@ -139,12 +216,20 @@ def get_dataframe_from_yoda_inputs(yoda_input_groups):
         yoda_stats_dicts = []
         # handle dijet first
         print("Processing", ylabel, yin_dijet)
-        stats_dict_dijet = get_yoda_stats_dict(yin_dijet, key_label=dataframe_yoda_key(ylabel))
+        stats_dict_dijet = get_yoda_stats_dict(yin_dijet,
+                                               key_label=dataframe_yoda_key(ylabel),
+                                               data_ak4_dirname=data_ak4_dirname,
+                                               data_ak8_dirname=data_ak8_dirname,
+                                               ignore_missing=ignore_missing)
         yoda_stats_dicts.extend(stats_dict_dijet)
 
         # then Z+J
         print("Processing", ylabel, yin_zpj)
-        stats_dict_zpj = get_yoda_stats_dict(yin_zpj, key_label=dataframe_yoda_key(ylabel))
+        stats_dict_zpj = get_yoda_stats_dict(yin_zpj,
+                                             key_label=dataframe_yoda_key(ylabel),
+                                             data_ak4_dirname=data_ak4_dirname,
+                                             data_ak8_dirname=data_ak8_dirname,
+                                             ignore_missing=ignore_missing)
         yoda_stats_dicts.extend(stats_dict_zpj)
 
         # Convert to dataframe, merge in with main dataframe
@@ -161,6 +246,12 @@ if __name__ == "__main__":
     parser.add_argument("--h5output",
                         default='rivet_summary.h5',
                         help=("Output HDF5 filename. Default is 'rivet_summary.h5'"))
+    parser.add_argument("--ak4source",
+                        default=None,
+                        help="Source directory for AK4 jets (should be the one made by unfolding.py")
+    parser.add_argument("--ak8source",
+                        default=None,
+                        help="Source directory for AK8 jets (should be the one made by unfolding.py")
     parser.add_argument("--yodaInputDijet",
                         action='append',
                         default=[],
@@ -173,6 +264,9 @@ if __name__ == "__main__":
                         action='append',
                         default=[],
                         help='Yoda input file label')
+    parser.add_argument("--ignoreMissing",
+                        action='store_true',
+                        help='Ignore missing bins/values')
     args = parser.parse_args()
 
     if (len(args.yodaInputDijet) != len(args.yodaLabel)
@@ -185,7 +279,10 @@ if __name__ == "__main__":
     # -----------------------------------------------------------------------
     # Get stats from YODA files, add to dataframe
     # -----------------------------------------------------------------------
-    df = get_dataframe_from_yoda_inputs(zip(args.yodaInputDijet, args.yodaInputZPJ, args.yodaLabel))
+    df = get_dataframe_from_yoda_inputs(zip(args.yodaInputDijet, args.yodaInputZPJ, args.yodaLabel),
+                                        data_ak4_dirname=args.ak4source,
+                                        data_ak8_dirname=args.ak8source,
+                                        ignore_missing=args.ignoreMissing)
     convert_df_types(df)
     print(df.head())
     print(df.tail())
