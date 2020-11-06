@@ -45,7 +45,7 @@ def do_all_flavour_fraction_plots(root_dir,
     """Do plots of jet flavour fractions vs pT, eta for both Z+jets and dijets regions"""
     # pt_bins = qgc.PT_BINS_INC_UFLOW
     pt_bins = qgc.PT_BINS_ZPJ
-    
+
     # Plots of all flavour fractions vs pT for a given sample/selection
     # --------------------------------------------------------------------------
     if zpj_dirname:
@@ -95,7 +95,7 @@ def do_all_flavour_fraction_plots(root_dir,
         },
         {
             'append': "_highPt2",
-            'title': '500 < p_{T}^{jet} GeV',
+            'title': 'p_{T}^{jet} > 500 GeV',
         },
     ]
     end = 1.7
