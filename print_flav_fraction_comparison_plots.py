@@ -42,10 +42,12 @@ def do_all_flavour_fraction_plots(root_dir,
                                   dj_cen_dirname="Dijet_QG_central_tighter",
                                   dj_fwd_dirname="Dijet_QG_forward_tighter",
                                   var_prepend=""):
-    """Do plots of jet flavour fractions vs pT, etafor both Z+jets and dijets regions"""
+    """Do plots of jet flavour fractions vs pT, eta for both Z+jets and dijets regions"""
     # pt_bins = qgc.PT_BINS_INC_UFLOW
     pt_bins = qgc.PT_BINS_ZPJ
+    
     # Plots of all flavour fractions vs pT for a given sample/selection
+    # --------------------------------------------------------------------------
     if zpj_dirname:
         # Z+jets
         qgf.do_flavour_fraction_vs_pt(input_file=os.path.join(root_dir, qgc.DY_FILENAME),
@@ -76,48 +78,74 @@ def do_all_flavour_fraction_plots(root_dir,
                                       output_filename="%s/dj_flavour_fractions_forward_jet.%s" % (plot_dir, OUTPUT_FMT))
 
     # Plots of all flavour fractions vs eta for a given sample/selection
+    # --------------------------------------------------------------------------
+    # Do for separate pt regions
+    pt_regions = [
+        {
+            'append': "_lowPt",
+            'title': '30 < p_{T}^{jet} < 100 GeV',
+        },
+        {
+            'append': "_midPt",
+            'title': '100 < p_{T}^{jet} < 250 GeV',
+        },
+        {
+            'append': "_highPt",
+            'title': '250 < p_{T}^{jet} < 500 GeV',
+        },
+        {
+            'append': "_highPt2",
+            'title': '500 < p_{T}^{jet} GeV',
+        },
+    ]
     end = 1.7
     interval = 0.25
     eta_bins = np.arange(-end, end+interval, interval)
     eta_bins = list(zip(eta_bins[:-1], eta_bins[1:])) # make pairwise bins
     print(eta_bins)
-    eta_title = "p_{T}^{jet} > 30 GeV"
-    if zpj_dirname:
-        # Z+jets
-        qgf.do_flavour_fraction_vs_eta(input_file=os.path.join(root_dir, qgc.DY_FILENAME),
-                                       title=qgc.ZpJ_LABEL +  "\n" + eta_title,
-                                       dirname=zpj_dirname,
-                                       eta_bins=eta_bins,
-                                       var_prepend=var_prepend,
-                                       which_jet="1",
-                                       output_filename="%s/zpj_flavour_fractions_vs_eta.%s" % (plot_dir, OUTPUT_FMT))
-    if dj_cen_dirname:
-        # Dijets central
-        qgf.do_flavour_fraction_vs_eta(input_file=os.path.join(root_dir, qgc.QCD_FILENAME),
-                                       title=qgc.Dijet_CEN_LABEL +  "\n" + eta_title,
-                                       dirname=dj_cen_dirname,
-                                       eta_bins=eta_bins,
-                                       var_prepend=var_prepend,
-                                       which_jet="1",
-                                       output_filename="%s/dj_flavour_fractions_central_jet_vs_eta.%s" % (plot_dir, OUTPUT_FMT))
+    for pt_region in pt_regions:
+      eta_title = pt_region['title']
+      append = pt_region['append']
 
-    if dj_fwd_dirname:
-        # Dijets central
-        qgf.do_flavour_fraction_vs_eta(input_file=os.path.join(root_dir, qgc.QCD_FILENAME),
-                                       title=qgc.Dijet_FWD_LABEL +  "\n" + eta_title,
-                                       dirname=dj_fwd_dirname,
-                                       eta_bins=eta_bins,
-                                       var_prepend=var_prepend,
-                                       which_jet="1",
-                                       output_filename="%s/dj_flavour_fractions_forward_jet_vs_eta.%s" % (plot_dir, OUTPUT_FMT))
+      if zpj_dirname:
+          # Z+jets
+          qgf.do_flavour_fraction_vs_eta(input_file=os.path.join(root_dir, qgc.DY_FILENAME),
+                                         title=qgc.ZpJ_LABEL +  "\n" + eta_title,
+                                         dirname=zpj_dirname,
+                                         eta_bins=eta_bins,
+                                         var_prepend=var_prepend,
+                                         which_jet="both",
+                                         append=append,
+                                         output_filename="%s/zpj_flavour_fractions_vs_eta%s.%s" % (plot_dir, append, OUTPUT_FMT))
+      if dj_cen_dirname:
+          # Dijets central
+          qgf.do_flavour_fraction_vs_eta(input_file=os.path.join(root_dir, qgc.QCD_FILENAME),
+                                         title=qgc.Dijet_CEN_LABEL +  "\n" + eta_title,
+                                         dirname=dj_cen_dirname,
+                                         eta_bins=eta_bins,
+                                         var_prepend=var_prepend,
+                                         which_jet="both",
+                                         append=append,
+                                         output_filename="%s/dj_flavour_fractions_central_jet_vs_eta%s.%s" % (plot_dir, append, OUTPUT_FMT))
 
+      if dj_fwd_dirname:
+          # Dijets central
+          qgf.do_flavour_fraction_vs_eta(input_file=os.path.join(root_dir, qgc.QCD_FILENAME),
+                                         title=qgc.Dijet_FWD_LABEL +  "\n" + eta_title,
+                                         dirname=dj_fwd_dirname,
+                                         eta_bins=eta_bins,
+                                         var_prepend=var_prepend,
+                                         which_jet="both",
+                                         append=append,
+                                         output_filename="%s/dj_flavour_fractions_forward_jet_vs_eta%s.%s" % (plot_dir, append, OUTPUT_FMT))
 
+    # Compare one flav fraction across samples/selections
+    # --------------------------------------------------------------------------
     dirnames = [dj_cen_dirname, dj_fwd_dirname, zpj_dirname]
     labels = [qgc.Dijet_CEN_LABEL, qgc.Dijet_FWD_LABEL, qgc.ZpJ_LABEL]
     this_dirnames = []
     this_labels = []
     for this_flav in ['g', 'u', 'd', '1-g'][:-1]:
-        # Compare gluon fractions across samples/selections
         input_files = [os.path.join(root_dir, qgc.QCD_FILENAME) if "dijet" in d.lower()
                        else os.path.join(root_dir, qgc.DY_FILENAME)
                        for d in dirnames if d is not None]
@@ -130,8 +158,6 @@ def do_all_flavour_fraction_plots(root_dir,
                                             var_prepend=var_prepend,
                                             which_jet="1",
                                             xtitle="p_{T}^{%s} [GeV]" % qgf.get_jet_str(var_prepend))
-
-    #
 
 
 def do_flavour_fraction_input_comparison_plots(root_dirs, labels, plot_dir="flav_fractions_comparison", zpj_dirname="ZPlusJets_QG", dj_cen_dirname="Dijet_QG_central_tighter", dj_fwd_dirname="Dijet_QG_forward_tighter", var_prepend=""):
