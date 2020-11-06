@@ -190,8 +190,7 @@ class GenPtBinnedPlotter(object):
         )
         self.unfolder = unfolder
 
-    @staticmethod
-    def _modify_plot(this_plot):
+    def _modify_plot(self, this_plot):
         this_plot.legend.SetX1(0.6)
         this_plot.legend.SetY1(0.7)
         this_plot.legend.SetX2(0.98)
@@ -1957,8 +1956,7 @@ class GenLambdaBinnedPlotter(object):
         )
         self.unfolder = unfolder
 
-    @staticmethod
-    def _modify_plot(this_plot):
+    def _modify_plot(self, this_plot):
         this_plot.legend.SetX1(0.6)
         this_plot.legend.SetY1(0.68)
         this_plot.legend.SetX2(0.98)
@@ -2733,8 +2731,7 @@ class RecoPtBinnedPlotter(object):
         )
         self.unfolder = unfolder
 
-    @staticmethod
-    def _modify_plot(this_plot):
+    def _modify_plot(self, this_plot):
         this_plot.legend.SetX1(0.6)
         this_plot.legend.SetY1(0.68)
         this_plot.legend.SetX2(0.98)
@@ -3683,8 +3680,7 @@ class BigNormalised1DPlotter(object):
         ylim = (0, 3*ymax)  # room for labels
         return ylim
 
-    @staticmethod
-    def _modify_plot(this_plot):
+    def _modify_plot(self, this_plot):
         this_plot.legend.SetX1(0.72)
         this_plot.legend.SetY1(0.72)
         this_plot.legend.SetX2(0.9)

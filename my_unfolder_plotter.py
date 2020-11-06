@@ -170,8 +170,7 @@ class MyUnfolderPlotter(object):
         legend.SetFillColorAlpha(ROOT.kWhite, 0.9)
         legend.SetFillStyle(1001)
 
-    @staticmethod
-    def _modify_plot(plot):
+    def _modify_plot(self, plot):
         plot.default_canvas_size = (800, 500)
         plot.left_margin = 0.08
         # plot.left_title_offset_fudge_factor = 7
