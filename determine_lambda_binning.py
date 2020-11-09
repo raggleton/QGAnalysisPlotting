@@ -218,7 +218,59 @@ def concat_row(arr2d, row_ind):
     return arr2d_new
 
 
-def calc_variable_binning_purity_stability(h2d, purity_goal=0.4, stability_goal=0.4, integer_binning=False):
+def get_1D_bins_from_arr2d(arr2d, axis='gen'):
+    return arr2d.sum(axis=0 if axis.lower() == 'gen' else 1)
+
+
+def get_unsmooth_bins(arr2d, axis='gen'):
+    """Find bins that are not smooth, ie they are spikey"""
+    # Get 1D hist, by summing over bins of other axis in 2D hist
+    bins = get_1D_bins_from_arr2d(arr2d, axis)
+    diffs = np.diff(bins)
+    diff_signs = np.sign(np.diff(bins))
+    bad_diff_bins = []
+    for i in range(len(diff_signs)-2):
+        if i == 0:
+            # edge case: consider i, i+1
+            # but avoid cases where binning is coarse - could be genuine
+            # 1st bin and not a spike i.e. +ve gradient up to peak
+            if diff_signs[i] != diff_signs[i+1] and diffs[i] < 0:
+                print('>>>>! Bin', i, 'diff wrong sign:', diffs[i], diffs[i+1])
+                bad_diff_bins.append(i)
+        else:
+            # consider i-1, i, i+1
+            if (diff_signs[i] != diff_signs[i-1] and
+                diff_signs[i] != diff_signs[i+1]):
+                print('>>>>! Bin', i, 'diff wrong sign:', diffs[i-1], diffs[i], diffs[i+1])
+                bad_diff_bins.append(i)
+    return bad_diff_bins
+
+
+def printable_bins(bins):
+    """Stop printing out floating-point errors
+
+    Trick by converting to str, then back to float
+
+    Parameters
+    ----------
+    bins : TYPE
+        Description
+
+    Returns
+    -------
+    list[[bin edge, bin edge]]
+    """
+    s = []
+    fmt = '%.3g'
+    for (a, b) in bins:
+        s.append([float(fmt % a), float(fmt % b)])
+    return s
+
+
+def calc_variable_binning_purity_stability(h2d,
+                                           purity_goal=0.4,
+                                           stability_goal=0.4,
+                                           integer_binning=False):
     """Determine binning by combining neighbouring bins until we reach desired purity & stability
 
     If integer_binning, then ensure only even gaps between bins, such that when
@@ -295,7 +347,7 @@ def calc_variable_binning_purity_stability(h2d, purity_goal=0.4, stability_goal=
     if integer_binning:
         last_bin -= 0.5
     these_bins[-1][1] = last_bin
-    print("Final binning:", these_bins)
+    print("Final binning:", printable_bins(these_bins))
     return these_bins
 
 
