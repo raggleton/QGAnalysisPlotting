@@ -375,101 +375,112 @@ def make_rebinned_2d_hist(h2d, new_binning, use_half_width_y=False):
         return rebin_2d_hist(h2d, new_binning, new_binning)
 
 
-def make_plots(h2d, var_dict, plot_dir, append="",
-               plot_migrations=True, plot_reco=True, plot_gen=True,
-               true_mean=None, true_rms=None):
+def make_plots(h2d,
+               var_dict,
+               plot_dir,
+               append="",
+               plot_maps=True,
+               plot_migrations=True,
+               plot_reco=True,
+               plot_gen=True,
+               true_mean=None,
+               true_rms=None,
+               div_bin_width=True):
     """Plot a 2D hist, with copies renormalised by row and by column.
 
     Also optionally plot migrations as 1D plot,
     as well as 1D projections for reco (y) & gen (x)
     """
     # Plot original 2D map, no renormalizing by axis
-    canv = ROOT.TCanvas("c"+cu.get_unique_str(), "", 700, 600)
-    canv.SetTicks(1, 1)
-    if var_dict.get("log", False):
-        canv.SetLogx()
-        canv.SetLogy()
-    pad = ROOT.gPad
-    pad.SetBottomMargin(0.12)
-    pad.SetLeftMargin(0.13)
-    pad.SetRightMargin(0.16)
-    xtitle_offset = 1.4
-    ytitle_offset = xtitle_offset * 1.1
-    ztitle_offset = xtitle_offset * 0.9
-    h2d.SetTitleOffset(xtitle_offset, 'X')
-    h2d.SetTitleOffset(ytitle_offset, 'Y')
-    h2d.SetTitleOffset(ztitle_offset, 'Z')
-    h2d.SetMinimum(1E-3)
-    if var_dict.get('log', False):
-        h2d.GetXaxis().SetLimits(1, 150)
-        h2d.GetYaxis().SetLimits(1, 150)
-    title = "%s;%s (GEN);%s (RECO)" % (var_dict.get('title', '').replace("\n", ", "), var_dict['var_label'], var_dict['var_label'])
-    h2d.SetTitle(title)
-    h2d.Draw("COLZ")
-    old_font_size = ROOT.gStyle.GetTitleFontSize()
-    if "#splitline" in var_dict.get('title', ''):
-        # need to shrink it down a bit
-        pad.SetTopMargin(0.16)
-        ROOT.gStyle.SetTitleFontSize(0.035)
+    h2d_renorm_x, h2d_renorm_y = None, None
+    if plot_maps or plot_migrations:
+        h2d_renorm_y = cu.make_normalised_TH2(h2d, 'Y', recolour=False, do_errors=True)
+        h2d_renorm_x = cu.make_normalised_TH2(h2d, 'X', recolour=False, do_errors=True)
+
+    if plot_maps:
+        canv = ROOT.TCanvas("c"+cu.get_unique_str(), "", 700, 600)
+        canv.SetTicks(1, 1)
+        if var_dict.get("log", False):
+            canv.SetLogx()
+            canv.SetLogy()
+        pad = ROOT.gPad
+        pad.SetBottomMargin(0.12)
+        pad.SetLeftMargin(0.13)
+        pad.SetRightMargin(0.16)
+        xtitle_offset = 1.4
+        ytitle_offset = xtitle_offset * 1.1
+        ztitle_offset = xtitle_offset * 0.9
+        h2d.SetTitleOffset(xtitle_offset, 'X')
+        h2d.SetTitleOffset(ytitle_offset, 'Y')
+        h2d.SetTitleOffset(ztitle_offset, 'Z')
+        h2d.SetMinimum(1E-3)
+        if var_dict.get('log', False):
+            h2d.GetXaxis().SetLimits(1, 150)
+            h2d.GetYaxis().SetLimits(1, 150)
+        title = "%s;%s (GEN);%s (RECO)" % (var_dict.get('title', '').replace("\n", ", "), var_dict['var_label'], var_dict['var_label'])
+        h2d.SetTitle(title)
         h2d.Draw("COLZ")
-    output_filename = os.path.join(plot_dir, var_dict['name']+"_%s.%s" % (append, OUTPUT_FMT))
-    output_dir = os.path.dirname(output_filename)
-    if not os.path.isdir(output_dir):
-        os.makedirs(output_dir)
-    canv.SaveAs(output_filename)
+        old_font_size = ROOT.gStyle.GetTitleFontSize()
+        if "#splitline" in var_dict.get('title', ''):
+            # need to shrink it down a bit
+            pad.SetTopMargin(0.16)
+            ROOT.gStyle.SetTitleFontSize(0.035)
+            h2d.Draw("COLZ")
+        output_filename = os.path.join(plot_dir, var_dict['name']+"_%s.%s" % (append, OUTPUT_FMT))
+        output_dir = os.path.dirname(output_filename)
+        if not os.path.isdir(output_dir):
+            os.makedirs(output_dir)
+        canv.SaveAs(output_filename)
 
-    canv.SetLogz()
-    output_filename = os.path.join(plot_dir, var_dict['name']+"_%s_logZ.%s" % (append, OUTPUT_FMT))
-    canv.SaveAs(output_filename)
+        canv.SetLogz()
+        output_filename = os.path.join(plot_dir, var_dict['name']+"_%s_logZ.%s" % (append, OUTPUT_FMT))
+        canv.SaveAs(output_filename)
 
-    # Plot 2D map, renormalized by row
-    canv.SetLogz(0)
-    h2d_renorm_y = cu.make_normalised_TH2(h2d, 'Y', recolour=False, do_errors=True)
-    marker_size = 0.8
-    h2d_renorm_y.SetMarkerSize(marker_size)
-    h2d_renorm_y.SetMaximum(1)
-    h2d_renorm_y.SetZTitle("P(GEN bin | RECO bin)")
-    draw_opt = "COLZ"
-    if plot_migrations:
-        draw_opt += " TEXT45"
-    h2d_renorm_y.SetMinimum(1E-3)
-    h2d_renorm_y.Draw(draw_opt)
-    xtitle_offset = 1.5
-    h2d_renorm_y.SetTitleOffset(xtitle_offset, 'X')
+        # Plot 2D map, renormalized by row
+        canv.SetLogz(0)
+        marker_size = 0.8
+        h2d_renorm_y.SetMarkerSize(marker_size)
+        h2d_renorm_y.SetMaximum(1)
+        h2d_renorm_y.SetZTitle("P(GEN bin | RECO bin)")
+        draw_opt = "COLZ"
+        if plot_migrations:
+            draw_opt += " TEXT45"
+        h2d_renorm_y.SetMinimum(1E-3)
+        h2d_renorm_y.Draw(draw_opt)
+        xtitle_offset = 1.5
+        h2d_renorm_y.SetTitleOffset(xtitle_offset, 'X')
 
-    yax = h2d_renorm_y.GetYaxis()
-    h2d_renorm_y.SetTitleOffset(ytitle_offset, 'Y')
-    canv.Update()
+        yax = h2d_renorm_y.GetYaxis()
+        h2d_renorm_y.SetTitleOffset(ytitle_offset, 'Y')
+        canv.Update()
 
-    canv.SaveAs(os.path.join(plot_dir, "%s_%s_renormY_linZ.%s" % (var_dict['name'], append, OUTPUT_FMT)))
-    canv.SetLogz()
-    h2d_renorm_y.SetMaximum(1)
-    h2d_renorm_y.SetMinimum(1E-3)
-    canv.SaveAs(os.path.join(plot_dir, "%s_%s_renormY_logZ.%s" % (var_dict['name'], append, OUTPUT_FMT)))
+        canv.SaveAs(os.path.join(plot_dir, "%s_%s_renormY_linZ.%s" % (var_dict['name'], append, OUTPUT_FMT)))
+        canv.SetLogz()
+        h2d_renorm_y.SetMaximum(1)
+        h2d_renorm_y.SetMinimum(1E-3)
+        canv.SaveAs(os.path.join(plot_dir, "%s_%s_renormY_logZ.%s" % (var_dict['name'], append, OUTPUT_FMT)))
 
-    # Plot 2D map, renormalized by column
-    canv.Clear()
-    canv.SetLogz(0)
-    h2d_renorm_x = cu.make_normalised_TH2(h2d, 'X', recolour=False, do_errors=True)
-    h2d_renorm_x.SetMarkerSize(marker_size)
-    h2d_renorm_x.SetMaximum(1)
-    h2d_renorm_x.SetMinimum(1E-3)
-    h2d_renorm_x.SetZTitle("P(RECO bin | GEN bin)")
-    h2d_renorm_x.Draw(draw_opt)
+        # Plot 2D map, renormalized by column
+        canv.Clear()
+        canv.SetLogz(0)
+        h2d_renorm_x.SetMarkerSize(marker_size)
+        h2d_renorm_x.SetMaximum(1)
+        h2d_renorm_x.SetMinimum(1E-3)
+        h2d_renorm_x.SetZTitle("P(RECO bin | GEN bin)")
+        h2d_renorm_x.Draw(draw_opt)
+        h2d_renorm_x.SetTitleOffset(xtitle_offset, 'X')
 
-    h2d_renorm_x.SetTitleOffset(xtitle_offset, 'X')
+        yax = h2d_renorm_x.GetYaxis()
+        h2d_renorm_x.SetTitleOffset(ytitle_offset, 'Y')
+        yax.SetMoreLogLabels()
+        canv.Update()
+        canv.SaveAs(os.path.join(plot_dir, "%s_%s_renormX_linZ.%s" % (var_dict['name'], append, OUTPUT_FMT)))
+        canv.SetLogz()
+        h2d_renorm_x.SetMaximum(1)
+        h2d_renorm_x.SetMinimum(1E-3)
+        canv.SaveAs(os.path.join(plot_dir, "%s_%s_renormX_logZ.%s" % (var_dict['name'], append, OUTPUT_FMT)))
 
-    yax = h2d_renorm_x.GetYaxis()
-    h2d_renorm_x.SetTitleOffset(ytitle_offset, 'Y')
-    yax.SetMoreLogLabels()
-    canv.Update()
-    canv.SaveAs(os.path.join(plot_dir, "%s_%s_renormX_linZ.%s" % (var_dict['name'], append, OUTPUT_FMT)))
-    canv.SetLogz()
-    h2d_renorm_x.SetMaximum(1)
-    h2d_renorm_x.SetMinimum(1E-3)
-    canv.SaveAs(os.path.join(plot_dir, "%s_%s_renormX_logZ.%s" % (var_dict['name'], append, OUTPUT_FMT)))
-
-    ROOT.gStyle.SetTitleFontSize(old_font_size)
+        ROOT.gStyle.SetTitleFontSize(old_font_size)
 
     # Plot migrations as 1D hists
     if plot_migrations:
@@ -480,6 +491,7 @@ def make_plots(h2d, var_dict, plot_dir, append="",
                                         output_filename=output_filename,
                                         title=var_dict.get('title', ''))
 
+    # Do 1D hist(s)
     if plot_reco or plot_gen:
         conts = []
         if plot_reco:
@@ -495,8 +507,13 @@ def make_plots(h2d, var_dict, plot_dir, append="",
             rms_u = metrics.calc_rms_ucert(areas, centers)
             rms, rms_err = rms_u.nominal_value, rms_u.std_dev
 
-            h_reco_div_bin_width = qgp.hist_divide_bin_width(h_reco)
-            conts.append(Contribution(h_reco_div_bin_width, label="Reco\n(mean = %.3f+-%.3f)\n(RMS = %.3f+-%.3f)" % (mean, mean_err, rms, rms_err), normalise_hist=False,
+            h_reco_div_bin_width = h_reco
+            if div_bin_width:
+                h_reco_div_bin_width = qgp.hist_divide_bin_width(h_reco)
+            conts.append(Contribution(h_reco_div_bin_width,
+                                      label="Reco\n(mean = %.3f+-%.3f)\n(RMS = %.3f+-%.3f)" % (mean, mean_err, rms, rms_err),
+                                      normalise_hist=False,
+                                      marker_color=ROOT.kRed,
                                       line_color=ROOT.kRed, line_width=2))
         if plot_gen:
             h_gen = h2d.ProjectionX(cu.get_unique_str(), 0, -1, "e")
@@ -510,13 +527,21 @@ def make_plots(h2d, var_dict, plot_dir, append="",
             rms_u = metrics.calc_rms_ucert(areas, centers)
             rms, rms_err = rms_u.nominal_value, rms_u.std_dev
 
-            h_gen_div_bin_width = qgp.hist_divide_bin_width(h_gen)
-            conts.append(Contribution(h_gen_div_bin_width, label="Gen\n(mean = %.3f+-%.3f)\n(RMS = %.3f+-%.3f)" % (mean, mean_err, rms, rms_err), normalise_hist=False,
+            h_gen_div_bin_width = h_gen
+            if div_bin_width:
+                h_gen_div_bin_width = qgp.hist_divide_bin_width(h_gen)
+            conts.append(Contribution(h_gen_div_bin_width,
+                                      label="Gen\n(mean = %.3f+-%.3f)\n(RMS = %.3f+-%.3f)" % (mean, mean_err, rms, rms_err),
+                                      normalise_hist=False,
+                                      marker_color=ROOT.kBlue,
                                       line_color=ROOT.kBlue, line_width=2, line_style=2 if plot_reco else 1))
 
-        plot = Plot(conts, what='hist', has_data=False,
+        plot = Plot(conts,
+                    what='hist',
+                    has_data=False,
                     title=var_dict.get('title', ''),
-                    xtitle=var_dict['var_label'], ytitle='p.d.f.')
+                    xtitle=var_dict['var_label'],
+                    ytitle='p.d.f.' if div_bin_width else "#Delta N / N")
         plot.default_canvas_size = (700, 600)
         plot.legend.SetX1(0.65)
         plot.legend.SetY1(0.65)
@@ -526,6 +551,8 @@ def make_plots(h2d, var_dict, plot_dir, append="",
             bits.append("reco")
         if plot_gen:
             bits.append("gen")
+        if div_bin_width:
+            bits.append("div_bin_width")
         content = "_".join(bits)
         output_filename = os.path.join(plot_dir, "%s_%s_1d_%s.%s" % (var_dict['name'], append, content, OUTPUT_FMT))
         plot.save(output_filename)
@@ -657,7 +684,8 @@ if __name__ == "__main__":
 
                 # Make plots with original fine equidistant binning
                 # -------------------------------------------------
-                make_plots(h2d_orig, var_dict, plot_dir=plot_dir, append="orig", plot_migrations=False)
+                make_plots(h2d_orig, var_dict, plot_dir=plot_dir, append="orig",
+                           plot_migrations=False) # don't do a div_bin_width=False version, as equidistant binning
 
                 response_maps_dict[var_dict['name']] = h2d_orig
 
@@ -682,8 +710,11 @@ if __name__ == "__main__":
 
                 # Plot with new binning
                 # ---------------------
+                make_plots(h2d_rebin, var_dict, plot_dir=plot_dir, append="rebinned")
                 make_plots(h2d_rebin, var_dict, plot_dir=plot_dir, append="rebinned",
-                           plot_migrations=True, plot_reco=True, plot_gen=True)
+                           plot_maps=False,
+                           plot_migrations=False,
+                           div_bin_width=False)
 
                 # Cache renormed plots here for migration plots
                 h2d_renorm_x = cu.make_normalised_TH2(h2d_rebin, 'X', recolour=False, do_errors=True)
@@ -821,7 +852,11 @@ if __name__ == "__main__":
                     make_plots(h2d_rebin, var_dict, plot_dir=plot_dir,
                                append="rebinned_for%s" % (reference_pt_region),
                                plot_migrations=True)
-
+                    make_plots(h2d_rebin, var_dict, plot_dir=plot_dir,
+                               append="rebinned_for%s" % (reference_pt_region),
+                               plot_maps=False,
+                               plot_migrations=False,
+                               div_bin_width=False)
 
                 # Apply binning scheme derived from one ungroomed region to groomed
                 # And use the reference pt region
@@ -857,6 +892,11 @@ if __name__ == "__main__":
                         make_plots(h2d_rebin, var_dict, plot_dir=plot_dir,
                                    append="rebinned_for%s_ungroomed" % (reference_pt_region),
                                    plot_migrations=True)
+                        make_plots(h2d_rebin, var_dict, plot_dir=plot_dir,
+                                   append="rebinned_for%s_ungroomed" % (reference_pt_region),
+                                   plot_maps=False,
+                                   plot_migrations=False,
+                                   div_bin_width=False)
 
                 # Now rebin any other input files with the same hist using the new binning
                 # ------------------------------------------------------------------------
@@ -892,7 +932,16 @@ if __name__ == "__main__":
 
                             this_var_dict = deepcopy(var_dict)
                             this_var_dict['title'] += "\n[%s]" % other_label
-                            make_plots(h2d_rebin_other, this_var_dict, plot_dir=plot_dir+"_"+other_label.replace(" ", "_"), append="rebinned_for%s" % (reference_pt_region), plot_migrations=True)
+                            make_plots(h2d_rebin_other, this_var_dict,
+                                       plot_dir=plot_dir+"_"+other_label.replace(" ", "_"),
+                                       append="rebinned_for%s" % (reference_pt_region),
+                                       plot_migrations=True)
+                            make_plots(h2d_rebin_other, this_var_dict,
+                                       plot_dir=plot_dir+"_"+other_label.replace(" ", "_"),
+                                       append="rebinned_for%s" % (reference_pt_region),
+                                       plot_migrations=False,
+                                       plot_maps=False,
+                                       div_bin_width=False)
 
                             h2d_renorm_x_other = cu.make_normalised_TH2(h2d_rebin_other, 'X', recolour=False, do_errors=True)
                             tfile_other_out.WriteTObject(h2d_renorm_x_other)
