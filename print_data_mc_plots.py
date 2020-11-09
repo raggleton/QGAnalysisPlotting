@@ -17,7 +17,7 @@ My_Style.cd()
 import argparse
 
 # My stuff
-from comparator import Contribution, Plot, grab_obj
+from comparator import Contribution, Plot
 import qg_common as qgc
 import qg_general_plots as qgp
 import common_utils as cu
@@ -53,6 +53,25 @@ def do_plots(root_dir, title):
 
     radius, pus = cu.get_jet_config_from_dirname(root_dir)
     jet_str = "AK%s PF %s" % (radius.upper(), pus.upper())
+
+    single_mu_tfile, dy_tfile, dy_hpp_tfile = None, None, None
+    jetht_zb_tfile, qcd_tfile, qcd_hpp_tfile = None, None, None
+
+    filename_obj_map = {
+        os.path.isfile(os.path.join(root_dir, qgc.SINGLE_MU_FILENAME)): single_mu_tfile,
+        os.path.isfile(os.path.join(root_dir, qgc.DY_FILENAME)): dy_tfile,
+        os.path.isfile(os.path.join(root_dir, qgc.DY_HERWIG_FILENAME)): dy_hpp_tfile,
+        # os.path.isfile(os.path.join(root_dir, qgc.DY_MG_HERWIG_FILENAME)): dy_mg_hpp_tfile,
+
+        os.path.isfile(os.path.join(root_dir, qgc.JETHT_ZB_FILENAME)): jetht_zb_tfile,
+        os.path.isfile(os.path.join(root_dir, qgc.QCD_FILENAME)): qcd_tfile,
+        os.path.isfile(os.path.join(root_dir, qgc.QCD_HERWIG_FILENAME)): qcd_hpp_tfile,
+        # os.path.isfile(os.path.join(root_dir, qgc.QCD_PYTHIA_ONLY_FILENAME)): qcd_py_tfile,
+    }
+
+    for filename, obj in filename_obj_map.items():
+        if os.path.isfile(filename):
+            obj = cu.TFileCacher(filename)
 
     for gr_append in ["", "_groomed"]:
         if gr_append == "_groomed":
@@ -95,8 +114,8 @@ def do_plots(root_dir, title):
                 ####################
 
                 # SINGLE MU DATA
-                if os.path.isfile(os.path.join(root_dir, qgc.SINGLE_MU_FILENAME)):
-                    h2d_dyj_data = grab_obj(os.path.join(root_dir, qgc.SINGLE_MU_FILENAME), "%s/%s" % (zpj_dirname, v))
+                if single_mu_tfile:
+                    h2d_dyj_data = single_mu_tfile.get("%s/%s" % (zpj_dirname, v))
                     dy_kwargs_data = dict(line_color=qgc.SINGLE_MU_COLOUR, line_width=data_line_width, fill_color=qgc.SINGLE_MU_COLOUR,
                                           marker_color=qgc.SINGLE_MU_COLOUR, marker_style=cu.Marker.get(qgc.DY_MARKER), marker_size=msize*0.7,
                                           label="Data")
@@ -107,8 +126,8 @@ def do_plots(root_dir, title):
                         zpj_2d_entries.append((h2d_dyj_data, dy_kwargs_data))
 
                 # PYTHIA DY MC
-                if os.path.isfile(os.path.join(root_dir, qgc.DY_FILENAME)):
-                    h2d_dyj_mc = grab_obj(os.path.join(root_dir, qgc.DY_FILENAME), "%s/%s" % (zpj_dirname, v))
+                if dy_tfile:
+                    h2d_dyj_mc = dy_tfile.get("%s/%s" % (zpj_dirname, v))
                     dy_kwargs_mc = dict(line_color=qgc.DY_COLOUR, line_width=lw, fill_color=qgc.DY_COLOUR,
                                         marker_color=qgc.DY_COLOUR, marker_style=cu.Marker.get(qgc.DY_MARKER), marker_size=mc_msize,
                                         label=mgpy_label,
@@ -119,8 +138,8 @@ def do_plots(root_dir, title):
                         zpj_2d_entries.append((h2d_dyj_mc, dy_kwargs_mc))
 
                 # HERWIG++ DY
-                if os.path.isfile(os.path.join(root_dir, qgc.DY_HERWIG_FILENAME)):
-                    h2d_dyj_mc_hpp = grab_obj(os.path.join(root_dir, qgc.DY_HERWIG_FILENAME), "%s/%s" % (zpj_dirname, v))
+                if dy_hpp_tfile:
+                    h2d_dyj_mc_hpp = dy_hpp_tfile.get("%s/%s" % (zpj_dirname, v))
                     col_hpp = qgc.DY_COLOURS[2]
                     dy_kwargs_mc_hpp = dict(line_color=col_hpp, line_width=lw, fill_color=col_hpp,
                                             marker_color=col_hpp, marker_style=cu.Marker.get(qgc.DY_MARKER), marker_size=mc_msize,
@@ -133,7 +152,7 @@ def do_plots(root_dir, title):
 
                 # MG+HERWIG++ DY
                 # if end_val < 151:
-                #     h2d_dyj_mc3 = grab_obj(os.path.join(root_dir, qgc.DY_MG_HERWIG_FILENAME), "%s/%s" % (zpj_dirname, v))
+                #     h2d_dyj_mc3 = get("%s/%s" % (zpj_dirname, v))
                 #     col4 = qgc.DY_COLOURS[3]
                 #     dy_kwargs_mc3 = dict(line_color=col4, line_width=lw, fill_color=col4,
                 #                          marker_color=col4, marker_style=cu.Marker.get(qgc.DY_MARKER), marker_size=0,
@@ -151,8 +170,8 @@ def do_plots(root_dir, title):
                 ####################
 
                 # JETHT/ZEROBIAS DATA
-                if os.path.isfile(os.path.join(root_dir, qgc.JETHT_ZB_FILENAME)):
-                    h2d_qcd_cen_data = grab_obj(os.path.join(root_dir, qgc.JETHT_ZB_FILENAME), "%s/%s" % (dj_cen_dirname, v))  # use already merged jetht+zb
+                if jetht_zb_tfile:
+                    h2d_qcd_cen_data = jetht_zb_tfile.get("%s/%s" % (dj_cen_dirname, v))  # use already merged jetht+zb
                     qcd_cen_kwargs_data = dict(line_color=qgc.JETHT_COLOUR, line_width=data_line_width, fill_color=qgc.JETHT_COLOUR,
                                                marker_color=qgc.JETHT_COLOUR, marker_style=cu.Marker.get(qgc.QCD_MARKER), marker_size=msize,
                                                label="Data")
@@ -163,8 +182,8 @@ def do_plots(root_dir, title):
                         dijet_cen_2d_entries.append((h2d_qcd_cen_data, qcd_cen_kwargs_data))
 
                 # MG+PYTHIA QCD MC
-                if os.path.isfile(os.path.join(root_dir, qgc.QCD_FILENAME)):
-                    h2d_qcd_cen_mc = grab_obj(os.path.join(root_dir, qgc.QCD_FILENAME), "%s/%s" % (dj_cen_dirname, v))
+                if qcd_tfile:
+                    h2d_qcd_cen_mc = qcd_tfile.get("%s/%s" % (dj_cen_dirname, v))
                     qcd_cen_kwargs_mc = dict(line_color=qgc.QCD_COLOUR, line_width=lw, fill_color=qgc.QCD_COLOUR,
                                              marker_color=qgc.QCD_COLOUR, marker_style=cu.Marker.get(qgc.QCD_MARKER), marker_size=mc_msize,
                                              label=mgpy_label,
@@ -176,9 +195,9 @@ def do_plots(root_dir, title):
                         dijet_cen_2d_entries.append((h2d_qcd_cen_mc, qcd_cen_kwargs_mc))
 
                 # PYTHIA ONLY
-                # if os.path.isfile(os.path.join(root_dir, qgc.QCD_PYTHIA_ONLY_FILENAME)):
+                # if qcd_py_tfile:
                 #     col = qgc.QCD_COLOURS[2]
-                #     h2d_qcd_cen_mc2 = grab_obj(os.path.join(root_dir, qgc.QCD_PYTHIA_ONLY_FILENAME), "%s/%s" % (dj_cen_dirname, v))
+                #     h2d_qcd_cen_mc2 = qcd_py_tfile.get("%s/%s" % (dj_cen_dirname, v))
                 #     qcd_cen_kwargs_mc2 = dict(line_color=col, line_width=lw, fill_color=col,
                 #                               marker_color=col, marker_style=cu.Marker.get(qgc.QCD_MARKER), marker_size=mc_msize,
                 #                               label="Pythia8",
@@ -189,8 +208,8 @@ def do_plots(root_dir, title):
                 #         dijet_cen_2d_entries.append((h2d_qcd_cen_mc2, qcd_cen_kwargs_mc2))
 
                 # HERWIG++ QCD
-                if os.path.isfile(os.path.join(root_dir, qgc.QCD_HERWIG_FILENAME)):
-                    h2d_qcd_cen_mc_hpp = grab_obj(os.path.join(root_dir, qgc.QCD_HERWIG_FILENAME), "%s/%s" % (dj_cen_dirname, v))
+                if qcd_hpp_tfile:
+                    h2d_qcd_cen_mc_hpp = qcd_hpp_tfile.get("%s/%s" % (dj_cen_dirname, v))
                     qcd_cen_kwargs_mc_hpp = dict(line_color=qgc.HERWIGPP_QCD_COLOUR, line_width=lw, fill_color=qgc.HERWIGPP_QCD_COLOUR,
                                                  marker_color=qgc.HERWIGPP_QCD_COLOUR, marker_style=cu.Marker.get(qgc.QCD_MARKER), marker_size=mc_msize,
                                                  label=hpp_label,
@@ -206,8 +225,8 @@ def do_plots(root_dir, title):
                 ####################
 
                 # JETHT/ZEROBIAS DATA
-                if os.path.isfile(os.path.join(root_dir, qgc.JETHT_ZB_FILENAME)):
-                    h2d_qcd_fwd_data = grab_obj(os.path.join(root_dir, qgc.JETHT_ZB_FILENAME), "%s/%s" % (dj_fwd_dirname, v))  # use already merged jetht+zb
+                if jetht_zb_tfile:
+                    h2d_qcd_fwd_data = jetht_zb_tfile.get("%s/%s" % (dj_fwd_dirname, v))  # use already merged jetht+zb
                     qcd_fwd_kwargs_data = dict(line_color=qgc.JETHT_COLOUR, line_width=data_line_width, fill_color=qgc.JETHT_COLOUR,
                                                marker_color=qgc.JETHT_COLOUR, marker_style=cu.Marker.get('triangleDown'), marker_size=msize,
                                                label="Data")
@@ -218,8 +237,8 @@ def do_plots(root_dir, title):
                         dijet_fwd_2d_entries.append((h2d_qcd_fwd_data, qcd_fwd_kwargs_data))
 
                 # MG+PYTHIA QCD MC
-                if os.path.isfile(os.path.join(root_dir, qgc.QCD_FILENAME)):
-                    h2d_qcd_fwd_mc = grab_obj(os.path.join(root_dir, qgc.QCD_FILENAME), "%s/%s" % (dj_fwd_dirname, v))
+                if qcd_tfile:
+                    h2d_qcd_fwd_mc = qcd_tfile.get("%s/%s" % (dj_fwd_dirname, v))
                     qcd_fwd_kwargs_mc = dict(line_color=qgc.QCD_COLOUR, line_width=lw, fill_color=qgc.QCD_COLOUR,
                                              marker_color=qgc.QCD_COLOUR, marker_style=cu.Marker.get(qgc.QCD_MARKER), marker_size=mc_msize,
                                              label=mgpy_label,
@@ -231,9 +250,9 @@ def do_plots(root_dir, title):
                         dijet_fwd_2d_entries.append((h2d_qcd_fwd_mc, qcd_fwd_kwargs_mc))
 
                 # PYTHIA ONLY
-                # if os.path.isfile(os.path.join(root_dir, qgc.QCD_PYTHIA_ONLY_FILENAME)):
+                # if qcd_py_tfile:
                     # col = qgc.QCD_COLOURS[2]
-                    # h2d_qcd_fwd_mc2 = grab_obj(os.path.join(root_dir, qgc.QCD_PYTHIA_ONLY_FILENAME), "%s/%s" % (dj_fwd_dirname, v))
+                    # h2d_qcd_fwd_mc2 = qcd_py_tfile.get("%s/%s" % (dj_fwd_dirname, v))
                     # qcd_fwd_kwargs_mc2 = dict(line_color=col, line_width=lw, fill_color=col,
                     #                           marker_color=col, marker_style=cu.Marker.get(qgc.QCD_MARKER), marker_size=mc_msize,
                     #                           label="Pythia8",
@@ -244,8 +263,8 @@ def do_plots(root_dir, title):
                     #     dijet_fwd_2d_entries.append((h2d_qcd_fwd_mc2, qcd_fwd_kwargs_mc2))
 
                 # HERWIG++ QCD
-                if os.path.isfile(os.path.join(root_dir, qgc.QCD_HERWIG_FILENAME)):
-                    h2d_qcd_fwd_mc_hpp = grab_obj(os.path.join(root_dir, qgc.QCD_HERWIG_FILENAME), "%s/%s" % (dj_fwd_dirname, v))
+                if qcd_hpp_tfile:
+                    h2d_qcd_fwd_mc_hpp = qcd_hpp_tfile.get("%s/%s" % (dj_fwd_dirname, v))
                     qcd_fwd_kwargs_mc_hpp = dict(line_color=qgc.HERWIGPP_QCD_COLOUR, line_width=lw, fill_color=qgc.HERWIGPP_QCD_COLOUR,
                                                  marker_color=qgc.HERWIGPP_QCD_COLOUR, marker_style=cu.Marker.get(qgc.QCD_MARKER), marker_size=mc_msize,
                                                  label=hpp_label,

@@ -14,7 +14,7 @@ from array import array
 from uuid import uuid1
 
 # My stuff
-from comparator import Contribution, Plot, grab_obj
+from comparator import Contribution, Plot
 import qg_common as qgc
 import qg_general_plots as qgp
 import common_utils as cu
@@ -339,15 +339,15 @@ def do_dijet_distributions(root_dir, title):
     # root_files = [qgc.JETHT_ZB_FILENAME, qgc.QCD_FILENAME]
     # root_files = [qgc.JETHT_ZB_FILENAME, qgc.QCD_PYTHIA_ONLY_FILENAME]
     # root_files = [qgc.JETHT_ZB_FILENAME, qgc.QCD_HERWIG_FILENAME]
-    root_files = [cu.open_root_file(os.path.join(root_dir, r)) for r in root_files]
+    root_files = [cu.TFileCacher(os.path.join(root_dir, r)) for r in root_files]
 
     # herwig_dir = "workdir_ak4chs_herwig_newFlav_withPUreweight_withMuSF"
     # herwig_dir = "workdir_ak4chs_herwig_newFlav_withPUreweight_withMuSF_noExtraJetCuts"
-    # root_files.append(cu.open_root_file(os.path.join(herwig_dir, qgc.QCD_FILENAME)))
+    # root_files.append(cu.TFileCacher(os.path.join(herwig_dir, qgc.QCD_FILENAME)))
 
-    # directories = [cu.get_from_tfile(rf, "Dijet") for rf in root_files]
-    directories = [cu.get_from_tfile(rf, "Dijet_tighter") for rf in root_files[:]]
-    # directories.extend([cu.get_from_tfile(rf, "Dijet_tighter") for rf in root_files[1:]])
+    # directories = [rf.get("Dijet") for rf in root_files]
+    directories = [rf.get("Dijet_tighter") for rf in root_files[:]]
+    # directories.extend([rf.get("Dijet_tighter") for rf in root_files[1:]])
     mc_col = qgc.QCD_COLOUR
     mc_col2 = qgc.QCD_COLOURS[2]
     # mc_col3 = qgc.QCD_COLOURS[3]
@@ -388,7 +388,7 @@ def do_dijet_distributions(root_dir, title):
                                       bin_by='ave')
 
     # Do eta-ordered
-    directories = [cu.get_from_tfile(rf, "Dijet_eta_ordered") for rf in root_files[:]]
+    directories = [rf.get("Dijet_eta_ordered") for rf in root_files[:]]
     do_all_1D_projection_plots_in_dir(directories=directories,
                                       output_dir=os.path.join(root_dir, "Dijet_data_mc_kin_comparison_eta_ordered_normalised"),
                                       components_styles_dicts=csd,
@@ -402,9 +402,9 @@ def do_zpj_distributions(root_dir, title):
     """Do plots comparing different different inputs in Z+jet region"""
     # root_files = [qgc.SINGLE_MU_FILENAME, qgc.DY_FILENAME, qgc.DY_HERWIG_FILENAME, qgc.DY_MG_HERWIG_FILENAME]
     root_files = [qgc.SINGLE_MU_FILENAME, qgc.DY_FILENAME, qgc.DY_HERWIG_FILENAME]
-    root_files = [cu.open_root_file(os.path.join(root_dir, r)) for r in root_files]
+    root_files = [cu.TFileCacher(os.path.join(root_dir, r)) for r in root_files]
 
-    directories = [cu.get_from_tfile(rf, "ZPlusJets") for rf in root_files]
+    directories = [rf.get("ZPlusJets") for rf in root_files]
     data_col = qgc.SINGLE_MU_COLOUR
     mc_col = qgc.DY_COLOUR
     mc_col2 = qgc.HERWIGPP_DY_COLOUR
@@ -442,7 +442,7 @@ def do_zpj_distributions(root_dir, title):
                                       bin_by='Z')
 
     # Preselection hists
-    # directories_presel = directories = [cu.get_from_tfile(rf, "ZPlusJets_Presel") for rf in root_files]
+    # directories_presel = directories = [rf.get("ZPlusJets_Presel") for rf in root_files]
     # do_all_1D_projection_plots_in_dir(directories=directories,
     #                                   output_dir=os.path.join(root_dir, "ZPlusJets_Presel_data_mc_kin_comparison_normalised_compare"),
     #                                   # output_dir=os.path.join(root_dir, "ZPlusJets_data_mc_kin_comparison_normalised_compare_KFactor"),

@@ -152,7 +152,7 @@ def make_comparison_plot_ingredients(entries, rebin=1, normalise_hist=True, mean
     do_subplot = any(c.subplot for c in conts) or "subplot" in plot_kwargs
     if (len(conts) == 1 or not do_subplot) and "subplot_type" in plot_kwargs:
         plot_kwargs['subplot_type'] = None
-        print("Not doing subplot")
+        # print("Not doing subplot")
 
     # If 'subplot' in plot_kwargs, then Plot expects it to be a Contribution object
     # But we only make those here
