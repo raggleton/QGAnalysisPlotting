@@ -43,7 +43,7 @@ ROOT.gStyle.SetPaintTextFormat(".3f")
 OUTPUT_FMT = "pdf"
 
 
-def calc_variable_binning(h2d, plot_dir, metric):
+def calc_variable_binning_metric(h2d, plot_dir, metric):
     metric = metric.lower()
     this_h2d = h2d.Clone(h2d.GetName()+"Clone")
     # this_h2d.Rebin2D(2, 2)
@@ -663,7 +663,7 @@ if __name__ == "__main__":
 
                 # metric = "gausfit"
                 # metric = "quantile"
-                # new_binning = calc_variable_binning(h2d_orig, plot_dir, args.metric)
+                # new_binning = calc_variable_binning_metric(h2d_orig, plot_dir, args.metric)
 
                 # Calculate new binning
                 # ---------------------
