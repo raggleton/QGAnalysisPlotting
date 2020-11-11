@@ -791,7 +791,10 @@ class Plot(object):
         # cms_latex.DrawLatex(0.14, latex_height, "#font[62]{CMS}#font[52]{ Preliminary}")
         # cms_latex.DrawLatex(0.14, latex_height, "#font[62]{CMS}")
         cms_latex.SetTextAlign(ROOT.kHAlignRight + ROOT.kVAlignBottom)
-        cms_latex.DrawLatex(0.94, latex_height, " %s fb^{-1} (13 TeV)" % self.lumi)
+        rh_str = "13 TeV"
+        if self.lumi is not None:
+            rh_str = " %s fb^{-1} (%s)" % (self.lumi, rh_str)
+        cms_latex.DrawLatex(0.94, latex_height, rh_str)
 
         # Add title to plot
         text_latex = ROOT.TLatex()
