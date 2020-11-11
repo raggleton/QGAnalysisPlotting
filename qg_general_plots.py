@@ -229,7 +229,7 @@ def do_comparison_plot(entries, output_filename, rebin=1, draw_opt="NOSTACK HIST
 
         plot.plot(draw_opt)
         plot.get_modifier().GetYaxis().SetTitleOffset(plot.get_modifier().GetYaxis().GetTitleOffset()*1.1)
-        
+
         if logx:
             plot.set_logx(do_more_labels=False)
         if logy:
@@ -1237,12 +1237,15 @@ def migration_plot_components(h2d_renorm_x, h2d_renorm_y, xlabel):
     label = ";%s;Fraction" % xlabel
     hist_purity = ROOT.TH1F("purity"+cu.get_unique_str(), xlabel, n_bins, array('d', binning))
     hist_stability = ROOT.TH1F("stability"+cu.get_unique_str(), xlabel, n_bins, array('d', binning))
-    hist_xfer_down = ROOT.TH1F("xfer_down"+cu.get_unique_str(), xlabel, n_bins, array('d', binning))
-    hist_xfer_down2 = ROOT.TH1F("xfer_down2"+cu.get_unique_str(), xlabel, n_bins, array('d', binning))
-    hist_xfer_down3 = ROOT.TH1F("xfer_down3"+cu.get_unique_str(), xlabel, n_bins, array('d', binning))
-    hist_xfer_up = ROOT.TH1F("xfer_up"+cu.get_unique_str(), xlabel, n_bins, array('d', binning))
-    hist_xfer_up2 = ROOT.TH1F("xfer_up2"+cu.get_unique_str(), xlabel, n_bins, array('d', binning))
-    hist_xfer_up3 = ROOT.TH1F("xfer_up3"+cu.get_unique_str(), xlabel, n_bins, array('d', binning))
+    hist_reco_down = ROOT.TH1F("reco_down"+cu.get_unique_str(), xlabel, n_bins, array('d', binning))
+    hist_reco_down2 = ROOT.TH1F("reco_down2"+cu.get_unique_str(), xlabel, n_bins, array('d', binning))
+    # hist_reco_down3 = ROOT.TH1F("reco_down3"+cu.get_unique_str(), xlabel, n_bins, array('d', binning))
+    hist_reco_up = ROOT.TH1F("reco_up"+cu.get_unique_str(), xlabel, n_bins, array('d', binning))
+    hist_reco_up2 = ROOT.TH1F("reco_up2"+cu.get_unique_str(), xlabel, n_bins, array('d', binning))
+    # hist_reco_up3 = ROOT.TH1F("reco_up3"+cu.get_unique_str(), xlabel, n_bins, array('d', binning))
+
+    hist_gen_down = ROOT.TH1F("gen_down"+cu.get_unique_str(), xlabel, n_bins, array('d', binning))
+    hist_gen_up = ROOT.TH1F("gen_up"+cu.get_unique_str(), xlabel, n_bins, array('d', binning))
 
     for bin_ind in range(1, h2d_renorm_x.GetNbinsX()+1):
         hist_purity.SetBinContent(bin_ind, h2d_renorm_y.GetBinContent(bin_ind, bin_ind))
@@ -1251,50 +1254,114 @@ def migration_plot_components(h2d_renorm_x, h2d_renorm_y, xlabel):
         hist_stability.SetBinContent(bin_ind, h2d_renorm_x.GetBinContent(bin_ind, bin_ind))
         hist_stability.SetBinError(bin_ind, h2d_renorm_x.GetBinError(bin_ind, bin_ind))
 
-        hist_xfer_down.SetBinContent(bin_ind, h2d_renorm_x.GetBinContent(bin_ind, bin_ind-1))
-        hist_xfer_down.SetBinError(bin_ind, h2d_renorm_x.GetBinError(bin_ind, bin_ind-1))
-        hist_xfer_down2.SetBinContent(bin_ind, h2d_renorm_x.GetBinContent(bin_ind, bin_ind-2))
-        hist_xfer_down2.SetBinError(bin_ind, h2d_renorm_x.GetBinError(bin_ind, bin_ind-2))
-        hist_xfer_down3.SetBinContent(bin_ind, h2d_renorm_x.GetBinContent(bin_ind, bin_ind-3))
-        hist_xfer_down3.SetBinError(bin_ind, h2d_renorm_x.GetBinError(bin_ind, bin_ind-3))
+        if bin_ind-1 >= 1:
+            # to avoid counting under/overflow
+            hist_reco_down.SetBinContent(bin_ind, h2d_renorm_x.GetBinContent(bin_ind, bin_ind-1))
+            hist_reco_down.SetBinError(bin_ind, h2d_renorm_x.GetBinError(bin_ind, bin_ind-1))
 
-        hist_xfer_up.SetBinContent(bin_ind, h2d_renorm_x.GetBinContent(bin_ind, bin_ind+1))
-        hist_xfer_up.SetBinError(bin_ind, h2d_renorm_x.GetBinError(bin_ind, bin_ind+1))
-        hist_xfer_up2.SetBinContent(bin_ind, h2d_renorm_x.GetBinContent(bin_ind, bin_ind+2))
-        hist_xfer_up2.SetBinError(bin_ind, h2d_renorm_x.GetBinError(bin_ind, bin_ind+2))
-        hist_xfer_up3.SetBinContent(bin_ind, h2d_renorm_x.GetBinContent(bin_ind, bin_ind+3))
-        hist_xfer_up3.SetBinError(bin_ind, h2d_renorm_x.GetBinError(bin_ind, bin_ind+3))
+            hist_gen_down.SetBinContent(bin_ind, h2d_renorm_y.GetBinContent(bin_ind-1, bin_ind))
+            hist_gen_down.SetBinError(bin_ind, h2d_renorm_y.GetBinError(bin_ind-1, bin_ind))
+        else:
+            hist_reco_down.SetBinContent(bin_ind, 0)
+            hist_reco_down.SetBinError(bin_ind, 0)
+
+            hist_gen_down.SetBinContent(bin_ind, 0)
+            hist_gen_down.SetBinError(bin_ind, 0)
+
+        if bin_ind-2 >= 1:
+            hist_reco_down2.SetBinContent(bin_ind, h2d_renorm_x.GetBinContent(bin_ind, bin_ind-2))
+            hist_reco_down2.SetBinError(bin_ind, h2d_renorm_x.GetBinError(bin_ind, bin_ind-2))
+        else:
+            hist_reco_down2.SetBinContent(bin_ind, 0)
+            hist_reco_down2.SetBinError(bin_ind, 0)
+
+        # if bin_ind-3 >= 1:
+        #     hist_reco_down3.SetBinContent(bin_ind, h2d_renorm_x.GetBinContent(bin_ind, bin_ind-3))
+        #     hist_reco_down3.SetBinError(bin_ind, h2d_renorm_x.GetBinError(bin_ind, bin_ind-3))
+        # else:
+        #     hist_reco_down3.SetBinContent(bin_ind, 0)
+        #     hist_reco_down3.SetBinError(bin_ind, 0)
+
+        if bin_ind+1 <= n_bins:
+            hist_reco_up.SetBinContent(bin_ind, h2d_renorm_x.GetBinContent(bin_ind, bin_ind+1))
+            hist_reco_up.SetBinError(bin_ind, h2d_renorm_x.GetBinError(bin_ind, bin_ind+1))
+
+            hist_gen_up.SetBinContent(bin_ind, h2d_renorm_y.GetBinContent(bin_ind+1, bin_ind))
+            hist_gen_up.SetBinError(bin_ind, h2d_renorm_y.GetBinError(bin_ind+1, bin_ind))
+        else:
+            hist_reco_up.SetBinContent(bin_ind, 0)
+            hist_reco_up.SetBinError(bin_ind, 0)
+
+            hist_gen_up.SetBinContent(bin_ind, 0)
+            hist_gen_up.SetBinError(bin_ind, 0)
+
+        if bin_ind+2 <= n_bins:
+            hist_reco_up2.SetBinContent(bin_ind, h2d_renorm_x.GetBinContent(bin_ind, bin_ind+2))
+            hist_reco_up2.SetBinError(bin_ind, h2d_renorm_x.GetBinError(bin_ind, bin_ind+2))
+        else:
+            hist_reco_up2.SetBinContent(bin_ind, 0)
+            hist_reco_up2.SetBinError(bin_ind, 0)
+
+        # if bin_ind+3 <= n_bins:
+        #     hist_reco_up3.SetBinContent(bin_ind, h2d_renorm_x.GetBinContent(bin_ind, bin_ind+3))
+        #     hist_reco_up3.SetBinError(bin_ind, h2d_renorm_x.GetBinError(bin_ind, bin_ind+3))
+        # else:
+        #     hist_reco_up3.SetBinContent(bin_ind, 0)
+        #     hist_reco_up3.SetBinError(bin_ind, 0)
+
 
     # col_purity = ROOT.kViolet-3
     # col_purity = ROOT.kOrange-3
     col_purity = ROOT.kGreen+1
     col_stability = ROOT.kBlack
-    col_xfer_down = ROOT.kRed
-    col_xfer_down2 = ROOT.kMagenta
-    col_xfer_down3 = ROOT.kGreen
-    col_xfer_up = ROOT.kBlue-4
-    col_xfer_up2 = ROOT.kAzure+8
-    col_xfer_up3 = ROOT.kOrange
+    col_reco_down = ROOT.kRed
+    col_reco_down2 = ROOT.kMagenta
+    col_reco_down3 = ROOT.kGreen
+    col_gen_down = ROOT.kGreen
+    col_reco_up = ROOT.kBlue-4
+    col_reco_up2 = ROOT.kAzure+8
+    col_reco_up3 = ROOT.kOrange
+    col_gen_up = ROOT.kOrange
     contributions = [
         Contribution(hist_purity, label="Purity (gen correct)", line_color=col_purity, marker_color=col_purity),
         Contribution(hist_stability, label="Stability (reco correct)", line_color=col_stability, marker_color=col_stability),
-        Contribution(hist_xfer_down, label="-1 reco bin", line_color=col_xfer_down, marker_color=col_xfer_down, line_style=2),
-        Contribution(hist_xfer_down2, label="-2 reco bin", line_color=col_xfer_down2, marker_color=col_xfer_down2, line_style=3),
-        # Contribution(hist_xfer_down3, label="3 lower reco bin", line_color=col_xfer_down3, marker_color=col_xfer_down3),
-        Contribution(hist_xfer_up, label="+1 reco bin", line_color=col_xfer_up, marker_color=col_xfer_up, line_style=2),
-        Contribution(hist_xfer_up2, label="+2 reco bin", line_color=col_xfer_up2, marker_color=col_xfer_up2, line_style=3),
-        # Contribution(hist_xfer_up3, label="3 higher reco bin", line_color=col_xfer_up3, marker_color=col_xfer_up3),
+        Contribution(hist_reco_down, label="-1 reco bin", line_color=col_reco_down, marker_color=col_reco_down, line_style=2),
+        Contribution(hist_reco_up, label="+1 reco bin", line_color=col_reco_up, marker_color=col_reco_up, line_style=2),
+        Contribution(hist_reco_down2, label="-2 reco bin", line_color=col_reco_down2, marker_color=col_reco_down2, line_style=3),
+        Contribution(hist_reco_up2, label="+2 reco bin", line_color=col_reco_up2, marker_color=col_reco_up2, line_style=3),
+        Contribution(hist_gen_down, label="-1 gen bin", line_color=col_gen_down, marker_color=col_gen_down, line_style=7),
+        Contribution(hist_gen_up, label="+1 gen bin", line_color=col_gen_up, marker_color=col_gen_up, line_style=7),
     ]
     return contributions
 
 
-def make_migration_summary_plot(h2d_renorm_x, h2d_renorm_y, xlabel, output_filename, title="", log_var=False):
+def make_migration_summary_plot(h2d_renorm_x,
+                                h2d_renorm_y,
+                                xlabel,
+                                output_filename,
+                                title="",
+                                log_var=False,
+                                do_reco_updown2=True,  # do +-2 reco bin
+                                do_gen_updown=False):  # do +-1 gen bin
     contributions = migration_plot_components(h2d_renorm_x, h2d_renorm_y, xlabel)
-    for c in contributions:
+    this_cont = contributions[:4]
+    if do_reco_updown2:
+        this_cont += contributions[4:6]
+    if do_gen_updown:
+        this_cont += contributions[6:8]
+    for c in this_cont:
         c.obj.SetLineWidth(2)
     binning = [h2d_renorm_x.GetXaxis().GetBinLowEdge(bin_ind) for bin_ind in range(1, h2d_renorm_x.GetNbinsX()+2)]
     xlim = [binning[0], binning[-1]]
-    plot = Plot(contributions, what='hist', xlim=xlim, ylim=[1e-3, 10], xtitle=xlabel, has_data=False, title=title)
+    plot = Plot(this_cont,
+                what='hist',
+                xlim=xlim,
+                ylim=[1e-3, 10] if do_reco_updown2 else [1e-2, 10],
+                xtitle=xlabel,
+                ytitle="Fraction",
+                has_data=False,
+                title=title,
+                lumi=None)
     plot.default_canvas_size = (700, 600)
     y1 = 0.15
     plot.legend.SetX1(0.55)
