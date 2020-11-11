@@ -10,7 +10,7 @@ import os
 from array import array
 
 # My stuff
-from comparator import Contribution, Plot, grab_obj
+from comparator import Contribution, Plot, grab_obj, ZeroContributions
 import common_utils as cu
 from qg_common import *
 from qg_general_plots import get_projection_plot
@@ -142,7 +142,7 @@ def get_flavour_efficiencies(input_file, dirname, bins, var_prepend="", which_je
     return flav_eff_dict
 
 
-def compare_flavour_fractions_vs_pt(input_files, dirnames, pt_bins, labels, flav, output_filename, title="", var_prepend="", which_jet="both", xtitle="p_{T}^{jet} [GeV]"):
+def compare_flavour_fractions_vs_pt(input_files, dirnames, pt_bins, labels, flav, output_filename, title="", var_prepend="", which_jet="both", xtitle="p_{T}^{jet} [GeV]", n_partons='all'):
     """Plot a specified flavour fraction vs pT for several sources.
     Each entry in input_files, dirnames, and labels corresponds to one line
 
@@ -150,13 +150,16 @@ def compare_flavour_fractions_vs_pt(input_files, dirnames, pt_bins, labels, flav
     """
     bin_centers = [0.5*(x[0]+x[1]) for x in pt_bins]
     bin_widths = [0.5*(x[1]-x[0]) for x in pt_bins]
+    metric = 'pt'
+    if n_partons.lower() != 'all':
+        metric = 'pt_npartons_%s' % n_partons
     info = [get_flavour_efficiencies(ifile,
-                                     sel,
+                                     dname,
                                      bins=pt_bins,
                                      var_prepend=var_prepend,
-                                     which_jet=(which_jet if "Dijet" in sel else "both"),
-                                     metric='pt')
-            for ifile, sel in zip(input_files, dirnames)]
+                                     which_jet=(which_jet if "Dijet" in dname else "both"),
+                                     metric=metric)
+            for ifile, dname in zip(input_files, dirnames)]
     contribs = []
     N = len(bin_centers)
     colours = [ROOT.kRed, ROOT.kBlack, ROOT.kBlue, ROOT.kGreen-3]
@@ -196,15 +199,18 @@ def compare_flavour_fractions_vs_pt(input_files, dirnames, pt_bins, labels, flav
              ylim=(0, 1),
              has_data=False)
     p.default_canvas_size = (600, 600)
-    p.plot("AP")
-    p.main_pad.SetBottomMargin(0.16)
-    p.get_modifier().GetXaxis().SetTitleOffset(1.4)
-    p.get_modifier().GetXaxis().SetTitleSize(.045)
-    p.legend.SetX1(0.56)
-    p.legend.SetY1(0.65)
-    p.legend.SetY2(0.87)
-    p.set_logx(do_more_labels=True, do_exponent=False)
-    p.save(output_filename)
+    try:
+        p.plot("AP")
+        p.main_pad.SetBottomMargin(0.16)
+        p.get_modifier().GetXaxis().SetTitleOffset(1.4)
+        p.get_modifier().GetXaxis().SetTitleSize(.045)
+        p.legend.SetX1(0.56)
+        p.legend.SetY1(0.65)
+        p.legend.SetY2(0.87)
+        p.set_logx(do_more_labels=True, do_exponent=False)
+        p.save(output_filename)
+    except ZeroContributions:
+        pass
 
 
 def do_flavour_fraction_vs_pt(input_file, dirname, pt_bins, output_filename, title="", var_prepend="", which_jet="both"):
