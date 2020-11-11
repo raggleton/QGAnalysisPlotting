@@ -301,7 +301,7 @@ class Plot(object):
         self.text_left_offset = 0 # for title and CMS texts together
         self.top_margin = 0.1
         self.main_pad = None
-        self.subplot = subplot
+        self.subplot = subplot # Contribution for subplot
         if subplot_type and subplot_type not in ['ratio', 'diff', "ddelta"]:
             raise RuntimeError("subplot_type must be one of None, ratio, diff, or ddelta")
         self.subplot_type = subplot_type
@@ -334,13 +334,16 @@ class Plot(object):
         """Create a container object for lots of the same TObject"""
         if self.plot_what in ["graph", "both"]:
             self.container = ROOT.TMultiGraph(ROOT.TUUID().AsString(), "")
-            self.subplot_container = ROOT.TMultiGraph(ROOT.TUUID().AsString(), "")
+            if self.subplot_type:
+                self.subplot_container = ROOT.TMultiGraph(ROOT.TUUID().AsString(), "")
         elif self.plot_what == "function":
             self.container = MultiFunc()
-            self.subplot_container = MultiFunc()
+            if self.subplot_type:
+                self.subplot_container = MultiFunc()
         elif self.plot_what == "hist":
             self.container = ROOT.THStack(ROOT.TUUID().AsString(), "")
-            self.subplot_container = ROOT.THStack(ROOT.TUUID().AsString(), "")
+            if self.subplot_type:
+                self.subplot_container = ROOT.THStack(ROOT.TUUID().AsString(), "")
 
         if self.container:
             ROOT.SetOwnership(self.container, False)
