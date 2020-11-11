@@ -357,7 +357,7 @@ def do_plots(root_dir, title):
                                            subplot_type='ratio',
                                            subplot_title=subplot_title,
                                            subplot_limits=subplot_limits,
-                                           lumi=cu.get_lumi_str(do_doijet=True, do_zpj=False))
+                                           lumi=cu.get_lumi_str(do_dijet=True, do_zpj=False))
 
                 # dj forward only
                 if len(dijet_fwd_entries) > 0:
@@ -374,7 +374,7 @@ def do_plots(root_dir, title):
                                            subplot_type='ratio',
                                            subplot_title=subplot_title,
                                            subplot_limits=subplot_limits,
-                                           lumi=cu.get_lumi_str(do_doijet=True, do_zpj=False))
+                                           lumi=cu.get_lumi_str(do_dijet=True, do_zpj=False))
 
                 # zpj only
                 if len(zpj_entries) > 0:
@@ -403,7 +403,7 @@ def do_plots(root_dir, title):
                                            subplot_type='ratio',
                                            subplot_title=subplot_title,
                                            subplot_limits=subplot_limits,
-                                           lumi=cu.get_lumi_str(do_doijet=False, do_zpj=True))
+                                           lumi=cu.get_lumi_str(do_dijet=False, do_zpj=True))
 
 
             # Do overall summary plots across all pt bins

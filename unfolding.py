@@ -660,7 +660,7 @@ def main():
             unfolder_plotter = MyUnfolderPlotter(unfolder,
                                                  is_data=not MC_INPUT,
                                                  lumi=cu.get_lumi_str(do_dijet="Dijet" in region['name'],
-                                                                      do_zpj="ZPlusJets" in in region['name']))
+                                                                      do_zpj="ZPlusJets" in region['name']))
             plot_args = dict(output_dir=this_output_dir, append=append)
 
             # SetEpsMatrix ensures rank properly calculated when inverting

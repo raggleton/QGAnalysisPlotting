@@ -372,11 +372,11 @@ def get_unfolding_output_dir(args):
             reg_axis_str = '_onlyRegAngle'
 
         if args.biasFactor != 0:
-            if args.biasVector == "template"
+            if args.biasVector == "template":
               reg_axis_str += "_useTemplateFit"
-            elif args.biasVector == "truth"
+            elif args.biasVector == "truth":
               reg_axis_str += "_useTruth"
-            elif args.biasVector == "alttruth"
+            elif args.biasVector == "alttruth":
               reg_axis_str += "_useAltTruth"
 
             bias_str = "_biasFactor%g" % args.biasFactor
