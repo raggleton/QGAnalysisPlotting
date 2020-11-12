@@ -113,13 +113,7 @@ def do_jet_pt_migration_plot(input_filename, directory, title, output_dir):
     tfile = cu.open_root_file(input_filename)
     h2d = tfile.Get("%s/jet_pt_vs_genjet_pt" % directory)
 
-    # Transpose it, since I got it wrong way round
-    h2d_new = h2d.Clone()
-    for ix in range(1, h2d.GetNbinsX()+1):
-        for iy in range(1, h2d.GetNbinsY()+1):
-            h2d_new.SetBinContent(iy, ix, h2d.GetBinContent(ix, iy))
-            h2d_new.SetBinError(iy, ix, h2d.GetBinError(ix, iy))
-
+    h2d_new = h2d
     h2d_renorm_y = cu.make_normalised_TH2(h2d_new, 'Y', recolour=False, do_errors=True)
     h2d_renorm_x = cu.make_normalised_TH2(h2d_new, 'X', recolour=False, do_errors=True)
 
