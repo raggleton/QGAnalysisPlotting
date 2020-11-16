@@ -270,7 +270,8 @@ def printable_bins(bins):
 def calc_variable_binning_purity_stability(h2d,
                                            purity_goal=0.4,
                                            stability_goal=0.4,
-                                           integer_binning=False):
+                                           integer_binning=False,
+                                           spike_smoothing=True):
     """Determine binning by combining neighbouring bins until we reach desired purity & stability
 
     If integer_binning, then ensure only even gaps between bins, such that when
@@ -291,13 +292,20 @@ def calc_variable_binning_purity_stability(h2d,
     Note that it doesn't matter if the bin edges are integers or half-integers;
     but they must be consistent.
     """
-    arr2d, _ = cu.th2_to_arr(h2d)
+    arr2d_orig, _ = cu.th2_to_arr(h2d)
     reco_bin_edges = cu.get_bin_edges(h2d, 'Y')
     # gen_bin_edges = cu.get_bin_edges(h2d, 'X')
     # print(reco_bin_edges)
     new_bin_edges = np.array(reco_bin_edges[:])
 
+    # smooth_bins = False
+    # smooth_bin_counter = 0 # safety
+    # bad_diff_bins, bad_diff_bin_edges = [], []
+    # while not smooth_bins and smooth_bin_counter < 100:
+    #     smooth_bin_counter += 1
+
     # assumes both axes have same dimension!
+    arr2d = np.copy(arr2d_orig)
     bin_ind = 0
     counter = 0  # safety measure
     while bin_ind < len(arr2d)-1 and counter < 10000:
@@ -306,10 +314,13 @@ def calc_variable_binning_purity_stability(h2d,
         arr2d_renormy = renorm(arr2d, axis=1)  # renormed per y (reco) bin
         purity = arr2d_renormy[bin_ind][bin_ind]  # fraction in a reco bin that are actually from that gen bin
         stability = arr2d_renormx[bin_ind][bin_ind] # fraction in a gen bin that make it to that reco bin
+        has_even_interval = (new_bin_edges[bin_ind+1]-new_bin_edges[bin_ind]) % 2 == 0
         # print(purity, stability)
-        if ((purity > purity_goal) and (stability > stability_goal) and
-            ((integer_binning and (new_bin_edges[bin_ind+1]-new_bin_edges[bin_ind]) % 2 == 0)  # check for even interval if integer_binning
-             or not integer_binning)):
+
+        if (purity > purity_goal and
+            stability > stability_goal and
+            ((integer_binning and has_even_interval) or not integer_binning)):
+            # FOUND OUR DESIRED BIN
             # print("found bin")
             # print(new_bin_edges)
             print("bin_ind:", bin_ind, " = ", new_bin_edges[bin_ind], "-", new_bin_edges[bin_ind+1], "purity: %.3f" % purity, "stability: %.3f" % stability)
@@ -332,9 +343,141 @@ def calc_variable_binning_purity_stability(h2d,
         # remove the penultimate entry, which would have been the lower edge of the last bin
         # with the insufficient purity/stability
         new_bin_edges = np.delete(new_bin_edges, -2)
+    print(new_bin_edges)
+
+    if spike_smoothing:
+        # Check for smooth/continuous distribution: if not, then need to reconsider
+        # TODO check either of reco/gen, or both?
+        axis = 'reco'
+        bad_diff_bins = get_unsmooth_bins(arr2d, axis=axis)
+        # handle 0 especially, since we can just combine the first few bins
+
+        bad_counter = 0
+        while 0 in bad_diff_bins and bad_counter < 1:
+            bad_counter += 1
+
+            new_arr2d = np.copy(arr2d)
+            zero_counter = 0
+            hist_bins = get_1D_bins_from_arr2d(arr2d, axis)
+            # find end bin - which has a height similar to 1st bin, add a bit of padding
+            start_bin = 0
+            # +1 since offset by 1 (for factor < 0, np.where will always pick 0th entry, so we check [1:])
+            # +1 to well-cover the range
+            end_bin = int(np.where(hist_bins[1:] > 1.*hist_bins[0])[0][0]) + 1
+            print('end_bin:', end_bin)
+
+            # Now do clustering, to try and get similar heights
+            bins_to_cluster = hist_bins[start_bin:end_bin]
+            print("len(bins_to_cluster)", len(bins_to_cluster))
+            if len(bins_to_cluster) == 2:
+                # just merge the first two
+                row_ind = 0
+                print("Joining", row_ind)
+                new_arr2d = concat_row(new_arr2d, row_ind)
+                new_arr2d = concat_row(new_arr2d.T, row_ind).T
+                new_bin_edges = np.delete(new_bin_edges, row_ind+1)
+
+            else:
+                print('new_bin_edges[start_bin:end_bin]', new_bin_edges[start_bin:end_bin])
+
+                # the smallest number of bins is 1
+                # the largest number is constrained by the 0th bin (or largest?)
+                # that we are trying to merge, since we don't want it much larger
+                # than the average
+                sum_bins = bins_to_cluster.sum()
+                num_target_bins = np.arange(1, len(bins_to_cluster), 1)
+                # num_target_bins = np.array([2])
+                averages = sum_bins / num_target_bins
+                mask = bins_to_cluster.max() < 1.2 * averages
+                averages = averages[mask]
+                num_target_bins = num_target_bins[mask]
+
+                results = []
+
+                print('bins_to_cluster', bins_to_cluster)
+
+                # iterate over different number of target bins
+                for n_target, ave in zip(num_target_bins, averages):
+
+                    this_arr2d = np.copy(new_arr2d)
+                    this_new_bin_edges = np.copy(new_bin_edges)
+
+                    print('n_target', n_target)
+                    print('target', ave)
+
+                    # figure out most even binning for given target number of bins
+                    cumul_bins = bins_to_cluster.cumsum()
+                    ideal_cumul = np.linspace(0, sum_bins, n_target+1)
+                    indices = np.searchsorted(cumul_bins, ideal_cumul, side='right')  # right to ensure last bin done
+                    print('cumul_bins', cumul_bins)
+                    print('ideal_cumul', ideal_cumul)
+
+                    # sometimes get 0, 0 as first indices, when 1st bin is too big for
+                    # the final 1st bin
+                    # this makes the 2nd bin huge, so override that
+                    if indices[0] == 0 and indices[1] == 0:
+                        indices[1] = 1
+
+                    print('indices', indices)
+
+                    # do rebinning of these bins
+                    new_data = []
+                    for g, gn in zip(indices[:-1], indices[1:]):
+                        new_data.append(bins_to_cluster[g:gn].sum())
+                    print("rebinned bins", new_data)
+
+                    # now do rebinning of th2, bin edges
+                    row_ind = start_bin-1
+                    for g, gn in zip(indices[:-1], indices[1:]):
+                        print("outer Joining", g)
+                        row_ind += 1
+                        rebin_these = range(g, gn-1) # -1 because we merge 2 bins into 1, so only need to concat one fewer
+                        # if len(rebin_these) <= 1:
+                            # print('...skipping')
+                            # continue
+                        for gg in rebin_these:
+                            print("Joining", row_ind)
+                            this_arr2d = concat_row(this_arr2d, row_ind)
+                            this_arr2d = concat_row(this_arr2d.T, row_ind).T
+                            this_new_bin_edges = np.delete(this_new_bin_edges, row_ind+1)
+
+                    this_hist = get_1D_bins_from_arr2d(this_arr2d, axis)
+                    # Calculate std deviation across bins of interest
+                    this_std = np.std(np.diff(this_hist[start_bin:end_bin+1]))
+                    # Calculate max absolute diff across bins of interest
+                    this_max_diff = np.abs(np.diff(this_hist[start_bin:end_bin+1])).max()
+                    results.append({
+                        'arr2d': this_arr2d,
+                        'bin_edges': this_new_bin_edges,
+                        'std_dev': this_std,
+                        'max_diff': this_max_diff
+                    })
+
+                # Choose best binning, based on some metric (min diff, min std dev)
+                min_metric = 1E100
+                min_metric_n = -1
+                for n_bins, r in zip(num_target_bins, results):
+                    metric = r['max_diff']
+                    if metric < min_metric:  # favour smaller # bins
+                        min_metric = metric
+                        min_metric_n = n_bins
+                    print(n_bins, r['bin_edges'], r['std_dev'], r['max_diff'])
+                # min_metric_n = 3
+                ind = np.where(num_target_bins == min_metric_n)[0][0]
+                new_arr2d = results[ind]['arr2d']
+                new_bin_edges = results[ind]['bin_edges']
+                print("chosen nbins", min_metric_n)
+
+            bad_diff_bins = get_unsmooth_bins(new_arr2d, axis=axis)
+
+            if 0 in bad_diff_bins:
+                print("!!!! I couldn't get rid of bad 1st bin")
+            else:
+                print("My new bins:", new_bin_edges)
+
 
     if integer_binning:
-        # ensure integers fall in centr of bin
+        # ensure integers fall in centre of bin
         # this assumes the original bin edges were integers!
         # if not, comment out this line
         new_bin_edges-= 0.5
@@ -649,6 +792,9 @@ if __name__ == "__main__":
                         help="Target purity & stability as a fraction",
                         default=0.5,
                         type=float)
+    parser.add_argument("--spikeSmoothing",
+                        help="Smooth spike @ 0",
+                        action='store_true')
     # acceptable_metrics = ['gausfit', 'quantile']
     # parser.add_argument("--metric",
     #                     help="Metric for deciding bin width.",
@@ -754,7 +900,8 @@ if __name__ == "__main__":
                 new_binning = calc_variable_binning_purity_stability(h2d_orig,
                                                                      purity_goal=goal,
                                                                      stability_goal=goal,
-                                                                     integer_binning=integer_binning)
+                                                                     integer_binning=integer_binning,
+                                                                     spike_smoothing='charged' in angle.var and args.spikeSmoothing)
                 rebin_results_dict[var_dict['name']] = new_binning
 
                 # Rebin 2D heatmap
