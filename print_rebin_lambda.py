@@ -157,12 +157,14 @@ if __name__ == "__main__":
                                                                                zip(source_plot_dir_names, region_labels),
                                                                                pt_regions):
         multi_region = not isinstance(source_plot_dir_name, str)
+        is_groomed = False
         if multi_region:
-            var_prepend = "groomed " if "groomed" in source_plot_dir_name[0] else ""
+            is_groomed = "groomed" in source_plot_dir_name[0]
             total_plot_dir_name = "+".join(source_plot_dir_name)
         else:
-            var_prepend = "groomed " if "groomed" in source_plot_dir_name else ""
+            is_groomed = "groomed" in source_plot_dir_name
             total_plot_dir_name = source_plot_dir_name
+        var_prepend = "groomed " if is_groomed else ""
         print(angle, source_plot_dir_name, region_label, pt_region_dict['title'])
 
         var_dict = {
@@ -196,7 +198,7 @@ if __name__ == "__main__":
             ref_region = "Dijet_QG_central_tighter+Dijet_QG_forward_tighter"
 
             # Here we want separate groomed/ungroomed binnings
-            if "groomed" in total_plot_dir_name:
+            if is_groomed:
                 if args.groomedRef == "groomed":
                     # Use groomed for groomed
                     ref_region = ref_region.replace("_tighter", "_tighter_groomed")
@@ -224,7 +226,8 @@ if __name__ == "__main__":
         else:
             # Get common binning scheme from qg_common
             var_binning_key = angle.var
-            new_binning = qgc.VAR_UNFOLD_DICT[var_binning_key]['gen']
+            groom_str = "groomed" if is_groomed else "ungroomed"
+            new_binning = qgc.VAR_UNFOLD_DICT[groom_str][var_binning_key]['gen']
             # convert to pairs of bin edges
             new_binning = list(zip(new_binning[:-1], new_binning[1:]))
             print(new_binning)

@@ -432,10 +432,10 @@ def main():
     print("Running TUnfold version", ROOT.TUnfold.GetTUnfoldVersion())
 
     LAMBDA_VAR_DICTS = qgc.VAR_UNFOLD_DICT
-    if 'target0p5' in src_dir:
-        LAMBDA_VAR_DICTS = qgc.VAR_UNFOLD_DICT_TARGET0p5
-    elif 'target0p6' in src_dir:
-        LAMBDA_VAR_DICTS = qgc.VAR_UNFOLD_DICT_TARGET0p6
+    # if 'target0p5' in src_dir:
+    #     LAMBDA_VAR_DICTS = qgc.VAR_UNFOLD_DICT_TARGET0p5
+    # elif 'target0p6' in src_dir:
+    #     LAMBDA_VAR_DICTS = qgc.VAR_UNFOLD_DICT_TARGET0p6
 
 
     # Do unfolding per signal region
@@ -515,13 +515,14 @@ def main():
 
         # Do unfolding for each angle
         # ----------------------------------------------------------------------
+        is_groomed = "groomed" in region['name']
         for angle in angles:
             region = copy(orig_region)  # make copy since we might modify it later, e.g. PDF, and want same start for each angle
 
             if isinstance(region['mc_tfile'], str):
                 region['mc_tfile'] = cu.open_root_file(region['mc_tfile'])
 
-            angle_prepend = "groomed " if "groomed" in region['name'] else ""
+            angle_prepend = "groomed " if is_groomed else ""
             append = "%s_%s" % (region['name'], angle.var)  # common str to put on filenames, etc. don't need angle_prepend as 'groomed' in region name
             angle_str = "%s%s (%s)" % (angle_prepend, qgc.lower_angle_name(angle), angle.lambda_str)
 
@@ -543,8 +544,9 @@ def main():
 
             # Setup MyUnfolder object to do unfolding etc
             # -------------------------------------------
-            angle_bin_edges_reco = LAMBDA_VAR_DICTS[angle.var]['reco']
-            angle_bin_edges_gen = LAMBDA_VAR_DICTS[angle.var]['gen']
+            groom_str = "groomed" if is_groomed else "ungroomed"
+            angle_bin_edges_reco = LAMBDA_VAR_DICTS[groom_str][angle.var]['reco']
+            angle_bin_edges_gen = LAMBDA_VAR_DICTS[groom_str][angle.var]['gen']
             angle_shortname = angle.var.replace("jet_", "")
 
             mc_hname_append = "split" if MC_SPLIT else "all"

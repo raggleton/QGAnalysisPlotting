@@ -277,7 +277,7 @@ def tunfold_to_physical_bins(hist, bins, divide_by_bin_width=True):
 
 
 angle = [a for a in qgc.COMMON_VARS if a.var in 'jet_LHA'][0]
-LAMBDA_VAR_DICTS = qgc.VAR_UNFOLD_DICT_TARGET0p5
+LAMBDA_VAR_DICTS = qgc.VAR_UNFOLD_DICT['ungroomed']
 variable_bin_edges_reco = LAMBDA_VAR_DICTS[angle.var]['reco']
 variable_bin_edges_gen = LAMBDA_VAR_DICTS[angle.var]['gen']
 variable_name = angle.name

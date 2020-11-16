@@ -675,10 +675,10 @@ if __name__ == "__main__":
         # it will auto sum over the releveant map across the dirs
         source_plot_dir_names = [("Dijet_QG_tighter",),
                                  ("Dijet_QG_central_tighter", "Dijet_QG_forward_tighter"),
-                                 ("Dijet_QG_central_tighter_groomed", "Dijet_QG_forward_tighter_groomed")][2:]
+                                 ("Dijet_QG_central_tighter_groomed", "Dijet_QG_forward_tighter_groomed")][1:]
         region_labels = [qgc.Dijet_LABEL,
                          qgc.Dijet_LABEL,
-                         qgc.Dijet_GROOMED_LABEL][2:]
+                         qgc.Dijet_GROOMED_LABEL][1:]
 
     elif "dyjetstoll" in args.input.lower():
         source_plot_dir_names = [("ZPlusJets_QG"), ("ZPlusJets_QG_groomed")]

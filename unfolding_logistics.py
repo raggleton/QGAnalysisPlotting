@@ -39,7 +39,7 @@ def get_unfolding_argparser(description='', parser=None):
                         help="Source directory with ROOT files")
 
     parser.add_argument("--angles",
-                        choices=list(qgc.VAR_UNFOLD_DICT.keys()) + ["all"],
+                        choices=list(qgc.VAR_UNFOLD_DICT['ungroomed'].keys()) + ["all"],
                         nargs='+',
                         required=True,
                         help="Lambda angles to unfold, or 'all' for all of them")

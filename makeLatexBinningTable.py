@@ -77,5 +77,5 @@ def print_pt_lists():
 
 
 if __name__ == "__main__":
-    print_variable_table(qgc.VAR_UNFOLD_DICT_TARGET0p5)
+    print_variable_table(qgc.VAR_UNFOLD_DICT)
     print_pt_lists()

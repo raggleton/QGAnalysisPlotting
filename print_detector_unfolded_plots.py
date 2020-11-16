@@ -429,7 +429,7 @@ if __name__ == "__main__":
     parser.add_argument("source",
                         help="Source directory (should be the one made by unfolding.py)")
     parser.add_argument("--angles",
-                        choices=list(qgc.VAR_UNFOLD_DICT.keys()) + ["all"],
+                        choices=list(qgc.VAR_UNFOLD_DICT['ungroomed'].keys()) + ["all"],
                         nargs='+',
                         help="Lambda angles to unfold, or 'all' for all of them (default).",
                         default=["all"])
