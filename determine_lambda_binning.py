@@ -13,14 +13,15 @@ import argparse
 from MyStyle import My_Style
 My_Style.cd()
 import os
-from itertools import product
+os.nice(10)
+from itertools import product, chain
 from array import array
 from math import sqrt
 import bisect
 import numpy as np
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict
 from copy import deepcopy
-os.nice(10)
+
 
 import ROOT
 ROOT.PyConfig.IgnoreCommandLineOptions = True
@@ -234,8 +235,8 @@ def get_unsmooth_bins(arr2d, axis='gen'):
             # edge case: consider i, i+1
             # but avoid cases where binning is coarse - could be genuine
             # 1st bin and not a spike i.e. +ve gradient up to peak
-            if diff_signs[i] != diff_signs[i+1] and diffs[i] < 0:
-                print('>>>>! Bin', i, 'diff wrong sign:', diffs[i], diffs[i+1])
+            if diff_signs[0] != diff_signs[1] and diffs[0] < 0:
+                print('>>>>! Bin', i, 'diff wrong sign:', diffs[0], diffs[1])
                 bad_diff_bins.append(i)
         else:
             # consider i-1, i, i+1
@@ -564,11 +565,14 @@ def make_rebinned_2d_hist(h2d, new_binning, use_half_width_y=False):
         # create half width bins from new_binning
         reco_binning = []
         reco_bin_edges = cu.get_bin_edges(h2d, 'Y')
+        print("Creating half-bin width...")
         for s, e in new_binning:
             ideal_mid = (s+e)/2.
+            # find the bin that closest matches this ideal_mid
             mid = reco_bin_edges[bisect.bisect_left(reco_bin_edges, ideal_mid)]
             reco_binning.append((s, mid))
             reco_binning.append((mid, e))
+        print("...done")
         return rebin_2d_hist(h2d, new_binning, reco_binning)
     else:
         return rebin_2d_hist(h2d, new_binning, new_binning)
@@ -593,8 +597,10 @@ def make_plots(h2d,
     # Plot original 2D map, no renormalizing by axis
     h2d_renorm_x, h2d_renorm_y = None, None
     if plot_maps or plot_migrations:
+        print("calculating normalised hists...")
         h2d_renorm_y = cu.make_normalised_TH2(h2d, 'Y', recolour=False, do_errors=True)
         h2d_renorm_x = cu.make_normalised_TH2(h2d, 'X', recolour=False, do_errors=True)
+        print("done calculating normalised hists...")
 
     if plot_maps:
         canv = ROOT.TCanvas("c"+cu.get_unique_str(), "", 700, 600)
@@ -862,7 +868,7 @@ if __name__ == "__main__":
 
     input_tfile = cu.open_root_file(args.input)
 
-    for angle in qgc.COMMON_VARS[:]:
+    for angle in chain(qgc.COMMON_VARS[:]):
 
         integer_binning = "multiplicity" in angle.var.lower()
 
@@ -880,6 +886,7 @@ if __name__ == "__main__":
                     "var_label": "%s%s (%s)" % (var_prepend, angle.name, angle.lambda_str),
                     "title": "%s jets: %s\n%s" % (jet_str, region_label, pt_region_dict['title']),
                 }
+                print("Doing", var_dict['name'])
 
                 h_append = "_rel_response" if do_rel_response else "_response"
                 names = ["%s/%s%s%s" % (sname, angle.var, pt_region_dict['append'], h_append) for sname in source_plot_dir_name_list]
@@ -888,7 +895,7 @@ if __name__ == "__main__":
                 # Make plots with original fine equidistant binning
                 # -------------------------------------------------
                 make_plots(h2d_orig, var_dict, plot_dir=plot_dir, append="orig",
-                           plot_migrations=False) # don't do a div_bin_width=False version, as equidistant binning
+                           plot_migrations=False, div_bin_width=False) # don't do a div_bin_width=True version, as equidistant binning
 
                 response_maps_dict[var_dict['name']] = h2d_orig
 
@@ -914,12 +921,14 @@ if __name__ == "__main__":
 
                 # Plot with new binning
                 # ---------------------
+                print("Making plots")
                 make_plots(h2d_rebin, var_dict, plot_dir=plot_dir, append="rebinned")
                 make_plots(h2d_rebin, var_dict, plot_dir=plot_dir, append="rebinned",
                            plot_maps=False,
                            plot_migrations=False,
                            div_bin_width=False)
 
+                print("Doing caching/writing")
                 # Cache renormed plots here for migration plots
                 h2d_renorm_x = cu.make_normalised_TH2(h2d_rebin, 'X', recolour=False, do_errors=True)
                 output_tfile.WriteTObject(h2d_renorm_x)  # we want renormalised by col for doing folding
@@ -928,6 +937,8 @@ if __name__ == "__main__":
                 h2d_renorm_y = cu.make_normalised_TH2(h2d_rebin, 'Y', recolour=False, do_errors=True)
                 output_tfile.WriteTObject(h2d_renorm_y)  # save anyway for completeness
                 response_maps_dict[var_dict['name']+"_renormY"] = h2d_renorm_y
+
+                print("done caching/writing")
 
                 # Now rebin any other input files with the same hist using the new binning
                 # ------------------------------------------------------------------------
@@ -1021,7 +1032,9 @@ if __name__ == "__main__":
             # ---------------------------------------------------------
             rebin_other_pt_regions = True
             reference_pt_region = "_midPt"  # correspond to 'append' key in a dict
-            # reference_pt_region = "_lowPt"  # correspond to 'append' key in a dict
+            if "puppiMultiplicity" in angle.var:
+                reference_pt_region = "_highPt"
+
             if rebin_other_pt_regions:
 
                 this_pt_dict = [x for x in pt_regions if x['append'] == reference_pt_region][0]
@@ -1061,17 +1074,19 @@ if __name__ == "__main__":
                                plot_maps=False,
                                plot_migrations=False,
                                div_bin_width=False)
+                    print("done plots rebin_other_pt_regions")
 
                 # Apply binning scheme derived from one ungroomed region to groomed
                 # And use the reference pt region
                 # ---------------------------------------------------------
-                rebin_other_groomed_regions = True
-                if "groomed" in source_plot_dir_name_list[0] and rebin_other_groomed_regions:
+                rebin_groomed_using_ungroomed = True
+                if "groomed" in source_plot_dir_name_list[0] and rebin_groomed_using_ungroomed:
                     # Find rebinning scheme
                     ungroomed_source_plot_dir_name = "+".join([s.replace("_groomed", "") for s in source_plot_dir_name_list])
                     key = "%s/%s%s" % (ungroomed_source_plot_dir_name, angle.var, reference_pt_region)
                     print("key", key)
                     if key not in rebin_results_dict:
+                        print(list(rebin_results_dict.keys()))
                         raise RuntimeError("Missing key %s in dict" % key)
 
                     reference_binning = rebin_results_dict[key]
@@ -1101,6 +1116,7 @@ if __name__ == "__main__":
                                    plot_maps=False,
                                    plot_migrations=False,
                                    div_bin_width=False)
+                        print("Done plots rebin_groomed_using_ungroomed")
 
                 # Now rebin any other input files with the same hist using the new binning
                 # ------------------------------------------------------------------------
@@ -1215,7 +1231,9 @@ if __name__ == "__main__":
             # turn pairs of bin edges into one list
             bins = [vv[0] for vv in v]
             bins.append(v[-1][1])
-            fout.write("%s: %s\n" % (k, bins))
+            bin_str = ', '.join(['%.3g' % b for b in bins])
+            fout.write("%s: %s\n" % (k, bin_str))
+
 
     print("saved new binning to", output_txt)
     print("saved rebinned 2D hists to", output_root_filename)
