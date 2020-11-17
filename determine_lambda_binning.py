@@ -500,6 +500,8 @@ def rebin_2d_hist(h2d, new_binning_x, new_binning_y):
     new_binning_x, new_binning_y are lists of tuple pairs of bin edges
     e.g. [(0, 1), (1, 4), (4, 10)]
     """
+    print("rebinning...")
+    # convert pairs of bins to list of edges, including upper edge of last bin
     bin_edges_x = [b[0] for b in new_binning_x]
     bin_edges_x.append(new_binning_x[-1][1])
 
@@ -508,7 +510,7 @@ def rebin_2d_hist(h2d, new_binning_x, new_binning_y):
 
     # print("rebin_2d_hist, new axes:", bin_edges_x, bin_edges_y)
 
-    new_hist = ROOT.TH2D(
+    new_h2d = ROOT.TH2D(
         h2d.GetName()+"Rebin",
         ';'.join([h2d.GetTitle(), h2d.GetXaxis().GetTitle(), h2d.GetYaxis().GetTitle()]),
         len(new_binning_x),
@@ -517,33 +519,35 @@ def rebin_2d_hist(h2d, new_binning_x, new_binning_y):
         array('d', bin_edges_y)
     )
 
-    nbins_x_orig = h2d.GetNbinsX()
+    # Get original bin edges
     bins_x_orig = cu.get_bin_edges(h2d, 'X')
-
-    nbins_y_orig = h2d.GetNbinsY()
     bins_y_orig = cu.get_bin_edges(h2d, 'Y')
 
-    # TODO: handle under/overflow
-    for xind, xbin in enumerate(new_binning_x, 1):  # these are tuples
-        for yind, ybin in enumerate(new_binning_y, 1):
-            # Find all the old bins that correspond to this new bin, get their contents
-            new_bin_content = 0
-            new_bin_error_sq = 0
-            # TODO handle error - reset to sqrt(N)?
-            for xind_orig, xbin_orig in enumerate(bins_x_orig[:-1], 1):
-                for yind_orig, ybin_orig in enumerate(bins_y_orig[:-1], 1):
-                    if (xbin_orig >= xbin[0] and xbin_orig < xbin[1] and
-                        ybin_orig >= ybin[0] and ybin_orig < ybin[1]):
-                        new_bin_content += h2d.GetBinContent(xind_orig, yind_orig)
-                        new_bin_error_sq += pow(h2d.GetBinError(xind_orig, yind_orig), 2)
-                        # print("For new bin", xbin, ybin, "using contents from", xbin_orig, bins_x_orig[xind_orig], ybin_orig, bins_y_orig[yind_orig])
-                        # print("orig bin", xind_orig, yind_orig)
+    # Get original bin contents
+    arr, err = cu.th2_to_arr(h2d, do_errors=True)
 
-            new_hist.SetBinContent(xind, yind, new_bin_content)
-            # print("Setting bin", xind, yind)
-            new_hist.SetBinError(xind, yind, sqrt(new_bin_error_sq))
+    # Get map of old bin edges -> new bin edges
+    # -1 to start at 0
+    bin_groups_x = np.digitize(bins_x_orig, bin_edges_x) - 1
+    bin_groups_y = np.digitize(bins_y_orig, bin_edges_y) - 1
 
-    return new_hist
+    # Count cumulative number of entries in each group (remove last bin as upper edge)
+    group_counts_x = np.bincount(bin_groups_x)[:-1].cumsum()
+    group_counts_y = np.bincount(bin_groups_y)[:-1].cumsum()
+
+    group_counts_x = np.insert(group_counts_x, 0, 0)
+    group_counts_y = np.insert(group_counts_y, 0, 0)
+
+    # Iterate over each group, sum, set new TH2 contents
+    for xind, (xl, xh) in enumerate(zip(group_counts_x[:-1], group_counts_x[1:]), 1):
+        for yind, (yl, yh) in enumerate(zip(group_counts_y[:-1], group_counts_y[1:]), 1):
+            new_bin_content = arr[yl:yh,xl:xh].sum()
+            new_bin_err = np.sqrt(np.power(err[yl:yh,xl:xh], 2).sum())
+            new_h2d.SetBinContent(xind, yind, new_bin_content)
+            new_h2d.SetBinError(xind, yind, new_bin_err)
+
+    print("...done rebinning")
+    return new_h2d
 
 
 def make_rebinned_2d_hist(h2d, new_binning, use_half_width_y=False):
