@@ -254,8 +254,9 @@ VAR_UNFOLD_DICT_TARGET0p5 = {
     },
 }
 
-# new version of WTA, cen+fwd dijet, target 0.5, pt>0 (except multiplicity), softdrop, fix lambda
-# from ./workdir_102X_v3data_v2mc_ak4puppi_fixSelCutOrder_puppiJER_tightJetId_constitPt0MultPt1_WeightCuts_fixLambda/determine_lambda_binning_target0p5/binning_uhh2.AnalysisModuleRunner.MC.MC_QCD.txt
+# new version of WTA, cen+fwd dijet, target 0.5, pt>0 (except multiplicity), softdrop, fix lambda, charged clustering
+# target 0.65 + spike smoothing for groomed charged
+# from workdir_102X_v3data_v2mc_ak4puppi_fixSelCutOrder_puppiJER_tightJetId_constitPt0MultPt1_WeightCuts_zjAsym_genjetGhostFlav_noBCpref_genJetNoMu_fixCharged/
 VAR_UNFOLD_DICT_TARGET0p5 = {
     "ungroomed": {
         'jet_puppiMultiplicity': {
@@ -275,74 +276,72 @@ VAR_UNFOLD_DICT_TARGET0p5 = {
             'reco': None
         },
         'jet_thrust': {
-            'gen': np.array([0.0, 0.05, 0.09, 0.15, 0.205, 0.26, 1.0], dtype='d'),
+            'gen': np.array([0.0, 0.05, 0.09, 0.15, 0.205, 0.26, 0.6], dtype='d'),
             'reco': None
         },
 
         'jet_puppiMultiplicity_charged': {
-            'gen': np.array([-0.5, 3.5, 5.5, 9.5, 13.5, 17.5, 21.5, 25.5, 31.5, 37.5, 45.5, 59.5, 99.5], dtype='d'),
+            'gen': np.array([-0.5, 3.5, 5.5, 7.5, 9.5, 11.5, 13.5, 17.5, 21.5, 25.5, 29.5, 35.5, 41.5, 59.5, 99.5], dtype='d'),
             'reco': None
         },
         'jet_pTD_charged': {
-            'gen': np.array([0.0, 0.06, 0.08, 0.1, 0.13, 0.17, 0.22, 0.28, 0.36, 0.47, 0.59, 0.73, 1.0], dtype='d'),
+            'gen': np.array([0, 0.07, 0.09, 0.12, 0.15, 0.19, 0.24, 0.31, 0.4, 0.52, 0.69, 1], dtype='d'),
             'reco': None
         },
         'jet_LHA_charged': {
-            'gen': np.array([0.0, 0.05, 0.09, 0.14, 0.19, 0.25, 0.32, 0.39, 0.47, 0.55, 0.63, 0.72, 1.0], dtype='d'),
+            'gen': np.array([0, 0.06, 0.11, 0.15, 0.19, 0.23, 0.27, 0.31, 0.35, 0.39, 0.44, 0.49, 0.54, 0.6, 1], dtype='d'),
             'reco': None
         },
         'jet_width_charged': {
-            'gen': np.array([0.0, 0.01, 0.025, 0.045, 0.075, 0.11, 0.155, 0.21, 0.275, 0.34, 0.41, 0.485, 0.575, 1.0], dtype='d'),
+            'gen': np.array([0, 0.0225, 0.04, 0.0575, 0.0775, 0.1, 0.125, 0.152, 0.185, 0.22, 0.26, 0.307, 0.362, 0.425, 0.497, 1], dtype='d'),
             'reco': None
         },
         'jet_thrust_charged': {
-            'gen': np.array([0.0, 0.005, 0.015, 0.03, 0.055, 0.09, 0.125, 0.16, 0.195, 0.23, 0.27, 0.315, 0.375, 1.0], dtype='d'),
+            'gen': np.array([0, 0.005, 0.0125, 0.0225, 0.035, 0.05, 0.07, 0.0925, 0.12, 0.152, 0.188, 0.228, 0.273, 0.6], dtype='d'),
             'reco': None
         },
     },
 
     "groomed": {
         'jet_puppiMultiplicity': {
-            # 'gen': np.array([0, 10, 15, 20, 30, 50, 75, 100, 150], dtype='d'),
-            'gen': np.array([-0.5, 9.5, 15.5, 21.5, 29.5, 39.5, 59.5, 99.5, 149.5], dtype='d'),
+            'gen': np.array([-0.5, 7.5, 13.5, 19.5, 29.5, 39.5, 49.5, 75.5, 99.5, 149.5], dtype='d'),
             'reco': None
         },
         'jet_pTD': {
-            'gen': np.array([0.0, 0.06, 0.09, 0.13, 0.19, 0.3, 1.0], dtype='d'),
+            'gen': np.array([0, 0.06, 0.09, 0.14, 0.22, 1], dtype='d'),
             'reco': None
         },
         'jet_LHA': {
-            'gen': np.array([0.0, 0.17, 0.25, 0.32, 0.38, 0.45, 0.52, 0.59, 0.66, 1.0], dtype='d'),
+            'gen': np.array([0, 0.1, 0.18, 0.26, 0.34, 0.42, 0.5, 0.57, 0.64, 1.], dtype='d'),
             'reco': None
         },
         'jet_width': {
-            'gen': np.array([ 0.0, 0.105, 0.165, 0.23, 0.305, 0.38, 0.46, 0.55, 1.0], dtype='d'),
+            'gen': np.array([0, 0.02, 0.05, 0.095, 0.147, 0.225, 0.307, 0.388, 0.468, 0.56, 1], dtype='d'),
             'reco': None
         },
         'jet_thrust': {
-            'gen': np.array([0.0, 0.05, 0.09, 0.15, 0.205, 0.26, 1.0], dtype='d'),
+            'gen': np.array([0, 0.0025, 0.01, 0.025, 0.06, 0.12, 0.177, 0.23, 0.285, 0.6], dtype='d'),
             'reco': None
         },
 
         'jet_puppiMultiplicity_charged': {
-            # 'gen': np.array([0, 3, 5.0, 8.0, 11.0, 14.0, 18.0, 22.0, 26.0, 31.0, 37.0, 45.0, 150.0], dtype='d'),
-            'gen': np.array([-0.5, 3.5, 5.5, 9.5, 13.5, 17.5, 21.5, 25.5, 31.5, 37.5, 45.5, 59.5, 99.5], dtype='d'),
+            'gen': np.array([-0.5, 3.5, 5.5, 9.5, 13.5, 17.5, 21.5, 27.5, 35.5, 49.5, 99.5], dtype='d'),
             'reco': None
         },
         'jet_pTD_charged': {
-            'gen': np.array([0.0, 0.06, 0.08, 0.1, 0.13, 0.17, 0.22, 0.28, 0.36, 0.47, 0.59, 0.73, 1.0], dtype='d'),
+            'gen': np.array([0, 0.07, 0.09, 0.12, 0.16, 0.21, 0.27, 0.35, 0.44, 0.54, 0.66, 1], dtype='d'),
             'reco': None
         },
         'jet_LHA_charged': {
-            'gen': np.array([0.0, 0.05, 0.09, 0.14, 0.19, 0.25, 0.32, 0.39, 0.47, 0.55, 0.63, 0.72, 1.0], dtype='d'),
+            'gen': np.array([0, 0.06, 0.09, 0.12, 0.15, 0.19, 0.23, 0.27, 0.32, 0.37, 0.42, 0.48, 0.54, 0.6, 1], dtype='d'),
             'reco': None
         },
         'jet_width_charged': {
-            'gen': np.array([0.0, 0.01, 0.025, 0.045, 0.075, 0.11, 0.155, 0.21, 0.275, 0.34, 0.41, 0.485, 0.575, 1.0], dtype='d'),
+            'gen': np.array([0, 0.0125, 0.0225, 0.035, 0.05, 0.07, 0.095, 0.128, 0.17, 0.225, 0.29, 0.365, 0.45, 1], dtype='d'),
             'reco': None
         },
         'jet_thrust_charged': {
-            'gen': np.array([0.0, 0.005, 0.015, 0.03, 0.055, 0.09, 0.125, 0.16, 0.195, 0.23, 0.27, 0.315, 0.375, 1.0], dtype='d'),
+            'gen': np.array([0, 0.0025, 0.005, 0.0075, 0.0125, 0.02, 0.0325, 0.05, 0.0775, 0.115, 0.16, 0.21, 0.265, 0.6], dtype='d'),
             'reco': None
         },
     }
