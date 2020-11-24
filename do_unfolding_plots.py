@@ -327,6 +327,19 @@ class GenPtBinnedPlotter(object):
             plot.plot("NOSTACK E1")
             plot.save("%s/unfolded_%s_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
 
+            if self.setup.angle.var in ["jet_LHA_charged", "jet_thrust_charged", "jet_width_charged", "jet_thrust", "jet_width"]:
+                upper_bin = [x for x in cu.get_bin_edges(mc_gen_hist_bin, 'x') if x < 0.2][-1]
+                plot2 = Plot(entries,
+                            ytitle=self.setup.pt_bin_normalised_differential_label,
+                            title=self.get_pt_bin_title(bin_edge_low, bin_edge_high),
+                            xlim=(0, upper_bin),
+                            **self.pt_bin_plot_args)
+                self._modify_plot(plot2)
+                plot2.subplot_title = "* / Generator"
+                plot2.plot("NOSTACK E1")
+                # plot2.set_logx(do_exponent=False)
+                plot2.save("%s/unfolded_%s_bin_%d_divBinWidth_lowX.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
+
     def plot_unfolded_with_alt_truth_normalised(self, do_chi2=False):
         data_total_errors_style = dict(label="Data (total uncert.)",
                                        line_color=self.plot_styles['unfolded_total_colour'],
@@ -490,6 +503,31 @@ class GenPtBinnedPlotter(object):
             plot.canvas.cd()
 
             plot.save("%s/unfolded_%s_alt_truth_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
+
+            if self.setup.angle.var in ["jet_thrust_charged", "jet_width_charged", "jet_thrust", "jet_width"]:
+                # plot.ylim = (1E-5)
+                plot.y_padding_max_log = 50
+                plot.y_padding_min_log = 0.5
+                plot.ylim = None
+                plot.set_logy(do_exponent=False, do_more_labels=False)
+                plot.save("%s/unfolded_%s_alt_truth_bin_%d_divBinWidth_logY.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
+            
+            if self.setup.angle.var in ["jet_LHA_charged", "jet_thrust_charged", "jet_width_charged", "jet_thrust", "jet_width"]:
+                bin_edges = cu.get_bin_edges(mc_gen_hist_bin, 'x')
+                # get the bin edge thats smallest between 0.2, and 5th bin
+                bin_lt_lim = [x for x in bin_edges if x < 0.2][-1]
+                upper_bin = min(bin_edges[5], bin_lt_lim)
+                plot2 = Plot(entries,
+                            ytitle=self.setup.pt_bin_normalised_differential_label,
+                            title=self.get_pt_bin_title(bin_edge_low, bin_edge_high),
+                            xlim=(0, upper_bin),
+                            **self.pt_bin_plot_args)
+                self._modify_plot(plot2)
+                plot2.subplot_title = "* / Generator"
+                plot2.plot("NOSTACK E1")
+                # plot2.set_logx(do_exponent=False)
+                plot2.save("%s/unfolded_%s_alt_truth_bin_%d_divBinWidth_lowX.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
+
 
     def plot_unfolded_with_unreg_normalised(self):
         for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
