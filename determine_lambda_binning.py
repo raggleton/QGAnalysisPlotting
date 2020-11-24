@@ -206,7 +206,7 @@ def concat_row(arr2d, row_ind):
     # concat row row_ind + row_ind+1
     nrows, ncols = arr2d.shape
     if row_ind > nrows - 2:
-        raise RuntimeError("Cannot concat row [%d] as only %d rows in matrix" % (row_ind, nrows))
+        raise IndexError("Cannot concat row [%d] as only %d rows in matrix" % (row_ind, nrows))
     arr2d_new = np.zeros(shape=(nrows-1, ncols), dtype=float)
     new_row = arr2d[row_ind] + arr2d[row_ind+1]
     arr2d_new[row_ind] = new_row
@@ -267,6 +267,138 @@ def printable_bins(bins):
         s.append([float(fmt % a), float(fmt % b)])
     return s
 
+
+def calc_variable_binning_nbins(h2d,
+                                nbins_min=5,
+                                nbins_max=15,
+                                integer_binning=False):
+    """
+    """
+    arr2d_orig, _ = cu.th2_to_arr(h2d)
+    reco_bin_edges = cu.get_bin_edges(h2d, 'Y')
+    # gen_bin_edges = cu.get_bin_edges(h2d, 'X')
+    # print(reco_bin_edges)
+    new_bin_edges = np.array(reco_bin_edges[:])
+
+    # smooth_bins = False
+    # smooth_bin_counter = 0 # safety
+    # bad_diff_bins, bad_diff_bin_edges = [], []
+    # while not smooth_bins and smooth_bin_counter < 100:
+    #     smooth_bin_counter += 1
+
+    # assumes both axes have same dimension!
+    axis = 'reco'
+    hist_bins = get_1D_bins_from_arr2d(arr2d_orig, axis)
+
+    # Now do clustering, to try and get similar heights
+    bins_to_cluster = hist_bins[:]
+    sum_bins = bins_to_cluster.sum()
+    num_target_bins = np.arange(nbins_min, nbins_max+1, 1)
+    # num_target_bins = np.array([2])
+    averages = sum_bins / num_target_bins
+
+    results = []
+
+    print('bins_to_cluster', bins_to_cluster)
+
+    # iterate over different number of target bins
+    for n_target, ave in zip(num_target_bins, averages):
+
+        this_arr2d = np.copy(arr2d_orig)
+        this_new_bin_edges = np.copy(new_bin_edges)
+
+        print('n_target', n_target)
+        print('target', ave)
+
+        # figure out most even binning for given target number of bins
+        cumul_bins = bins_to_cluster.cumsum()
+        ideal_cumul = np.linspace(0, sum_bins, n_target+1)
+        indices = np.searchsorted(cumul_bins, ideal_cumul, side='right')  # right to ensure last bin done
+        print('cumul_bins', cumul_bins)
+        print('ideal_cumul', ideal_cumul)
+        # append on last bin
+        if indices[-1] != len(bins_to_cluster):
+            indices = np.append(indices, len(bins_to_cluster))
+        print('indices', indices)
+
+        # do rebinning of these bins
+        new_data = []
+        for g, gn in zip(indices[:-1], indices[1:]):
+            new_data.append(bins_to_cluster[g:gn].sum())
+        print("rebinned bins", new_data)
+
+        # now do rebinning of th2, bin edges
+        row_ind = -1
+        for g, gn in zip(indices[:-1], indices[1:]):
+            # print("outer Joining", g)
+            row_ind += 1
+            rebin_these = range(g, gn-1) # -1 because we merge 2 bins into 1, so only need to concat one fewer
+            # if len(rebin_these) <= 1:
+                # print('...skipping')
+                # continue
+            for gg in rebin_these:
+                # print("Joining", row_ind)
+                try:
+                    this_arr2d = concat_row(this_arr2d, row_ind)
+                    this_arr2d = concat_row(this_arr2d.T, row_ind).T
+                    this_new_bin_edges = np.delete(this_new_bin_edges, row_ind+1)
+                except IndexError:
+                    # FIXME stop avoiding dodgy off by 1 errors
+                    pass
+        print(this_new_bin_edges)
+        # do one final bin merge
+        # this_arr2d = concat_row(this_arr2d, row_ind)
+        # this_arr2d = concat_row(this_arr2d.T, row_ind).T
+        # this_new_bin_edges = np.delete(this_new_bin_edges, row_ind+1)
+
+        this_hist = get_1D_bins_from_arr2d(this_arr2d, axis)
+        # Calculate std deviation across bins of interest
+        this_std = np.std(np.diff(this_hist))
+        # Calculate max absolute diff across bins of interest
+        this_max_diff = np.abs(np.diff(this_hist)).max()
+        this_bin_ave = np.mean(this_hist)
+        this_rel_std = this_std / this_bin_ave
+        this_rel_max_diff = this_max_diff / this_bin_ave
+        results.append({
+            'arr2d': this_arr2d,
+            'bin_edges': this_new_bin_edges,
+            'std_dev': this_std,
+            'rel_std_dev': this_rel_std,
+            'max_diff': this_max_diff,
+            'rel_max_diff': this_rel_max_diff,
+        })
+
+    # Choose best binning, based on some metric (min diff, min std dev)
+    min_metric = 1E100
+    min_metric_n = -1
+    for n_bins, r in zip(num_target_bins, results):
+        metric = r['rel_std_dev']
+        if metric < min_metric:  # favour smaller # bins
+            min_metric = metric
+            min_metric_n = n_bins
+        print(n_bins, r['bin_edges'], r['std_dev'], r['max_diff'], r['rel_std_dev'], r['rel_max_diff'])
+    # min_metric_n = 3
+    ind = np.where(num_target_bins == min_metric_n)[0][0]
+    new_arr2d = results[ind]['arr2d']
+    new_bin_edges = results[ind]['bin_edges']
+    print("chosen nbins", min_metric_n)
+
+    if integer_binning:
+        # ensure integers fall in centre of bin
+        # this assumes the original bin edges were integers!
+        # if not, comment out this line
+        new_bin_edges-= 0.5
+
+    # convert to bin edge pairs, keeping pair[1] to be same as next_pair[0],
+    # otherwise you lose a bin later when making the rebinned TH2
+    these_bins = [list(x) for x in zip(new_bin_edges[:-1], new_bin_edges[1:])]
+    # manual hack for last bin
+    last_bin = reco_bin_edges[-1]
+    if integer_binning:
+        last_bin -= 0.5
+    these_bins[-1][1] = last_bin
+    print("Final binning:", printable_bins(these_bins))
+    return these_bins
 
 def calc_variable_binning_purity_stability(h2d,
                                            purity_goal=0.4,
@@ -354,7 +486,7 @@ def calc_variable_binning_purity_stability(h2d,
         # handle 0 especially, since we can just combine the first few bins
 
         bad_counter = 0
-        while 0 in bad_diff_bins and bad_counter < 1:
+        while 0 in bad_diff_bins and 1 not in bad_diff_bins and bad_counter < 1:
             bad_counter += 1
 
             new_arr2d = np.copy(arr2d)
@@ -913,6 +1045,11 @@ if __name__ == "__main__":
                                                                      stability_goal=goal,
                                                                      integer_binning=integer_binning,
                                                                      spike_smoothing='charged' in angle.var and args.spikeSmoothing)
+                # new_binning = calc_variable_binning_nbins(h2d_orig,
+                #                                           nbins_min=5, 
+                #                                           nbins_max=15,
+                #                                           integer_binning=integer_binning)
+                
                 rebin_results_dict[var_dict['name']] = new_binning
 
                 # Rebin 2D heatmap
