@@ -515,9 +515,9 @@ def main():
 
         # Do unfolding for each angle
         # ----------------------------------------------------------------------
-        is_groomed = "groomed" in region['name']
         for angle in angles:
             region = copy(orig_region)  # make copy since we might modify it later, e.g. PDF, and want same start for each angle
+            is_groomed = "groomed" in region['name']
 
             if isinstance(region['mc_tfile'], str):
                 region['mc_tfile'] = cu.open_root_file(region['mc_tfile'])
@@ -527,7 +527,7 @@ def main():
             angle_str = "%s%s (%s)" % (angle_prepend, qgc.lower_angle_name(angle), angle.lambda_str)
 
             print("*"*120)
-            print("Region/var: %s" % (append))
+            print("Region/var: %s %s" % (region['name'], angle.var))
             print("*"*120)
 
             # put plots in subdir, to avoid overcrowding
@@ -636,6 +636,12 @@ def main():
             #                                    pt_bin_edges_underflow_reco=pt_bin_edges_underflow_reco,
             #                                    pt_bin_edges_underflow_gen=pt_bin_edges_underflow_gen,)
 
+            print('reco lambda binning', angle_bin_edges_reco)
+            print('gen lambd binning', angle_bin_edges_gen)
+            print('reco pt binning', pt_bin_edges_reco)
+            print('gen pt binning', pt_bin_edges_gen)
+            print('reco uflow pt binning', pt_bin_edges_underflow_reco)
+            print('gen uflow pt binning', pt_bin_edges_underflow_gen)
 
             unfolder = MyUnfolder(response_map=rm_large_rel_error_bins_th2(hist_mc_gen_reco_map),
                                   variable_bin_edges_reco=angle_bin_edges_reco,
