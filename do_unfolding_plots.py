@@ -19,6 +19,10 @@ from copy import copy, deepcopy
 import numpy as np
 import scipy
 from itertools import chain
+from glob import glob
+
+# for webpage
+from jinja2 import Environment, FileSystemLoader
 
 import ROOT
 from MyStyle import My_Style
@@ -191,6 +195,9 @@ class GenPtBinnedPlotter(object):
         self.unfolder = unfolder
 
     def _modify_plot(self, this_plot):
+        if self.setup.output_fmt == "gif":
+            orig_w, orig_h = this_plot.default_canvas_size
+            this_plot.default_canvas_size = (int(orig_w*0.5), int(orig_h*0.5))
         this_plot.legend.SetX1(0.6)
         this_plot.legend.SetY1(0.7)
         this_plot.legend.SetX2(0.98)
@@ -2770,6 +2777,9 @@ class RecoPtBinnedPlotter(object):
         self.unfolder = unfolder
 
     def _modify_plot(self, this_plot):
+        if self.setup.output_fmt == "gif":
+            orig_w, orig_h = this_plot.default_canvas_size
+            this_plot.default_canvas_size = (int(orig_w*0.5), int(orig_h*0.5))
         this_plot.legend.SetX1(0.6)
         this_plot.legend.SetY1(0.68)
         this_plot.legend.SetX2(0.98)
@@ -4858,6 +4868,160 @@ def print_chi2_table(df):
     print(r'\end{tabular}')
 
 
+class PlotWebpageMaker(object):
+
+    def __init__(self, webpage_dir):
+        self.webpage_dir = webpage_dir
+        self.thumb_dir = os.path.join(webpage_dir, 'thumbnails')
+        self.pdf_dir = os.path.join(webpage_dir, 'images')
+        self.plot_setups = []  # store info each time we call make_plots()
+
+    def make_plots(self, setup):
+        """Create all thumbnails & images for webpage"""
+        thumb_setup = Setup(jet_algo=setup.jet_algo,
+                            region=setup.region,
+                            angle=setup.angle,
+                            output_dir=self.thumb_dir,
+                            has_data=setup.has_data)
+        thumb_setup.output_fmt = "gif"
+        do_binned_plots_per_region_angle(setup=thumb_setup,
+                                         do_binned_gen_pt=True,
+                                         do_binned_gen_lambda=False,
+                                         do_binned_reco_pt=True,
+                                         only_paper_plots=True)
+
+        pdf_setup = Setup(jet_algo=setup.jet_algo,
+                          region=setup.region,
+                          angle=setup.angle,
+                          output_dir=self.pdf_dir,
+                          has_data=setup.has_data)
+        do_binned_plots_per_region_angle(setup=pdf_setup,
+                                         do_binned_gen_pt=True,
+                                         do_binned_gen_lambda=False,
+                                         do_binned_reco_pt=True,
+                                         only_paper_plots=True)
+
+        self.plot_setups.append([thumb_setup, pdf_setup])
+
+    def make_webpage(self, source_dir=""):
+        """Make the HTML pages"""
+        env = Environment(loader=FileSystemLoader('.'), trim_blocks=True, lstrip_blocks=True)
+        template = env.get_template("unfolding_webpage_template.html")
+
+        unfolded_file = os.path.join(self.webpage_dir, "index.html")
+        uncertainty_file = os.path.join(self.webpage_dir, "index_uncertainty.html")
+        detector_file = os.path.join(self.webpage_dir, "index_detector.html")
+
+        menu_items = [
+            {'href': os.path.basename(unfolded_file), 'text': "Unfolded differential plots"},
+            {'href': os.path.basename(uncertainty_file), 'text': "Unfolded uncertainty plots"},
+            {'href': os.path.basename(detector_file), 'text': "Detector differential plots"},
+        ]
+
+        def _generate_title(setup):
+            """Geenrate title for a given setup (jet algo, region, angle)"""
+            groom_str = " Groomed" if "groomed" in setup.region['name'] else ''
+            return '%s %s%s %s' % (setup.jet_algo, setup.region['label'], groom_str, setup.angle.name)
+
+        def _generate_id(setup):
+            """Geenrate ID for a given setup (jet algo, region, angle)"""
+            return '%s_%s_%s' % (setup.jet_algo, setup.region['name'], setup.angle.var)
+
+        def _get_pdf_filename(thumb_setup, pdf_setup, thumb_filename):
+            """Convert thumbnail filename to PDF filename"""
+            pdf_base = os.path.basename(thumb_filename).replace("."+thumb_setup.output_fmt, "."+pdf_setup.output_fmt)
+            return os.path.relpath(os.path.join(pdf_setup.output_dir, pdf_base),
+                                   self.webpage_dir)
+
+        # make differential unfolded page
+        thumb_item_groups = []
+        for thumb_setup, pdf_setup in self.plot_setups:
+            thumbnails = [
+                {
+                    'src': thumb_fname,
+                    'href': _get_pdf_filename(thumb_setup, pdf_setup, thumb_fname),
+                    'alt': ''
+                }
+                for thumb_fname
+                in glob(thumb_setup.output_dir + "/unfolded_%s_alt_truth_bin_*_divBinWidth.%s" % (pdf_setup.append, thumb_setup.output_fmt))
+                if "lowX" not in thumb_fname and "logY" not in thumb_fname
+            ]
+            this_dict = {
+                'title': _generate_title(thumb_setup),
+                'id': _generate_id(thumb_setup),
+                'thumbnails': thumbnails
+            }
+            thumb_item_groups.append(this_dict)
+            print('Adding', this_dict['title'])
+
+        template_dict = dict(
+            title=source_dir + "</h2><h2>Unfolded plots",
+            menu=menu_items,
+            thumbnail_groups=thumb_item_groups
+        )
+        output = template.render(template_dict)
+        with open(unfolded_file, 'w') as f:
+            f.write(output)
+        print("Webpage written to", unfolded_file)
+
+        # make systematics page
+        thumb_item_groups = []
+        for thumb_setup, pdf_setup in self.plot_setups:
+            thumbnails = [
+                {
+                    'src': thumb_fname,
+                    'href': _get_pdf_filename(thumb_setup, pdf_setup, thumb_fname),
+                    'alt': ''
+                }
+                for thumb_fname
+                in glob(thumb_setup.output_dir + "/unfolded_syst_variations_vs_nominal_%s_bin_*_divBinWidth.%s" % (pdf_setup.append, thumb_setup.output_fmt))
+            ]
+            this_dict = {
+                'title': _generate_title(thumb_setup),
+                'id': _generate_id(thumb_setup),
+                'thumbnails': thumbnails
+            }
+            thumb_item_groups.append(this_dict)
+
+        template_dict = dict(
+            title=source_dir + "</h2><h2>Unfolded uncertainty plots",
+            menu=menu_items,
+            thumbnail_groups=thumb_item_groups
+        )
+        output = template.render(template_dict)
+        with open(uncertainty_file, 'w') as f:
+            f.write(output)
+        print("Webpage written to", uncertainty_file)
+
+        # make differential detector page
+        thumb_item_groups = []
+        for thumb_setup, pdf_setup in self.plot_setups:
+            thumbnails = [
+                {
+                    'src': thumb_fname,
+                    'href': _get_pdf_filename(thumb_setup, pdf_setup, thumb_fname),
+                    'alt': ''
+                }
+                for thumb_fname
+                in glob(thumb_setup.output_dir + "/detector_reco_binning_%s_bin_*_divBinWidth.%s" % (pdf_setup.append, thumb_setup.output_fmt))
+            ]
+            this_dict = {
+                'title': _generate_title(thumb_setup),
+                'id': _generate_id(thumb_setup),
+                'thumbnails': thumbnails
+            }
+            thumb_item_groups.append(this_dict)
+
+        template_dict = dict(
+            title=source_dir + "</h2><h2>Detector plots",
+            menu=menu_items,
+            thumbnail_groups=thumb_item_groups
+        )
+        output = template.render(template_dict)
+        with open(detector_file, 'w') as f:
+            f.write(output)
+        print("Webpage written to", detector_file)
+
 @profile
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
@@ -4896,6 +5060,9 @@ def main():
     parser.add_argument("--onlyPaperPlots",
                         action='store_true',
                         help='Only do paper plots (applies to --doBinnedPlotsGenPt, etc)')
+    parser.add_argument("--webpage",
+                        action='store_true',
+                        help='Do webpage of unfolded results & systematics')
 
     region_group = parser.add_argument_group('Region selection')
     region_group.add_argument("--doAllRegions",
@@ -4949,6 +5116,9 @@ def main():
         jet_algo = "AK8"
 
     has_data = not ('_MC_all' in args.source or '_MC_split' in args.source)
+
+    webpage_dir = os.path.join(args.source, 'webpages')
+    webpage_maker = PlotWebpageMaker(webpage_dir=webpage_dir)
 
     all_chi2_stats = []
 
@@ -5016,6 +5186,9 @@ def main():
                                                                     only_paper_plots=args.onlyPaperPlots)
             prof_done_binned_plots()
 
+            if args.webpage:
+                webpage_maker.make_plots(setup)
+
             if args.doBigNormed1DPlots:
                 print("...........................................................")
                 print(" Doing big normed 1D plots...")
@@ -5046,6 +5219,9 @@ def main():
                 del hist_bin_chopper
                 del unpickled_region
                 del setup
+
+    if args.webpage:
+        webpage_maker.make_webpage(source_dir=args.source)
 
     if len(all_chi2_stats) > 0:
         df_stats = pd.DataFrame(all_chi2_stats)

@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Unfolding plots</title>
+
+<style>
+#thumbnail {
+  border: 1px solid #ddd; /* Gray border */
+  border-radius: 4px;  /* Rounded border */
+  padding: 5px; /* Some padding */
+  width: 18%; /* Set a small width */
+  height: auto;
+}
+
+/* Add a hover effect (blue shadow) */
+#thumbnail:hover {
+  box-shadow: 0 0 2px 1px rgba(0, 140, 186, 0.5);
+}
+
+body {
+    font: normal 14px Arial, sans-serif;
+}
+
+#section-item {
+    display: block;
+    width: 20%;
+    float: left;
+}
+</style>
+</head>
+
+<body>
+<!-- Title -->
+<h2 style="overflow-wrap: break-word;">{{ title }}</h2>
+
+<!-- Different page navigation-->
+<div id="page-menu">
+  <ul >
+    {% for item in menu %}
+        <li ><a href="{{ item.href }}">{{ item.text }}</a></li>
+    {% endfor %}
+  </ul>
+</div>
+
+<!-- Regions navigation -->
+<div id="section-menu">
+  <ul >
+    {% for group in thumbnail_groups %}
+        <li id="section-item"><a href="#{{ group.id }}">{{ group.title }}</a></li>
+    {% endfor %}
+  </ul>
+</div>
+
+<!-- need the &nbsp; otherwise br ignored -->
+<br>&nbsp;
+
+<!-- Add thumbnails -->
+{% for group in thumbnail_groups %}
+    <div>
+        <br>&nbsp;
+        <h3 id="{{ group.id }}" style="display: inline;">{{ group.title }}</h3> <a href="#top" style="display: inline;">top</a>
+        <br>&nbsp;
+    </div>
+    {% for thumb in group.thumbnails %}
+        <a target="_self" href="{{ thumb.href }}">
+          <img src="{{ thumb.src }}" alt="{{ thumb.alt }}" id="thumbnail">
+        </a>
+    {% endfor %}
+{% endfor %}
+
+</body>
+</html>
