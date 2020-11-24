@@ -49,7 +49,7 @@ def get_flavour_efficiencies(input_file, dirname, bins, var_prepend="", which_je
     flav_dict = {'d': [], 'u': [], 's': [], 'c': [], 'b': [] ,'t': [], 'g': [], 'unknown': [], 'total': []}
 
     for (pt_min, pt_max) in bins:
-        h_flav = get_projection_plot(h2d_flav, pt_min, pt_max)
+        h_flav = get_projection_plot(h2d_flav, pt_min, pt_max, cut_axis='y')
 
         total_err = array('d', [-1.])
         total2 = h_flav.IntegralAndError(1, h_flav.GetNbinsX()+1, total_err)
@@ -65,7 +65,7 @@ def get_flavour_efficiencies(input_file, dirname, bins, var_prepend="", which_je
         g_num = h_flav.GetBinContent(22)
 
         total = d_num+u_num+s_num+c_num+b_num+t_num+g_num+unknown_num
-        print(total, total2)
+        # print(total, total2)
         if not cu.same_floats(total, total2):
             raise RuntimeError("totals dont match: %.9g vs %.9g" % (total, total2))
 
@@ -129,6 +129,7 @@ def get_flavour_efficiencies(input_file, dirname, bins, var_prepend="", which_je
             h_flav.SetBinError(ind, val[1])
 
         eff_flav = ROOT.TEfficiency(h_flav, h_total)
+        eff_flav.SetStatisticOption(1)  # normal approx
         flav_eff_dict[flav_key] = eff_flav
 
         # gr_flav = ROOT.TGraphAsymmErrors(h_flav, h_total)

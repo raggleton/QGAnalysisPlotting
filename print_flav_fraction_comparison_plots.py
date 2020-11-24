@@ -8,6 +8,7 @@ My_Style.cd()
 import os
 os.nice(10)
 import argparse
+from array import array
 import numpy as np
 
 # My stuff
@@ -15,6 +16,7 @@ from comparator import Contribution, Plot, grab_obj
 import qg_common as qgc
 import qg_general_plots as qgg
 import qg_flavour_plots as qgf
+import common_utils as cu
 
 # For debugging
 import sys
@@ -30,12 +32,87 @@ ROOT.PyConfig.IgnoreCommandLineOptions = True
 ROOT.gROOT.SetBatch(1)
 ROOT.TH1.SetDefaultSumw2()
 ROOT.gStyle.SetOptStat(0)
+ROOT.gErrorIgnoreLevel = ROOT.kWarning
 
 # Control plot output format
 OUTPUT_FMT = "pdf"
 
 MG_SAMPLE = "MG5+Pythia8"
 HPP_SAMPLE = "Herwig++"
+
+
+
+def do_flav_nparton_fraction_vs_pt(input_file,
+                                   dirname,
+                                   flav,
+                                   n_partons,
+                                   pt_bins,
+                                   output_filename,
+                                   var_prepend='',
+                                   which_jet='1',
+                                   title=''):
+
+    tfile = cu.open_root_file(input_file)
+    hist_2d_total = tfile.Get("%s/%sjet%s_flavour_vs_pt" % (dirname, var_prepend, which_jet))
+    hists_2d = [tfile.Get("%s/%sjet%s_flavour_vs_pt_npartons_%s" % (dirname, var_prepend, which_jet, n_parton))
+                for n_parton in n_partons]
+    # pdigid is x axis, pt is y axis
+    # so we want the 1D projection on the y axis,
+    # for the x bin corresponding to this flav
+    flav_dict = {
+        'd': 1,
+        'u': 2,
+        's': 3,
+        'c': 4,
+        'b': 5,
+        't': 6,
+        'g': 21,
+        'unknown': 0,
+    }
+    flav_bin = hists_2d[0].GetXaxis().FindFixBin(flav_dict[flav])
+    projs = [h.ProjectionY(cu.get_unique_str(), flav_bin, flav_bin, 'e')
+             for h in hists_2d]
+    hist_total = hist_2d_total.ProjectionY(cu.get_unique_str(), flav_bin, flav_bin, 'e')
+
+    # rebin hists
+    # add (0, x) bin for lowest bin, since hist has that
+    bins = np.array([(0., qgc.PT_BINS_ZPJ_INC_UFLOW[0][0])] + qgc.PT_BINS_ZPJ_INC_UFLOW)
+    # convert to only have each edge once, not pairs of edges
+    bins = np.concatenate((bins[:,0], bins[-1:,1]))
+    hist_total = hist_total.Rebin(len(bins)-1, cu.get_unique_str(), bins)
+    rebinned_hists = [h.Rebin(len(bins)-1, cu.get_unique_str(), bins) for h in projs]
+
+    # divide each by total to get fraction
+    for h in rebinned_hists:
+        h.Divide(hist_total)
+
+    # create Contributions for Plot
+    colours = [ROOT.kBlack, ROOT.kBlue, ROOT.kRed, ROOT.kGreen+2]
+    marker = cu.Marker()
+    entries = [Contribution(h, label="%s parton%s" % (n_parton, 's' if n_parton != '1' else ''),
+                            line_width=1, line_color=colours[int(n_parton)-1], line_style=1,
+                            fill_color=colours[int(n_parton)-1], fill_style=0,
+                            marker_size=1, marker_color=colours[int(n_parton)-1], marker_style=mark,
+                            leg_draw_opt=None)
+               for n_parton, h, mark in zip(n_partons, rebinned_hists, marker.cycle())
+               if h.GetEntries() > 0]
+
+    plot = Plot(entries,
+                what='hist',
+                xtitle="p_{T}^{%s} [GeV]" % qgf.get_jet_str(var_prepend),
+                ytitle="Fraction",
+                title=title,
+                xlim=(pt_bins[0][0], pt_bins[-1][1]),
+                ylim=[0, 1.4],
+                has_data=False)
+    plot.default_canvas_size = (600, 600)
+    plot.plot("HIST E NOSTACK")
+    plot.set_logx(do_more_labels=True, do_exponent=False)
+    plot.legend.SetX1(0.55)
+    plot.legend.SetY1(0.72)
+    plot.legend.SetY2(0.85)
+    plot.save(output_filename)
+
 
 def do_all_flavour_fraction_plots(root_dir,
                                   plot_dir="flav_fractions",
@@ -207,56 +284,68 @@ def do_all_flavour_fraction_plots(root_dir,
 
     # Compare one flav fraction across samples/selections
     # --------------------------------------------------------------------------
-    dirnames = [dj_cen_dirname, dj_fwd_dirname, zpj_dirname]
-    for this_flav in ['g', 'u', 'd', '1-g'][:-1]:
-        input_files = [os.path.join(root_dir, qgc.QCD_FILENAME) if "dijet" in d.lower()
-                       else os.path.join(root_dir, qgc.DY_FILENAME)
-                       for d in dirnames if d is not None]
+    if dj_fwd_dirname and zpj_dirname:
+        dirnames = [dj_cen_dirname, dj_fwd_dirname, zpj_dirname]
+        for this_flav in ['g', 'u', 'd', 's', 'c', 'b'][:]:
+            input_files = [os.path.join(root_dir, qgc.QCD_FILENAME) if "dijet" in d.lower()
+                           else os.path.join(root_dir, qgc.DY_FILENAME)
+                           for d in dirnames]
 
-        labels = [qgc.Dijet_CEN_LABEL, qgc.Dijet_FWD_LABEL, qgc.ZpJ_LABEL]
+            labels = [qgc.Dijet_CEN_LABEL, qgc.Dijet_FWD_LABEL, qgc.ZpJ_LABEL]
 
-        qgf.compare_flavour_fractions_vs_pt(input_files=input_files,
-                                            dirnames=dirnames,
-                                            pt_bins=pt_bins,
-                                            labels=labels,
-                                            flav=this_flav,
-                                            output_filename="%s/%s_flav_fraction_compare_jet1.%s" % (plot_dir, this_flav, OUTPUT_FMT),
-                                            var_prepend=var_prepend,
-                                            which_jet="1",
-                                            xtitle="p_{T}^{%s} [GeV]" % qgf.get_jet_str(var_prepend))
-
-        # Do for various n partons exclusively
-        for n_partons in ["1", "2", "3", "4"]:
             qgf.compare_flavour_fractions_vs_pt(input_files=input_files,
                                                 dirnames=dirnames,
                                                 pt_bins=pt_bins,
                                                 labels=labels,
                                                 flav=this_flav,
-                                                output_filename="%s/%s_flav_fraction_compare_jet1_npartons_%s.%s" % (plot_dir, this_flav, n_partons, OUTPUT_FMT),
-                                                n_partons=n_partons,
+                                                output_filename="%s/%s_flav_fraction_compare_jet1.%s" % (plot_dir, this_flav, OUTPUT_FMT),
                                                 var_prepend=var_prepend,
                                                 which_jet="1",
-                                                title=n_partons+" outgoing parton"+("s" if n_partons != "1" else ""),
                                                 xtitle="p_{T}^{%s} [GeV]" % qgf.get_jet_str(var_prepend))
 
-        # Compare MG+Pythia vs Herwig++ for each region, flav
-        for dname, label in zip(dirnames, labels):
-            input_files = [os.path.join(root_dir, qgc.DY_FILENAME), os.path.join(root_dir, qgc.DY_HERWIG_FILENAME)]
-            if 'dijet' in dname.lower():
-                input_files = [os.path.join(root_dir, qgc.QCD_FILENAME), os.path.join(root_dir, qgc.QCD_HERWIG_FILENAME)]
+            # Do for various n partons exclusively
+            for n_partons in ["1", "2", "3", "4"]:
+                qgf.compare_flavour_fractions_vs_pt(input_files=input_files,
+                                                    dirnames=dirnames,
+                                                    pt_bins=pt_bins,
+                                                    labels=labels,
+                                                    flav=this_flav,
+                                                    output_filename="%s/%s_flav_fraction_compare_jet1_npartons_%s.%s" % (plot_dir, this_flav, n_partons, OUTPUT_FMT),
+                                                    n_partons=n_partons,
+                                                    var_prepend=var_prepend,
+                                                    which_jet="1",
+                                                    title=n_partons+" outgoing parton"+("s" if n_partons != "1" else ""),
+                                                    xtitle="p_{T}^{%s} [GeV]" % qgf.get_jet_str(var_prepend))
 
-            labels = [MG_SAMPLE, HPP_SAMPLE]
+    dirnames, labels = [], []
+    if dj_cen_dirname:
+        dirnames += [dj_cen_dirname, dj_fwd_dirname]
+        labels += [qgc.Dijet_CEN_LABEL, qgc.Dijet_FWD_LABEL]
+    if zpj_dirname:
+        dirnames += [zpj_dirname]
+        labels += [qgc.ZpJ_LABEL]
+    
+    # Compare MG+Pythia vs Herwig++ for each region, flav
+    for dname, label in zip(dirnames, labels):
+        input_files = [os.path.join(root_dir, qgc.DY_FILENAME), os.path.join(root_dir, qgc.DY_HERWIG_FILENAME)]
+        if 'dijet' in dname.lower():
+            input_files = [os.path.join(root_dir, qgc.QCD_FILENAME), os.path.join(root_dir, qgc.QCD_HERWIG_FILENAME)]
 
-            short_name = "dj_central"
-            if "forward" in dname.lower():
-                short_name = "dj_forward"
-            if "zplusjet" in dname.lower():
-                short_name = "zpj"
+        sample_labels = [MG_SAMPLE, HPP_SAMPLE]
+        sample_short_names = ['mgpythia', 'herwigpp']
+
+        short_name = "dj_central"
+        if "forward" in dname.lower():
+            short_name = "dj_forward"
+        if "zplusjet" in dname.lower():
+            short_name = "zpj"
+
+        for this_flav in ['g', 'u', 'd', 's', 'c', 'b'][:]:
 
             qgf.compare_flavour_fractions_vs_pt(input_files=input_files,
                                                 dirnames=[dname for i in input_files],
                                                 pt_bins=pt_bins,
-                                                labels=labels,
+                                                labels=sample_labels,
                                                 flav=this_flav,
                                                 output_filename="%s/%s_%s_flav_fraction_compare_mgpythia_vs_herwigpp_jet1.%s" % (plot_dir, this_flav, short_name, OUTPUT_FMT),
                                                 var_prepend=var_prepend,
@@ -269,7 +358,7 @@ def do_all_flavour_fraction_plots(root_dir,
                 qgf.compare_flavour_fractions_vs_pt(input_files=input_files,
                                                     dirnames=[dname for i in input_files],
                                                     pt_bins=pt_bins,
-                                                    labels=labels,
+                                                    labels=sample_labels,
                                                     flav=this_flav,
                                                     output_filename="%s/%s_%s_flav_fraction_compare_mgpythia_vs_herwigpp_jet1_npartons_%s.%s" % (plot_dir, this_flav, short_name, n_partons, OUTPUT_FMT),
                                                     n_partons=n_partons,
@@ -277,6 +366,19 @@ def do_all_flavour_fraction_plots(root_dir,
                                                     which_jet="1",
                                                     title=label + "\n" + n_partons+" outgoing parton"+("s" if n_partons != "1" else ""),
                                                     xtitle="p_{T}^{%s} [GeV]" % qgf.get_jet_str(var_prepend))
+
+            # Do a plot of fractions of n partons for this flavour / input etc
+            for input_file, sample_label, sample_short_name in zip(input_files, sample_labels, sample_short_names):
+                do_flav_nparton_fraction_vs_pt(input_file=input_file,
+                                               dirname=dname,
+                                               flav=this_flav,
+                                               n_partons=['2', '3', '4'] if 'dijet' in dname.lower() else ['1', '2', '3', '4'],
+                                               pt_bins=pt_bins,
+                                               var_prepend=var_prepend,
+                                               which_jet='1',
+                                               title=label + "\n" + sample_label + '\n%s flavour jets' % this_flav,
+                                               output_filename="%s/%s_%s_%s_nparton_fraction.%s" % (plot_dir, this_flav, short_name, sample_short_name, OUTPUT_FMT))
+
 
 
 def do_flavour_fraction_input_comparison_plots(root_dirs,
