@@ -4588,21 +4588,21 @@ def do_all_big_absolute_1d_plots_per_region_angle(setup):
     unfolder_plotter.draw_probability_matrix(title=prob_title, **plot_args)
 
     if has_scale_systs:
-        # detector scale variations
-        scale_contributions = [
-            Contribution(mdict['unfolder'].hist_mc_reco,
-                         label=mdict['label'],
-                         line_color=mdict['colour'], line_style=1, line_width=1,
-                         marker_color=mdict['colour'], marker_size=0, marker_style=21,
-                         subplot=unfolder.hist_mc_reco)
-            for mdict in region['scale_systematics']
-        ]
-        unfolder_plotter.draw_detector_1d(do_reco_mc=True,
-                                          output_dir=setup.output_dir,
-                                          append='scale_systs_%s' % setup.append,
-                                          title=title,
-                                          other_contributions=scale_contributions,
-                                          subplot_title='#splitline{Variation /}{nominal}')
+        # detector scale variations - useless as all unfold same input
+        # scale_contributions = [
+        #     Contribution(mdict['unfolder'].hist_mc_reco,
+        #                  label=mdict['label'],
+        #                  line_color=mdict['colour'], line_style=1, line_width=1,
+        #                  marker_color=mdict['colour'], marker_size=0, marker_style=21,
+        #                  subplot=unfolder.hist_mc_reco)
+        #     for mdict in region['scale_systematics']
+        # ]
+        # unfolder_plotter.draw_detector_1d(do_reco_mc=True,
+        #                                   output_dir=setup.output_dir,
+        #                                   append='scale_systs_%s' % setup.append,
+        #                                   title=title,
+        #                                   other_contributions=scale_contributions,
+        #                                   subplot_title='#splitline{Variation /}{nominal}')
         # unfolded scale variations
         scale_contributions = [
             Contribution(mdict['unfolder'].get_unfolded_with_ematrix_stat(),
@@ -4612,27 +4612,31 @@ def do_all_big_absolute_1d_plots_per_region_angle(setup):
                          subplot=unfolder.get_unfolded_with_ematrix_stat())
             for mdict in region['scale_systematics']
         ]
-        unfolder_plotter.draw_unfolded_1d(do_unfolded=True, do_gen=False,
+        unfolder_plotter.draw_unfolded_1d(do_unfolded=True, 
+                                          do_gen=False,
                                           output_dir=setup.output_dir,
                                           append='scale_systs_%s' % setup.append,
                                           title=title,
                                           other_contributions=scale_contributions,
+                                          subplot_limits=(0.975, 1.025),
+                                          mark_negatives=False,
                                           subplot_title='#splitline{Variation /}{nominal}')
         # truth scale variations
-        scale_contributions = [
-            Contribution(mdict['unfolder'].hist_truth,
-                         label=mdict['label'],
-                         line_color=mdict['colour'], line_style=1, line_width=1,
-                         marker_color=mdict['colour'], marker_size=0, marker_style=21,
-                         subplot=unfolder.hist_truth)
-            for mdict in region['scale_systematics']
-        ]
-        unfolder_plotter.draw_generator_1d(do_truth_mc=True,
-                                           output_dir=setup.output_dir,
-                                           append='scale_systs_%s' % setup.append,
-                                           title=title,
-                                           other_contributions=scale_contributions,
-                                           subplot_title='#splitline{Variation /}{nominal}')
+        # useless as all use same truth as same input
+        # scale_contributions = [
+        #     Contribution(mdict['unfolder'].hist_truth,
+        #                  label=mdict['label'],
+        #                  line_color=mdict['colour'], line_style=1, line_width=1,
+        #                  marker_color=mdict['colour'], marker_size=0, marker_style=21,
+        #                  subplot=unfolder.hist_truth)
+        #     for mdict in region['scale_systematics']
+        # ]
+        # unfolder_plotter.draw_generator_1d(do_truth_mc=True,
+        #                                    output_dir=setup.output_dir,
+        #                                    append='scale_systs_%s' % setup.append,
+        #                                    title=title,
+        #                                    other_contributions=scale_contributions,
+        #                                    subplot_title='#splitline{Variation /}{nominal}')
 
 
 @profile
