@@ -111,9 +111,9 @@ def get_unfolding_argparser(description='', parser=None):
                                       default=0,
                                       help='Bias factor for regularization')
     regularization_group.add_argument("--biasVector",
-                                      choices=['template', 'truth', 'alttruth'],
+                                      choices=['template', 'templateOtherProc', 'truth', 'alttruth'],
                                       default='template',
-                                      help="Bias vector: template from reco fit, truth MC, alt. truth MC" \
+                                      help="Bias vector: template from reco fit, template from reco fit including other processes, truth MC, alt. truth MC" \
                                            "Only useful if --biasFactor != 0")
 
     # MC INPUT OPTIONS
@@ -374,6 +374,8 @@ def get_unfolding_output_dir(args):
         if args.biasFactor != 0:
             if args.biasVector == "template":
               reg_axis_str += "_useTemplateFit"
+            if args.biasVector == "templateOtherProc":
+              reg_axis_str += "_useTemplateFitOtherProc"
             elif args.biasVector == "truth":
               reg_axis_str += "_useTruth"
             elif args.biasVector == "alttruth":

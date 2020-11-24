@@ -889,7 +889,7 @@ def main():
 
                 truth_template = hist_mc_gen_all
 
-                if args.biasVector == "template":
+                if args.biasVector == "template" or args.biasVector == "templateOtherProc":
                     # Create truth template by fitting MC to data @ detector level
                     # --------------------------------------------------------------
                     # Fit the two MC templates to data to get their fractions
@@ -919,6 +919,43 @@ def main():
                                                    hist_reco=alt_hist_mc_reco_bg_subtracted_gen_binning,
                                                    hist_gen=alt_hist_mc_gen,
                                                    colour=ROOT.kViolet+1)
+
+                    if args.biasVector == "templateOtherProc":
+                        # add the "other" process (e.g. QCD for DY)
+                        # this accounts for the assumption that not only are the shapes wrong
+                        # (which we account for by using MG+Pythia & H++),
+                        # but the fraction wrong (account for by using the other process)
+                        if isinstance(region['mc_otherProc_tfile'], str):
+                            print("Opening", region['mc_otherProc_tfile'])
+                            region['mc_otherProc_tfile'] = cu.open_root_file(region['mc_otherProc_tfile'])
+
+                        hist_mc_otherProc_gen_all = cu.get_from_tfile(region['mc_otherProc_tfile'], "%s/hist_%s_truth_all" % (region['dirname_otherProc'], angle_shortname))
+                        hist_mc_otherProc_reco_gen_binning_all = cu.get_from_tfile(region['mc_otherProc_tfile'], "%s/hist_%s_reco_gen_binning" % (region['dirname_otherProc'], angle_shortname))
+                        hist_mc_otherProc_fakes_reco_gen_binning = cu.get_from_tfile(region['mc_otherProc_tfile'], "%s/hist_%s_reco_fake_gen_binning" % (region['dirname_otherProc'], angle_shortname))
+                        hist_otherProc_fake_fraction_gen_binning = hist_mc_otherProc_fakes_reco_gen_binning.Clone("hist_%s_fakes_fraction_gen_binning" % angle_shortname)
+                        hist_otherProc_fake_fraction_gen_binning.Divide(hist_mc_otherProc_reco_gen_binning_all)
+                        hist_mc_otherProc_reco_gen_binning_all_bg_subtracted, hist_otherProc_fakes_reco_all_gen_binning = subtract_background(hist_mc_otherProc_reco_gen_binning_all, hist_otherProc_fake_fraction_gen_binning)
+
+                        template_maker.add_mc_template(name=region['mc_otherProc_label'],
+                                                       hist_reco=hist_mc_otherProc_reco_gen_binning_all_bg_subtracted,
+                                                       hist_gen=hist_mc_otherProc_gen_all,
+                                                       colour=ROOT.kRed+3)
+
+                        if isinstance(region['alt_mc_otherProc_tfile'], str):
+                            print("Opening", region['alt_mc_otherProc_tfile'])
+                            region['alt_mc_otherProc_tfile'] = cu.open_root_file(region['alt_mc_otherProc_tfile'])
+
+                        alt_hist_mc_otherProc_gen_all = cu.get_from_tfile(region['alt_mc_otherProc_tfile'], "%s/hist_%s_truth_all" % (region['dirname_otherProc'], angle_shortname))
+                        alt_hist_mc_otherProc_reco_gen_binning_all = cu.get_from_tfile(region['alt_mc_otherProc_tfile'], "%s/hist_%s_reco_gen_binning" % (region['dirname_otherProc'], angle_shortname))
+                        alt_hist_mc_otherProc_fakes_reco_gen_binning = cu.get_from_tfile(region['alt_mc_otherProc_tfile'], "%s/hist_%s_reco_fake_gen_binning" % (region['dirname_otherProc'], angle_shortname))
+                        alt_hist_otherProc_fake_fraction_gen_binning = alt_hist_mc_otherProc_fakes_reco_gen_binning.Clone("hist_%s_fakes_fraction_gen_binning" % angle_shortname)
+                        alt_hist_otherProc_fake_fraction_gen_binning.Divide(alt_hist_mc_otherProc_reco_gen_binning_all)
+                        alt_hist_mc_otherProc_reco_gen_binning_all_bg_subtracted, hist_otherProc_fakes_reco_all_gen_binning = subtract_background(alt_hist_mc_otherProc_reco_gen_binning_all, alt_hist_otherProc_fake_fraction_gen_binning)
+
+                        template_maker.add_mc_template(name=region['alt_mc_otherProc_label'],
+                                                       hist_reco=alt_hist_mc_otherProc_reco_gen_binning_all_bg_subtracted,
+                                                       hist_gen=alt_hist_mc_otherProc_gen_all,
+                                                       colour=ROOT.kViolet+4)
 
                     truth_template = template_maker.create_template()
 

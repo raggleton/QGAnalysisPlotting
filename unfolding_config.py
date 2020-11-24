@@ -19,10 +19,14 @@ def get_dijet_config(source_dir, central=True, groomed=False):
     source_dir_systs = os.path.join(source_dir, "systematics_files")
 
     input_mc_qcd_mgpythia_tfile = os.path.join(source_dir, qgc.QCD_FILENAME)
+    # input_mc_qcd_mgpythia_tfile = os.path.join(source_dir, "uhh2.AnalysisModuleRunner.MC.MC_QCD_jackknife10.root")
     input_mc_qcd_pythia_tfile = os.path.join(source_dir, qgc.QCD_PYTHIA_ONLY_FILENAME)
     input_mc_qcd_flat_pythia_tfile = os.path.join(source_dir, qgc.QCD_FLAT_PYTHIA_ONLY_FILENAME)
     input_mc_qcd_herwig_tfile = os.path.join(source_dir, qgc.QCD_HERWIG_FILENAME)
     input_mc_qcd_herwig_tfile_reweight = os.path.join(source_dir, qgc.QCD_HERWIG_PTREWEIGHT_FILENAME)
+    
+    input_mc_dy_mgpythia_tfile = os.path.join(source_dir, qgc.DY_FILENAME)
+    input_mc_dy_herwig_tfile = os.path.join(source_dir, qgc.DY_HERWIG_FILENAME)
 
     input_jetht_tfile = os.path.join(source_dir, qgc.JETHT_ZB_FILENAME)
 
@@ -33,6 +37,11 @@ def get_dijet_config(source_dir, central=True, groomed=False):
         "data_tfile": input_jetht_tfile,
         "mc_tfile": input_mc_qcd_mgpythia_tfile,
         "mc_label": "MG5+Pythia8",
+        
+        "dirname_otherProc": "ZPlusJets_QG_Unfold",
+        "mc_otherProc_tfile": input_mc_dy_mgpythia_tfile,
+        "mc_otherProc_label": "MG5+Pythia8 (DY)",
+
         # "mc_tfile": input_mc_qcd_herwig_tfile,
         # "mc_label": "Herwig++",
         # "mc_tfile": input_mc_qcd_pythia_tfile,
@@ -45,6 +54,10 @@ def get_dijet_config(source_dir, central=True, groomed=False):
         # "alt_mc_label": "Pythia8",
         # "alt_mc_tfile": input_mc_qcd_herwig_tfile_reweight,
         # "alt_mc_label": "Herwig++ (reweighted)",
+
+        "alt_mc_otherProc_tfile": input_mc_dy_herwig_tfile,
+        "alt_mc_otherProc_label": "Herwig++ (DY)",
+
         "tau_limits": None,  # user should set this
         "unreg_unfolder": None,  # set later if regularisation used
         "experimental_systematics": [
@@ -300,6 +313,7 @@ def get_dijet_config(source_dir, central=True, groomed=False):
         this_dict['dirname'] = 'Dijet_QG_Unfold_central_tighter_groomed'
         this_dict['label'] = qgc.Dijet_CEN_LABEL.replace(" region", "")
         this_dict['name'] = 'Dijet_central_groomed'
+        this_dict["dirname_otherProc"] = "ZPlusJets_QG_Unfold_groomed"
         return this_dict
 
     elif not central and groomed:
@@ -307,6 +321,7 @@ def get_dijet_config(source_dir, central=True, groomed=False):
         this_dict['dirname'] = 'Dijet_QG_Unfold_forward_tighter_groomed'
         this_dict['label'] = qgc.Dijet_FWD_LABEL.replace(" region", "")
         this_dict['name'] = 'Dijet_forward_groomed'
+        this_dict["dirname_otherProc"] = "ZPlusJets_QG_Unfold_groomed"
         return this_dict
 
 
@@ -316,8 +331,10 @@ def get_zpj_config(source_dir, groomed=False):
     input_mc_dy_mgpythia_tfile = os.path.join(source_dir, qgc.DY_FILENAME)  # incl + HT binned
     input_mc_dy_mgpythia_incl_tfile = os.path.join(source_dir, qgc.DY_INCL_FILENAME)  # only inclusive
     input_mc_dy_mgherwig_tfile = os.path.join(source_dir, qgc.DY_MG_HERWIG_FILENAME)
-    # input_mc_dy_herwig_tfile = os.path.join(source_dir, qgc.DY_HERWIG_FILENAME)  # only inclusive one
-    input_mc_dy_herwig_tfile = os.path.join(source_dir, qgc.DY_HERWIG_LOW_HIGH_PT_FILENAME)  # inclusive + my high pt sample
+    input_mc_dy_herwig_tfile = os.path.join(source_dir, qgc.DY_HERWIG_FILENAME)  # inclusive + my high pt sample
+    
+    input_mc_qcd_mgpythia_tfile = os.path.join(source_dir, qgc.QCD_FILENAME)  # HT binned
+    input_mc_qcd_herwig_tfile = os.path.join(source_dir, qgc.QCD_HERWIG_FILENAME)
 
     input_singlemu_tfile = os.path.join(source_dir, qgc.SINGLE_MU_FILENAME)
 
@@ -333,8 +350,15 @@ def get_zpj_config(source_dir, groomed=False):
         # "mc_tfile": input_mc_dy_mgpythia_incl_tfile,
         # "mc_label": "MG5+Pythia8 (inclusive)",
 
+        "dirname_otherProc": "Dijet_QG_Unfold_central_tighter",
+        "mc_otherProc_tfile": input_mc_qcd_mgpythia_tfile,
+        "mc_otherProc_label": "MG5+Pythia8 (QCD)",
+
         "alt_mc_tfile": input_mc_dy_herwig_tfile,
         "alt_mc_label": "Herwig++",
+
+        "alt_mc_otherProc_tfile": input_mc_qcd_herwig_tfile,
+        "alt_mc_otherProc_label": "Herwig++ (QCD)",
 
         # "alt_mc_tfile": input_mc_dy_mgherwig_tfile,
         # "alt_mc_label": "MG+Herwig++",
@@ -596,6 +620,7 @@ def get_zpj_config(source_dir, groomed=False):
         this_dict['dirname'] = 'ZPlusJets_QG_Unfold_groomed'
         this_dict['name'] = 'ZPlusJets_groomed'
         this_dict['label'] = qgc.ZpJ_LABEL.replace(" region", "")
+        this_dict["dirname_otherProc"] = "Dijet_QG_Unfold_central_tighter_groomed"
         return this_dict
 
 
