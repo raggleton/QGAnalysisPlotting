@@ -5032,9 +5032,6 @@ def main():
                         nargs='+',
                         help="Lambda angles to unfold, or 'all' for all of them (default).",
                         default=["all"])
-    parser.add_argument("--outputDir",
-                        default=None,
-                        help='Output directory (default is the source dir)')
     parser.add_argument("--doBinnedPlots",
                         action='store_true',
                         help='Do all lambda/pt binned plots')

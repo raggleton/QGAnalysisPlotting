@@ -801,8 +801,8 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
                     # bin_ind_var_down = gen_node.GetGlobalBinNumber(self.variable_bin_edges_gen[ilambda], pt_cen)
                     # bin_ind_var_up = gen_node.GetGlobalBinNumber(self.variable_bin_edges_gen[ilambda+2], pt_cen)
 
-                    print("Adding L matrix entry", nr_counter)
-                    print('lambda:', self.variable_bin_edges_gen[ilambda], 'pt:', (self.pt_bin_edges_gen[ipt], self.pt_bin_edges_gen[ipt+1], self.pt_bin_edges_gen[ipt+2]))
+                    # print("Adding L matrix entry", nr_counter)
+                    # print('lambda:', self.variable_bin_edges_gen[ilambda], 'pt:', (self.pt_bin_edges_gen[ipt], self.pt_bin_edges_gen[ipt+1], self.pt_bin_edges_gen[ipt+2]))
 
                     # pt_bin_width_down = pt_bin_edges_gen[ipt+1] - pt_bin_edges_gen[ipt]
                     # pt_bin_width_up = pt_bin_edges_gen[ipt+2] - pt_bin_edges_gen[ipt+1]
@@ -857,8 +857,8 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
                     # bin_ind_var_down = gen_node.GetGlobalBinNumber(self.variable_bin_edges_gen[ilambda], pt_cen)
                     # bin_ind_var_up = gen_node.GetGlobalBinNumber(self.variable_bin_edges_gen[ilambda+2], pt_cen)
 
-                    print("Adding L matrix entry", nr_counter)
-                    print('pt:', self.pt_bin_edges_gen[ipt], 'lambda:', (self.variable_bin_edges_gen[ilambda], self.variable_bin_edges_gen[ilambda+1], self.variable_bin_edges_gen[ilambda+2]))
+                    # print("Adding L matrix entry", nr_counter)
+                    # print('pt:', self.pt_bin_edges_gen[ipt], 'lambda:', (self.variable_bin_edges_gen[ilambda], self.variable_bin_edges_gen[ilambda+1], self.variable_bin_edges_gen[ilambda+2]))
 
                     # pt_bin_width_down = variable_bin_edges_gen[ilambda+1] - variable_bin_edges_gen[ilambda]
                     # pt_bin_width_up = variable_bin_edges_gen[ilambda+2] - variable_bin_edges_gen[ilambda+1]
@@ -913,8 +913,8 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
                     bin_ind_pt_down = gen_node.GetGlobalBinNumber(lambda_cen, self.pt_bin_edges_gen[ipt]+0.001)
                     bin_ind_pt_up = gen_node.GetGlobalBinNumber(lambda_cen, self.pt_bin_edges_gen[ipt+1]+0.001)
 
-                    print("Adding L matrix entry", nr_counter)
-                    print('lambda:', self.variable_bin_edges_gen[ilambda], 'pt:', (self.pt_bin_edges_gen[ipt], self.pt_bin_edges_gen[ipt+1]))
+                    # print("Adding L matrix entry", nr_counter)
+                    # print('lambda:', self.variable_bin_edges_gen[ilambda], 'pt:', (self.pt_bin_edges_gen[ipt], self.pt_bin_edges_gen[ipt+1]))
 
                     val_down = ref_hist.GetBinContent(bin_ind_pt_down)
                     value_pt_down = 1./val_down if val_down != 0 else 0
@@ -937,8 +937,8 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
                     bin_ind_lambda_down = gen_node.GetGlobalBinNumber(self.variable_bin_edges_gen[ilambda]+0.001, pt_cen)
                     bin_ind_lambda_up = gen_node.GetGlobalBinNumber(self.variable_bin_edges_gen[ilambda+1]+0.001, pt_cen)
 
-                    print("Adding L matrix entry", nr_counter)
-                    print('pt:', self.pt_bin_edges_gen[ipt], 'lambda:', (self.variable_bin_edges_gen[ilambda], self.variable_bin_edges_gen[ilambda+1]))
+                    # print("Adding L matrix entry", nr_counter)
+                    # print('pt:', self.pt_bin_edges_gen[ipt], 'lambda:', (self.variable_bin_edges_gen[ilambda], self.variable_bin_edges_gen[ilambda+1]))
 
                     val_down = ref_hist.GetBinContent(bin_ind_lambda_down)
                     value_lambda_down = 1./val_down if val_down != 0 else 0
