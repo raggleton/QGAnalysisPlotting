@@ -339,6 +339,11 @@ def do_dijet_distributions(root_dir, title):
     # root_files = [qgc.JETHT_ZB_FILENAME, qgc.QCD_FILENAME]
     # root_files = [qgc.JETHT_ZB_FILENAME, qgc.QCD_PYTHIA_ONLY_FILENAME]
     # root_files = [qgc.JETHT_ZB_FILENAME, qgc.QCD_HERWIG_FILENAME]
+
+    if not all(os.path.isfile(os.path.join(root_dir, r)) for r in root_files):
+        print("Cannot find ROOT files, skipping dijet kinematic plots")
+        return
+
     root_files = [cu.TFileCacher(os.path.join(root_dir, r)) for r in root_files]
 
     # herwig_dir = "workdir_ak4chs_herwig_newFlav_withPUreweight_withMuSF"
@@ -402,6 +407,11 @@ def do_zpj_distributions(root_dir, title):
     """Do plots comparing different different inputs in Z+jet region"""
     # root_files = [qgc.SINGLE_MU_FILENAME, qgc.DY_FILENAME, qgc.DY_HERWIG_FILENAME, qgc.DY_MG_HERWIG_FILENAME]
     root_files = [qgc.SINGLE_MU_FILENAME, qgc.DY_FILENAME, qgc.DY_HERWIG_FILENAME]
+
+    if not all([os.path.isfile(os.path.join(root_dir, r)) for r in root_files]):
+        print("Cannot find ROOT files, skipping Z+J kinematic plots")
+        return
+
     root_files = [cu.TFileCacher(os.path.join(root_dir, r)) for r in root_files]
 
     directories = [rf.get("ZPlusJets") for rf in root_files]
