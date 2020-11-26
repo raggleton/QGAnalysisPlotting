@@ -168,10 +168,15 @@ ANGLE_REBIN_DICT = {
 
 PT_UNFOLD_DICT = {
     # "signal_gen": np.array([50, 65, 88, 120, 150, 186, 254, 326, 408, 481, 614, 800, 1000, 6500], dtype='d'),
-    "signal_gen": np.array([50, 65, 88, 120, 150, 186, 254, 326, 408, 481, 614, 800, 1000, 4000], dtype='d'),
-    # "signal_gen": np.array([50, 65, 88, 120, 150, 186, 254, 326, 408, 481, 614, 800, 1000, 2000], dtype='d'),
+
     "underflow_gen": np.array([15, 30, 38, 50], dtype='d'),
-    "signal_zpj_gen": np.array([50, 65, 88, 120, 150, 186, 254, 326, 408, 481, 614, 800, 2000], dtype='d'),
+    "signal_gen": np.array([50, 65, 88, 120, 150, 186, 254, 326, 408, 481, 614, 800, 1000, 4000], dtype='d'),
+
+    # "signal_gen": np.array([65, 88, 120, 150, 186, 254, 326, 408, 481, 614, 800, 1000, 4000], dtype='d'),
+    # "underflow_gen": np.array([30, 38, 50, 65], dtype='d'),
+
+    # "signal_zpj_gen": np.array([50, 65, 88, 120, 150, 186, 254, 326, 408, 481, 614, 800, 2000], dtype='d'),
+    "signal_zpj_gen": np.array([50, 65, 88, 120, 150, 186, 254, 326, 408, 1500], dtype='d'),
     # "signal_zpj_gen": np.array([50, 65, 88, 120, 150, 186, 254, 408, 614, 2000], dtype='d'),
     "underflow_zpj_gen": np.array([15, 30, 38, 50], dtype='d'),
 }
@@ -185,7 +190,6 @@ for pt_name in list(PT_UNFOLD_DICT.keys()):
 reco_jet_pt = 30
 PT_UNFOLD_DICT['underflow_reco'] = PT_UNFOLD_DICT['underflow_reco'][PT_UNFOLD_DICT['underflow_reco'] >= reco_jet_pt]
 PT_UNFOLD_DICT['underflow_zpj_reco'] = PT_UNFOLD_DICT['underflow_zpj_reco'][PT_UNFOLD_DICT['underflow_zpj_reco'] >= reco_jet_pt]
-
 
 
 # new version of WTA, cen+fwd dijet, target 0.5
@@ -268,7 +272,7 @@ VAR_UNFOLD_DICT_TARGET0p5 = {
             'reco': None
         },
         'jet_LHA': {
-            'gen': np.array([0.0, 0.17, 0.25, 0.32, 0.38, 0.45, 0.52, 0.59, 0.66, 1.0], dtype='d'),
+            'gen': np.array([0.0, 0.17, 0.25, 0.32, 0.38, 0.45, 0.52, 0.59, 1.0], dtype='d'),
             'reco': None
         },
         'jet_width': {
@@ -276,7 +280,7 @@ VAR_UNFOLD_DICT_TARGET0p5 = {
             'reco': None
         },
         'jet_thrust': {
-            'gen': np.array([0.0, 0.05, 0.09, 0.15, 0.205, 0.26, 0.6], dtype='d'),
+            'gen': np.array([0.0, 0.05, 0.09, 0.15, 0.205, 1], dtype='d'),
             'reco': None
         },
 
@@ -297,7 +301,7 @@ VAR_UNFOLD_DICT_TARGET0p5 = {
             'reco': None
         },
         'jet_thrust_charged': {
-            'gen': np.array([0, 0.005, 0.0125, 0.0225, 0.035, 0.05, 0.07, 0.0925, 0.12, 0.152, 0.188, 0.228, 0.273, 0.6], dtype='d'),
+            'gen': np.array([0, 0.005, 0.0125, 0.0225, 0.035, 0.05, 0.07, 0.0925, 0.12, 0.152, 0.188, 0.228, 1], dtype='d'),
             'reco': None
         },
     },
@@ -316,11 +320,11 @@ VAR_UNFOLD_DICT_TARGET0p5 = {
             'reco': None
         },
         'jet_width': {
-            'gen': np.array([0, 0.02, 0.05, 0.095, 0.147, 0.225, 0.307, 0.388, 0.468, 0.56, 1], dtype='d'),
+            'gen': np.array([0, 0.02, 0.05, 0.095, 0.147, 0.225, 0.307, 0.388, 0.468, 1], dtype='d'),
             'reco': None
         },
         'jet_thrust': {
-            'gen': np.array([0, 0.0025, 0.01, 0.025, 0.06, 0.12, 0.177, 0.23, 0.285, 0.6], dtype='d'),
+            'gen': np.array([0, 0.0025, 0.01, 0.025, 0.06, 0.12, 0.177, 0.23, 1], dtype='d'),
             'reco': None
         },
 
@@ -341,7 +345,7 @@ VAR_UNFOLD_DICT_TARGET0p5 = {
             'reco': None
         },
         'jet_thrust_charged': {
-            'gen': np.array([0, 0.0025, 0.005, 0.0075, 0.0125, 0.02, 0.0325, 0.05, 0.0775, 0.115, 0.16, 0.21, 0.265, 0.6], dtype='d'),
+            'gen': np.array([0, 0.0025, 0.005, 0.0075, 0.0125, 0.02, 0.0325, 0.05, 0.0775, 0.115, 0.16, 0.21, 1], dtype='d'),
             'reco': None
         },
     }
