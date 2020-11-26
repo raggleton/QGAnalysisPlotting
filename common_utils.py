@@ -14,6 +14,8 @@ from array import array
 from itertools import chain
 from collections import OrderedDict
 import pickle
+import inspect
+
 
 np.set_printoptions(edgeitems=3, infstr='Infinity',
                     linewidth=220, nanstr='nan', precision=6,
@@ -83,6 +85,15 @@ def check_dir_exists_create(filepath):
     """Check if directory exists. If not, create it."""
     if not check_dir_exists(filepath):
         os.makedirs(cleanup_filepath(filepath))
+
+
+def get_current_func_name():
+    """Get name of current function (the one that calls this function)
+
+    Note that we have to use f_back to get the caller of this method,
+    otherwise it would just return get_current_func_name
+    """
+    return inspect.currentframe().f_back.f_code.co_name
 
 
 #

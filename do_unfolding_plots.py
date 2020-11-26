@@ -268,7 +268,9 @@ class GenPtBinnedPlotter(object):
                              marker_color=self.plot_styles['unfolded_stat_colour'], marker_style=cu.Marker.get('circle'), marker_size=0.75,
                              subplot=mc_gen_hist_bin),
             ]
-            if not self.check_entries(entries, "plot_unfolded_unnormalised %d" % (ibin)):
+
+            func_name = cu.get_current_func_name()
+            if not self.check_entries(entries, "%s bin %d" % (func_name, ibin)):
                 return
             plot = Plot(entries,
                         ytitle=self.setup.pt_bin_unnormalised_differential_label,
@@ -324,7 +326,9 @@ class GenPtBinnedPlotter(object):
                              marker_color=self.plot_styles['unfolded_stat_colour'], marker_style=cu.Marker.get('circle'), marker_size=0.75,
                              subplot=mc_gen_hist_bin),
             ]
-            if not self.check_entries(entries, "plot_unfolded_normalised_pt_bin %d" % (ibin)):
+
+            func_name = cu.get_current_func_name()
+            if not self.check_entries(entries, "%s bin %d" % (func_name, ibin)):
                 return
 
             plot = Plot(entries,
@@ -441,7 +445,8 @@ class GenPtBinnedPlotter(object):
                 *data_entries
             ]
 
-            if not self.check_entries(entries, "plot_unfolded_with_alt_truth_normalised_pt_bin %d" % (ibin)):
+            func_name = cu.get_current_func_name()
+            if not self.check_entries(entries, "%s bin %d" % (func_name, ibin)):
                 return
 
             plot = Plot(entries,
@@ -562,7 +567,9 @@ class GenPtBinnedPlotter(object):
                              marker_color=self.plot_styles['unfolded_unreg_colour'], #marker_style=cu.Marker.get('circle'), marker_size=0.75,
                              subplot=mc_gen_hist_bin),
             ]
-            if not self.check_entries(entries, "plot_unfolded_with_unreg_normalised_pt_bin %d" % (ibin)):
+
+            func_name = cu.get_current_func_name()
+            if not self.check_entries(entries, "%s bin %d" % (func_name, ibin)):
                 return
             plot = Plot(entries,
                         ytitle=self.setup.pt_bin_normalised_differential_label,
@@ -597,7 +604,9 @@ class GenPtBinnedPlotter(object):
                              marker_color=self.plot_styles['unfolded_unreg_colour'], #marker_style=cu.Marker.get('circle'), marker_size=0.75,
                              subplot=mc_gen_hist_bin),
             ]
-            if not self.check_entries(entries, "plot_unfolded_with_unreg_unnormalised_pt_bin %d" % (ibin)):
+
+            func_name = cu.get_current_func_name()
+            if not self.check_entries(entries, "%s bin %d" % (func_name, ibin)):
                 return
             plot = Plot(entries,
                         ytitle=self.setup.pt_bin_unnormalised_differential_label,
@@ -645,7 +654,9 @@ class GenPtBinnedPlotter(object):
                              subplot=mc_gen_hist_bin),
 
             ]
-            if not self.check_entries(entries, "plot_unfolded_with_template_normalised %d" % (ibin)):
+
+            func_name = cu.get_current_func_name()
+            if not self.check_entries(entries, "%s bin %d" % (func_name, ibin)):
                 return
             plot = Plot(entries,
                         ytitle=self.setup.pt_bin_normalised_differential_label,
@@ -693,7 +704,9 @@ class GenPtBinnedPlotter(object):
                              subplot=mc_gen_hist_bin),
 
             ]
-            if not self.check_entries(entries, "plot_unfolded_with_template_unnormalised %d" % (ibin)):
+
+            func_name = cu.get_current_func_name()
+            if not self.check_entries(entries, "%s bin %d" % (func_name, ibin)):
                 return
             plot = Plot(entries,
                         ytitle=self.setup.pt_bin_unnormalised_differential_label,
@@ -747,7 +760,9 @@ class GenPtBinnedPlotter(object):
                              marker_color=self.plot_styles['alt_unfolded_colour'], #marker_style=cu.Marker.get('circle'), marker_size=0.75,
                              subplot=mc_gen_hist_bin),
             ]
-            if not self.check_entries(entries, "plot_unfolded_with_unreg_normalised_pt_bin %d" % (ibin)):
+
+            func_name = cu.get_current_func_name()
+            if not self.check_entries(entries, "%s bin %d" % (func_name, ibin)):
                 return
             plot = Plot(entries,
                         ytitle=self.setup.pt_bin_normalised_differential_label,
@@ -796,7 +811,9 @@ class GenPtBinnedPlotter(object):
                              marker_color=self.plot_styles['alt_unfolded_colour'], #marker_style=cu.Marker.get('circle'), marker_size=0.75,
                              subplot=mc_gen_hist_bin),
             ]
-            if not self.check_entries(entries, "plot_unfolded_with_unreg_normalised_pt_bin %d" % (ibin)):
+
+            func_name = cu.get_current_func_name()
+            if not self.check_entries(entries, "%s bin %d" % (func_name, ibin)):
                 return
             this_plot_args = {k:v for k,v in self.pt_bin_plot_args.items()}
             this_plot_args['subplot_title'] = '#splitline{* / Gen}{(%s)}' % (self.region['mc_label'])
@@ -852,7 +869,9 @@ class GenPtBinnedPlotter(object):
                              marker_color=self.plot_styles['unfolded_total_colour'], #marker_style=cu.Marker.get('circle'), marker_size=0.75,
                              subplot=mc_gen_hist_bin),
             ])
-            if not self.check_entries(syst_entries, "plot_unfolded_with_scale_systs_normalised_pt_bin %d" % (ibin)):
+
+            func_name = cu.get_current_func_name()
+            if not self.check_entries(syst_entries, "%s bin %d" % (func_name, ibin)):
                 return
             plot = Plot(syst_entries,
                         ytitle=self.setup.pt_bin_normalised_differential_label,
@@ -908,7 +927,9 @@ class GenPtBinnedPlotter(object):
                              marker_color=self.plot_styles['unfolded_total_colour'], #marker_style=cu.Marker.get('circle'), marker_size=0.75,
                              subplot=mc_gen_hist_bin),
             ])
-            if not self.check_entries(syst_entries, "plot_unfolded_with_scale_systs_unormalised_pt_bin %d" % (ibin)):
+
+            func_name = cu.get_current_func_name()
+            if not self.check_entries(syst_entries, "%s bin %d" % (func_name, ibin)):
                 return
             plot = Plot(syst_entries,
                         ytitle=self.setup.pt_bin_unnormalised_differential_label,
@@ -967,7 +988,9 @@ class GenPtBinnedPlotter(object):
                              marker_color=self.plot_styles['unfolded_total_colour'], #marker_style=cu.Marker.get('circle'), marker_size=0.75,
                              subplot=mc_gen_hist_bin),
             ])
-            if not self.check_entries(syst_entries, "plot_unfolded_with_model_systs_normalised_pt_bin %d" % (ibin)):
+
+            func_name = cu.get_current_func_name()
+            if not self.check_entries(syst_entries, "%s bin %d" % (func_name, ibin)):
                 return
             plot_args = copy(self.pt_bin_plot_args)
             plot_args['subplot_title'] = "Unfolded / Gen"
@@ -1028,7 +1051,9 @@ class GenPtBinnedPlotter(object):
                              marker_color=self.plot_styles['unfolded_total_colour'], #marker_style=cu.Marker.get('circle'), marker_size=0.75,
                              subplot=mc_gen_hist_bin),
             ])
-            if not self.check_entries(syst_entries, "plot_unfolded_with_model_systs_unnormalised_pt_bin %d" % (ibin)):
+
+            func_name = cu.get_current_func_name()
+            if not self.check_entries(syst_entries, "%s bin %d" % (func_name, ibin)):
                 return
             plot_args = copy(self.pt_bin_plot_args)
             plot_args['subplot_title'] = "Unfolded / Gen"
@@ -1094,7 +1119,9 @@ class GenPtBinnedPlotter(object):
                              marker_color=self.plot_styles['unfolded_total_colour'], #marker_style=cu.Marker.get('circle'), marker_size=0.75,
                              subplot=mc_gen_hist_bin),
             ])
-            if not self.check_entries(pdf_entries, "plot_unfolded_with_pdf_systs_normalised_pt_bin %d" % (ibin)):
+
+            func_name = cu.get_current_func_name()
+            if not self.check_entries(pdf_entries, "%s bin %d" % (func_name, ibin)):
                 return
             plot = Plot(pdf_entries,
                        ytitle=self.setup.pt_bin_normalised_differential_label,
@@ -1156,7 +1183,9 @@ class GenPtBinnedPlotter(object):
                              marker_color=self.plot_styles['unfolded_total_colour'], #marker_style=cu.Marker.get('circle'), marker_size=0.75,
                              subplot=mc_gen_hist_bin),
             ])
-            if not self.check_entries(pdf_entries, "plot_unfolded_with_pdf_systs_unnormalised_pt_bin %d" % (ibin)):
+
+            func_name = cu.get_current_func_name()
+            if not self.check_entries(pdf_entries, "%s bin %d" % (func_name, ibin)):
                 return
             plot = Plot(pdf_entries,
                         ytitle=self.setup.pt_bin_unnormalised_differential_label,
@@ -1216,7 +1245,9 @@ class GenPtBinnedPlotter(object):
                              marker_color=self.plot_styles['unfolded_total_colour'], #marker_style=cu.Marker.get('circle'), marker_size=0.75,
                              subplot=mc_gen_hist_bin),
             ])
-            if not self.check_entries(entries, "plot_unfolded_with_jackknife_input_normalised_pt_bin %d" % (ibin)):
+
+            func_name = cu.get_current_func_name()
+            if not self.check_entries(entries, "%s bin %d" % (func_name, ibin)):
                 return
             plot = Plot(entries,
                         ytitle=self.setup.pt_bin_normalised_differential_label,
@@ -1271,7 +1302,9 @@ class GenPtBinnedPlotter(object):
                              marker_color=self.plot_styles['unfolded_total_colour'], #marker_style=cu.Marker.get('circle'), marker_size=0.75,
                              subplot=mc_gen_hist_bin),
             ])
-            if not self.check_entries(entries, "plot_unfolded_with_jackknife_response_normalised_pt_bin %d" % (ibin)):
+
+            func_name = cu.get_current_func_name()
+            if not self.check_entries(entries, "%s bin %d" % (func_name, ibin)):
                 return
             plot = Plot(entries,
                         ytitle=self.setup.pt_bin_normalised_differential_label,
@@ -1411,7 +1444,9 @@ class GenPtBinnedPlotter(object):
                                  marker_color=ROOT.kBlack,
                                  )
             entries.extend([c_stat, c_syst, c_tot])
-            if not self.check_entries(entries, "plot_uncertainty_shifts_normalised %d" % (ibin)):
+
+            func_name = cu.get_current_func_name()
+            if not self.check_entries(entries, "%s bin %d" % (func_name, ibin)):
                 return
             plot = Plot(entries,
                         what="hist",
@@ -1474,7 +1509,9 @@ class GenPtBinnedPlotter(object):
                                  subplot=unfolded_hist_bin_stat_errors)
                 entries.append(c)
 
-            if not self.check_entries(entries, "plot_unfolded_with_exp_systs_normalised %d" % ibin):
+
+            func_name = cu.get_current_func_name()
+            if not self.check_entries(entries, "%s bin %d" % (func_name, ibin)):
                 return
             xlim = qgp.calc_auto_xlim(entries[0:1])  # only for data
             plot = Plot(entries,
@@ -1535,7 +1572,9 @@ class GenPtBinnedPlotter(object):
                                  subplot=unfolded_hist_bin_stat_errors)
                 entries.append(c)
 
-            if not self.check_entries(entries, "plot_unfolded_with_exp_systs_normalised %d" % ibin):
+
+            func_name = cu.get_current_func_name()
+            if not self.check_entries(entries, "%s bin %d" % (func_name, ibin)):
                 return
             xlim = qgp.calc_auto_xlim(entries[0:1])  # only for data
             plot = Plot(entries,
@@ -1691,7 +1730,9 @@ class GenPtBinnedPlotter(object):
                              **rsp_style),
             ])
 
-            if not self.check_entries(entries, "plot_syst_fraction_normalised %d" % ibin):
+
+            func_name = cu.get_current_func_name()
+            if not self.check_entries(entries, "%s bin %d" % (func_name, ibin)):
                 return
             # find upper limit where there is no data
             xlim = qgp.calc_auto_xlim([unfolded_hist_bin_total_errors])
@@ -1861,7 +1902,9 @@ class GenPtBinnedPlotter(object):
                              **rsp_style),
             ])
 
-            if not self.check_entries(entries, "plot_syst_fraction_normalised %d" % ibin):
+
+            func_name = cu.get_current_func_name()
+            if not self.check_entries(entries, "%s bin %d" % (func_name, ibin)):
                 return
             # find upper limit where there is no data
             xlim = qgp.calc_auto_xlim([unfolded_hist_bin_total_errors])
@@ -1930,7 +1973,9 @@ class GenPtBinnedPlotter(object):
                              marker_color=self.plot_styles['reco_data_colour'], marker_style=cu.Marker.get('circle'), marker_size=0.75,
                              subplot=None if alt_detector else mc_hist_bin)
             )
-            if not self.check_entries(entries, "plot_detector_normalised_bg_subtracted %d" % (ibin)):
+
+            func_name = cu.get_current_func_name()
+            if not self.check_entries(entries, "%s bin %d" % (func_name, ibin)):
                 continue
             plot = Plot(entries,
                         xtitle=self.setup.detector_title,
@@ -2073,7 +2118,9 @@ class GenLambdaBinnedPlotter(object):
                              marker_color=self.plot_styles['unfolded_stat_colour'], marker_style=cu.Marker.get('circle'), marker_size=0.75,
                              subplot=mc_gen_hist_bin),
             ]
-            if not self.check_entries(entries, "plot_unfolded_unnormalised %d" % (ibin)):
+
+            func_name = cu.get_current_func_name()
+            if not self.check_entries(entries, "%s bin %d" % (func_name, ibin)):
                 return
             plot = Plot(entries,
                         ytitle=self.setup.pt_bin_unnormalised_differential_label,
@@ -2109,7 +2156,9 @@ class GenLambdaBinnedPlotter(object):
                              marker_color=self.plot_styles['unfolded_unreg_colour'], #marker_style=cu.Marker.get('circle'), marker_size=0.75,
                              subplot=mc_gen_hist_bin),
             ]
-            if not self.check_entries(entries, "plot_unfolded_with_unreg_unnormalised %d" % (ibin)):
+
+            func_name = cu.get_current_func_name()
+            if not self.check_entries(entries, "%s bin %d" % (func_name, ibin)):
                 return
             plot = Plot(entries,
                         ytitle=self.setup.pt_bin_unnormalised_differential_label,
@@ -2157,7 +2206,9 @@ class GenLambdaBinnedPlotter(object):
                              subplot=mc_gen_hist_bin),
 
             ]
-            if not self.check_entries(entries, "plot_unfolded_with_template_unnormalised %d" % (ibin)):
+
+            func_name = cu.get_current_func_name()
+            if not self.check_entries(entries, "%s bin %d" % (func_name, ibin)):
                 return
             plot = Plot(entries,
                         ytitle=self.setup.pt_bin_unnormalised_differential_label,
@@ -2202,7 +2253,9 @@ class GenLambdaBinnedPlotter(object):
                              marker_color=self.plot_styles['alt_unfolded_colour'], #marker_style=cu.Marker.get('circle'), marker_size=0.75,
                              subplot=mc_gen_hist_bin),
             ]
-            if not self.check_entries(entries, "plot_unfolded_with_alt_response_unnormalised %d" % (ibin)):
+
+            func_name = cu.get_current_func_name()
+            if not self.check_entries(entries, "%s bin %d" % (func_name, ibin)):
                 return
             plot = Plot(entries,
                         ytitle=self.setup.lambda_bin_unnormalised_differential_label,
@@ -2248,7 +2301,9 @@ class GenLambdaBinnedPlotter(object):
                              marker_color=self.plot_styles['unfolded_total_colour'], #marker_style=cu.Marker.get('circle'), marker_size=0.75,
                              subplot=mc_gen_hist_bin),
             ])
-            if not self.check_entries(syst_entries, "plot_unfolded_with_scale_systs_unnormalised %d" % (ibin)):
+
+            func_name = cu.get_current_func_name()
+            if not self.check_entries(syst_entries, "%s bin %d" % (func_name, ibin)):
                 return
             plot = Plot(syst_entries,
                         ytitle=self.setup.pt_bin_normalised_differential_label,
@@ -2307,7 +2362,9 @@ class GenLambdaBinnedPlotter(object):
                              marker_color=self.plot_styles['unfolded_total_colour'], #marker_style=cu.Marker.get('circle'), marker_size=0.75,
                              subplot=mc_gen_hist_bin),
             ])
-            if not self.check_entries(syst_entries, "plot_unfolded_with_model_systs_unnormalised %d" % (ibin)):
+
+            func_name = cu.get_current_func_name()
+            if not self.check_entries(syst_entries, "%s bin %d" % (func_name, ibin)):
                 return
             plot = Plot(syst_entries,
                         ytitle=self.setup.pt_bin_normalised_differential_label,
@@ -2370,7 +2427,9 @@ class GenLambdaBinnedPlotter(object):
                              marker_color=self.plot_styles['unfolded_total_colour'], #marker_style=cu.Marker.get('circle'), marker_size=0.75,
                              subplot=mc_gen_hist_bin),
             ])
-            if not self.check_entries(pdf_entries, "plot_unfolded_with_pdf_systs_unnormalised %d" % (ibin)):
+
+            func_name = cu.get_current_func_name()
+            if not self.check_entries(pdf_entries, "%s bin %d" % (func_name, ibin)):
                 return
             plot = Plot(pdf_entries,
                         ytitle=self.setup.pt_bin_unnormalised_differential_label,
@@ -2465,7 +2524,9 @@ class GenLambdaBinnedPlotter(object):
                                  marker_color=ROOT.kBlack,
                                  )
             entries.extend([c_stat, c_syst, c_tot])
-            if not self.check_entries(entries, "plot_uncertainty_shifts_unnormalised %d" % (ibin)):
+
+            func_name = cu.get_current_func_name()
+            if not self.check_entries(entries, "%s bin %d" % (func_name, ibin)):
                 return
             plot = Plot(entries,
                         what="hist",
@@ -2525,7 +2586,9 @@ class GenLambdaBinnedPlotter(object):
                                  subplot=unfolded_hist_bin_no_errors)
                 entries.append(c)
 
-            if not self.check_entries(entries, "plot_unfolded_with_exp_systs_unnormalised %d" % ibin):
+
+            func_name = cu.get_current_func_name()
+            if not self.check_entries(entries, "%s bin %d" % (func_name, ibin)):
                 return
             plot = Plot(entries,
                         xtitle=self.setup.pt_str,
@@ -2677,7 +2740,9 @@ class GenLambdaBinnedPlotter(object):
                              **rsp_style),
             ])
 
-            if not self.check_entries(entries, "plot_syst_fraction_unnormalised %d" % ibin):
+
+            func_name = cu.get_current_func_name()
+            if not self.check_entries(entries, "%s bin %d" % (func_name, ibin)):
                 return
             xlim = qgp.calc_auto_xlim(entries)
             ylim = [0.7, 1.5] if "Dijet" in self.setup.region['name'] else [0.3, 1.9]
@@ -2743,7 +2808,9 @@ class GenLambdaBinnedPlotter(object):
                              marker_color=self.plot_styles['reco_data_colour'], marker_style=cu.Marker.get('circle'), marker_size=0.75,
                              subplot=None if alt_detector else mc_hist_bin)
             )
-            if not self.check_entries(entries, "plot_detector_unnormalised %d" % (ibin)):
+
+            func_name = cu.get_current_func_name()
+            if not self.check_entries(entries, "%s bin %d" % (func_name, ibin)):
                 continue
             plot = Plot(entries,
                         xtitle=self.setup.pt_str,
@@ -2871,7 +2938,9 @@ class RecoPtBinnedPlotter(object):
             entries.append(
                 Contribution(data_hist_bin, **data_total_errors_style),
             )
-            if not self.check_entries(entries, "plot_detector_normalised %d" % (ibin)):
+
+            func_name = cu.get_current_func_name()
+            if not self.check_entries(entries, "%s bin %d" % (func_name, ibin)):
                 continue
             plot = Plot(entries,
                         xtitle=self.setup.detector_title,
@@ -2977,7 +3046,9 @@ class RecoPtBinnedPlotter(object):
             entries.append(
                 Contribution(data_hist_bin, **data_total_errors_style),
             )
-            if not self.check_entries(entries, "plot_detector_normalised_bg_subtracted %d" % (ibin)):
+
+            func_name = cu.get_current_func_name()
+            if not self.check_entries(entries, "%s bin %d" % (func_name, ibin)):
                 continue
             plot = Plot(entries,
                         xtitle=self.setup.detector_title,
@@ -3053,7 +3124,9 @@ class RecoPtBinnedPlotter(object):
                              marker_color=self.plot_styles['reco_folded_unfolded_colour'], marker_style=cu.Marker.get('circle'), marker_size=0.75,
                              subplot=input_hist_bin),
             ]
-            if not self.check_entries(entries, "plot_folded_unfolded_normalised %d" % (ibin)):
+
+            func_name = cu.get_current_func_name()
+            if not self.check_entries(entries, "%s bin %d" % (func_name, ibin)):
                 continue
             plot = Plot(entries,
                         xtitle=self.setup.detector_title,
@@ -3090,7 +3163,9 @@ class RecoPtBinnedPlotter(object):
                              marker_color=self.plot_styles['reco_folded_unfolded_colour'],marker_style=cu.Marker.get('circle'), marker_size=0.75,
                              subplot=mc_reco_hist_bin),
             ]
-            if not self.check_entries(entries, "plot_folded_unfolded_normalised %d" % (ibin)):
+
+            func_name = cu.get_current_func_name()
+            if not self.check_entries(entries, "%s bin %d" % (func_name, ibin)):
                 continue
             plot = Plot(entries,
                         xtitle=self.setup.detector_title,
@@ -3121,7 +3196,9 @@ class RecoPtBinnedPlotter(object):
                              marker_color=self.plot_styles['reco_folded_mc_truth_colour'], marker_style=cu.Marker.get('circle'), marker_size=0.75,
                              subplot=mc_reco_hist_bin),
             ]
-            if not self.check_entries(entries, "plot_folded_gen_normalised %d" % (ibin)):
+
+            func_name = cu.get_current_func_name()
+            if not self.check_entries(entries, "%s bin %d" % (func_name, ibin)):
                 continue
             plot = Plot(entries,
                         xtitle=self.setup.detector_title,
@@ -3161,7 +3238,9 @@ class RecoPtBinnedPlotter(object):
                                  subplot=mc_reco_hist_bin)
                 )
 
-            if not self.check_entries(entries, "plot_detector_with_model_systs_normalised %d" % (ibin)):
+
+            func_name = cu.get_current_func_name()
+            if not self.check_entries(entries, "%s bin %d" % (func_name, ibin)):
                 continue
             plot = Plot(entries,
                         xtitle=self.setup.detector_title,
@@ -3211,7 +3290,9 @@ class RecoPtBinnedPlotter(object):
                                  subplot=mc_reco_hist_bin)
                 )
 
-            if not self.check_entries(entries, "plot_detector_with_model_systs_normalised %d" % (ibin)):
+
+            func_name = cu.get_current_func_name()
+            if not self.check_entries(entries, "%s bin %d" % (func_name, ibin)):
                 continue
             plot = Plot(entries,
                         xtitle=self.setup.detector_title,
@@ -3261,7 +3342,9 @@ class RecoPtBinnedPlotter(object):
                                  subplot=mc_reco_hist_bin)
                 )
 
-            if not self.check_entries(entries, "plot_detector_with_pdf_systs_normalised %d" % (ibin)):
+
+            func_name = cu.get_current_func_name()
+            if not self.check_entries(entries, "%s bin %d" % (func_name, ibin)):
                 continue
             plot = Plot(entries,
                         xtitle=self.setup.detector_title,
@@ -3311,7 +3394,9 @@ class RecoPtBinnedPlotter(object):
                                  subplot=mc_reco_hist_bin)
                 )
 
-            if not self.check_entries(entries, "plot_detector_with_pdf_systs_normalised %d" % (ibin)):
+
+            func_name = cu.get_current_func_name()
+            if not self.check_entries(entries, "%s bin %d" % (func_name, ibin)):
                 continue
             plot = Plot(entries,
                         xtitle=self.setup.detector_title,
