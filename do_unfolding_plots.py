@@ -20,6 +20,8 @@ import numpy as np
 import scipy
 from itertools import chain
 from glob import glob
+from collections import defaultdict
+import inspect
 
 # for webpage
 from jinja2 import Environment, FileSystemLoader
@@ -175,39 +177,18 @@ def _make_thumbnail_canvas(plot):
     orig_w, orig_h = plot.default_canvas_size
     plot.default_canvas_size = (int(orig_w*0.5), int(orig_h*0.5))
 
-# FIXME: generalise this and LambdaBinnedPlotter into one generic BinnedPlotter?
-# Although each has different set of plots, so not easy/possible
-class GenPtBinnedPlotter(object):
-    def __init__(self, setup, bins, hist_bin_chopper, unfolder):
-        self.setup = setup
-        self.region = setup.region  # just to make life easier
-        self.bins = bins
-        self.hist_bin_chopper = hist_bin_chopper
+
+class BinnedPlotter(object):
+    def __init__(self):
+        self.plots_dict = defaultdict(list)  # use to cache plot names per function name
 
         self.line_width = 2
         self.plot_styles = PLOT_STYLES
-        self.pt_bin_plot_args = dict(
-            what="hist",
-            xtitle=self.setup.particle_title,
-            has_data=self.setup.has_data,
-            ylim=[0, None],
-            subplot_type='ratio',
-            subplot_title="* / %s" % (self.region['mc_label']),
-            # subplot_limits=(0, 2) if self.setup.has_data else (0.75, 1.25),
-            subplot_limits=(0.5, 2.5) if self.setup.has_data else (0.75, 1.25),
-        )
-        self.unfolder = unfolder
 
-    def _modify_plot(self, this_plot):
-        if self.setup.output_fmt == "gif":
-            _make_thumbnail_canvas(this_plot)
-        this_plot.legend.SetX1(0.6)
-        this_plot.legend.SetY1(0.7)
-        this_plot.legend.SetX2(0.98)
-        this_plot.legend.SetY2(0.88)
-        this_plot.left_margin = 0.16
-        this_plot.y_padding_max_linear = 1.8
-        this_plot.lumi = self.setup.lumi
+    def save_plot(self, plot, filename):
+        plot.save(filename)
+        func_name = inspect.currentframe().f_back.f_code.co_name
+        self.plots_dict[func_name].append(filename)
 
     @staticmethod
     def check_entries(entries, message=""):
@@ -230,6 +211,38 @@ class GenPtBinnedPlotter(object):
             return False
 
         return True
+
+
+class GenPtBinnedPlotter(BinnedPlotter):
+    def __init__(self, setup, bins, hist_bin_chopper, unfolder):
+        self.setup = setup
+        self.region = setup.region  # just to make life easier
+        self.bins = bins
+        self.hist_bin_chopper = hist_bin_chopper
+
+        self.pt_bin_plot_args = dict(
+            what="hist",
+            xtitle=self.setup.particle_title,
+            has_data=self.setup.has_data,
+            ylim=[0, None],
+            subplot_type='ratio',
+            subplot_title="* / %s" % (self.region['mc_label']),
+            # subplot_limits=(0, 2) if self.setup.has_data else (0.75, 1.25),
+            subplot_limits=(0.5, 2.5) if self.setup.has_data else (0.75, 1.25),
+        )
+        self.unfolder = unfolder
+        super().__init__()
+
+    def _modify_plot(self, this_plot):
+        if self.setup.output_fmt == "gif":
+            _make_thumbnail_canvas(this_plot)
+        this_plot.legend.SetX1(0.6)
+        this_plot.legend.SetY1(0.7)
+        this_plot.legend.SetX2(0.98)
+        this_plot.legend.SetY2(0.88)
+        this_plot.left_margin = 0.16
+        this_plot.y_padding_max_linear = 1.8
+        this_plot.lumi = self.setup.lumi
 
     def get_pt_bin_title(self, bin_edge_low, bin_edge_high):
         title = (("{jet_algo}\n"
@@ -279,7 +292,7 @@ class GenPtBinnedPlotter(object):
             self._modify_plot(plot)
             plot.subplot_title = "* / Generator"
             plot.plot("NOSTACK E1")
-            plot.save("%s/unfolded_unnormalised_%s_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
+            self.save_plot(plot, "%s/unfolded_unnormalised_%s_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
 
     def plot_unfolded_normalised(self):
         for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
@@ -339,7 +352,7 @@ class GenPtBinnedPlotter(object):
             self._modify_plot(plot)
             plot.subplot_title = "* / Generator"
             plot.plot("NOSTACK E1")
-            plot.save("%s/unfolded_%s_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
+            self.save_plot(plot, "%s/unfolded_%s_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
 
             if self.setup.angle.var in ["jet_LHA_charged", "jet_thrust_charged", "jet_width_charged", "jet_thrust", "jet_width"]:
                 upper_bin = [x for x in cu.get_bin_edges(mc_gen_hist_bin, 'x') if x < 0.2][-1]
@@ -352,7 +365,7 @@ class GenPtBinnedPlotter(object):
                 plot2.subplot_title = "* / Generator"
                 plot2.plot("NOSTACK E1")
                 # plot2.set_logx(do_exponent=False)
-                plot2.save("%s/unfolded_%s_bin_%d_divBinWidth_lowX.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
+                self.save_plot(plot2, "%s/unfolded_%s_bin_%d_divBinWidth_lowX.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
 
     def plot_unfolded_with_alt_truth_normalised(self, do_chi2=False):
         data_total_errors_style = dict(label="Data (total uncert.)",
@@ -517,7 +530,6 @@ class GenPtBinnedPlotter(object):
             plot.subplot_legend.Draw()
             plot.canvas.cd()
 
-            plot.save("%s/unfolded_%s_alt_truth_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
 
             if self.setup.angle.var in ["jet_thrust_charged", "jet_width_charged", "jet_thrust", "jet_width"]:
                 # plot.ylim = (1E-5)
@@ -542,6 +554,7 @@ class GenPtBinnedPlotter(object):
                 plot2.plot("NOSTACK E1")
                 # plot2.set_logx(do_exponent=False)
                 plot2.save("%s/unfolded_%s_alt_truth_bin_%d_divBinWidth_lowX.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
+            self.save_plot(plot, "%s/unfolded_%s_alt_truth_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
 
 
     def plot_unfolded_with_unreg_normalised(self):
@@ -579,7 +592,7 @@ class GenPtBinnedPlotter(object):
             self._modify_plot(plot)
             plot.subplot_title = "* / Generator"
             plot.plot("NOSTACK E1")
-            plot.save("%s/unfolded_%s_with_unreg_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
+            self.save_plot(plot, "%s/unfolded_%s_with_unreg_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
 
     def plot_unfolded_with_unreg_unnormalised(self):
         for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
@@ -616,7 +629,7 @@ class GenPtBinnedPlotter(object):
             self._modify_plot(plot)
             plot.subplot_title = "* / Generator"
             plot.plot("NOSTACK E1")
-            plot.save("%s/unfolded_unnormalised_%s_with_unreg_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
+            self.save_plot(plot, "%s/unfolded_unnormalised_%s_with_unreg_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
 
     def plot_unfolded_with_template_normalised(self):
         for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
@@ -666,7 +679,7 @@ class GenPtBinnedPlotter(object):
             self._modify_plot(plot)
             plot.subplot_title = "* / Generator"
             plot.plot("NOSTACK E1")
-            plot.save("%s/unfolded_%s_with_template_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
+            self.save_plot(plot, "%s/unfolded_%s_with_template_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
 
     def plot_unfolded_with_template_unnormalised(self):
         for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
@@ -716,7 +729,7 @@ class GenPtBinnedPlotter(object):
             self._modify_plot(plot)
             plot.subplot_title = "* / Generator"
             plot.plot("NOSTACK E1")
-            plot.save("%s/unfolded_unnormalised_%s_with_template_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
+            self.save_plot(plot, "%s/unfolded_unnormalised_%s_with_template_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
 
     def plot_unfolded_with_alt_response_normalised(self, alt_unfolder):
         for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
@@ -771,7 +784,7 @@ class GenPtBinnedPlotter(object):
                         **self.pt_bin_plot_args)
             self._modify_plot(plot)
             plot.plot("NOSTACK E1")
-            plot.save("%s/unfolded_%s_alt_response_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
+            self.save_plot(plot, "%s/unfolded_%s_alt_response_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
 
     def plot_unfolded_with_alt_response_truth_normalised(self, alt_unfolder):
         for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
@@ -824,7 +837,7 @@ class GenPtBinnedPlotter(object):
                         **this_plot_args)
             self._modify_plot(plot)
             plot.plot("NOSTACK E1")
-            plot.save("%s/unfolded_%s_alt_response_truth_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
+            self.save_plot(plot, "%s/unfolded_%s_alt_response_truth_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
 
     def plot_unfolded_with_scale_systs_normalised(self):
         for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
@@ -889,7 +902,7 @@ class GenPtBinnedPlotter(object):
             if len(syst_entries) > 6:
                 plot.legend.SetNColumns(2)
             plot.plot("NOSTACK E1")
-            plot.save("%s/unfolded_%s_syst_scale_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
+            self.save_plot(plot, "%s/unfolded_%s_syst_scale_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
 
     def plot_unfolded_with_scale_systs_unnormalised(self):
         for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
@@ -947,7 +960,7 @@ class GenPtBinnedPlotter(object):
             if len(syst_entries) > 6:
                 plot.legend.SetNColumns(2)
             plot.plot("NOSTACK E1")
-            plot.save("%s/unfolded_%s_syst_scale_unnormalised_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
+            self.save_plot(plot, "%s/unfolded_%s_syst_scale_unnormalised_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
 
     def plot_unfolded_with_model_systs_normalised(self):
         for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
@@ -1010,7 +1023,7 @@ class GenPtBinnedPlotter(object):
             if len(syst_entries) > 6:
                 plot.legend.SetNColumns(2)
             plot.plot("NOSTACK E1")
-            plot.save("%s/unfolded_%s_syst_model_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
+            self.save_plot(plot, "%s/unfolded_%s_syst_model_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
 
     def plot_unfolded_with_model_systs_unnormalised(self):
         for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
@@ -1073,7 +1086,7 @@ class GenPtBinnedPlotter(object):
             if len(syst_entries) > 6:
                 plot.legend.SetNColumns(2)
             plot.plot("NOSTACK E1")
-            plot.save("%s/unfolded_%s_syst_model_unnormalised_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
+            self.save_plot(plot, "%s/unfolded_%s_syst_model_unnormalised_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
 
     def plot_unfolded_with_pdf_systs_normalised(self):
         for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
@@ -1138,7 +1151,7 @@ class GenPtBinnedPlotter(object):
                 plot.legend.SetNColumns(3)
             ROOT.gStyle.SetPalette(55)
             plot.plot("NOSTACK E1 PLC PMC")
-            plot.save("%s/unfolded_%s_pdf_model_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
+            self.save_plot(plot, "%s/unfolded_%s_pdf_model_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
             ROOT.gStyle.SetPalette(ROOT.kViridis)
 
     def plot_unfolded_with_pdf_systs_unnormalised(self):
@@ -1202,7 +1215,7 @@ class GenPtBinnedPlotter(object):
                 plot.legend.SetNColumns(3)
             ROOT.gStyle.SetPalette(55)
             plot.plot("NOSTACK E1 PLC PMC")
-            plot.save("%s/unfolded_%s_pdf_model_unnormalised_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
+            self.save_plot(plot, "%s/unfolded_%s_pdf_model_unnormalised_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
             ROOT.gStyle.SetPalette(ROOT.kViridis)
 
     def plot_unfolded_with_jackknife_input_normalised(self):
@@ -1265,7 +1278,7 @@ class GenPtBinnedPlotter(object):
             if len(entries) > 6:
                 plot.legend.SetNColumns(2)
             plot.plot("NOSTACK E1")
-            plot.save("%s/unfolded_%s_jackknife_input_vars_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
+            self.save_plot(plot, "%s/unfolded_%s_jackknife_input_vars_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
 
     def plot_unfolded_with_jackknife_response_normalised(self):
         for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
@@ -1322,7 +1335,7 @@ class GenPtBinnedPlotter(object):
             if len(entries) > 6:
                 plot.legend.SetNColumns(2)
             plot.plot("NOSTACK E1")
-            plot.save("%s/unfolded_%s_jackknife_response_vars_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
+            self.save_plot(plot, "%s/unfolded_%s_jackknife_response_vars_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
 
     def plot_jackknife_residuals(self, jackknife_variations):
         """Plot distributions of unfolded / gen for each bin for all jackknife variations
@@ -1371,7 +1384,7 @@ class GenPtBinnedPlotter(object):
             #             xtitle="Unfolded / Gen")
             # plot.plot("NOSTACK HIST")
             # plot.legend.SetNColumns(2)
-            # plot.save("%s/jackknife_residuals_%s_bin_%d.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
+            # self.save_plot(plot, "%s/jackknife_residuals_%s_bin_%d.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
 
     def plot_uncertainty_shifts_normalised(self):
         """Do plots of fractional uncertainty shifts on *normalised* unfolded distribution"""
@@ -1463,13 +1476,13 @@ class GenPtBinnedPlotter(object):
             plot.y_padding_max_linear = 1.4
             plot.plot("NOSTACK HIST")
             output_filename = "%s/unfolded_systs_%s_bin_%d.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt)
-            plot.save(output_filename)
+            self.save_plot(plot, output_filename)
 
             plot.y_padding_max_log = 50
             plot.set_logy(do_more_labels=False)
             plot.get_modifier().SetMinimum(1E-4)
             log_filename, ext = os.path.splitext(output_filename)
-            plot.save(log_filename+"_log"+ext)
+            self.save_plot(plot, log_filename+"_log"+ext)
 
     def plot_unfolded_with_exp_systs_normalised(self):
         """Plot shifted unfolded normalised distributions for each syst"""
@@ -1532,7 +1545,7 @@ class GenPtBinnedPlotter(object):
             if len(entries) > 5: plot.legend.SetNColumns(2)
             # plot.subplot_limits = (0.9, 1.1)
             plot.plot("NOSTACK E1")
-            plot.save("%s/unfolded_syst_variations_%s_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
+            self.save_plot(plot, "%s/unfolded_syst_variations_%s_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
 
     def plot_unfolded_with_exp_systs_unnormalised(self):
         """Plot shifted unfolded absolute distributions for each syst"""
@@ -1595,7 +1608,7 @@ class GenPtBinnedPlotter(object):
             if len(entries) > 5: plot.legend.SetNColumns(2)
             # plot.subplot_limits = (0.9, 1.1)
             plot.plot("NOSTACK E1")
-            plot.save("%s/unfolded_syst_variations_unnormalised_%s_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
+            self.save_plot(plot, "%s/unfolded_syst_variations_unnormalised_%s_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
 
     def plot_syst_fraction_normalised(self):
         """Plot varation / central value on normalised hists
@@ -1772,7 +1785,7 @@ class GenPtBinnedPlotter(object):
             line.SetLineColor(ROOT.kGray+2)
             line.SetLineColor(ROOT.kBlack)
             line.Draw()
-            plot.save("%s/unfolded_syst_variations_vs_nominal_%s_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
+            self.save_plot(plot, "%s/unfolded_syst_variations_vs_nominal_%s_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
 
     def plot_syst_fraction_unnormalised(self):
         """Plot varation / central value on absolute hists
@@ -1942,7 +1955,7 @@ class GenPtBinnedPlotter(object):
             line.SetLineColor(ROOT.kGray+2)
             line.SetLineColor(ROOT.kBlack)
             line.Draw()
-            plot.save("%s/unfolded_unnormalised_syst_variations_vs_nominal_%s_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
+            self.save_plot(plot, "%s/unfolded_unnormalised_syst_variations_vs_nominal_%s_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
 
     def plot_detector_normalised_bg_subtracted(self, alt_detector=None):
         for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
@@ -1989,7 +2002,7 @@ class GenPtBinnedPlotter(object):
                         )
             self._modify_plot(plot)
             plot.plot("NOSTACK E1")
-            plot.save("%s/detector_gen_binning_bg_subtracted_%s_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
+            self.save_plot(plot, "%s/detector_gen_binning_bg_subtracted_%s_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
 
     def plot_ematrix(self, h2d, title, output_filename):
         """Generic function to plot error matrix for a given pt bin"""
@@ -2030,7 +2043,7 @@ class GenPtBinnedPlotter(object):
 # ================================================================================
 
 
-class GenLambdaBinnedPlotter(object):
+class GenLambdaBinnedPlotter(BinnedPlotter):
     def __init__(self, setup, bins, hist_bin_chopper, unfolder):
         self.setup = setup
         self.region = setup.region
@@ -2048,6 +2061,7 @@ class GenLambdaBinnedPlotter(object):
             subplot_limits=(0, 2) if self.setup.has_data else (0.75, 1.25),
         )
         self.unfolder = unfolder
+        super().__init__()
 
     def _modify_plot(self, this_plot):
         if self.setup.output_fmt != "pdf":
@@ -2059,28 +2073,6 @@ class GenLambdaBinnedPlotter(object):
         this_plot.left_margin = 0.16
         this_plot.y_padding_max_log = 5000 # space for title
         this_plot.lumi = self.setup.lumi
-
-    @staticmethod
-    def check_entries(entries, message=""):
-        """Check that at least 1 Contribution has something in it"""
-        has_entries = [c.obj.GetEntries() > 0 for c in entries]
-        if not any(has_entries):
-            if message:
-                print("Skipping 0 entries (%s)" % (message))
-            else:
-                print("Skipping 0 entries")
-            return False
-
-        max_bin = max([c.obj.GetMaximum() for c in entries])
-        min_bin = min([c.obj.GetMinimum() for c in entries])
-        if max_bin == min_bin:
-            if message:
-                print("Skipping min=max hists (%s)" % (message))
-            else:
-                print("Skipping min=max hists")
-            return False
-
-        return True
 
     def get_lambda_bin_title(self, bin_edge_low, bin_edge_high):
         title = (("{jet_algo}\n"
@@ -2130,7 +2122,7 @@ class GenLambdaBinnedPlotter(object):
             plot.plot("NOSTACK E1")
             plot.set_logx(do_more_labels=False)
             plot.set_logy(do_more_labels=False)
-            plot.save("%s/unfolded_unnormalised_%s_lambda_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
+            self.save_plot(plot, "%s/unfolded_unnormalised_%s_lambda_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
 
     def plot_unfolded_with_unreg_unnormalised(self):
         for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
@@ -2168,7 +2160,7 @@ class GenLambdaBinnedPlotter(object):
             plot.plot("NOSTACK E1")
             plot.set_logx(do_more_labels=False)
             plot.set_logy(do_more_labels=False)
-            plot.save("%s/unfolded_unnormalised_%s_with_unreg_lambda_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
+            self.save_plot(plot, "%s/unfolded_unnormalised_%s_with_unreg_lambda_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
 
     def plot_unfolded_with_template_unnormalised(self):
         for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
@@ -2218,7 +2210,7 @@ class GenLambdaBinnedPlotter(object):
             plot.plot("NOSTACK E1")
             plot.set_logx(do_more_labels=False)
             plot.set_logy(do_more_labels=False)
-            plot.save("%s/unfolded_unnormalised_%s_with_template_unreg_lambda_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
+            self.save_plot(plot, "%s/unfolded_unnormalised_%s_with_template_unreg_lambda_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
 
     def plot_unfolded_with_alt_response_unnormalised(self, alt_unfolder):
         for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
@@ -2265,7 +2257,7 @@ class GenLambdaBinnedPlotter(object):
             plot.plot("NOSTACK E1")
             plot.set_logx(do_more_labels=False)
             plot.set_logy(do_more_labels=False)
-            plot.save("%s/unfolded_unnormalised_%s_alt_response_lambda_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
+            self.save_plot(plot, "%s/unfolded_unnormalised_%s_alt_response_lambda_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
 
     def plot_unfolded_with_scale_systs_unnormalised(self):
         for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
@@ -2323,7 +2315,7 @@ class GenLambdaBinnedPlotter(object):
             plot.plot("NOSTACK E1")
             plot.set_logx(do_more_labels=False)
             plot.set_logy(do_more_labels=False)
-            plot.save("%s/unfolded_unnormalised_%s_syst_scale_lambda_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
+            self.save_plot(plot, "%s/unfolded_unnormalised_%s_syst_scale_lambda_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
 
     def plot_unfolded_with_model_systs_unnormalised(self):
         for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
@@ -2384,7 +2376,7 @@ class GenLambdaBinnedPlotter(object):
             plot.plot("NOSTACK E1")
             plot.set_logx(do_more_labels=False)
             plot.set_logy(do_more_labels=False)
-            plot.save("%s/unfolded_unnormalised_%s_syst_model_lambda_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
+            self.save_plot(plot, "%s/unfolded_unnormalised_%s_syst_model_lambda_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
 
     def plot_unfolded_with_pdf_systs_unnormalised(self):
         for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
@@ -2446,7 +2438,7 @@ class GenLambdaBinnedPlotter(object):
             plot.plot("NOSTACK E1 PLC PMC")
             plot.set_logx(do_more_labels=False)
             plot.set_logy(do_more_labels=False)
-            plot.save("%s/unfolded_unnormalised_%s_pdf_model_lambda_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
+            self.save_plot(plot, "%s/unfolded_unnormalised_%s_pdf_model_lambda_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
             ROOT.gStyle.SetPalette(ROOT.kViridis)
 
     def plot_uncertainty_shifts_unnormalised(self):
@@ -2544,13 +2536,13 @@ class GenLambdaBinnedPlotter(object):
             plot.plot("NOSTACK HIST")
             plot.set_logx(do_more_labels=False)
             output_filename = "%s/unfolded_unnormalised_systs_%s_lambda_bin_%d.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt)
-            plot.save(output_filename)
+            self.save_plot(plot, output_filename)
 
             plot.y_padding_max_log = 50
             plot.set_logy(do_more_labels=False)
             plot.get_modifier().SetMinimum(1E-4)
             log_filename, ext = os.path.splitext(output_filename)
-            plot.save(log_filename+"_log"+ext)
+            self.save_plot(plot, log_filename+"_log"+ext)
 
     def plot_unfolded_with_exp_systs_unnormalised(self):
         """Plot shifted unfolded normalised distributions for each syst"""
@@ -2609,7 +2601,7 @@ class GenLambdaBinnedPlotter(object):
             plot.plot("NOSTACK E1")
             plot.set_logx(do_more_labels=False)
             plot.set_logy(do_more_labels=False)
-            plot.save("%s/unfolded_unnormalised_syst_variations_%s_lambda_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
+            self.save_plot(plot, "%s/unfolded_unnormalised_syst_variations_%s_lambda_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
 
     def plot_syst_fraction_unnormalised(self):
         """Plot varation / central value on absolute hists
@@ -2780,7 +2772,7 @@ class GenLambdaBinnedPlotter(object):
             line.SetLineColor(ROOT.kGray+2)
             line.SetLineColor(ROOT.kBlack)
             line.Draw()
-            plot.save("%s/unfolded_unnormalised_syst_variations_vs_nominal_%s_lambda_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
+            self.save_plot(plot, "%s/unfolded_unnormalised_syst_variations_vs_nominal_%s_lambda_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
 
     def plot_detector_unnormalised(self, alt_detector=None):
         for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
@@ -2826,10 +2818,10 @@ class GenLambdaBinnedPlotter(object):
             plot.plot("NOSTACK E1")
             plot.set_logx(do_more_labels=False)
             plot.set_logy(do_more_labels=False)
-            plot.save("%s/detector_unnormalised_gen_binning_bg_subtracted_%s_lambda_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
+            self.save_plot(plot, "%s/detector_unnormalised_gen_binning_bg_subtracted_%s_lambda_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
 
 
-class RecoPtBinnedPlotter(object):
+class RecoPtBinnedPlotter(BinnedPlotter):
     def __init__(self, setup, bins, hist_bin_chopper, unfolder):
         self.setup = setup
         self.region = setup.region
@@ -2847,6 +2839,7 @@ class RecoPtBinnedPlotter(object):
             subplot_limits=(0, 2) if self.setup.has_data else (0.75, 1.25),
         )
         self.unfolder = unfolder
+        super().__init__()
 
     def _modify_plot(self, this_plot):
         if self.setup.output_fmt != "pdf":
@@ -2857,24 +2850,6 @@ class RecoPtBinnedPlotter(object):
         this_plot.legend.SetY2(0.88)
         this_plot.left_margin = 0.16
         this_plot.lumi = self.setup.lumi
-
-    @staticmethod
-    def check_entries(entries, message=""):
-        """Check that at least 1 Contribution has something in it"""
-        has_entries = [c.obj.GetEntries() > 0 for c in entries]
-        if not any(has_entries):
-            if message:
-                print("Skipping 0 entries (%s)" % (message))
-            else:
-                print("Skipping 0 entries")
-            return False
-
-        max_bin = max([c.obj.GetMaximum() for c in entries])
-        min_bin = min([c.obj.GetMinimum() for c in entries])
-        if max_bin == min_bin:
-            return False
-
-        return True
 
     def get_pt_bin_title(self, bin_edge_low, bin_edge_high):
         title = (("{jet_algo}\n"
@@ -3007,7 +2982,7 @@ class RecoPtBinnedPlotter(object):
 
             plot.canvas.cd()
 
-            plot.save("%s/detector_reco_binning_%s_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
+            self.save_plot(plot, "%s/detector_reco_binning_%s_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
 
     def plot_detector_normalised_bg_subtracted(self, alt_detector=None):
         data_total_errors_style = dict(label="Data (bg-subtracted)",
@@ -3106,7 +3081,7 @@ class RecoPtBinnedPlotter(object):
             plot.subplot_line.Draw()
             plot.canvas.cd()
 
-            plot.save("%s/detector_reco_binning_bg_subtracted_%s_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
+            self.save_plot(plot, "%s/detector_reco_binning_bg_subtracted_%s_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
 
     def plot_folded_unfolded_normalised(self):
         for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
@@ -3139,7 +3114,7 @@ class RecoPtBinnedPlotter(object):
                         subplot_limits=(0.75, 1.25),)
             self._modify_plot(plot)
             plot.plot("NOSTACK E1")
-            plot.save("%s/detector_folded_unfolded_only_data_%s_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
+            self.save_plot(plot, "%s/detector_folded_unfolded_only_data_%s_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
 
     def plot_folded_unfolded_with_mc_normalised(self):
         for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
@@ -3178,7 +3153,7 @@ class RecoPtBinnedPlotter(object):
                         subplot_limits=(0.75, 1.25),)
             self._modify_plot(plot)
             plot.plot("NOSTACK E1")
-            plot.save("%s/detector_folded_unfolded_%s_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
+            self.save_plot(plot, "%s/detector_folded_unfolded_%s_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
 
     def plot_folded_gen_normalised(self):
         for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
@@ -3211,7 +3186,7 @@ class RecoPtBinnedPlotter(object):
                         subplot_limits=(0.75, 1.25),)
             self._modify_plot(plot)
             plot.plot("NOSTACK E1")
-            plot.save("%s/detector_folded_gen_%s_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
+            self.save_plot(plot, "%s/detector_folded_gen_%s_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
 
     def plot_detector_with_model_systs_normalised(self):
         for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
@@ -3262,7 +3237,7 @@ class RecoPtBinnedPlotter(object):
                 plot.legend.SetNColumns(3)
             ROOT.gStyle.SetPalette(55)
             plot.plot("NOSTACK E1")
-            plot.save("%s/detector_reco_binning_bg_subtracted_model_systs_%s_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
+            self.save_plot(plot, "%s/detector_reco_binning_bg_subtracted_model_systs_%s_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
             ROOT.gStyle.SetPalette(ROOT.kViridis)
 
     def plot_detector_with_model_systs_unnormalised(self):
@@ -3314,7 +3289,7 @@ class RecoPtBinnedPlotter(object):
                 plot.legend.SetNColumns(3)
             ROOT.gStyle.SetPalette(55)
             plot.plot("NOSTACK E1")
-            plot.save("%s/detector_reco_binning_bg_subtracted_model_systs_unnormalised_%s_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
+            self.save_plot(plot, "%s/detector_reco_binning_bg_subtracted_model_systs_unnormalised_%s_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
             ROOT.gStyle.SetPalette(ROOT.kViridis)
 
     def plot_detector_with_pdf_systs_normalised(self):
@@ -3366,7 +3341,7 @@ class RecoPtBinnedPlotter(object):
                 plot.legend.SetNColumns(3)
             ROOT.gStyle.SetPalette(55)
             plot.plot("NOSTACK PLC PMC E1")
-            plot.save("%s/detector_reco_binning_bg_subtracted_pdf_systs_%s_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
+            self.save_plot(plot, "%s/detector_reco_binning_bg_subtracted_pdf_systs_%s_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
             ROOT.gStyle.SetPalette(ROOT.kViridis)
 
     def plot_detector_with_pdf_systs_unnormalised(self):
@@ -3418,7 +3393,7 @@ class RecoPtBinnedPlotter(object):
                 plot.legend.SetNColumns(3)
             ROOT.gStyle.SetPalette(55)
             plot.plot("NOSTACK PLC PMC E1")
-            plot.save("%s/detector_reco_binning_bg_subtracted_pdf_systs_unnormalised_%s_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
+            self.save_plot(plot, "%s/detector_reco_binning_bg_subtracted_pdf_systs_unnormalised_%s_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
             ROOT.gStyle.SetPalette(ROOT.kViridis)
 
 
