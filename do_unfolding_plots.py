@@ -171,6 +171,10 @@ def calc_chi2_stats(one_hist, other_hist, cov_matrix):
     return chi2, ndof, p
 
 
+def _make_thumbnail_canvas(plot):
+    orig_w, orig_h = plot.default_canvas_size
+    plot.default_canvas_size = (int(orig_w*0.5), int(orig_h*0.5))
+
 # FIXME: generalise this and LambdaBinnedPlotter into one generic BinnedPlotter?
 # Although each has different set of plots, so not easy/possible
 class GenPtBinnedPlotter(object):
@@ -196,8 +200,7 @@ class GenPtBinnedPlotter(object):
 
     def _modify_plot(self, this_plot):
         if self.setup.output_fmt == "gif":
-            orig_w, orig_h = this_plot.default_canvas_size
-            this_plot.default_canvas_size = (int(orig_w*0.5), int(orig_h*0.5))
+            _make_thumbnail_canvas(this_plot)
         this_plot.legend.SetX1(0.6)
         this_plot.legend.SetY1(0.7)
         this_plot.legend.SetX2(0.98)
@@ -2002,6 +2005,8 @@ class GenLambdaBinnedPlotter(object):
         self.unfolder = unfolder
 
     def _modify_plot(self, this_plot):
+        if self.setup.output_fmt != "pdf":
+            _make_thumbnail_canvas(this_plot)
         this_plot.legend.SetX1(0.6)
         this_plot.legend.SetY1(0.68)
         this_plot.legend.SetX2(0.98)
@@ -2777,9 +2782,8 @@ class RecoPtBinnedPlotter(object):
         self.unfolder = unfolder
 
     def _modify_plot(self, this_plot):
-        if self.setup.output_fmt == "gif":
-            orig_w, orig_h = this_plot.default_canvas_size
-            this_plot.default_canvas_size = (int(orig_w*0.5), int(orig_h*0.5))
+        if self.setup.output_fmt != "pdf":
+            _make_thumbnail_canvas(this_plot)
         this_plot.legend.SetX1(0.6)
         this_plot.legend.SetY1(0.68)
         this_plot.legend.SetX2(0.98)
