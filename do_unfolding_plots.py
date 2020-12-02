@@ -4934,6 +4934,16 @@ def print_chi2_table(df):
     print(r'\end{tabular}')
 
 
+def slim_region(region):
+    """Remove excess bits from Region dict to save memory"""
+    if 'pdf_systematics' in region:
+        del region['pdf_systematics']
+    if 'scale_systematics' in region:
+        del region['scale_systematics']
+    if 'model_systematics' in region:
+        del region['model_systematics']
+
+
 class PlotWebpageMaker(object):
 
     def __init__(self, webpage_dir):
@@ -4949,6 +4959,7 @@ class PlotWebpageMaker(object):
                             angle=setup.angle,
                             output_dir=self.thumb_dir,
                             has_data=setup.has_data)
+        slim_region(thumb_setup.region)
         thumb_setup.output_fmt = "gif"
         do_binned_plots_per_region_angle(setup=thumb_setup,
                                          do_binned_gen_pt=True,
