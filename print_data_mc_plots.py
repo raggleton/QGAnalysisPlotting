@@ -48,30 +48,19 @@ TOTAL_LUMI = 35918
 def do_plots(root_dir, title):
     # QG variable plots
     pt_bins = qgc.PT_BINS[:]
+    print(pt_bins)
     var_list = qgc.COMMON_VARS
     var_prepend = ""
 
     radius, pus = cu.get_jet_config_from_dirname(root_dir)
     jet_str = "AK%s PF %s" % (radius.upper(), pus.upper())
 
-    single_mu_tfile, dy_tfile, dy_hpp_tfile = None, None, None
-    jetht_zb_tfile, qcd_tfile, qcd_hpp_tfile = None, None, None
-
-    filename_obj_map = {
-        os.path.isfile(os.path.join(root_dir, qgc.SINGLE_MU_FILENAME)): single_mu_tfile,
-        os.path.isfile(os.path.join(root_dir, qgc.DY_FILENAME)): dy_tfile,
-        os.path.isfile(os.path.join(root_dir, qgc.DY_HERWIG_FILENAME)): dy_hpp_tfile,
-        # os.path.isfile(os.path.join(root_dir, qgc.DY_MG_HERWIG_FILENAME)): dy_mg_hpp_tfile,
-
-        os.path.isfile(os.path.join(root_dir, qgc.JETHT_ZB_FILENAME)): jetht_zb_tfile,
-        os.path.isfile(os.path.join(root_dir, qgc.QCD_FILENAME)): qcd_tfile,
-        os.path.isfile(os.path.join(root_dir, qgc.QCD_HERWIG_FILENAME)): qcd_hpp_tfile,
-        # os.path.isfile(os.path.join(root_dir, qgc.QCD_PYTHIA_ONLY_FILENAME)): qcd_py_tfile,
-    }
-
-    for filename, obj in filename_obj_map.items():
-        if os.path.isfile(filename):
-            obj = cu.TFileCacher(filename)
+    single_mu_tfile = cu.TFileCacher(os.path.join(root_dir, qgc.SINGLE_MU_FILENAME))
+    dy_tfile = cu.TFileCacher(os.path.join(root_dir, qgc.DY_FILENAME))
+    dy_hpp_tfile = cu.TFileCacher(os.path.join(root_dir, qgc.DY_HERWIG_FILENAME))
+    jetht_zb_tfile = cu.TFileCacher(os.path.join(root_dir, qgc.JETHT_ZB_FILENAME))
+    qcd_tfile = cu.TFileCacher(os.path.join(root_dir, qgc.QCD_FILENAME))
+    qcd_hpp_tfile = cu.TFileCacher(os.path.join(root_dir, qgc.QCD_HERWIG_FILENAME))
 
     for gr_append in ["", "_groomed"]:
         if gr_append == "_groomed":
@@ -434,8 +423,8 @@ def do_plots(root_dir, title):
             #                                     dijet_fwd_entries=dijet_fwd_entries,
             #                                     zpj_entries=zpj_entries)
 
-            qgp.do_mean_rms_summary_plot(dijet_cen_1d_entries[:],
-                                         pt_bins[:],
+            qgp.do_mean_rms_summary_plot(dijet_cen_1d_entries,
+                                         pt_bins,
                                          "%s/ptBinned/%s_box_dijet_cen_mpl.%s" % (plot_dir, v, OUTPUT_FMT),
                                          var_label=var_label,
                                          xlim=(50, 4000),
@@ -443,8 +432,8 @@ def do_plots(root_dir, title):
                                          ylim_rms=ylim_rms,
                                          region_title="%s jets in %s" % (jet_str, qgc.Dijet_CEN_LABEL.lower()))
 
-            qgp.do_mean_rms_summary_plot(dijet_fwd_1d_entries[:],
-                                         pt_bins[:],
+            qgp.do_mean_rms_summary_plot(dijet_fwd_1d_entries,
+                                         pt_bins,
                                          "%s/ptBinned/%s_box_dijet_fwd_mpl.%s" % (plot_dir, v, OUTPUT_FMT),
                                          var_label=var_label,
                                          xlim=(50, 4000),
@@ -453,11 +442,11 @@ def do_plots(root_dir, title):
                                          region_title="%s jets in %s" % (jet_str, qgc.Dijet_FWD_LABEL.lower()))
 
             # zpj_1d_entries[i][j] is the jth sample in the ith pt bin
-            qgp.do_mean_rms_summary_plot(zpj_1d_entries[:],
-                                         pt_bins[:],
+            qgp.do_mean_rms_summary_plot(zpj_1d_entries,
+                                         pt_bins,
                                          "%s/ptBinned/%s_box_zpj_mpl.%s" % (plot_dir, v, OUTPUT_FMT),
                                          var_label=var_label,
-                                         xlim=(50, 614),
+                                         xlim=(50, 800),
                                          ylim_mean=ylim_mean,
                                          ylim_rms=ylim_rms,
                                          region_title="%s jets in %s" % (jet_str, qgc.ZpJ_LABEL))
