@@ -270,17 +270,27 @@ class DijetZPJGenPtBinnedPlotter(object):
                 # fit_result = zpj_unfolded_hist.Fit(zpj_unfolded_fit, fit_opts, "")
                 # fit_result.Print()
 
-            n_dp = determine_num_dp(errors)
+            # n_dp = determine_num_dp(errors)
+            n_dp = 3
 
             # kerning necessary as it puts massive space around #pm
             # but the first #kern doesn't affect the space after #pm as much (?!),
             # so I have to add another one with harder kerning
             # we use %.(n_dp)f as our float format str to ensure the correct number of dp are shown (and not rounded off)
-            mean_template = 'Mean = {:.%df}#kern[-0.2dx]{{ #pm}}#kern[-0.5dx]{{ }}{:.%df}' % (n_dp, n_dp)
+            stat_template = 'Mean = {:.%df}#kern[-0.2dx]{{ #pm}}#kern[-0.5dx]{{ }}{}' % (n_dp)
+            err_template = "{:.%df}" % n_dp
+
+            def _stat_label(mean, err, dp):
+                err_str = err_template.format(err)
+                # if the error is so small that it would display as 0.000,
+                # i.e. < 0.0005, instead show < 0.001
+                if err < 5*10**(-dp-1):
+                    err_str = "#lower[-0.09dy]{<}#kern[-0.75dx]{ }" + err_template.format(1*10**(-dp))
+                return stat_template.format(round(mean, dp), err_str)
 
             if do_dijet:
                 dijet_entries.append(Contribution(dijet_detector_hist,
-                                                  label='Detector-level (stat. uncert.)\n%s' % (mean_template.format(round(dijet_detector_mean, n_dp), round(dijet_detector_mean_err, n_dp))),
+                                                  label='Detector-level (stat. only)\n%s' % (_stat_label(dijet_detector_mean, dijet_detector_mean_err, n_dp)),
                                                   line_color=self.plot_colours['dijet_colour'],
                                                   line_width=self.line_width,
                                                   line_style=self.line_style_detector,
@@ -288,7 +298,7 @@ class DijetZPJGenPtBinnedPlotter(object):
                                                   marker_style=cu.Marker.get('circle', filled=False),
                                                   marker_size=0.75))
                 dijet_entries.append(Contribution(dijet_unfolded_hist,
-                                                  label='Particle-level\n%s' % (mean_template.format(round(dijet_unfolded_mean, n_dp), round(dijet_unfolded_mean_err, n_dp))),
+                                                  label='Particle-level\n%s' % (_stat_label(dijet_unfolded_mean, dijet_unfolded_mean_err, n_dp)),
                                                   line_color=self.plot_colours['dijet_colour'],
                                                   line_width=self.line_width,
                                                   line_style=1,
@@ -298,7 +308,7 @@ class DijetZPJGenPtBinnedPlotter(object):
 
             if do_zpj:
                 zpj_entries.append(Contribution(zpj_detector_hist,
-                                            label='Detector-level (stat. uncert.)\n%s' % (mean_template.format(round(zpj_detector_mean, n_dp), round(zpj_detector_mean_err, n_dp))),
+                                            label='Detector-level (stat. only)\n%s' % (_stat_label(zpj_detector_mean, zpj_detector_mean_err, n_dp)),
                                             line_color=self.plot_colours['zpj_colour'],
                                             line_width=self.line_width,
                                             line_style=self.line_style_detector,
@@ -306,7 +316,7 @@ class DijetZPJGenPtBinnedPlotter(object):
                                             marker_style=cu.Marker.get('square', filled=False),
                                             marker_size=0.75))
                 zpj_entries.append(Contribution(zpj_unfolded_hist,
-                                            label='Particle-level\n%s' % (mean_template.format(round(zpj_unfolded_mean, n_dp), round(zpj_unfolded_mean_err, n_dp))),
+                                            label='Particle-level\n%s' % (_stat_label(zpj_unfolded_mean, zpj_unfolded_mean_err, n_dp)),
                                             line_color=self.plot_colours['zpj_colour'],
                                             line_width=self.line_width,
                                             line_style=1,
@@ -344,12 +354,12 @@ class DijetZPJGenPtBinnedPlotter(object):
             dummy_gr = ROOT.TGraphErrors(1, array('d', [1]), array('d', [1]), array('d', [1]), array('d', [1]))
             dummies = []  # to stop garbage collection
             label_height = 0.03
-            legend_height = 0.17
-            legend_x1 = 0.56
-            legend_x2 = 0.78
+            legend_height = 0.14
+            legend_x1 = 0.54
+            legend_x2 = 0.77
             label_left_offset = 0.01
-            label_text_size = 0.037
-            label_top = 0.85
+            label_text_size = 0.035
+            label_top = 0.86
             legend_text_size = 0.032
             inter_region_offset = 0.025
             if do_dijet:
@@ -500,7 +510,7 @@ if __name__ == "__main__":
             output_dir = "%s/detector_unfolded_dijet_zpj%s/%s" % (args.source, groom_str, angle.var)
             binned_plotter = DijetZPJGenPtBinnedPlotter(jet_algo=jet_algo,
                                                         angle=angle,
-                                                        bins=dijet_region['unfolder'].pt_bin_edges_gen,
+                                                        bins=dijet_region['unfolder'].pt_bin_edges_gen[:-3], # stop early as Z+J missing some
                                                         dijet_region=dijet_region,
                                                         zpj_region=zpj_region,
                                                         output_dir=output_dir,
