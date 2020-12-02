@@ -3631,9 +3631,9 @@ def do_binned_plots_per_region_angle(setup, do_binned_gen_pt, do_binned_gen_lamb
                     syst_gen_lambda_binned_plotter.plot_unfolded_with_unreg_unnormalised()
                     syst_gen_lambda_binned_plotter.plot_unfolded_with_template_unnormalised()
 
-        if has_pdf_systs:
-            print("...doing pdf systs")
-            gen_lambda_binned_plotter.plot_unfolded_with_pdf_systs_unnormalised()
+        # if has_pdf_systs:
+        #     print("...doing pdf systs")
+        #     gen_lambda_binned_plotter.plot_unfolded_with_pdf_systs_unnormalised()
         #     # Do a set of individual plots for these PDF variations
         #     for syst_dict in region['pdf_systematics']:
         #         print(".......", syst_dict['label'])
@@ -4611,19 +4611,20 @@ def do_all_big_absolute_1d_plots_per_region_angle(setup):
                                       title=title)
 
     # with alt MC
-    unfolder_plotter.draw_detector_1d(do_reco_data_bg_sub=setup.has_data,
-                                      do_reco_bg=False,
-                                      do_reco_mc_bg_sub=True,
-                                      output_dir=setup.output_dir,
-                                      other_contributions=[
-                                              Contribution(region['alt_hist_mc_reco_bg_subtracted'],
-                                                           label="Alt MC bg-subtracted [detector-level]",
-                                                           line_color=ROOT.kGreen+2,
-                                                           marker_color=ROOT.kGreen+2,
-                                                           subplot=None)
-                                          ],
-                                      append='bg_fakes_subtracted_altMC_%s' % setup.append,
-                                      title=title)
+    if alt_hist_truth is not None:
+        unfolder_plotter.draw_detector_1d(do_reco_data_bg_sub=setup.has_data,
+                                          do_reco_bg=False,
+                                          do_reco_mc_bg_sub=True,
+                                          output_dir=setup.output_dir,
+                                          other_contributions=[
+                                                  Contribution(region['alt_hist_mc_reco_bg_subtracted'],
+                                                               label="Alt MC bg-subtracted [detector-level]",
+                                                               line_color=ROOT.kGreen+2,
+                                                               marker_color=ROOT.kGreen+2,
+                                                               subplot=None)
+                                              ],
+                                          append='bg_fakes_subtracted_altMC_%s' % setup.append,
+                                          title=title)
 
 
     # reco using gen binning
