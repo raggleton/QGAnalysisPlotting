@@ -4952,7 +4952,7 @@ class PlotWebpageMaker(object):
         self.pdf_dir = os.path.join(webpage_dir, 'images')
         self.plot_setups = []  # store info each time we call make_plots()
 
-    def make_plots(self, setup):
+    def make_plots(self, setup, do_plotting=True):
         """Create all thumbnails & images for webpage"""
         thumb_setup = Setup(jet_algo=setup.jet_algo,
                             region=setup.region,
@@ -4961,22 +4961,24 @@ class PlotWebpageMaker(object):
                             has_data=setup.has_data)
         slim_region(thumb_setup.region)
         thumb_setup.output_fmt = "gif"
-        do_binned_plots_per_region_angle(setup=thumb_setup,
-                                         do_binned_gen_pt=True,
-                                         do_binned_gen_lambda=False,
-                                         do_binned_reco_pt=True,
-                                         only_paper_plots=True)
+        if do_plotting:
+            do_binned_plots_per_region_angle(setup=thumb_setup,
+                                             do_binned_gen_pt=True,
+                                             do_binned_gen_lambda=False,
+                                             do_binned_reco_pt=True,
+                                             only_paper_plots=True)
 
         pdf_setup = Setup(jet_algo=setup.jet_algo,
                           region=setup.region,
                           angle=setup.angle,
                           output_dir=self.pdf_dir,
                           has_data=setup.has_data)
-        do_binned_plots_per_region_angle(setup=pdf_setup,
-                                         do_binned_gen_pt=True,
-                                         do_binned_gen_lambda=False,
-                                         do_binned_reco_pt=True,
-                                         only_paper_plots=True)
+        if do_plotting:
+            do_binned_plots_per_region_angle(setup=pdf_setup,
+                                             do_binned_gen_pt=True,
+                                             do_binned_gen_lambda=False,
+                                             do_binned_reco_pt=True,
+                                             only_paper_plots=True)
 
         self.plot_setups.append([thumb_setup, pdf_setup])
 
@@ -5134,9 +5136,13 @@ def main():
     parser.add_argument("--onlyPaperPlots",
                         action='store_true',
                         help='Only do paper plots (applies to --doBinnedPlotsGenPt, etc)')
+    
     parser.add_argument("--webpage",
                         action='store_true',
                         help='Do webpage of unfolded results & systematics')
+    parser.add_argument("--webpagePlots",
+                        action='store_true',
+                        help='Do plots for webpage')
 
     region_group = parser.add_argument_group('Region selection')
     region_group.add_argument("--doAllRegions",
@@ -5258,10 +5264,14 @@ def main():
                                                                     do_binned_gen_lambda=args.doBinnedPlotsGenLambda,
                                                                     do_binned_reco_pt=args.doBinnedPlotsRecoPt,
                                                                     only_paper_plots=args.onlyPaperPlots)
-            prof_done_binned_plots()
+            # prof_done_binned_plots()
 
-            if args.webpage:
-                webpage_maker.make_plots(setup)
+            # print("Setup obj:")
+            # cu.print_dict_item_sizes(setup.__dict__)
+            # print("region PDF obj:")
+            # cu.print_dict_item_sizes(setup.region['pdf_systematics'][0])
+            # print("region scale obj:")
+            # cu.print_dict_item_sizes(setup.region['scale_systematics'][0])
 
             if args.doBigNormed1DPlots:
                 print("...........................................................")
@@ -5271,7 +5281,7 @@ def main():
                 # (unlike the standard plot from MyUnfolderPlotter, which is absolute)
                 do_all_big_normalised_1d_plots_per_region_angle(setup, hist_bin_chopper)
 
-            prof_done_big_normed_plots()
+            # prof_done_big_normed_plots()
 
             if args.doBigAbs1DPlots:
                 print("...........................................................")
@@ -5280,10 +5290,16 @@ def main():
                 # Do standard 1D absolute plots
                 do_all_big_absolute_1d_plots_per_region_angle(setup)
 
-            prof_done_big_abs_plots()
+            # prof_done_big_abs_plots()
 
             if args.doBottomLineTest:
                 all_chi2_stats.append(get_bottom_line_stats(setup))
+
+
+            if args.webpage:
+                webpage_maker.make_plots(setup, do_plotting=False)
+            if args.webpagePlots:
+                webpage_maker.make_plots(setup, do_plotting=True)
 
             prof_done_chi2()
 
@@ -5293,9 +5309,13 @@ def main():
                 del hist_bin_chopper
                 del unpickled_region
                 del setup
+            
+            prof_done_cleanup()
 
-    if args.webpage:
+    if args.webpage or args.webpagePlots:
+        prof_start_webpage()
         webpage_maker.make_webpage(source_dir=args.source)
+        prof_done_webpage()
 
     if len(all_chi2_stats) > 0:
         df_stats = pd.DataFrame(all_chi2_stats)
@@ -5335,6 +5355,18 @@ def prof_done_big_abs_plots():
 
 @profile
 def prof_done_chi2():
+    pass
+
+@profile
+def prof_done_cleanup():
+    pass
+
+@profile
+def prof_start_webpage():
+    pass
+
+@profile
+def prof_done_webpage():
     pass
 
 
