@@ -13,6 +13,7 @@ import sys
 from array import array
 import numpy as np
 import math
+import argparse
 
 # My stuff
 from comparator import Contribution, Plot, grab_obj
@@ -697,7 +698,7 @@ def do_dijet_pt_plots(workdir,
         y = array('d', [1 for i in range(1, n+1)])
         exl = array('d', [bin_width[i-1] for i in range(1, n+1)])
         exh = array('d', [bin_width[i-1] for i in range(1, n+1)])
-        
+
         # exp_hist_up_ratio = exp_hist_up.Clone()
         # exp_hist_down_ratio = exp_hist_down.Clone()
         # exp_hist_up_ratio.Add(mg_hist, -1) # error doesnt matter
@@ -837,7 +838,7 @@ def do_dijet_pt_plots(workdir,
         do_jet_pt_plot(entries,
                        output_filename=os.path.join(workdir, "data_mc_jet_pt/Dijet_%s/jet_pt.%s" % (region_shortname, OUTPUT_FMT)),
                        rebin=1,
-                       xlim=(30, 4000),
+                       xlim=(30, qgc.PT_UNFOLD_DICT['signal_gen'][-1]),
                        ylim=(5E-3, 1E14),
                        title=title,
                        subplot_limits=(0, 2.5),
@@ -1221,7 +1222,7 @@ def do_zpj_pt_plots(workdir,
     y = array('d', [1 for i in range(1, n+1)])
     exl = array('d', [bin_width[i-1] for i in range(1, n+1)])
     exh = array('d', [bin_width[i-1] for i in range(1, n+1)])
-    
+
     # exp_hist_up_ratio = exp_hist_up.Clone()
     # exp_hist_down_ratio = exp_hist_down.Clone()
     # exp_hist_up_ratio.Add(mg_hist, -1)
@@ -1362,8 +1363,8 @@ def do_zpj_pt_plots(workdir,
     do_jet_pt_plot(entries,
                    output_filename=os.path.join(workdir, "data_mc_jet_pt/ZPlusJets/jet_pt.%s" % (OUTPUT_FMT)),
                    rebin=1,
-                   xlim=(30, 800),
-                   ylim=(5E-2, 1E7),
+                   xlim=(30, qgc.PT_UNFOLD_DICT['signal_zpj_gen'][-1]),
+                   ylim=(1E-2, 1E7),
                    title=title,
                    data_first=True,
                    subplot_limits=(0, 2.5),
@@ -1381,7 +1382,11 @@ def do_zpj_pt_plots(workdir,
 
 
 if __name__ == "__main__":
-    parser = qgc.get_parser()
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('workdirs',
+                        nargs='+',
+                        help='Workdir(s) with ROOT files to process. '
+                             'Several dirs can be specified here, separated by a space.')
     args = parser.parse_args()
 
     for workdir in args.workdirs:
