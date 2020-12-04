@@ -1112,18 +1112,19 @@ def main():
                 # first construct all new systematic variations dicts
                 original_jk_dict = region['jackknife_input_variations'][0]
                 original_jk_dict['label'] = '_jackknife_template'  # initial _ to ignore it later on
-                tfile = original_jk_dict['tfile']
-                if not isinstance(tfile, ROOT.TFile):
-                    tfile = cu.open_root_file(tfile)
+                # tfile = original_jk_dict['tfile']
+                # if not isinstance(tfile, ROOT.TFile):
+                #     tfile = cu.open_root_file(tfile)
 
                 region['jackknife_input_variations']  = []
                 num_vars = len(original_jk_dict['variations'])
+                input_tfile = region['mc_tfile'] if MC_INPUT else region['data_tfile']
                 for jk_ind in original_jk_dict['variations']:
                     region['jackknife_input_variations'].append(
                         {
                             "label": "Jackknife_input_%d" % (jk_ind),
-                            "input_reco": cu.get_from_tfile(tfile, "%s/hist_%s_reco_all_jackknife_%d" % (region['dirname'], angle_shortname, jk_ind)),
-                            "input_gen": cu.get_from_tfile(tfile, "%s/hist_%s_truth_all_jackknife_%d" % (region['dirname'], angle_shortname, jk_ind)),
+                            "input_reco": cu.get_from_tfile(input_tfile, "%s/hist_%s_reco_all_jackknife_%d" % (region['dirname'], angle_shortname, jk_ind)),
+                            "input_gen": cu.get_from_tfile(input_tfile, "%s/hist_%s_truth_all_jackknife_%d" % (region['dirname'], angle_shortname, jk_ind)) if MC_INPUT else hist_mc_gen,
                             "colour": cu.get_colour_seq(jk_ind, num_vars),
                         })
 
