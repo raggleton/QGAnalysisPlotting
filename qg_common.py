@@ -18,7 +18,7 @@ QCD_CEN_COLOUR = 867
 QCD_FWD_COLOUR = 868
 
 # kBlue = 600
-MGPY_QCD_COLOUR = 601 
+MGPY_QCD_COLOUR = 601
 # kViolet = 880
 HERWIGPP_QCD_COLOUR = 880-2
 
@@ -470,9 +470,6 @@ def get_parser():
     parser.add_argument('workdirs',
                         nargs='+',
                         help='Workdir(s) with ROOT files to process. '
-                        'Each directory must have ROOT files '
-                        '"uhh2.AnalysisModuleRunner.MC.MC_DYJetsToLL_.root" '
-                        'and "uhh2.AnalysisModuleRunner.MC.MC_QCD_.root" in it. '
                         'Several dirs can be specified here, separated by a space.')
     parser.add_argument("-o", "--output",
                         help="Directory to put output plot dirs into",
