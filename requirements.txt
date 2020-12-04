@@ -6,3 +6,4 @@ jax
 uproot
 rootpy
 uncertainties
+jinja2
