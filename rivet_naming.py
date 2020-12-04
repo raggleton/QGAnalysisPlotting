@@ -101,7 +101,7 @@ PT_BINS_EDGES_DIJET = [
 ]
 
 PT_BINS_EDGES_ZPJ = [
-    50, 65, 88, 120, 150, 186, 254, 326, 408, 481, 614, 800, 2000
+    50, 65, 88, 120, 150, 186, 254, 326, 408, 1500
 ]
 
 # convert to pairs of (lower, upper) bins edges
