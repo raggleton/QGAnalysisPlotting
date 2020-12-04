@@ -5256,14 +5256,14 @@ def main():
 
             hist_bin_chopper = this_region['unfolder'].hist_bin_chopper
 
-            if any([args.doBinnedPlotsGenPt, args.doBinnedPlotsGenLambda, args.doBinnedPlotsRecoPt]):
+            if any([args.doBinnedPlotsGenPt, args.doBinnedPlotsGenLambda, args.doBinnedPlotsRecoPt, args.onlyPaperPlots]):
                 print("...........................................................")
                 print(" Doing lots of plots per pt/lambda bin...")
                 print("...........................................................")
                 hist_bin_chopper = do_binned_plots_per_region_angle(setup,
-                                                                    do_binned_gen_pt=args.doBinnedPlotsGenPt,
-                                                                    do_binned_gen_lambda=args.doBinnedPlotsGenLambda,
-                                                                    do_binned_reco_pt=args.doBinnedPlotsRecoPt,
+                                                                    do_binned_gen_pt=args.doBinnedPlotsGenPt or args.onlyPaperPlots,
+                                                                    do_binned_gen_lambda=args.doBinnedPlotsGenLambda or args.onlyPaperPlots,
+                                                                    do_binned_reco_pt=args.doBinnedPlotsRecoPt or args.onlyPaperPlots,
                                                                     only_paper_plots=args.onlyPaperPlots)
             # prof_done_binned_plots()
 
