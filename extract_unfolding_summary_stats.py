@@ -60,7 +60,7 @@ def check_hist_for_negatives(hist):
 
 def unpack_slim_unfolding_root_file_uproot(input_tfile, region_name, angle_name, pt_bins):
     tdir = "%s/%s" % (region_name, angle_name)
-    indices = range(len(pt_bins)-1)
+    indices = range(len(pt_bins)-1 if isinstance(pt_bins[0], float) else len(pt_bins))  # adjust if pairs of bins, or individual bin edges
 
     unfolding_stat_err_hists = [
         input_tfile["%s/unfolded_stat_err_norm_divBinWidth_%d" % (tdir, ibin)]
