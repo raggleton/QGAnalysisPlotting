@@ -174,6 +174,14 @@ def get_unfolding_argparser(description='', parser=None):
                                  'made by a previous running of unfolding.py ' \
                                  'that covers the different signal regions & variables')
 
+    syst_group.add_argument("--doExperimentalSystsAsAltResponse",
+                            type=lambda x: bool(distutils.util.strtobool(x)),
+                            default=False,
+                            help=('Do experimental systs explicitly as alternate unfoldings, '
+                                  'instead of using TUnfold method. Use this for dodgy unfoldings, '
+                                  'e.g. -ve results.'
+                                  + standard_bool_description))
+
     # SCALE SYST OPTIONS
     # --------------------------------------------------------------------------
     syst_group.add_argument("--doScaleSysts",
@@ -273,6 +281,9 @@ def sanitise_args(args):
         args.doExperimentalSystsOnlyHerwig = False
         print("Warning: will use experimental systs from --doExperimentalSystsFromFile option only, "
               "ignoring --doExperimentalSysts and --doExperimentalSystsOnlyHerwig")
+
+    if (args.doExperimentalSystsAsAltResponse and not any([args.doExperimentalSysts, args.doExperimentalSystsOnlyHerwig])):
+        print("Warning: --doExperimentalSystsAsAltResponse requires one of --doExperimentalSysts/--doExperimentalSystsOnlyHerwig")
 
     if ((args.doModelSystsOnlyScale or args.doModelSystsOnlyHerwig or args.doModelSysts or args.doModelSystsNotScale)
         and args.doModelSystsFromFile):
