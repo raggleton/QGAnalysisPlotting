@@ -161,7 +161,7 @@ def get_yoda_stats_dict(input_filename,
                         print(centers_b)
                         print(widths_b)
                         delta = metrics.calc_delta_jax(areas_a, areas_b)
-                        err = metrics.calc_delta_correlated_error_jax(areas_a, ematrix, areas_b, errors_b)
+                        delta_err = metrics.calc_delta_correlated_error_jax(areas_a, ematrix, areas_b, errors_b)
 
                     result_dict = {
                         'jet_algo': algo_name,
@@ -176,8 +176,8 @@ def get_yoda_stats_dict(input_filename,
                         'rms_%s' % key_label: rms,
                         'rms_err_%s' % key_label: rms_err,
 
-                        'delta_%s' % key_label: delta,
-                        'delta_err_%s' % key_label: delta_err,
+                        'delta_%s' % key_label: float(delta),
+                        'delta_err_%s' % key_label: float(delta_err),
                     }
                     results_dicts.append(result_dict)
     return results_dicts
