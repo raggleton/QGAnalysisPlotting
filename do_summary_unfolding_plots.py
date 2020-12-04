@@ -1274,12 +1274,12 @@ class SummaryPlotter(object):
         end_x = 0.985  # to match legend
         # Figure out why physical region(s) are in plot, to get correct lumi
         do_zpj, do_dijet = False, False
-        for sg in selection_groups:
+        for sg in selections:
             if any(["ZPlusJets" in x[0] for x in sg['selections']]):
                 do_zpj = True
             if any(["Dijet" in x[0] for x in sg['selections']]):
                 do_dijet = True
-                lumi = cu.get_lumi_str(do_dijet=do_dijet, do_zpj=do_zpj)
+        lumi = cu.get_lumi_str(do_dijet=do_dijet, do_zpj=do_zpj)
         cms_latex.DrawLatexNDC(end_x, latex_height, " %s fb^{-1} (13 TeV)" % lumi)
         gc_stash.append(cms_latex)
 
@@ -2052,7 +2052,7 @@ if __name__ == "__main__":
     print(df.head())
     print("# entries:", len(df.index))
 
-    yoda_labels = None
+    yoda_labels = []
     if args.h5inputRivet:
         print("Reading in RIVET data from existing HDF5 file...")
         with pd.HDFStore(args.h5inputRivet) as store:
@@ -2133,7 +2133,7 @@ if __name__ == "__main__":
     ak4_str = "AK4"
     ak8_str = "AK8"
 
-    if not args.h5inputRivet and not args.yodaInputDijet:
+    if not args.h5inputRivet and not args.onlyYodaData:
         plotter.filename_append += "_onlyDataNomMC"
 
     filename_append = plotter.filename_append
