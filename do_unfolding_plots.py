@@ -4950,16 +4950,17 @@ class PlotWebpageMaker(object):
         self.webpage_dir = webpage_dir
         self.thumb_dir = os.path.join(webpage_dir, 'thumbnails')
         self.pdf_dir = os.path.join(webpage_dir, 'images')
-        self.plot_setups = []  # store info each time we call make_plots()
+        self.plot_setups = []  # store info each time we call make_webpage_plots()
 
-    def make_plots(self, setup, do_plotting=True):
+    def make_webpage_plots(self, setup, do_plotting=True):
         """Create all thumbnails & images for webpage"""
         thumb_setup = Setup(jet_algo=setup.jet_algo,
                             region=setup.region,
                             angle=setup.angle,
                             output_dir=self.thumb_dir,
                             has_data=setup.has_data)
-        slim_region(thumb_setup.region)
+        if not do_plotting:
+            slim_region(thumb_setup.region)
         thumb_setup.output_fmt = "gif"
         if do_plotting:
             do_binned_plots_per_region_angle(setup=thumb_setup,
@@ -5297,9 +5298,9 @@ def main():
 
 
             if args.webpage:
-                webpage_maker.make_plots(setup, do_plotting=False)
+                webpage_maker.make_webpage_plots(setup, do_plotting=False)
             if args.webpagePlots:
-                webpage_maker.make_plots(setup, do_plotting=True)
+                webpage_maker.make_webpage_plots(setup, do_plotting=True)
 
             prof_done_chi2()
 
@@ -5312,7 +5313,7 @@ def main():
             
             prof_done_cleanup()
 
-    if args.webpage or args.webpagePlots:
+    if args.webpage:
         prof_start_webpage()
         webpage_maker.make_webpage(source_dir=args.source)
         prof_done_webpage()
