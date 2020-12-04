@@ -2045,9 +2045,8 @@ def main():
 
                     if isinstance(scale_dict['tfile'], str):
                         scale_dict['tfile'] = cu.open_root_file(scale_dict['tfile'])
-                    scale_dict['response_map'] = cu.get_from_tfile(scale_dict['tfile'], "%s/tu_%s_GenReco_all" % (region['dirname'], angle_shortname))
 
-                    scale_unfolder = MyUnfolder(response_map=scale_dict['response_map'],
+                    scale_unfolder = MyUnfolder(response_map=cu.get_from_tfile(scale_dict['tfile'], "%s/tu_%s_GenReco_all" % (region['dirname'], angle_shortname)),
                                                 variable_bin_edges_reco=unfolder.variable_bin_edges_reco,
                                                 variable_bin_edges_gen=unfolder.variable_bin_edges_gen,
                                                 variable_name=unfolder.variable_name,
