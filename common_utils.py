@@ -879,8 +879,8 @@ def get_lumi_str(do_dijet=True, do_zpj=True):
     """Get correct luminosity depending on signal region(s), since dijet prescaled"""
     lumi = "35.9"
     if do_zpj and do_dijet:
-        lumi = " #leq35.9"
+        lumi = " #leq#kern[-0.7dx]{ }35.9"
     elif not do_zpj and do_dijet:
-        lumi = " <35.9"
+        lumi = " <#kern[-0.5dx]{ }35.9"
     return lumi
 
