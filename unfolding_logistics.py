@@ -342,6 +342,9 @@ def get_unfolding_output_dir(args):
     elif args.doExperimentalSystsFromFile:
         append += "_experimentalSystFromFile"
 
+    if any([args.doExperimentalSysts, args.doExperimentalSystsOnlyHerwig]) and args.doExperimentalSystsAsAltResponse:
+        append += "AsAltResponse"
+
     if args.doScaleSysts:
         append += "_scaleSyst"
 
