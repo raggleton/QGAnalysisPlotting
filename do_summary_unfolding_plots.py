@@ -154,6 +154,8 @@ class SummaryPlotter(object):
         self.angles = angles
         self.pt_bins_dijet = pt_bins_dijet
         self.pt_bins_zpj = pt_bins_zpj
+        self.min_pt_bin_ind_ak4 = 0
+        self.min_pt_bin_ind_ak8 = 2  # lose first 2 bins of AK8 as MC not proper
         self.df = df
         self.output_fmt = 'pdf'
         self.output_dir = output_dir
@@ -173,6 +175,12 @@ class SummaryPlotter(object):
             "key": key, # for accesing the variable in dataframe
             "style_dict": style_dict
         })
+
+    def min_pt_bin_ind(self, jet_algo):
+        if "ak4" in jet_algo['name'].lower():
+            return self.min_pt_bin_ind_ak4
+        else:
+            return self.min_pt_bin_ind_ak8
 
     @staticmethod
     def data_to_hist(data, data_err, bins):
@@ -197,7 +205,8 @@ class SummaryPlotter(object):
             this_str += "zpj_"
         return this_str
 
-    def plot_dijet_zpj_metric_vs_pt_one_angle_one_jet(self, metric, angle, jet_algo, do_groomed, output_dir, do_zpj=True, do_dijet_cen=True, do_dijet_fwd=True):
+
+    def plot_dijet_zpj_metric_vs_pt_one_angle_one_jet(self, metric, angle, jet_algo, do_groomed, output_dir, do_zpj=True, do_dijet_cen=True, do_dijet_fwd=True, min_pt_bin_ind=0):
         """Do plot of lambda metric vs pt, for any combo of the dijet cen/fwd and zpj regions, for a given angle/jet algo/grooming"""
         if metric not in ["mean", "rms", "delta"]:
             raise ValueError("metric must be one of 'mean', 'rms', 'delta'")
@@ -205,7 +214,7 @@ class SummaryPlotter(object):
         only_one_region = sum([do_dijet_cen, do_dijet_fwd, do_zpj]) == 1
 
         df = self.df
-        mask = ((df['angle'] == angle.var) & (df['jet_algo'] == jet_algo['name']) & (df['isgroomed'] == do_groomed))
+        mask = ((df['angle'] == angle.var) & (df['jet_algo'] == jet_algo['name']) & (df['isgroomed'] == do_groomed) & (df['pt_bin'] >= min_pt_bin_ind))
         if not mask.any():
             return
 
@@ -220,15 +229,15 @@ class SummaryPlotter(object):
             dijet_central_data = df[mask & (df['region'] == region_name)]
 
             if not self.only_yoda_data:
-                dijet_central_hist_truth = self.data_to_hist(dijet_central_data['%s_truth' % metric], dijet_central_data['%s_err_truth' % metric], self.pt_bins_dijet)
-                dijet_central_hist_alt_truth = self.data_to_hist(dijet_central_data['%s_alt_truth' % metric], dijet_central_data['%s_err_alt_truth' % metric], self.pt_bins_dijet)
+                dijet_central_hist_truth = self.data_to_hist(dijet_central_data['%s_truth' % metric], dijet_central_data['%s_err_truth' % metric], self.pt_bins_dijet[min_pt_bin_ind:])
+                dijet_central_hist_alt_truth = self.data_to_hist(dijet_central_data['%s_alt_truth' % metric], dijet_central_data['%s_err_alt_truth' % metric], self.pt_bins_dijet[min_pt_bin_ind:])
 
             for sample in self.other_samples:
-                hist = self.data_to_hist(dijet_central_data['%s_%s' % (metric, sample['key'])], dijet_central_data['%s_err_%s' % (metric, sample['key'])], self.pt_bins_dijet)
+                hist = self.data_to_hist(dijet_central_data['%s_%s' % (metric, sample['key'])], dijet_central_data['%s_err_%s' % (metric, sample['key'])], self.pt_bins_dijet[min_pt_bin_ind:])
                 other_samples_dijet_central_hists.append(hist)
 
             if metric != 'delta':
-                dijet_central_hist = self.data_to_hist(dijet_central_data[metric], dijet_central_data['%s_err' % metric], self.pt_bins_dijet)
+                dijet_central_hist = self.data_to_hist(dijet_central_data[metric], dijet_central_data['%s_err' % metric], self.pt_bins_dijet[min_pt_bin_ind:])
                 # Create copy with 0 error bars, for the ratio subplot
                 # The data will have its own error region
                 dijet_central_hist_no_errors = dijet_central_hist.Clone()
@@ -254,15 +263,15 @@ class SummaryPlotter(object):
             dijet_forward_data = df[mask & (df['region'] == region_name)]
 
             if not self.only_yoda_data:
-                dijet_forward_hist_truth = self.data_to_hist(dijet_forward_data['%s_truth' % metric], dijet_forward_data['%s_err_truth' % metric], self.pt_bins_dijet)
-                dijet_forward_hist_alt_truth = self.data_to_hist(dijet_forward_data['%s_alt_truth' % metric], dijet_forward_data['%s_err_alt_truth' % metric], self.pt_bins_dijet)
+                dijet_forward_hist_truth = self.data_to_hist(dijet_forward_data['%s_truth' % metric], dijet_forward_data['%s_err_truth' % metric], self.pt_bins_dijet[min_pt_bin_ind:])
+                dijet_forward_hist_alt_truth = self.data_to_hist(dijet_forward_data['%s_alt_truth' % metric], dijet_forward_data['%s_err_alt_truth' % metric], self.pt_bins_dijet[min_pt_bin_ind:])
 
             for sample in self.other_samples:
-                hist = self.data_to_hist(dijet_forward_data['%s_%s' % (metric, sample['key'])], dijet_forward_data['%s_err_%s' % (metric, sample['key'])], self.pt_bins_dijet)
+                hist = self.data_to_hist(dijet_forward_data['%s_%s' % (metric, sample['key'])], dijet_forward_data['%s_err_%s' % (metric, sample['key'])], self.pt_bins_dijet[min_pt_bin_ind:])
                 other_samples_dijet_forward_hists.append(hist)
 
             if metric != 'delta':
-                dijet_forward_hist = self.data_to_hist(dijet_forward_data[metric], dijet_forward_data['%s_err' % metric], self.pt_bins_dijet)
+                dijet_forward_hist = self.data_to_hist(dijet_forward_data[metric], dijet_forward_data['%s_err' % metric], self.pt_bins_dijet[min_pt_bin_ind:])
                 dijet_forward_hist_no_errors = dijet_forward_hist.Clone()
                 cu.remove_th1_errors(dijet_forward_hist.Clone())
 
@@ -283,19 +292,19 @@ class SummaryPlotter(object):
                 region_name += "_groomed"
             # drop last pt bin as massive error
             pt_bins = self.pt_bins_zpj[:-2]
-            zpj_data = df[mask & (df['region'] == region_name) & (df['pt_bin'] < len(pt_bins)-1)]
+            zpj_data = df[mask & (df['region'] == region_name) & (df['pt_bin'] < len(pt_bins)-1) & (df['pt_bin'] >= min_pt_bin_ind)]
             # the -1 is because the last entry in pt_bins is the upper edge of the last bin
             if not self.only_yoda_data:
-                zpj_hist_truth = self.data_to_hist(zpj_data['%s_truth' % metric], zpj_data['%s_err_truth' % metric], pt_bins)
-                zpj_hist_alt_truth = self.data_to_hist(zpj_data['%s_alt_truth' % metric], zpj_data['%s_err_alt_truth' % metric], pt_bins)
+                zpj_hist_truth = self.data_to_hist(zpj_data['%s_truth' % metric], zpj_data['%s_err_truth' % metric], pt_bins[min_pt_bin_ind:])
+                zpj_hist_alt_truth = self.data_to_hist(zpj_data['%s_alt_truth' % metric], zpj_data['%s_err_alt_truth' % metric], pt_bins[min_pt_bin_ind:])
 
             for sample in self.other_samples:
                 key = sample['key']
-                hist = self.data_to_hist(zpj_data['%s_%s' % (metric, key)], zpj_data['%s_err_%s' % (metric, key)], pt_bins)
+                hist = self.data_to_hist(zpj_data['%s_%s' % (metric, key)], zpj_data['%s_err_%s' % (metric, key)], pt_bins[min_pt_bin_ind:])
                 other_samples_zpj_hists.append(hist)
 
             if metric != 'delta':
-                zpj_hist = self.data_to_hist(zpj_data[metric], zpj_data['%s_err' % metric], pt_bins)
+                zpj_hist = self.data_to_hist(zpj_data[metric], zpj_data['%s_err' % metric], pt_bins[min_pt_bin_ind:])
                 # 0 error bar hists & ratio = 1 hists for subplot
                 zpj_hist_no_errors = zpj_hist.Clone()
                 cu.remove_th1_errors(zpj_hist_no_errors)
@@ -699,7 +708,12 @@ class SummaryPlotter(object):
         print('plot_dijet_zpj_means_vs_pt_all...')
         for jet_algo, angle, groomed in product(self.jet_algos, self.angles, [False, True]):
             print("  ...doing", jet_algo['label'], angle.name, 'groomed' if groomed else 'ungroomed')
-            self.plot_dijet_zpj_metric_vs_pt_one_angle_one_jet('mean', angle, jet_algo, do_groomed=groomed, output_dir='%s/plot_dijet_zpj_means_vs_pt_all' % self.output_dir)
+            self.plot_dijet_zpj_metric_vs_pt_one_angle_one_jet('mean',
+                                                               angle,
+                                                               jet_algo,
+                                                               do_groomed=groomed,
+                                                               output_dir='%s/plot_dijet_zpj_means_vs_pt_all' % self.output_dir,
+                                                               min_pt_bin_ind=self.min_pt_bin_ind(jet_algo))
 
     def plot_dijet_means_vs_pt_all(self):
         """Plot mean vs pt for dijet (cen+fwd, cen, fwd) on one plot,
@@ -707,9 +721,23 @@ class SummaryPlotter(object):
         print('plot_dijet_means_vs_pt_all...')
         for jet_algo, angle, groomed in product(self.jet_algos, self.angles, [False, True]):
             print("  ...doing", jet_algo['label'], angle.name, 'groomed' if groomed else 'ungroomed')
-            # self.plot_dijet_zpj_metric_vs_pt_one_angle_one_jet('mean', angle, jet_algo, do_groomed=groomed, output_dir='%s/plot_dijet_means_vs_pt_all' % self.output_dir, do_zpj=False)
-            self.plot_dijet_zpj_metric_vs_pt_one_angle_one_jet('mean', angle, jet_algo, do_groomed=groomed, output_dir='%s/plot_dijet_cen_means_vs_pt_all' % self.output_dir, do_zpj=False, do_dijet_fwd=False)
-            self.plot_dijet_zpj_metric_vs_pt_one_angle_one_jet('mean', angle, jet_algo, do_groomed=groomed, output_dir='%s/plot_dijet_fwd_means_vs_pt_all' % self.output_dir, do_zpj=False, do_dijet_cen=False)
+            # self.plot_dijet_zpj_metric_vs_pt_one_angle_one_jet('mean', angle, jet_algo, do_groomed=groomed, output_dir='%s/plot_dijet_means_vs_pt_all' % self.output_dir, do_zpj=False, min_pt_bin_ind=self.min_pt_bin_ind(jet_algo))
+            self.plot_dijet_zpj_metric_vs_pt_one_angle_one_jet('mean',
+                                                               angle,
+                                                               jet_algo,
+                                                               do_groomed=groomed,
+                                                               output_dir='%s/plot_dijet_cen_means_vs_pt_all' % self.output_dir,
+                                                               do_zpj=False,
+                                                               do_dijet_fwd=False,
+                                                               min_pt_bin_ind=self.min_pt_bin_ind(jet_algo))
+            self.plot_dijet_zpj_metric_vs_pt_one_angle_one_jet('mean',
+                                                               angle,
+                                                               jet_algo,
+                                                               do_groomed=groomed,
+                                                               output_dir='%s/plot_dijet_fwd_means_vs_pt_all' % self.output_dir,
+                                                               do_zpj=False,
+                                                               do_dijet_cen=False,
+                                                               min_pt_bin_ind=self.min_pt_bin_ind(jet_algo))
 
     def plot_zpj_means_vs_pt_all(self):
         """Plot mean vs pt for zpj on one plot,
@@ -717,7 +745,14 @@ class SummaryPlotter(object):
         print('plot_zpj_means_vs_pt_all...')
         for jet_algo, angle, groomed in product(self.jet_algos, self.angles, [False, True]):
             print("  ...doing", jet_algo['label'], angle.name, 'groomed' if groomed else 'ungroomed')
-            self.plot_dijet_zpj_metric_vs_pt_one_angle_one_jet('mean', angle, jet_algo, do_groomed=groomed, output_dir='%s/plot_zpj_means_vs_pt_all' % self.output_dir, do_dijet_cen=False, do_dijet_fwd=False)
+            self.plot_dijet_zpj_metric_vs_pt_one_angle_one_jet('mean',
+                                                               angle,
+                                                               jet_algo,
+                                                               do_groomed=groomed,
+                                                               output_dir='%s/plot_zpj_means_vs_pt_all' % self.output_dir,
+                                                               do_dijet_cen=False,
+                                                               do_dijet_fwd=False,
+                                                               min_pt_bin_ind=self.min_pt_bin_ind(jet_algo))
 
     def plot_dijet_zpj_rms_vs_pt_all(self):
         """Plot RMS vs pt for dijet (cen+fwd) & Z+jet on one plot,
@@ -725,7 +760,12 @@ class SummaryPlotter(object):
         print('plot_dijet_zpj_rms_vs_pt_all...')
         for jet_algo, angle, groomed in product(self.jet_algos, self.angles, [False, True]):
             print("  ...doing", jet_algo['label'], angle.name, 'groomed' if groomed else 'ungroomed')
-            self.plot_dijet_zpj_metric_vs_pt_one_angle_one_jet('rms', angle, jet_algo, do_groomed=groomed, output_dir='%s/plot_dijet_zpj_rms_vs_pt_all' % self.output_dir)
+            self.plot_dijet_zpj_metric_vs_pt_one_angle_one_jet('rms',
+                                                               angle,
+                                                               jet_algo,
+                                                               do_groomed=groomed,
+                                                               output_dir='%s/plot_dijet_zpj_rms_vs_pt_all' % self.output_dir,
+                                                               min_pt_bin_ind=self.min_pt_bin_ind(jet_algo))
 
     def plot_dijet_rms_vs_pt_all(self):
         """Plot RMS vs pt for dijet (cen+fwd, cen, fwd) on one plot,
@@ -733,9 +773,23 @@ class SummaryPlotter(object):
         print('plot_dijet_rms_vs_pt_all...')
         for jet_algo, angle, groomed in product(self.jet_algos, self.angles, [False, True]):
             print("  ...doing", jet_algo['label'], angle.name, 'groomed' if groomed else 'ungroomed')
-            # self.plot_dijet_zpj_metric_vs_pt_one_angle_one_jet('rms', angle, jet_algo, do_groomed=groomed, output_dir='%s/plot_dijet_rms_vs_pt_all' % self.output_dir, do_zpj=False)
-            self.plot_dijet_zpj_metric_vs_pt_one_angle_one_jet('rms', angle, jet_algo, do_groomed=groomed, output_dir='%s/plot_dijet_cen_rms_vs_pt_all' % self.output_dir, do_zpj=False, do_dijet_fwd=False)
-            self.plot_dijet_zpj_metric_vs_pt_one_angle_one_jet('rms', angle, jet_algo, do_groomed=groomed, output_dir='%s/plot_dijet_fwd_rms_vs_pt_all' % self.output_dir, do_zpj=False, do_dijet_cen=False)
+            # self.plot_dijet_zpj_metric_vs_pt_one_angle_one_jet('rms', angle, jet_algo, do_groomed=groomed, output_dir='%s/plot_dijet_rms_vs_pt_all' % self.output_dir, do_zpj=False, min_pt_bin_ind=self.min_pt_bin_ind(jet_algo))
+            self.plot_dijet_zpj_metric_vs_pt_one_angle_one_jet('rms',
+                                                               angle,
+                                                               jet_algo,
+                                                               do_groomed=groomed,
+                                                               output_dir='%s/plot_dijet_cen_rms_vs_pt_all' % self.output_dir,
+                                                               do_zpj=False,
+                                                               do_dijet_fwd=False,
+                                                               min_pt_bin_ind=self.min_pt_bin_ind(jet_algo))
+            self.plot_dijet_zpj_metric_vs_pt_one_angle_one_jet('rms',
+                                                               angle,
+                                                               jet_algo,
+                                                               do_groomed=groomed,
+                                                               output_dir='%s/plot_dijet_fwd_rms_vs_pt_all' % self.output_dir,
+                                                               do_zpj=False,
+                                                               do_dijet_cen=False,
+                                                               min_pt_bin_ind=self.min_pt_bin_ind(jet_algo))
 
     def plot_zpj_rms_vs_pt_all(self):
         """Plot RMS vs pt for zpj on one plot,
@@ -743,7 +797,14 @@ class SummaryPlotter(object):
         print('plot_zpj_rms_vs_pt_all...')
         for jet_algo, angle, groomed in product(self.jet_algos, self.angles, [False, True]):
             print("  ...doing", jet_algo['label'], angle.name, 'groomed' if groomed else 'ungroomed')
-            self.plot_dijet_zpj_metric_vs_pt_one_angle_one_jet('rms', angle, jet_algo, do_groomed=groomed, output_dir='%s/plot_zpj_rms_vs_pt_all' % self.output_dir, do_dijet_cen=False, do_dijet_fwd=False)
+            self.plot_dijet_zpj_metric_vs_pt_one_angle_one_jet('rms',
+                                                               angle,
+                                                               jet_algo,
+                                                               do_groomed=groomed,
+                                                               output_dir='%s/plot_zpj_rms_vs_pt_all' % self.output_dir,
+                                                               do_dijet_cen=False,
+                                                               do_dijet_fwd=False,
+                                                               min_pt_bin_ind=self.min_pt_bin_ind(jet_algo))
 
     def plot_dijet_zpj_delta_vs_pt_all(self):
         """Plot delta vs pt for dijet (cen+fwd) & Z+jet on one plot,
@@ -751,7 +812,12 @@ class SummaryPlotter(object):
         print('plot_dijet_zpj_delta_vs_pt_all...')
         for jet_algo, angle, groomed in product(self.jet_algos, self.angles, [False, True]):
             print("  ...doing", jet_algo['label'], angle.name, 'groomed' if groomed else 'ungroomed')
-            self.plot_dijet_zpj_metric_vs_pt_one_angle_one_jet('delta', angle, jet_algo, do_groomed=groomed, output_dir='%s/plot_dijet_zpj_delta_vs_pt_all' % self.output_dir)
+            self.plot_dijet_zpj_metric_vs_pt_one_angle_one_jet('delta',
+                                                               angle,
+                                                               jet_algo,
+                                                               do_groomed=groomed,
+                                                               output_dir='%s/plot_dijet_zpj_delta_vs_pt_all' % self.output_dir,
+                                                               min_pt_bin_ind=self.min_pt_bin_ind(jet_algo))
 
     def plot_dijet_delta_vs_pt_all(self):
         """Plot mean vs pt for dijet (cen+fwd, cen, fwd) on one plot,
@@ -759,9 +825,23 @@ class SummaryPlotter(object):
         print('plot_dijet_delta_vs_pt_all...')
         for jet_algo, angle, groomed in product(self.jet_algos, self.angles, [False, True]):
             print("  ...doing", jet_algo['label'], angle.name, 'groomed' if groomed else 'ungroomed')
-            # self.plot_dijet_zpj_metric_vs_pt_one_angle_one_jet('delta', angle, jet_algo, do_groomed=groomed, output_dir='%s/plot_dijet_delta_vs_pt_all' % self.output_dir, do_zpj=False)
-            self.plot_dijet_zpj_metric_vs_pt_one_angle_one_jet('delta', angle, jet_algo, do_groomed=groomed, output_dir='%s/plot_dijet_cen_delta_vs_pt_all' % self.output_dir, do_zpj=False, do_dijet_fwd=False)
-            self.plot_dijet_zpj_metric_vs_pt_one_angle_one_jet('delta', angle, jet_algo, do_groomed=groomed, output_dir='%s/plot_dijet_fwd_delta_vs_pt_all' % self.output_dir, do_zpj=False, do_dijet_cen=False)
+            # self.plot_dijet_zpj_metric_vs_pt_one_angle_one_jet('delta', angle, jet_algo, do_groomed=groomed, output_dir='%s/plot_dijet_delta_vs_pt_all' % self.output_dir, do_zpj=False, min_pt_bin_ind=self.min_pt_bin_ind(jet_algo))
+            self.plot_dijet_zpj_metric_vs_pt_one_angle_one_jet('delta',
+                                                               angle,
+                                                               jet_algo,
+                                                               do_groomed=groomed,
+                                                               output_dir='%s/plot_dijet_cen_delta_vs_pt_all' % self.output_dir,
+                                                               do_zpj=False,
+                                                               do_dijet_fwd=False,
+                                                               min_pt_bin_ind=self.min_pt_bin_ind(jet_algo))
+            self.plot_dijet_zpj_metric_vs_pt_one_angle_one_jet('delta',
+                                                               angle,
+                                                               jet_algo,
+                                                               do_groomed=groomed,
+                                                               output_dir='%s/plot_dijet_fwd_delta_vs_pt_all' % self.output_dir,
+                                                               do_zpj=False,
+                                                               do_dijet_cen=False,
+                                                               min_pt_bin_ind=self.min_pt_bin_ind(jet_algo))
 
     def plot_zpj_delta_vs_pt_all(self):
         """Plot mean vs pt for zpj on one plot,
@@ -769,7 +849,14 @@ class SummaryPlotter(object):
         print('plot_zpj_delta_vs_pt_all...')
         for jet_algo, angle, groomed in product(self.jet_algos, self.angles, [False, True]):
             print("  ...doing", jet_algo['label'], angle.name, 'groomed' if groomed else 'ungroomed')
-            self.plot_dijet_zpj_metric_vs_pt_one_angle_one_jet('delta', angle, jet_algo, do_groomed=groomed, output_dir='%s/plot_zpj_delta_vs_pt_all' % self.output_dir, do_dijet_cen=False, do_dijet_fwd=False)
+            self.plot_dijet_zpj_metric_vs_pt_one_angle_one_jet('delta',
+                                                               angle,
+                                                               jet_algo,
+                                                               do_groomed=groomed,
+                                                               output_dir='%s/plot_zpj_delta_vs_pt_all' % self.output_dir,
+                                                               do_dijet_cen=False,
+                                                               do_dijet_fwd=False,
+                                                               min_pt_bin_ind=self.min_pt_bin_ind(jet_algo))
 
     @staticmethod
     def _make_hist_from_values(value_error_pairs, bins=None, title="", name="", bin_names=None):
