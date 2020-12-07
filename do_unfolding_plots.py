@@ -38,6 +38,7 @@ import qg_general_plots as qgp
 from my_unfolder import MyUnfolder, HistBinChopper, unpickle_region
 from my_unfolder_plotter import MyUnfolderPlotter
 from unfolding_config import setup_regions_from_argparse
+import metric_calculators as metrics
 
 pd.set_option('display.max_columns', None)
 
@@ -176,6 +177,46 @@ def calc_chi2_stats(one_hist, other_hist, cov_matrix):
 def _make_thumbnail_canvas(plot):
     orig_w, orig_h = plot.default_canvas_size
     plot.default_canvas_size = (int(orig_w*0.5), int(orig_h*0.5))
+
+#TODO: centralise this - same code in print_detector_unfolded.py!
+def scale_ematrix_by_bin_widths(ematrix, widths):
+    this_widths = widths.reshape(len(widths), 1)
+    return ematrix * this_widths * this_widths.T
+
+
+def get_correlated_mean_err(hist, ematrix, is_density=True):
+    contents, _ = cu.th1_to_ndarray(hist)
+    contents = contents.reshape(-1)  # necessary for jax to avoid shape discrepancy
+    centers = cu.get_th1_bin_centers(hist)
+    cov_matrix, _ = cu.th2_to_ndarray(ematrix)
+    if is_density:
+        widths = cu.get_th1_bin_widths(hist)
+        bin_areas = contents*widths
+        # need to scale ematrix by bin areas
+        cov_matrix = scale_ematrix_by_bin_widths(cov_matrix, widths)
+    else:
+        bin_areas = contents
+    # print(bin_areas.shape, centers.shape, cov_matrix.shape)
+    mean = float(metrics.calc_mean_jax(bin_areas, centers))
+    mean_err = float(metrics.calc_mean_cov_matrix_jax(bin_areas, centers, cov_matrix))
+    return mean, mean_err
+
+
+def get_uncorrelated_mean_err(hist, is_density=True):
+    contents, errors = cu.th1_to_ndarray(hist)
+    centers = cu.get_th1_bin_centers(hist)
+    if is_density:
+        # need to multiply by widths, since the original hist has bin contents divided by width
+        widths = cu.get_th1_bin_widths(hist)
+        bin_areas = contents*widths
+        bin_errors = errors*widths
+    else:
+        bin_areas = contents
+        bin_errors = errors
+    # convert to uncertainty arrays
+    areas, centers = metrics.hist_values_to_uarray(bin_areas=bin_areas, bin_centers=centers, bin_errors=bin_errors)
+    mean_u = metrics.calc_mean_ucert(areas, centers)
+    return mean_u.nominal_value, mean_u.std_dev
 
 
 class BinnedPlotter(object):
@@ -323,13 +364,20 @@ class GenPtBinnedPlotter(BinnedPlotter):
                 unfolded_hist_bin_total_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded', **hbc_args)
             # cu.print_th1_bins(unfolded_hist_bin_total_errors)
 
+            # get stats
+            cov_matrix = self.hist_bin_chopper.get_bin_plot(self.region['unfolder'].total_ematrix_name,
+                                                            ind=ibin, axis='pt', do_norm=True, do_div_bin_width=True, binning_scheme='generator')
+            unfolded_mean, unfolded_mean_err = get_correlated_mean_err(unfolded_hist_bin_total_errors, cov_matrix, is_density=True)
+
+            generator_mean, generator_mean_err = get_uncorrelated_mean_err(mc_gen_hist_bin, is_density=True)
+
             entries = [
                 Contribution(mc_gen_hist_bin,
-                             label="Generator",
+                             label="Generator\nMean = %.3f #pm %.3f" % (generator_mean, generator_mean_err),
                              line_color=self.plot_styles['gen_colour'], line_width=self.line_width,
                              marker_color=self.plot_styles['gen_colour'], marker_size=0),
                 Contribution(unfolded_hist_bin_total_errors,
-                             label="Data (total unc.)",
+                             label="Data (total unc.)\nMean = %.3f #pm %.3f" % (unfolded_mean, unfolded_mean_err),
                              line_color=self.plot_styles['unfolded_total_colour'], line_width=self.line_width, line_style=1,
                              marker_color=self.plot_styles['unfolded_total_colour'],# marker_style=cu.Marker.get('circle'), marker_size=0.75,
                              subplot=mc_gen_hist_bin),
@@ -5102,6 +5150,7 @@ class PlotWebpageMaker(object):
             f.write(output)
         print("Webpage written to", detector_file)
 
+
 @profile
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
@@ -5137,7 +5186,7 @@ def main():
     parser.add_argument("--onlyPaperPlots",
                         action='store_true',
                         help='Only do paper plots (applies to --doBinnedPlotsGenPt, etc)')
-    
+
     parser.add_argument("--webpage",
                         action='store_true',
                         help='Do webpage of unfolded results & systematics')
@@ -5310,7 +5359,7 @@ def main():
                 del hist_bin_chopper
                 del unpickled_region
                 del setup
-            
+
             prof_done_cleanup()
 
     if args.webpage:
