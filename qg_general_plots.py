@@ -1192,7 +1192,7 @@ def do_mean_rms_summary_plot(entries,
     # Add lumi text
     lumi = cu.get_lumi_str(do_dijet=False, do_zpj=True)
     if "dijet" in region_title.lower():
-        lumi = cu.get_lumi_str(do_dijet=True, do_zpj=False)
+        lumi = "< 35.9"
     axes[mean_plot_ind].text(1, text_height, "%s $\\mathrm{fb}^{\\mathrm{-1}}$ (13 TeV)" % lumi, horizontalalignment='right', transform=axes[mean_plot_ind].transAxes)
 
     # Set axis titles
