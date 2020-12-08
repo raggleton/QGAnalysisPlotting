@@ -55,6 +55,10 @@ def do_plots(root_dir, title):
     radius, pus = cu.get_jet_config_from_dirname(root_dir)
     jet_str = "AK%s PF %s" % (radius.upper(), pus.upper())
 
+    if radius == "8":
+        pt_bins = qgc.PT_BINS[2:]
+        print(pt_bins)
+
     single_mu_tfile = cu.TFileCacher(os.path.join(root_dir, qgc.SINGLE_MU_FILENAME))
     dy_tfile = cu.TFileCacher(os.path.join(root_dir, qgc.DY_FILENAME))
     dy_hpp_tfile = cu.TFileCacher(os.path.join(root_dir, qgc.DY_HERWIG_FILENAME))
@@ -423,11 +427,13 @@ def do_plots(root_dir, title):
             #                                     dijet_fwd_entries=dijet_fwd_entries,
             #                                     zpj_entries=zpj_entries)
 
+            # pt_low = 88 if "8" in radius else 50 
+            pt_low = pt_bins[0][0]
             qgp.do_mean_rms_summary_plot(dijet_cen_1d_entries,
                                          pt_bins,
                                          "%s/ptBinned/%s_box_dijet_cen_mpl.%s" % (plot_dir, v, OUTPUT_FMT),
                                          var_label=var_label,
-                                         xlim=(50, 4000),
+                                         xlim=(pt_low, 4000),
                                          ylim_mean=ylim_mean,
                                          ylim_rms=ylim_rms,
                                          region_title="%s jets in %s" % (jet_str, qgc.Dijet_CEN_LABEL.lower()))
@@ -436,7 +442,7 @@ def do_plots(root_dir, title):
                                          pt_bins,
                                          "%s/ptBinned/%s_box_dijet_fwd_mpl.%s" % (plot_dir, v, OUTPUT_FMT),
                                          var_label=var_label,
-                                         xlim=(50, 4000),
+                                         xlim=(pt_low, 4000),
                                          ylim_mean=ylim_mean,
                                          ylim_rms=ylim_rms,
                                          region_title="%s jets in %s" % (jet_str, qgc.Dijet_FWD_LABEL.lower()))
@@ -446,7 +452,7 @@ def do_plots(root_dir, title):
                                          pt_bins,
                                          "%s/ptBinned/%s_box_zpj_mpl.%s" % (plot_dir, v, OUTPUT_FMT),
                                          var_label=var_label,
-                                         xlim=(50, 800),
+                                         xlim=(pt_low, 800),
                                          ylim_mean=ylim_mean,
                                          ylim_rms=ylim_rms,
                                          region_title="%s jets in %s" % (jet_str, qgc.ZpJ_LABEL))
