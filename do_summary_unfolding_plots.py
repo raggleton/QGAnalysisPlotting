@@ -2134,6 +2134,9 @@ if __name__ == "__main__":
     # Read in data from h5 files
     # -----------------------------------------------------------------------
     print("Reading in unfolding data from existing HDF5 file...")
+    if not os.path.isfile(args.h5input):
+        raise IOError("Cannot find --h5input file")
+    
     with pd.HDFStore(args.h5input) as store:
         df = store['df']
     print(df.head())
