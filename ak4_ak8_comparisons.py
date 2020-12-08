@@ -66,26 +66,69 @@ def do_data_mc_plot(dirname, histname, output_filename, **plot_kwargs):
     data_file = cu.open_root_file(os.path.join(dirname, qgc.JETHT_ZB_FILENAME))
     qcd_file = cu.open_root_file(os.path.join(dirname, qgc.QCD_FILENAME))
     qcd_py_file = cu.open_root_file(os.path.join(dirname, qgc.QCD_PYTHIA_ONLY_FILENAME))
+    qcd_hpp_file = cu.open_root_file(os.path.join(dirname, qgc.QCD_HERWIG_FILENAME))
 
     data_hist = cu.get_from_tfile(data_file, histname)
     qcd_hist = cu.get_from_tfile(qcd_file, histname)
     qcd_py_hist = cu.get_from_tfile(qcd_py_file, histname)
+    qcd_hpp_hist = cu.get_from_tfile(qcd_hpp_file, histname)
     conts = [
-        Contribution(data_hist, label="Data", line_color=ROOT.kBlack, marker_size=0),
-        Contribution(qcd_hist, label="QCD MG+PYTHIA MC", line_color=ROOT.kRed, subplot=data_hist, marker_size=0),
-        Contribution(qcd_py_hist, label="QCD PYTHIA8 MC", line_color=ROOT.kBlue, subplot=data_hist, marker_size=0),
+        Contribution(data_hist, label="Data", line_color=ROOT.kBlack, marker_size=0, marker_color=ROOT.kBlack),
+        Contribution(qcd_hist, label="QCD MG+PYTHIA8 MC", line_color=qgc.QCD_COLOUR, subplot=data_hist, marker_size=0, marker_color=qgc.QCD_COLOUR),
+        Contribution(qcd_py_hist, label="QCD PYTHIA8 MC", line_color= qgc.QCD_COLOURS[2], subplot=data_hist, marker_size=0, marker_color= qgc.QCD_COLOURS[2]),
+        # Contribution(qcd_hpp_hist, label="QCD HERWIG++ MC", line_color=qgc.HERWIGPP_QCD_COLOUR, subplot=data_hist, marker_size=0, marker_color=qgc.HERWIGPP_QCD_COLOUR),
     ]
     plot = Plot(conts,
                 what='hist',
                 ytitle="N",
+                xtitle="p_{T}^{Leading jet} [GeV]",
                 subplot_type="ratio",
                 subplot_title="Simulation / data",
                 ylim=[1E3, None],
+                lumi=cu.get_lumi_str(do_dijet=True, do_zpj=False),
                 **plot_kwargs)
     plot.y_padding_max_log = 500
+
+    plot.legend.SetX1(0.55)
+    plot.legend.SetX2(0.98)
     plot.legend.SetY1(0.7)
+    # plot.legend.SetY2(0.88)
     plot.plot("NOSTACK HIST E")
-    plot.set_logx(do_more_labels=False)
+    plot.set_logx(do_more_labels=True, do_exponent=False)
+    plot.set_logy(do_more_labels=False)
+
+    plot.save(output_filename)
+
+
+def do_zpj_data_mc_plot(dirname, histname, output_filename, **plot_kwargs):
+    data_file = cu.open_root_file(os.path.join(dirname, qgc.SINGLE_MU_FILENAME))
+    dy_file = cu.open_root_file(os.path.join(dirname, qgc.DY_FILENAME))
+    dy_hpp_file = cu.open_root_file(os.path.join(dirname, qgc.DY_HERWIG_FILENAME))
+
+    data_hist = cu.get_from_tfile(data_file, histname)
+    dy_hist = cu.get_from_tfile(dy_file, histname)
+    dy_hpp_hist = cu.get_from_tfile(dy_hpp_file, histname)
+    conts = [
+        Contribution(data_hist, label="Data", line_color=ROOT.kBlack, marker_size=0, marker_color=ROOT.kBlack),
+        Contribution(dy_hist, label="DY MG+PYTHIA8 MC", line_color=qgc.DY_COLOUR, subplot=data_hist, marker_size=0, marker_color=qgc.DY_COLOUR),
+        Contribution(dy_hpp_hist, label="DY HERWIG++ MC", line_color=qgc.HERWIGPP_DY_COLOUR, subplot=data_hist, marker_size=0, marker_color=qgc.HERWIGPP_DY_COLOUR),
+    ]
+    plot = Plot(conts,
+                what='hist',
+                ytitle="N",
+                xtitle="p_{T}^{Leading jet} [GeV]",
+                subplot_type="ratio",
+                subplot_title="Simulation / data",
+                ylim=[1, None],
+                **plot_kwargs)
+    plot.y_padding_max_log = 500
+
+    plot.legend.SetX1(0.55)
+    plot.legend.SetX2(0.98)
+    plot.legend.SetY1(0.7)
+    # plot.legend.SetY2(0.88)
+    plot.plot("NOSTACK HIST E")
+    plot.set_logx(do_more_labels=True, do_exponent=False)
     plot.set_logy(do_more_labels=False)
 
     plot.save(output_filename)
@@ -517,7 +560,7 @@ def do_jet_pt_vs_genht_plot(dirname, output_filename, title=""):
     histname = "Dijet_tighter/pt_jet_vs_genHT"
     canv.SetRightMargin(0.15)
     h = cu.get_from_tfile(qcd_file, histname)
-    h.SetTitle(title)
+    h.SetTitle(title + ";p_{T}^{Leading jet} [GeV]; H_{T}^{Gen} [GeV]")
     h.Draw("COLZ")
     h.GetXaxis().SetRangeUser(0, 200)
     h.GetYaxis().SetRangeUser(0, 200)
@@ -531,14 +574,27 @@ if __name__ == "__main__":
     pt_xlim = (20, 1000)
     do_data_mc_plot(ak4_v3_v2_dir,
                     histname,
-                    output_filename=os.path.join(odir, "pythia_pt_jet1_ak4_v2_v2.pdf"),
-                    title="AK4, v3 data, v2 MC\nNormalised to lumi",
+                    output_filename=os.path.join(odir, "pythia_pt_jet1_ak4_v3_v2.pdf"),
+                    title="AK4, v3 data, v2 MC\nDijet region\nNormalised to lumi",
                     xlim=pt_xlim)
     do_data_mc_plot(ak8_v3_v2_dir,
                     histname,
                     output_filename=os.path.join(odir, "pythia_pt_jet1_ak8_v3_v2.pdf"),
-                    title="AK8, v3 data, v2 MC\nNormalised to lumi",
+                    title="AK8, v3 data, v2 MC\nDijet region\nNormalised to lumi",
                     xlim=pt_xlim)
+    
+    histname_dy = "ZPlusJets/pt_jet1"
+    pt_xlim_dy = (20, 500)
+    do_zpj_data_mc_plot(ak4_v3_v2_dir,
+                    histname_dy,
+                    output_filename=os.path.join(odir, "dy_pt_jet1_ak4_v3_v2.pdf"),
+                    title="AK4, v3 data, v2 MC\nZ+Jet region\nNormalised to lumi",
+                    xlim=pt_xlim_dy)
+    do_zpj_data_mc_plot(ak8_v3_v2_dir,
+                    histname_dy,
+                    output_filename=os.path.join(odir, "dy_pt_jet1_ak8_v3_v2.pdf"),
+                    title="AK8, v3 data, v2 MC\nZ+Jet region\nNormalised to lumi",
+                    xlim=pt_xlim_dy)
     
 
     # pt_xlim = (20, 1000)
@@ -751,9 +807,9 @@ if __name__ == "__main__":
                              title="AK4 vs AK8",
                              xlim=pt_xlim)
 
-    # do_jet_pt_vs_genht_plot(ak4_v3_v2_dir,
-    #                         output_filename=os.path.join(odir, "jet_pt_vs_genht_ak4_v2.pdf"),
-    #                         title="AK4 V2 MC")
-    # do_jet_pt_vs_genht_plot(ak8_v3_v2_dir,
-    #                         output_filename=os.path.join(odir, "jet_pt_vs_genht_ak8_v2.pdf"),
-    #                         title="AK8 V2 MC")
+    do_jet_pt_vs_genht_plot(ak4_v3_v2_dir,
+                            output_filename=os.path.join(odir, "jet_pt_vs_genht_ak4_v2.pdf"),
+                            title="AK4 QCD MG+PYTHIA8 MC")
+    do_jet_pt_vs_genht_plot(ak8_v3_v2_dir,
+                            output_filename=os.path.join(odir, "jet_pt_vs_genht_ak8_v2.pdf"),
+                            title="AK8 QCD MG+PYTHIA8 MC")
