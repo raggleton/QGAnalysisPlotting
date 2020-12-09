@@ -565,7 +565,8 @@ def main():
 
             # Actual distribution to be unfolded
             reco_1d = hist_mc_reco.Clone() if MC_INPUT else hist_data_reco
-            reco_1d = rm_large_rel_error_bins_th1(reco_1d, -1)
+            relative_err_threshold_th1 = 0.3
+            reco_1d = rm_large_rel_error_bins_th1(reco_1d, relative_err_threshold=relative_err_threshold_th1)
 
             # to construct our "fakes" template, we use the ratio as predicted by MC, and apply it to data
             # this way we ensure we don't have -ve values, and avoid any issue with cross sections
@@ -609,7 +610,7 @@ def main():
 
             # setup one unfolder to get binning
             # TODO: move creation of TUnfoldbinning into own func
-            # dummy_unfolder = MyUnfolder(response_map=rm_large_rel_error_bins_th2(hist_mc_gen_reco_map),
+            # dummy_unfolder = MyUnfolder(response_map=rm_large_rel_error_bins_th2(hist_mc_gen_reco_map, relative_err_threshold_th2),
             #                             variable_bin_edges_reco=angle_bin_edges_reco,
             #                             variable_bin_edges_gen=angle_bin_edges_gen,
             #                             variable_name=variable_name,
@@ -643,7 +644,8 @@ def main():
             print('reco uflow pt binning', pt_bin_edges_underflow_reco)
             print('gen uflow pt binning', pt_bin_edges_underflow_gen)
 
-            unfolder = MyUnfolder(response_map=rm_large_rel_error_bins_th2(hist_mc_gen_reco_map),
+            relative_err_threshold_th2 = 0.3
+            unfolder = MyUnfolder(response_map=rm_large_rel_error_bins_th2(hist_mc_gen_reco_map, relative_err_threshold_th2),
                                   variable_bin_edges_reco=angle_bin_edges_reco,
                                   variable_bin_edges_gen=angle_bin_edges_gen,
                                   variable_name=variable_name,
@@ -961,7 +963,7 @@ def main():
                     truth_template = template_maker.create_template()
 
                 elif args.biasVector == "alttruth":
-                    truth_template = alt_hist_truth
+                    truth_template = alt_hist_mc_gen
 
                 unfolder.truth_template = truth_template
                 unfolder.hist_bin_chopper.add_obj("truth_template", truth_template)
@@ -1163,7 +1165,7 @@ def main():
                     # --------------------------------------------------------------
                     jk_input_hist = jk_dict['input_reco']
 
-                    jk_hist_mc_reco = jk_input_hist.Clone()
+                    jk_hist_mc_reco = relative_err_threshold_th1(jk_input_hist.Clone(), relative_err_threshold_th1)
 
                     # fakes-subtracted version
                     jk_hist_mc_reco_bg_subtracted, jk_hist_fakes = subtract_background(jk_hist_mc_reco, hist_fake_fraction)
@@ -1386,7 +1388,7 @@ def main():
                     print("*** Unfolding with jackknife response matrix:", jk_label, "(%d/%d) ***" % (jk_ind+1, len(region['jackknife_response_variations'])))
                     print("*" * 80)
 
-                    jk_unfolder = MyUnfolder(response_map=jk_dict['response_map'],
+                    jk_unfolder = MyUnfolder(response_map=rm_large_rel_error_bins_th2(jk_dict['response_map'], relative_err_threshold_th2),
                                              variable_bin_edges_reco=unfolder.variable_bin_edges_reco,
                                              variable_bin_edges_gen=unfolder.variable_bin_edges_gen,
                                              variable_name=unfolder.variable_name,
@@ -1515,7 +1517,7 @@ def main():
                     this_syst = ExpSystematic(label=syst_dict['label'], syst_map=None)
 
                     # construct unfolder like original but with this response matrix, do unfolding
-                    exp_syst_unfolder = MyUnfolder(response_map=rm_large_rel_error_bins_th2(map_syst),
+                    exp_syst_unfolder = MyUnfolder(response_map=rm_large_rel_error_bins_th2(map_syst, relative_err_threshold_th2),
                                                    variable_bin_edges_reco=unfolder.variable_bin_edges_reco,
                                                    variable_bin_edges_gen=unfolder.variable_bin_edges_gen,
                                                    variable_name=unfolder.variable_name,
@@ -1746,7 +1748,7 @@ def main():
             # Draw projections of response matrix vs 1D hist to check normalisation OK
             # Only makes sense if the same MC events go into matrix & 1D plot
             # ------------------------------------------------------------------
-            if not MC_SPLIT:
+            if not MC_SPLIT and relative_err_threshold_th2 < 0:
                 # on gen axis
                 proj_gen = unfolder.response_map.ProjectionX("proj_gen_%s" % (append))
                 draw_projection_comparison(unfolder.hist_truth, proj_gen,
@@ -1860,7 +1862,7 @@ def main():
                 hist_mc_gen_reco_map_alt = cu.get_from_tfile(region['alt_mc_tfile'], "%s/tu_%s_GenReco_all" % (region['dirname'], angle_shortname))
                 hist_mc_gen_reco_map_alt.Scale(unfolder.response_map.Integral() / hist_mc_gen_reco_map_alt.Integral())  # just for display purposes, doesn't affect result
 
-                alt_unfolder = MyUnfolder(response_map=rm_large_rel_error_bins_th2(hist_mc_gen_reco_map_alt),
+                alt_unfolder = MyUnfolder(response_map=rm_large_rel_error_bins_th2(hist_mc_gen_reco_map_alt, relative_err_threshold_th2),
                                           variable_bin_edges_reco=unfolder.variable_bin_edges_reco,
                                           variable_bin_edges_gen=unfolder.variable_bin_edges_gen,
                                           variable_name=unfolder.variable_name,
@@ -2279,6 +2281,7 @@ def main():
                     # into account any reco-dependent efficiencies
                     # TODO: is this right?
                     sf = hist_mc_gen.Integral() / hist_syst_gen.Integral()
+                    hist_syst_reco = relative_err_threshold_th1(hist_syst_reco, relative_err_threshold_th1)
                     hist_syst_reco.Scale(sf)
                     hist_syst_gen.Scale(sf)
                     hist_syst_reco_gen_binning.Scale(sf)
