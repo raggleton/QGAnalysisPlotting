@@ -300,7 +300,7 @@ class GenPtBinnedPlotter(BinnedPlotter):
             what="hist",
             xtitle=self.setup.particle_title,
             has_data=self.setup.has_data,
-            ylim=[0, None],
+            # ylim=[0, None],
             subplot_type='ratio',
             subplot_title="* / %s" % (self.region['mc_label']),
             # subplot_limits=(0, 2) if self.setup.has_data else (0.75, 1.25),
@@ -552,6 +552,7 @@ class GenPtBinnedPlotter(BinnedPlotter):
                         title=self.get_pt_bin_title(bin_edge_low, bin_edge_high),
                         legend=True,
                         xlim=qgp.calc_auto_xlim(entries[2:3]),  # set x lim to where data is non-0
+                        ylim=[0, None],
                         **self.pt_bin_plot_args)
 
             plot.subplot_title = "Simulation / data"
