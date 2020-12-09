@@ -410,11 +410,11 @@ class GenPtBinnedPlotter(BinnedPlotter):
 
             entries = [
                 Contribution(mc_gen_hist_bin,
-                             label="Generator\nMean = %.3f #pm %.3f\nRMS= %.3f #pm %.3f" % (generator_mean, generator_mean_err, generator_rms, generator_rms_err),
+                             label="Generator\nMean = %.3f #pm %.3f\nRMS = %.3f #pm %.3f" % (generator_mean, generator_mean_err, generator_rms, generator_rms_err),
                              line_color=self.plot_styles['gen_colour'], line_width=self.line_width,
                              marker_color=self.plot_styles['gen_colour'], marker_size=0),
                 Contribution(unfolded_hist_bin_total_errors,
-                             label="Data (total unc.)\nMean = %.3f #pm %.3f\nRMS= %.3f #pm %.3f" % (unfolded_mean, unfolded_mean_err, unfolded_rms, unfolded_rms_err),
+                             label="Data (total unc.)\nMean = %.3f #pm %.3f\nRMS = %.3f #pm %.3f" % (unfolded_mean, unfolded_mean_err, unfolded_rms, unfolded_rms_err),
                              line_color=self.plot_styles['unfolded_total_colour'], line_width=self.line_width, line_style=1,
                              marker_color=self.plot_styles['unfolded_total_colour'],# marker_style=cu.Marker.get('circle'), marker_size=0.75,
                              subplot=mc_gen_hist_bin),
