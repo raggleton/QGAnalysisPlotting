@@ -24,49 +24,58 @@ def make_values_strings(values):
 
 
 def print_variable_table(var_dict):
-    for angle_name, angle_binning_dict in var_dict.items():
-        if "_charged" in angle_name:
-            continue
-        angle = [a for a in qgc.COMMON_VARS if a.var == angle_name]
-        if len(angle) == 0:
-            raise RuntimeError("Cannot find angle %s" % angle_name)
-        if len(angle) > 1:
-            raise RuntimeError("Found too many angles %s" % angle_name)
+        for angle_name in var_dict['ungroomed']:
+            for groomed_status in [False, True]:
+                groomed_str = "groomed" if groomed_status else "ungroomed"
 
-        # do charged+neutral
-        angle = angle[0]
-        angle_name_str = angle.name
-        if "ptd" in angle_name.lower():
-            angle_name_str = "$%s$" % angle_name_str
-        # gen binning
-        gen_latex_line = "\\multirow{{2}}{{*}}{name} & Generator & {binning} \\\\"
-        this_gen_entry = {
-            "name": "{%s ($%s$)}" % (angle_name_str, aliases[angle_name]),
-            "binning": ", ".join(make_values_strings(angle_binning_dict['gen'])),
-        }
-        print(gen_latex_line.format(**this_gen_entry))
+                if "_charged" in angle_name:
+                    continue
+                angle = [a for a in qgc.COMMON_VARS if a.var == angle_name]
+                if len(angle) == 0:
+                    raise RuntimeError("Cannot find angle %s" % angle_name)
+                if len(angle) > 1:
+                    raise RuntimeError("Found too many angles %s" % angle_name)
+                
+                uncharged_dict = var_dict[groomed_str][angle_name]
+                
+                # do charged+neutral
+                angle = angle[0]
+                angle_name_str = angle.name
+                if "ptd" in angle_name.lower():
+                    angle_name_str = "$%s$" % angle_name_str
+                # gen binning
+                gen_latex_line = "\\multirow{{2}}{{*}}{name} & {groom} & Generator & {binning} \\\\"
+                this_gen_entry = {
+                    "name": "{%s ($%s$)}" % (angle_name_str, aliases[angle_name]),
+                    "binning": ", ".join(make_values_strings(uncharged_dict['gen'])),
+                    "groom": groomed_str.title(),
+                }
+                print(gen_latex_line.format(**this_gen_entry))
 
-        # reco binning
-        reco_latex_line = "& Detector & {binning} \\\\ [\\cmsTabSkip]"
-        this_reco_entry = {
-            "binning": ", ".join(make_values_strings(angle_binning_dict['reco'])),
-        }
-        print(reco_latex_line.format(**this_reco_entry))
+                # reco binning
+                reco_latex_line = "& {groom} & Detector & {binning} \\\\ [\\cmsTabSkip]"
+                this_reco_entry = {
+                    "binning": ", ".join(make_values_strings(uncharged_dict['reco'])),
+                    "groom": groomed_str.title(),
+                }
+                print(reco_latex_line.format(**this_reco_entry))
 
-        # do charged-only
-        charged_angle_name = angle_name + "_charged"
-        v_charged = var_dict[charged_angle_name]
-        # gen
-        this_gen_entry = {
-            "name": "{Charged %s ($%s$)}" % (angle_name_str, aliases[angle_name]),
-            "binning": ", ".join(make_values_strings(v_charged['gen'])),
-        }
-        print(gen_latex_line.format(**this_gen_entry))
-        # reco
-        this_reco_entry = {
-            "binning": ", ".join(make_values_strings(v_charged['reco'])),
-        }
-        print(reco_latex_line.format(**this_reco_entry))
+                # do charged-only
+                charged_angle_name = angle_name + "_charged"
+                charged_dict = var_dict[groomed_str][charged_angle_name]
+                # gen
+                this_gen_entry = {
+                    "name": "{Charged %s ($%s$)}" % (angle_name_str, aliases[angle_name]),
+                    "binning": ", ".join(make_values_strings(charged_dict['gen'])),
+                    "groom": groomed_str.title(),
+                }
+                print(gen_latex_line.format(**this_gen_entry))
+                # reco
+                this_reco_entry = {
+                    "binning": ", ".join(make_values_strings(charged_dict['reco'])),
+                    "groom": groomed_str.title(),
+                }
+                print(reco_latex_line.format(**this_reco_entry))
 
 
 def print_pt_lists():
