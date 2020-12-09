@@ -146,38 +146,47 @@ def get_flavour_efficiencies(input_file, dirname, bins, var_prepend="", which_je
 def compare_flavour_fractions_vs_pt(input_files, dirnames, pt_bins, labels, flav, output_filename, title="", var_prepend="", which_jet="both", xtitle="p_{T}^{jet} [GeV]", n_partons='all'):
     """Plot a specified flavour fraction vs pT for several sources.
     Each entry in input_files, dirnames, and labels corresponds to one line
+    n_partons can be a str, 'all', '1', etc, or a list of str to include
 
     TODO: fix this - bit stupid input format
     """
     bin_centers = [0.5*(x[0]+x[1]) for x in pt_bins]
     bin_widths = [0.5*(x[1]-x[0]) for x in pt_bins]
-    metric = 'pt'
-    if n_partons.lower() != 'all':
-        metric = 'pt_npartons_%s' % n_partons
-    info = [get_flavour_efficiencies(ifile,
-                                     dname,
-                                     bins=pt_bins,
-                                     var_prepend=var_prepend,
-                                     which_jet=(which_jet if "Dijet" in dname else "both"),
-                                     metric=metric)
-            for ifile, dname in zip(input_files, dirnames)]
+
+    if isinstance(n_partons, str):
+        n_partons = [n_partons]
+
     contribs = []
-    N = len(bin_centers)
-    colours = [ROOT.kRed, ROOT.kBlack, ROOT.kBlue, ROOT.kGreen-3]
+    for n_parton_ind, n_parton in enumerate(n_partons):
+        metric = 'pt'
+        if n_parton.lower() != 'all':
+            metric = 'pt_npartons_%s' % n_parton
+        info = [get_flavour_efficiencies(ifile,
+                                         dname,
+                                         bins=pt_bins,
+                                         var_prepend=var_prepend,
+                                         which_jet=(which_jet if "Dijet" in dname else "both"),
+                                         metric=metric)
+                for ifile, dname in zip(input_files, dirnames)]
+        N = len(bin_centers)
+        colours = [ROOT.kRed, ROOT.kBlack, ROOT.kBlue, ROOT.kGreen-3]
 
-    for i, fdict in enumerate(info):
-        if flav in ['u', 'd', 's', 'c', 'b', 't', 'g']:
-            obj = fdict[flav].CreateGraph()
-        else:
-            raise RuntimeError("Robin broke 1-X functionality")
-            obj = ROOT.TGraphErrors(N, np.array(bin_centers), 1.-np.array(fdict[flav.replace("1-", '')]), np.array(bin_widths), np.zeros(N))
-
-        c = Contribution(obj,
-                         label="%s" % (labels[i]),
-                         line_color=colours[i], line_width=1,
-                         marker_style=20+i, marker_color=colours[i], marker_size=1,
-                         leg_draw_opt="LP")
-        contribs.append(c)
+        for i, fdict in enumerate(info):
+            if flav in ['u', 'd', 's', 'c', 'b', 't', 'g']:
+                obj = fdict[flav].CreateGraph()
+            else:
+                raise RuntimeError("Robin broke 1-X functionality")
+                obj = ROOT.TGraphErrors(N, np.array(bin_centers), 1.-np.array(fdict[flav.replace("1-", '')]), np.array(bin_widths), np.zeros(N))
+            if obj.GetN() == 0:
+                continue
+            n_parton_str = "" if n_parton == "all" else " (%s-parton)" % n_parton
+            c = Contribution(obj,
+                             label="%s%s" % (labels[i], n_parton_str),
+                             line_color=colours[i]+n_parton_ind, line_width=1,
+                             line_style=n_parton_ind+1,
+                             marker_style=20+i, marker_color=colours[i]+n_parton_ind, marker_size=1,
+                             leg_draw_opt="LP")
+            contribs.append(c)
 
     flav_str_dict = {
         'u': 'Up quark',
