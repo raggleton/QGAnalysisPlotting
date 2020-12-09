@@ -165,7 +165,7 @@ try:
         return jnp.sqrt(err_sq)
 
 
-    def calc_rms_correlated_error_jax(bin_areas, bin_centers, error_matrix):
+    def calc_rms_cov_matrix_jax(bin_areas, bin_centers, error_matrix):
         """Get error on rms, assuming covariance matrix error_matrix"""
         diffs = rms_differential_jax(bin_areas, bin_centers)
         # sum_sq = diffs @ error_matrix @ diffs
