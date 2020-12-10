@@ -66,6 +66,11 @@ def get_unfolding_argparser(description='', parser=None):
                         default=False,
                         help="Use jacobian method to do errors")
 
+    parser.add_argument("--relErr",
+                        default=-1,
+                        type=float,
+                        help="Remove any input & response bins with relative error greater than value specified. -1 to ignore it.")
+
     # SIGNAL REGION OPTIONS
     # --------------------------------------------------------------------------
     region_group = parser.add_argument_group('Region selection')
@@ -376,6 +381,9 @@ def get_unfolding_output_dir(args):
 
     if args.useAltResponse:
         append += "_altResponse"
+
+    if args.relErr > 0:
+        append += "_maxRelErr%s" % str(args.relErr).replace(".", "p")
 
     reg_axis_str = ""
     bias_str = ""
