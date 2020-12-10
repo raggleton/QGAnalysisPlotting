@@ -14,11 +14,10 @@ from itertools import chain
 import scipy
 from scipy import stats
 import inspect
-import warnings
 import pickle
 import gzip
 from functools import partial
-
+from collections import namedtuple
 
 import ROOT
 from MyStyle import My_Style
@@ -26,7 +25,6 @@ from comparator import Contribution, Plot
 My_Style.cd()
 
 import common_utils as cu
-import qg_common as qgc
 import qg_general_plots as qgp
 from my_unfolder_plotter import MyUnfolderPlotter
 
@@ -49,6 +47,187 @@ with open("MyTUnfoldDensity.cpp") as f:
 # Load my derived class
 # ROOT.gInterpreter.ProcessLine(".L MyTUnfoldDensity.cc+")
 # ROOT.gSystem.Load("MyTUnfoldDensity_cc.so")
+
+# hold (pt, variable) pair
+PtVar = namedtuple("PtVar", ["pt", "var"])
+
+
+class PtVarBinning(object):
+    """Hold a set of pt, variable binning. Assumes separate underflow pT region."""
+
+    def __init__(self,
+                 variable_bin_edges, # 'variable' refers to e.g. ptD, LHA
+                 variable_name,
+                 pt_bin_edges,
+                 pt_bin_edges_underflow,
+                 binning_name,
+                 binning_underflow_name,
+                 binning_signal_name,
+                 var_uf=False,  # _uf = underflow
+                 var_of=True,  # _of = overflow
+                 pt_uf=False,
+                 pt_of=True):
+        self.variable_name = variable_name
+        self.variable_bin_edges = variable_bin_edges
+        self.nbins_variable = len(variable_bin_edges)-1 if variable_bin_edges is not None else 0
+
+        self.pt_bin_edges = pt_bin_edges
+        self.nbins_pt = len(pt_bin_edges)-1 if pt_bin_edges is not None else 0
+
+        self.pt_bin_edges_underflow = pt_bin_edges_underflow
+        self.nbins_pt_underflow = len(pt_bin_edges_underflow)-1 if pt_bin_edges_underflow is not None else 0
+
+        self.var_uf = var_uf
+        self.var_of = var_of
+        self.pt_uf = pt_uf
+        self.pt_of = pt_of
+
+        self.pt_name = "pt"
+
+        self.binning_name = binning_name
+        self.binning = ROOT.TUnfoldBinning(self.binning_name)
+
+        # Do pt underflow ourselves as separate region
+        self.binning_underflow_name = binning_underflow_name
+        self.distribution_underflow = self.binning.AddBinning(self.binning_underflow_name)
+        if self.variable_bin_edges is not None:
+            self.distribution_underflow.AddAxis(self.variable_name, self.nbins_variable, self.variable_bin_edges,
+                                                self.var_uf, self.var_of)
+        self.distribution_underflow.AddAxis(self.pt_name, self.nbins_pt_underflow, self.pt_bin_edges_underflow,
+                                            self.pt_uf, False)
+
+        # Signal pt region
+        self.binning_signal_name = binning_signal_name
+        self.distribution = self.binning.AddBinning(self.binning_signal_name)
+        if self.variable_bin_edges is not None:
+            self.distribution.AddAxis(self.variable_name, self.nbins_variable, self.variable_bin_edges,
+                                      self.var_uf, self.var_of)
+        self.distribution.AddAxis(self.pt_name, self.nbins_pt, self.pt_bin_edges,
+                                  False, self.pt_of)
+
+        # Hold maps of global bin number < > physical bin edges
+        self.global_bin_to_physical_val_map = dict()
+        self.physical_val_to_global_bin_map = dict()
+
+        self.cache_global_bin_mapping()
+        print("bin 1:", self.global_bin_to_physical_val_map[1])
+
+    def is_signal_region(self, pt):
+        return pt >= self.pt_bin_edges[0]
+
+    def get_distribution(self, pt):
+        return self.distribution if self.is_signal_region(pt) else self.distribution_underflow
+
+    def cache_global_bin_mapping(self):
+        """Create maps of global bin <> physical bin values, 
+        by iterating through all the physical bins (inc oflow)
+
+        Have to do this as the TUnfoldBinning one isnt good.
+        """
+        all_pt_bins = list(chain(self.pt_bin_edges_underflow[:-1], self.pt_bin_edges))
+        for ibin_pt, pt in enumerate(all_pt_bins[:-1]):
+            this_pt = pt+1E-6
+            pt_bin = (pt, all_pt_bins[ibin_pt+1])
+            binning_obj = self.get_distribution(this_pt)
+            if self.variable_bin_edges is not None:
+                for ibin_var, variable in enumerate(self.variable_bin_edges[:-1]):
+                    global_bin = binning_obj.GetGlobalBinNumber(variable+1E-6, this_pt)
+                    self.global_bin_to_physical_val_map[global_bin] = PtVar(pt=pt_bin,
+                                                                            var=(variable, self.variable_bin_edges[ibin_var+1]))
+                if self.var_of:
+                    variable = self.variable_bin_edges[-1]
+                    global_bin = binning_obj.GetGlobalBinNumber(variable+1E-6, this_pt)
+                    self.global_bin_to_physical_val_map[global_bin] = PtVar(pt=pt_bin,
+                                                                            var=(variable, np.inf))
+            else:
+                global_bin = binning_obj.GetGlobalBinNumber(this_pt)
+                self.global_bin_to_physical_val_map[global_bin] = PtVar(pt=pt_bin,
+                                                                        var=None)
+
+        if self.pt_of:
+            pt = self.pt_bin_edges[-1]
+            this_pt = pt+1E-6
+            pt_bin = (pt, np.inf)
+            binning_obj = self.get_distribution(this_pt)
+            if self.variable_bin_edges is not None:
+                for ibin_var, variable in enumerate(self.variable_bin_edges[:-1]):
+                    global_bin = binning_obj.GetGlobalBinNumber(variable+1E-6, this_pt)
+                    self.global_bin_to_physical_val_map[global_bin] = PtVar(pt=pt_bin,
+                                                                            var=(variable, self.variable_bin_edges[ibin_var+1]))
+                if self.var_of:
+                    variable = self.variable_bin_edges[-1]
+                    global_bin = binning_obj.GetGlobalBinNumber(variable+1E-6, this_pt)
+                    self.global_bin_to_physical_val_map[global_bin] = PtVar(pt=pt_bin,
+                                                                            var=(variable, np.inf))
+            else:
+                global_bin = binning_obj.GetGlobalBinNumber(this_pt)
+                self.global_bin_to_physical_val_map[global_bin] = PtVar(pt=pt_bin,
+                                                                        var=None)
+
+        # now invert
+        self.physical_val_to_global_bin_map = {v: k for k, v in self.global_bin_to_physical_val_map.items()}
+
+
+class BinningHandler(object):
+    """Class to handle intricacies of 2D binning scheme"""
+
+    def __init__(self,
+                 variable_bin_edges_reco,  # 'variable' refers to e.g. ptD, LHA
+                 variable_bin_edges_gen,  # reco for detector binning, gen for generator (final) binning
+                 variable_name,
+                 pt_bin_edges_reco,
+                 pt_bin_edges_underflow_reco,
+                 pt_bin_edges_gen,
+                 pt_bin_edges_underflow_gen,
+                 var_uf=False,  # _uf = underflow
+                 var_of=True,  # _of = overflow
+                 pt_uf=False,
+                 pt_of=True):
+
+        # DETECTOR LEVEL BINNING
+        # ------------------------------------------------------------------------------------------
+        self.detector_binning_name = "detector"
+        self.detector_ptvar_binning = PtVarBinning(variable_bin_edges_reco,
+                                                   variable_name,
+                                                   pt_bin_edges_reco,
+                                                   pt_bin_edges_underflow_reco,
+                                                   binning_name=self.detector_binning_name,
+                                                   binning_underflow_name="detectordistribution_underflow",
+                                                   binning_signal_name="detectordistribution",
+                                                   var_uf=var_uf,
+                                                   var_of=var_of,
+                                                   pt_uf=pt_uf,
+                                                   pt_of=pt_of)
+
+        # GENERATOR LEVEL BINNING
+        # ------------------------------------------------------------------------------------------
+        self.generator_binning_name = "generator"
+        self.generator_ptvar_binning = PtVarBinning(variable_bin_edges_gen,
+                                                    variable_name,
+                                                    pt_bin_edges_gen,
+                                                    pt_bin_edges_underflow_gen,
+                                                    binning_name=self.generator_binning_name,
+                                                    binning_underflow_name="generatordistribution_underflow",
+                                                    binning_signal_name="generatordistribution",
+                                                    var_uf=var_uf,
+                                                    var_of=var_of,
+                                                    pt_uf=pt_uf,
+                                                    pt_of=pt_of)
+
+        self.binning_mapping = {
+            self.generator_binning_name: self.generator_ptvar_binning,
+            self.detector_binning_name: self.detector_ptvar_binning,
+        }
+
+    def get_binning_scheme(self, binning_scheme):
+        valid_args = list(self.binning_mapping.keys())
+        if binning_scheme not in valid_args:
+            raise ValueError("binning_scheme should be one of: %s" % ",".join(valid_args))
+        return self.binning_mapping[binning_scheme]
+
+    def get_physical_bins(self, global_bin_number, binning_scheme):
+        ptvar_binning = self.get_binning_scheme(binning_scheme)
+        return ptvar_binning.global_bin_to_physical_val_map[global_bin_number]
 
 
 class MyUnfolder(ROOT.MyTUnfoldDensity):
@@ -101,6 +280,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
                  pt_bin_edges_gen,
                  pt_bin_edges_underflow_reco,
                  pt_bin_edges_underflow_gen,
+                 binning_handler=None,
                  orientation=ROOT.TUnfold.kHistMapOutputHoriz,
                  constraintMode=ROOT.TUnfold.kEConstraintArea,
                  regMode=ROOT.TUnfold.kRegModeCurvature,
@@ -119,57 +299,71 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             elif orientation == ROOT.TUnfold.kHistMapOutputVert:
                 if response_map.GetBinContent(0, 1) != 0 or response_map.GetBinContent(1, 0) != 0:
                     raise RuntimeError("Your response_map has entries in 0th gen bin - this means you've got unintended underflow!")
+
         self.variable_name = variable_name
         self.variable_name_safe = cu.no_space_str(variable_name)
 
-        self.variable_bin_edges_reco = variable_bin_edges_reco
-        self.nbins_variable_reco = len(variable_bin_edges_reco)-1 if variable_bin_edges_reco is not None else 0
-        self.variable_bin_edges_gen = variable_bin_edges_gen
-        self.nbins_variable_gen = len(variable_bin_edges_gen)-1 if variable_bin_edges_gen is not None else 0
+        self.binning_handler = (binning_handler or
+                                BinningHandler(variable_bin_edges_reco, # 'variable' refers to e.g. ptD, LHA
+                                               variable_bin_edges_gen, # reco for detector binning, gen for generator (final) binning
+                                               variable_name,
+                                               pt_bin_edges_reco,
+                                               pt_bin_edges_underflow_reco,
+                                               pt_bin_edges_gen,
+                                               pt_bin_edges_underflow_gen,
+                                               var_uf=False, # _uf = underflow
+                                               var_of=True,  # _of = overflow
+                                               pt_uf=False,
+                                               pt_of=True))
 
-        self.pt_bin_edges_reco = pt_bin_edges_reco
-        self.nbins_pt_reco = len(pt_bin_edges_reco)-1 if pt_bin_edges_reco is not None else 0
-        self.pt_bin_edges_gen = pt_bin_edges_gen
-        self.nbins_pt_gen = len(pt_bin_edges_gen)-1 if pt_bin_edges_gen is not None else 0
+        # self.variable_bin_edges_reco = variable_bin_edges_reco
+        # self.nbins_variable_reco = len(variable_bin_edges_reco)-1 if variable_bin_edges_reco is not None else 0
+        # self.variable_bin_edges_gen = variable_bin_edges_gen
+        # self.nbins_variable_gen = len(variable_bin_edges_gen)-1 if variable_bin_edges_gen is not None else 0
 
-        self.pt_bin_edges_underflow_reco = pt_bin_edges_underflow_reco
-        self.nbins_pt_underflow_reco = len(pt_bin_edges_underflow_reco)-1 if pt_bin_edges_underflow_reco is not None else 0
-        self.pt_bin_edges_underflow_gen = pt_bin_edges_underflow_gen
-        self.nbins_pt_underflow_gen = len(pt_bin_edges_underflow_gen)-1 if pt_bin_edges_underflow_gen is not None else 0
+        # self.pt_bin_edges_reco = pt_bin_edges_reco
+        # self.nbins_pt_reco = len(pt_bin_edges_reco)-1 if pt_bin_edges_reco is not None else 0
+        # self.pt_bin_edges_gen = pt_bin_edges_gen
+        # self.nbins_pt_gen = len(pt_bin_edges_gen)-1 if pt_bin_edges_gen is not None else 0
 
-        # Binning setup here MUST match how it was setup in making the input files, otherwise
-        # you will have untold pain and suffering!
-        # TODO read in from XML
-        var_uf, var_of = False, True
-        pt_uf, pt_of = False, True  # handle pt under/over flow ourselves
-        self.detector_binning = ROOT.TUnfoldBinning("detector")
+        # self.pt_bin_edges_underflow_reco = pt_bin_edges_underflow_reco
+        # self.nbins_pt_underflow_reco = len(pt_bin_edges_underflow_reco)-1 if pt_bin_edges_underflow_reco is not None else 0
+        # self.pt_bin_edges_underflow_gen = pt_bin_edges_underflow_gen
+        # self.nbins_pt_underflow_gen = len(pt_bin_edges_underflow_gen)-1 if pt_bin_edges_underflow_gen is not None else 0
 
-        self.detector_distribution_underflow = self.detector_binning.AddBinning("detectordistribution_underflow")
-        if self.variable_bin_edges_reco is not None:
-            self.detector_distribution_underflow.AddAxis(self.variable_name, self.nbins_variable_reco, self.variable_bin_edges_reco, var_uf, var_of)
-        if self.pt_bin_edges_underflow_reco is not None:
-            self.detector_distribution_underflow.AddAxis("pt", self.nbins_pt_underflow_reco, self.pt_bin_edges_underflow_reco, False, False)
+        # # Binning setup here MUST match how it was setup in making the input files, otherwise
+        # # you will have untold pain and suffering!
+        # # TODO read in from XML
+        # var_uf, var_of = False, True
+        # pt_uf, pt_of = False, True  # handle pt under/over flow ourselves
+        # self.detector_binning = ROOT.TUnfoldBinning("detector")
 
-        self.detector_distribution = self.detector_binning.AddBinning("detectordistribution")
-        if self.variable_bin_edges_reco is not None:
-            self.detector_distribution.AddAxis(self.variable_name, self.nbins_variable_reco, self.variable_bin_edges_reco, var_uf, var_of)
-        if self.pt_bin_edges_reco is not None:
-            self.detector_distribution.AddAxis("pt", self.nbins_pt_reco, self.pt_bin_edges_reco, False, pt_of)
+        # self.detector_distribution_underflow = self.detector_binning.AddBinning("detectordistribution_underflow")
+        # if self.variable_bin_edges_reco is not None:
+        #     self.detector_distribution_underflow.AddAxis(self.variable_name, self.nbins_variable_reco, self.variable_bin_edges_reco, var_uf, var_of)
+        # if self.pt_bin_edges_underflow_reco is not None:
+        #     self.detector_distribution_underflow.AddAxis("pt", self.nbins_pt_underflow_reco, self.pt_bin_edges_underflow_reco, False, False)
+
+        # self.detector_distribution = self.detector_binning.AddBinning("detectordistribution")
+        # if self.variable_bin_edges_reco is not None:
+        #     self.detector_distribution.AddAxis(self.variable_name, self.nbins_variable_reco, self.variable_bin_edges_reco, var_uf, var_of)
+        # if self.pt_bin_edges_reco is not None:
+        #     self.detector_distribution.AddAxis("pt", self.nbins_pt_reco, self.pt_bin_edges_reco, False, pt_of)
 
 
-        self.generator_binning = ROOT.TUnfoldBinning("generator")
+        # self.generator_binning = ROOT.TUnfoldBinning("generator")
 
-        self.generator_distribution_underflow = self.generator_binning.AddBinning("generatordistribution_underflow")
-        if self.variable_bin_edges_gen is not None:
-            self.generator_distribution_underflow.AddAxis(self.variable_name, self.nbins_variable_gen, self.variable_bin_edges_gen, var_uf, var_of)
-        if self.pt_bin_edges_underflow_gen is not None:
-            self.generator_distribution_underflow.AddAxis("pt", self.nbins_pt_underflow_gen, self.pt_bin_edges_underflow_gen, pt_uf, False)
+        # self.generator_distribution_underflow = self.generator_binning.AddBinning("generatordistribution_underflow")
+        # if self.variable_bin_edges_gen is not None:
+        #     self.generator_distribution_underflow.AddAxis(self.variable_name, self.nbins_variable_gen, self.variable_bin_edges_gen, var_uf, var_of)
+        # if self.pt_bin_edges_underflow_gen is not None:
+        #     self.generator_distribution_underflow.AddAxis("pt", self.nbins_pt_underflow_gen, self.pt_bin_edges_underflow_gen, pt_uf, False)
 
-        self.generator_distribution = self.generator_binning.AddBinning("generatordistribution")
-        if self.variable_bin_edges_gen is not None:
-            self.generator_distribution.AddAxis(self.variable_name, self.nbins_variable_gen, self.variable_bin_edges_gen, var_uf, var_of)
-        if self.pt_bin_edges_gen is not None:
-            self.generator_distribution.AddAxis("pt", self.nbins_pt_gen, self.pt_bin_edges_gen, False, pt_of)
+        # self.generator_distribution = self.generator_binning.AddBinning("generatordistribution")
+        # if self.variable_bin_edges_gen is not None:
+        #     self.generator_distribution.AddAxis(self.variable_name, self.nbins_variable_gen, self.variable_bin_edges_gen, var_uf, var_of)
+        # if self.pt_bin_edges_gen is not None:
+        #     self.generator_distribution.AddAxis("pt", self.nbins_pt_gen, self.pt_bin_edges_gen, False, pt_of)
 
         self.orientation = orientation
         self.constraintMode = constraintMode
@@ -280,70 +474,119 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
 
         self.total_ematrix_name = "total_ematrix"
 
+        # self.variable_bin_edges_reco
+        # self.nbins_variable_reco
+        # self.variable_bin_edges_gen
+        # self.nbins_variable_gen
+        # self.pt_bin_edges_reco
+        # self.nbins_pt_reco
+        # self.pt_bin_edges_gen
+        # self.nbins_pt_gen
+        # self.pt_bin_edges_underflow_reco
+        # self.nbins_pt_underflow_reco
+        # self.pt_bin_edges_underflow_gen
+        # self.nbins_pt_underflow_gen
+        # self.detector_binning
+        # self.detector_distribution_underflow
+        # self.detector_distribution
+        # self.generator_binning
+        # self.generator_distribution_underflow
+        # self.generator_distribution
 
-    @staticmethod
-    def construct_tunfold_binning(variable_bin_edges_reco,
-                                  variable_bin_edges_gen,
-                                  variable_name,
-                                  pt_bin_edges_reco,
-                                  pt_bin_edges_gen,
-                                  pt_bin_edges_underflow_reco,
-                                  pt_bin_edges_underflow_gen):
-        """Setup TUnfoldBinning objects
+        # binning_properties = [
+        #     'variable_bin_edges_reco',
+        #     'nbins_variable_reco',
+        #     'variable_bin_edges_gen',
+        #     'nbins_variable_gen',
+        #     'pt_bin_edges_reco',
+        #     'nbins_pt_reco',
+        #     'pt_bin_edges_gen',
+        #     'nbins_pt_gen',
+        #     'pt_bin_edges_underflow_reco',
+        #     'nbins_pt_underflow_reco',
+        #     'pt_bin_edges_underflow_gen',
+        #     'nbins_pt_underflow_gen',
+        #     'detector_binning',
+        #     'detector_distribution_underflow',
+        #     'detector_distribution',
+        #     'generator_binning',
+        #     'generator_distribution_underflow',
+        #     'generator_distribution',]
 
-        TODO: integrate this into __init__ properly!
-        """
-        variable_bin_edges_reco = variable_bin_edges_reco
-        nbins_variable_reco = len(variable_bin_edges_reco)-1 if variable_bin_edges_reco is not None else 0
-        variable_bin_edges_gen = variable_bin_edges_gen
-        nbins_variable_gen = len(variable_bin_edges_gen)-1 if variable_bin_edges_gen is not None else 0
+    # rewire these to point to BinningHandler instead
+    # one day I'll remove references to these
+    @property
+    def variable_bin_edges_reco(self):
+        return self.binning_handler.detector_ptvar_binning.variable_bin_edges
 
-        pt_bin_edges_reco = pt_bin_edges_reco
-        nbins_pt_reco = len(pt_bin_edges_reco)-1 if pt_bin_edges_reco is not None else 0
-        pt_bin_edges_gen = pt_bin_edges_gen
-        nbins_pt_gen = len(pt_bin_edges_gen)-1 if pt_bin_edges_gen is not None else 0
+    @property
+    def nbins_variable_reco(self):
+        return self.binning_handler.detector_ptvar_binning.nbins_variable
 
-        pt_bin_edges_underflow_reco = pt_bin_edges_underflow_reco
-        nbins_pt_underflow_reco = len(pt_bin_edges_underflow_reco)-1 if pt_bin_edges_underflow_reco is not None else 0
-        pt_bin_edges_underflow_gen = pt_bin_edges_underflow_gen
-        nbins_pt_underflow_gen = len(pt_bin_edges_underflow_gen)-1 if pt_bin_edges_underflow_gen is not None else 0
+    @property
+    def pt_bin_edges_reco(self):
+        return self.binning_handler.detector_ptvar_binning.pt_bin_edges
 
-        # Binning setup here MUST match how it was setup in making the input files, otherwise
-        # you will have untold pain and suffering!
-        # TODO read in from XML
-        var_uf, var_of = False, True
-        pt_uf, pt_of = False, True  # handle pt under/over flow ourselves
-        detector_binning = ROOT.TUnfoldBinning("detector")
+    @property
+    def nbins_pt_reco(self):
+        return self.binning_handler.detector_ptvar_binning.nbins_pt
 
-        detector_distribution_underflow = detector_binning.AddBinning("detectordistribution_underflow")
-        if variable_bin_edges_reco is not None:
-            detector_distribution_underflow.AddAxis(variable_name, nbins_variable_reco, variable_bin_edges_reco, var_uf, var_of)
-        if pt_bin_edges_underflow_reco is not None:
-            detector_distribution_underflow.AddAxis("pt", nbins_pt_underflow_reco, pt_bin_edges_underflow_reco, False, False)
+    @property
+    def pt_bin_edges_underflow_reco(self):
+        return self.binning_handler.detector_ptvar_binning.pt_bin_edges_underflow
 
-        detector_distribution = detector_binning.AddBinning("detectordistribution")
-        if variable_bin_edges_reco is not None:
-            detector_distribution.AddAxis(variable_name, nbins_variable_reco, variable_bin_edges_reco, var_uf, var_of)
-        if pt_bin_edges_reco is not None:
-            detector_distribution.AddAxis("pt", nbins_pt_reco, pt_bin_edges_reco, False, pt_of)
+    @property
+    def nbins_pt_underflow_reco(self):
+        return self.binning_handler.detector_ptvar_binning.nbins_pt_underflow
+
+    @property
+    def detector_binning(self):
+        return self.binning_handler.detector_ptvar_binning.binning
+
+    @property
+    def detector_distribution_underflow(self):
+        return self.binning_handler.detector_ptvar_binning.distribution_underflow
+
+    @property
+    def detector_distribution(self):
+        return self.binning_handler.detector_ptvar_binning.distribution
 
 
-        generator_binning = ROOT.TUnfoldBinning("generator")
+    @property
+    def variable_bin_edges_gen(self):
+        return self.binning_handler.generator_ptvar_binning.variable_bin_edges
 
-        generator_distribution_underflow = generator_binning.AddBinning("generatordistribution_underflow")
-        if variable_bin_edges_gen is not None:
-            generator_distribution_underflow.AddAxis(variable_name, nbins_variable_gen, variable_bin_edges_gen, var_uf, var_of)
-        if pt_bin_edges_underflow_gen is not None:
-            generator_distribution_underflow.AddAxis("pt", nbins_pt_underflow_gen, pt_bin_edges_underflow_gen, pt_uf, False)
+    @property
+    def nbins_variable_gen(self):
+        return self.binning_handler.generator_ptvar_binning.nbins_variable
 
-        generator_distribution = generator_binning.AddBinning("generatordistribution")
-        if variable_bin_edges_gen is not None:
-            generator_distribution.AddAxis(variable_name, nbins_variable_gen, variable_bin_edges_gen, var_uf, var_of)
-        if pt_bin_edges_gen is not None:
-            generator_distribution.AddAxis("pt", nbins_pt_gen, pt_bin_edges_gen, False, pt_of)
+    @property
+    def pt_bin_edges_gen(self):
+        return self.binning_handler.generator_ptvar_binning.pt_bin_edges
 
-        return generator_binning, detector_binning
+    @property
+    def nbins_pt_gen(self):
+        return self.binning_handler.generator_ptvar_binning.nbins_pt
 
+    @property
+    def pt_bin_edges_underflow_gen(self):
+        return self.binning_handler.generator_ptvar_binning.pt_bin_edges_underflow
+
+    @property
+    def nbins_pt_underflow_gen(self):
+        return self.binning_handler.generator_ptvar_binning.nbins_pt_underflow
+
+    @property
+    def generator_binning(self):
+        return self.binning_handler.generator_ptvar_binning.binning
+
+    @property
+    def generator_distribution_underflow(self):
+        return self.binning_handler.generator_ptvar_binning.distribution_underflow
+
+    @property
+    def generator_distribution(self):
+        return self.binning_handler.generator_ptvar_binning.distribution
 
     def save_binning(self, print_xml=True, txt_filename=None):
         """Save binning scheme to txt and/or print XML to screen"""
@@ -478,7 +721,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             if key in state and state[key] is not None:
                 del state[key]
         # Remove the large entries from being pickled
-        # Normally they can be reconstructed from ROOT objects intstead
+        # Normally they can be reconstructed from ROOT objects instead
         _del_state('_probability_ndarray')
         _del_state('response_map_normed_by_detector_pt')
         _del_state('vyy_inv_ndarray')

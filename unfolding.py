@@ -31,7 +31,7 @@ My_Style.cd()
 import common_utils as cu
 import qg_common as qgc
 import qg_general_plots as qgp
-from my_unfolder import MyUnfolder, pickle_region, unpickle_region, ExpSystematic, HistBinChopper, TruthTemplateMaker
+from my_unfolder import MyUnfolder, pickle_region, unpickle_region, ExpSystematic, HistBinChopper, TruthTemplateMaker, BinningHandler
 from my_unfolder_plotter import MyUnfolderPlotter
 from unfolding_regularisation_classes import TauScanner, LCurveScanner
 from unfolding_config import get_dijet_config, get_zpj_config
@@ -157,73 +157,73 @@ def draw_projection_comparison(h_orig, h_projection, title, xtitle, output_filen
     plot.save(output_filename)
 
 
-def fill_empty_bins(response_map,
-                    variable_bin_edges_reco,
-                    variable_bin_edges_gen,
-                    variable_name,
-                    pt_bin_edges_reco,
-                    pt_bin_edges_gen,
-                    pt_bin_edges_underflow_reco,
-                    pt_bin_edges_underflow_gen):
-    """Fill in empty bins in the response map with some small value
+# def fill_empty_bins(response_map,
+#                     variable_bin_edges_reco,
+#                     variable_bin_edges_gen,
+#                     variable_name,
+#                     pt_bin_edges_reco,
+#                     pt_bin_edges_gen,
+#                     pt_bin_edges_underflow_reco,
+#                     pt_bin_edges_underflow_gen):
+#     """Fill in empty bins in the response map with some small value
 
-    Testing to see if it helps stabilise unfolding
-    """
-    new_map = response_map.Clone()
+#     Testing to see if it helps stabilise unfolding
+#     """
+#     new_map = response_map.Clone()
 
-    generator_binning, detector_binning = MyUnfolder.construct_tunfold_binning(variable_bin_edges_reco,
-                                                                               variable_bin_edges_gen,
-                                                                               variable_name,
-                                                                               pt_bin_edges_reco,
-                                                                               pt_bin_edges_gen,
-                                                                               pt_bin_edges_underflow_reco,
-                                                                               pt_bin_edges_underflow_gen)
+#     generator_binning, detector_binning = MyUnfolder.construct_tunfold_binning(variable_bin_edges_reco,
+#                                                                                variable_bin_edges_gen,
+#                                                                                variable_name,
+#                                                                                pt_bin_edges_reco,
+#                                                                                pt_bin_edges_gen,
+#                                                                                pt_bin_edges_underflow_reco,
+#                                                                                pt_bin_edges_underflow_gen)
 
-    generator_binning_uflow = generator_binning.FindNode("generatordistribution_underflow")
-    generator_binning_main = generator_binning.FindNode("generatordistribution")
+#     generator_binning_uflow = generator_binning.FindNode("generatordistribution_underflow")
+#     generator_binning_main = generator_binning.FindNode("generatordistribution")
 
-    detector_binning_uflow = detector_binning.FindNode("detectordistribution_underflow")
-    detector_binning_main = detector_binning.FindNode("detectordistribution")
+#     detector_binning_uflow = detector_binning.FindNode("detectordistribution_underflow")
+#     detector_binning_main = detector_binning.FindNode("detectordistribution")
 
-    # in each gen pt, detector pt bin, find the largest and smallest bin counts
-    # then go through again and fill in the empty bins with some very small value,
-    # that is relatively smaller than the smallest bin is compared to the largest bin
-    # (we're just trying to ensure non-zero, not physically super sensible)
-    n_bins = (len(variable_bin_edges_gen)-1)*(len(variable_bin_edges_reco)-1)
-    for ibin_pt_gen, gen_pt in enumerate(chain(pt_bin_edges_underflow_gen[:-1], pt_bin_edges_gen)):
-        for ibin_pt_reco, reco_pt in enumerate(chain(pt_bin_edges_underflow_reco[:-1], pt_bin_edges_reco)):
-            largest_bin_count = -99999
-            smallest_bin_count = 9E99
-            empty_bin_indices = []
+#     # in each gen pt, detector pt bin, find the largest and smallest bin counts
+#     # then go through again and fill in the empty bins with some very small value,
+#     # that is relatively smaller than the smallest bin is compared to the largest bin
+#     # (we're just trying to ensure non-zero, not physically super sensible)
+#     n_bins = (len(variable_bin_edges_gen)-1)*(len(variable_bin_edges_reco)-1)
+#     for ibin_pt_gen, gen_pt in enumerate(chain(pt_bin_edges_underflow_gen[:-1], pt_bin_edges_gen)):
+#         for ibin_pt_reco, reco_pt in enumerate(chain(pt_bin_edges_underflow_reco[:-1], pt_bin_edges_reco)):
+#             largest_bin_count = -99999
+#             smallest_bin_count = 9E99
+#             empty_bin_indices = []
 
-            for gen_var in variable_bin_edges_gen[:-1]:
-                # urghhhhhh have to manually choose the TUnfoldBinning object
-                this_gen_binning = generator_binning_uflow if gen_pt < pt_bin_edges_gen[0] else generator_binning_main
-                gen_bin_num = this_gen_binning.GetGlobalBinNumber(gen_var+0.001, gen_pt+0.001)
-                for reco_var in variable_bin_edges_reco[:-1]:
-                    this_reco_binning = detector_binning_uflow if reco_pt < pt_bin_edges_reco[0] else detector_binning_main
-                    reco_bin_num = this_reco_binning.GetGlobalBinNumber(reco_var+0.001, reco_pt+0.001)
-                    val = response_map.GetBinContent(gen_bin_num, reco_bin_num)
-                    if val == 0:
-                        empty_bin_indices.append([gen_bin_num, reco_bin_num])
-                    elif val < smallest_bin_count:
-                        smallest_bin_count = val
-                    elif val > largest_bin_count:
-                        largest_bin_count = val
+#             for gen_var in variable_bin_edges_gen[:-1]:
+#                 # urghhhhhh have to manually choose the TUnfoldBinning object
+#                 this_gen_binning = generator_binning_uflow if gen_pt < pt_bin_edges_gen[0] else generator_binning_main
+#                 gen_bin_num = this_gen_binning.GetGlobalBinNumber(gen_var+0.001, gen_pt+0.001)
+#                 for reco_var in variable_bin_edges_reco[:-1]:
+#                     this_reco_binning = detector_binning_uflow if reco_pt < pt_bin_edges_reco[0] else detector_binning_main
+#                     reco_bin_num = this_reco_binning.GetGlobalBinNumber(reco_var+0.001, reco_pt+0.001)
+#                     val = response_map.GetBinContent(gen_bin_num, reco_bin_num)
+#                     if val == 0:
+#                         empty_bin_indices.append([gen_bin_num, reco_bin_num])
+#                     elif val < smallest_bin_count:
+#                         smallest_bin_count = val
+#                     elif val > largest_bin_count:
+#                         largest_bin_count = val
 
-            # if ibin_pt_gen < 4 and ibin_pt_reco < 4:
-            #     print(ibin_pt_gen, ibin_pt_reco, ":", len(empty_bin_indices), n_bins, largest_bin_count, smallest_bin_count, smallest_bin_count/largest_bin_count)
+#             # if ibin_pt_gen < 4 and ibin_pt_reco < 4:
+#             #     print(ibin_pt_gen, ibin_pt_reco, ":", len(empty_bin_indices), n_bins, largest_bin_count, smallest_bin_count, smallest_bin_count/largest_bin_count)
 
-            is_near_diagonal = abs(ibin_pt_gen - (ibin_pt_reco/2)) < 3
-            if (largest_bin_count > 0) and (smallest_bin_count > 0) and (((1. * len(empty_bin_indices) / n_bins) < 0.75) or is_near_diagonal):
-                ratio = smallest_bin_count / largest_bin_count
-                new_val = ratio * ratio * smallest_bin_count
-                print("Filling", ibin_pt_gen, ibin_pt_reco, smallest_bin_count * ratio)
-                for x, y in empty_bin_indices:
-                    new_map.SetBinContent(x, y, new_val)
-                    new_map.SetBinError(x, y, 0)
+#             is_near_diagonal = abs(ibin_pt_gen - (ibin_pt_reco/2)) < 3
+#             if (largest_bin_count > 0) and (smallest_bin_count > 0) and (((1. * len(empty_bin_indices) / n_bins) < 0.75) or is_near_diagonal):
+#                 ratio = smallest_bin_count / largest_bin_count
+#                 new_val = ratio * ratio * smallest_bin_count
+#                 print("Filling", ibin_pt_gen, ibin_pt_reco, smallest_bin_count * ratio)
+#                 for x, y in empty_bin_indices:
+#                     new_map.SetBinContent(x, y, new_val)
+#                     new_map.SetBinError(x, y, 0)
 
-    return new_map
+#     return new_map
 
 
 def calc_background(hist, bg_fraction_hist):
@@ -607,35 +607,6 @@ def main():
             elif args.regularizeAxis == 'angle':
                 axis_steering = 'pt[N];%s[B]' % variable_name
 
-            # setup one unfolder to get binning
-            # TODO: move creation of TUnfoldbinning into own func
-            # dummy_unfolder = MyUnfolder(response_map=rm_large_rel_error_bins_th2(hist_mc_gen_reco_map, args.relErr),
-            #                             variable_bin_edges_reco=angle_bin_edges_reco,
-            #                             variable_bin_edges_gen=angle_bin_edges_gen,
-            #                             variable_name=variable_name,
-            #                             pt_bin_edges_reco=pt_bin_edges_reco,
-            #                             pt_bin_edges_gen=pt_bin_edges_gen,
-            #                             pt_bin_edges_underflow_reco=pt_bin_edges_underflow_reco,
-            #                             pt_bin_edges_underflow_gen=pt_bin_edges_underflow_gen,
-            #                             orientation=ROOT.TUnfold.kHistMapOutputHoriz,
-            #                             constraintMode=AREA_OPT_DICT[args.areaConstraint],
-            #                             # regMode=ROOT.TUnfold.kRegModeCurvature,
-            #                             # densityFlags=ROOT.TUnfoldDensity.kDensityModeBinWidth, # important as we have varying bin sizes!
-            #                             regMode=ROOT.TUnfold.kRegModeNone,
-            #                             densityFlags=ROOT.TUnfoldDensity.kDensityModeBinWidthAndUser, # doesn't actually matter as RegModNone
-            #                             distribution='generatordistribution',  # the one to use for actual final regularisation/unfolding
-            #                             axisSteering=axis_steering)
-
-            # # fill in empty bins in response_map to ensure better unfolding
-            # new_response_map = fill_empty_bins(hist_mc_gen_reco_map,
-            #                                    variable_bin_edges_reco=angle_bin_edges_reco,
-            #                                    variable_bin_edges_gen=angle_bin_edges_gen,
-            #                                    variable_name=variable_name,
-            #                                    pt_bin_edges_reco=pt_bin_edges_reco,
-            #                                    pt_bin_edges_gen=pt_bin_edges_gen,
-            #                                    pt_bin_edges_underflow_reco=pt_bin_edges_underflow_reco,
-            #                                    pt_bin_edges_underflow_gen=pt_bin_edges_underflow_gen,)
-
             print('reco lambda binning', angle_bin_edges_reco)
             print('gen lambd binning', angle_bin_edges_gen)
             print('reco pt binning', pt_bin_edges_reco)
@@ -643,7 +614,25 @@ def main():
             print('reco uflow pt binning', pt_bin_edges_underflow_reco)
             print('gen uflow pt binning', pt_bin_edges_underflow_gen)
 
+            binning_handler = BinningHandler(variable_bin_edges_reco=angle_bin_edges_reco,
+                                             variable_bin_edges_gen=angle_bin_edges_gen,
+                                             variable_name=variable_name,
+                                             pt_bin_edges_reco=pt_bin_edges_reco,
+                                             pt_bin_edges_gen=pt_bin_edges_gen,
+                                             pt_bin_edges_underflow_reco=pt_bin_edges_underflow_reco,
+                                             pt_bin_edges_underflow_gen=pt_bin_edges_underflow_gen)
+
+
+            # disconnected_output_bins = find_disconnected_output_bins(hist_mc_gen_reco_map)
+            # print("disconnected", disconnected_output_bins)
+            # for d in disconnected_output_bins:
+            #     print(binning_handler.get_physical_bins(d, 'generator'))
+
+            # disconnected_input_bins = find_disconnected_input_bins(hist_mc_gen_reco_map)
+            # print("disconnected", disconnected_input_bins)
+
             unfolder = MyUnfolder(response_map=rm_large_rel_error_bins_th2(hist_mc_gen_reco_map, args.relErr),
+                                  binning_handler=binning_handler,
                                   variable_bin_edges_reco=angle_bin_edges_reco,
                                   variable_bin_edges_gen=angle_bin_edges_gen,
                                   variable_name=variable_name,
