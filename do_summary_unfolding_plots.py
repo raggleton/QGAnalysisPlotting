@@ -291,7 +291,7 @@ class SummaryPlotter(object):
             if do_groomed:
                 region_name += "_groomed"
             # drop last pt bin as massive error
-            pt_bins = self.pt_bins_zpj[:-2]
+            pt_bins = self.pt_bins_zpj[:]
             zpj_data = df[mask & (df['region'] == region_name) & (df['pt_bin'] < len(pt_bins)-1) & (df['pt_bin'] >= min_pt_bin_ind)]
             # the -1 is because the last entry in pt_bins is the upper edge of the last bin
             if not self.only_yoda_data:
