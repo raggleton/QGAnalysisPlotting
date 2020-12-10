@@ -1553,9 +1553,40 @@ def main():
                     exp_syst_unfolder.subtract_background(hist_fakes_reco, "fakes")
                     exp_syst_unfolder.subtract_background_gen_binning(hist_fakes_reco_gen_binning, "fakes")
 
+                    # Setup regularisation
+                    # --------------------------------------------------------------
+                    exp_tau = 0
+                    if REGULARIZE != "None":
+                        exp_syst_unfolder.SetBias(unfolder.truth_template)
+                        exp_syst_unfolder.setup_L_matrix_curvature(ref_hist=unfolder.truth_template, axis=args.regularizeAxis)
+
+                        if REGULARIZE == "L":
+                            print("Regularizing with ScanLcurve, please be patient...")
+                            exp_l_scanner = LCurveScanner()
+                            exp_tau = exp_l_scanner.scan_L(tunfolder=exp_syst_unfolder,
+                                                           n_scan=args.nScan,
+                                                           tau_min=region['tau_limits'][angle.var][0],
+                                                           tau_max=region['tau_limits'][angle.var][1])
+                            print("Found tau:", exp_tau)
+                            exp_l_scanner.plot_scan_L_curve(output_filename="%s/scanL_%s_%s.%s" % (this_output_dir, append, this_syst.label_no_spaces, OUTPUT_FMT))
+                            exp_l_scanner.plot_scan_L_curvature(output_filename="%s/scanLcurvature_%s_%s.%s" % (this_output_dir, append, this_syst.label_no_spaces, OUTPUT_FMT))
+
+                        elif REGULARIZE == "tau":
+                            print("Regularizing with ScanTau, please be patient...")
+                            exp_tau_scanner = TauScanner()
+                            exp_tau = exp_tau_scanner.scan_tau(tunfolder=exp_syst_unfolder,
+                                                               n_scan=args.nScan,
+                                                               tau_min=region['tau_limits'][angle.var][0],
+                                                               tau_max=region['tau_limits'][angle.var][1],
+                                                               scan_mode=scan_mode,
+                                                               distribution=scan_distribution,
+                                                               axis_steering=exp_syst_unfolder.axisSteering)
+                            print("Found tau:", exp_tau)
+                            exp_tau_scanner.plot_scan_tau(output_filename="%s/scantau_%s_%s.%s" % (this_output_dir, append, this_syst.label_no_spaces, OUTPUT_FMT))
+
                     # Do unfolding!
                     # --------------------------------------------------------------
-                    exp_syst_unfolder.do_unfolding(0)
+                    exp_syst_unfolder.do_unfolding(exp_tau)
                     exp_syst_unfolder.get_output(hist_name="exp_syst_%s_unfolded_1d" % this_syst.label_no_spaces)
                     exp_syst_unfolder._post_process()
 
