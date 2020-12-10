@@ -305,7 +305,7 @@ def main():
     if any([args.doDijetCentral, args.doDijetForward, args.doDijetCentralGroomed, args.doDijetForwardGroomed]):
         # actually these are all pretty similar...
         tau_limits_central = {
-            'jet_puppiMultiplicity': (1E-1, 1E3),
+            'jet_puppiMultiplicity': (1E-3, 1E2),
             'jet_pTD': (1E-1, 1E3),
             'jet_LHA': (1E-1, 1E3),
             'jet_width': (1E-1, 1E3),
