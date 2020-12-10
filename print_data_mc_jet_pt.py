@@ -454,20 +454,6 @@ def do_dijet_pt_plots(workdir,
         },
     ]
 
-    generator_binning, detector_binning = MyUnfolder.construct_tunfold_binning(variable_bin_edges_reco,
-                                                                               variable_bin_edges_gen,
-                                                                               variable_name,
-                                                                               pt_bin_edges_reco,
-                                                                               pt_bin_edges_gen,
-                                                                               pt_bin_edges_underflow_reco,
-                                                                               pt_bin_edges_underflow_gen)
-    generator_binning_uflow = generator_binning.FindNode("generatordistribution_underflow")
-    generator_binning_main = generator_binning.FindNode("generatordistribution")
-
-    detector_binning_uflow = detector_binning.FindNode("detectordistribution_underflow")
-    detector_binning_main = detector_binning.FindNode("detectordistribution")
-
-
     for region_shortname, region_label in [("central", qgc.Dijet_CEN_LABEL), ("forward", qgc.Dijet_FWD_LABEL)]:
 
         # histname = "Dijet_QG_%s_tighter/jet_pt" % (region_shortname)  # fine equidistant binning
@@ -574,9 +560,9 @@ def do_dijet_pt_plots(workdir,
             these_pdf_systematics = []
             num_vars = len(pdf_systematics[0]['variations'])
             for pdf_ind in pdf_systematics[0]['variations']:
-                hist = cu.get_from_tfile(tfile, "Dijet_QG_Unfold_%s_tighter/hist_LHA_reco_all_PDF_%d" % (region_shortname, pdf_ind))
-                hist = create_pt_hist(hist, detector_binning_main, detector_binning_uflow, pt_bin_edges_reco, pt_bin_edges_underflow_reco, variable_bin_edges_reco)
-                hist.Scale(mg_sf, "width")
+                hist = cu.get_from_tfile(tfile, "Dijet_QG_Unfold_%s_tighter/hist_pt_reco_all_PDF_%d" % (region_shortname, pdf_ind))
+                hist = tunfold_to_physical_bins(hist, all_pt_bins, divide_by_bin_width=True)
+                hist.Scale(mg_sf)
                 these_pdf_systematics.append(
                     {
                         "label": "PDF_%d" % (pdf_ind),
@@ -993,20 +979,6 @@ def do_zpj_pt_plots(workdir,
         },
     ]
 
-    generator_binning, detector_binning = MyUnfolder.construct_tunfold_binning(variable_bin_edges_reco,
-                                                                               variable_bin_edges_gen,
-                                                                               variable_name,
-                                                                               pt_bin_edges_zpj_reco,
-                                                                               pt_bin_edges_zpj_gen,
-                                                                               pt_bin_edges_zpj_underflow_reco,
-                                                                               pt_bin_edges_zpj_underflow_gen)
-    generator_binning_uflow = generator_binning.FindNode("generatordistribution_underflow")
-    generator_binning_main = generator_binning.FindNode("generatordistribution")
-
-    detector_binning_uflow = detector_binning.FindNode("detectordistribution_underflow")
-    detector_binning_main = detector_binning.FindNode("detectordistribution")
-
-
     lw = 2
     msize = 1.1
     data_line_width = lw
@@ -1108,9 +1080,6 @@ def do_zpj_pt_plots(workdir,
             hist = cu.get_from_tfile(tfile, "ZPlusJets_QG_Unfold/hist_pt_reco_all_PDF_%d" % (pdf_ind))
             hist = tunfold_to_physical_bins(hist, all_pt_bins, divide_by_bin_width=True)
             hist.Scale(mg_sf)
-            # hist = cu.get_from_tfile(tfile, "ZPlusJets_QG_Unfold/hist_LHA_reco_all_PDF_%d" % (pdf_ind))
-            # hist = create_pt_hist(hist, detector_binning_main, detector_binning_uflow, pt_bin_edges_zpj_reco, pt_bin_edges_zpj_underflow_reco, variable_bin_edges_reco)
-            # hist.Scale(mg_sf, "width")
             these_pdf_systematics.append(
                 {
                     "label": "PDF_%d" % (pdf_ind),
