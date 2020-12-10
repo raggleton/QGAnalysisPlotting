@@ -806,6 +806,11 @@ def main():
             # ---------------------
             unreg_unfolder = None
             L_matrix_entries = []
+            tau = 0
+            scan_mode = ROOT.TUnfoldDensity.kEScanTauRhoAvgSys
+            scan_mode = ROOT.TUnfoldDensity.kEScanTauRhoAvg
+            scan_distribution = unfolder.distribution
+
             if REGULARIZE != "None":
                 print("Doing preliminary unregularised unfolding...")
                 # Do an unregularised version first for comparison,
@@ -1042,12 +1047,6 @@ def main():
                     # print("Adding regularisation rule: nR=%d, gen bins: [%d - %d], factors: [%f, %f, %f]" % (iy, left_bin, right_bin, -scale_left, 2*(scale_left+scale_right), -scale_right) )
                     # unfolder.RegularizeCurvature(left_bin, mid_bin, right_bin, scale_left, scale_right)
 
-            tau = 0
-            scan_mode = ROOT.TUnfoldDensity.kEScanTauRhoAvgSys
-            scan_mode = ROOT.TUnfoldDensity.kEScanTauRhoAvg
-            scan_distribution = unfolder.distribution
-
-            if REGULARIZE != "None":
                 if REGULARIZE == "L":
                     print("Regularizing with ScanLcurve, please be patient...")
                     l_scanner = LCurveScanner()
