@@ -119,7 +119,7 @@ class PtVarBinning(object):
         return self.distribution if self.is_signal_region(pt) else self.distribution_underflow
 
     def cache_global_bin_mapping(self):
-        """Create maps of global bin <> physical bin values, 
+        """Create maps of global bin <> physical bin values,
         by iterating through all the physical bins (inc oflow)
 
         Have to do this as the TUnfoldBinning one isnt good.
@@ -166,6 +166,20 @@ class PtVarBinning(object):
 
         # now invert
         self.physical_val_to_global_bin_map = {v: k for k, v in self.global_bin_to_physical_val_map.items()}
+
+    def get_first_pt_overflow_global_bin(self):
+        """Get global bin corresponding to first pt overflow bin,
+        or the last bin+1 if no pt overflow configured"""
+        if not self.pt_of:
+            return max(self.global_bin_to_physical_val_map.keys())+1
+
+        pt = self.pt_bin_edges[-1] + 1E-6
+        binning_obj = self.get_distribution(pt)
+        if self.variable_bin_edges is not None:
+            global_bin = binning_obj.GetGlobalBinNumber(self.variable_bin_edges[0]+1E-6, pt)
+        else:
+            global_bin = binning_obj.GetGlobalBinNumber(pt)
+        return global_bin
 
 
 class BinningHandler(object):
@@ -228,6 +242,10 @@ class BinningHandler(object):
     def get_physical_bins(self, global_bin_number, binning_scheme):
         ptvar_binning = self.get_binning_scheme(binning_scheme)
         return ptvar_binning.global_bin_to_physical_val_map[global_bin_number]
+
+    def get_first_pt_overflow_global_bin(self, binning_scheme):
+        ptvar_binning = self.get_binning_scheme(binning_scheme)
+        return ptvar_binning.get_first_pt_overflow_global_bin()
 
 
 class MyUnfolder(ROOT.MyTUnfoldDensity):

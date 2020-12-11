@@ -21,6 +21,8 @@ import numpy as np
 import math
 from itertools import product, chain
 from copy import copy, deepcopy
+from pprint import pprint
+from bisect import bisect_right
 
 import ROOT
 from MyStyle import My_Style
@@ -244,6 +246,128 @@ def subtract_background(hist, bg_fraction_hist):
     new_hist = hist.Clone(cu.get_unique_str())
     new_hist.Add(bg_hist, -1)
     return new_hist, bg_hist
+
+
+def find_disconnected_output_bins(response_map):
+    project_x = response_map.ProjectionX()  # assumed gen on x axis
+    disconnected_bins = []
+    for ix in range(1, project_x.GetNbinsX()+1):
+        val = project_x.GetBinContent(ix)
+        if val == 0:
+            disconnected_bins.append(ix)
+    return disconnected_bins
+
+
+def find_disconnected_input_bins(response_map):
+    project_y = response_map.ProjectionY()  # assumed gen on x axis
+    disconnected_bins = []
+    for ix in range(1, project_y.GetNbinsX()+1):
+        val = project_y.GetBinContent(ix)
+        if val == 0:
+            disconnected_bins.append(ix)
+    return disconnected_bins
+
+
+def merge_th1_bins(h, bin_list):
+    """Merges each bin in bin_list with its leftwards neighbour"""
+    bin_edges_orig = cu.get_bin_edges(h, 'x')
+    # print("orig", bin_edges_orig)
+    bin_edges_new = [x for i, x in enumerate(bin_edges_orig, 1)
+                     if i not in bin_list]
+    # print("new", bin_edges_new)
+    h_new = ROOT.TH1D(h.GetName() + cu.get_unique_str(),
+                      ";".join([h.GetTitle(), h.GetXaxis().GetTitle(), h.GetYaxis().GetTitle()]),
+                      len(bin_edges_new)-1,
+                      array('d', bin_edges_new))
+    for ix in range(1, h.GetNbinsX()+1):
+        val = h.GetBinContent(ix)
+        err = h.GetBinError(ix)
+        pos = bisect_right(bin_list, ix)
+        ix_new = ix - pos
+        # print("ix", ix, "ix_new", ix_new)
+        h_new.SetBinContent(ix_new, val + h_new.GetBinContent(ix_new))
+        h_new.SetBinError(ix_new, np.hypot(err, h_new.GetBinError(ix_new)))
+    return h_new
+
+
+def merge_th2_bins(h, bin_list_x, bin_list_y):
+    if not bin_list_x or len(bin_list_x) == 0:
+        h_new = h
+    else:
+        # do x bin merging first
+        bin_edges_x_orig = cu.get_bin_edges(h, 'x')
+        print("origx", bin_edges_x_orig)
+        bin_edges_x_new = [x for i, x in enumerate(bin_edges_x_orig, 1)
+                          if i not in bin_list_x]
+        print("newx", bin_edges_x_new)
+        h_new = ROOT.TH2D(h.GetName() + cu.get_unique_str(),
+                          ";".join([h.GetTitle(), h.GetXaxis().GetTitle(), h.GetYaxis().GetTitle()]),
+                          len(bin_edges_x_new)-1,
+                          array('d', bin_edges_x_new),
+                          len(bin_edges_y_orig)-1,
+                          array('d', bin_edges_y_orig))
+
+        for iy in range(1, h.GetNbinsY()+1):
+            for ix in range(1, h.GetNbinsX()+1):
+                val = h.GetBinContent(ix, iy)
+                err = h.GetBinError(ix, iy)
+                pos = bisect_right(bin_list_x, ix)
+                ix_new = ix - pos
+                h_new.SetBinContent(ix_new, iy, val + h_new.GetBinContent(ix_new, iy))
+                h_new.SetBinError(ix_new, iy, np.hypot(err, h_new.GetBinError(ix_new, iy)))
+
+    if not bin_list_y or len(bin_list_y) == 0:
+        return h_new
+
+    # now do y bin merging
+    bin_edges_x_new = cu.get_bin_edges(h_new, 'x')
+    print("origx", bin_edges_x_new)
+    bin_edges_y_orig = cu.get_bin_edges(h, 'y')
+    print("origy", bin_edges_y_orig)
+    bin_edges_y_new = [y for i, y in enumerate(bin_edges_y_orig, 1)
+                       if i not in bin_list_y]
+    print("newy", bin_edges_y_new)
+    h_new2 = ROOT.TH2D(h.GetName() + cu.get_unique_str(),
+                      ";".join([h.GetTitle(), h.GetXaxis().GetTitle(), h.GetYaxis().GetTitle()]),
+                      len(bin_edges_x_new)-1,
+                      array('d', bin_edges_x_new),
+                      len(bin_edges_y_new)-1,
+                      array('d', bin_edges_y_new))
+
+    for ix in range(1, h_new.GetNbinsX()+1):
+        for iy in range(1, h_new.GetNbinsY()+1):
+            val = h_new.GetBinContent(ix, iy)
+            err = h_new.GetBinError(ix, iy)
+            pos = bisect_right(bin_list_x, iy)
+            iy_new = iy - pos
+            h_new2.SetBinContent(ix, iy_new, val + h_new2.GetBinContent(ix, iy_new))
+            h_new2.SetBinError(ix, iy_new, np.hypot(err, h_new2.GetBinError(ix, iy_new)))
+    return h_new2
+
+
+def get_bins_to_merge_nonnegative(h, max_bin=-1):
+    """"""
+    bins_to_merge = []
+    if max_bin < 0:
+        max_bin = h.GetNbinsX()
+    contents = np.array([h.GetBinContent(i) for i in range(1, max_bin+1)])
+    for ix, x in enumerate(contents, 1):
+        this_merge_set = []
+        if x < 0:
+            print("Found -ve bin", ix, "=", x, "±", h.GetBinError(ix))
+            this_merge_set.append(ix)
+            summed_bins = x
+            iter_ind = 1
+            while summed_bins < 0:
+                summed_bins += contents[ix-iter_ind-1]
+                print("..new sum", summed_bins)
+                if summed_bins < 0:
+                    this_merge_set.append(ix-iter_ind)
+                iter_ind += 1
+            this_merge_set = this_merge_set[::-1]  # reverse order so ascending
+            print("Found set that sums > 0:", this_merge_set, "=", summed_bins)
+            bins_to_merge.extend(this_merge_set)
+    return sorted(list(set(bins_to_merge)))
 
 
 # To be able to export to XML, since getting std::ostream from python is impossible?
@@ -1090,6 +1214,58 @@ def main():
 
             # Check result with numpy
             # unfolder.do_numpy_comparison(output_dir=this_output_dir)
+
+            # Figure out if we should merge any bins (i.e. -ve ones)
+            # bins_to_merge = []
+            pt_overflow_bin = binning_handler.get_first_pt_overflow_global_bin("generator")
+            print("pt_overflow_bin:", pt_overflow_bin)
+            bins_to_merge = get_bins_to_merge_nonnegative(unfolder.get_output(), max_bin=pt_overflow_bin-1)
+            print("bins to merge:", bins_to_merge)
+            for b in bins_to_merge:
+                print(b, ":", binning_handler.get_physical_bins(b, "generator"))
+
+            # for ibin in range(1, unfolder.get_output().GetNbinsX()+1):
+            #     bin_val = unfolder.get_output().GetBinContent(ibin)
+            #     if bin_val >= 0:
+            #         continue
+
+            #     print("Unfolded bin", ibin, "=", binning_handler.get_physical_bins(ibin, "generator"),"< 0:", bin_val)
+            #     bins_to_merge.append(ibin)
+
+            # counter = 0
+            # while len(bins_to_merge) > 0 and counter < 5:
+            #     counter += 1
+            #     print(bins_to_merge)
+            #     unfolder.unfolded = merge_th1_bins(unfolder.get_output(), bins_to_merge)
+
+            #     unfolder.unfolded_stat_err = merge_th1_bins(unfolder.get_unfolded_with_ematrix_stat(), bins_to_merge)
+            #     unfolder.unfolded_rsp_err = merge_th1_bins(unfolder.get_unfolded_with_ematrix_response(), bins_to_merge)
+            #     # unfolder.unfolded_total_err = merge_th1_bins(unfolder.get_unfolded_with_ematrix_total(), bins_to_merge)
+            #     unfolder.folded_unfolded = merge_th1_bins(unfolder.get_folded_unfolded(), bins_to_merge)
+            #     unfolder.folded_mc_truth = merge_th1_bins(unfolder.get_folded_mc_truth(), bins_to_merge)
+            #     unfolder.hist_truth = merge_th1_bins(unfolder.hist_truth, bins_to_merge)
+
+            #     unfolder.hist_bin_chopper.objects['hist_truth'] = unfolder.hist_truth
+            #     unfolder.hist_bin_chopper.objects['unfolded'] = unfolder.get_output()
+            #     unfolder.hist_bin_chopper.objects[unfolder.stat_uncert_name] = unfolder.get_unfolded_with_ematrix_stat()
+            #     unfolder.hist_bin_chopper.objects[unfolder.rsp_uncert_name] = unfolder.get_unfolded_with_ematrix_response()
+
+            #     for ibin in range(1, unfolder.get_output().GetNbinsX()+1):
+            #         bin_val = unfolder.get_output().GetBinContent(ibin)
+            #         if bin_val >= 0:
+            #             continue
+
+            #         print("Unfolded bin", ibin, "=", binning_handler.get_physical_bins(ibin, "generator"),"< 0:", bin_val)
+            #         bins_to_merge.append(ibin)
+
+            unfolder.unfolded = merge_th1_bins(unfolder.get_output(), bins_to_merge)
+            for ibin in range(1, unfolder.get_output().GetNbinsX()+1):
+                bin_val = unfolder.get_output().GetBinContent(ibin)
+                if bin_val >= 0:
+                    continue
+
+                print("Unfolded bin", ibin, "=", binning_handler.get_physical_bins(ibin, "generator"),"< 0:", bin_val)
+
 
             prof_end_nominal()
 
