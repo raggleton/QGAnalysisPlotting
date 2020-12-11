@@ -970,7 +970,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         # FIXME use input_hist instead with detector binning?
         which = which.lower()
         if which not in ['unfolded', 'gen']:
-            raise ArgumentError("calculate_pt_bin_factors: 'which' arg should be 'unfolded' or 'gen'")
+            raise ValueError("calculate_pt_bin_factors: 'which' arg should be 'unfolded' or 'gen'")
 
         hist = None
         if which == 'gen':
@@ -3947,7 +3947,7 @@ class HistBinChopper(object):
     def get_binning(self, binning_scheme):
         """Get TUnfoldBinning, lambda var bins, pt bins for binning_scheme = 'generator' or 'detector'"""
         if binning_scheme not in ['generator', 'detector']:
-            raise ArgumentError("binning_scheme must be one of 'generator', 'detector'")
+            raise ValueError("binning_scheme must be one of 'generator', 'detector'")
         thing = self.generator_binning if "generator" in binning_scheme else self.detector_binning
         if thing is None:
             raise RuntimeError("No valid TUnfoldBinning object for binning scheme '%s'" % binning_scheme)
@@ -4087,7 +4087,7 @@ class HistBinChopper(object):
     def _generate_key(name, ind, axis, do_norm, do_div_bin_width, binning_scheme):
         """Generate consistent name for these args, options as in get_bin_plot()"""
         if axis not in ['pt', 'lambda']:
-            raise ArgumentError('_generate_key(): axis must be "pt" or "lambda"')
+            raise ValueError('_generate_key(): axis must be "pt" or "lambda"')
         key = name + "_%s_bin_%d_%s" % (axis, ind, binning_scheme)
         if do_norm:
             key += "_norm"
