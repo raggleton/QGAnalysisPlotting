@@ -920,7 +920,8 @@ class MyUnfolderPlotter(object):
                          output_dir='.', append='', title='',
                          mark_negatives=True,
                          subplot_title=None,
-                         subplot_limits=(0.75, 1.25)):
+                         subplot_limits=(0.75, 1.25),
+                         do_logy=True):
         """Simple plot of unfolded & gen, by bin number (ie non physical axes)"""
         entries = []
 
@@ -957,28 +958,30 @@ class MyUnfolderPlotter(object):
                     subplot_type='ratio' if do_subplot else None,
                     subplot_title=subplot_title if subplot_title else '#splitline{Unfolded %s /}{MC Gen}' % label,
                     subplot_limits=subplot_limits,
+                    # ylim=[-500, 1000],
                     has_data=self.is_data)
         self._modify_plot(plot)
         # plot.text_left_offset = 0.05  # have to bodge this
         if len(entries) < 20:
-          plot.plot("NOSTACK HISTE")
+            plot.plot("NOSTACK HISTE")
         else:
-          plot.plot("NOSTACK HIST PLC PMC")
+            plot.plot("NOSTACK HIST PLC PMC")
         # plot.main_pad.SetLogy(1)
-        plot.set_logy(do_more_labels=False, override_check=True)
-        ymax = max([o.GetMaximum() for o in plot.contributions_objs])
-        plot.container.SetMaximum(ymax * 500)
-        ymin = min(c.obj.GetMinimum(1E-8) for c in entries)
-        plot.container.SetMinimum(ymin*0.01)  # space for bin labels as well
+        if do_logy:
+            plot.set_logy(do_more_labels=False, override_check=True)
+            ymax = max([o.GetMaximum() for o in plot.contributions_objs])
+            plot.container.SetMaximum(ymax * 500)
+            ymin = min(c.obj.GetMinimum(1E-8) for c in entries)
+            plot.container.SetMinimum(ymin*0.01)  # space for bin labels as well
         plot.main_pad.cd()
         plot.legend.SetY1NDC(0.7)
         plot.legend.SetY2NDC(0.88)
         plot.legend.SetX1NDC(0.65)
         plot.legend.SetX2NDC(0.88)
         if len(entries) > 5:
-          plot.legend.SetNColumns(2)
+            plot.legend.SetNColumns(2)
         if len(entries) > 50:
-          plot.legend.SetNColumns(3)
+            plot.legend.SetNColumns(3)
         # draw pt bin lines
         plot.main_pad.cd()
         lines, text = self.draw_pt_binning_lines(plot, which='gen', axis='x', do_underflow=True)
@@ -987,7 +990,12 @@ class MyUnfolderPlotter(object):
         arrows = []
         if do_unfolded and mark_negatives:
             plot.main_pad.cd()
-            arrows = self.mark_negatives(self.unfolder.unfolded, ymin*0.01, ymin*50)
+            if not do_logy:
+                ymin = min([e.obj.GetMinimum() for e in entries])
+                ymax = max([e.obj.GetMaximum() for e in entries])
+                arrows = self.mark_negatives(self.unfolder.unfolded, ymin, (ymax-ymin)/5 + ymin)
+            else:
+                arrows = self.mark_negatives(self.unfolder.unfolded, ymin*0.01, ymin*50)
 
         output_filename = "%s/unfolded_%s.%s" % (output_dir, append, self.output_fmt)
         plot.save(output_filename)

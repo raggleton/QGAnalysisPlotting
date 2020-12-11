@@ -1899,7 +1899,11 @@ def main():
             # Draw big 1D distributions
             # ------------------------------------------------------------------
             title = "%s\n%s region, %s" % (jet_algo, region['label'], angle_str)
-            unfolder_plotter.draw_unfolded_1d(output_dir=this_output_dir, append=append, title=title)
+            unfolder_plotter.draw_unfolded_1d(output_dir=this_output_dir,
+                                              append=append,
+                                              title=title,
+                                              do_gen=True,
+                                              do_logy=True)
 
             # reco using detector binning
             unfolder_plotter.draw_detector_1d(do_reco_mc=True,
