@@ -72,7 +72,7 @@ class PtVarBinning(object):
         self.variable_bin_edges = variable_bin_edges
         self.nbins_variable = len(variable_bin_edges)-1 if variable_bin_edges is not None else 0
 
-        self.pt_bin_edges = pt_bin_edges_signal
+        self.pt_bin_edges_signal = pt_bin_edges_signal
         self.nbins_pt = len(pt_bin_edges_signal) - 1 if pt_bin_edges_signal is not None else 0
 
         self.pt_bin_edges_underflow = pt_bin_edges_underflow
@@ -103,7 +103,7 @@ class PtVarBinning(object):
         if self.variable_bin_edges is not None:
             self.distribution.AddAxis(self.variable_name, self.nbins_variable, self.variable_bin_edges,
                                       self.var_uf, self.var_of)
-        self.distribution.AddAxis(self.pt_name, self.nbins_pt, self.pt_bin_edges,
+        self.distribution.AddAxis(self.pt_name, self.nbins_pt, self.pt_bin_edges_signal,
                                   False, self.pt_of)
 
         # Hold maps of global bin number < > physical bin edges
@@ -114,13 +114,13 @@ class PtVarBinning(object):
         print("bin 1:", self.global_bin_to_physical_val_map[1])
 
     def is_signal_region(self, pt):
-        return pt >= self.pt_bin_edges[0]
+        return pt >= self.pt_bin_edges_signal[0]
 
     def get_distribution(self, pt):
         return self.distribution if self.is_signal_region(pt) else self.distribution_underflow
 
     def get_pt_bins(self, is_signal_region):
-        return self.pt_bin_edges if is_signal_region else self.pt_bin_edges_underflow
+        return self.pt_bin_edges_signal if is_signal_region else self.pt_bin_edges_underflow
 
     def get_variable_bins(self, pt):
         # pt in args to duck type with PtVarPerPtBinning method
@@ -132,7 +132,7 @@ class PtVarBinning(object):
 
         Have to do this as the TUnfoldBinning one isnt good.
         """
-        all_pt_bins = list(chain(self.pt_bin_edges_underflow[:-1], self.pt_bin_edges))
+        all_pt_bins = list(chain(self.pt_bin_edges_underflow[:-1], self.pt_bin_edges_signal))
         for ibin_pt, pt in enumerate(all_pt_bins[:-1]):
             this_pt = pt+1E-6
             pt_bin = (pt, all_pt_bins[ibin_pt+1])
@@ -153,7 +153,7 @@ class PtVarBinning(object):
                                                                         var=None)
 
         if self.pt_of:
-            pt = self.pt_bin_edges[-1]
+            pt = self.pt_bin_edges_signal[-1]
             this_pt = pt+1E-6
             pt_bin = (pt, np.inf)
             binning_obj = self.get_distribution(this_pt)
@@ -185,7 +185,7 @@ class PtVarBinning(object):
         if not self.pt_of:
             return max(self.global_bin_to_physical_val_map.keys())+1
 
-        pt = self.pt_bin_edges[-1] + 1E-6
+        pt = self.pt_bin_edges_signal[-1] + 1E-6
         binning_obj = self.get_distribution(pt)
         if self.variable_bin_edges is not None:
             global_bin = binning_obj.GetGlobalBinNumber(self.variable_bin_edges[0]+1E-6, pt)
@@ -612,7 +612,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
 
     @property
     def pt_bin_edges_reco(self):
-        return self.binning_handler.detector_ptvar_binning.pt_bin_edges
+        return self.binning_handler.detector_ptvar_binning.pt_bin_edges_signal
 
     @property
     def nbins_pt_reco(self):
@@ -649,7 +649,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
 
     @property
     def pt_bin_edges_gen(self):
-        return self.binning_handler.generator_ptvar_binning.pt_bin_edges
+        return self.binning_handler.generator_ptvar_binning.pt_bin_edges_signal
 
     @property
     def nbins_pt_gen(self):
