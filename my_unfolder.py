@@ -57,9 +57,9 @@ class PtVarBinning(object):
     """Hold a set of pt, variable binning. Assumes separate underflow pT region."""
 
     def __init__(self,
-                 variable_bin_edges, # 'variable' refers to e.g. ptD, LHA
+                 variable_bin_edges,  # 'variable' refers to e.g. ptD, LHA
                  variable_name,
-                 pt_bin_edges,
+                 pt_bin_edges_signal,
                  pt_bin_edges_underflow,
                  binning_name,
                  binning_underflow_name,
@@ -72,8 +72,8 @@ class PtVarBinning(object):
         self.variable_bin_edges = variable_bin_edges
         self.nbins_variable = len(variable_bin_edges)-1 if variable_bin_edges is not None else 0
 
-        self.pt_bin_edges = pt_bin_edges
-        self.nbins_pt = len(pt_bin_edges)-1 if pt_bin_edges is not None else 0
+        self.pt_bin_edges = pt_bin_edges_signal
+        self.nbins_pt = len(pt_bin_edges_signal) - 1 if pt_bin_edges_signal is not None else 0
 
         self.pt_bin_edges_underflow = pt_bin_edges_underflow
         self.nbins_pt_underflow = len(pt_bin_edges_underflow)-1 if pt_bin_edges_underflow is not None else 0
@@ -118,6 +118,9 @@ class PtVarBinning(object):
 
     def get_distribution(self, pt):
         return self.distribution if self.is_signal_region(pt) else self.distribution_underflow
+
+    def get_pt_bins(self, is_signal_region):
+        return self.pt_bin_edges if is_signal_region else self.pt_bin_edges_underflow
 
     def get_variable_bins(self, pt):
         # pt in args to duck type with PtVarPerPtBinning method
@@ -240,7 +243,7 @@ class PtVarPerPtBinning(object):
         self.binning_name = binning_name
         self.binning_underflow_name = binning_underflow_name
         self.binning_signal_name = binning_signal_name
-        
+
         self.binning = ROOT.TUnfoldBinning(self.binning_name)
 
         # Do pt underflow ourselves as separate region
@@ -258,7 +261,7 @@ class PtVarPerPtBinning(object):
                                            1,
                                            pt_bin_edges_signal,
                                            False, False)
-            # pt underflow must always be false, because we have to specify 
+            # pt underflow must always be false, because we have to specify
             # the lambda binning for it explicity, so it will be part of the pt_signal_bin_config
             self.underflow_distributions.append(distribution_underflow)
 
@@ -275,8 +278,8 @@ class PtVarPerPtBinning(object):
             distribution_signal.AddAxis(self.pt_name,
                                         1,
                                         pt_bin_edges_signal,
-                                        False, False)  
-            # pt overflow must always be false, because we have to specify 
+                                        False, False)
+            # pt overflow must always be false, because we have to specify
             # the lambda binning for it explicity, so it will be part of the pt_signal_bin_config
             self.signal_distributions.append(distribution_signal)
 
@@ -297,6 +300,9 @@ class PtVarPerPtBinning(object):
         if pos > (len(distributions)-1):
             raise IndexError("Can't find distribution for pt %f in bins %s with pos %d (len = %s)" % (pt, pt_bins, pos, len(distributions)))
         return distributions[pos]
+
+    def get_pt_bins(self, is_signal_region):
+        return self.pt_bin_edges_signal if is_signal_region else self.pt_bin_edges_underflow
 
     def get_variable_bins(self, pt):
         pt_bins = self.pt_bin_edges_signal if self.is_signal_region(pt) else self.pt_bin_edges_underflow
@@ -343,18 +349,18 @@ class BinningHandler(object):
     """Class to handle both detector and generator binnings"""
 
     def __init__(self,
-                 detector_binning_obj,
-                 generator_binning_obj):
+                 detector_ptvar_binning,
+                 generator_ptvar_binning):
 
         # DETECTOR LEVEL BINNING
         # ------------------------------------------------------------------------------------------
         self.detector_binning_name = "detector"
-        self.detector_ptvar_binning = detector_binning_obj
+        self.detector_ptvar_binning = detector_ptvar_binning
 
         # GENERATOR LEVEL BINNING
         # ------------------------------------------------------------------------------------------
         self.generator_binning_name = "generator"
-        self.generator_ptvar_binning = generator_binning_obj
+        self.generator_ptvar_binning = generator_ptvar_binning
 
         self.binning_mapping = {
             self.generator_binning_name: self.generator_ptvar_binning,
@@ -449,18 +455,39 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         self.variable_name = variable_name
         self.variable_name_safe = cu.no_space_str(variable_name)
 
-        self.binning_handler = (binning_handler or
-                                BinningHandler(variable_bin_edges_reco, # 'variable' refers to e.g. ptD, LHA
-                                               variable_bin_edges_gen, # reco for detector binning, gen for generator (final) binning
-                                               variable_name,
-                                               pt_bin_edges_reco,
-                                               pt_bin_edges_underflow_reco,
-                                               pt_bin_edges_gen,
-                                               pt_bin_edges_underflow_gen,
-                                               var_uf=False, # _uf = underflow
-                                               var_of=True,  # _of = overflow
-                                               pt_uf=False,
-                                               pt_of=True))
+        self.binning_handler = binning_handler
+        # TODO: remove me once interface updates
+        if binning_handler is None:
+            var_uf = False
+            var_of = True
+            pt_uf = False
+            pt_of = True
+            generator_binning = PtVarBinning(variable_bin_edges=variable_bin_edges_gen,
+                                             variable_name=variable_name,
+                                             pt_bin_edges_signal=pt_bin_edges_gen,
+                                             pt_bin_edges_underflow=pt_bin_edges_underflow_gen,
+                                             binning_name="generator",
+                                             binning_underflow_name="generatordistribution_underflow",
+                                             binning_signal_name="generatordistribution",
+                                             var_uf=var_uf,
+                                             var_of=var_of,
+                                             pt_uf=pt_uf,
+                                             pt_of=pt_of)
+
+            detector_binning = PtVarBinning(variable_bin_edges=variable_bin_edges_reco,
+                                            variable_name=variable_name,
+                                            pt_bin_edges_signal=pt_bin_edges_reco,
+                                            pt_bin_edges_underflow=pt_bin_edges_underflow_reco,
+                                            binning_name="detector",
+                                            binning_underflow_name="detectordistribution_underflow",
+                                            binning_signal_name="detectordistribution",
+                                            var_uf=var_uf,
+                                            var_of=var_of,
+                                            pt_uf=pt_uf,
+                                            pt_of=pt_of)
+
+            self.binning_handler = BinningHandler(generator_ptvar_binning=generator_binning,
+                                                  detector_ptvar_binning=detector_binning)
 
         # self.variable_bin_edges_reco = variable_bin_edges_reco
         # self.nbins_variable_reco = len(variable_bin_edges_reco)-1 if variable_bin_edges_reco is not None else 0
@@ -598,10 +625,13 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
 
         # For producing normalised distributions
         self.hist_bin_chopper = HistBinChopper(generator_binning=self.generator_binning.FindNode("generatordistribution"),
-                                               detector_binning=self.detector_binning.FindNode("detectordistribution"))
+                                               detector_binning=self.detector_binning.FindNode("detectordistribution"),
+                                               binning_handler=self.binning_handler)
 
+        # TODO remove me - can do with extra flags in HistBinChopper
         self.hist_bin_chopper_uflow = HistBinChopper(generator_binning=self.generator_binning.FindNode("generatordistribution_underflow"),
-                                                     detector_binning=self.detector_binning.FindNode("detectordistribution_underflow"))
+                                                     detector_binning=self.detector_binning.FindNode("detectordistribution_underflow"),
+                                                     binning_handler=self.binning_handler)
 
         # For setting/getting various uncerts from HistBinChopper
         self.no_uncert_name = "unfolded_no_err"
@@ -2941,7 +2971,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         # For each pt bin, recalculate total error in quadrature and store in unfolded hist
         for ibin_pt, pt in enumerate(self.pt_bin_edges_gen[:-1]):
             first_bin = ibin_pt == 0
-            hbc_args = dict(ind=ibin_pt, binning_scheme='generator')
+            hbc_args = dict(ind=ibin_pt, binning_scheme='generator', is_signal=True)
 
             unfolded_hist_bin_stat_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded_stat_err', **hbc_args)
             unfolded_hist_bin_rsp_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded_rsp_err', **hbc_args)
@@ -4056,7 +4086,7 @@ def unpack_slim_unfolding_root_file(input_tfile, region_name, angle_name, pt_bin
 class HistBinChopper(object):
     """Get histogram for pt or variable bin, and cache it in dict, so can be used later"""
 
-    def __init__(self, generator_binning, detector_binning):
+    def __init__(self, generator_binning, detector_binning, binning_handler=None):
         self.generator_binning = generator_binning
         if self.generator_binning is not None:
             # do this once as expensive
@@ -4068,20 +4098,12 @@ class HistBinChopper(object):
             self.detector_binning_var_bins = np.array(self.detector_binning.GetDistributionBinning(0))
             self.detector_binning_pt_bins = np.array(self.detector_binning.GetDistributionBinning(1))
 
+        self.binning_handler = binning_handler
+
         self.objects = {}
         self._cache = {}
         self._cache_integral = {}
 
-    def get_binning(self, binning_scheme):
-        """Get TUnfoldBinning, lambda var bins, pt bins for binning_scheme = 'generator' or 'detector'"""
-        if binning_scheme not in ['generator', 'detector']:
-            raise ValueError("binning_scheme must be one of 'generator', 'detector'")
-        thing = self.generator_binning if "generator" in binning_scheme else self.detector_binning
-        if thing is None:
-            raise RuntimeError("No valid TUnfoldBinning object for binning scheme '%s'" % binning_scheme)
-        var_bins = self.generator_binning_var_bins if binning_scheme == 'generator' else self.detector_binning_var_bins
-        pt_bins = self.generator_binning_pt_bins if binning_scheme == 'generator' else self.detector_binning_pt_bins
-        return thing, var_bins, pt_bins
 
     def add_obj(self, name, obj):
         # TODO: allow overwrite?
@@ -4094,61 +4116,95 @@ class HistBinChopper(object):
         self._cache.update(other._cache)
         self._cache_integral.update(other._cache_integral)
 
-    def get_var_hist_pt_binned(self, hist1d, ibin_pt, binning_scheme='generator'):
-        """Get hist of variable for given pt bin from massive 1D hist that TUnfold makes"""
-        # FIXME: assume no underflow?!
-        binning, var_bins, pt_bins = self.get_binning(binning_scheme)
+    def get_var_hist_pt_binned(self, hist1d, ibin_pt, binning_scheme='generator', is_signal=True):
+        """Get hist of variable for given pt bin from massive 1D hist that TUnfold makes
+
+        Parameters
+        ----------
+        hist1d : ROOT.TH1D
+            Big 1D histogram to chop up
+        ibin_pt : int
+            Pt bin number (0-indexed)
+            # TODO: make this a physical value instead?
+        binning_scheme : str, optional
+            "generator" or "detector" for respective binning scheme
+        is_signal : bool, optional
+            True if signal region, false for pt underflow region
+            # TODO make this a bool
+
+        Returns
+        -------
+        ROOT.TH1D
+        """
+        binning_obj = self.binning_handler.get_binning_scheme(binning_scheme)
+        pt = binning_obj.get_pt_bins(is_signal)[ibin_pt]
+        var_bins = binning_obj.get_variable_bins(pt)
         h = ROOT.TH1D("h_%d_%s" % (ibin_pt, cu.get_unique_str()), "", len(var_bins)-1, var_bins)
         for var_ind, var_value in enumerate(var_bins[:-1], 1):
-            this_val = var_value+0.001  # ensure its inside
-            bin_num = binning.GetGlobalBinNumber(this_val, pt_bins[ibin_pt]+0.001)
+            bin_num = binning_obj.physical_bin_to_global_bin(var=var_value+1E-6, pt=pt+1E-6)  # +1E-6 to ensure its inside
             h.SetBinContent(var_ind, hist1d.GetBinContent(bin_num))
             h.SetBinError(var_ind, hist1d.GetBinError(bin_num))
         return h
 
-    def get_var_2d_hist_pt_binned(self, hist2d, ibin_pt, binning_scheme='generator'):
-        """Get 2d hist for given pt bin from massive 2D hist"""
-        # FIXME: assume no underflow?!
-        binning, var_bins, pt_bins = self.get_binning(binning_scheme)
+    def get_var_2d_hist_pt_binned(self, hist2d, ibin_pt, binning_scheme='generator', is_signal=True):
+        """Get 2d hist for given pt bin from massive 2D hist
+
+        Same options as get_var_hist_pt_binned()
+        """
+        binning_obj = self.binning_handler.get_binning_scheme(binning_scheme)
+        pt = binning_obj.get_pt_bins(is_signal)[ibin_pt]
+        var_bins = binning_obj.get_variable_bins(pt)
         h = ROOT.TH2D("h2d_%d_%s" % (ibin_pt, cu.get_unique_str()), "", len(var_bins)-1, var_bins, len(var_bins)-1, var_bins)
-        for var_ind, var_value in enumerate(var_bins[:-1], 1):
-            this_val = var_value+0.001  # ensure its inside
-            bin_num = binning.GetGlobalBinNumber(this_val, pt_bins[ibin_pt]+0.1)
-            for var_ind2, var_value2 in enumerate(var_bins[:-1], 1):
-                this_val2 = var_value2+0.001  # ensure its inside
-                bin_num2 = binning.GetGlobalBinNumber(this_val2, pt_bins[ibin_pt]+0.1)
-                h.SetBinContent(var_ind, var_ind2, hist2d.GetBinContent(bin_num, bin_num2))
-                h.SetBinError(var_ind, var_ind2, hist2d.GetBinError(bin_num, bin_num2))
+        for var_ind_x, var_value_x in enumerate(var_bins[:-1], 1):
+            bin_num_x = binning_obj.physical_bin_to_global_bin(var=var_value_x+1E-6, pt=pt+1E-6)  # +1E-6 to ensure its inside
+            for var_ind_y, var_value_y in enumerate(var_bins[:-1], 1):
+                bin_num_y = binning_obj.physical_bin_to_global_bin(var=var_value_y+1E-6, pt=pt+1E-6)
+                h.SetBinContent(var_ind_x, var_ind_y, hist2d.GetBinContent(bin_num_x, bin_num_y))
+                h.SetBinError(var_ind_x, var_ind_y, hist2d.GetBinError(bin_num_x, bin_num_y))
         return h
 
-    def get_pt_hist_var_binned(self, hist1d, ibin_var, binning_scheme='generator'):
-        """Get hist of pt for given variable bin from massive 1D hist that TUnfold makes"""
-        # FIXME: assume no underflow?!
-        binning, var_bins, pt_bins = self.get_binning(binning_scheme)
+    def get_pt_hist_var_binned(self, hist1d, ibin_var, binning_scheme='generator', is_signal=True):
+        """Get hist of pt for given variable bin from massive 1D hist that TUnfold makes
+
+        NB only makes sense if this variable bin exists across all pt bins, otherwise impossible to do
+        """
+        binning_obj = self.binning_handler.get_binning_scheme(binning_scheme)
+        pt_bins = binning_obj.get_pt_bins(is_signal)
+        if isinstance(binning_obj, PtVarPerPtBinning):
+            # check if this variable bin exists for all pt bins
+            var_value = [binning_obj.get_variable_bins(pt)[ibin_var] for pt in pt_bins]
+            if len(set(var_value)) != 1:
+                raise ValueError("Cannot use get_pt_hist_var_binned: binning scheme has different bin edge for ibin_var=%d" % ibin_var)
+
+        var_value = binning_obj.get_variable_bins(pt_bins[0])[ibin_var]
         h = ROOT.TH1D("h_%d_%s" % (ibin_var, cu.get_unique_str()), "", len(pt_bins)-1, pt_bins)
         for pt_ind, pt_value in enumerate(pt_bins[:-1], 1):
-            this_val = pt_value+0.001  # ensure its inside
-            bin_num = binning.GetGlobalBinNumber(var_bins[ibin_var]+0.1, this_val)
+            bin_num = binning_obj.physical_bin_to_global_bin(var=var_value+1E-6, pt=pt_value+1E-6)
             h.SetBinContent(pt_ind, hist1d.GetBinContent(bin_num))
             h.SetBinError(pt_ind, hist1d.GetBinError(bin_num))
         return h
 
-    def get_pt_2d_hist_var_binned(self, hist2d, ibin_var, binning_scheme='generator'):
+    def get_pt_2d_hist_var_binned(self, hist2d, ibin_var, binning_scheme='generator', is_signal=True):
         """Get 2d hist for given variable bin from massive 2D hist"""
-        # FIXME: assume no underflow?!
-        binning, var_bins, pt_bins = self.get_binning(binning_scheme)
+        binning_obj = self.binning_handler.get_binning_scheme(binning_scheme)
+        pt_bins = binning_obj.get_pt_bins(is_signal)
+        if isinstance(binning_obj, PtVarPerPtBinning):
+            # check if this variable bin exists for all pt bins
+            var_value = [binning_obj.get_variable_bins(pt)[ibin_var] for pt in pt_bins]
+            if len(set(var_value)) != 1:
+                raise ValueError("Cannot use get_pt_hist_var_binned: binning scheme has different bin edge for ibin_var=%d" % ibin_var)
+
+        var_value = binning_obj.get_variable_bins(pt_bins[0])[ibin_var]
         h = ROOT.TH1D("h2d_%d_%s" % (ibin_var, cu.get_unique_str()), "", len(pt_bins)-1, pt_bins)
-        for pt_ind, pt_value in enumerate(pt_bins[:-1], 1):
-            this_val = pt_value+0.001  # ensure its inside
-            bin_num = binning.GetGlobalBinNumber(var_bins[ibin_var]+0.1, this_val)
-            for pt_ind2, pt_value2 in enumerate(pt_bins[:-1], 1):
-                this_val2 = pt_value+0.001  # ensure its inside
-                bin_num2 = binning.GetGlobalBinNumber(var_bins[ibin_var]+0.1, this_val2)
-                h.SetBinContent(pt_ind, pt_ind2, hist2d.GetBinContent(bin_num, bin_num2))
-                h.SetBinError(pt_ind, pt_ind2, hist2d.GetBinError(bin_num, bin_num2))
+        for pt_ind_x, pt_value_x in enumerate(pt_bins[:-1], 1):
+            bin_num_x = binning_obj.physical_bin_to_global_bin(var=var_value+1E-6, pt=pt_value_x+1E-6)
+            for pt_ind_y, pt_value_y in enumerate(pt_bins[:-1], 1):
+                bin_num_y = binning_obj.physical_bin_to_global_bin(var=var_value+1E-6, pt=pt_value_y+1E-6)
+                h.SetBinContent(pt_ind_x, pt_ind_y, hist2d.GetBinContent(bin_num_x, bin_num_y))
+                h.SetBinError(pt_ind_x, pt_ind_y, hist2d.GetBinError(bin_num_x, bin_num_y))
         return h
 
-    def get_bin_plot(self, name, ind, axis, do_norm=False, do_div_bin_width=False, binning_scheme='generator'):
+    def get_bin_plot(self, name, ind, axis, do_norm=False, do_div_bin_width=False, binning_scheme='generator', is_signal=True):
         """Get plot for given bin (index=ind) of specified axis.
 
         Note, only considers signal region
@@ -4183,12 +4239,18 @@ class HistBinChopper(object):
         if self.objects[name] is None:
             raise RuntimeError("HistBinChopper.objects[%s] is None" % name)
 
-        key = self._generate_key(name, ind, axis, do_norm, do_div_bin_width, binning_scheme)
+        key = self._generate_key(name, ind, axis, do_norm, do_div_bin_width, binning_scheme, is_signal)
         if key not in self._cache:
             if axis == 'lambda':
-                self._cache[key] = self.get_pt_hist_var_binned(self.objects[name], ind, binning_scheme)
+                self._cache[key] = self.get_pt_hist_var_binned(hist1d=self.objects[name],
+                                                               ibin_var=ind,
+                                                               binning_scheme=binning_scheme,
+                                                               is_signal=is_signal)
             else:
-                self._cache[key] = self.get_var_hist_pt_binned(self.objects[name], ind, binning_scheme)
+                self._cache[key] = self.get_var_hist_pt_binned(hist1d=self.objects[name],
+                                                               ibin_pt=ind,
+                                                               binning_scheme=binning_scheme,
+                                                               is_signal=is_signal)
 
             # havent done div bin width or normalising yet
             self._cache_integral[key] = self._cache[key].Integral()
@@ -4212,7 +4274,7 @@ class HistBinChopper(object):
         return self._cache_integral[key]
 
     @staticmethod
-    def _generate_key(name, ind, axis, do_norm, do_div_bin_width, binning_scheme):
+    def _generate_key(name, ind, axis, do_norm, do_div_bin_width, binning_scheme, is_signal=True):
         """Generate consistent name for these args, options as in get_bin_plot()"""
         if axis not in ['pt', 'lambda']:
             raise ValueError('_generate_key(): axis must be "pt" or "lambda"')
@@ -4221,32 +4283,34 @@ class HistBinChopper(object):
             key += "_norm"
         if do_div_bin_width:
             key += "_divBinWidth"
+        if not is_signal:
+            key += "_ptUnderflow"
         return key
 
     # TODO: remove these? just use get_bin_plot instead?
-    def get_pt_bin(self, name, ind, binning_scheme='generator'):
-        return self.get_bin_plot(name, ind, axis='pt', do_norm=False, do_div_bin_width=False, binning_scheme=binning_scheme)
+    def get_pt_bin(self, name, ind, binning_scheme='generator', is_signal=True):
+        return self.get_bin_plot(name, ind, axis='pt', do_norm=False, do_div_bin_width=False, binning_scheme=binning_scheme, is_signal=is_signal)
 
-    def get_pt_bin_div_bin_width(self, name, ind, binning_scheme='generator'):
-        return self.get_bin_plot(name, ind, axis='pt', do_norm=False, do_div_bin_width=True, binning_scheme=binning_scheme)
+    def get_pt_bin_div_bin_width(self, name, ind, binning_scheme='generator', is_signal=True):
+        return self.get_bin_plot(name, ind, axis='pt', do_norm=False, do_div_bin_width=True, binning_scheme=binning_scheme, is_signal=is_signal)
 
-    def get_pt_bin_normed(self, name, ind, binning_scheme='generator'):
-        return self.get_bin_plot(name, ind, axis='pt', do_norm=True, do_div_bin_width=False, binning_scheme=binning_scheme)
+    def get_pt_bin_normed(self, name, ind, binning_scheme='generator', is_signal=True):
+        return self.get_bin_plot(name, ind, axis='pt', do_norm=True, do_div_bin_width=False, binning_scheme=binning_scheme, is_signal=is_signal)
 
-    def get_pt_bin_normed_div_bin_width(self, name, ind, binning_scheme='generator'):
-        return self.get_bin_plot(name, ind, axis='pt', do_norm=True, do_div_bin_width=True, binning_scheme=binning_scheme)
+    def get_pt_bin_normed_div_bin_width(self, name, ind, binning_scheme='generator', is_signal=True):
+        return self.get_bin_plot(name, ind, axis='pt', do_norm=True, do_div_bin_width=True, binning_scheme=binning_scheme, is_signal=is_signal)
 
-    def get_lambda_bin(self, name, ind, binning_scheme='generator'):
-        return self.get_bin_plot(name, ind, axis='lambda', do_norm=False, do_div_bin_width=False, binning_scheme=binning_scheme)
+    def get_lambda_bin(self, name, ind, binning_scheme='generator', is_signal=True):
+        return self.get_bin_plot(name, ind, axis='lambda', do_norm=False, do_div_bin_width=False, binning_scheme=binning_scheme, is_signal=is_signal)
 
-    def get_lambda_bin_div_bin_width(self, name, ind, binning_scheme='generator'):
-        return self.get_bin_plot(name, ind, axis='lambda', do_norm=False, do_div_bin_width=True, binning_scheme=binning_scheme)
+    def get_lambda_bin_div_bin_width(self, name, ind, binning_scheme='generator', is_signal=True):
+        return self.get_bin_plot(name, ind, axis='lambda', do_norm=False, do_div_bin_width=True, binning_scheme=binning_scheme, is_signal=is_signal)
 
-    def get_lambda_bin_normed(self, name, ind, binning_scheme='generator'):
-        return self.get_bin_plot(name, ind, axis='lambda', do_norm=True, do_div_bin_width=False, binning_scheme=binning_scheme)
+    def get_lambda_bin_normed(self, name, ind, binning_scheme='generator', is_signal=True):
+        return self.get_bin_plot(name, ind, axis='lambda', do_norm=True, do_div_bin_width=False, binning_scheme=binning_scheme, is_signal=is_signal)
 
-    def get_lambda_bin_normed_div_bin_width(self, name, ind, binning_scheme='generator'):
-        return self.get_bin_plot(name, ind, axis='lambda', do_norm=True, do_div_bin_width=True, binning_scheme=binning_scheme)
+    def get_lambda_bin_normed_div_bin_width(self, name, ind, binning_scheme='generator', is_signal=True):
+        return self.get_bin_plot(name, ind, axis='lambda', do_norm=True, do_div_bin_width=True, binning_scheme=binning_scheme, is_signal=is_signal)
 
 
 class ExpSystematic(object):
@@ -4314,11 +4378,14 @@ class TruthTemplateMaker(object):
         self.pt_bin_edges_underflow_gen = pt_bin_edges_underflow_gen
         self.nbins_pt_underflow_gen = len(pt_bin_edges_underflow_gen)-1 if pt_bin_edges_underflow_gen is not None else 0
 
+        self.binning_handler = None # FIXME
         self.hist_bin_chopper_signal = HistBinChopper(generator_binning=self.generator_binning.FindNode("generatordistribution"),
-                                                      detector_binning=self.detector_binning.FindNode("detectordistribution"))
+                                                      detector_binning=self.detector_binning.FindNode("detectordistribution"),
+                                                      binning_handler=self.binning_handler)
 
         self.hist_bin_chopper_uflow = HistBinChopper(generator_binning=self.generator_binning.FindNode("generatordistribution_underflow"),
-                                                     detector_binning=self.detector_binning.FindNode("detectordistribution_underflow"))
+                                                     detector_binning=self.detector_binning.FindNode("detectordistribution_underflow"),
+                                                     binning_handler=self.binning_handler)
 
         self.templates = []  # store MC template to be fitted
         self.data_label_reco = "hist_data_reco"

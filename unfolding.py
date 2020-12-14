@@ -33,7 +33,7 @@ My_Style.cd()
 import common_utils as cu
 import qg_common as qgc
 import qg_general_plots as qgp
-from my_unfolder import MyUnfolder, pickle_region, unpickle_region, ExpSystematic, HistBinChopper, TruthTemplateMaker, BinningHandler
+from my_unfolder import MyUnfolder, pickle_region, unpickle_region, ExpSystematic, HistBinChopper, TruthTemplateMaker, BinningHandler, PtVarBinning, PtVarPerPtBinning
 from my_unfolder_plotter import MyUnfolderPlotter
 from unfolding_regularisation_classes import TauScanner, LCurveScanner
 from unfolding_config import get_dijet_config, get_zpj_config
@@ -296,6 +296,7 @@ def merge_th2_bins(h, bin_list_x, bin_list_y):
     else:
         # do x bin merging first
         bin_edges_x_orig = cu.get_bin_edges(h, 'x')
+        bin_edges_y_orig = cu.get_bin_edges(h, 'y')
         print("origx", bin_edges_x_orig)
         bin_edges_x_new = [x for i, x in enumerate(bin_edges_x_orig, 1)
                           if i not in bin_list_x]
@@ -738,14 +739,36 @@ def main():
             print('reco uflow pt binning', pt_bin_edges_underflow_reco)
             print('gen uflow pt binning', pt_bin_edges_underflow_gen)
 
-            binning_handler = BinningHandler(variable_bin_edges_reco=angle_bin_edges_reco,
-                                             variable_bin_edges_gen=angle_bin_edges_gen,
+            var_uf = False
+            var_of = True
+            pt_uf = False
+            pt_of = True
+            generator_binning = PtVarBinning(variable_bin_edges=angle_bin_edges_gen,
                                              variable_name=variable_name,
-                                             pt_bin_edges_reco=pt_bin_edges_reco,
-                                             pt_bin_edges_gen=pt_bin_edges_gen,
-                                             pt_bin_edges_underflow_reco=pt_bin_edges_underflow_reco,
-                                             pt_bin_edges_underflow_gen=pt_bin_edges_underflow_gen)
+                                             pt_bin_edges_signal=pt_bin_edges_gen,
+                                             pt_bin_edges_underflow=pt_bin_edges_underflow_gen,
+                                             binning_name="generator",
+                                             binning_underflow_name="generatordistribution_underflow",
+                                             binning_signal_name="generatordistribution",
+                                             var_uf=var_uf,
+                                             var_of=var_of,
+                                             pt_uf=pt_uf,
+                                             pt_of=pt_of)
 
+            detector_binning = PtVarBinning(variable_bin_edges=angle_bin_edges_reco,
+                                            variable_name=variable_name,
+                                            pt_bin_edges_signal=pt_bin_edges_reco,
+                                            pt_bin_edges_underflow=pt_bin_edges_underflow_reco,
+                                            binning_name="detector",
+                                            binning_underflow_name="detectordistribution_underflow",
+                                            binning_signal_name="detectordistribution",
+                                            var_uf=var_uf,
+                                            var_of=var_of,
+                                            pt_uf=pt_uf,
+                                            pt_of=pt_of)
+
+            binning_handler = BinningHandler(generator_ptvar_binning=generator_binning,
+                                             detector_ptvar_binning=detector_binning)
 
             # disconnected_output_bins = find_disconnected_output_bins(hist_mc_gen_reco_map)
             # print("disconnected", disconnected_output_bins)
