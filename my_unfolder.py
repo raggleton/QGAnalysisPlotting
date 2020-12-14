@@ -18,6 +18,7 @@ import pickle
 import gzip
 from functools import partial
 from collections import namedtuple
+from bisect import bisect_right, bisect_left
 
 import ROOT
 from MyStyle import My_Style
@@ -118,6 +119,10 @@ class PtVarBinning(object):
     def get_distribution(self, pt):
         return self.distribution if self.is_signal_region(pt) else self.distribution_underflow
 
+    def get_variable_bins(self, pt):
+        # pt in args to duck type with PtVarPerPtBinning method
+        return self.variable_bin_edges
+
     def cache_global_bin_mapping(self):
         """Create maps of global bin <> physical bin values,
         by iterating through all the physical bins (inc oflow)
@@ -167,6 +172,10 @@ class PtVarBinning(object):
         # now invert
         self.physical_val_to_global_bin_map = {v: k for k, v in self.global_bin_to_physical_val_map.items()}
 
+    def physical_bin_to_global_bin(self, pt, var):
+        dist = self.get_distribution(pt)
+        return dist.GetGlobalBinNumber(var, pt)
+
     def get_first_pt_overflow_global_bin(self):
         """Get global bin corresponding to first pt overflow bin,
         or the last bin+1 if no pt overflow configured"""
@@ -182,51 +191,170 @@ class PtVarBinning(object):
         return global_bin
 
 
-class BinningHandler(object):
-    """Class to handle intricacies of 2D binning scheme"""
+def flatten_unique(list_of_lists):
+    # uses itertool recipe
+    return sorted(list(set(chain.from_iterable(list_of_lists))))
+
+
+class PtVarPerPtBinning(object):
+    """Hold a set of pt, variable binning. Separate variable binning per pT bin.
+    Assumes separate underflow pT region.
+
+    NB no pT overflow, since we might want to do it with a different lambda binning,
+    so assume user has added it themselves
+
+    Structure of pt_*_bin_config:
+
+    [
+        ([50, 65], [0, 0.1, 0.2, 0.5, 1.0]), # [0] is pt bins edge, [1] is the variable bins
+        ([65, 88], [0, 0.1, 0.25, 0.4, 1.0]),
+        ([88, 200], [0, 0.1, 0.3, 0.75, 1.0]),
+    ]
+    """
 
     def __init__(self,
-                 variable_bin_edges_reco,  # 'variable' refers to e.g. ptD, LHA
-                 variable_bin_edges_gen,  # reco for detector binning, gen for generator (final) binning
                  variable_name,
-                 pt_bin_edges_reco,
-                 pt_bin_edges_underflow_reco,
-                 pt_bin_edges_gen,
-                 pt_bin_edges_underflow_gen,
+                 pt_underflow_bin_config,
+                 pt_signal_bin_config,
+                 binning_name,
+                 binning_underflow_name,
+                 binning_signal_name,
                  var_uf=False,  # _uf = underflow
-                 var_of=True,  # _of = overflow
-                 pt_uf=False,
-                 pt_of=True):
+                 var_of=True):
+        self.variable_name = variable_name
+        self.pt_underflow_bin_config = pt_underflow_bin_config
+        self.pt_signal_bin_config = pt_signal_bin_config
+
+        # convert pairs of bin edges into ordered list
+        self.pt_bin_edges_underflow = np.array(flatten_unique(b[0] for b in pt_underflow_bin_config))
+        self.nbins_pt_underflow = len(self.pt_bin_edges_underflow)-1
+
+        self.pt_bin_edges_signal = np.array(flatten_unique(b[0] for b in pt_signal_bin_config))
+        self.nbins_pt = len(self.pt_bin_edges_signal)-1
+
+        self.var_uf = var_uf
+        self.var_of = var_of
+
+        self.pt_name = "pt"
+
+        self.binning_name = binning_name
+        self.binning_underflow_name = binning_underflow_name
+        self.binning_signal_name = binning_signal_name
+        
+        self.binning = ROOT.TUnfoldBinning(self.binning_name)
+
+        # Do pt underflow ourselves as separate region
+        # TODO merge into one?
+        self.underflow_distributions = []
+        for pt_ind, pt in enumerate(self.pt_bin_edges_underflow[:-1]):
+            distribution_underflow = self.binning.AddBinning(self.binning_underflow_name + str(pt_ind))
+            variable_bin_edges = self.pt_underflow_bin_config[pt_ind][1]
+            distribution_underflow.AddAxis(self.variable_name,
+                                           len(variable_bin_edges)-1,
+                                           np.array(variable_bin_edges, 'd'),
+                                           self.var_uf, self.var_of)
+            pt_bin_edges_signal = np.array([pt, self.pt_bin_edges_underflow[pt_ind+1]], 'd')
+            distribution_underflow.AddAxis(self.pt_name,
+                                           1,
+                                           pt_bin_edges_signal,
+                                           False, False)
+            # pt underflow must always be false, because we have to specify 
+            # the lambda binning for it explicity, so it will be part of the pt_signal_bin_config
+            self.underflow_distributions.append(distribution_underflow)
+
+        # Signal pt region
+        self.signal_distributions = []
+        for pt_ind, pt in enumerate(self.pt_bin_edges_signal[:-1]):
+            distribution_signal = self.binning.AddBinning(self.binning_signal_name + str(pt_ind))
+            variable_bin_edges = self.pt_signal_bin_config[pt_ind][1]
+            distribution_signal.AddAxis(self.variable_name,
+                                        len(variable_bin_edges)-1,
+                                        np.array(variable_bin_edges, 'd'),
+                                        self.var_uf, self.var_of)
+            pt_bin_edges_signal = np.array([pt, self.pt_bin_edges_signal[pt_ind+1]], 'd')
+            distribution_signal.AddAxis(self.pt_name,
+                                        1,
+                                        pt_bin_edges_signal,
+                                        False, False)  
+            # pt overflow must always be false, because we have to specify 
+            # the lambda binning for it explicity, so it will be part of the pt_signal_bin_config
+            self.signal_distributions.append(distribution_signal)
+
+        # Hold maps of global bin number < > physical bin edges
+        self.global_bin_to_physical_val_map = dict()
+        self.physical_val_to_global_bin_map = dict()
+
+        self.cache_global_bin_mapping()
+        print("bin 1:", self.global_bin_to_physical_val_map[1])
+
+    def is_signal_region(self, pt):
+        return pt >= self.pt_bin_edges_signal[0]
+
+    def get_distribution(self, pt):
+        pt_bins = self.pt_bin_edges_signal if self.is_signal_region(pt) else self.pt_bin_edges_underflow
+        distributions = self.signal_distributions if self.is_signal_region(pt) else self.underflow_distributions
+        pos = bisect_right(pt_bins, pt) - 1
+        if pos > (len(distributions)-1):
+            raise IndexError("Can't find distribution for pt %f in bins %s with pos %d (len = %s)" % (pt, pt_bins, pos, len(distributions)))
+        return distributions[pos]
+
+    def get_variable_bins(self, pt):
+        pt_bins = self.pt_bin_edges_signal if self.is_signal_region(pt) else self.pt_bin_edges_underflow
+        config = self.pt_signal_bin_config if self.is_signal_region(pt) else self.pt_underflow_bin_config
+        pos = bisect_right(pt_bins, pt)-1
+        if pos > (len(config)-1):
+            raise IndexError("Can't find variable bins for pt %f" % pt)
+        return config[pos][1]
+
+    def cache_global_bin_mapping(self):
+        """Create maps of global bin <> physical bin values,
+        by iterating through all the physical bins (inc oflow)
+
+        Have to do this as the TUnfoldBinning one isnt good.
+        """
+        for ibin_pt, config in enumerate(chain(self.pt_underflow_bin_config, self.pt_signal_bin_config)):
+            this_pt = config[0][0] + 1E-6
+            pt_bin = tuple(config[0])
+            binning_obj = self.get_distribution(this_pt)
+            var_bin_edges = config[1]
+            for var_low, var_high in zip(var_bin_edges[:-1], var_bin_edges[1:]):
+                global_bin = binning_obj.GetGlobalBinNumber(var_low+1E-6, this_pt)
+                self.global_bin_to_physical_val_map[global_bin] = PtVar(pt=pt_bin,
+                                                                        var=(var_low, var_high))
+            if self.var_of:
+                variable = var_bin_edges[-1]
+                global_bin = binning_obj.GetGlobalBinNumber(variable+1E-6, this_pt)
+                self.global_bin_to_physical_val_map[global_bin] = PtVar(pt=pt_bin,
+                                                                        var=(variable, np.inf))
+
+        # now invert
+        self.physical_val_to_global_bin_map = {v: k for k, v in self.global_bin_to_physical_val_map.items()}
+
+    def physical_bin_to_global_bin(self, pt, var):
+        dist = self.get_distribution(pt)
+        return dist.GetGlobalBinNumber(var, pt)
+
+    def get_first_pt_overflow_global_bin(self):
+        """Get global bin corresponding to first pt overflow bin"""
+        return self.physical_bin_to_global_bin(pt=9999999., var=100000)
+
+
+class BinningHandler(object):
+    """Class to handle both detector and generator binnings"""
+
+    def __init__(self,
+                 detector_binning_obj,
+                 generator_binning_obj):
 
         # DETECTOR LEVEL BINNING
         # ------------------------------------------------------------------------------------------
         self.detector_binning_name = "detector"
-        self.detector_ptvar_binning = PtVarBinning(variable_bin_edges_reco,
-                                                   variable_name,
-                                                   pt_bin_edges_reco,
-                                                   pt_bin_edges_underflow_reco,
-                                                   binning_name=self.detector_binning_name,
-                                                   binning_underflow_name="detectordistribution_underflow",
-                                                   binning_signal_name="detectordistribution",
-                                                   var_uf=var_uf,
-                                                   var_of=var_of,
-                                                   pt_uf=pt_uf,
-                                                   pt_of=pt_of)
+        self.detector_ptvar_binning = detector_binning_obj
 
         # GENERATOR LEVEL BINNING
         # ------------------------------------------------------------------------------------------
         self.generator_binning_name = "generator"
-        self.generator_ptvar_binning = PtVarBinning(variable_bin_edges_gen,
-                                                    variable_name,
-                                                    pt_bin_edges_gen,
-                                                    pt_bin_edges_underflow_gen,
-                                                    binning_name=self.generator_binning_name,
-                                                    binning_underflow_name="generatordistribution_underflow",
-                                                    binning_signal_name="generatordistribution",
-                                                    var_uf=var_uf,
-                                                    var_of=var_of,
-                                                    pt_uf=pt_uf,
-                                                    pt_of=pt_of)
+        self.generator_ptvar_binning = generator_binning_obj
 
         self.binning_mapping = {
             self.generator_binning_name: self.generator_ptvar_binning,
