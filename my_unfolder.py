@@ -381,6 +381,32 @@ class BinningHandler(object):
         ptvar_binning = self.get_binning_scheme(binning_scheme)
         return ptvar_binning.get_first_pt_overflow_global_bin()
 
+    @property
+    def variable_name(self):
+        return self.detector_ptvar_binning.variable_name
+
+    # def save_binning(self, print_xml=True, txt_filename=None):
+    #     """Save binning scheme to txt and/or print XML to screen"""
+    #     if txt_filename:
+    #         with open(txt_filename, 'w') as of:
+    #             of.write("GEN BINNING\n")
+    #             of.write("--------------------\n")
+    #             for name, region in [
+    #                 ("generator_distribution", self.generator_distribution),
+    #                 ("generator_distribution_underflow", self.generator_distribution_underflow)]:
+    #                 of.write("%s: bins %d - %d\n" % (name, region.GetStartBin(), region.GetEndBin()))
+    #             of.write("\nDETECTOR BINNING\n")
+    #             of.write("--------------------\n")
+    #             for name, region in [
+    #                 ("detector_distribution", self.detector_distribution),
+    #                 ("detector_distribution_underflow", self.detector_distribution_underflow)]:
+    #                 of.write("%s: bins %d - %d\n" % (name, region.GetStartBin(), region.GetEndBin()))
+    #
+    #     if print_xml:
+    #         # don't know how to create a ofstream in python :( best we can do is ROOT.cout
+    #         ROOT.TUnfoldBinningXML.ExportXML(self.detector_binning, ROOT.cout, True, False)
+    #         ROOT.TUnfoldBinningXML.ExportXML(self.generator_binning, ROOT.cout, False, True)
+
 
 class MyUnfolder(ROOT.MyTUnfoldDensity):
     """Main class to handle unfolding input/outputs, all the associated objects
@@ -425,14 +451,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
 
     def __init__(self,
                  response_map,  # 2D GEN-RECO heatmap
-                 variable_bin_edges_reco, # 'variable' refers to e.g. ptD, LHA
-                 variable_bin_edges_gen, # reco for detector binnig, gen for generator (final) binning
-                 variable_name,
-                 pt_bin_edges_reco,
-                 pt_bin_edges_gen,
-                 pt_bin_edges_underflow_reco,
-                 pt_bin_edges_underflow_gen,
-                 binning_handler=None,
+                 binning_handler,
                  orientation=ROOT.TUnfold.kHistMapOutputHoriz,
                  constraintMode=ROOT.TUnfold.kEConstraintArea,
                  regMode=ROOT.TUnfold.kRegModeCurvature,
@@ -452,91 +471,9 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
                 if response_map.GetBinContent(0, 1) != 0 or response_map.GetBinContent(1, 0) != 0:
                     raise RuntimeError("Your response_map has entries in 0th gen bin - this means you've got unintended underflow!")
 
-        self.variable_name = variable_name
-        self.variable_name_safe = cu.no_space_str(variable_name)
-
         self.binning_handler = binning_handler
-        # TODO: remove me once interface updates
-        if binning_handler is None:
-            var_uf = False
-            var_of = True
-            pt_uf = False
-            pt_of = True
-            generator_binning = PtVarBinning(variable_bin_edges=variable_bin_edges_gen,
-                                             variable_name=variable_name,
-                                             pt_bin_edges_signal=pt_bin_edges_gen,
-                                             pt_bin_edges_underflow=pt_bin_edges_underflow_gen,
-                                             binning_name="generator",
-                                             binning_underflow_name="generatordistribution_underflow",
-                                             binning_signal_name="generatordistribution",
-                                             var_uf=var_uf,
-                                             var_of=var_of,
-                                             pt_uf=pt_uf,
-                                             pt_of=pt_of)
-
-            detector_binning = PtVarBinning(variable_bin_edges=variable_bin_edges_reco,
-                                            variable_name=variable_name,
-                                            pt_bin_edges_signal=pt_bin_edges_reco,
-                                            pt_bin_edges_underflow=pt_bin_edges_underflow_reco,
-                                            binning_name="detector",
-                                            binning_underflow_name="detectordistribution_underflow",
-                                            binning_signal_name="detectordistribution",
-                                            var_uf=var_uf,
-                                            var_of=var_of,
-                                            pt_uf=pt_uf,
-                                            pt_of=pt_of)
-
-            self.binning_handler = BinningHandler(generator_ptvar_binning=generator_binning,
-                                                  detector_ptvar_binning=detector_binning)
-
-        # self.variable_bin_edges_reco = variable_bin_edges_reco
-        # self.nbins_variable_reco = len(variable_bin_edges_reco)-1 if variable_bin_edges_reco is not None else 0
-        # self.variable_bin_edges_gen = variable_bin_edges_gen
-        # self.nbins_variable_gen = len(variable_bin_edges_gen)-1 if variable_bin_edges_gen is not None else 0
-
-        # self.pt_bin_edges_reco = pt_bin_edges_reco
-        # self.nbins_pt_reco = len(pt_bin_edges_reco)-1 if pt_bin_edges_reco is not None else 0
-        # self.pt_bin_edges_gen = pt_bin_edges_gen
-        # self.nbins_pt_gen = len(pt_bin_edges_gen)-1 if pt_bin_edges_gen is not None else 0
-
-        # self.pt_bin_edges_underflow_reco = pt_bin_edges_underflow_reco
-        # self.nbins_pt_underflow_reco = len(pt_bin_edges_underflow_reco)-1 if pt_bin_edges_underflow_reco is not None else 0
-        # self.pt_bin_edges_underflow_gen = pt_bin_edges_underflow_gen
-        # self.nbins_pt_underflow_gen = len(pt_bin_edges_underflow_gen)-1 if pt_bin_edges_underflow_gen is not None else 0
-
-        # # Binning setup here MUST match how it was setup in making the input files, otherwise
-        # # you will have untold pain and suffering!
-        # # TODO read in from XML
-        # var_uf, var_of = False, True
-        # pt_uf, pt_of = False, True  # handle pt under/over flow ourselves
-        # self.detector_binning = ROOT.TUnfoldBinning("detector")
-
-        # self.detector_distribution_underflow = self.detector_binning.AddBinning("detectordistribution_underflow")
-        # if self.variable_bin_edges_reco is not None:
-        #     self.detector_distribution_underflow.AddAxis(self.variable_name, self.nbins_variable_reco, self.variable_bin_edges_reco, var_uf, var_of)
-        # if self.pt_bin_edges_underflow_reco is not None:
-        #     self.detector_distribution_underflow.AddAxis("pt", self.nbins_pt_underflow_reco, self.pt_bin_edges_underflow_reco, False, False)
-
-        # self.detector_distribution = self.detector_binning.AddBinning("detectordistribution")
-        # if self.variable_bin_edges_reco is not None:
-        #     self.detector_distribution.AddAxis(self.variable_name, self.nbins_variable_reco, self.variable_bin_edges_reco, var_uf, var_of)
-        # if self.pt_bin_edges_reco is not None:
-        #     self.detector_distribution.AddAxis("pt", self.nbins_pt_reco, self.pt_bin_edges_reco, False, pt_of)
-
-
-        # self.generator_binning = ROOT.TUnfoldBinning("generator")
-
-        # self.generator_distribution_underflow = self.generator_binning.AddBinning("generatordistribution_underflow")
-        # if self.variable_bin_edges_gen is not None:
-        #     self.generator_distribution_underflow.AddAxis(self.variable_name, self.nbins_variable_gen, self.variable_bin_edges_gen, var_uf, var_of)
-        # if self.pt_bin_edges_underflow_gen is not None:
-        #     self.generator_distribution_underflow.AddAxis("pt", self.nbins_pt_underflow_gen, self.pt_bin_edges_underflow_gen, pt_uf, False)
-
-        # self.generator_distribution = self.generator_binning.AddBinning("generatordistribution")
-        # if self.variable_bin_edges_gen is not None:
-        #     self.generator_distribution.AddAxis(self.variable_name, self.nbins_variable_gen, self.variable_bin_edges_gen, var_uf, var_of)
-        # if self.pt_bin_edges_gen is not None:
-        #     self.generator_distribution.AddAxis("pt", self.nbins_pt_gen, self.pt_bin_edges_gen, False, pt_of)
+        self.variable_name = binning_handler.variable_name
+        self.variable_name_safe = cu.no_space_str(self.variable_name)
 
         self.orientation = orientation
         self.constraintMode = constraintMode
@@ -611,9 +548,10 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         self.exp_systs = []  # list of ExpSystematic objects to hold systematics
         self.exp_systs_normed = []  # list of ExpSystematic objects to hold normalised systematics (created in normalise_all_systs())
 
+        # distribution name for getting various error, rho, etc matrices
         # use "generator" for signal + underflow region
         # "generatordistribution" only for ???
-        self.output_distribution_name = "generator"
+        self.output_distribution_name = self.binning_handler.get_binning_scheme('generator').binning_name
 
         self.folded_unfolded = None  # set in get_folded_unfolded()
         self.folded_unfolded_tunfold = None  # set in get_folded_unfolded()
@@ -624,14 +562,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         self.truth_template = None  # set by TruthTemplateMaker, for regularisation
 
         # For producing normalised distributions
-        self.hist_bin_chopper = HistBinChopper(generator_binning=self.generator_binning.FindNode("generatordistribution"),
-                                               detector_binning=self.detector_binning.FindNode("detectordistribution"),
-                                               binning_handler=self.binning_handler)
-
-        # TODO remove me - can do with extra flags in HistBinChopper
-        self.hist_bin_chopper_uflow = HistBinChopper(generator_binning=self.generator_binning.FindNode("generatordistribution_underflow"),
-                                                     detector_binning=self.detector_binning.FindNode("detectordistribution_underflow"),
-                                                     binning_handler=self.binning_handler)
+        self.hist_bin_chopper = HistBinChopper(binning_handler=self.binning_handler)
 
         # For setting/getting various uncerts from HistBinChopper
         self.no_uncert_name = "unfolded_no_err"
@@ -668,26 +599,6 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         # self.generator_binning
         # self.generator_distribution_underflow
         # self.generator_distribution
-
-        # binning_properties = [
-        #     'variable_bin_edges_reco',
-        #     'nbins_variable_reco',
-        #     'variable_bin_edges_gen',
-        #     'nbins_variable_gen',
-        #     'pt_bin_edges_reco',
-        #     'nbins_pt_reco',
-        #     'pt_bin_edges_gen',
-        #     'nbins_pt_gen',
-        #     'pt_bin_edges_underflow_reco',
-        #     'nbins_pt_underflow_reco',
-        #     'pt_bin_edges_underflow_gen',
-        #     'nbins_pt_underflow_gen',
-        #     'detector_binning',
-        #     'detector_distribution_underflow',
-        #     'detector_distribution',
-        #     'generator_binning',
-        #     'generator_distribution_underflow',
-        #     'generator_distribution',]
 
     # rewire these to point to BinningHandler instead
     # one day I'll remove references to these
@@ -763,28 +674,6 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
     @property
     def generator_distribution(self):
         return self.binning_handler.generator_ptvar_binning.distribution
-
-    def save_binning(self, print_xml=True, txt_filename=None):
-        """Save binning scheme to txt and/or print XML to screen"""
-        if txt_filename:
-            with open(txt_filename, 'w') as of:
-                of.write("GEN BINNING\n")
-                of.write("--------------------\n")
-                for name, region in [
-                    ("generator_distribution", self.generator_distribution),
-                    ("generator_distribution_underflow", self.generator_distribution_underflow)]:
-                    of.write("%s: bins %d - %d\n" % (name, region.GetStartBin(), region.GetEndBin()))
-                of.write("\nDETECTOR BINNING\n")
-                of.write("--------------------\n")
-                for name, region in [
-                    ("detector_distribution", self.detector_distribution),
-                    ("detector_distribution_underflow", self.detector_distribution_underflow)]:
-                    of.write("%s: bins %d - %d\n" % (name, region.GetStartBin(), region.GetEndBin()))
-
-        if print_xml:
-            # don't know how to create a ofstream in python :( best we can do is ROOT.cout
-            ROOT.TUnfoldBinningXML.ExportXML(self.detector_binning, ROOT.cout, True, False)
-            ROOT.TUnfoldBinningXML.ExportXML(self.generator_binning, ROOT.cout, False, True)
 
     @staticmethod
     def _check_save_to_tfile(tfile, obj, name=None):
@@ -1407,6 +1296,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         Label must be same as used to add it in add_sys_error()
         """
         # TODO: syst_label -> ExpSystematic obj
+        print("get_syst_shift('%s')" % syst_label)
         this_syst = self.get_exp_syst(syst_label)
         if this_syst.syst_shift is None:
             hist = self.GetDeltaSysSource(this_syst.label,
@@ -1698,6 +1588,8 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         """Get error matrix due to statistics from thing being unfolded"""
         if getattr(self, "ematrix_input", None) is None:
             self.ematrix_input = self.GetEmatrixInput("ematrix_input_"+cu.get_unique_str(), "", self.output_distribution_name, "*[]", self.use_axis_binning)
+            # print("ematrix_input1st bin low edge:", self.ematrix_input.GetXaxis().GetBinLowEdge(1))
+            # print("output bin low edge:", self.get_output().GetXaxis().GetBinLowEdge(1))
         return self.ematrix_input
 
     def get_ematrix_stat_response(self):
@@ -1740,6 +1632,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             # Gnahhhhhhh
             self.ematrix_stat = this_binning.CreateErrorMatrixHistogram("ematrix_stat_"+cu.get_unique_str(), self.use_axis_binning) #, bin_map, "", "*[]")
             self.GetEmatrix(self.ematrix_stat)
+            print("ematrix stat has shape", self.ematrix_stat.GetNbinsX(), self.ematrix_stat.GetNbinsY())
         return self.ematrix_stat
 
     def get_ematrix_total_absolute(self):
@@ -2056,6 +1949,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
 
         # Convert vector to TH1
         folded_mc_truth = cu.ndarray_to_th1(folded_vec.T, has_oflow_x=oflow, offset=0.5)
+        print('folded_mc_truth bin(1) low edge:', folded_mc_truth.GetBinLowEdge(1))
 
         # Error propagation: if y = Ax, with covariance matrices Vyy and Vxx,
         # respectively, then Vyy = (A*Vxx)*A^T
@@ -2971,7 +2865,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         # For each pt bin, recalculate total error in quadrature and store in unfolded hist
         for ibin_pt, pt in enumerate(self.pt_bin_edges_gen[:-1]):
             first_bin = ibin_pt == 0
-            hbc_args = dict(ind=ibin_pt, binning_scheme='generator', is_signal=True)
+            hbc_args = dict(ind=ibin_pt, binning_scheme='generator', is_signal_region=True)
 
             unfolded_hist_bin_stat_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded_stat_err', **hbc_args)
             unfolded_hist_bin_rsp_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded_rsp_err', **hbc_args)
@@ -3072,6 +2966,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             h_total = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded', **hbc_args)
             for i in range(1, h_total.GetNbinsX()+1):
                 err2 = sum([pow(h.GetBinError(i), 2) for h in error_bar_hists])
+                # print(i, "old err:", h_total.GetBinError(i), "new err:", math.sqrt(err2))
                 h_total.SetBinError(i, math.sqrt(err2))
             # if first_bin:
                 # print("total ematrix diags:", [h_total.GetBinError(i) for i in range(1, nbins+1)])
@@ -3265,11 +3160,13 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         then create the corresponding shift & shifted distributions
         """
         # stat + rsp stat + exp systs
+        print("create_absolute_total_uncertainty()")
         ematrix_total = self.get_ematrix_tunfold_total().Clone("ematrix_total")
         for n in ["Scale", "PDF"]:
             # scale systs if exists
             if self.has_exp_syst(n):
                 ematrix_total.Add(self.get_exp_syst(n).syst_ematrix)
+        # store
         total_syst = ExpSystematic(label="Total")
         total_syst.syst_ematrix = ematrix_total
         total_syst.syst_shift = self.make_hist_from_diagonal_errors(ematrix_total, do_sqrt=True, set_errors=False, offset=0.5)
@@ -3292,6 +3189,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
 
     def normalise_all_systs(self):
         """Create normalised versions of all ExpSystematic stored in this instance"""
+        print("normalise_all_systs()")
         new_systs = []
         for exp_syst in self.exp_systs:
             norm_exp_syst = ExpSystematic(label=exp_syst.label + "_Norm")
@@ -4086,24 +3984,12 @@ def unpack_slim_unfolding_root_file(input_tfile, region_name, angle_name, pt_bin
 class HistBinChopper(object):
     """Get histogram for pt or variable bin, and cache it in dict, so can be used later"""
 
-    def __init__(self, generator_binning, detector_binning, binning_handler=None):
-        self.generator_binning = generator_binning
-        if self.generator_binning is not None:
-            # do this once as expensive
-            self.generator_binning_var_bins = np.array(self.generator_binning.GetDistributionBinning(0))
-            self.generator_binning_pt_bins = np.array(self.generator_binning.GetDistributionBinning(1))
-
-        self.detector_binning = detector_binning
-        if self.detector_binning is not None:
-            self.detector_binning_var_bins = np.array(self.detector_binning.GetDistributionBinning(0))
-            self.detector_binning_pt_bins = np.array(self.detector_binning.GetDistributionBinning(1))
-
+    def __init__(self, binning_handler=None):
         self.binning_handler = binning_handler
 
         self.objects = {}
         self._cache = {}
         self._cache_integral = {}
-
 
     def add_obj(self, name, obj):
         # TODO: allow overwrite?
@@ -4116,7 +4002,7 @@ class HistBinChopper(object):
         self._cache.update(other._cache)
         self._cache_integral.update(other._cache_integral)
 
-    def get_var_hist_pt_binned(self, hist1d, ibin_pt, binning_scheme='generator', is_signal=True):
+    def get_var_hist_pt_binned(self, hist1d, ibin_pt, binning_scheme='generator', is_signal_region=True):
         """Get hist of variable for given pt bin from massive 1D hist that TUnfold makes
 
         Parameters
@@ -4124,20 +4010,19 @@ class HistBinChopper(object):
         hist1d : ROOT.TH1D
             Big 1D histogram to chop up
         ibin_pt : int
-            Pt bin number (0-indexed)
+            Pt bin number: 0-indexed for each of signal region, underflow region
             # TODO: make this a physical value instead?
         binning_scheme : str, optional
             "generator" or "detector" for respective binning scheme
-        is_signal : bool, optional
+        is_signal_region : bool, optional
             True if signal region, false for pt underflow region
-            # TODO make this a bool
 
         Returns
         -------
         ROOT.TH1D
         """
         binning_obj = self.binning_handler.get_binning_scheme(binning_scheme)
-        pt = binning_obj.get_pt_bins(is_signal)[ibin_pt]
+        pt = binning_obj.get_pt_bins(is_signal_region)[ibin_pt]
         var_bins = binning_obj.get_variable_bins(pt)
         h = ROOT.TH1D("h_%d_%s" % (ibin_pt, cu.get_unique_str()), "", len(var_bins)-1, var_bins)
         for var_ind, var_value in enumerate(var_bins[:-1], 1):
@@ -4146,13 +4031,13 @@ class HistBinChopper(object):
             h.SetBinError(var_ind, hist1d.GetBinError(bin_num))
         return h
 
-    def get_var_2d_hist_pt_binned(self, hist2d, ibin_pt, binning_scheme='generator', is_signal=True):
+    def get_var_2d_hist_pt_binned(self, hist2d, ibin_pt, binning_scheme='generator', is_signal_region=True):
         """Get 2d hist for given pt bin from massive 2D hist
 
         Same options as get_var_hist_pt_binned()
         """
         binning_obj = self.binning_handler.get_binning_scheme(binning_scheme)
-        pt = binning_obj.get_pt_bins(is_signal)[ibin_pt]
+        pt = binning_obj.get_pt_bins(is_signal_region)[ibin_pt]
         var_bins = binning_obj.get_variable_bins(pt)
         h = ROOT.TH2D("h2d_%d_%s" % (ibin_pt, cu.get_unique_str()), "", len(var_bins)-1, var_bins, len(var_bins)-1, var_bins)
         for var_ind_x, var_value_x in enumerate(var_bins[:-1], 1):
@@ -4163,13 +4048,13 @@ class HistBinChopper(object):
                 h.SetBinError(var_ind_x, var_ind_y, hist2d.GetBinError(bin_num_x, bin_num_y))
         return h
 
-    def get_pt_hist_var_binned(self, hist1d, ibin_var, binning_scheme='generator', is_signal=True):
+    def get_pt_hist_var_binned(self, hist1d, ibin_var, binning_scheme='generator', is_signal_region=True):
         """Get hist of pt for given variable bin from massive 1D hist that TUnfold makes
 
         NB only makes sense if this variable bin exists across all pt bins, otherwise impossible to do
         """
         binning_obj = self.binning_handler.get_binning_scheme(binning_scheme)
-        pt_bins = binning_obj.get_pt_bins(is_signal)
+        pt_bins = binning_obj.get_pt_bins(is_signal_region)
         if isinstance(binning_obj, PtVarPerPtBinning):
             # check if this variable bin exists for all pt bins
             var_value = [binning_obj.get_variable_bins(pt)[ibin_var] for pt in pt_bins]
@@ -4184,10 +4069,10 @@ class HistBinChopper(object):
             h.SetBinError(pt_ind, hist1d.GetBinError(bin_num))
         return h
 
-    def get_pt_2d_hist_var_binned(self, hist2d, ibin_var, binning_scheme='generator', is_signal=True):
+    def get_pt_2d_hist_var_binned(self, hist2d, ibin_var, binning_scheme='generator', is_signal_region=True):
         """Get 2d hist for given variable bin from massive 2D hist"""
         binning_obj = self.binning_handler.get_binning_scheme(binning_scheme)
-        pt_bins = binning_obj.get_pt_bins(is_signal)
+        pt_bins = binning_obj.get_pt_bins(is_signal_region)
         if isinstance(binning_obj, PtVarPerPtBinning):
             # check if this variable bin exists for all pt bins
             var_value = [binning_obj.get_variable_bins(pt)[ibin_var] for pt in pt_bins]
@@ -4204,7 +4089,7 @@ class HistBinChopper(object):
                 h.SetBinError(pt_ind_x, pt_ind_y, hist2d.GetBinError(bin_num_x, bin_num_y))
         return h
 
-    def get_bin_plot(self, name, ind, axis, do_norm=False, do_div_bin_width=False, binning_scheme='generator', is_signal=True):
+    def get_bin_plot(self, name, ind, axis, do_norm=False, do_div_bin_width=False, binning_scheme='generator', is_signal_region=True):
         """Get plot for given bin (index=ind) of specified axis.
 
         Note, only considers signal region
@@ -4239,18 +4124,18 @@ class HistBinChopper(object):
         if self.objects[name] is None:
             raise RuntimeError("HistBinChopper.objects[%s] is None" % name)
 
-        key = self._generate_key(name, ind, axis, do_norm, do_div_bin_width, binning_scheme, is_signal)
+        key = self._generate_key(name, ind, axis, do_norm, do_div_bin_width, binning_scheme, is_signal_region)
         if key not in self._cache:
             if axis == 'lambda':
                 self._cache[key] = self.get_pt_hist_var_binned(hist1d=self.objects[name],
                                                                ibin_var=ind,
                                                                binning_scheme=binning_scheme,
-                                                               is_signal=is_signal)
+                                                               is_signal_region=is_signal_region)
             else:
                 self._cache[key] = self.get_var_hist_pt_binned(hist1d=self.objects[name],
                                                                ibin_pt=ind,
                                                                binning_scheme=binning_scheme,
-                                                               is_signal=is_signal)
+                                                               is_signal_region=is_signal_region)
 
             # havent done div bin width or normalising yet
             self._cache_integral[key] = self._cache[key].Integral()
@@ -4274,7 +4159,7 @@ class HistBinChopper(object):
         return self._cache_integral[key]
 
     @staticmethod
-    def _generate_key(name, ind, axis, do_norm, do_div_bin_width, binning_scheme, is_signal=True):
+    def _generate_key(name, ind, axis, do_norm, do_div_bin_width, binning_scheme, is_signal_region=True):
         """Generate consistent name for these args, options as in get_bin_plot()"""
         if axis not in ['pt', 'lambda']:
             raise ValueError('_generate_key(): axis must be "pt" or "lambda"')
@@ -4283,34 +4168,34 @@ class HistBinChopper(object):
             key += "_norm"
         if do_div_bin_width:
             key += "_divBinWidth"
-        if not is_signal:
+        if not is_signal_region:
             key += "_ptUnderflow"
         return key
 
     # TODO: remove these? just use get_bin_plot instead?
-    def get_pt_bin(self, name, ind, binning_scheme='generator', is_signal=True):
-        return self.get_bin_plot(name, ind, axis='pt', do_norm=False, do_div_bin_width=False, binning_scheme=binning_scheme, is_signal=is_signal)
+    def get_pt_bin(self, name, ind, binning_scheme='generator', is_signal_region=True):
+        return self.get_bin_plot(name=name, ind=ind, axis='pt', do_norm=False, do_div_bin_width=False, binning_scheme=binning_scheme, is_signal_region=is_signal_region)
 
-    def get_pt_bin_div_bin_width(self, name, ind, binning_scheme='generator', is_signal=True):
-        return self.get_bin_plot(name, ind, axis='pt', do_norm=False, do_div_bin_width=True, binning_scheme=binning_scheme, is_signal=is_signal)
+    def get_pt_bin_div_bin_width(self, name, ind, binning_scheme='generator', is_signal_region=True):
+        return self.get_bin_plot(name=name, ind=ind, axis='pt', do_norm=False, do_div_bin_width=True, binning_scheme=binning_scheme, is_signal_region=is_signal_region)
 
-    def get_pt_bin_normed(self, name, ind, binning_scheme='generator', is_signal=True):
-        return self.get_bin_plot(name, ind, axis='pt', do_norm=True, do_div_bin_width=False, binning_scheme=binning_scheme, is_signal=is_signal)
+    def get_pt_bin_normed(self, name, ind, binning_scheme='generator', is_signal_region=True):
+        return self.get_bin_plot(name=name, ind=ind, axis='pt', do_norm=True, do_div_bin_width=False, binning_scheme=binning_scheme, is_signal_region=is_signal_region)
 
-    def get_pt_bin_normed_div_bin_width(self, name, ind, binning_scheme='generator', is_signal=True):
-        return self.get_bin_plot(name, ind, axis='pt', do_norm=True, do_div_bin_width=True, binning_scheme=binning_scheme, is_signal=is_signal)
+    def get_pt_bin_normed_div_bin_width(self, name, ind, binning_scheme='generator', is_signal_region=True):
+        return self.get_bin_plot(name=name, ind=ind, axis='pt', do_norm=True, do_div_bin_width=True, binning_scheme=binning_scheme, is_signal_region=is_signal_region)
 
-    def get_lambda_bin(self, name, ind, binning_scheme='generator', is_signal=True):
-        return self.get_bin_plot(name, ind, axis='lambda', do_norm=False, do_div_bin_width=False, binning_scheme=binning_scheme, is_signal=is_signal)
+    def get_lambda_bin(self, name, ind, binning_scheme='generator', is_signal_region=True):
+        return self.get_bin_plot(name=name, ind=ind, axis='lambda', do_norm=False, do_div_bin_width=False, binning_scheme=binning_scheme, is_signal_region=is_signal_region)
 
-    def get_lambda_bin_div_bin_width(self, name, ind, binning_scheme='generator', is_signal=True):
-        return self.get_bin_plot(name, ind, axis='lambda', do_norm=False, do_div_bin_width=True, binning_scheme=binning_scheme, is_signal=is_signal)
+    def get_lambda_bin_div_bin_width(self, name, ind, binning_scheme='generator', is_signal_region=True):
+        return self.get_bin_plot(name=name, ind=ind, axis='lambda', do_norm=False, do_div_bin_width=True, binning_scheme=binning_scheme, is_signal_region=is_signal_region)
 
-    def get_lambda_bin_normed(self, name, ind, binning_scheme='generator', is_signal=True):
-        return self.get_bin_plot(name, ind, axis='lambda', do_norm=True, do_div_bin_width=False, binning_scheme=binning_scheme, is_signal=is_signal)
+    def get_lambda_bin_normed(self, name, ind, binning_scheme='generator', is_signal_region=True):
+        return self.get_bin_plot(name=name, ind=ind, axis='lambda', do_norm=True, do_div_bin_width=False, binning_scheme=binning_scheme, is_signal_region=is_signal_region)
 
-    def get_lambda_bin_normed_div_bin_width(self, name, ind, binning_scheme='generator', is_signal=True):
-        return self.get_bin_plot(name, ind, axis='lambda', do_norm=True, do_div_bin_width=True, binning_scheme=binning_scheme, is_signal=is_signal)
+    def get_lambda_bin_normed_div_bin_width(self, name, ind, binning_scheme='generator', is_signal_region=True):
+        return self.get_bin_plot(name=name, ind=ind, axis='lambda', do_norm=True, do_div_bin_width=True, binning_scheme=binning_scheme, is_signal_region=is_signal_region)
 
 
 class ExpSystematic(object):
@@ -4347,45 +4232,10 @@ class TruthTemplateMaker(object):
     distribution. I'm lazy.
     """
 
-    def __init__(self,
-                 generator_binning,
-                 detector_binning,
-                 variable_bin_edges_reco, # 'variable' refers to e.g. ptD, LHA
-                 variable_bin_edges_gen, # reco for detector binnig, gen for generator (final) binning
-                 variable_name,
-                 pt_bin_edges_reco,
-                 pt_bin_edges_gen,
-                 pt_bin_edges_underflow_reco,
-                 pt_bin_edges_underflow_gen,
-                 output_dir):
-        self.generator_binning = generator_binning
-        self.detector_binning = detector_binning
-
-        self.variable_bin_edges_reco = variable_bin_edges_reco
-        self.nbins_variable_reco = len(variable_bin_edges_reco)-1 if variable_bin_edges_reco is not None else 0
-        self.variable_bin_edges_gen = variable_bin_edges_gen
-        self.nbins_variable_gen = len(variable_bin_edges_gen)-1 if variable_bin_edges_gen is not None else 0
-
-        self.variable_name = variable_name
-
-        self.pt_bin_edges_reco = pt_bin_edges_reco
-        self.nbins_pt_reco = len(pt_bin_edges_reco)-1 if pt_bin_edges_reco is not None else 0
-        self.pt_bin_edges_gen = pt_bin_edges_gen
-        self.nbins_pt_gen = len(pt_bin_edges_gen)-1 if pt_bin_edges_gen is not None else 0
-
-        self.pt_bin_edges_underflow_reco = pt_bin_edges_underflow_reco
-        self.nbins_pt_underflow_reco = len(pt_bin_edges_underflow_reco)-1 if pt_bin_edges_underflow_reco is not None else 0
-        self.pt_bin_edges_underflow_gen = pt_bin_edges_underflow_gen
-        self.nbins_pt_underflow_gen = len(pt_bin_edges_underflow_gen)-1 if pt_bin_edges_underflow_gen is not None else 0
-
-        self.binning_handler = None # FIXME
-        self.hist_bin_chopper_signal = HistBinChopper(generator_binning=self.generator_binning.FindNode("generatordistribution"),
-                                                      detector_binning=self.detector_binning.FindNode("detectordistribution"),
-                                                      binning_handler=self.binning_handler)
-
-        self.hist_bin_chopper_uflow = HistBinChopper(generator_binning=self.generator_binning.FindNode("generatordistribution_underflow"),
-                                                     detector_binning=self.detector_binning.FindNode("detectordistribution_underflow"),
-                                                     binning_handler=self.binning_handler)
+    def __init__(self, binning_handler, output_dir):
+        self.binning_handler = binning_handler
+        self.variable_name = binning_handler.variable_name
+        self.hist_bin_chopper = HistBinChopper(binning_handler=self.binning_handler)
 
         self.templates = []  # store MC template to be fitted
         self.data_label_reco = "hist_data_reco"
@@ -4403,13 +4253,11 @@ class TruthTemplateMaker(object):
 
     def set_input(self, data_hist_reco):
         """Set thing that gets fitted. Should be at detector-level, but with gen binning"""
-        self.hist_bin_chopper_signal.add_obj(self.data_label_reco, data_hist_reco)
-        self.hist_bin_chopper_uflow.add_obj(self.data_label_reco, data_hist_reco)
+        self.hist_bin_chopper.add_obj(self.data_label_reco, data_hist_reco)
 
     def set_input_gen(self, data_hist_gen):
         """Set thing to be fitted at gen level - for cross-checking with MC"""
-        self.hist_bin_chopper_signal.add_obj(self.data_label_gen, data_hist_gen)
-        self.hist_bin_chopper_uflow.add_obj(self.data_label_gen, data_hist_gen)
+        self.hist_bin_chopper.add_obj(self.data_label_gen, data_hist_gen)
 
     def add_mc_template(self, name, hist_reco, hist_gen, colour=None):
         """Add MC template to be part of the fit.
@@ -4425,10 +4273,8 @@ class TruthTemplateMaker(object):
             hist_gen=hist_gen,
             colour=colour
         ))
-        self.hist_bin_chopper_signal.add_obj(reco_label, hist_reco.Clone())
-        self.hist_bin_chopper_signal.add_obj(gen_label, hist_gen.Clone())
-        self.hist_bin_chopper_uflow.add_obj(reco_label, hist_reco.Clone())
-        self.hist_bin_chopper_uflow.add_obj(gen_label, hist_gen.Clone())
+        self.hist_bin_chopper.add_obj(reco_label, hist_reco.Clone())
+        self.hist_bin_chopper.add_obj(gen_label, hist_gen.Clone())
 
     # Create fit function from templates
     # Should be used with functools.partial
@@ -4452,8 +4298,8 @@ class TruthTemplateMaker(object):
         # do the fits per pT bin, including plotting the fit
         self.do_fits()
         # plot scale factors vs pt bin
-        first_bin = self.pt_bin_edges_underflow_gen[0]
-        last_bin = self.pt_bin_edges_gen[-1]
+        first_bin = self.binning_handler.get_binning_scheme('generator').get_pt_bins(is_signal_region=False)[0]
+        last_bin = self.binning_handler.get_binning_scheme('generator').get_pt_bins(is_signal_region=True)[-1]
         self.plot_fit_results_vs_pt_bin("Fit to reco data, %g < p_{T} < %G GeV" % (first_bin, last_bin),
                                         os.path.join(self.output_dir, "reco_gen_bin_fit_factors.pdf"))
         self.construct_truth_template()
@@ -4545,8 +4391,6 @@ class TruthTemplateMaker(object):
         self.fit_results = []
         self.components = []
 
-        xmin = 0
-        xmax = len(self.variable_bin_edges_gen)-1
         n_components = len(self.templates)
 
         if n_components < 2:
@@ -4554,18 +4398,20 @@ class TruthTemplateMaker(object):
 
         labels = [t['name'] for t in self.templates]
         # Fit underflow pT bins
-        for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.pt_bin_edges_underflow_gen[:-1], self.pt_bin_edges_underflow_gen[1:])):
+        pt_bins_uflow = self.binning_handler.get_binning_scheme('generator').get_pt_bins(is_signal_region=False)
+        for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(pt_bins_uflow[:-1], pt_bins_uflow[1:])):
             print("Fitting uflow", bin_edge_low, bin_edge_high)
-            hbc_args = dict(ind=ibin, binning_scheme='generator')
-            hist_data = self.hist_bin_chopper_uflow.get_pt_bin_div_bin_width(self.data_label_reco, **hbc_args).Clone()
+            hbc_args = dict(ind=ibin, binning_scheme='generator', is_signal_region=False)
+            hist_data = self.hist_bin_chopper.get_pt_bin_div_bin_width(self.data_label_reco, **hbc_args).Clone()
             if hist_data.Integral() == 0:
                 self.fits.append(None)
                 self.fit_results.append(None)
                 self.components.append(None)
                 print("... empty data, skipping fit")
                 continue
-            mc_hists = [self.hist_bin_chopper_uflow.get_pt_bin_div_bin_width(t['reco_label'], **hbc_args).Clone()
+            mc_hists = [self.hist_bin_chopper.get_pt_bin_div_bin_width(t['reco_label'], **hbc_args).Clone()
                         for t in self.templates]
+            xmin, xmax = 0, hist_data.GetNbinsX()
             # create TF1 using MC histograms
             f = ROOT.TF1("reco_fit_gen_ubin_%d" % ibin, partial(TruthTemplateMaker.data_distribution_fn, hists=mc_hists), xmin, xmax, n_components)
             f.SetNpx(10000)
@@ -4583,12 +4429,14 @@ class TruthTemplateMaker(object):
                           filename=os.path.join(self.output_dir, "reco_fit_gen_bin_uflow_%d.pdf" % ibin))
 
         # Fit signal pT bins
-        for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.pt_bin_edges_gen[:-1], self.pt_bin_edges_gen[1:])):
+        pt_bins_signal = self.binning_handler.get_binning_scheme('generator').get_pt_bins(is_signal_region=True)
+        for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(pt_bins_signal[:-1], pt_bins_signal[1:])):
             print("Fitting", bin_edge_low, bin_edge_high)
-            hbc_args = dict(ind=ibin, binning_scheme='generator')
-            hist_data = self.hist_bin_chopper_signal.get_pt_bin_div_bin_width(self.data_label_reco, **hbc_args).Clone()
-            mc_hists = [self.hist_bin_chopper_signal.get_pt_bin_div_bin_width(t['reco_label'], **hbc_args).Clone()
-                        for t in self.templates]
+            hbc_args = dict(ind=ibin, binning_scheme='generator', is_signal_region=True)
+            hist_data = self.hist_bin_chopper.get_pt_bin_div_bin_width(self.data_label_reco, **hbc_args).Clone()
+            mc_hists = [self.hist_bin_chopper.get_pt_bin_div_bin_width(template['reco_label'], **hbc_args).Clone()
+                        for template in self.templates]
+            xmin, xmax = 0, hist_data.GetNbinsX()
             # create TF1 using MC histograms
             f = ROOT.TF1("reco_fit_gen_bin_%d" % ibin, partial(TruthTemplateMaker.data_distribution_fn, hists=mc_hists), xmin, xmax, len(mc_hists))
             f.SetNpx(10000)
@@ -4637,10 +4485,11 @@ class TruthTemplateMaker(object):
         new_truth_hists = []
 
         # underflow pt bins
-        for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.pt_bin_edges_underflow_gen[:-1], self.pt_bin_edges_underflow_gen[1:])):
+        pt_bins_uflow = self.binning_handler.get_binning_scheme('generator').get_pt_bins(is_signal_region=False)
+        for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(pt_bins_uflow[:-1], pt_bins_uflow[1:])):
             print("Creating template", ibin, bin_edge_low, bin_edge_high)
 
-            hbc_args = dict(ind=ibin, binning_scheme='generator')
+            hbc_args = dict(ind=ibin, binning_scheme='generator', is_signal_region=False)
             sum_hist = None
 
             if ibin == 0:
@@ -4648,8 +4497,8 @@ class TruthTemplateMaker(object):
                 # extrapolate from lowest pt bins to get fit factors for this bin
                 last_ind = 3
                 degree = 1
-                pt_params = [0.5*(self.pt_bin_edges_underflow_gen[i]+self.pt_bin_edges_underflow_gen[i+1]) for i in range(1, last_ind)]
-                center_bin_0 = 0.5*(self.pt_bin_edges_underflow_gen[0] + self.pt_bin_edges_underflow_gen[1])
+                pt_params = [0.5*(pt_bins_uflow[i]+pt_bins_uflow[i+1]) for i in range(1, last_ind)]
+                center_bin_0 = 0.5*(pt_bins_uflow[0] + pt_bins_uflow[1])
 
                 for ind_t, template in enumerate(self.templates):
                     params = [f.GetParameter(ind_t) for f in self.fits[1:last_ind]]
@@ -4657,7 +4506,7 @@ class TruthTemplateMaker(object):
                     w = np.poly1d(fit_coeff)(center_bin_0)
                     print("Extrapolated w%d for lowest pt bin:" % ind_t, w)
                     # note no div bin width, as that's what TUnfold uses
-                    hist_gen = self.hist_bin_chopper_uflow.get_pt_bin(template['gen_label'], **hbc_args).Clone()
+                    hist_gen = self.hist_bin_chopper.get_pt_bin(template['gen_label'], **hbc_args).Clone()
                     hist_gen.Scale(w)
                     if sum_hist is None:
                         sum_hist = hist_gen
@@ -4670,7 +4519,7 @@ class TruthTemplateMaker(object):
                 # Sum together into one hist for this pt bin
                 for ind_t, template in enumerate(self.templates):
                     # note no div bin width, as that's what TUnfold uses
-                    hist_gen = self.hist_bin_chopper_uflow.get_pt_bin(template['gen_label'], **hbc_args).Clone()
+                    hist_gen = self.hist_bin_chopper.get_pt_bin(template['gen_label'], **hbc_args).Clone()
                     print("Scaling template", ind_t, "by", self.fits[ibin].GetParameter(ind_t))
                     hist_gen.Scale(self.fits[ibin].GetParameter(ind_t))
                     if sum_hist is None:
@@ -4683,10 +4532,11 @@ class TruthTemplateMaker(object):
 
         # signal pt bins
         global_ibin = ibin+1
-        for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.pt_bin_edges_gen[:-1], self.pt_bin_edges_gen[1:])):
+        pt_bins_signal = self.binning_handler.get_binning_scheme('generator').get_pt_bins(is_signal_region=True)
+        for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(pt_bins_signal[:-1], pt_bins_signal[1:])):
             print("Creating template", ibin, global_ibin, bin_edge_low, bin_edge_high)
 
-            hbc_args = dict(ind=ibin, binning_scheme='generator')
+            hbc_args = dict(ind=ibin, binning_scheme='generator', is_signal_region=True)
             sum_hist = None
 
             # Get the scaled truth-level distributions, using fit factors
@@ -4694,7 +4544,7 @@ class TruthTemplateMaker(object):
             # Sum together into one hist for this pt bin
             for ind_t, template in enumerate(self.templates):
                 # note no div bin width, as that's what TUnfold uses
-                hist_gen = self.hist_bin_chopper_signal.get_pt_bin(template['gen_label'], **hbc_args).Clone()
+                hist_gen = self.hist_bin_chopper.get_pt_bin(template['gen_label'], **hbc_args).Clone()
                 print("Scaling template", ind_t, "by", self.fits[global_ibin].GetParameter(ind_t))
                 hist_gen.Scale(self.fits[global_ibin].GetParameter(ind_t))
                 if sum_hist is None:
@@ -4711,28 +4561,26 @@ class TruthTemplateMaker(object):
         truth_template = self.templates[0]['hist_gen'].Clone("truth_template")
         truth_template.Reset()
 
-        all_pt_bins = self.pt_bin_edges_underflow_gen[:-1]
-        all_pt_bins = np.append(all_pt_bins, self.pt_bin_edges_gen)
+        print(type(pt_bins_uflow), pt_bins_uflow)
+        print(type(pt_bins_signal), pt_bins_signal)
+        all_pt_bins = list(chain(pt_bins_uflow[:-1], pt_bins_signal))
         print(all_pt_bins)
         for pt_ind, (pt_low, pt_high) in enumerate(zip(all_pt_bins[:-1], all_pt_bins[1:])):
-            binning = self.generator_binning.FindNode("generatordistribution_underflow") if pt_low < self.pt_bin_edges_gen[0] else self.generator_binning.FindNode("generatordistribution")
-            start_bin = binning.GetGlobalBinNumber(self.variable_bin_edges_gen[0]+0.001, pt_low+0.001)
-            end_bin = binning.GetGlobalBinNumber(self.variable_bin_edges_gen[-1]+0.001, pt_low+0.001)
-            for bin_ind, glob_bin in enumerate(range(start_bin, end_bin+1), 1):
-                # bin_ind refers to bin in the template hist, glob_bin refers to global bin number
-                truth_template.SetBinContent(glob_bin, new_truth_hists[pt_ind].GetBinContent(bin_ind))
-                truth_template.SetBinError(glob_bin, new_truth_hists[pt_ind].GetBinError(bin_ind))
-
+            var_bins = self.binning_handler.get_binning_scheme('generator').get_variable_bins(pt=pt_low+1E-6)
+            for bin_ind, var_value in enumerate(var_bins, 1):
+                # bin_ind refers to bin in the template TH1 (hence start at 1), global_bin refers to global bin number
+                global_bin = self.binning_handler.get_binning_scheme('generator').physical_bin_to_global_bin(pt=pt_low+1E-6, var=var_value+1E-6)
+                truth_template.SetBinContent(global_bin, new_truth_hists[pt_ind].GetBinContent(bin_ind))
+                truth_template.SetBinError(global_bin, new_truth_hists[pt_ind].GetBinError(bin_ind))
             # TODO: deal with overflow?
 
         self.truth_template = truth_template
-        self.hist_bin_chopper_signal.add_obj("truth_template", self.truth_template)
-        self.hist_bin_chopper_uflow.add_obj("truth_template", self.truth_template)
+        self.hist_bin_chopper.add_obj("truth_template", self.truth_template)
 
     def check_template_at_gen(self):
         """Do fits at gen level to input from set_input_gen(), and compare with
         fit factors from reco fit"""
-        if self.data_label_gen not in self.hist_bin_chopper_signal.objects:
+        if self.data_label_gen not in self.hist_bin_chopper.objects:
             raise RuntimeError("No %s: you need to call set_input_gen() first" % self.data_label_gen)
 
         if self.truth_template is None:
@@ -4740,8 +4588,8 @@ class TruthTemplateMaker(object):
 
         self.do_gen_fits()
         # plot scale factors vs pt bin, along with reco ones
-        first_bin = self.pt_bin_edges_underflow_gen[0]
-        last_bin = self.pt_bin_edges_gen[-1]
+        first_bin = self.binning_handler.get_binning_scheme('generator').get_pt_bins(is_signal_region=False)[0]
+        last_bin = self.binning_handler.get_binning_scheme('generator').get_pt_bins(is_signal_region=True)[-1]
         self.plot_gen_vs_reco_fit_results_vs_pt_bin("Comparing fit to reco and gen, %g < p_{T} < %G GeV" % (first_bin, last_bin),
                                                     os.path.join(self.output_dir, "reco_vs_gen_bin_fit_factors.pdf"))
 
@@ -4752,8 +4600,6 @@ class TruthTemplateMaker(object):
         self.fits_gen = []
         self.fit_results_gen = []
 
-        xmin = 0
-        xmax = len(self.variable_bin_edges_gen)-1
         n_components = len(self.templates)
 
         if n_components < 2:
@@ -4761,16 +4607,18 @@ class TruthTemplateMaker(object):
 
         labels = [t['name'] for t in self.templates]
         # Fit underflow pT bins
-        for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.pt_bin_edges_underflow_gen[:-1], self.pt_bin_edges_underflow_gen[1:])):
+        pt_bins_uflow = self.binning_handler.get_binning_scheme('generator').get_pt_bins(is_signal_region=False)
+        for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(pt_bins_uflow[:-1], pt_bins_uflow[1:])):
             print("Fitting uflow", bin_edge_low, bin_edge_high)
-            hbc_args = dict(ind=ibin, binning_scheme='generator')
-            hist_data = self.hist_bin_chopper_uflow.get_pt_bin_div_bin_width(self.data_label_gen, **hbc_args).Clone()
+            hbc_args = dict(ind=ibin, binning_scheme='generator', is_signal_region=False)
+            hist_data = self.hist_bin_chopper.get_pt_bin_div_bin_width(self.data_label_gen, **hbc_args).Clone()
             if hist_data.Integral() == 0:
                 self.fits_gen.append(None)
                 self.fit_results_gen.append(None)
                 print("... empty data, skipping fit")
                 continue
-            mc_hists = [self.hist_bin_chopper_uflow.get_pt_bin_div_bin_width(t['gen_label'], **hbc_args).Clone()
+            xmin, xmax = 0, hist_data.GetNbinsX()
+            mc_hists = [self.hist_bin_chopper.get_pt_bin_div_bin_width(t['gen_label'], **hbc_args).Clone()
                         for t in self.templates]
             # create TF1 using MC histograms
             f = ROOT.TF1("gen_fit_gen_ubin_%d" % ibin, partial(TruthTemplateMaker.data_distribution_fn, hists=mc_hists), xmin, xmax, n_components)
@@ -4785,7 +4633,7 @@ class TruthTemplateMaker(object):
 
             # Get the fit from reco fit values
             other_contributions = [
-                Contribution(self.hist_bin_chopper_uflow.get_pt_bin_div_bin_width("truth_template", **hbc_args),
+                Contribution(self.hist_bin_chopper.get_pt_bin_div_bin_width("truth_template", **hbc_args),
                              label="Fit using reco fit params",
                              line_width=2,
                              line_color=ROOT.kOrange-3,
@@ -4800,12 +4648,14 @@ class TruthTemplateMaker(object):
                           filename=os.path.join(self.output_dir, "gen_fit_gen_bin_uflow_%d.pdf" % ibin))
 
         # Fit signal pT bins
-        for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.pt_bin_edges_gen[:-1], self.pt_bin_edges_gen[1:])):
+        pt_bins_uflow = self.binning_handler.get_binning_scheme('generator').get_pt_bins(is_signal_region=True)
+        for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(pt_bins_signal[:-1], pt_bins_signal[1:])):
             print("Fitting", bin_edge_low, bin_edge_high)
-            hbc_args = dict(ind=ibin, binning_scheme='generator')
-            hist_data = self.hist_bin_chopper_signal.get_pt_bin_div_bin_width(self.data_label_gen, **hbc_args).Clone()
-            mc_hists = [self.hist_bin_chopper_signal.get_pt_bin_div_bin_width(t['gen_label'], **hbc_args).Clone()
-                        for t in self.templates]
+            hbc_args = dict(ind=ibin, binning_scheme='generator', is_signal_region=True)
+            hist_data = self.hist_bin_chopper.get_pt_bin_div_bin_width(self.data_label_gen, **hbc_args).Clone()
+            mc_hists = [self.hist_bin_chopper.get_pt_bin_div_bin_width(template['gen_label'], **hbc_args).Clone()
+                        for template in self.templates]
+            xmin, xmax = 0, hist_data.GetNbinsX()
             # create TF1 using MC histograms
             f = ROOT.TF1("gen_fit_gen_bin_%d" % ibin, partial(TruthTemplateMaker.data_distribution_fn, hists=mc_hists), xmin, xmax, len(mc_hists))
             f.SetNpx(10000)
@@ -4819,7 +4669,7 @@ class TruthTemplateMaker(object):
 
             # Get the fit from reco fit values
             other_contributions = [
-                Contribution(self.hist_bin_chopper_signal.get_pt_bin_div_bin_width("truth_template", **hbc_args),
+                Contribution(self.hist_bin_chopper.get_pt_bin_div_bin_width("truth_template", **hbc_args),
                              label="Fit using reco fit params",
                              line_width=2,
                              line_color=ROOT.kOrange-3,

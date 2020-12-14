@@ -780,13 +780,6 @@ def main():
 
             unfolder = MyUnfolder(response_map=rm_large_rel_error_bins_th2(hist_mc_gen_reco_map, args.relErr),
                                   binning_handler=binning_handler,
-                                  variable_bin_edges_reco=angle_bin_edges_reco,
-                                  variable_bin_edges_gen=angle_bin_edges_gen,
-                                  variable_name=variable_name,
-                                  pt_bin_edges_reco=pt_bin_edges_reco,
-                                  pt_bin_edges_gen=pt_bin_edges_gen,
-                                  pt_bin_edges_underflow_reco=pt_bin_edges_underflow_reco,
-                                  pt_bin_edges_underflow_gen=pt_bin_edges_underflow_gen,
                                   orientation=ROOT.TUnfold.kHistMapOutputHoriz,
                                   constraintMode=AREA_OPT_DICT[args.areaConstraint],
                                   # regMode=ROOT.TUnfold.kRegModeCurvature,
@@ -797,9 +790,9 @@ def main():
                                   axisSteering=axis_steering)
 
             # Save binning to file
-            unfolder.save_binning(txt_filename="%s/binning_scheme.txt" % (this_output_dir), print_xml=False)
-            ROOT.BinningXMLExporter.ExportXML(unfolder.detector_binning, this_output_dir, "detector_binning.xml", True, True, 2)
-            ROOT.BinningXMLExporter.ExportXML(unfolder.generator_binning, this_output_dir, "generator_binning.xml", True, True, 2)
+            # unfolder.save_binning(txt_filename="%s/binning_scheme.txt" % (this_output_dir), print_xml=False)
+            # ROOT.BinningXMLExporter.ExportXML(unfolder.detector_binning, this_output_dir, "detector_binning.xml", True, True, 2)
+            # ROOT.BinningXMLExporter.ExportXML(unfolder.generator_binning, this_output_dir, "generator_binning.xml", True, True, 2)
 
             unfolder_plotter = MyUnfolderPlotter(unfolder,
                                                  is_data=not MC_INPUT,
@@ -963,13 +956,7 @@ def main():
                 # Do an unregularised version first for comparison,
                 # also potentially for factor/bias
                 unreg_unfolder = MyUnfolder(response_map=unfolder.response_map,
-                                            variable_bin_edges_reco=unfolder.variable_bin_edges_reco,
-                                            variable_bin_edges_gen=unfolder.variable_bin_edges_gen,
-                                            variable_name=unfolder.variable_name,
-                                            pt_bin_edges_reco=unfolder.pt_bin_edges_reco,
-                                            pt_bin_edges_gen=unfolder.pt_bin_edges_gen,
-                                            pt_bin_edges_underflow_reco=unfolder.pt_bin_edges_underflow_reco,
-                                            pt_bin_edges_underflow_gen=unfolder.pt_bin_edges_underflow_gen,
+                                            binning_handler=binning_handler,
                                             orientation=unfolder.orientation,
                                             constraintMode=unfolder.constraintMode,
                                             regMode=ROOT.TUnfold.kRegModeNone,
@@ -1038,15 +1025,7 @@ def main():
                     # Then use the same at truth level
                     # This template will allow us to setup a more accurate L matrix,
                     # and a bias hist
-                    template_maker = TruthTemplateMaker(generator_binning=unfolder.generator_binning,
-                                                        detector_binning=unfolder.detector_binning,
-                                                        variable_bin_edges_reco=unfolder.variable_bin_edges_reco,
-                                                        variable_bin_edges_gen=unfolder.variable_bin_edges_gen,
-                                                        variable_name=unfolder.variable_name,
-                                                        pt_bin_edges_reco=unfolder.pt_bin_edges_reco,
-                                                        pt_bin_edges_gen=unfolder.pt_bin_edges_gen,
-                                                        pt_bin_edges_underflow_reco=unfolder.pt_bin_edges_underflow_reco,
-                                                        pt_bin_edges_underflow_gen=unfolder.pt_bin_edges_underflow_gen,
+                    template_maker = TruthTemplateMaker(binning_handler=binning_handler,
                                                         output_dir=this_output_dir)
 
                     # thing to be fitted
@@ -1326,19 +1305,13 @@ def main():
                     print("*" * 80)
 
                     jk_unfolder = MyUnfolder(response_map=unfolder.response_map,
-                                              variable_bin_edges_reco=unfolder.variable_bin_edges_reco,
-                                              variable_bin_edges_gen=unfolder.variable_bin_edges_gen,
-                                              variable_name=unfolder.variable_name,
-                                              pt_bin_edges_reco=unfolder.pt_bin_edges_reco,
-                                              pt_bin_edges_gen=unfolder.pt_bin_edges_gen,
-                                              pt_bin_edges_underflow_reco=unfolder.pt_bin_edges_underflow_reco,
-                                              pt_bin_edges_underflow_gen=unfolder.pt_bin_edges_underflow_gen,
-                                              orientation=unfolder.orientation,
-                                              constraintMode=unfolder.constraintMode,
-                                              regMode=unfolder.regMode,
-                                              densityFlags=unfolder.densityFlags,
-                                              distribution=unfolder.distribution,
-                                              axisSteering=unfolder.axisSteering)
+                                             binning_handler=binning_handler,
+                                             orientation=unfolder.orientation,
+                                             constraintMode=unfolder.constraintMode,
+                                             regMode=unfolder.regMode,
+                                             densityFlags=unfolder.densityFlags,
+                                             distribution=unfolder.distribution,
+                                             axisSteering=unfolder.axisSteering)
 
                     jk_unfolder.SetEpsMatrix(eps_matrix)
 
@@ -1390,15 +1363,7 @@ def main():
                             # Then use the same at truth level
                             # This template will allow us to setup a more accurate L matrix,
                             # and a bias hist
-                            jk_template_maker = TruthTemplateMaker(generator_binning=unfolder.generator_binning,
-                                                                   detector_binning=unfolder.detector_binning,
-                                                                   variable_bin_edges_reco=unfolder.variable_bin_edges_reco,
-                                                                   variable_bin_edges_gen=unfolder.variable_bin_edges_gen,
-                                                                   variable_name=unfolder.variable_name,
-                                                                   pt_bin_edges_reco=unfolder.pt_bin_edges_reco,
-                                                                   pt_bin_edges_gen=unfolder.pt_bin_edges_gen,
-                                                                   pt_bin_edges_underflow_reco=unfolder.pt_bin_edges_underflow_reco,
-                                                                   pt_bin_edges_underflow_gen=unfolder.pt_bin_edges_underflow_gen,
+                            jk_template_maker = TruthTemplateMaker(binning_handler=binning_handler,
                                                                    output_dir=jk_output_dir)
 
                             jk_template_maker.set_input(jk_unfolder.input_hist_gen_binning_bg_subtracted)
@@ -1574,13 +1539,7 @@ def main():
                     print("*" * 80)
 
                     jk_unfolder = MyUnfolder(response_map=rm_large_rel_error_bins_th2(jk_dict['response_map'], args.relErr),
-                                             variable_bin_edges_reco=unfolder.variable_bin_edges_reco,
-                                             variable_bin_edges_gen=unfolder.variable_bin_edges_gen,
-                                             variable_name=unfolder.variable_name,
-                                             pt_bin_edges_reco=unfolder.pt_bin_edges_reco,
-                                             pt_bin_edges_gen=unfolder.pt_bin_edges_gen,
-                                             pt_bin_edges_underflow_reco=unfolder.pt_bin_edges_underflow_reco,
-                                             pt_bin_edges_underflow_gen=unfolder.pt_bin_edges_underflow_gen,
+                                             binning_handler=binning_handler,
                                              orientation=unfolder.orientation,
                                              constraintMode=unfolder.constraintMode,
                                              regMode=unfolder.regMode,
@@ -1703,13 +1662,7 @@ def main():
 
                     # construct unfolder like original but with this response matrix, do unfolding
                     exp_syst_unfolder = MyUnfolder(response_map=rm_large_rel_error_bins_th2(map_syst, args.relErr),
-                                                   variable_bin_edges_reco=unfolder.variable_bin_edges_reco,
-                                                   variable_bin_edges_gen=unfolder.variable_bin_edges_gen,
-                                                   variable_name=unfolder.variable_name,
-                                                   pt_bin_edges_reco=unfolder.pt_bin_edges_reco,
-                                                   pt_bin_edges_gen=unfolder.pt_bin_edges_gen,
-                                                   pt_bin_edges_underflow_reco=unfolder.pt_bin_edges_underflow_reco,
-                                                   pt_bin_edges_underflow_gen=unfolder.pt_bin_edges_underflow_gen,
+                                                   binning_handler=binning_handler,
                                                    orientation=unfolder.orientation,
                                                    constraintMode=unfolder.constraintMode,
                                                    regMode=unfolder.regMode,
@@ -2083,13 +2036,7 @@ def main():
                 hist_mc_gen_reco_map_alt.Scale(unfolder.response_map.Integral() / hist_mc_gen_reco_map_alt.Integral())  # just for display purposes, doesn't affect result
 
                 alt_unfolder = MyUnfolder(response_map=rm_large_rel_error_bins_th2(hist_mc_gen_reco_map_alt, args.relErr),
-                                          variable_bin_edges_reco=unfolder.variable_bin_edges_reco,
-                                          variable_bin_edges_gen=unfolder.variable_bin_edges_gen,
-                                          variable_name=unfolder.variable_name,
-                                          pt_bin_edges_reco=unfolder.pt_bin_edges_reco,
-                                          pt_bin_edges_gen=unfolder.pt_bin_edges_gen,
-                                          pt_bin_edges_underflow_reco=unfolder.pt_bin_edges_underflow_reco,
-                                          pt_bin_edges_underflow_gen=unfolder.pt_bin_edges_underflow_gen,
+                                          binning_handler=binning_handler,
                                           orientation=unfolder.orientation,
                                           constraintMode=unfolder.constraintMode,
                                           regMode=unfolder.regMode,
@@ -2270,13 +2217,7 @@ def main():
                         scale_dict['tfile'] = cu.open_root_file(scale_dict['tfile'])
 
                     scale_unfolder = MyUnfolder(response_map=cu.get_from_tfile(scale_dict['tfile'], "%s/tu_%s_GenReco_all" % (region['dirname'], angle_shortname)),
-                                                variable_bin_edges_reco=unfolder.variable_bin_edges_reco,
-                                                variable_bin_edges_gen=unfolder.variable_bin_edges_gen,
-                                                variable_name=unfolder.variable_name,
-                                                pt_bin_edges_reco=unfolder.pt_bin_edges_reco,
-                                                pt_bin_edges_gen=unfolder.pt_bin_edges_gen,
-                                                pt_bin_edges_underflow_reco=unfolder.pt_bin_edges_underflow_reco,
-                                                pt_bin_edges_underflow_gen=unfolder.pt_bin_edges_underflow_gen,
+                                                binning_handler=binning_handler,
                                                 orientation=unfolder.orientation,
                                                 constraintMode=unfolder.constraintMode,
                                                 regMode=unfolder.regMode,
@@ -2471,13 +2412,7 @@ def main():
                     hist_syst_gen = cu.get_from_tfile(syst_dict['tfile'], "%s/hist_%s_truth_%s" % (region['dirname'], angle_shortname, mc_hname_append))
 
                     syst_unfolder = MyUnfolder(response_map=unfolder.response_map,
-                                               variable_bin_edges_reco=unfolder.variable_bin_edges_reco,
-                                               variable_bin_edges_gen=unfolder.variable_bin_edges_gen,
-                                               variable_name=unfolder.variable_name,
-                                               pt_bin_edges_reco=unfolder.pt_bin_edges_reco,
-                                               pt_bin_edges_gen=unfolder.pt_bin_edges_gen,
-                                               pt_bin_edges_underflow_reco=unfolder.pt_bin_edges_underflow_reco,
-                                               pt_bin_edges_underflow_gen=unfolder.pt_bin_edges_underflow_gen,
+                                               binning_handler=binning_handler,
                                                orientation=unfolder.orientation,
                                                constraintMode=unfolder.constraintMode,
                                                regMode=unfolder.regMode,
@@ -2557,15 +2492,7 @@ def main():
                         # Then use the same at truth level
                         # This template will allow us to setup a more accurate L matrix,
                         # and a bias hist
-                        syst_template_maker = TruthTemplateMaker(generator_binning=unfolder.generator_binning,
-                                                                 detector_binning=unfolder.detector_binning,
-                                                                 variable_bin_edges_reco=unfolder.variable_bin_edges_reco,
-                                                                 variable_bin_edges_gen=unfolder.variable_bin_edges_gen,
-                                                                 variable_name=unfolder.variable_name,
-                                                                 pt_bin_edges_reco=unfolder.pt_bin_edges_reco,
-                                                                 pt_bin_edges_gen=unfolder.pt_bin_edges_gen,
-                                                                 pt_bin_edges_underflow_reco=unfolder.pt_bin_edges_underflow_reco,
-                                                                 pt_bin_edges_underflow_gen=unfolder.pt_bin_edges_underflow_gen,
+                        syst_template_maker = TruthTemplateMaker(binning_handler=binning_handler,
                                                                  output_dir=syst_output_dir)
 
                         syst_template_maker.set_input(syst_unfolder.input_hist_gen_binning_bg_subtracted)
@@ -2855,13 +2782,7 @@ def main():
                     print("*" * 80)
                     pdf_response_map = cu.get_from_tfile(pdf_tfile, pdf_dict['response_map'])
                     pdf_unfolder = MyUnfolder(response_map=pdf_response_map,
-                                              variable_bin_edges_reco=unfolder.variable_bin_edges_reco,
-                                              variable_bin_edges_gen=unfolder.variable_bin_edges_gen,
-                                              variable_name=unfolder.variable_name,
-                                              pt_bin_edges_reco=unfolder.pt_bin_edges_reco,
-                                              pt_bin_edges_gen=unfolder.pt_bin_edges_gen,
-                                              pt_bin_edges_underflow_reco=unfolder.pt_bin_edges_underflow_reco,
-                                              pt_bin_edges_underflow_gen=unfolder.pt_bin_edges_underflow_gen,
+                                              binning_handler=binning_handler,
                                               orientation=unfolder.orientation,
                                               constraintMode=unfolder.constraintMode,
                                               regMode=unfolder.regMode,
@@ -2869,7 +2790,7 @@ def main():
                                               distribution=unfolder.distribution,
                                               axisSteering=unfolder.axisSteering)
 
-                    # Needed beacuse some fo the PDF variations struggle to unfold
+                    # Needed because some fo the PDF variations struggle to unfold
                     # Even 1E-18 wouldn't work - needs to be v.small
                     pdf_unfolder.SetEpsMatrix(eps_matrix)
 
