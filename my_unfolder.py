@@ -2863,7 +2863,8 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         self.hist_bin_chopper.add_obj(self.total_ematrix_name, self.get_ematrix_stat())
 
         # For each pt bin, recalculate total error in quadrature and store in unfolded hist
-        for ibin_pt, pt in enumerate(self.pt_bin_edges_gen[:-1]):
+        pt_bins = self.binning_handler.get_binning_scheme("generator").get_pt_bins(is_signal_region=True)
+        for ibin_pt, pt in enumerate(pt_bins[:-1]):
             first_bin = ibin_pt == 0
             hbc_args = dict(ind=ibin_pt, binning_scheme='generator', is_signal_region=True)
 
@@ -2877,11 +2878,11 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             # if they haven't been calculated by jackknife methods,
             # scaling by overall normalisation and bin widths
             binning = self.generator_binning.FindNode("generatordistribution")
-            var_bins = self.variable_bin_edges_gen
+            var_bins = self.binning_handler.get_binning_scheme('generator').get_variable_bins(pt)
             # FIXME what to do if non-sequential bin numbers?!
             # the 0.001 is to ensure we're def inside this bin
-            start_bin = binning.GetGlobalBinNumber(var_bins[0]+0.001, pt+0.001)
-            end_bin = binning.GetGlobalBinNumber(var_bins[-2]+0.001, pt+0.001)  # -2 since the last one is the upper edge of the last bin
+            start_bin = self.binning_handler.get_binning_scheme('generator').physical_bin_to_global_bin(var=var_bins[0]+1E-6, pt=pt+1E-6)
+            end_bin = self.binning_handler.get_binning_scheme('generator').physical_bin_to_global_bin(var=var_bins[-2]+1E-6, pt=pt+1E-6)  # -2 since the last one is the upper edge of the last bin
             stat_key = self.hist_bin_chopper._generate_key(self.stat_ematrix_name,
                                                            ind=ibin_pt,
                                                            axis='pt',
@@ -4024,7 +4025,7 @@ class HistBinChopper(object):
         binning_obj = self.binning_handler.get_binning_scheme(binning_scheme)
         pt = binning_obj.get_pt_bins(is_signal_region)[ibin_pt]
         var_bins = binning_obj.get_variable_bins(pt)
-        h = ROOT.TH1D("h_%d_%s" % (ibin_pt, cu.get_unique_str()), "", len(var_bins)-1, var_bins)
+        h = ROOT.TH1D("h_%d_%s" % (ibin_pt, cu.get_unique_str()), "", len(var_bins)-1, np.array(var_bins))
         for var_ind, var_value in enumerate(var_bins[:-1], 1):
             bin_num = binning_obj.physical_bin_to_global_bin(var=var_value+1E-6, pt=pt+1E-6)  # +1E-6 to ensure its inside
             h.SetBinContent(var_ind, hist1d.GetBinContent(bin_num))
