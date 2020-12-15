@@ -14,7 +14,6 @@ mprof run --interval 0.1 --python unfolding.py <args>
 from __future__ import print_function, division
 
 import os
-os.nice(10)
 import sys
 from array import array
 import numpy as np
@@ -27,13 +26,11 @@ from bisect import bisect_right
 import ROOT
 from MyStyle import My_Style
 from comparator import Contribution, Plot
-My_Style.cd()
 
 # my packages
 import common_utils as cu
 import qg_common as qgc
-import qg_general_plots as qgp
-from my_unfolder import MyUnfolder, pickle_region, unpickle_region, ExpSystematic, HistBinChopper, TruthTemplateMaker, BinningHandler, PtVarBinning, PtVarPerPtBinning
+from my_unfolder import MyUnfolder, pickle_region, unpickle_region, ExpSystematic, TruthTemplateMaker, BinningHandler, PtVarBinning, PtVarPerPtBinning
 from my_unfolder_plotter import MyUnfolderPlotter
 from unfolding_regularisation_classes import TauScanner, LCurveScanner
 from unfolding_config import get_dijet_config, get_zpj_config
@@ -46,12 +43,16 @@ if not (sys.version_info.major == 3 and sys.version_info.minor >= 8):
     import rootpy
     # import rootpy.logger.magic as M; M.DANGER.enabled = True
 
+My_Style.cd()
+
 ROOT.gErrorIgnoreLevel = ROOT.kWarning
 # ROOT.gErrorIgnoreLevel = ROOT.kInfo
 ROOT.PyConfig.IgnoreCommandLineOptions = True
 ROOT.gROOT.SetBatch(1)
 ROOT.TH1.SetDefaultSumw2()
 ROOT.TH1.AddDirectory(False)  # VERY IMPORTANT - somewhere, closing a TFile for exp systs deletes a map...dunno why
+
+os.nice(10)
 
 # Control plot output format
 OUTPUT_FMT = "pdf"
@@ -69,6 +70,7 @@ if not any(['profile' in locals(),
             'profile' in dir(__builtins__)]):
 
     print("I have no memory_profiler @profile decorator in unfolding, creating my own instead")
+
     def profile(func):
         return func
 
@@ -562,7 +564,6 @@ def main():
     # elif 'target0p6' in src_dir:
     #     LAMBDA_VAR_DICTS = qgc.VAR_UNFOLD_DICT_TARGET0p6
 
-
     # Do unfolding per signal region
     # --------------------------------------------------------------------------
     for orig_region in regions[:]:
@@ -574,11 +575,11 @@ def main():
 
         zpj_append = "_zpj" if is_zpj else ""
 
-        pt_bin_edges_gen = qgc.PT_UNFOLD_DICT['signal%s_gen' % (zpj_append)]
-        pt_bin_edges_reco = qgc.PT_UNFOLD_DICT['signal%s_reco' % (zpj_append)]
+        pt_bin_edges_gen = qgc.PT_UNFOLD_DICT['signal%s_gen' % zpj_append]
+        pt_bin_edges_reco = qgc.PT_UNFOLD_DICT['signal%s_reco' % zpj_append]
 
-        pt_bin_edges_underflow_gen = qgc.PT_UNFOLD_DICT['underflow%s_gen' % (zpj_append)]
-        pt_bin_edges_underflow_reco = qgc.PT_UNFOLD_DICT['underflow%s_reco' % (zpj_append)]
+        pt_bin_edges_underflow_gen = qgc.PT_UNFOLD_DICT['underflow%s_gen' % zpj_append]
+        pt_bin_edges_underflow_reco = qgc.PT_UNFOLD_DICT['underflow%s_reco' % zpj_append]
 
         # Modify systematics as necessary
         # ----------------------------------------------------------------------
@@ -661,7 +662,7 @@ def main():
 
             # Save minimal set of hists etc to ROOT file for access later
             # For everything, we pickle it
-            output_tfile_slim = ROOT.TFile("%s/unfolding_result_slim.root" % (this_output_dir), "RECREATE")
+            output_tfile_slim = ROOT.TFile("%s/unfolding_result_slim.root" % this_output_dir, "RECREATE")
             new_tdir = "%s/%s" % (region['name'], angle.var)
             output_tfile_slim.mkdir(new_tdir)
             this_slim_tdir = output_tfile_slim.Get(new_tdir)
@@ -785,7 +786,7 @@ def main():
                                   # regMode=ROOT.TUnfold.kRegModeCurvature,
                                   # densityFlags=ROOT.TUnfoldDensity.kDensityModeBinWidth, # important as we have varying bin sizes!
                                   regMode=ROOT.TUnfold.kRegModeNone,
-                                  densityFlags=ROOT.TUnfoldDensity.kDensityModeBinWidthAndUser, # doesn't actually matter as RegModNone
+                                  densityFlags=ROOT.TUnfoldDensity.kDensityModeBinWidthAndUser,  # doesn't actually matter as RegModNone
                                   distribution='generatordistribution',  # the one to use for actual final regularisation/unfolding
                                   axisSteering=axis_steering)
 
@@ -803,10 +804,30 @@ def main():
             # SetEpsMatrix ensures rank properly calculated when inverting
             # Needed if you get message "rank of matrix E 55 expect 170"
             # And unfolded looks wacko
-            eps_matrix = 1E-160
             eps_matrix = 1E-60
             unfolder.SetEpsMatrix(eps_matrix)
             print("Running with eps =", unfolder.GetEpsMatrix())
+
+            # testing
+            # :pt[326,408]:groomed Multiplicity (charged-only)[49.5,99.5]
+            reco_bin = binning_handler.physical_bin_to_global_bin(pt=326, var=50, binning_scheme='detector')
+            print("reco bin", reco_bin)
+            for r in range(reco_bin-5, reco_bin+5):
+                print("reco bin", r, binning_handler.global_bin_to_physical_bin(r, "detector"), reco_1d.GetBinContent(r), "±", reco_1d.GetBinError(r))
+                if reco_1d.GetBinContent(r) == 0:
+                    reco_1d.SetBinContent(r, reco_1d.GetBinContent(r-1) / 10.)
+                    reco_1d.SetBinError(r, math.sqrt(reco_1d.GetBinContent(r)))
+                    print("setting", r, "=", reco_1d.GetBinContent(r), "±", reco_1d.GetBinError(r))
+
+            reco_bin = binning_handler.physical_bin_to_global_bin(pt=9999, var=50, binning_scheme='detector')
+            end_bin = binning_handler.physical_bin_to_global_bin(pt=9999, var=999, binning_scheme='detector')
+            print("reco bin", reco_bin)
+            for r in range(463, end_bin+1):
+                print("reco bin", r, binning_handler.global_bin_to_physical_bin(r, "detector"), reco_1d.GetBinContent(r), "±", reco_1d.GetBinError(r))
+                if reco_1d.GetBinContent(r) == 0:
+                    reco_1d.SetBinContent(r, 1E-5)
+                    reco_1d.SetBinError(r, math.sqrt(reco_1d.GetBinContent(r)))
+                    print("setting", r, "=", reco_1d.GetBinContent(r), "±", reco_1d.GetBinError(r))
 
             # Set what is to be unfolded
             # ------------------------------------------------------------------
@@ -825,7 +846,6 @@ def main():
             # Add systematic errors as different response matrices, use TUnfold machinery
             # ------------------------------------------------------------------
             if args.doExperimentalSysts and not args.doExperimentalSystsAsAltResponse:
-                chosen_rsp_bin = (35, 35)
                 chosen_rsp_bin = (78, 150)
                 print("nominal response bin content for", chosen_rsp_bin, unfolder.response_map.GetBinContent(*chosen_rsp_bin))
 
@@ -854,19 +874,19 @@ def main():
                         print("    syst bin", chosen_rsp_bin, map_syst.GetBinContent(*chosen_rsp_bin))
                         unfolder.add_sys_error(rm_large_rel_error_bins_th2(map_syst), syst_dict['label'], ROOT.TUnfoldDensity.kSysErrModeMatrix)
 
-                    # Plot the reponse matrix for this systematic
-                    syst_label_no_spaces = cu.no_space_str(syst_dict['label'])
-                    output_filename = "%s/response_map_syst_%s_%s.%s" % (this_output_dir, syst_label_no_spaces, append, unfolder_plotter.output_fmt)
-                    title = "%s, %s region, %s, %s" % (jet_algo, region['label'], angle_str, syst_dict['label'])
-                    unfolder_plotter.draw_2d_hist(map_syst,
-                                                  title=title,
-                                                  output_filename=output_filename,
-                                                  logz=True,
-                                                  draw_bin_lines_x=True,
-                                                  draw_bin_lines_y=True,
-                                                  canvas_size=(800, 700),
-                                                  xtitle='Generator bin',
-                                                  ytitle='Detector bin')
+                        # Plot the response matrix for this systematic
+                        syst_label_no_spaces = cu.no_space_str(syst_dict['label'])
+                        output_filename = "%s/response_map_syst_%s_%s.%s" % (this_output_dir, syst_label_no_spaces, append, unfolder_plotter.output_fmt)
+                        title = "%s, %s region, %s, %s" % (jet_algo, region['label'], angle_str, syst_dict['label'])
+                        unfolder_plotter.draw_2d_hist(map_syst,
+                                                      title=title,
+                                                      output_filename=output_filename,
+                                                      logz=True,
+                                                      draw_bin_lines_x=True,
+                                                      draw_bin_lines_y=True,
+                                                      canvas_size=(800, 700),
+                                                      xtitle='Generator bin',
+                                                      ytitle='Detector bin')
 
             # Subtract fakes (treat as background)
             # ------------------------------------------------------------------
@@ -942,7 +962,6 @@ def main():
 
                 unfolder.hist_bin_chopper.add_obj('alt_hist_truth', alt_hist_mc_gen)
 
-
             # Do any regularization
             # ---------------------
             unreg_unfolder = None
@@ -1001,7 +1020,7 @@ def main():
                         bg_hist = cu.get_from_tfile(bg_dict['tfile'], "%s/hist_%s_reco_%s" % (region['dirname'], angle_shortname, mc_hname_append))
                         bg_hist_gen = cu.get_from_tfile(bg_dict['tfile'], "%s/hist_%s_truth_%s" % (region['dirname'], angle_shortname, mc_hname_append))
                         bg_dict['hist'] = bg_hist
-                        bg_dict['hist_gen'] = bg_hist
+                        bg_dict['hist_gen'] = bg_hist_gen
 
                         unreg_unfolder.subtract_background(hist=bg_hist,
                                                            name=bg_dict['name'],
@@ -1081,6 +1100,11 @@ def main():
 
                     truth_template = template_maker.create_template()
 
+                    if MC_INPUT:
+                        # do check by fitting at gen level and comparing
+                        template_maker.set_input_gen(unreg_unfolder.hist_truth)
+                        template_maker.check_template_at_gen()
+
                 elif args.biasVector == "alttruth":
                     truth_template = alt_hist_mc_gen
 
@@ -1109,11 +1133,6 @@ def main():
                                                         title='',
                                                         subplot_title="* / Generator",
                                                         subplot_limits=(0, 2))
-
-                if MC_INPUT:
-                    # do check by fitting at gen level and comparing
-                    template_maker.set_input_gen(unreg_unfolder.hist_truth)
-                    template_maker.check_template_at_gen()
 
                 # Setup our L matrix
                 # ------------------------------------------------------------------
@@ -1379,17 +1398,18 @@ def main():
                                                               colour=ROOT.kViolet+1)
 
                             jk_truth_template = jk_template_maker.create_template()
+
+                            if MC_INPUT:
+                                # do check by fitting at gen level and comparing
+                                jk_template_maker.set_input_gen(jk_unfolder.hist_truth)
+                                jk_template_maker.check_template_at_gen()
+
                         elif args.biasVector == "alttruth":
                             jk_truth_template = alt_hist_mc_gen
 
                         jk_unfolder.truth_template = jk_truth_template
                         jk_unfolder.hist_bin_chopper.add_obj("truth_template", jk_unfolder.truth_template)
                         jk_unfolder.hist_bin_chopper.add_obj("alt_hist_truth", alt_hist_mc_gen)
-
-                        if MC_INPUT:
-                            # do check by fitting at gen level and comparing
-                            jk_template_maker.set_input_gen(jk_unfolder.hist_truth)
-                            jk_template_maker.check_template_at_gen()
 
                         jk_unfolder.SetBias(jk_unfolder.truth_template)
                         jk_unfolder.setup_L_matrix_curvature(ref_hist=jk_unfolder.truth_template, axis=args.regularizeAxis)
@@ -1519,12 +1539,12 @@ def main():
                 if not isinstance(tfile, ROOT.TFile):
                     tfile = cu.open_root_file(tfile)
 
-                region['jackknife_response_variations']  = []
+                region['jackknife_response_variations'] = []
                 num_vars = len(original_jk_dict['variations'])
                 for jk_ind in original_jk_dict['variations']:
                     region['jackknife_response_variations'].append(
                         {
-                            "label": "Jackknife_response_%d" % (jk_ind),
+                            "label": "Jackknife_response_%d" % jk_ind,
                             "response_map": cu.get_from_tfile(tfile, "%s/tu_%s_GenReco_all_jackknife_%d" % (region['dirname'], angle_shortname, jk_ind)),
                             "colour": cu.get_colour_seq(jk_ind, num_vars),
                         })
@@ -1586,9 +1606,9 @@ def main():
                             print("Regularizing with ScanLcurve, please be patient...")
                             jk_l_scanner = LCurveScanner()
                             jk_tau = jk_l_scanner.scan_L(tunfolder=jk_unfolder,
-                                                      n_scan=args.nScan,
-                                                      tau_min=region['tau_limits'][angle.var][0],
-                                                      tau_max=region['tau_limits'][angle.var][1])
+                                                         n_scan=args.nScan,
+                                                         tau_min=region['tau_limits'][angle.var][0],
+                                                         tau_max=region['tau_limits'][angle.var][1])
                             print("Found tau:", jk_tau)
                             jk_l_scanner.plot_scan_L_curve(output_filename="%s/scanL_%s.%s" % (jk_output_dir, append, OUTPUT_FMT))
                             jk_l_scanner.plot_scan_L_curvature(output_filename="%s/scanLcurvature_%s.%s" % (jk_output_dir, append, OUTPUT_FMT))
@@ -1597,12 +1617,12 @@ def main():
                             print("Regularizing with ScanTau, please be patient...")
                             jk_tau_scanner = TauScanner()
                             jk_tau = jk_tau_scanner.scan_tau(tunfolder=jk_unfolder,
-                                                          n_scan=args.nScan,
-                                                          tau_min=region['tau_limits'][angle.var][0],
-                                                          tau_max=region['tau_limits'][angle.var][1],
-                                                          scan_mode=scan_mode,
-                                                          distribution=scan_distribution,
-                                                          axis_steering=unfolder.axisSteering)
+                                                             n_scan=args.nScan,
+                                                             tau_min=region['tau_limits'][angle.var][0],
+                                                             tau_max=region['tau_limits'][angle.var][1],
+                                                             scan_mode=scan_mode,
+                                                             distribution=scan_distribution,
+                                                             axis_steering=unfolder.axisSteering)
                             print("Found tau:", jk_tau)
                             jk_tau_scanner.plot_scan_tau(output_filename="%s/scantau_%s.%s" % (jk_output_dir, append, OUTPUT_FMT))
 
@@ -2172,7 +2192,7 @@ def main():
                 #     smeared_alt_chi2, smeared_alt_ndf, smeared_alt_p = unfolder.calculate_chi2(one_hist=alt_unfolder.get_folded_mc_truth(),
                 #                                                                                other_hist=unfolder.hist_mc_reco_bg_subtracted,
                 #                                                                                cov_inv_matrix=unfolder.get_vyy_inv_ndarray(),
-                #                                                                                # cov_inv_matrix=unfolder.get_vyy_inv_no_bg_ndarray(),
+                #                                                                                # cov_inv_matrix=unfolder.get_vyy_inv_no_bg_subtraction_ndarray(),
                 #                                                                                detector_space=True,
                 #                                                                                ignore_underflow_bins=True,
                 #                                                                                debugging_dir=os.path.join(this_output_dir, 'smeared_alt_chi2_debug'))
@@ -2556,7 +2576,7 @@ def main():
                     # Do unfolding!
                     # --------------------------------------------------------------
                     syst_unfolder.do_unfolding(syst_tau)
-                    syst_unfolder.get_output(hist_name="syst_%s_unfolded_1d" % (syst_label_no_spaces))
+                    syst_unfolder.get_output(hist_name="syst_%s_unfolded_1d" % syst_label_no_spaces)
                     syst_unfolder._post_process()
                     if not args.jacobian:
                         syst_unfolder.setup_normalised_results_per_pt_bin()
@@ -2762,12 +2782,12 @@ def main():
                 if not isinstance(pdf_tfile, ROOT.TFile):
                     pdf_tfile = cu.open_root_file(pdf_tfile)
 
-                region['pdf_systematics']  = []
+                region['pdf_systematics'] = []
                 num_vars = len(original_pdf_dict['variations'])
                 for pdf_ind in original_pdf_dict['variations']:
                     region['pdf_systematics'].append(
                         {
-                            "label": "PDF_%d" % (pdf_ind),
+                            "label": "PDF_%d" % pdf_ind,
                             "response_map": "%s/tu_%s_GenReco_all_PDF_%d" % (region['dirname'], angle_shortname, pdf_ind),  # only store obj name, not obj, as we don't need all simultaneously
                             "colour": cu.get_colour_seq(pdf_ind, num_vars)
                         })
@@ -2854,7 +2874,7 @@ def main():
                     # Do unfolding!
                     # --------------------------------------------------------------
                     pdf_unfolder.do_unfolding(pdf_tau)
-                    pdf_unfolder.get_output(hist_name="syst_%s_unfolded_1d" % (pdf_label_no_spaces))
+                    pdf_unfolder.get_output(hist_name="syst_%s_unfolded_1d" % pdf_label_no_spaces)
                     pdf_unfolder._post_process()
 
                     if not args.jacobian:
@@ -3020,7 +3040,7 @@ def main():
             print("-"*80)
 
             prof_begin_save_to_pickle()
-            pickle_filename = os.path.join("%s/unfolding_result.pkl" % (this_output_dir))
+            pickle_filename = os.path.join("%s/unfolding_result.pkl" % this_output_dir)
             pickle_region(region, pickle_filename, infos=False, convert_tfile_to_str=True)
             print(">> Saved to pickle file", pickle_filename)
             print("")
@@ -3066,8 +3086,8 @@ def main():
 
                 do_all_big_normalised_1d_plots_per_region_angle(setup, hbc)
 
-    print("Saved minimal hists to", output_tfile_slim.GetName())
-    output_tfile_slim.Close()
+            print("Saved minimal hists to", output_tfile_slim.GetName())
+            output_tfile_slim.Close()
 
 
 # these are dummy functions for use with mprof, to mark various points in the program flow

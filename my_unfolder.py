@@ -24,7 +24,6 @@ from bisect import bisect_right, bisect_left
 import ROOT
 from MyStyle import My_Style
 from comparator import Contribution, Plot
-My_Style.cd()
 
 import common_utils as cu
 import qg_general_plots as qgp
@@ -36,6 +35,7 @@ np.set_printoptions(edgeitems=3, infstr='Infinity',
                     linewidth=220, nanstr='nan', precision=6,
                     suppress=False, threshold=sys.maxsize, formatter=None)
 
+My_Style.cd()
 ROOT.PyConfig.IgnoreCommandLineOptions = True
 ROOT.gROOT.SetBatch(1)
 ROOT.TH1.SetDefaultSumw2()
@@ -785,19 +785,20 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
                 pass
 
         for ibin_pt in range(len(self.pt_bin_edges_gen[:-1])):
-            _write(self.stat_uncert_name, ibin_pt, 'generator', "unfolded_stat_err_norm_divBinWidth_%d" % (ibin_pt))
-            _write("unfolded", ibin_pt, 'generator', "unfolded_norm_divBinWidth_%d" % (ibin_pt))
-            _write("hist_truth", ibin_pt, 'generator', "hist_truth_norm_divBinWidth_%d" % (ibin_pt))
-            _write("alt_hist_truth", ibin_pt, 'generator', "alt_hist_truth_norm_divBinWidth_%d" % (ibin_pt))
-            _write(self.stat_ematrix_name, ibin_pt, 'generator', 'unfolded_stat_ematrix_norm_divBinWidth_%d' % (ibin_pt))
-            _write(self.rsp_ematrix_name, ibin_pt, 'generator', 'unfolded_rsp_ematrix_norm_divBinWidth_%d' % (ibin_pt))
-            _write(self.total_ematrix_name, ibin_pt, 'generator', 'unfolded_total_ematrix_norm_divBinWidth_%d' % (ibin_pt))
+            _write(self.stat_uncert_name, ibin_pt, 'generator', "unfolded_stat_err_norm_divBinWidth_%d" % ibin_pt)
+            _write("unfolded", ibin_pt, 'generator', "unfolded_norm_divBinWidth_%d" % ibin_pt)
+            _write("hist_truth", ibin_pt, 'generator', "hist_truth_norm_divBinWidth_%d" % ibin_pt)
+            _write("alt_hist_truth", ibin_pt, 'generator', "alt_hist_truth_norm_divBinWidth_%d" % ibin_pt)
+            _write(self.stat_ematrix_name, ibin_pt, 'generator', 'unfolded_stat_ematrix_norm_divBinWidth_%d' % ibin_pt)
+            _write(self.rsp_ematrix_name, ibin_pt, 'generator', 'unfolded_rsp_ematrix_norm_divBinWidth_%d' % ibin_pt)
+            _write(self.total_ematrix_name, ibin_pt, 'generator', 'unfolded_total_ematrix_norm_divBinWidth_%d' % ibin_pt)
 
     def __getstate__(self):
         # Copy the object's state from self.__dict__ which contains
         # all our instance attributes. Always use the dict.copy()
         # method to avoid modifying the original state.
         state = self.__dict__.copy()
+
         def _del_state(key):
             if key in state and state[key] is not None:
                 del state[key]
@@ -921,14 +922,14 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         # nError2: return values>10000 are fatal errors, because the
         # unfolding can not be done. The number nError2 corresponds to the
         # number of truth bins which are not constrained by data points.
-        nError1 = input_status % 10000
-        nError2 = math.floor(input_status / 10000.)
-        print("set_input:", input_status, "nError1 =", nError1, "nError2 = ", nError2)
-        if nError2 > 0:
+        n_error_1 = input_status % 10000
+        n_error_2 = math.floor(input_status / 10000.)
+        print("set_input:", input_status, "nError1 =", n_error_1, "nError2 = ", n_error_2)
+        if n_error_2 > 0:
             if error_unconstrained_truth_bins:
-                raise ValueError("%d unconstrained truth bins - cannot unfold" % nError2)
+                raise ValueError("%d unconstrained truth bins - cannot unfold" % n_error_2)
             else:
-                warnings.warn("%d unconstrained truth bins - cannot unfold" % nError2)
+                warnings.warn("%d unconstrained truth bins - cannot unfold" % n_error_2)
 
     def subtract_background(self, hist, name, scale=1.0, scale_err=0.0):
         """Subtract background source from input hist"""
@@ -944,7 +945,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
                 raise ValueError("self.input_hist_bg_subtracted bin %d has contents <0: %g" % (ix, val))
         self.SubtractBackground(hist.Clone(), name, scale, scale_err)
 
-    def subtract_background_gen_binning(self, hist, name, scale=1.0, scale_err=0.0):
+    def subtract_background_gen_binning(self, hist, name, scale=1.0):
         """Subtract background source with gen binning from input hist
 
         NB doesn't affect TUnfold, only for own book keeping
@@ -1035,7 +1036,6 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             h_failed.Divide(h_all)
 
         return h_failed
-
 
     # SETUP REGULARISATION STUFF
     # --------------------------------------------------------------------------
@@ -1133,8 +1133,8 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         if axis in ["both", "pt"]:
             for ilambda in range(len(self.variable_bin_edges_gen[:-1])):
                 for ipt in range(len(self.pt_bin_edges_gen[:-3])):
-                    pt_cen = self.pt_bin_edges_gen[ipt+1]+0.001  # add a tiny bit to make sure we're in the bin properly (I can never remember if included or not)
-                    lambda_cen = self.variable_bin_edges_gen[ilambda]+0.001  # add a tiny bit to make sure we're in the bin properly (I can never remember if included or not)
+                    pt_cen = self.pt_bin_edges_gen[ipt+1]+0.001  # add a tiny bit to make sure we're in the bin properly
+                    lambda_cen = self.variable_bin_edges_gen[ilambda]+0.001
 
                     bin_ind_pt_down = gen_node.GetGlobalBinNumber(lambda_cen, self.pt_bin_edges_gen[ipt]+0.001)
                     bin_ind_pt_up = gen_node.GetGlobalBinNumber(lambda_cen, self.pt_bin_edges_gen[ipt+2]+0.001)
@@ -1318,11 +1318,11 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             raise ValueError("Found >1 exp systematic with label '%s': %s" % (label, [x.label for x in items]))
         return items[0]
 
-    def add_sys_error(self, map_syst, label, mode):
+    def add_sys_error(self, map_syst, label, mode=ROOT.TUnfoldDensity.kSysErrModeMatrix):
         """Add systematic error via response map, arguments as per AddSysError()"""
         # don't store map, since we don't actually use it, and it wastes memory
         this_syst = ExpSystematic(label=label, syst_map=None)
-        self.AddSysError(map_syst, label, self.orientation, ROOT.TUnfoldDensity.kSysErrModeMatrix)
+        self.AddSysError(map_syst, label, self.orientation, mode)
         self.exp_systs.append(this_syst)
 
     def get_syst_shift(self, syst_label):
@@ -1337,7 +1337,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             hist = self.GetDeltaSysSource(this_syst.label,
                                           this_syst.syst_shift_label,  # name given to hist obj
                                           "",
-                                          self.output_distribution_name, # must be the same as what's used in get_output
+                                          self.output_distribution_name,  # must be the same as what's used in get_output
                                           self.axisSteering,
                                           self.use_axis_binning)
             this_syst.syst_shift = hist  # cache shifts
@@ -1391,8 +1391,9 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             # Sanity check incase unfolding went really wrong - e.g. if rank
             # of matrix E is way smaller than what is expected
             # May mean SetEpsMatrix() is needed to help inversion
-            if max_chi2_ndf > 0 and self.chi2sys / self.Ndf > max_chi2_ndf:
-                raise RuntimeError("chi2sys / Ndf > %d - unfolding is rubbish! Maybe SetEpsMatrix()? if you get 'rank of matrix E X expect Y' warning" % (max_chi2_ndf))
+            if 0 < max_chi2_ndf < (self.chi2sys / self.Ndf):
+                raise RuntimeError("chi2sys / Ndf > %d - unfolding is rubbish! Maybe use SetEpsMatrix()? "
+                                   "Especially if you get 'rank of matrix E X expect Y' warning" % max_chi2_ndf)
 
         return self.unfolded
 
@@ -1500,7 +1501,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
 
     def update_unfolded_with_ematrix_tunfold_total(self):
         """Update unfolded hist with total errors from total error matrix"""
-        error_total_1d = self.make_hist_from_diagonal_errors(self.get_ematrix_tunfold_total(), do_sqrt=True) # note that bin contents = 0, only bin errors are non-0
+        error_total_1d = self.make_hist_from_diagonal_errors(self.get_ematrix_tunfold_total(), do_sqrt=True)  # note that bin contents = 0, only bin errors are non-0
         self.update_hist_bin_error(h_orig=error_total_1d, h_to_be_updated=self.get_output())
 
     def get_unfolded_with_no_errors(self):
@@ -1513,7 +1514,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
     def get_unfolded_with_ematrix_stat(self):
         """Make copy of unfolded, but only stat errors"""
         if getattr(self, 'unfolded_stat_err', None) is None:
-            error_1d = self.make_hist_from_diagonal_errors(self.get_ematrix_stat(), do_sqrt=True) # note that bin contents = 0, only bin errors are non-0
+            error_1d = self.make_hist_from_diagonal_errors(self.get_ematrix_stat(), do_sqrt=True)  # note that bin contents = 0, only bin errors are non-0
             self.unfolded_stat_err = self.get_output().Clone("unfolded_stat_err")
             self.update_hist_bin_error(h_orig=error_1d, h_to_be_updated=self.unfolded_stat_err)
         return self.unfolded_stat_err
@@ -1521,7 +1522,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
     def get_unfolded_with_ematrix_response(self):
         """Create unfolded with error bars from response matrix uncertainties"""
         if getattr(self, 'unfolded_rsp_err', None) is None:
-            error_stat_response = self.make_hist_from_diagonal_errors(self.get_ematrix_stat_response(), do_sqrt=True) # note that bin contents need to be correct, otherwise won't normalise correctly
+            error_stat_response = self.make_hist_from_diagonal_errors(self.get_ematrix_stat_response(), do_sqrt=True)  # note that bin contents need to be correct, otherwise won't normalise correctly
             self.unfolded_rsp_err = self.get_output().Clone("unfolded_rsp_err")
             self.update_hist_bin_error(h_orig=error_stat_response, h_to_be_updated=self.unfolded_rsp_err)
         return self.unfolded_rsp_err
@@ -1530,7 +1531,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         """Create unfolded with error bars from total uncertainties"""
         return self.get_syst_error_hist('Total')
         if getattr(self, 'unfolded_total_err', None) is None:
-            error_stat_response = self.make_hist_from_diagonal_errors(self.get_ematrix_total_absolute(), do_sqrt=True) # note that bin contents need to be correct, otherwise won't normalise correctly
+            error_stat_response = self.make_hist_from_diagonal_errors(self.get_ematrix_total_absolute(), do_sqrt=True)  # note that bin contents need to be correct, otherwise won't normalise correctly
             self.unfolded_total_err = self.get_output().Clone("unfolded_total_err")
             self.update_hist_bin_error(h_orig=error_stat_response, h_to_be_updated=self.unfolded_total_err)
         return self.unfolded_total_err
@@ -1579,7 +1580,6 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         is_1d = ((isinstance(arr, ROOT.TH1) and not isinstance(arr, ROOT.TH2)) or  # important otherwise TH2 will eval True, as subclass of TH1
                  (isinstance(arr, np.ndarray) and arr.shape[0] == 1) or
                  (ybinning is None))
-
 
         nrows = self.nbins_pt_gen*self.nbins_variable_gen if ybinning == 'generator' else self.nbins_pt_reco*self.nbins_variable_reco
         if is_1d:
@@ -1708,8 +1708,6 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
                 return None
         return this_syst.syst_ematrix
 
-    # property or getter?
-    @property
     def ematrix_syst_ndarray(self, syst_label):
         cached_attr_name = '_ematrix_syst_%s_ndarray' % (cu.no_space_str(syst_label))
         if not hasattr(self, cached_attr_name):
@@ -1865,8 +1863,8 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
 
         # try a version cutting out underflow bins
         if remove_underflow_bins:
-            start_ind_gen = self.generator_distribution.GetStartBin() - 1 # -1 as numpy starts at 0, TUnfold at 1
-            start_ind_det = self.detector_distribution.GetStartBin() - 1 # -1 as numpy starts at 0, TUnfold at 1
+            start_ind_gen = self.generator_distribution.GetStartBin() - 1  # -1 as numpy starts at 0, TUnfold at 1
+            start_ind_det = self.detector_distribution.GetStartBin() - 1  # -1 as numpy starts at 0, TUnfold at 1
             print("Signal Start ind gen:", start_ind_gen)
             print("Signal Start ind det:", start_ind_det)
             print("prob ndarray.shape:", self.probability_ndarray.shape)
@@ -2007,10 +2005,10 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
 
         rsp_inv_ndarray = np.linalg.pinv(self.probability_ndarray)
 
-        y_ndarray = np.zeros(shape=(self.GetNy(),1))
+        y_ndarray = np.zeros(shape=(self.GetNy(), 1))
         y = self.GetY()
         for i in range(self.GetNy()):
-            y_ndarray[i,0] = y(i, 0)
+            y_ndarray[i, 0] = y(i, 0)
 
         # calculate my own result simple inversion
         # nb this is really dodgy as non-square matrices don't have an inverse technically...
@@ -2122,7 +2120,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             plot = Plot(entries, what='hist', has_data=False,)
             plot.default_canvas_size = (800, 600)
             plot.plot("NOSTACK HIST")
-            l,t = debug_plotter.draw_pt_binning_lines(plot,
+            l, t = debug_plotter.draw_pt_binning_lines(plot,
                                                       which='reco' if detector_space else 'gen',
                                                       axis='x',
                                                       do_underflow=has_underflow,
@@ -2142,7 +2140,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
                         )
             plot.default_canvas_size = (800, 600)
             plot.plot("NOSTACK HIST")
-            l,t = debug_plotter.draw_pt_binning_lines(plot,
+            l, t = debug_plotter.draw_pt_binning_lines(plot,
                                                       which='reco' if detector_space else 'gen',
                                                       axis='x',
                                                       do_underflow=has_underflow,
@@ -2159,7 +2157,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             canv.SetLeftMargin(0.15)
             canv.SetRightMargin(0.18)
 
-            l,t = debug_plotter.draw_pt_binning_lines(obj,
+            l, t = debug_plotter.draw_pt_binning_lines(obj,
                                                       which='reco' if detector_space else 'gen',
                                                       axis='x',
                                                       do_underflow=has_underflow,
@@ -2193,7 +2191,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
                 canv.SetLeftMargin(0.15)
                 canv.SetRightMargin(0.18)
 
-                l,t = debug_plotter.draw_pt_binning_lines(obj,
+                l, t = debug_plotter.draw_pt_binning_lines(obj,
                                                           which='reco' if detector_space else 'gen',
                                                           axis='x',
                                                           do_underflow=has_underflow,
@@ -2239,7 +2237,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             # Components of delta * V_inv * delta before summing
             components = delta * inter.T
             components_hist = cu.ndarray_to_th1(components, offset=0.5)
-            y_max = components_hist.GetMaximum() * 1.2
+            # y_max = components_hist.GetMaximum() * 1.2
             entries = [
                 Contribution(components_hist)
             ]
@@ -2252,11 +2250,11 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
                         )
             plot.default_canvas_size = (800, 600)
             plot.plot("NOSTACK HIST")
-            l,t = debug_plotter.draw_pt_binning_lines(plot,
-                                                      which='reco' if detector_space else 'gen',
-                                                      axis='x',
-                                                      do_underflow=has_underflow,
-                                                      offset=0)
+            l, t = debug_plotter.draw_pt_binning_lines(plot,
+                                                       which='reco' if detector_space else 'gen',
+                                                       axis='x',
+                                                       do_underflow=has_underflow,
+                                                       offset=0)
             plot.save(os.path.join(debugging_dir, 'components.pdf'))
 
             # pt_bin_edges = self.pt_bin_edges_reco if detector_space else self.pt_bin_edges_gen
@@ -2358,7 +2356,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
     # --------------------------------------------------------------------------
     def update_stat_response_from_jackknife(self, jackknife_variations):
         """Use jackknife results to update absolute response matrix stat uncert"""
-        num_vars = len(jackknife_variations)
+        # num_vars = len(jackknife_variations)
         # Factor to scale up to full uncert
         scale_factor = len(jackknife_variations) / (len(jackknife_variations) - 1)
         # Go through each bin of the output distribution,
@@ -2402,13 +2400,11 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
                 if self.rsp_uncert_name in k:
                     del self.hist_bin_chopper._cache[k]  # reset HBC cache
 
-
     def update_input_stat_uncert_from_jackknife(self, jackknife_variations):
         """Use jackknife results to update absolute input stat uncert
 
         TODO what about uncert from backgrounds?
         """
-        num_vars = len(jackknife_variations)
         # Factor to scale up to full uncert
         scale_factor = len(jackknife_variations) / (len(jackknife_variations) - 1)
         # Go through each bin of the output distribution,
@@ -2536,7 +2532,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
                     if jvar['label'] in k:
                         keys_to_del.append(k)
             for k in keys_to_del:
-                self.hist_bin_chopper._cache[k]
+                del self.hist_bin_chopper._cache[k]
 
     def create_normalised_jackknife_input_uncertainty_per_pt_bin(self, jackknife_variations):
         """Create input uncertainty & error matrices for each gen pt bin for use later.
@@ -2618,7 +2614,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
                     if jvar['label'] in k:
                         keys_to_del.append(k)
             for k in keys_to_del:
-                self.hist_bin_chopper._cache[k]
+                del self.hist_bin_chopper._cache[k]
 
 
     def create_normalised_scale_syst_uncertainty_per_pt_bin(self, scale_systs):
@@ -3271,6 +3267,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
                 # print("Jacobian diagonals vs 1/N:")
                 # for ix in range(1, h_abs.GetNbinsX()+1):
                 #     print(ix, (N-h_abs.GetBinContent(ix))/(N**2), 1./N)
+                # FIXME finish this
 
     def setup_normalised_results(self):
         # For each pt bin, we get the nominal result
@@ -3326,7 +3323,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             nominal = self.hist_bin_chopper.get_pt_bin_normed(self.no_uncert_name, **hbc_args)
 
             # unfolded bin contents + stat unc error bars
-            stat_err = self.hist_bin_chopper.get_pt_bin("norm_stat_err", **hbc_args) # NOT get_normed - already normed!
+            stat_err = self.hist_bin_chopper.get_pt_bin("norm_stat_err", **hbc_args)  # NOT get_normed - already normed!
             stat_err_hist = nominal.Clone(cu.get_unique_str())
             self.update_hist_bin_error(h_to_be_updated=stat_err_hist, h_orig=stat_err)
             self.hist_bin_chopper._cache[key_gen(self.stat_uncert_name)] = stat_err_hist
@@ -3337,7 +3334,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             # cu.print_th1_bins(stat_err_hist_div_bin_width)
 
             # unfolded bin contents + rsp unc error bars
-            rsp_err = self.hist_bin_chopper.get_pt_bin("norm_rsp_err", **hbc_args) # NOT get_normed - already normed!
+            rsp_err = self.hist_bin_chopper.get_pt_bin("norm_rsp_err", **hbc_args)  # NOT get_normed - already normed!
             rsp_err_hist = nominal.Clone(cu.get_unique_str())
             self.update_hist_bin_error(h_to_be_updated=rsp_err_hist, h_orig=rsp_err)
             self.hist_bin_chopper._cache[key_gen(self.rsp_uncert_name)] = rsp_err_hist
@@ -3378,7 +3375,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
 
                 # same but divide by bin width
                 this_shifted_hist_div_bin_width = qgp.hist_divide_bin_width(this_shifted_hist)
-                self.hist_bin_chopper._cache[key_gen_div_width(unnorm(exp_syst.syst_shifted_label))] = this_err_hist_div_bin_width
+                self.hist_bin_chopper._cache[key_gen_div_width(unnorm(exp_syst.syst_shifted_label))] = this_shifted_hist_div_bin_width
 
 
     # METHODS FOR ABSOLUTE PER PT BIN RESULTS
@@ -3452,9 +3449,9 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         self.hist_bin_chopper.add_obj(self.scale_uncert_ematrix_name, self.get_unfolded_with_ematrix_stat())
 
         for ibin_pt in range(len(self.pt_bin_edges_gen[:-1])):
-            nominal = self.hist_bin_chopper.get_pt_bin_div_bin_width('unfolded_stat_err',
-                                                                             ibin_pt,
-                                                                             binning_scheme='generator')
+            # nominal = self.hist_bin_chopper.get_pt_bin_div_bin_width('unfolded_stat_err',
+            #                                                                  ibin_pt,
+            #                                                                  binning_scheme='generator')
             scale_hist = self.hist_bin_chopper.get_pt_bin_div_bin_width(self.scale_uncert_name,
                                                                                ibin_pt,
                                                                                binning_scheme='generator')
@@ -3467,7 +3464,6 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
                                                       do_div_bin_width=True,
                                                       binning_scheme='generator')
             self.hist_bin_chopper._cache[key] = scale_ematrix
-
 
     def create_pdf_syst_uncertainty_per_pt_bin(self, pdf_systs):
         """Create PDF uncertainty from unfolded PDF variations
@@ -3493,7 +3489,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             variations = [syst['unfolder'].hist_bin_chopper.get_pt_bin_div_bin_width('unfolded', ibin_pt, binning_scheme='generator')
                           for syst in pdf_systs]
 
-            variations_envelope = self.hist_bin_chopper.get_pt_bin_div_bin_width('unfolded_stat_err', ibin_pt, binning_scheme='generator').Clone("pdf_%d" % (ibin_pt))
+            variations_envelope = self.hist_bin_chopper.get_pt_bin_div_bin_width('unfolded_stat_err', ibin_pt, binning_scheme='generator').Clone("pdf_%d" % ibin_pt)
 
             for ix in range(1, variations_envelope.GetNbinsX()+1):
                 # np.std does sqrt((abs(x - x.mean())**2) / (len(x) - ddof)),
@@ -3524,9 +3520,9 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         self.hist_bin_chopper.add_obj(self.pdf_uncert_ematrix_name, self.get_unfolded_with_ematrix_stat())
 
         for ibin_pt in range(len(self.pt_bin_edges_gen[:-1])):
-            nominal = self.hist_bin_chopper.get_pt_bin_div_bin_width('unfolded_stat_err',
-                                                                             ibin_pt,
-                                                                             binning_scheme='generator')
+            # nominal = self.hist_bin_chopper.get_pt_bin_div_bin_width('unfolded_stat_err',
+            #                                                                  ibin_pt,
+            #                                                                  binning_scheme='generator')
             pdf_hist = self.hist_bin_chopper.get_pt_bin_div_bin_width(self.pdf_uncert_name,
                                                                                ibin_pt,
                                                                                binning_scheme='generator')
@@ -3760,7 +3756,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             variations = [syst['unfolder'].hist_bin_chopper.get_lambda_bin_div_bin_width('unfolded', **hbc_args)
                           for syst in pdf_systs]
 
-            variations_envelope = self.hist_bin_chopper.get_lambda_bin_div_bin_width('unfolded_stat_err', **hbc_args).Clone("pdf_%d" % (ibin_var))
+            variations_envelope = self.hist_bin_chopper.get_lambda_bin_div_bin_width('unfolded_stat_err', **hbc_args).Clone("pdf_%d" % ibin_var)
 
             for ix in range(1, variations_envelope.GetNbinsX()+1):
                 # np.std does sqrt((abs(x - x.mean())**2) / (len(x) - ddof)),
@@ -4349,7 +4345,7 @@ class TruthTemplateMaker(object):
         this_hist_data.Draw()
         canv.Update()
         all_func_hists = []
-        stats = this_hist_data.GetListOfFunctions().FindObject("stats")
+        stats_box = this_hist_data.GetListOfFunctions().FindObject("stats")
         func = this_hist_data.GetListOfFunctions().At(0)
         hist_fit = hist_data.Clone("Fit")
         for i in range(1, hist_data.GetNbinsX()+1):
@@ -4408,12 +4404,12 @@ class TruthTemplateMaker(object):
                     subplot_limits=subplot_lim)
         plot.plot("NOSTACK HIST E")
         plot.main_pad.cd()
-        stats.SetBorderSize(0)
-        stats.SetFillStyle(0)
-        stats.SetY1NDC(0.65)
-        stats.SetY2NDC(0.83)
-        stats.SetX2NDC(0.9)
-        stats.Draw()
+        stats_box.SetBorderSize(0)
+        stats_box.SetFillStyle(0)
+        stats_box.SetY1NDC(0.65)
+        stats_box.SetY2NDC(0.83)
+        stats_box.SetX2NDC(0.9)
+        stats_box.Draw()
         plot.legend.SetY2NDC(0.75)
         plot.legend.SetY1NDC(0.5)
         plot.legend.SetX2NDC(0.9)
