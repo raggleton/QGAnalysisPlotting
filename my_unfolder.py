@@ -16,6 +16,7 @@ from scipy import stats
 import inspect
 import pickle
 import gzip
+import warnings
 from functools import partial
 from collections import namedtuple
 from bisect import bisect_right, bisect_left
@@ -879,10 +880,13 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
                   hist_mc_reco_bg_subtracted=None,
                   hist_mc_reco_gen_binning=None,
                   hist_mc_reco_gen_binning_bg_subtracted=None,
-                  bias_factor=0):
+                  bias_factor=0,
+                  error_unconstrained_truth_bins=True):
         """Set hist to be unfolded, plus other basic hists
 
         Also allow other args to be passed to TUnfoldSys::SetInput
+
+
         """
         self.input_hist = input_hist.Clone()
         self.input_hist_bg_subtracted = input_hist.Clone() if input_hist else None
@@ -893,7 +897,23 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         self.hist_mc_reco_bg_subtracted = hist_mc_reco_bg_subtracted
         self.hist_mc_reco_gen_binning = hist_mc_reco_gen_binning
         self.hist_mc_reco_gen_binning_bg_subtracted = hist_mc_reco_gen_binning_bg_subtracted
-        self.SetInput(input_hist, bias_factor)
+        input_status = self.SetInput(input_hist, bias_factor)
+        # input_status = nError1+10000*nError2
+        # nError1: number of bins where the uncertainty is zero.
+        # these bins either are not used for the unfolding (if
+        # oneOverZeroError==0) or 1/uncertainty is set to oneOverZeroError.</li>
+
+        # nError2: return values>10000 are fatal errors, because the
+        # unfolding can not be done. The number nError2 corresponds to the
+        # number of truth bins which are not constrained by data points.
+        nError1 = input_status % 10000
+        nError2 = math.floor(input_status / 10000.)
+        print("set_input:", input_status, "nError1 =", nError1, "nError2 = ", nError2)
+        if nError2 > 0:
+            if error_unconstrained_truth_bins:
+                raise ValueError("%d unconstrained truth bins - cannot unfold" % nError2)
+            else:
+                warnings.warn("%d unconstrained truth bins - cannot unfold" % nError2)
 
     def subtract_background(self, hist, name, scale=1.0, scale_err=0.0):
         """Subtract background source from input hist"""

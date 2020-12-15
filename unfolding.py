@@ -817,7 +817,8 @@ def main():
                                hist_mc_reco_bg_subtracted=hist_mc_reco_bg_subtracted,  # do ourselves - subtract_background only for input_hist
                                hist_mc_reco_gen_binning=hist_mc_reco_gen_binning,
                                hist_mc_reco_gen_binning_bg_subtracted=hist_mc_reco_gen_binning_bg_subtracted,
-                               bias_factor=args.biasFactor)
+                               bias_factor=args.biasFactor,
+                               error_unconstrained_truth_bins=False)
 
             unfolder.hist_bin_chopper.add_obj('hist_truth', unfolder.hist_truth)
 
