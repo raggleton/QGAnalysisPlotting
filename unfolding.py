@@ -233,6 +233,8 @@ def draw_projection_comparison(h_orig, h_projection, title, xtitle, output_filen
 def calc_background(hist, bg_fraction_hist):
     """Calculate background from hist,
     given the background fractions in bg_fraction_hist"""
+    if hist.GetNbinsX() != bg_fraction_hist.GetNbinsX():
+        raise ValueError("Mimsmatch in number of bins in calc_background()")
     bg_hist = hist.Clone(cu.get_unique_str())
     bg_hist.Multiply(bg_fraction_hist)
     return bg_hist
@@ -734,7 +736,7 @@ def main():
                 axis_steering = 'pt[N];%s[B]' % variable_name
 
             print('reco lambda binning', angle_bin_edges_reco)
-            print('gen lambd binning', angle_bin_edges_gen)
+            print('gen lambda binning', angle_bin_edges_gen)
             print('reco pt binning', pt_bin_edges_reco)
             print('gen pt binning', pt_bin_edges_gen)
             print('reco uflow pt binning', pt_bin_edges_underflow_reco)
@@ -895,7 +897,7 @@ def main():
             unfolder.subtract_background(hist_fakes_reco, "Signal fakes", scale=1., scale_err=0.0)
 
             hist_fakes_reco_gen_binning = calc_background(unfolder.input_hist_gen_binning, hist_fake_fraction_gen_binning)
-            unfolder.subtract_background_gen_binning(hist_fakes_reco_gen_binning, "Signal fakes", scale=1., scale_err=0.0)
+            unfolder.subtract_background_gen_binning(hist_fakes_reco_gen_binning, "Signal fakes", scale=1.)
 
             # Subtract actual backgrounds if necessary
             # ------------------------------------------------------------------
@@ -1006,7 +1008,7 @@ def main():
                 # Subtract fakes (treat as background)
                 # ------------------------------------------------------------------
                 unreg_unfolder.subtract_background(hist_fakes_reco, "Signal fakes", scale=1., scale_err=0.0)
-                unreg_unfolder.subtract_background_gen_binning(hist_fakes_reco_gen_binning, "Signal fakes", scale=1., scale_err=0.0)
+                unreg_unfolder.subtract_background_gen_binning(hist_fakes_reco_gen_binning, "Signal fakes", scale=1.)
 
                 # Subtract actual backgrounds if necessary
                 # ------------------------------------------------------------------
@@ -1368,7 +1370,7 @@ def main():
                     # Subtract fakes (treat as background)
                     # --------------------------------------------------------------
                     jk_unfolder.subtract_background(jk_hist_fakes, "Signal fakes", scale=1., scale_err=0.0)
-                    jk_unfolder.subtract_background_gen_binning(jk_hist_fakes_gen_binning, "Signal fakes", scale=1., scale_err=0.0)
+                    jk_unfolder.subtract_background_gen_binning(jk_hist_fakes_gen_binning, "Signal fakes", scale=1.)
 
                     # Do regularisation
                     # --------------------------------------------------------------
@@ -1590,7 +1592,7 @@ def main():
                     # Subtract fakes (treat as background), same as nominal
                     # --------------------------------------------------------------
                     jk_unfolder.subtract_background(hist_fakes_reco, "Signal fakes", scale=1., scale_err=0.0)
-                    jk_unfolder.subtract_background_gen_binning(hist_fakes_reco_gen_binning, "Signal fakes", scale=1., scale_err=0.0)
+                    jk_unfolder.subtract_background_gen_binning(hist_fakes_reco_gen_binning, "Signal fakes", scale=1.)
 
                     # Do regularisation
                     # --------------------------------------------------------------
@@ -2270,7 +2272,7 @@ def main():
                     # Subtract fakes (treat as background), same as nominal
                     # --------------------------------------------------------------
                     scale_unfolder.subtract_background(hist_fakes_reco, "Signal fakes", scale=1., scale_err=0.0)
-                    scale_unfolder.subtract_background_gen_binning(hist_fakes_reco_gen_binning, "Signal fakes", scale=1., scale_err=0.0)
+                    scale_unfolder.subtract_background_gen_binning(hist_fakes_reco_gen_binning, "Signal fakes", scale=1.)
 
                     # Do regularisation
                     # --------------------------------------------------------------
@@ -2834,7 +2836,7 @@ def main():
                     # Subtract fakes (treat as background)
                     # --------------------------------------------------------------
                     pdf_unfolder.subtract_background(hist_fakes_reco, "Signal fakes", scale=1., scale_err=0.0)
-                    pdf_unfolder.subtract_background_gen_binning(hist_fakes_reco_gen_binning, "Signal fakes", scale=1., scale_err=0.0)
+                    pdf_unfolder.subtract_background_gen_binning(hist_fakes_reco_gen_binning, "Signal fakes", scale=1.)
 
                     # Do any regularization
                     # --------------------------------------------------------------
