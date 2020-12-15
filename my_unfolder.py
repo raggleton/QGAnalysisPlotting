@@ -111,7 +111,7 @@ class PtVarBinning(object):
         self.global_bin_to_physical_val_map = dict()
         self.physical_val_to_global_bin_map = dict()
 
-        self.cache_global_bin_mapping()
+        self._cache_global_bin_mapping()
         print("bin 1:", self.global_bin_to_physical_val_map[1])
 
     def is_signal_region(self, pt):
@@ -127,7 +127,7 @@ class PtVarBinning(object):
         # pt in args to duck type with PtVarPerPtBinning method
         return self.variable_bin_edges
 
-    def cache_global_bin_mapping(self):
+    def _cache_global_bin_mapping(self):
         """Create maps of global bin <> physical bin values,
         by iterating through all the physical bins (inc oflow)
 
@@ -179,6 +179,11 @@ class PtVarBinning(object):
     def physical_bin_to_global_bin(self, pt, var):
         dist = self.get_distribution(pt)
         return dist.GetGlobalBinNumber(var, pt)
+
+    def global_bin_to_physical_bin(self, global_bin_number):
+        if global_bin_number not in self.global_bin_to_physical_val_map:
+            raise KeyError("No global bin %d" % global_bin_number)
+        return self.global_bin_to_physical_val_map[global_bin_number]
 
     def get_first_pt_overflow_global_bin(self):
         """Get global bin corresponding to first pt overflow bin,
@@ -238,6 +243,8 @@ class PtVarPerPtBinning(object):
 
         self.var_uf = var_uf
         self.var_of = var_of
+        self.pt_uf = False
+        self.pt_of = False  # since we handle it ourselves
 
         self.pt_name = "pt"
 
@@ -263,7 +270,7 @@ class PtVarPerPtBinning(object):
                                            pt_bin_edges_signal,
                                            False, False)
             # pt underflow must always be false, because we have to specify
-            # the lambda binning for it explicity, so it will be part of the pt_signal_bin_config
+            # the lambda binning for it explicitly, so it will be part of the pt_signal_bin_config
             self.underflow_distributions.append(distribution_underflow)
 
         # Signal pt region
@@ -281,14 +288,14 @@ class PtVarPerPtBinning(object):
                                         pt_bin_edges_signal,
                                         False, False)
             # pt overflow must always be false, because we have to specify
-            # the lambda binning for it explicity, so it will be part of the pt_signal_bin_config
+            # the lambda binning for it explicitly, so it will be part of the pt_signal_bin_config
             self.signal_distributions.append(distribution_signal)
 
         # Hold maps of global bin number < > physical bin edges
         self.global_bin_to_physical_val_map = dict()
         self.physical_val_to_global_bin_map = dict()
 
-        self.cache_global_bin_mapping()
+        self._cache_global_bin_mapping()
         print("bin 1:", self.global_bin_to_physical_val_map[1])
 
     def is_signal_region(self, pt):
@@ -313,7 +320,7 @@ class PtVarPerPtBinning(object):
             raise IndexError("Can't find variable bins for pt %f" % pt)
         return config[pos][1]
 
-    def cache_global_bin_mapping(self):
+    def _cache_global_bin_mapping(self):
         """Create maps of global bin <> physical bin values,
         by iterating through all the physical bins (inc oflow)
 
@@ -341,6 +348,11 @@ class PtVarPerPtBinning(object):
         dist = self.get_distribution(pt)
         return dist.GetGlobalBinNumber(var, pt)
 
+    def global_bin_to_physical_bin(self, global_bin_number):
+        if global_bin_number not in self.global_bin_to_physical_val_map:
+            raise KeyError("No global bin %d" % global_bin_number)
+        return self.global_bin_to_physical_val_map[global_bin_number]
+
     def get_first_pt_overflow_global_bin(self):
         """Get global bin corresponding to first pt overflow bin"""
         return self.physical_bin_to_global_bin(pt=9999999., var=100000)
@@ -353,13 +365,9 @@ class BinningHandler(object):
                  detector_ptvar_binning,
                  generator_ptvar_binning):
 
-        # DETECTOR LEVEL BINNING
-        # ------------------------------------------------------------------------------------------
         self.detector_binning_name = "detector"
         self.detector_ptvar_binning = detector_ptvar_binning
 
-        # GENERATOR LEVEL BINNING
-        # ------------------------------------------------------------------------------------------
         self.generator_binning_name = "generator"
         self.generator_ptvar_binning = generator_ptvar_binning
 
@@ -374,13 +382,20 @@ class BinningHandler(object):
             raise ValueError("binning_scheme should be one of: %s" % ",".join(valid_args))
         return self.binning_mapping[binning_scheme]
 
-    def get_physical_bins(self, global_bin_number, binning_scheme):
-        ptvar_binning = self.get_binning_scheme(binning_scheme)
-        return ptvar_binning.global_bin_to_physical_val_map[global_bin_number]
+    def global_bin_to_physical_bin(self, global_bin_number, binning_scheme):
+        return self.get_binning_scheme(binning_scheme).global_bin_to_physical_bin(global_bin_number)
+
+    def physical_bin_to_global_bin(self, pt, var, binning_scheme):
+        return self.get_binning_scheme(binning_scheme).physical_bin_to_global_bin(pt=pt, var=var)
 
     def get_first_pt_overflow_global_bin(self, binning_scheme):
-        ptvar_binning = self.get_binning_scheme(binning_scheme)
-        return ptvar_binning.get_first_pt_overflow_global_bin()
+        return self.get_binning_scheme(binning_scheme).get_first_pt_overflow_global_bin()
+
+    def get_pt_bins(self, binning_scheme, is_signal_region):
+        return self.get_binning_scheme(binning_scheme).get_pt_bins(is_signal_region)
+
+    def get_variable_bins(self, pt, binning_scheme):
+        return self.get_binning_scheme(binning_scheme).get_variable_bins(pt)
 
     @property
     def variable_name(self):
@@ -1888,7 +1903,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             for ibin_pt, (pt, pt_next) in enumerate(zip(bins[:-1], bins[1:])):
                 # print(ibin_pt, pt, pt_next)
                 this_sum = 0
-                var = self.variable_bin_edges_reco[0]+0.001
+                var = self.binning_handler.get_variable_bins(pt, binning_scheme="detector")[0]+0.001
                 # urgh this is horrible, but crashes if you use self.detector_binning.GetGlobalBinNumber() whyyyy
                 # need separate binning obj for each value, else it misses bins
                 binning = self.detector_distribution_underflow if pt in self.pt_bin_edges_underflow_reco else self.detector_distribution
@@ -1904,7 +1919,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
 
             # Now set the new bin contents and error bars by scaling using these sums
             for ibin_pt, (pt, pt_next) in enumerate(zip(bins[:-1], bins[1:])):
-                var = self.variable_bin_edges_reco[0]+0.001
+                var = self.binning_handler.get_variable_bins(pt, binning_scheme="detector")[0]+0.001
                 # urgh this is horrible, but crashes if you use self.detector_binning.GetGlobalBinNumber() whyyyy
                 binning = self.detector_distribution_underflow if pt in self.pt_bin_edges_underflow_reco else self.detector_distribution
                 binning_next = self.detector_distribution_underflow if pt_next in self.pt_bin_edges_underflow_reco else self.detector_distribution
@@ -2883,7 +2898,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         self.hist_bin_chopper.add_obj(self.total_ematrix_name, self.get_ematrix_stat())
 
         # For each pt bin, recalculate total error in quadrature and store in unfolded hist
-        pt_bins = self.binning_handler.get_binning_scheme("generator").get_pt_bins(is_signal_region=True)
+        pt_bins = self.binning_handler.get_pt_bins(binning_scheme='generator', is_signal_region=True)
         for ibin_pt, pt in enumerate(pt_bins[:-1]):
             first_bin = ibin_pt == 0
             hbc_args = dict(ind=ibin_pt, binning_scheme='generator', is_signal_region=True)
@@ -2898,11 +2913,11 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             # if they haven't been calculated by jackknife methods,
             # scaling by overall normalisation and bin widths
             binning = self.generator_binning.FindNode("generatordistribution")
-            var_bins = self.binning_handler.get_binning_scheme('generator').get_variable_bins(pt)
+            var_bins = self.binning_handler.get_variable_bins(pt, binning_scheme='generator')
             # FIXME what to do if non-sequential bin numbers?!
             # the 0.001 is to ensure we're def inside this bin
-            start_bin = self.binning_handler.get_binning_scheme('generator').physical_bin_to_global_bin(var=var_bins[0]+1E-6, pt=pt+1E-6)
-            end_bin = self.binning_handler.get_binning_scheme('generator').physical_bin_to_global_bin(var=var_bins[-2]+1E-6, pt=pt+1E-6)  # -2 since the last one is the upper edge of the last bin
+            start_bin = self.binning_handler.physical_bin_to_global_bin(var=var_bins[0] + 1E-6, pt=pt + 1E-6, binning_scheme='generator')
+            end_bin = self.binning_handler.physical_bin_to_global_bin(var=var_bins[-2] + 1E-6, pt=pt + 1E-6, binning_scheme='generator')  # -2 since the last one is the upper edge of the last bin
             stat_key = self.hist_bin_chopper._generate_key(self.stat_ematrix_name,
                                                            ind=ibin_pt,
                                                            axis='pt',
@@ -4319,8 +4334,8 @@ class TruthTemplateMaker(object):
         # do the fits per pT bin, including plotting the fit
         self.do_fits()
         # plot scale factors vs pt bin
-        first_bin = self.binning_handler.get_binning_scheme('generator').get_pt_bins(is_signal_region=False)[0]
-        last_bin = self.binning_handler.get_binning_scheme('generator').get_pt_bins(is_signal_region=True)[-1]
+        first_bin = self.binning_handler.get_pt_bins(binning_scheme='generator', is_signal_region=False)[0]
+        last_bin = self.binning_handler.get_pt_bins(binning_scheme='generator', is_signal_region=True)[-1]
         self.plot_fit_results_vs_pt_bin("Fit to reco data, %g < p_{T} < %G GeV" % (first_bin, last_bin),
                                         os.path.join(self.output_dir, "reco_gen_bin_fit_factors.pdf"))
         self.construct_truth_template()
@@ -4419,7 +4434,7 @@ class TruthTemplateMaker(object):
 
         labels = [t['name'] for t in self.templates]
         # Fit underflow pT bins
-        pt_bins_uflow = self.binning_handler.get_binning_scheme('generator').get_pt_bins(is_signal_region=False)
+        pt_bins_uflow = self.binning_handler.get_pt_bins(binning_scheme='generator', is_signal_region=False)
         for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(pt_bins_uflow[:-1], pt_bins_uflow[1:])):
             print("Fitting uflow", bin_edge_low, bin_edge_high)
             hbc_args = dict(ind=ibin, binning_scheme='generator', is_signal_region=False)
@@ -4450,7 +4465,7 @@ class TruthTemplateMaker(object):
                           filename=os.path.join(self.output_dir, "reco_fit_gen_bin_uflow_%d.pdf" % ibin))
 
         # Fit signal pT bins
-        pt_bins_signal = self.binning_handler.get_binning_scheme('generator').get_pt_bins(is_signal_region=True)
+        pt_bins_signal = self.binning_handler.get_pt_bins(binning_scheme='generator', is_signal_region=True)
         for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(pt_bins_signal[:-1], pt_bins_signal[1:])):
             print("Fitting", bin_edge_low, bin_edge_high)
             hbc_args = dict(ind=ibin, binning_scheme='generator', is_signal_region=True)
@@ -4506,7 +4521,7 @@ class TruthTemplateMaker(object):
         new_truth_hists = []
 
         # underflow pt bins
-        pt_bins_uflow = self.binning_handler.get_binning_scheme('generator').get_pt_bins(is_signal_region=False)
+        pt_bins_uflow = self.binning_handler.get_pt_bins(binning_scheme='generator', is_signal_region=False)
         for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(pt_bins_uflow[:-1], pt_bins_uflow[1:])):
             print("Creating template", ibin, bin_edge_low, bin_edge_high)
 
@@ -4553,7 +4568,7 @@ class TruthTemplateMaker(object):
 
         # signal pt bins
         global_ibin = ibin+1
-        pt_bins_signal = self.binning_handler.get_binning_scheme('generator').get_pt_bins(is_signal_region=True)
+        pt_bins_signal = self.binning_handler.get_pt_bins(binning_scheme="generator", is_signal_region=True)
         for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(pt_bins_signal[:-1], pt_bins_signal[1:])):
             print("Creating template", ibin, global_ibin, bin_edge_low, bin_edge_high)
 
@@ -4587,10 +4602,10 @@ class TruthTemplateMaker(object):
         all_pt_bins = list(chain(pt_bins_uflow[:-1], pt_bins_signal))
         print(all_pt_bins)
         for pt_ind, (pt_low, pt_high) in enumerate(zip(all_pt_bins[:-1], all_pt_bins[1:])):
-            var_bins = self.binning_handler.get_binning_scheme('generator').get_variable_bins(pt=pt_low+1E-6)
+            var_bins = self.binning_handler.get_variable_bins(pt=pt_low+1E-6, binning_scheme='generator')
             for bin_ind, var_value in enumerate(var_bins, 1):
                 # bin_ind refers to bin in the template TH1 (hence start at 1), global_bin refers to global bin number
-                global_bin = self.binning_handler.get_binning_scheme('generator').physical_bin_to_global_bin(pt=pt_low+1E-6, var=var_value+1E-6)
+                global_bin = self.binning_handler.physical_bin_to_global_bin(pt=pt_low + 1E-6, var=var_value + 1E-6, binning_scheme='generator')
                 truth_template.SetBinContent(global_bin, new_truth_hists[pt_ind].GetBinContent(bin_ind))
                 truth_template.SetBinError(global_bin, new_truth_hists[pt_ind].GetBinError(bin_ind))
             # TODO: deal with overflow?
@@ -4609,8 +4624,8 @@ class TruthTemplateMaker(object):
 
         self.do_gen_fits()
         # plot scale factors vs pt bin, along with reco ones
-        first_bin = self.binning_handler.get_binning_scheme('generator').get_pt_bins(is_signal_region=False)[0]
-        last_bin = self.binning_handler.get_binning_scheme('generator').get_pt_bins(is_signal_region=True)[-1]
+        first_bin = self.binning_handler.get_pt_bins(binning_scheme='generator', is_signal_region=False)[0]
+        last_bin = self.binning_handler.get_pt_bins(binning_scheme='generator', is_signal_region=True)[-1]
         self.plot_gen_vs_reco_fit_results_vs_pt_bin("Comparing fit to reco and gen, %g < p_{T} < %G GeV" % (first_bin, last_bin),
                                                     os.path.join(self.output_dir, "reco_vs_gen_bin_fit_factors.pdf"))
 
@@ -4628,7 +4643,7 @@ class TruthTemplateMaker(object):
 
         labels = [t['name'] for t in self.templates]
         # Fit underflow pT bins
-        pt_bins_uflow = self.binning_handler.get_binning_scheme('generator').get_pt_bins(is_signal_region=False)
+        pt_bins_uflow = self.binning_handler.get_pt_bins(binning_scheme='generator', is_signal_region=False)
         for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(pt_bins_uflow[:-1], pt_bins_uflow[1:])):
             print("Fitting uflow", bin_edge_low, bin_edge_high)
             hbc_args = dict(ind=ibin, binning_scheme='generator', is_signal_region=False)
@@ -4669,7 +4684,7 @@ class TruthTemplateMaker(object):
                           filename=os.path.join(self.output_dir, "gen_fit_gen_bin_uflow_%d.pdf" % ibin))
 
         # Fit signal pT bins
-        pt_bins_uflow = self.binning_handler.get_binning_scheme('generator').get_pt_bins(is_signal_region=True)
+        pt_bins_signal = self.binning_handler.get_pt_bins(binning_scheme='generator', is_signal_region=True)
         for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(pt_bins_signal[:-1], pt_bins_signal[1:])):
             print("Fitting", bin_edge_low, bin_edge_high)
             hbc_args = dict(ind=ibin, binning_scheme='generator', is_signal_region=True)

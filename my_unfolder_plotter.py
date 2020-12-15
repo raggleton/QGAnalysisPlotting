@@ -721,25 +721,15 @@ class MyUnfolderPlotter(object):
         if labels_inside_align not in ['lower', 'higher']:
             raise ArgumentError("'labels_inside_align' should be 'lower' or 'higher'")
 
-        # setup bins, etc
-        signal_pt_bins = []
-        underflow_pt_bins = []
-        variable_bins = []
-        this_binning = None
-        dist_name = None
+        binning_handler_scheme_map = {"gen": "generator", "reco": "detector"}
+        binning_scheme = binning_handler_scheme_map[which]
+        binning_handler = self.unfolder.binning_handler
+        binning_obj = binning_handler.get_binning_scheme(binning_scheme)
 
-        if which == 'gen':
-            signal_pt_bins = self.unfolder.pt_bin_edges_gen
-            underflow_pt_bins = self.unfolder.pt_bin_edges_underflow_gen
-            variable_bins = self.unfolder.variable_bin_edges_gen
-            this_binning = self.unfolder.generator_binning
-            dist_name = "generatordistribution"
-        else:
-            signal_pt_bins = self.unfolder.pt_bin_edges_reco
-            underflow_pt_bins = self.unfolder.pt_bin_edges_underflow_reco
-            variable_bins = self.unfolder.variable_bin_edges_reco
-            this_binning = self.unfolder.detector_binning
-            dist_name = "detectordistribution"
+        # setup pt bins - variable bins may be pt-dependent,
+        # so handle those inside the loop over pt bins
+        signal_pt_bins = binning_handler.get_pt_bins(binning_scheme=binning_scheme, is_signal_region=True)
+        underflow_pt_bins = binning_handler.get_pt_bins(binning_scheme=binning_scheme, is_signal_region=False)
 
         all_pt_bins = []
         if do_underflow:
@@ -760,27 +750,29 @@ class MyUnfolderPlotter(object):
                 axis_low, axis_high = plot.GetXaxis().GetXmin(), plot.GetXaxis().GetXmax()
 
         # check if overall pt overflow needed
-        if this_binning.FindNode(dist_name).HasOverflow(1):  # axis=1 is pt
+        if binning_handler.get_binning_scheme(binning_scheme).pt_of:
             all_pt_bins.append(np.inf)
 
-
-        lines = []  # otherwise python kills them
+        lines = []  # otherwise python destroys them
         texts = []
-        first_var = variable_bins[0]
-        last_var = variable_bins[-1]
+
         if isinstance(plot, Plot):
             plot.main_pad.cd()
 
         # add line + text for each pt bin
         for pt_ind, (pt_val, pt_val_upper) in enumerate(zip(all_pt_bins[:-1], all_pt_bins[1:])):
+            variable_bins = binning_handler.get_variable_bins(pt=pt_val, binning_scheme=binning_scheme)
+            first_var = variable_bins[0]
+            last_var = variable_bins[-1]
+
             # convert value to bin number
-            # what a load of rubbish, why cant I just ask generator_binning for it?!
-            binning = this_binning.FindNode("%s_underflow" % dist_name) if pt_val < signal_pt_bins[0] else this_binning.FindNode(dist_name)
-            pt_bin = binning.GetGlobalBinNumber(first_var+0.000001, pt_val+0.01) - 0.5 # -0.5 for offset, since the bins are centered on the bin number (e.g. bin 81 goes from 80.5 to 81.5)
-            pt_bin_offset = 0 if do_underflow else binning.GetStartBin()
+            # binning = this_binning.FindNode("%s_underflow" % dist_name) if pt_val < signal_pt_bins[0] else this_binning.FindNode(dist_name)
+            # pt_bin = binning.GetGlobalBinNumber(first_var+0.000001, pt_val+0.01) - 0.5 # -0.5 for offset, since the bins are centered on the bin number (e.g. bin 81 goes from 80.5 to 81.5)
+            pt_bin = binning_obj.physical_bin_to_global_bin(pt=pt_val, var=first_var) - 0.5
+            pt_bin_offset = 0 if do_underflow else binning_obj.get_distribution(pt).GetStartBin()
 
             # remove extra bins due to the lambda overflow, if it exists
-            if not do_overflow and this_binning.FindNode(dist_name).HasOverflow(0):  # axis=0 is lambda
+            if not do_overflow and binning_obj.var_of:
                 oflow_offset = pt_ind+1
                 pt_bin_offset += oflow_offset
 
@@ -799,7 +791,7 @@ class MyUnfolderPlotter(object):
 
             # draw text for pt bins
             if do_labels_inside and axis == 'x':
-                pt_bin_higher = binning.GetGlobalBinNumber(last_var-0.00001, pt_val+0.01) - 0.5
+                pt_bin_higher = binning_obj.physical_bin_to_global_bin(pt=pt_val, var=last_var) - 0.5
                 pt_bin_higher -= pt_bin_offset
                 pt_bin_higher += offset
                 pt_bin_interval = pt_bin_higher - pt_bin
@@ -851,7 +843,7 @@ class MyUnfolderPlotter(object):
                 texts.append(text)
 
             if do_labels_outside and axis == 'x':
-                pt_bin_higher = binning.GetGlobalBinNumber(last_var-0.00001, pt_val+0.01) - 0.5
+                pt_bin_higher = binning_obj.physical_bin_to_global_bin(pt=pt_val, var=last_var) - 0.5
                 pt_bin_higher -= pt_bin_offset
                 pt_bin_higher += offset
                 pt_bin_interval = pt_bin_higher - pt_bin
@@ -873,7 +865,7 @@ class MyUnfolderPlotter(object):
                 texts.append(text)
 
             if do_labels_outside and axis == 'y':
-                pt_bin_higher = binning.GetGlobalBinNumber(last_var-0.00001, pt_val+0.01) - 0.5
+                pt_bin_higher = binning_obj.physical_bin_to_global_bin(pt=pt_val, var=last_var) - 0.5
                 pt_bin_higher -= pt_bin_offset
                 pt_bin_higher += offset
                 pt_bin_interval = pt_bin_higher - pt_bin
@@ -905,8 +897,8 @@ class MyUnfolderPlotter(object):
             for pt_val in all_pt_bins[1:-1]:
                 # convert value to bin number
                 # what a load of rubbish, why cant I just ask generator_binning for it?!
-                binning = this_binning.FindNode("%s_underflow" % dist_name) if pt_val < signal_pt_bins[0] else this_binning.FindNode(dist_name)
-                pt_bin = binning.GetGlobalBinNumber(first_var+0.000001, pt_val+0.01) - 0.5 # -0.5 for offset, since the bins are centered on the bin number (e.g. bin 81 goes from 80.5 to 81.5)
+                # binning = this_binning.FindNode("%s_underflow" % dist_name) if pt_val < signal_pt_bins[0] else this_binning.FindNode(dist_name)
+                pt_bin = binning_obj.physical_bin_to_global_bin(pt=pt_val, var=first_var) - 0.5
                 line = ROOT.TLine(pt_bin, y_low, pt_bin, y_high)
                 line.SetLineStyle(2)
                 line.SetLineColor(14)
