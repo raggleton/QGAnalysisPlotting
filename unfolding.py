@@ -782,6 +782,45 @@ def main():
             binning_handler = BinningHandler(generator_ptvar_binning=generator_binning,
                                              detector_ptvar_binning=detector_binning)
 
+            def zero_column_th2(h2d, column_num):
+                for iy in range(1, h2d.GetNbinsY()+1):
+                    if h2d.GetBinContent(column_num, iy) != 0:
+                        print("Zeroing (%d, %d)" % (column_num, iy))
+                    h2d.SetBinContent(column_num, iy, 0)
+                    h2d.SetBinError(column_num, iy, 0)
+
+            def zero_row_th2(h2d, row_num):
+                for ix in range(1, h2d.GetNbinsX()+1):
+                    h2d.SetBinContent(ix, row_num, 0)
+                    h2d.SetBinError(ix, row_num, 0)
+
+            # Remove last pt bin entries - detector level
+            def zero_last_pt_bin_th1_reco(h):
+                start_bin = binning_handler.physical_bin_to_global_bin(pt=pt_bin_edges_reco[-1]+1, var=0, binning_scheme='detector')
+                end_bin = binning_handler.physical_bin_to_global_bin(pt=pt_bin_edges_reco[-1]+1, var=9999, binning_scheme='detector')
+                for r in range(start_bin, end_bin+1):
+                    h.SetBinContent(r, 0)
+                    h.SetBinError(r, 0)
+
+            def zero_last_pt_bin_th2_reco(h):
+                start_bin = binning_handler.physical_bin_to_global_bin(pt=pt_bin_edges_reco[-1]+1, var=0, binning_scheme='detector')
+                end_bin = binning_handler.physical_bin_to_global_bin(pt=pt_bin_edges_reco[-1]+1, var=9999, binning_scheme='detector')
+                for ix in range(1, h.GetNbinsX()+1):
+                    for r in range(start_bin, end_bin+1):
+                        h.SetBinContent(ix, r, 0)
+                        h.SetBinError(ix, r, 0)
+
+            def zero_last_pt_bin_th2_gen(h):
+                start_bin = binning_handler.physical_bin_to_global_bin(pt=pt_bin_edges_gen[-1]+1, var=0, binning_scheme='generator')
+                end_bin = binning_handler.physical_bin_to_global_bin(pt=pt_bin_edges_gen[-1]+1, var=9999, binning_scheme='generator')
+                for r in range(start_bin, end_bin+1):
+                    for iy in range(1, h.GetNbinsY()+1):
+                        h.SetBinContent(r, iy, 0)
+                        h.SetBinError(r, iy, 0)
+
+            # Get lots of hists from input files
+            # ------------------------------------------------------------------
+
             mc_hname_append = "split" if MC_SPLIT else "all"
             hist_mc_reco = cu.get_from_tfile(region['mc_tfile'], "%s/hist_%s_reco_%s" % (region['dirname'], angle_shortname, mc_hname_append))
             hist_mc_gen = cu.get_from_tfile(region['mc_tfile'], "%s/hist_%s_truth_%s" % (region['dirname'], angle_shortname, mc_hname_append))
@@ -789,6 +828,11 @@ def main():
             hist_mc_reco_all = cu.get_from_tfile(region['mc_tfile'], "%s/hist_%s_reco_all" % (region['dirname'], angle_shortname))
             hist_mc_gen_all = cu.get_from_tfile(region['mc_tfile'], "%s/hist_%s_truth_all" % (region['dirname'], angle_shortname))
             hist_mc_gen_reco_map = cu.get_from_tfile(region['mc_tfile'], "%s/tu_%s_GenReco_%s" % (region['dirname'], angle_shortname, mc_hname_append))
+
+            zero_last_pt_bin_th1_reco(hist_mc_reco)
+            zero_last_pt_bin_th1_reco(hist_mc_reco_all)
+            zero_last_pt_bin_th2_reco(hist_mc_gen_reco_map)
+            zero_last_pt_bin_th2_gen(hist_mc_gen_reco_map)
 
             hist_data_reco = None
             if not MC_INPUT:
@@ -800,11 +844,14 @@ def main():
             reco_1d = hist_mc_reco.Clone() if MC_INPUT else hist_data_reco
             reco_1d = rm_large_rel_error_bins_th1(reco_1d, relative_err_threshold=args.relErr)
 
+            zero_last_pt_bin_th1_reco(reco_1d)
+
             # to construct our "fakes" template, we use the ratio as predicted by MC, and apply it to data
             # this way we ensure we don't have -ve values, and avoid any issue with cross sections
             hist_mc_fakes_reco = cu.get_from_tfile(region['mc_tfile'], "%s/hist_%s_reco_fake_all" % (region['dirname'], angle_shortname))
-            hist_fake_fraction = hist_mc_fakes_reco.Clone("hist_%s_fakes_reco_fraction" % angle_shortname)
-            hist_fake_fraction.Divide(hist_mc_reco_all)
+            zero_last_pt_bin_th1_reco(hist_mc_fakes_reco)
+            hist_fake_fraction = rm_large_rel_error_bins_th1(hist_mc_fakes_reco.Clone("hist_%s_fakes_reco_fraction" % angle_shortname), relative_err_threshold=args.relErr)
+            hist_fake_fraction.Divide(rm_large_rel_error_bins_th1(hist_mc_reco_all, relative_err_threshold=args.relErr))
 
             hist_mc_reco_bg_subtracted, hist_fakes_reco = subtract_background(hist_mc_reco, hist_fake_fraction)
             hist_mc_reco_all_bg_subtracted, hist_fakes_reco_all = subtract_background(hist_mc_reco_all, hist_fake_fraction)
