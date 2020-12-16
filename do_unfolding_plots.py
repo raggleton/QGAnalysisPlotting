@@ -9,7 +9,6 @@ Do all the unfolding plots: per pT bin, per lambda bin, summary plot
 from __future__ import print_function, division
 
 import os
-os.nice(10)
 import sys
 import argparse
 import math
@@ -29,7 +28,6 @@ from jinja2 import Environment, FileSystemLoader
 import ROOT
 from MyStyle import My_Style
 from comparator import Contribution, Plot
-My_Style.cd()
 
 # my packages
 import common_utils as cu
@@ -40,7 +38,9 @@ from my_unfolder_plotter import MyUnfolderPlotter
 from unfolding_config import setup_regions_from_argparse
 import metric_calculators as metrics
 
+My_Style.cd()
 pd.set_option('display.max_columns', None)
+os.nice(10)
 
 # Use rootpy to throw exceptions on ROOT errors, but need DANGER enabled
 # Doesn't work with python 3.8 for now
@@ -64,6 +64,7 @@ if not any(['profile' in locals(),
             (isinstance(globals()['__builtins__'], dict) and 'profile' in globals()['__builtins__']),
             'profile' in dir(__builtins__)]):
     print("I have no memory_profiler @profile decorator in do_unfolding_plots, creating my own instead")
+
     def profile(func):
         return func
 
@@ -94,10 +95,10 @@ class Setup(object):
         self.detector_title = "Detector-level {prepend}{name} ({lambda_str})".format(prepend=angle_prepend,
                                                                                      name=lower_angle_name,
                                                                                      lambda_str=angle.lambda_str)
-        self.pt_bin_normalised_differential_label = "#frac{1}{d#sigma/dp_{T}} #frac{d^{2}#sigma}{dp_{T} d%s}" % (angle.lambda_str)
-        self.pt_bin_detector_normalised_differential_label = "#frac{1}{dN/dp_{T}} #frac{d^{2}N}{dp_{T} d%s}" % (angle.lambda_str)
-        self.pt_bin_normalised_differential_times_width_label = "#frac{1}{d#sigma/dp_{T}} #frac{d^{2}#sigma}{dp_{T} d%s}" % (angle.lambda_str)
-        self.pt_bin_unnormalised_differential_label = "#frac{1}{dN/dp_{T}} #frac{d^{2}N}{dp_{T} d%s}" % (angle.lambda_str)  # FIXME
+        self.pt_bin_normalised_differential_label = "#frac{1}{d#sigma/dp_{T}} #frac{d^{2}#sigma}{dp_{T} d%s}" % angle.lambda_str
+        self.pt_bin_detector_normalised_differential_label = "#frac{1}{dN/dp_{T}} #frac{d^{2}N}{dp_{T} d%s}" % angle.lambda_str
+        self.pt_bin_normalised_differential_times_width_label = "#frac{1}{d#sigma/dp_{T}} #frac{d^{2}#sigma}{dp_{T} d%s}" % angle.lambda_str
+        self.pt_bin_unnormalised_differential_label = "#frac{1}{dN/dp_{T}} #frac{d^{2}N}{dp_{T} d%s}" % angle.lambda_str  # FIXME
         self.pt_bin_unnormalised_differential_label = "N"
         self.lambda_bin_normalised_differential_label = "#frac{1}{d#sigma/d%s} #frac{d^{2}#sigma}{dp_{T} d%s}" % (angle.lambda_str, angle.lambda_str)
         self.lambda_bin_unnormalised_differential_label = "#frac{1}{dN/d%s} #frac{d^{2}N}{dp_{T} d%s}" % (angle.lambda_str, angle.lambda_str)  # FIXME
@@ -272,7 +273,7 @@ class BinnedPlotter(object):
         has_entries = [c.obj.GetEntries() > 0 for c in entries]
         if not any(has_entries):
             if message:
-                print("Skipping 0 entries (%s)" % (message))
+                print("Skipping 0 entries (%s)" % message)
             else:
                 print("Skipping 0 entries")
             return False
@@ -281,7 +282,7 @@ class BinnedPlotter(object):
         min_bin = min([c.obj.GetMinimum() for c in entries])
         if max_bin == min_bin:
             if message:
-                print("Skipping min=max hists (%s)" % (message))
+                print("Skipping min=max hists (%s)" % message)
             else:
                 print("Skipping min=max hists")
             return False
@@ -347,12 +348,12 @@ class GenPtBinnedPlotter(BinnedPlotter):
                              line_color=self.plot_styles['gen_colour'], line_width=self.line_width,
                              marker_color=self.plot_styles['gen_colour'], marker_size=0),
                 Contribution(unfolded_hist_bin_total_errors,
-                             label="Unfolded (#tau = %.3g) (total unc.)" % (self.unfolder.tau),
+                             label="Unfolded (#tau = %.3g) (total unc.)" % self.unfolder.tau,
                              line_color=self.plot_styles['unfolded_total_colour'], line_width=self.line_width, line_style=1,
-                             marker_color=self.plot_styles['unfolded_total_colour'],# marker_style=cu.Marker.get('circle'), marker_size=0.75,
+                             marker_color=self.plot_styles['unfolded_total_colour'],  # marker_style=cu.Marker.get('circle'), marker_size=0.75,
                              subplot=mc_gen_hist_bin),
                 Contribution(unfolded_hist_bin_stat_errors,
-                             label="Unfolded (#tau = %.3g) (stat. unc.)" % (self.unfolder.tau),
+                             label="Unfolded (#tau = %.3g) (stat. unc.)" % self.unfolder.tau,
                              line_color=self.plot_styles['unfolded_stat_colour'], line_width=self.line_width, line_style=1,
                              marker_color=self.plot_styles['unfolded_stat_colour'], marker_style=cu.Marker.get('circle'), marker_size=0.75,
                              subplot=mc_gen_hist_bin),
@@ -442,10 +443,10 @@ class GenPtBinnedPlotter(BinnedPlotter):
             if self.setup.angle.var in ["jet_LHA_charged", "jet_thrust_charged", "jet_width_charged", "jet_thrust", "jet_width"]:
                 upper_bin = [x for x in cu.get_bin_edges(mc_gen_hist_bin, 'x') if x < 0.2][-1]
                 plot2 = Plot(entries,
-                            ytitle=self.setup.pt_bin_normalised_differential_label,
-                            title=self.get_pt_bin_title(bin_edge_low, bin_edge_high),
-                            xlim=(0, upper_bin),
-                            **self.pt_bin_plot_args)
+                             ytitle=self.setup.pt_bin_normalised_differential_label,
+                             title=self.get_pt_bin_title(bin_edge_low, bin_edge_high),
+                             xlim=(0, upper_bin),
+                             **self.pt_bin_plot_args)
                 self._modify_plot(plot2)
                 plot2.subplot_title = "* / Generator"
                 plot2.plot("NOSTACK E1")
@@ -633,10 +634,10 @@ class GenPtBinnedPlotter(BinnedPlotter):
                     bin_lt_lim = [x for x in bin_edges if x < 0.2][-1]
                     upper_bin = min(bin_edges[5], bin_lt_lim)
                     plot2 = Plot(entries,
-                                ytitle=self.setup.pt_bin_normalised_differential_label,
-                                title=self.get_pt_bin_title(bin_edge_low, bin_edge_high),
-                                xlim=(0, upper_bin),
-                                **self.pt_bin_plot_args)
+                                 ytitle=self.setup.pt_bin_normalised_differential_label,
+                                 title=self.get_pt_bin_title(bin_edge_low, bin_edge_high),
+                                 xlim=(0, upper_bin),
+                                 **self.pt_bin_plot_args)
                     self._modify_plot(plot2)
                     plot2.subplot_title = "* / Generator"
                     plot2.plot("NOSTACK E1")
@@ -657,9 +658,9 @@ class GenPtBinnedPlotter(BinnedPlotter):
                              line_color=self.plot_styles['gen_colour'], line_width=self.line_width,
                              marker_color=self.plot_styles['gen_colour'], marker_size=0),
                 Contribution(unfolded_hist_bin_total_errors,
-                             label="Unfolded (#tau = %.3g) (total unc.)" % (self.unfolder.tau),
+                             label="Unfolded (#tau = %.3g) (total unc.)" % self.unfolder.tau,
                              line_color=self.plot_styles['unfolded_total_colour'], line_width=self.line_width, line_style=1,
-                             marker_color=self.plot_styles['unfolded_total_colour'], #marker_style=cu.Marker.get('circle'), marker_size=0.75,
+                             marker_color=self.plot_styles['unfolded_total_colour'],  #marker_style=cu.Marker.get('circle'), marker_size=0.75,
                              subplot=mc_gen_hist_bin),
                 Contribution(unreg_unfolded_hist_bin_total_errors,
                              label="Unfolded (#tau = 0) (total unc.)",
@@ -694,9 +695,9 @@ class GenPtBinnedPlotter(BinnedPlotter):
                              line_color=self.plot_styles['gen_colour'], line_width=self.line_width,
                              marker_color=self.plot_styles['gen_colour'], marker_size=0),
                 Contribution(unfolded_hist_bin_total_errors,
-                             label="Unfolded (#tau = %.3g) (total unc.)" % (self.unfolder.tau),
+                             label="Unfolded (#tau = %.3g) (total unc.)" % self.unfolder.tau,
                              line_color=self.plot_styles['unfolded_total_colour'], line_width=self.line_width, line_style=1,
-                             marker_color=self.plot_styles['unfolded_total_colour'], #marker_style=cu.Marker.get('circle'), marker_size=0.75,
+                             marker_color=self.plot_styles['unfolded_total_colour'],  #marker_style=cu.Marker.get('circle'), marker_size=0.75,
                              subplot=mc_gen_hist_bin),
                 Contribution(unreg_unfolded_hist_bin_total_errors,
                              label="Unfolded (#tau = 0) (total unc.)",
@@ -738,9 +739,9 @@ class GenPtBinnedPlotter(BinnedPlotter):
                              marker_color=self.plot_styles['alt_gen_colour'], marker_size=0,
                              subplot=mc_gen_hist_bin),
                 Contribution(unfolded_hist_bin_total_errors,
-                             label="Unfolded (#tau = %.3g) (total unc.)" % (self.unfolder.tau),
+                             label="Unfolded (#tau = %.3g) (total unc.)" % self.unfolder.tau,
                              line_color=self.plot_styles['unfolded_total_colour'], line_width=self.line_width, line_style=1,
-                             marker_color=self.plot_styles['unfolded_total_colour'], #marker_style=cu.Marker.get('circle'), marker_size=0.75,
+                             marker_color=self.plot_styles['unfolded_total_colour'],  #marker_style=cu.Marker.get('circle'), marker_size=0.75,
                              subplot=mc_gen_hist_bin),
                 # Contribution(unreg_unfolded_hist_bin_total_errors,
                 #              label="Unfolded (#tau = 0) (total unc.)",
@@ -915,7 +916,7 @@ class GenPtBinnedPlotter(BinnedPlotter):
             func_name = cu.get_current_func_name()
             if not self.check_entries(entries, "%s bin %d" % (func_name, ibin)):
                 return
-            this_plot_args = {k:v for k,v in self.pt_bin_plot_args.items()}
+            this_plot_args = {k: v for k, v in self.pt_bin_plot_args.items()}
             this_plot_args['subplot_title'] = '#splitline{* / Gen}{(%s)}' % (self.region['mc_label'])
             plot = Plot(entries,
                         ytitle=self.setup.pt_bin_normalised_differential_label,

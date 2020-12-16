@@ -2308,13 +2308,13 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
                                                       do_labels_inside=False,
                                                       do_labels_outside=True,
                                                       offset=1)
-            l2,t2 = debug_plotter.draw_pt_binning_lines(obj,
-                                                        which='reco' if detector_space else 'gen',
-                                                        axis='y',
-                                                        do_underflow=has_underflow,
-                                                        do_labels_inside=False,
-                                                        do_labels_outside=True,
-                                                        offset=1)
+            l2, t2 = debug_plotter.draw_pt_binning_lines(obj,
+                                                         which='reco' if detector_space else 'gen',
+                                                         axis='y',
+                                                         do_underflow=has_underflow,
+                                                         do_labels_inside=False,
+                                                         do_labels_outside=True,
+                                                         offset=1)
             canv.SaveAs(os.path.join(debugging_dir, 'cov_inv_matrix_linZ.pdf'))
 
             canv.SetLogz(1)
@@ -2336,19 +2336,19 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
                 canv.SetRightMargin(0.18)
 
                 l, t = debug_plotter.draw_pt_binning_lines(obj,
-                                                          which='reco' if detector_space else 'gen',
-                                                          axis='x',
-                                                          do_underflow=has_underflow,
-                                                          do_labels_inside=False,
-                                                          do_labels_outside=True,
-                                                          offset=1)
-                l2,t2 = debug_plotter.draw_pt_binning_lines(obj,
-                                                            which='reco' if detector_space else 'gen',
-                                                            axis='y',
-                                                            do_underflow=has_underflow,
-                                                            do_labels_inside=False,
-                                                            do_labels_outside=True,
-                                                            offset=1)
+                                                           which='reco' if detector_space else 'gen',
+                                                           axis='x',
+                                                           do_underflow=has_underflow,
+                                                           do_labels_inside=False,
+                                                           do_labels_outside=True,
+                                                           offset=1)
+                l2, t2 = debug_plotter.draw_pt_binning_lines(obj,
+                                                             which='reco' if detector_space else 'gen',
+                                                             axis='y',
+                                                             do_underflow=has_underflow,
+                                                             do_labels_inside=False,
+                                                             do_labels_outside=True,
+                                                             offset=1)
                 canv.SaveAs(os.path.join(debugging_dir, 'cov_matrix_linZ.pdf'))
 
                 canv.SetLogz(1)
@@ -2720,7 +2720,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             bins = self.variable_bin_edges_gen
             nbins = len(bins) - 1
             # FIXME which binning to use? index or physical?
-            this_bin_unfolded_stat_ematrix = ROOT.TH2D("ematrix_stat_bin_%d_%s" % (ibin_pt, cu.get_unique_str()), "", nbins, 0, nbins, nbins,0, nbins)
+            this_bin_unfolded_stat_ematrix = ROOT.TH2D("ematrix_stat_bin_%d_%s" % (ibin_pt, cu.get_unique_str()), "", nbins, 0, nbins, nbins, 0, nbins)
             for ix in range(nbins):
                 for iy in range(nbins):
                     this_bin_unfolded_stat_ematrix.SetBinContent(ix+1, iy+1, cov_matrix[ix][iy])
@@ -2759,7 +2759,6 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
                         keys_to_del.append(k)
             for k in keys_to_del:
                 del self.hist_bin_chopper._cache[k]
-
 
     def create_normalised_scale_syst_uncertainty_per_pt_bin(self, scale_systs):
         """Create scale uncertainty from unfolding with scale variation response matrices.
@@ -2845,7 +2844,6 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
                                                       binning_scheme='generator')
             self.hist_bin_chopper._cache[key] = scale_ematrix
 
-
     def create_normalised_pdf_syst_uncertainty_per_pt_bin(self, pdf_systs):
         """Create PDF uncertainty from unfolded PDF variations
 
@@ -2871,7 +2869,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             variations = [syst['unfolder'].hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded', ibin_pt, binning_scheme='generator')
                           for syst in pdf_systs]
 
-            variations_envelope = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded_stat_err', ibin_pt, binning_scheme='generator').Clone("pdf_%d" % (ibin_pt))
+            variations_envelope = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded_stat_err', ibin_pt, binning_scheme='generator').Clone("pdf_%d" % ibin_pt)
 
             for ix in range(1, variations_envelope.GetNbinsX()+1):
                 # np.std does sqrt((abs(x - x.mean())**2) / (len(x) - ddof)),
@@ -2903,11 +2901,11 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
 
         for ibin_pt in range(len(self.pt_bin_edges_gen[:-1])):
             nominal = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded_stat_err',
+                                                                            ibin_pt,
+                                                                            binning_scheme='generator')
+            pdf_hist = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width(self.pdf_uncert_name,
                                                                              ibin_pt,
                                                                              binning_scheme='generator')
-            pdf_hist = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width(self.pdf_uncert_name,
-                                                                               ibin_pt,
-                                                                               binning_scheme='generator')
             pdf_shift = self.convert_error_bars_to_error_shift(pdf_hist)
             pdf_ematrix = cu.shift_to_covariance(pdf_shift)
             key = self.hist_bin_chopper._generate_key(self.pdf_uncert_ematrix_name,
@@ -2917,7 +2915,6 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
                                                       do_div_bin_width=True,
                                                       binning_scheme='generator')
             self.hist_bin_chopper._cache[key] = pdf_ematrix
-
 
     @staticmethod
     def convert_error_bars_to_error_shift(h):
@@ -2986,7 +2983,6 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
                                                           binning_scheme='generator')
                 self.hist_bin_chopper._cache[key] = syst_ematrix
 
-
     @staticmethod
     def get_sub_th2(h2d, start_bin, end_bin):
         """Create square TH2D from sub-matrix of h2d, from start_bin to end_bin (inclusive)"""
@@ -3052,7 +3048,6 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             # create stat & rsp err covariance matrices for this pt bin,
             # if they haven't been calculated by jackknife methods,
             # scaling by overall normalisation and bin widths
-            binning = self.generator_binning.FindNode("generatordistribution")
             var_bins = self.binning_handler.get_variable_bins(pt, binning_scheme='generator')
             # FIXME what to do if non-sequential bin numbers?!
             # the 0.001 is to ensure we're def inside this bin
