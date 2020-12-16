@@ -22,6 +22,7 @@ from itertools import product, chain
 from copy import copy, deepcopy
 from pprint import pprint
 from bisect import bisect_right
+import warnings
 
 import ROOT
 from MyStyle import My_Style
@@ -42,6 +43,19 @@ from do_unfolding_plots import Setup, do_binned_plots_per_region_angle, do_all_b
 if not (sys.version_info.major == 3 and sys.version_info.minor >= 8):
     import rootpy
     # import rootpy.logger.magic as M; M.DANGER.enabled = True
+
+
+# monkey-patch warning formatter
+def _formatwarning(message, category, filename, lineno, line=None):
+    return '{startcol}{fname}:{lineno} {cat}:{endcol} {msg}\n'.format(startcol=cu.pcolors.WARNING,
+                                                                      endcol=cu.pcolors.ENDC,
+                                                                      fname=os.path.basename(filename),
+                                                                      lineno=lineno,
+                                                                      cat=category.__name__,
+                                                                      msg=message)
+
+
+warnings.formatwarning = _formatwarning
 
 My_Style.cd()
 
@@ -1500,109 +1514,103 @@ def main():
 
                 return unfolder2
 
+            if args.mergeBins:
+                pt_overflow_bin = binning_handler.get_first_pt_overflow_global_bin("generator")
+                gen_bins_to_merge = get_bins_to_merge_nonnegative(unfolder.get_output(), binning_handler.get_binning_scheme('generator'), max_bin=pt_overflow_bin-1)
+                counter = 0
+                max_iterations = 3
+                ignored_input_bins = []
+                unfolder_merged = unfolder
+                while len(gen_bins_to_merge) > 0 and counter < max_iterations:
+                    print("********** MERGE LOOP:", counter, "***********")
+                    counter += 1
+                    unfolder_merged = setup_merged_bin_unfolder(gen_bins_to_merge, ignored_input_bins, unfolder_merged)
+                    unfolder_merged.check_input()
+                    tau2 = 0
+                    unfolder_merged.do_unfolding(tau2)
+                    gen_bins_to_merge = get_bins_to_merge_nonnegative(unfolder_merged.get_output(), unfolder_merged.binning_handler.get_binning_scheme('generator'))
 
-            pt_overflow_bin = binning_handler.get_first_pt_overflow_global_bin("generator")
-            gen_bins_to_merge = get_bins_to_merge_nonnegative(unfolder.get_output(), binning_handler.get_binning_scheme('generator'), max_bin=pt_overflow_bin-1)
-            counter = 0
-            max_iterations = 3
-            ignored_input_bins = []
-            unfolder_merged = unfolder
-            while len(gen_bins_to_merge) > 0 and counter < max_iterations:
-                print("********** MERGE LOOP:", counter, "***********")
-                counter += 1
-                unfolder_merged = setup_merged_bin_unfolder(gen_bins_to_merge, ignored_input_bins, unfolder_merged)
-                unfolder_merged.check_input()
-                tau2 = 0
-                unfolder_merged.do_unfolding(tau2)
-                gen_bins_to_merge = get_bins_to_merge_nonnegative(unfolder_merged.get_output(), unfolder_merged.binning_handler.get_binning_scheme('generator'))
+                unfolder_plotter2 = MyUnfolderPlotter(unfolder_merged,
+                                                      is_data=not MC_INPUT,
+                                                      lumi=cu.get_lumi_str(do_dijet="Dijet" in region['name'],
+                                                                           do_zpj="ZPlusJets" in region['name']))
+                plot_args2 = dict(output_dir=os.path.join(this_output_dir, 'merge_bins'), append=append)
 
-            unfolder_plotter2 = MyUnfolderPlotter(unfolder_merged,
-                                                  is_data=not MC_INPUT,
-                                                  lumi=cu.get_lumi_str(do_dijet="Dijet" in region['name'],
-                                                                       do_zpj="ZPlusJets" in region['name']))
-            plot_args2 = dict(output_dir=os.path.join(this_output_dir, 'merge_bins'), append=append)
+                # Do lots of extra gubbins, like caching matrices,
+                # creating unfolded hists with different levels of uncertianties,
+                # ------------------------------------------------------------------
+                unfolder_merged._post_process()
 
-            # Do unfolding!
-            # ------------------------------------------------------------------
-            # tau2 = 0
-            # unfolder_merged.do_unfolding(tau2)
-            # unfolder_merged.get_output(hist_name="unfolded_1d")
+                # Draw big 1D distributions
+                # ------------------------------------------------------------------
+                title = "%s\n%s region, %s" % (jet_algo, region['label'], angle_str)
+                unfolder_plotter2.draw_unfolded_1d(title=title,
+                                                   do_gen=True,
+                                                   do_logy=True,
+                                                   **plot_args2)
 
-            # Do lots of extra gubbins, like caching matrices,
-            # creating unfolded hists with different levels of uncertianties,
-            # ------------------------------------------------------------------
-            unfolder_merged._post_process()
+                # reco using detector binning
+                unfolder_plotter2.draw_detector_1d(do_reco_mc=True,
+                                                   do_reco_data=not MC_INPUT,
+                                                   title=title,
+                                                   **plot_args2)
 
-            # Draw big 1D distributions
-            # ------------------------------------------------------------------
-            title = "%s\n%s region, %s" % (jet_algo, region['label'], angle_str)
-            unfolder_plotter2.draw_unfolded_1d(title=title,
-                                               do_gen=True,
-                                               do_logy=True,
-                                               **plot_args2)
+                # reco using gen binning
+                unfolder_plotter2.draw_generator_1d(do_reco_data=not MC_INPUT,
+                                                    do_reco_data_bg_sub=False,
+                                                    do_reco_bg=False,
+                                                    do_reco_mc=True,
+                                                    do_reco_mc_bg_sub=False,
+                                                    do_truth_mc=True,
+                                                    title=title,
+                                                    **plot_args2)
 
-            # reco using detector binning
-            unfolder_plotter2.draw_detector_1d(do_reco_mc=True,
-                                               do_reco_data=not MC_INPUT,
-                                               title=title,
-                                               **plot_args2)
+                # same plot but with bg-subtracted reco
+                unfolder_plotter2.draw_detector_1d(do_reco_data_bg_sub=not MC_INPUT,
+                                                   do_reco_bg=True,
+                                                   do_reco_mc_bg_sub=True,
+                                                   output_dir=plot_args2['output_dir'],
+                                                   append='bg_fakes_subtracted_%s' % append,
+                                                   title=title)
 
-            # reco using gen binning
-            unfolder_plotter2.draw_generator_1d(do_reco_data=not MC_INPUT,
-                                                do_reco_data_bg_sub=False,
-                                                do_reco_bg=False,
-                                                do_reco_mc=True,
-                                                do_reco_mc_bg_sub=False,
-                                                do_truth_mc=True,
-                                                title=title,
-                                                **plot_args2)
+                # same but with generator-binning
+                unfolder_plotter2.draw_generator_1d(do_reco_data=False,
+                                                    do_reco_data_bg_sub=not MC_INPUT,
+                                                    do_reco_bg=True,
+                                                    do_reco_mc=False,
+                                                    do_reco_mc_bg_sub=True,
+                                                    do_truth_mc=True,
+                                                    output_dir=plot_args2['output_dir'],
+                                                    append='bg_fakes_subtracted_%s' % append,
+                                                    title=title)
+                print("unfolder_plotter2 done")
 
-            # same plot but with bg-subtracted reco
-            unfolder_plotter2.draw_detector_1d(do_reco_data_bg_sub=not MC_INPUT,
-                                               do_reco_bg=True,
-                                               do_reco_mc_bg_sub=True,
-                                               output_dir=plot_args2['output_dir'],
-                                               append='bg_fakes_subtracted_%s' % append,
-                                               title=title)
+                title = "Response matrix, %s, %s region, %s" % (jet_algo, region['label'], angle_str)
+                unfolder_plotter2.draw_response_matrix(title=title, **plot_args2)
 
-            # same but with generator-binning
-            unfolder_plotter2.draw_generator_1d(do_reco_data=False,
-                                                do_reco_data_bg_sub=not MC_INPUT,
-                                                do_reco_bg=True,
-                                                do_reco_mc=False,
-                                                do_reco_mc_bg_sub=True,
-                                                do_truth_mc=True,
-                                                output_dir=plot_args2['output_dir'],
-                                                append='bg_fakes_subtracted_%s' % append,
-                                                title=title)
-            print("unfolder_plotter2 done")
+                title = "Response matrix normed by detector p_{T} bin, %s, %s region, %s" % (jet_algo, region['label'], angle_str)
+                # unfolder_plotter2.draw_response_matrix_normed_by_detector_pt(title=title, **plot_args2)
 
-            title = "Response matrix, %s, %s region, %s" % (jet_algo, region['label'], angle_str)
-            unfolder_plotter2.draw_response_matrix(title=title, **plot_args2)
+                title = ("#splitline{Probability matrix, %s, %s region, %s}{Condition number: #sigma_{max} / #sigma_{min} = %.3g / %.3g = %g}"
+                         % (jet_algo, region['label'], angle_str, unfolder.sigma_max, unfolder.sigma_min, unfolder.condition_number))
+                unfolder_plotter2.draw_probability_matrix(title=title, **plot_args2)
 
-            title = "Response matrix normed by detector p_{T} bin, %s, %s region, %s" % (jet_algo, region['label'], angle_str)
-            # unfolder_plotter2.draw_response_matrix_normed_by_detector_pt(title=title, **plot_args2)
+                unfolder_merged.setup_normalised_results_per_pt_bin()
+                unfolder_merged.setup_absolute_results_per_pt_bin()
+                region['unfolder'] = unfolder_merged
+                setup2 = Setup(jet_algo=jet_algo,
+                               region=region,
+                               angle=angle,
+                               output_dir=plot_args2['output_dir'],
+                               has_data=not MC_INPUT)
+                hbc2 = do_binned_plots_per_region_angle(setup2,
+                                                        do_binned_gen_pt=True,
+                                                        do_binned_gen_lambda=False,
+                                                        do_binned_reco_pt=True)
 
-            title = ("#splitline{Probability matrix, %s, %s region, %s}{Condition number: #sigma_{max} / #sigma_{min} = %.3g / %.3g = %g}"
-                     % (jet_algo, region['label'], angle_str, unfolder.sigma_max, unfolder.sigma_min, unfolder.condition_number))
-            unfolder_plotter2.draw_probability_matrix(title=title, **plot_args2)
+                region['unfolder'] = unfolder
 
-            unfolder_merged.setup_normalised_results_per_pt_bin()
-            unfolder_merged.setup_absolute_results_per_pt_bin()
-            region['unfolder'] = unfolder_merged
-            setup2 = Setup(jet_algo=jet_algo,
-                           region=region,
-                           angle=angle,
-                           output_dir=plot_args2['output_dir'],
-                           has_data=not MC_INPUT)
-            hbc2 = do_binned_plots_per_region_angle(setup2,
-                                                    do_binned_gen_pt=True,
-                                                    do_binned_gen_lambda=False,
-                                                    do_binned_reco_pt=True)
 
-            region['unfolder'] = unfolder
-
-            # exit()
             prof_end_nominal()
 
             # ------------------------------------------------------------------

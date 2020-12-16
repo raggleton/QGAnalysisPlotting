@@ -71,6 +71,13 @@ def get_unfolding_argparser(description='', parser=None):
                         type=float,
                         help="Remove any input & response bins with relative error greater than value specified. -1 to ignore it.")
 
+    parser.add_argument("--mergeBins",
+                        type=lambda x: bool(distutils.util.strtobool(x)),
+                        default=False,
+                        help=('Merge -ve output bins, decided using unfolded output.'
+                               + standard_bool_description))
+
+
     # SIGNAL REGION OPTIONS
     # --------------------------------------------------------------------------
     region_group = parser.add_argument_group('Region selection')
@@ -384,6 +391,9 @@ def get_unfolding_output_dir(args):
 
     if args.relErr > 0:
         append += "_maxRelErr%s" % str(args.relErr).replace(".", "p")
+
+    if args.mergeBins:
+        append += "_mergeBins"
 
     reg_axis_str = ""
     bias_str = ""
