@@ -272,17 +272,36 @@ def find_disconnected_input_bins(response_map):
     return disconnected_bins
 
 
-def merge_th1_bins(h, bin_list):
-    """Merges each bin in bin_list with its leftwards neighbour"""
+def merge_th1_bins(h, bin_list, new_bin_edges=None):
+    """Merges each bin in bin_list with its leftwards neighbour. Can specify new bin edges.
+
+    Parameters
+    ----------
+    h : ROOT.TH1
+        Histogram to rebin
+    bin_list : list[int]
+        List of bin indices (1-index, since it's ROOT)
+    new_bin_edges : None, optional
+        New bin edges for returned TH1D.
+        If None, uses bin edges from original hist, just deleting those that
+        are in bin_list.
+
+    Returns
+    -------
+    ROOT.TH1D
+    """
+    if not bin_list or len(bin_list) == 0:
+        return h
     bin_edges_orig = cu.get_bin_edges(h, 'x')
     # print("orig", bin_edges_orig)
-    bin_edges_new = [x for i, x in enumerate(bin_edges_orig, 1)
-                     if i not in bin_list]
-    # print("new", bin_edges_new)
+    if new_bin_edges is None:
+        new_bin_edges = [x for i, x in enumerate(bin_edges_orig, 1)
+                         if i not in bin_list]
+    # print("new", new_bin_edges)
     h_new = ROOT.TH1D(h.GetName() + cu.get_unique_str(),
                       ";".join([h.GetTitle(), h.GetXaxis().GetTitle(), h.GetYaxis().GetTitle()]),
-                      len(bin_edges_new)-1,
-                      array('d', bin_edges_new))
+                      len(new_bin_edges)-1,
+                      array('d', new_bin_edges))
     for ix in range(1, h.GetNbinsX()+1):
         val = h.GetBinContent(ix)
         err = h.GetBinError(ix)
@@ -294,7 +313,32 @@ def merge_th1_bins(h, bin_list):
     return h_new
 
 
-def merge_th2_bins(h, bin_list_x, bin_list_y):
+def merge_th2_bins(h, bin_list_x, bin_list_y, new_bin_edges_x=None, new_bin_edges_y=None):
+    """Merges each bin in bin_list with its leftwards (index-1) neighbour. Can specify new bin edges.
+
+    Parameters
+    ----------
+    h : ROOT.TH2D
+        Histogram to rebin
+    bin_list_x : list[int]
+        List of bin indices (1-index, since it's ROOT).
+        If empty or None, no rebinning of this axis.
+    bin_list_y : list[int]
+        List of bin indices (1-index, since it's ROOT).
+        If empty or None, no rebinning of this axis.
+    new_bin_edges_x : None, optional
+        New x bin edges for returned TH2D.
+        If None, uses bin edges from original hist, just deleting those that
+        are in bin_list.
+    new_bin_edges_y : None, optional
+        New y bin edges for returned TH2D.
+        If None, uses bin edges from original hist, just deleting those that
+        are in bin_list.
+
+    Returns
+    -------
+    ROOT.TH2D
+    """
     if not bin_list_x or len(bin_list_x) == 0:
         h_new = h
     else:
@@ -302,13 +346,15 @@ def merge_th2_bins(h, bin_list_x, bin_list_y):
         bin_edges_x_orig = cu.get_bin_edges(h, 'x')
         bin_edges_y_orig = cu.get_bin_edges(h, 'y')
         print("origx", bin_edges_x_orig)
-        bin_edges_x_new = [x for i, x in enumerate(bin_edges_x_orig, 1)
-                          if i not in bin_list_x]
-        print("newx", bin_edges_x_new)
+        print("bin_list_x", bin_list_x)
+        if new_bin_edges_x is None:
+            new_bin_edges_x = [x for i, x in enumerate(bin_edges_x_orig, 1)
+                               if i not in bin_list_x]
+        print("newx", new_bin_edges_x)
         h_new = ROOT.TH2D(h.GetName() + cu.get_unique_str(),
                           ";".join([h.GetTitle(), h.GetXaxis().GetTitle(), h.GetYaxis().GetTitle()]),
-                          len(bin_edges_x_new)-1,
-                          array('d', bin_edges_x_new),
+                          len(new_bin_edges_x)-1,
+                          array('d', new_bin_edges_x),
                           len(bin_edges_y_orig)-1,
                           array('d', bin_edges_y_orig))
 
@@ -325,19 +371,20 @@ def merge_th2_bins(h, bin_list_x, bin_list_y):
         return h_new
 
     # now do y bin merging
-    bin_edges_x_new = cu.get_bin_edges(h_new, 'x')
-    print("origx", bin_edges_x_new)
+    bin_edges_x_orig = cu.get_bin_edges(h_new, 'x')
+    # print("origx", bin_edges_x_orig)
     bin_edges_y_orig = cu.get_bin_edges(h, 'y')
-    print("origy", bin_edges_y_orig)
-    bin_edges_y_new = [y for i, y in enumerate(bin_edges_y_orig, 1)
-                       if i not in bin_list_y]
-    print("newy", bin_edges_y_new)
+    # print("origy", bin_edges_y_orig)
+    if new_bin_edges_y is None:
+        new_bin_edges_y = [y for i, y in enumerate(bin_edges_y_orig, 1)
+                           if i not in bin_list_y]
+    # print("newy", new_bin_edges_y)
     h_new2 = ROOT.TH2D(h.GetName() + cu.get_unique_str(),
-                      ";".join([h.GetTitle(), h.GetXaxis().GetTitle(), h.GetYaxis().GetTitle()]),
-                      len(bin_edges_x_new)-1,
-                      array('d', bin_edges_x_new),
-                      len(bin_edges_y_new)-1,
-                      array('d', bin_edges_y_new))
+                       ";".join([h.GetTitle(), h.GetXaxis().GetTitle(), h.GetYaxis().GetTitle()]),
+                       len(bin_edges_x_orig)-1,
+                       array('d', bin_edges_x_orig),
+                       len(new_bin_edges_y)-1,
+                       array('d', new_bin_edges_y))
 
     for ix in range(1, h_new.GetNbinsX()+1):
         for iy in range(1, h_new.GetNbinsY()+1):
