@@ -119,7 +119,7 @@ class Contribution(object):
             Color of fill.
         fill_style : int
             Fill style.
-        marker_size : int
+        marker_size : float
             Size of marker
         marker_color : int or ROOT color
             Color of markers.

@@ -30,6 +30,21 @@ class CustomFormatter(argparse.ArgumentDefaultsHelpFormatter, argparse.RawDescri
     """Make argparse respect space formatting (newlines, etc) AND show defaults"""
     pass
 
+# colours for printed text
+# print(bcolors.WARNING + "Warning: No active frommets remain. Continue?" + bcolors.ENDC)
+class pcolors:
+    HEADER = '\033[95m'
+    OKBLUE = '\033[94m'
+    OKCYAN = '\033[96m'
+    OKGREEN = '\033[92m'
+    YELLOW = '\033[93m'
+    WARNING = YELLOW
+    RED = '\033[91m'
+    FAIL = RED
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
+
 
 def open_pdf(pdf_filename):
     """Open a PDF file using system's default PDF viewer."""
@@ -624,6 +639,8 @@ def th1_to_ndarray(hist_A, oflow_x=False):
     ncol = hist_A.GetNbinsX()
     if oflow_x:
         ncol += 2
+    
+    # makes column vectors
     contents = np.zeros(shape=(1, ncol), dtype=np.float64)
     errors = np.zeros(shape=(1, ncol), dtype=np.float64)
 
