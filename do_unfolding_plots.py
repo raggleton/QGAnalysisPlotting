@@ -3523,8 +3523,9 @@ def do_binned_plots_per_region_angle(setup, do_binned_gen_pt, do_binned_gen_lamb
         # Iterate through pt bins - gen binning
         # ------------------------------------------------------------------
         print("Doing GenPtBinnedPlotter...")
+        pt_bins = unfolder.binning_handler.get_pt_bins(binning_scheme='generator', is_signal_region=True)
         gen_pt_binned_plotter = GenPtBinnedPlotter(setup=setup,
-                                                   bins=unfolder.pt_bin_edges_gen,
+                                                   bins=pt_bins,
                                                    hist_bin_chopper=hbc,
                                                    unfolder=unfolder)
         if alt_hist_truth:
@@ -3584,7 +3585,7 @@ def do_binned_plots_per_region_angle(setup, do_binned_gen_pt, do_binned_gen_lamb
                     this_setup.output_dir = os.path.join(setup.output_dir, "modelSyst_"+cu.no_space_str(syst_dict['label']))
                     this_setup.region['mc_label'] = syst_dict['label']  # since that's the thing being unfolded
                     syst_gen_pt_binned_plotter = GenPtBinnedPlotter(setup=this_setup,
-                                                                    bins=unfolder.pt_bin_edges_gen,
+                                                                    bins=pt_bins,
                                                                     hist_bin_chopper=syst_dict['unfolder'].hist_bin_chopper,
                                                                     unfolder=syst_dict['unfolder'])
                     syst_gen_pt_binned_plotter.plot_unfolded_unnormalised()
@@ -3623,7 +3624,7 @@ def do_binned_plots_per_region_angle(setup, do_binned_gen_pt, do_binned_gen_lamb
                     this_setup = copy(setup)
                     this_setup.output_dir = os.path.join(setup.output_dir, "jackknife_input", jk_dict['label'])
                     jk_gen_pt_binned_plotter = GenPtBinnedPlotter(setup=this_setup,
-                                                                  bins=unfolder.pt_bin_edges_gen,
+                                                                  bins=pt_bins,
                                                                   hist_bin_chopper=jk_dict['unfolder'].hist_bin_chopper,
                                                                   unfolder=jk_dict['unfolder'])
                     jk_gen_pt_binned_plotter.plot_unfolded_unnormalised()
@@ -3644,7 +3645,7 @@ def do_binned_plots_per_region_angle(setup, do_binned_gen_pt, do_binned_gen_lamb
                     this_setup = copy(setup)
                     this_setup.output_dir = os.path.join(setup.output_dir, "jackknife_response", jk_dict['label'])
                     jk_gen_pt_binned_plotter = GenPtBinnedPlotter(setup=this_setup,
-                                                                  bins=unfolder.pt_bin_edges_gen,
+                                                                  bins=pt_bins,
                                                                   hist_bin_chopper=jk_dict['unfolder'].hist_bin_chopper,
                                                                   unfolder=jk_dict['unfolder'])
                     jk_gen_pt_binned_plotter.plot_unfolded_unnormalised()
@@ -3659,6 +3660,7 @@ def do_binned_plots_per_region_angle(setup, do_binned_gen_pt, do_binned_gen_lamb
         # if has_pdf_systs:
         #     unfolder.create_pdf_syst_uncertainty_per_pt_bin(region['pdf_systematics'])
         # unfolder.setup_absolute_results_per_pt_bin()
+
         # gen_pt_binned_plotter.plot_syst_fraction_unnormalised()
 
         # # if has_data:
@@ -3788,8 +3790,9 @@ def do_binned_plots_per_region_angle(setup, do_binned_gen_pt, do_binned_gen_lamb
         hbc.add_obj("input_hist", unfolder.input_hist)
         hbc.add_obj("folded_unfolded", unfolder.folded_unfolded)
         hbc.add_obj("folded_mc_truth", unfolder.folded_mc_truth)
+        pt_bins = unfolder.binning_handler.get_pt_bins(binning_scheme='detector', is_signal_region=True)
         reco_pt_binned_plotter = RecoPtBinnedPlotter(setup=setup,
-                                                     bins=unfolder.pt_bin_edges_reco,
+                                                     bins=pt_bins,
                                                      hist_bin_chopper=hbc,
                                                      unfolder=unfolder)
         reco_pt_binned_plotter.plot_detector_normalised(alt_detector=alt_hist_reco)
