@@ -3048,7 +3048,14 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             unfolded_hist_bin_rsp_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded_rsp_err', **hbc_args)
 
             unfolded_hist_bin_abs = self.hist_bin_chopper.get_pt_bin_div_bin_width('unfolded_stat_err', **hbc_args)
-            norm = unfolded_hist_bin_abs.Integral("width") / unfolded_hist_bin_stat_errors.Integral("width")
+
+            norm = 1
+            if unfolded_hist_bin_abs.Integral("width") == 0:
+                warnings.warn("setup_normalised_results_per_pt_bin: unfolded_hist_bin_abs.Integral = 0 in bin {0} for pt {1}".format(ibin_pt, pt))
+            if unfolded_hist_bin_stat_errors.Integral("width") == 0:
+                warnings.warn("setup_normalised_results_per_pt_bin: unfolded_hist_bin_stat_errors.Integral = 0 in bin {0} for pt {1}".format(ibin_pt, pt))
+            else:
+                norm = unfolded_hist_bin_abs.Integral("width") / unfolded_hist_bin_stat_errors.Integral("width")
 
             # create stat & rsp err covariance matrices for this pt bin,
             # if they haven't been calculated by jackknife methods,
