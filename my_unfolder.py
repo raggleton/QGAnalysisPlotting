@@ -942,6 +942,139 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             else:
                 warnings.warn("%d unconstrained truth bins - cannot unfold" % n_error_2)
 
+    def check_input(self, hist_y=None, raise_error=False):
+        """Check the input for unconstrained output bins. Returns unconstrained output gen bins,
+        along with their dependent reco bins
+
+        Uses A^t * V_yy. Look for bins where the output bin is 0,
+        because the sum(response_i * V_i) has 0s, and look for entries
+        where response_i != 0 but V_i = 0
+
+        Copied from TUnfold::SetInput(), but tidied up a bit
+
+        Parameters
+        ----------
+        hist_y : TH1D, optional
+            Hist to check, otherwise uses input Vyy from set_input()
+        raise_error : bool, optional
+            Raise Error if fails check (i.e. unconstrained output bins).
+            Otherwise prints warning
+
+        Returns
+        -------
+        list[int, list[int]]
+            List of unconstrained [gen bins, [dependent reco bins]]
+
+        Raises
+        ------
+        RuntimeError
+            If hist_y is None, and set_input() wasn't already called
+        ValueError
+            If raise_error=True and we have unconstrained bins
+        """
+        if hist_y is None and self.GetVyy() is None:
+            raise RuntimeError("hist_y and fVyy are empty, either specify hist_y or call SetInput() first")
+
+        rowVyy1 = ROOT.std.vector('int')(self.GetNy())
+        colVyy1 = ROOT.std.vector('int')(self.GetNy())
+        dataVyy1 = ROOT.std.vector('double')(self.GetNy())
+        dataVyyDiag = ROOT.std.vector('double')(self.GetNy())
+
+        nVarianceZero = 0
+        nVyy1 = 0
+
+        for iy in range(self.GetNy()):
+            # diagonals
+            if hist_y is not None:
+                dy = hist_y.GetBinError(iy + 1)
+            else:
+                dy = self.GetVyy()(iy, iy)
+            dy2 = dy*dy
+            if dy2 <= 0.0:
+                nVarianceZero += 1
+
+            rowVyy1[nVyy1] = iy
+            colVyy1[nVyy1] = 0
+            dataVyyDiag[iy] = dy2
+            if dy2 > 0.0:
+                dataVyy1[nVyy1] = dy2
+                nVyy1 += 1
+
+        vecV = self.CreateSparseMatrix(self.GetNy(), 1, nVyy1, rowVyy1, colVyy1, dataVyy1)
+
+        # mAtV is a nx1 matrix
+        mAtV = self.MultiplyMSparseTranspMSparse(self.GetA(), vecV)
+
+        nError2 = 0
+        for i in range(mAtV.GetNrows()):
+            if mAtV.GetRowIndexArray()[i] == mAtV.GetRowIndexArray()[i + 1]:
+                nError2 += 1
+
+        ignored_input_bins = []
+        if nError2 > 0:
+            # check whether data points with zero error are responsible
+            # a_rows[i] has the start index (in a_cols, a_data)
+            # for row i, a_rows[i+1] is the end index + 1
+            # a_cols[a_rows[i]]...a_cols[a_rows[i+1]-1]
+            # is the set of column indices that have !=0 data
+            # a_data[a_rows[i]]...a_data[a_rows[i+1]-1]
+            # is the set of corresponding data
+            fA = self.GetA()
+            aT = ROOT.TMatrixDSparse(fA.GetNcols(), fA.GetNrows())
+            aT.Transpose(fA)
+
+            a_rows = aT.GetRowIndexArray()
+            a_cols = aT.GetColIndexArray()
+            a_data = aT.GetMatrixArray()
+
+            # for each row in the resultant mAtV, look for 0 entries.
+            # for each of those, look at all the A^T and dataVyyDiag pairs
+            # (i.e. iterate over columns) and see which are 0
+            for row in range(mAtV.GetNrows()):
+                # printout every row's sum entries
+                # printf("++++ ROW %d\n", row)
+                # const sIndex = a_rows[row]
+                # const eIndex = a_rows[row+1]
+                # for (i=sIndex i<eIndex i++) {
+                #     col = a_cols[i]
+                #     cout << "dataVyyDiag[" << col << "]: " << dataVyyDiag[col] << endl
+                #     printf("a^T(%d,%d) = %.4e\n", row, col, a_data[i])
+                # }
+
+                if mAtV.GetRowIndexArray()[row] == mAtV.GetRowIndexArray()[row + 1]:
+                    binlist = ROOT.TString("no data to constrain output bin ")
+                    binlist += self.GetOutputBinName(self.GetBinFromRow(row))
+                    binlist += " depends on ignored input bins "
+                    this_ignored_bin = [self.GetBinFromRow(row), []]
+
+                    # Find all dependent entries
+                    sIndex = a_rows[row]
+                    eIndex = a_rows[row+1]
+                    for i in range(sIndex, eIndex):
+                        col = a_cols[i]
+                        if dataVyyDiag[col] > 0.:
+                            continue
+                        if a_data[i] == 0:
+                            continue
+                        # cout << "dataVyyDiag[" << col << "]: " << dataVyyDiag[col] << endl
+                        # printf("a^T(%d,%d) = %.4e\n", row, col, a_data[i])
+                        binlist += " "
+                        binlist += str(col+1) # +1 for ROOT binning
+                        this_ignored_bin[1].append(col+1)
+
+                    ignored_input_bins.append(this_ignored_bin)
+                    warnings.warn("check_input: %s" % binlist)
+
+            msg = "check_input: One output bins is not constrained by any data."
+            if nError2 > 1:
+                msg = "check_input: %d/%d output bins are not constrained by any data." % (nError2, mAtV.GetNrows())
+            if raise_error:
+                raise ValueError(msg)
+            else:
+                warnings.warn(msg)
+
+        return ignored_input_bins
+
     def subtract_background(self, hist, name, scale=1.0, scale_err=0.0):
         """Subtract background source from input hist"""
         # Save into dict of components - needed? since TUnfoldDensity does this as well
