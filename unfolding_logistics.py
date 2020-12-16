@@ -77,6 +77,12 @@ def get_unfolding_argparser(description='', parser=None):
                         help=('Merge -ve output bins, decided using unfolded output.'
                                + standard_bool_description))
 
+    parser.add_argument("--zeroLastPtBin",
+                        type=lambda x: bool(distutils.util.strtobool(x)),
+                        default=False,
+                        help=('Set contents of last pt reco bin to 0.'
+                               + standard_bool_description))
+
 
     # SIGNAL REGION OPTIONS
     # --------------------------------------------------------------------------
@@ -394,6 +400,9 @@ def get_unfolding_output_dir(args):
 
     if args.mergeBins:
         append += "_mergeBins"
+
+    if args.zeroLastPtBin:
+        append += "_zeroLastPtBin"
 
     reg_axis_str = ""
     bias_str = ""
