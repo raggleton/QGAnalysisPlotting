@@ -741,64 +741,8 @@ def main():
             angle_bin_edges_gen = LAMBDA_VAR_DICTS[groom_str][angle.var]['gen']
             angle_shortname = angle.var.replace("jet_", "")
 
-            mc_hname_append = "split" if MC_SPLIT else "all"
-            hist_mc_reco = cu.get_from_tfile(region['mc_tfile'], "%s/hist_%s_reco_%s" % (region['dirname'], angle_shortname, mc_hname_append))
-            hist_mc_gen = cu.get_from_tfile(region['mc_tfile'], "%s/hist_%s_truth_%s" % (region['dirname'], angle_shortname, mc_hname_append))
-            # _all versions used in TruthTemplateMaker, since we always want the full stats
-            hist_mc_reco_all = cu.get_from_tfile(region['mc_tfile'], "%s/hist_%s_reco_all" % (region['dirname'], angle_shortname))
-            hist_mc_gen_all = cu.get_from_tfile(region['mc_tfile'], "%s/hist_%s_truth_all" % (region['dirname'], angle_shortname))
-            hist_mc_gen_reco_map = cu.get_from_tfile(region['mc_tfile'], "%s/tu_%s_GenReco_%s" % (region['dirname'], angle_shortname, mc_hname_append))
-
-            hist_data_reco = None
-            if not MC_INPUT:
-                if not isinstance(region['data_tfile'], ROOT.TFile):
-                    region['data_tfile'] = cu.open_root_file(region['data_tfile'])
-                hist_data_reco = cu.get_from_tfile(region['data_tfile'], "%s/hist_%s_reco_all" % (region['dirname'], angle_shortname))
-
-            # Actual distribution to be unfolded
-            reco_1d = hist_mc_reco.Clone() if MC_INPUT else hist_data_reco
-            reco_1d = rm_large_rel_error_bins_th1(reco_1d, relative_err_threshold=args.relErr)
-
-            # to construct our "fakes" template, we use the ratio as predicted by MC, and apply it to data
-            # this way we ensure we don't have -ve values, and avoid any issue with cross sections
-            hist_mc_fakes_reco = cu.get_from_tfile(region['mc_tfile'], "%s/hist_%s_reco_fake_all" % (region['dirname'], angle_shortname))
-            hist_fake_fraction = hist_mc_fakes_reco.Clone("hist_%s_fakes_reco_fraction" % angle_shortname)
-            hist_fake_fraction.Divide(hist_mc_reco_all)
-
-            hist_mc_reco_bg_subtracted, hist_fakes_reco = subtract_background(hist_mc_reco, hist_fake_fraction)
-            hist_mc_reco_all_bg_subtracted, hist_fakes_reco_all = subtract_background(hist_mc_reco_all, hist_fake_fraction)
-
-            # Gen binning versions
-            # -------
-            mc_hname_append = "_split" if MC_SPLIT else ""  # FIXME consistency in unfold hist module!
-            hist_data_reco_gen_binning = None
-            if not MC_INPUT:
-                hist_data_reco_gen_binning = cu.get_from_tfile(region['data_tfile'], "%s/hist_%s_reco_gen_binning" % (region['dirname'], angle_shortname))
-            hist_mc_reco_gen_binning = cu.get_from_tfile(region['mc_tfile'], "%s/hist_%s_reco_gen_binning%s" % (region['dirname'], angle_shortname, mc_hname_append))
-            hist_mc_reco_gen_binning_all = cu.get_from_tfile(region['mc_tfile'], "%s/hist_%s_reco_gen_binning" % (region['dirname'], angle_shortname))
-
-            # Actual distribution to be unfolded, but with gen binning
-            reco_1d_gen_binning = hist_mc_reco_gen_binning.Clone() if MC_INPUT else hist_data_reco_gen_binning
-
-            hist_fake_fraction_gen_binning = None
-            # create template as above, but with gen binning
-            hist_mc_fakes_reco_gen_binning = cu.get_from_tfile(region['mc_tfile'], "%s/hist_%s_reco_fake_gen_binning" % (region['dirname'], angle_shortname))
-            hist_fake_fraction_gen_binning = hist_mc_fakes_reco_gen_binning.Clone("hist_%s_fakes_fraction_gen_binning" % angle_shortname)
-            hist_fake_fraction_gen_binning.Divide(hist_mc_reco_gen_binning_all)
-
-            hist_mc_reco_gen_binning_bg_subtracted, hist_fakes_reco_gen_binning = subtract_background(hist_mc_reco_gen_binning, hist_fake_fraction_gen_binning)
-            hist_mc_reco_gen_binning_all_bg_subtracted, hist_fakes_reco_all_gen_binning = subtract_background(hist_mc_reco_gen_binning_all, hist_fake_fraction_gen_binning)
-
-            # Setup unfolder object
-            # ---------------------
-            variable_name = "%s%s" % (angle_prepend, angle.name)
-            axis_steering = '*[B]'
-            # axis_steering = '*[]'
-            if args.regularizeAxis == 'pt':
-                axis_steering = 'pt[B];%s[N]' % variable_name
-            elif args.regularizeAxis == 'angle':
-                axis_steering = 'pt[N];%s[B]' % variable_name
-
+            # Setup binning scheme
+            # ------------------------------------------------------------------
             print('reco lambda binning', angle_bin_edges_reco)
             print('gen lambda binning', angle_bin_edges_gen)
             print('reco pt binning', pt_bin_edges_reco)
@@ -806,6 +750,7 @@ def main():
             print('reco uflow pt binning', pt_bin_edges_underflow_reco)
             print('gen uflow pt binning', pt_bin_edges_underflow_gen)
 
+            variable_name = "%s%s" % (angle_prepend, angle.name)
             var_uf = False
             var_of = True
             pt_uf = False
@@ -836,6 +781,64 @@ def main():
 
             binning_handler = BinningHandler(generator_ptvar_binning=generator_binning,
                                              detector_ptvar_binning=detector_binning)
+
+            mc_hname_append = "split" if MC_SPLIT else "all"
+            hist_mc_reco = cu.get_from_tfile(region['mc_tfile'], "%s/hist_%s_reco_%s" % (region['dirname'], angle_shortname, mc_hname_append))
+            hist_mc_gen = cu.get_from_tfile(region['mc_tfile'], "%s/hist_%s_truth_%s" % (region['dirname'], angle_shortname, mc_hname_append))
+            # _all versions used in TruthTemplateMaker, since we always want the full stats
+            hist_mc_reco_all = cu.get_from_tfile(region['mc_tfile'], "%s/hist_%s_reco_all" % (region['dirname'], angle_shortname))
+            hist_mc_gen_all = cu.get_from_tfile(region['mc_tfile'], "%s/hist_%s_truth_all" % (region['dirname'], angle_shortname))
+            hist_mc_gen_reco_map = cu.get_from_tfile(region['mc_tfile'], "%s/tu_%s_GenReco_%s" % (region['dirname'], angle_shortname, mc_hname_append))
+
+            hist_data_reco = None
+            if not MC_INPUT:
+                if not isinstance(region['data_tfile'], ROOT.TFile):
+                    region['data_tfile'] = cu.open_root_file(region['data_tfile'])
+                hist_data_reco = cu.get_from_tfile(region['data_tfile'], "%s/hist_%s_reco_all" % (region['dirname'], angle_shortname))
+
+            # Actual distribution to be unfolded
+            reco_1d = hist_mc_reco.Clone() if MC_INPUT else hist_data_reco
+            reco_1d = rm_large_rel_error_bins_th1(reco_1d, relative_err_threshold=args.relErr)
+
+            # to construct our "fakes" template, we use the ratio as predicted by MC, and apply it to data
+            # this way we ensure we don't have -ve values, and avoid any issue with cross sections
+            hist_mc_fakes_reco = cu.get_from_tfile(region['mc_tfile'], "%s/hist_%s_reco_fake_all" % (region['dirname'], angle_shortname))
+            hist_fake_fraction = hist_mc_fakes_reco.Clone("hist_%s_fakes_reco_fraction" % angle_shortname)
+            hist_fake_fraction.Divide(hist_mc_reco_all)
+
+            hist_mc_reco_bg_subtracted, hist_fakes_reco = subtract_background(hist_mc_reco, hist_fake_fraction)
+            hist_mc_reco_all_bg_subtracted, hist_fakes_reco_all = subtract_background(hist_mc_reco_all, hist_fake_fraction)
+
+            # Gen binning versions
+            # --------------------
+            mc_hname_append = "_split" if MC_SPLIT else ""  # FIXME consistency in unfold hist module!
+            hist_data_reco_gen_binning = None
+            if not MC_INPUT:
+                hist_data_reco_gen_binning = cu.get_from_tfile(region['data_tfile'], "%s/hist_%s_reco_gen_binning" % (region['dirname'], angle_shortname))
+            hist_mc_reco_gen_binning = cu.get_from_tfile(region['mc_tfile'], "%s/hist_%s_reco_gen_binning%s" % (region['dirname'], angle_shortname, mc_hname_append))
+            hist_mc_reco_gen_binning_all = cu.get_from_tfile(region['mc_tfile'], "%s/hist_%s_reco_gen_binning" % (region['dirname'], angle_shortname))
+
+            # Actual distribution to be unfolded, but with gen binning
+            reco_1d_gen_binning = hist_mc_reco_gen_binning.Clone() if MC_INPUT else hist_data_reco_gen_binning
+
+            hist_fake_fraction_gen_binning = None
+            # create template as above, but with gen binning
+            hist_mc_fakes_reco_gen_binning = cu.get_from_tfile(region['mc_tfile'], "%s/hist_%s_reco_fake_gen_binning" % (region['dirname'], angle_shortname))
+            hist_fake_fraction_gen_binning = hist_mc_fakes_reco_gen_binning.Clone("hist_%s_fakes_fraction_gen_binning" % angle_shortname)
+            hist_fake_fraction_gen_binning.Divide(hist_mc_reco_gen_binning_all)
+
+            hist_mc_reco_gen_binning_bg_subtracted, hist_fakes_reco_gen_binning = subtract_background(hist_mc_reco_gen_binning, hist_fake_fraction_gen_binning)
+            hist_mc_reco_gen_binning_all_bg_subtracted, hist_fakes_reco_all_gen_binning = subtract_background(hist_mc_reco_gen_binning_all, hist_fake_fraction_gen_binning)
+
+            # Setup unfolder object
+            # ---------------------
+            axis_steering = '*[B]'
+            # axis_steering = '*[]'
+            if args.regularizeAxis == 'pt':
+                axis_steering = 'pt[B];%s[N]' % variable_name
+            elif args.regularizeAxis == 'angle':
+                axis_steering = 'pt[N];%s[B]' % variable_name
+
 
             # disconnected_output_bins = find_disconnected_output_bins(hist_mc_gen_reco_map)
             # print("disconnected", disconnected_output_bins)
