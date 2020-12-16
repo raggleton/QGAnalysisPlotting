@@ -433,31 +433,45 @@ def get_bins_to_merge_nonnegative(h, binning_scheme, max_bin=-1):
     if max_bin < 0:
         max_bin = h.GetNbinsX()
     contents = np.array([h.GetBinContent(i) for i in range(1, max_bin+1)])
-    for ix, x in enumerate(contents, 1):
+
+    def _is_boundary_bin(bin_num):
+        pt_current = binning_scheme.global_bin_to_physical_bin(bin_num).pt[0]
+        pt_next = binning_scheme.global_bin_to_physical_bin(bin_num-1).pt[0]
+        return pt_next != pt_current
+
+    for bin_num, x in enumerate(contents, 1):
         this_merge_set = []
         if x < 0:
             negative_bin_value = x
-            negative_bin_error = h.GetBinError(ix)
-            print("Found -ve bin", ix, "=", negative_bin_value, "±", negative_bin_error)
-            this_merge_set.append(ix)
-            summed_bins = negative_bin_value
-            iter_ind = 1
+            negative_bin_error = h.GetBinError(bin_num)
+            print("Found -ve bin", bin_num, binning_scheme.global_bin_to_physical_bin(bin_num), "=", negative_bin_value, "±", negative_bin_error)
 
-            def _good_bin_sum(summed_bins_values):
-                return summed_bins_values >= 0
+            if _is_boundary_bin(bin_num):
+                pt_current = binning_scheme.global_bin_to_physical_bin(bin_num).pt[0]
+                pt_next = binning_scheme.global_bin_to_physical_bin(bin_num-1).pt[0]
+                warnings.warn("Cannot merge bin {0} across pT boundary {1} -> {2}, skipping".format(bin_num, pt_current, pt_next))
+                continue
+
+            this_merge_set.append(bin_num)
+            summed_bins = negative_bin_value
 
             # iterate over lefthand bins, but check you don't cross a pt boundary
-            while not _good_bin_sum(summed_bins):
-                summed_bins += contents[ix-iter_ind-1]
-                print("..new sum", summed_bins)
-                if not _good_bin_sum(summed_bins):
-                    this_merge_set.append(ix-iter_ind)
-                pt_current = binning_scheme.global_bin_to_physical_bin(ix-iter_ind).pt[0]
-                iter_ind += 1
-                pt_next = binning_scheme.global_bin_to_physical_bin(ix-iter_ind).pt[0]
-                if pt_next != pt_current:
-                    warnings.warn("Cannot merge bin {0} across pT boundary {1} -> {2}".format(ix-iter_ind+1, pt_current, pt_next))
+            iter_ind = 1
+            while summed_bins < 0:
+                this_bin = bin_num - iter_ind
+
+                if _is_boundary_bin(this_bin):
+                    pt_current = binning_scheme.global_bin_to_physical_bin(this_bin).pt[0]
+                    pt_next = binning_scheme.global_bin_to_physical_bin(this_bin-1).pt[0]
+                    warnings.warn("Cannot merge bin {0} across pT boundary {1} -> {2}, not including".format(this_bin, pt_current, pt_next))
                     break
+
+                summed_bins += contents[this_bin-1]  # -1 as numpy array
+                print("..new sum", summed_bins)
+                if summed_bins < 0:
+                    this_merge_set.append(this_bin)
+
+                iter_ind += 1
 
             this_merge_set = this_merge_set[::-1]  # reverse order so ascending
             print("Found set that sums > 0:", this_merge_set, "=", summed_bins)
