@@ -554,48 +554,8 @@ def main():
 
     # Configure Dijet regions
     if any([args.doDijetCentral, args.doDijetForward, args.doDijetCentralGroomed, args.doDijetForwardGroomed]):
-        # actually these are all pretty similar...
-        tau_limits_central = {
+        tau_limits = {
             'jet_puppiMultiplicity': (1E-3, 1E2),
-            'jet_pTD': (1E-1, 1E3),
-            'jet_LHA': (1E-1, 1E3),
-            'jet_width': (1E-1, 1E3),
-            'jet_thrust': (1E-1, 1E3),
-            'jet_puppiMultiplicity_charged': (1E-1, 1E3),
-            'jet_pTD_charged': (1E-1, 1E3),
-            'jet_LHA_charged': (1E-1, 1E3),
-            'jet_width_charged': (1E-1, 1E3),
-            'jet_thrust_charged': (1E-1, 1E3),
-        }
-
-        tau_limits_central_groomed = {
-            'jet_puppiMultiplicity': (1E-1, 1E3),
-            'jet_pTD': (1E-1, 1E3),
-            'jet_LHA': (1E-1, 1E2),
-            'jet_width': (1E-1, 1E3),
-            'jet_thrust': (1E-1, 1E3),
-            'jet_puppiMultiplicity_charged': (1E-1, 1E3),
-            'jet_pTD_charged': (1E-1, 1E3),
-            'jet_LHA_charged': (1E-1, 1E3),
-            'jet_width_charged': (1E-1, 1E3),
-            'jet_thrust_charged': (1E-1, 1E3),
-        }
-
-        tau_limits_forward = {
-            'jet_puppiMultiplicity': (1E-1, 1E3),
-            'jet_pTD': (1E-1, 1E3),
-            'jet_LHA': (1E-1, 1E3),
-            'jet_width': (1E-1, 1E3),
-            'jet_thrust': (1E-1, 1E3),
-            'jet_puppiMultiplicity_charged': (1E-1, 1E3),
-            'jet_pTD_charged': (1E-1, 1E3),
-            'jet_LHA_charged': (1E-1, 1E3),
-            'jet_width_charged': (1E-1, 1E3),
-            'jet_thrust_charged': (1E-1, 1E3),
-        }
-
-        tau_limits_forward_groomed = {
-            'jet_puppiMultiplicity': (1E-1, 1E3),
             'jet_pTD': (1E-1, 1E3),
             'jet_LHA': (1E-1, 1E3),
             'jet_width': (1E-1, 1E3),
@@ -609,40 +569,27 @@ def main():
 
         if args.doDijetCentral:
             dijet_region_central_dict = get_dijet_config(src_dir, central=True, groomed=False)
-            dijet_region_central_dict['tau_limits'] = tau_limits_central
+            dijet_region_central_dict['tau_limits'] = tau_limits
             regions.append(dijet_region_central_dict)
 
         if args.doDijetForward:
             dijet_region_forward_dict = get_dijet_config(src_dir, central=False, groomed=False)
-            dijet_region_forward_dict['tau_limits'] = tau_limits_forward
+            dijet_region_forward_dict['tau_limits'] = tau_limits
             regions.append(dijet_region_forward_dict)
 
         if args.doDijetCentralGroomed:
             dijet_region_central_groomed_dict = get_dijet_config(src_dir, central=True, groomed=True)
-            dijet_region_central_groomed_dict['tau_limits'] = tau_limits_central_groomed
+            dijet_region_central_groomed_dict['tau_limits'] = tau_limits
             regions.append(dijet_region_central_groomed_dict)
 
         if args.doDijetForwardGroomed:
             dijet_region_forward_groomed_dict = get_dijet_config(src_dir, central=False, groomed=True)
-            dijet_region_forward_groomed_dict['tau_limits'] = tau_limits_forward_groomed
+            dijet_region_forward_groomed_dict['tau_limits'] = tau_limits
             regions.append(dijet_region_forward_groomed_dict)
 
     if any([args.doZPJ, args.doZPJGroomed]):
         # FOR Z+JETS:
         tau_limits = {
-            'jet_puppiMultiplicity': (1E-1, 1E3),
-            'jet_pTD': (1E-1, 1E3),
-            'jet_LHA': (1E-1, 1E3),
-            'jet_width': (1E-1, 1E3),
-            'jet_thrust': (1E-1, 1E3),
-            'jet_puppiMultiplicity_charged': (1E-1, 1E3),
-            'jet_pTD_charged': (1E-1, 1E3),
-            'jet_LHA_charged': (1E-1, 1E3),
-            'jet_width_charged': (1E-1, 1E3),
-            'jet_thrust_charged': (1E-1, 1E3),
-        }
-
-        tau_limits_groomed = {
             'jet_puppiMultiplicity': (1E-1, 1E3),
             'jet_pTD': (1E-1, 1E3),
             'jet_LHA': (1E-1, 1E3),
@@ -662,7 +609,7 @@ def main():
 
         if args.doZPJGroomed:
             zpj_region_groomed_dict = get_zpj_config(src_dir, groomed=True)
-            zpj_region_groomed_dict['tau_limits'] = tau_limits_groomed
+            zpj_region_groomed_dict['tau_limits'] = tau_limits
             regions.append(zpj_region_groomed_dict)
 
     # Setup various options
