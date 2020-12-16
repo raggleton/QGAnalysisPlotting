@@ -316,7 +316,7 @@ def merge_th1_bins(h, bin_list, new_bin_edges=None):
                       ";".join([h.GetTitle(), h.GetXaxis().GetTitle(), h.GetYaxis().GetTitle()]),
                       len(new_bin_edges)-1,
                       array('d', new_bin_edges))
-    for ix in range(1, h.GetNbinsX()+1):
+    for ix in range(0, h.GetNbinsX()+2):
         val = h.GetBinContent(ix)
         err = h.GetBinError(ix)
         pos = bisect_right(bin_list, ix)
@@ -359,12 +359,12 @@ def merge_th2_bins(h, bin_list_x, bin_list_y, new_bin_edges_x=None, new_bin_edge
         # do x bin merging first
         bin_edges_x_orig = cu.get_bin_edges(h, 'x')
         bin_edges_y_orig = cu.get_bin_edges(h, 'y')
-        print("origx", bin_edges_x_orig)
-        print("bin_list_x", bin_list_x)
+        # print("origx", bin_edges_x_orig)
+        # print("bin_list_x", bin_list_x)
         if new_bin_edges_x is None:
             new_bin_edges_x = [x for i, x in enumerate(bin_edges_x_orig, 1)
                                if i not in bin_list_x]
-        print("newx", new_bin_edges_x)
+        # print("newx", new_bin_edges_x)
         h_new = ROOT.TH2D(h.GetName() + cu.get_unique_str(),
                           ";".join([h.GetTitle(), h.GetXaxis().GetTitle(), h.GetYaxis().GetTitle()]),
                           len(new_bin_edges_x)-1,
@@ -372,8 +372,8 @@ def merge_th2_bins(h, bin_list_x, bin_list_y, new_bin_edges_x=None, new_bin_edge
                           len(bin_edges_y_orig)-1,
                           array('d', bin_edges_y_orig))
 
-        for iy in range(1, h.GetNbinsY()+1):
-            for ix in range(1, h.GetNbinsX()+1):
+        for iy in range(0, h.GetNbinsY()+2):
+            for ix in range(0, h.GetNbinsX()+2):
                 val = h.GetBinContent(ix, iy)
                 err = h.GetBinError(ix, iy)
                 pos = bisect_right(bin_list_x, ix)
@@ -400,8 +400,8 @@ def merge_th2_bins(h, bin_list_x, bin_list_y, new_bin_edges_x=None, new_bin_edge
                        len(new_bin_edges_y)-1,
                        array('d', new_bin_edges_y))
 
-    for ix in range(1, h_new.GetNbinsX()+1):
-        for iy in range(1, h_new.GetNbinsY()+1):
+    for ix in range(0, h_new.GetNbinsX()+2):
+        for iy in range(0, h_new.GetNbinsY()+2):
             val = h_new.GetBinContent(ix, iy)
             err = h_new.GetBinError(ix, iy)
             pos = bisect_right(bin_list_x, iy)
@@ -750,14 +750,14 @@ def main():
                                              detector_ptvar_binning=detector_binning)
 
             def zero_column_th2(h2d, column_num):
-                for iy in range(1, h2d.GetNbinsY()+1):
+                for iy in range(0, h2d.GetNbinsY()+2):
                     if h2d.GetBinContent(column_num, iy) != 0:
                         print("Zeroing (%d, %d)" % (column_num, iy))
                     h2d.SetBinContent(column_num, iy, 0)
                     h2d.SetBinError(column_num, iy, 0)
 
             def zero_row_th2(h2d, row_num):
-                for ix in range(1, h2d.GetNbinsX()+1):
+                for ix in range(0, h2d.GetNbinsX()+2):
                     h2d.SetBinContent(ix, row_num, 0)
                     h2d.SetBinError(ix, row_num, 0)
 
@@ -772,7 +772,7 @@ def main():
             def zero_last_pt_bin_th2_reco(h):
                 start_bin = binning_handler.physical_bin_to_global_bin(pt=pt_bin_edges_reco[-1]+1, var=0, binning_scheme='detector')
                 end_bin = binning_handler.physical_bin_to_global_bin(pt=pt_bin_edges_reco[-1]+1, var=9999, binning_scheme='detector')
-                for ix in range(1, h.GetNbinsX()+1):
+                for ix in range(0, h.GetNbinsX()+2):
                     for r in range(start_bin, end_bin+1):
                         h.SetBinContent(ix, r, 0)
                         h.SetBinError(ix, r, 0)
@@ -781,7 +781,7 @@ def main():
                 start_bin = binning_handler.physical_bin_to_global_bin(pt=pt_bin_edges_gen[-1]+1, var=0, binning_scheme='generator')
                 end_bin = binning_handler.physical_bin_to_global_bin(pt=pt_bin_edges_gen[-1]+1, var=9999, binning_scheme='generator')
                 for r in range(start_bin, end_bin+1):
-                    for iy in range(1, h.GetNbinsY()+1):
+                    for iy in range(0, h.GetNbinsY()+2):
                         h.SetBinContent(r, iy, 0)
                         h.SetBinError(r, iy, 0)
 
@@ -796,10 +796,6 @@ def main():
             hist_mc_gen_all = cu.get_from_tfile(region['mc_tfile'], "%s/hist_%s_truth_all" % (region['dirname'], angle_shortname))
             hist_mc_gen_reco_map = cu.get_from_tfile(region['mc_tfile'], "%s/tu_%s_GenReco_%s" % (region['dirname'], angle_shortname, mc_hname_append))
 
-            zero_last_pt_bin_th1_reco(hist_mc_reco)
-            zero_last_pt_bin_th1_reco(hist_mc_reco_all)
-            zero_last_pt_bin_th2_reco(hist_mc_gen_reco_map)
-            zero_last_pt_bin_th2_gen(hist_mc_gen_reco_map)
 
             hist_data_reco = None
             if not MC_INPUT:
@@ -811,12 +807,18 @@ def main():
             reco_1d = hist_mc_reco.Clone() if MC_INPUT else hist_data_reco
             reco_1d = rm_large_rel_error_bins_th1(reco_1d, relative_err_threshold=args.relErr)
 
-            zero_last_pt_bin_th1_reco(reco_1d)
+            if args.zeroLastPtBin:
+                zero_last_pt_bin_th1_reco(hist_mc_reco)
+                zero_last_pt_bin_th1_reco(hist_mc_reco_all)
+                zero_last_pt_bin_th1_reco(reco_1d)
+                zero_last_pt_bin_th2_reco(hist_mc_gen_reco_map)
+                zero_last_pt_bin_th2_gen(hist_mc_gen_reco_map)
 
             # to construct our "fakes" template, we use the ratio as predicted by MC, and apply it to data
             # this way we ensure we don't have -ve values, and avoid any issue with cross sections
             hist_mc_fakes_reco = cu.get_from_tfile(region['mc_tfile'], "%s/hist_%s_reco_fake_all" % (region['dirname'], angle_shortname))
-            zero_last_pt_bin_th1_reco(hist_mc_fakes_reco)
+            if args.zeroLastPtBin:
+                zero_last_pt_bin_th1_reco(hist_mc_fakes_reco)
             hist_fake_fraction = rm_large_rel_error_bins_th1(hist_mc_fakes_reco.Clone("hist_%s_fakes_reco_fraction" % angle_shortname), relative_err_threshold=args.relErr)
             hist_fake_fraction.Divide(rm_large_rel_error_bins_th1(hist_mc_reco_all, relative_err_threshold=args.relErr))
 
