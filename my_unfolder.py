@@ -30,6 +30,17 @@ import qg_general_plots as qgp
 from my_unfolder_plotter import MyUnfolderPlotter
 
 
+# monkey-patch warning formatter
+def _formatwarning(message, category, filename, lineno, line=None):
+    return '{startcol}{fname}:{lineno} {cat}:{endcol} {msg}\n'.format(startcol=cu.pcolors.WARNING,
+                                                                      endcol=cu.pcolors.ENDC,
+                                                                      fname=os.path.basename(filename),
+                                                                      lineno=lineno,
+                                                                      cat=category.__name__,
+                                                                      msg=message)
+warnings.formatwarning = _formatwarning
+
+
 # This doesn't seem to work...sigh
 np.set_printoptions(edgeitems=3, infstr='Infinity',
                     linewidth=220, nanstr='nan', precision=6,
