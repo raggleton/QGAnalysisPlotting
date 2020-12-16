@@ -889,8 +889,6 @@ def main():
 
             # disconnected_output_bins = find_disconnected_output_bins(hist_mc_gen_reco_map)
             # print("disconnected", disconnected_output_bins)
-            # for d in disconnected_output_bins:
-            #     print(binning_handler.get_physical_bins(d, 'generator'))
 
             # disconnected_input_bins = find_disconnected_input_bins(hist_mc_gen_reco_map)
             # print("disconnected", disconnected_input_bins)
@@ -905,6 +903,35 @@ def main():
                                   densityFlags=ROOT.TUnfoldDensity.kDensityModeBinWidthAndUser,  # doesn't actually matter as RegModNone
                                   distribution='generatordistribution',  # the one to use for actual final regularisation/unfolding
                                   axisSteering=axis_steering)
+
+            # Look for unconstrained output bins,
+            # and set the corresponding entreis in the response matrix to 0
+            unconstrained_bins = unfolder.check_input(reco_1d)
+            for gen_bin, reco_bins in unconstrained_bins:
+                print("unconstrained_output:", gen_bin, "=", binning_handler.global_bin_to_physical_bin(gen_bin, 'generator'), "depends on reco bins:")
+                for r in reco_bins:
+                    print('    reco bin', r, "=", binning_handler.global_bin_to_physical_bin(r, 'detector'))
+                    hist_mc_gen_reco_map.SetBinContent(gen_bin, r, 0)
+                    hist_mc_gen_reco_map.SetBinError(gen_bin, r, 0)
+
+            # if len(unconstrained_bins) > 0:
+            #     unfolder = MyUnfolder(response_map=hist_mc_gen_reco_map,
+            #                           binning_handler=binning_handler,
+            #                           orientation=ROOT.TUnfold.kHistMapOutputHoriz,
+            #                           constraintMode=AREA_OPT_DICT[args.areaConstraint],
+            #                           # regMode=ROOT.TUnfold.kRegModeCurvature,
+            #                           # densityFlags=ROOT.TUnfoldDensity.kDensityModeBinWidth, # important as we have varying bin sizes!
+            #                           regMode=ROOT.TUnfold.kRegModeNone,
+            #                           densityFlags=ROOT.TUnfoldDensity.kDensityModeBinWidthAndUser,  # doesn't actually matter as RegModNone
+            #                           distribution='generatordistribution',  # the one to use for actual final regularisation/unfolding
+            #                           axisSteering=axis_steering)
+
+            #     unconstrained_bins = unfolder.check_input(reco_1d)
+
+            #     for gen_bin, reco_bins in unconstrained_bins:
+            #         print("unconstrained_output:", gen_bin, "=", binning_handler.global_bin_to_physical_bin(gen_bin, 'generator'), "depends on reco bins:")
+            #         for r in reco_bins:
+            #             print('    reco bin', r, "=", binning_handler.global_bin_to_physical_bin(r, 'detector'))
 
             # Save binning to file
             # unfolder.save_binning(txt_filename="%s/binning_scheme.txt" % (this_output_dir), print_xml=False)
@@ -923,27 +950,6 @@ def main():
             eps_matrix = 1E-60
             unfolder.SetEpsMatrix(eps_matrix)
             print("Running with eps =", unfolder.GetEpsMatrix())
-
-            # testing
-            # :pt[326,408]:groomed Multiplicity (charged-only)[49.5,99.5]
-            reco_bin = binning_handler.physical_bin_to_global_bin(pt=326, var=50, binning_scheme='detector')
-            print("reco bin", reco_bin)
-            for r in range(reco_bin-5, reco_bin+5):
-                print("reco bin", r, binning_handler.global_bin_to_physical_bin(r, "detector"), reco_1d.GetBinContent(r), "±", reco_1d.GetBinError(r))
-                if reco_1d.GetBinContent(r) == 0:
-                    reco_1d.SetBinContent(r, reco_1d.GetBinContent(r-1) / 10.)
-                    reco_1d.SetBinError(r, math.sqrt(reco_1d.GetBinContent(r)))
-                    print("setting", r, "=", reco_1d.GetBinContent(r), "±", reco_1d.GetBinError(r))
-
-            reco_bin = binning_handler.physical_bin_to_global_bin(pt=9999, var=50, binning_scheme='detector')
-            end_bin = binning_handler.physical_bin_to_global_bin(pt=9999, var=999, binning_scheme='detector')
-            print("reco bin", reco_bin)
-            for r in range(463, end_bin+1):
-                print("reco bin", r, binning_handler.global_bin_to_physical_bin(r, "detector"), reco_1d.GetBinContent(r), "±", reco_1d.GetBinError(r))
-                if reco_1d.GetBinContent(r) == 0:
-                    reco_1d.SetBinContent(r, 1E-5)
-                    reco_1d.SetBinError(r, math.sqrt(reco_1d.GetBinContent(r)))
-                    print("setting", r, "=", reco_1d.GetBinContent(r), "±", reco_1d.GetBinError(r))
 
             # Set what is to be unfolded
             # ------------------------------------------------------------------
