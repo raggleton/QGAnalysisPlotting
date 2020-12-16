@@ -403,6 +403,52 @@ public:
 ROOT.gInterpreter.ProcessLine(my_binning_xml_code)
 
 
+def modify_region_using_args(region, args):
+    """Modify region according to input args"""
+    if not args.doJackknifeInput:
+        region['jackknife_input_variations'] = []
+
+    if not args.doJackknifeResponse:
+        region['jackknife_response_variations'] = []
+
+    if args.doExperimentalSysts or args.doExperimentalSystsFromFile:
+        # Remove the lumi one if we have no backgrounds, or the user has not said to remove backgrounds
+        region['experimental_systematics'] = [syst_dict for syst_dict in region['experimental_systematics']
+                                              if not ('lumi' in syst_dict['label'].lower()
+                                                      and (len(region.get('backgrounds', [])) == 0
+                                                           or not args.subtractBackgrounds))]
+        if args.doExperimentalSystsOnlyHerwig:
+            # only herwig related systs
+            region['experimental_systematics'] = [s for s in region['experimental_systematics']
+                                                  if 'herwig' in s['label'].lower() or 'shower' in s['label'].lower()]
+
+    else:
+        region['experimental_systematics'] = []
+
+    if not (args.doScaleSysts or args.doScaleSystsFromFile):
+        region['scale_systematics'] = []
+
+    if not (args.doModelSysts or args.doModelSystsFromFile):
+        region['model_systematics'] = []
+
+    elif args.doModelSystsOnlyHerwig:
+        # only herwig related systs
+        region['model_systematics'] = [s for s in region['model_systematics']
+                                       if 'herwig' in s['label'].lower()]
+    elif args.doModelSystsOnlyScale:
+        # only scale related systs
+        region['model_systematics'] = [s for s in region['model_systematics']
+                                       if 'mu' in s['label'].lower()]
+
+    elif args.doModelSystsNotScale:
+        # only non-scale related systs
+        region['model_systematics'] = [s for s in region['model_systematics']
+                                       if 'mu' not in s['label'].lower()]
+
+    if not (args.doPDFSysts or args.doPDFSystsFromFile):
+        region['pdf_systematics'] = []
+
+
 @profile
 def main():
     """Main function to run setup, unfolding, etc.
@@ -561,10 +607,6 @@ def main():
     print("Running TUnfold version", ROOT.TUnfold.GetTUnfoldVersion())
 
     LAMBDA_VAR_DICTS = qgc.VAR_UNFOLD_DICT
-    # if 'target0p5' in src_dir:
-    #     LAMBDA_VAR_DICTS = qgc.VAR_UNFOLD_DICT_TARGET0p5
-    # elif 'target0p6' in src_dir:
-    #     LAMBDA_VAR_DICTS = qgc.VAR_UNFOLD_DICT_TARGET0p6
 
     # Do unfolding per signal region
     # --------------------------------------------------------------------------
@@ -583,63 +625,9 @@ def main():
         pt_bin_edges_underflow_gen = qgc.PT_UNFOLD_DICT['underflow%s_gen' % zpj_append]
         pt_bin_edges_underflow_reco = qgc.PT_UNFOLD_DICT['underflow%s_reco' % zpj_append]
 
-        # Modify systematics as necessary
+        # Modify systematics & other keys as necessary
         # ----------------------------------------------------------------------
-
-        if not args.doJackknifeInput:
-            orig_region['jackknife_input_variations'] = []
-
-        if not args.doJackknifeResponse:
-            orig_region['jackknife_response_variations'] = []
-
-        if args.doExperimentalSysts or args.doExperimentalSystsFromFile:
-            # Remove the lumi one if we have no backgrounds, or the user has not said to remove backgrounds
-            orig_region['experimental_systematics'] = [syst_dict for syst_dict in orig_region['experimental_systematics']
-                                                       if not ('lumi' in syst_dict['label'].lower()
-                                                               and (len(orig_region.get('backgrounds', [])) == 0
-                                                                    or not args.subtractBackgrounds))]
-            if args.doExperimentalSystsOnlyHerwig:
-                # only herwig related systs
-                orig_region['experimental_systematics'] = [s for s in orig_region['experimental_systematics']
-                                                           if 'herwig' in s['label'].lower() or 'shower' in s['label'].lower()]
-
-        else:
-            orig_region['experimental_systematics'] = []
-
-        if not (args.doScaleSysts or args.doScaleSystsFromFile):
-            orig_region['scale_systematics'] = []
-
-        if not (args.doModelSysts or args.doModelSystsFromFile):
-            orig_region['model_systematics'] = []
-
-        elif args.doModelSystsOnlyHerwig:
-            # only herwig related systs
-            orig_region['model_systematics'] = [s for s in orig_region['model_systematics']
-                                                if 'herwig' in s['label'].lower()]
-        elif args.doModelSystsOnlyScale:
-            # only scale related systs
-            orig_region['model_systematics'] = [s for s in orig_region['model_systematics']
-                                                if 'mu' in s['label'].lower()]
-
-        elif args.doModelSystsNotScale:
-            # only non-scale related systs
-            orig_region['model_systematics'] = [s for s in orig_region['model_systematics']
-                                                if 'mu' not in s['label'].lower()]
-
-        if not (args.doPDFSysts or args.doPDFSystsFromFile):
-            orig_region['pdf_systematics'] = []
-
-        # Do 1D unfolding of pt
-        # TODO!
-        # ----------------------------------------------------------------------
-        # hist_data_reco = cu.get_from_tfile(orig_region['data_tfile'], "%s/hist_pt_reco_all" % (orig_region['dirname']))
-        # mc_hname_append = "split" if MC_SPLIT else "all"
-        # if isinstance(orig_region['mc_tfile'], str):
-        #     orig_region['mc_tfile'] = cu.open_root_file(orig_region['mc_tfile'])
-        # hist_mc_reco = cu.get_from_tfile(orig_region['mc_tfile'], "%s/hist_pt_reco_%s" % (orig_region['dirname'], mc_hname_append))
-        # hist_mc_gen = cu.get_from_tfile(orig_region['mc_tfile'], "%s/hist_pt_truth_%s" % (orig_region['dirname'], mc_hname_append))
-        # hist_mc_gen_pt = cu.get_from_tfile(orig_region['mc_tfile'], "%s/hist_pt_truth_%s" % (orig_region['dirname'], mc_hname_append))
-        # hist_mc_gen_reco_map = cu.get_from_tfile(orig_region['mc_tfile'], "%s/tu_pt_GenReco_%s" % (orig_region['dirname'], mc_hname_append))
+        modify_region_using_args(orig_region, args)
 
         # Do unfolding for each angle
         # ----------------------------------------------------------------------
