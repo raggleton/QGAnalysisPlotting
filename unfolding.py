@@ -969,16 +969,20 @@ def main():
             # disconnected_input_bins = find_disconnected_input_bins(hist_mc_gen_reco_map)
             # print("disconnected input bins", disconnected_input_bins)
 
+            unfolder_args = dict(
+                orientation=ROOT.TUnfold.kHistMapOutputHoriz,
+                constraintMode=AREA_OPT_DICT[args.areaConstraint],
+                # regMode=ROOT.TUnfold.kRegModeCurvature,
+                # densityFlags=ROOT.TUnfoldDensity.kDensityModeBinWidth, # important as we have varying bin sizes!
+                regMode=ROOT.TUnfold.kRegModeNone,
+                densityFlags=ROOT.TUnfoldDensity.kDensityModeBinWidthAndUser,  # doesn't actually matter as RegModNone
+                distribution='generatordistribution',  # the one to use for actual final regularisation/unfolding
+                axisSteering=axis_steering
+            )
+
             unfolder = MyUnfolder(response_map=rm_large_rel_error_bins_th2(hist_mc_gen_reco_map, args.relErr),
                                   binning_handler=binning_handler,
-                                  orientation=ROOT.TUnfold.kHistMapOutputHoriz,
-                                  constraintMode=AREA_OPT_DICT[args.areaConstraint],
-                                  # regMode=ROOT.TUnfold.kRegModeCurvature,
-                                  # densityFlags=ROOT.TUnfoldDensity.kDensityModeBinWidth, # important as we have varying bin sizes!
-                                  regMode=ROOT.TUnfold.kRegModeNone,
-                                  densityFlags=ROOT.TUnfoldDensity.kDensityModeBinWidthAndUser,  # doesn't actually matter as RegModNone
-                                  distribution='generatordistribution',  # the one to use for actual final regularisation/unfolding
-                                  axisSteering=axis_steering)
+                                  **unfolder_args)
 
             # Look for unconstrained output bins,
             # and set the corresponding entries in the response matrix to 0
@@ -989,6 +993,10 @@ def main():
             #         print('    reco bin', r, "=", binning_handler.global_bin_to_physical_bin(r, 'detector'))
             #         hist_mc_gen_reco_map.SetBinContent(gen_bin, r, 0)
             #         hist_mc_gen_reco_map.SetBinError(gen_bin, r, 0)
+            # 
+            # unfolder = MyUnfolder(response_map=hist_mc_gen_reco_map,
+            #                       binning_handler=binning_handler,
+            #                       **unfolder_args)
 
             # Save binning to file
             # unfolder.save_binning(txt_filename="%s/binning_scheme.txt" % (this_output_dir), print_xml=False)
@@ -1157,12 +1165,7 @@ def main():
                 # also potentially for factor/bias
                 unreg_unfolder = MyUnfolder(response_map=unfolder.response_map,
                                             binning_handler=binning_handler,
-                                            orientation=unfolder.orientation,
-                                            constraintMode=unfolder.constraintMode,
-                                            regMode=ROOT.TUnfold.kRegModeNone,
-                                            densityFlags=ROOT.TUnfoldDensity.kDensityModeBinWidthAndUser,
-                                            distribution=unfolder.distribution,
-                                            axisSteering=unfolder.axisSteering)
+                                            **unfolder_args)
 
                 unreg_unfolder.SetEpsMatrix(eps_matrix)
 
@@ -1531,12 +1534,7 @@ def main():
 
                     new_unfolder = MyUnfolder(response_map=response_map_merged,
                                               binning_handler=binning_handler_merged,
-                                              orientation=orig_unfolder.orientation,
-                                              constraintMode=orig_unfolder.constraintMode,
-                                              regMode=orig_unfolder.regMode,
-                                              densityFlags=orig_unfolder.densityFlags,
-                                              distribution=orig_unfolder.distribution,
-                                              axisSteering=orig_unfolder.axisSteering)
+                                              **unfolder_args)
 
                     new_unfolder.SetEpsMatrix(eps_matrix)
 
@@ -1816,12 +1814,7 @@ def main():
 
                     new_unfolder = MyUnfolder(response_map=response_map_merged,
                                               binning_handler=binning_handler_merged,
-                                              orientation=orig_unfolder.orientation,
-                                              constraintMode=orig_unfolder.constraintMode,
-                                              regMode=orig_unfolder.regMode,
-                                              densityFlags=orig_unfolder.densityFlags,
-                                              distribution=orig_unfolder.distribution,
-                                              axisSteering=orig_unfolder.axisSteering)
+                                              **unfolder_args)
 
                     new_unfolder.SetEpsMatrix(eps_matrix)
 
@@ -1893,6 +1886,7 @@ def main():
                 # creating unfolded hists with different levels of uncertainties,
                 # ------------------------------------------------------------------
                 unfolder_merged._post_process()
+                unfolder_merged.print_condition_number()
 
                 # Draw big 1D distributions
                 # ------------------------------------------------------------------
@@ -2000,12 +1994,7 @@ def main():
 
                     jk_unfolder = MyUnfolder(response_map=unfolder.response_map,
                                              binning_handler=binning_handler,
-                                             orientation=unfolder.orientation,
-                                             constraintMode=unfolder.constraintMode,
-                                             regMode=unfolder.regMode,
-                                             densityFlags=unfolder.densityFlags,
-                                             distribution=unfolder.distribution,
-                                             axisSteering=unfolder.axisSteering)
+                                             **unfolder_args)
 
                     jk_unfolder.SetEpsMatrix(eps_matrix)
 
@@ -2235,12 +2224,7 @@ def main():
 
                     jk_unfolder = MyUnfolder(response_map=rm_large_rel_error_bins_th2(jk_dict['response_map'], args.relErr),
                                              binning_handler=binning_handler,
-                                             orientation=unfolder.orientation,
-                                             constraintMode=unfolder.constraintMode,
-                                             regMode=unfolder.regMode,
-                                             densityFlags=unfolder.densityFlags,
-                                             distribution=unfolder.distribution,
-                                             axisSteering=unfolder.axisSteering)
+                                             **unfolder_args)
 
                     jk_unfolder.SetEpsMatrix(eps_matrix)
 
@@ -2358,12 +2342,7 @@ def main():
                     # construct unfolder like original but with this response matrix, do unfolding
                     exp_syst_unfolder = MyUnfolder(response_map=rm_large_rel_error_bins_th2(map_syst, args.relErr),
                                                    binning_handler=unfolder.binning_handler,
-                                                   orientation=unfolder.orientation,
-                                                   constraintMode=unfolder.constraintMode,
-                                                   regMode=unfolder.regMode,
-                                                   densityFlags=unfolder.densityFlags,
-                                                   distribution=unfolder.distribution,
-                                                   axisSteering=unfolder.axisSteering)
+                                                   **unfolder_args)
 
                     exp_syst_unfolder.SetEpsMatrix(eps_matrix)
 
@@ -2733,12 +2712,7 @@ def main():
 
                 alt_unfolder = MyUnfolder(response_map=rm_large_rel_error_bins_th2(hist_mc_gen_reco_map_alt, args.relErr),
                                           binning_handler=unfolder.binning_handler,
-                                          orientation=unfolder.orientation,
-                                          constraintMode=unfolder.constraintMode,
-                                          regMode=unfolder.regMode,
-                                          densityFlags=unfolder.densityFlags,
-                                          distribution=unfolder.distribution,
-                                          axisSteering=unfolder.axisSteering)
+                                          **unfolder_args)
 
                 # SetEpsMatrix ensures rank properly calculated when inverting
                 # Needed if you get message "rank of matrix E 55 expect 170"
@@ -2914,12 +2888,7 @@ def main():
 
                     scale_unfolder = MyUnfolder(response_map=cu.get_from_tfile(scale_dict['tfile'], "%s/tu_%s_GenReco_all" % (region['dirname'], angle_shortname)),
                                                 binning_handler=unfolder.binning_handler,
-                                                orientation=unfolder.orientation,
-                                                constraintMode=unfolder.constraintMode,
-                                                regMode=unfolder.regMode,
-                                                densityFlags=unfolder.densityFlags,
-                                                distribution=unfolder.distribution,
-                                                axisSteering=unfolder.axisSteering)
+                                                **unfolder_args)
 
                     # Needed beacuse some of the variations struggle to unfold
                     # Even 1E-18 wouldn't work - needs to be v.small
@@ -3109,12 +3078,7 @@ def main():
 
                     syst_unfolder = MyUnfolder(response_map=unfolder.response_map,
                                                binning_handler=unfolder.binning_handler,
-                                               orientation=unfolder.orientation,
-                                               constraintMode=unfolder.constraintMode,
-                                               regMode=unfolder.regMode,
-                                               densityFlags=unfolder.densityFlags,
-                                               distribution=unfolder.distribution,
-                                               axisSteering=unfolder.axisSteering)
+                                               **unfolder_args)
 
                     syst_output_dir = this_output_dir+"/modelSyst_"+syst_label_no_spaces
                     syst_unfolder_plotter = MyUnfolderPlotter(syst_unfolder, is_data=False)
@@ -3479,12 +3443,7 @@ def main():
                     pdf_response_map = cu.get_from_tfile(pdf_tfile, pdf_dict['response_map'])
                     pdf_unfolder = MyUnfolder(response_map=pdf_response_map,
                                               binning_handler=unfolder.binning_handler,
-                                              orientation=unfolder.orientation,
-                                              constraintMode=unfolder.constraintMode,
-                                              regMode=unfolder.regMode,
-                                              densityFlags=unfolder.densityFlags,
-                                              distribution=unfolder.distribution,
-                                              axisSteering=unfolder.axisSteering)
+                                              **unfolder_args)
 
                     # Needed because some fo the PDF variations struggle to unfold
                     # Even 1E-18 wouldn't work - needs to be v.small
