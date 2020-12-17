@@ -31,14 +31,7 @@ from my_unfolder_plotter import MyUnfolderPlotter
 
 
 # monkey-patch warning formatter
-def _formatwarning(message, category, filename, lineno, line=None):
-    return '{startcol}{fname}:{lineno} {cat}:{endcol} {msg}\n'.format(startcol=cu.pcolors.WARNING,
-                                                                      endcol=cu.pcolors.ENDC,
-                                                                      fname=os.path.basename(filename),
-                                                                      lineno=lineno,
-                                                                      cat=category.__name__,
-                                                                      msg=message)
-warnings.formatwarning = _formatwarning
+warnings.formatwarning = cu._formatwarning
 
 
 # This doesn't seem to work...sigh

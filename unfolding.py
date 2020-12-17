@@ -47,16 +47,7 @@ if not (sys.version_info.major == 3 and sys.version_info.minor >= 8):
 
 
 # monkey-patch warning formatter
-def _formatwarning(message, category, filename, lineno, line=None):
-    return '{startcol}{fname}:{lineno} {cat}:{endcol} {msg}\n'.format(startcol=cu.pcolors.WARNING,
-                                                                      endcol=cu.pcolors.ENDC,
-                                                                      fname=os.path.basename(filename),
-                                                                      lineno=lineno,
-                                                                      cat=category.__name__,
-                                                                      msg=message)
-
-
-warnings.formatwarning = _formatwarning
+warnings.formatwarning = cu._formatwarning
 
 My_Style.cd()
 

@@ -21,6 +21,7 @@ from itertools import chain
 from glob import glob
 from collections import defaultdict
 import inspect
+import warnings
 
 # for webpage
 from jinja2 import Environment, FileSystemLoader
@@ -47,6 +48,10 @@ os.nice(10)
 if not (sys.version_info.major == 3 and sys.version_info.minor >= 8):
     import rootpy
     # import rootpy.logger.magic as M; M.DANGER.enabled = True
+
+
+# monkey-patch warning formatter
+warnings.formatwarning = cu._formatwarning
 
 ROOT.gErrorIgnoreLevel = ROOT.kError
 ROOT.PyConfig.IgnoreCommandLineOptions = True

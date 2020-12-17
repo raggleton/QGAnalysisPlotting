@@ -59,6 +59,16 @@ def open_pdf(pdf_filename):
         call(["start", pdf_filename])
 
 
+# monkey-patch warning formatter
+def _formatwarning(message, category, filename, lineno, line=None):
+    return '{startcol}{fname}:{lineno} {cat}:{endcol} {msg}\n'.format(startcol=pcolors.WARNING,
+                                                                      endcol=pcolors.ENDC,
+                                                                      fname=os.path.basename(filename),
+                                                                      lineno=lineno,
+                                                                      cat=category.__name__,
+                                                                      msg=message)
+
+
 #
 # Filepath/directory fns
 #
