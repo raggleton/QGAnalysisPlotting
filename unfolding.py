@@ -268,6 +268,7 @@ def subtract_background(hist, bg_fraction_hist):
 
 
 def find_disconnected_output_bins(response_map):
+    """Find columns in response map with no entries over any Y bins"""
     project_x = response_map.ProjectionX()  # assumed gen on x axis
     disconnected_bins = []
     for ix in range(1, project_x.GetNbinsX()+1):
@@ -278,7 +279,11 @@ def find_disconnected_output_bins(response_map):
 
 
 def find_disconnected_input_bins(response_map):
-    project_y = response_map.ProjectionY()  # assumed gen on x axis
+    """Find rows in response map with no entries over any X bins"""
+    # assumed gen on x axis
+    # don't include under/overflow gen bins
+    # project_y = response_map.ProjectionY(cu.get_unique_str(), 1, response_map.GetNbinsX())
+    project_y = response_map.ProjectionY()
     disconnected_bins = []
     for ix in range(1, project_y.GetNbinsX()+1):
         val = project_y.GetBinContent(ix)
@@ -883,12 +888,11 @@ def main():
             elif args.regularizeAxis == 'angle':
                 axis_steering = 'pt[N];%s[B]' % variable_name
 
-
             # disconnected_output_bins = find_disconnected_output_bins(hist_mc_gen_reco_map)
-            # print("disconnected", disconnected_output_bins)
+            # print("disconnected output bins", disconnected_output_bins)
 
             # disconnected_input_bins = find_disconnected_input_bins(hist_mc_gen_reco_map)
-            # print("disconnected", disconnected_input_bins)
+            # print("disconnected input bins", disconnected_input_bins)
 
             unfolder = MyUnfolder(response_map=rm_large_rel_error_bins_th2(hist_mc_gen_reco_map, args.relErr),
                                   binning_handler=binning_handler,
@@ -902,33 +906,14 @@ def main():
                                   axisSteering=axis_steering)
 
             # Look for unconstrained output bins,
-            # and set the corresponding entreis in the response matrix to 0
-            unconstrained_bins = unfolder.check_input(reco_1d)
-            for gen_bin, reco_bins in unconstrained_bins:
-                print("unconstrained_output:", gen_bin, "=", binning_handler.global_bin_to_physical_bin(gen_bin, 'generator'), "depends on reco bins:")
-                for r in reco_bins:
-                    print('    reco bin', r, "=", binning_handler.global_bin_to_physical_bin(r, 'detector'))
-                    hist_mc_gen_reco_map.SetBinContent(gen_bin, r, 0)
-                    hist_mc_gen_reco_map.SetBinError(gen_bin, r, 0)
-
-            # if len(unconstrained_bins) > 0:
-            #     unfolder = MyUnfolder(response_map=hist_mc_gen_reco_map,
-            #                           binning_handler=binning_handler,
-            #                           orientation=ROOT.TUnfold.kHistMapOutputHoriz,
-            #                           constraintMode=AREA_OPT_DICT[args.areaConstraint],
-            #                           # regMode=ROOT.TUnfold.kRegModeCurvature,
-            #                           # densityFlags=ROOT.TUnfoldDensity.kDensityModeBinWidth, # important as we have varying bin sizes!
-            #                           regMode=ROOT.TUnfold.kRegModeNone,
-            #                           densityFlags=ROOT.TUnfoldDensity.kDensityModeBinWidthAndUser,  # doesn't actually matter as RegModNone
-            #                           distribution='generatordistribution',  # the one to use for actual final regularisation/unfolding
-            #                           axisSteering=axis_steering)
-
-            #     unconstrained_bins = unfolder.check_input(reco_1d)
-
-            #     for gen_bin, reco_bins in unconstrained_bins:
-            #         print("unconstrained_output:", gen_bin, "=", binning_handler.global_bin_to_physical_bin(gen_bin, 'generator'), "depends on reco bins:")
-            #         for r in reco_bins:
-            #             print('    reco bin', r, "=", binning_handler.global_bin_to_physical_bin(r, 'detector'))
+            # and set the corresponding entries in the response matrix to 0
+            # unconstrained_bins = unfolder.check_input(reco_1d)
+            # for gen_bin, reco_bins in unconstrained_bins:
+            #     print("unconstrained_output:", gen_bin, "=", binning_handler.global_bin_to_physical_bin(gen_bin, 'generator'), "depends on reco bins:")
+            #     for r in reco_bins:
+            #         print('    reco bin', r, "=", binning_handler.global_bin_to_physical_bin(r, 'detector'))
+            #         hist_mc_gen_reco_map.SetBinContent(gen_bin, r, 0)
+            #         hist_mc_gen_reco_map.SetBinError(gen_bin, r, 0)
 
             # Save binning to file
             # unfolder.save_binning(txt_filename="%s/binning_scheme.txt" % (this_output_dir), print_xml=False)
@@ -1639,7 +1624,7 @@ def main():
                 title = "Response matrix, %s, %s region, %s" % (jet_algo, region['label'], angle_str)
                 unfolder_plotter2.draw_response_matrix(title=title, **plot_args2)
 
-                title = "Response matrix normed by detector p_{T} bin, %s, %s region, %s" % (jet_algo, region['label'], angle_str)
+                # title = "Response matrix normed by detector p_{T} bin, %s, %s region, %s" % (jet_algo, region['label'], angle_str)
                 # unfolder_plotter2.draw_response_matrix_normed_by_detector_pt(title=title, **plot_args2)
 
                 title = ("#splitline{Probability matrix, %s, %s region, %s}{Condition number: #sigma_{max} / #sigma_{min} = %.3g / %.3g = %g}"
