@@ -76,6 +76,13 @@ def get_unfolding_argparser(description='', parser=None):
                         default=False,
                         help=('Merge -ve output bins, decided using unfolded output.'
                                + standard_bool_description))
+    parser.add_argument("--mergeBinsFromFile",
+                        default=None,
+                        help=('Merge -ve output bins, using binning from another unfolding.' \
+                              'This should be a directory ' \
+                               'made by a previous running of unfolding.py ' \
+                               'that covers the different signal regions & variables'))
+
 
     parser.add_argument("--zeroLastPtBin",
                         type=lambda x: bool(distutils.util.strtobool(x)),
@@ -285,6 +292,9 @@ def sanitise_args(args):
         print("")
         args.subtractBackgrounds = False
 
+    if args.mergeBins and args.mergeBinsFromFile:
+        raise RuntimeError("Cannot do both --mergeBins and --mergeBinsFromFile")
+
     if args.doScaleSysts and args.doScaleSystsFromFile:
         raise RuntimeError("Cannot do both --doScaleSysts and --doScaleSystsFromFile")
 
@@ -400,6 +410,9 @@ def get_unfolding_output_dir(args):
 
     if args.mergeBins:
         append += "_mergeBins"
+
+    if args.mergeBinsFromFile:
+        append += "_mergeBinsFromFile"
 
     if args.zeroLastPtBin:
         append += "_zeroLastPtBin"
