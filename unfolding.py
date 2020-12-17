@@ -104,13 +104,13 @@ def rm_large_rel_error_bins_th2(hist, relative_err_threshold=-1):
         return hist
     new_hist = hist.Clone()
     new_hist.SetDirectory(0)
-    for ix in range(hist.GetNbinsX()+1):
-        for iy in range(hist.GetNbinsY()+1):
+    for ix in range(0, hist.GetNbinsX()+2):
+        for iy in range(0, hist.GetNbinsY()+2):
             val = hist.GetBinContent(ix, iy)
             err = hist.GetBinError(ix, iy)
             if val == 0:
                 continue
-            if (1.*err/val) > relative_err_threshold:
+            if (abs(1.*err/val)) > relative_err_threshold:
                 new_hist.SetBinContent(ix, iy, 0)
                 new_hist.SetBinError(ix, iy, 0)
     return new_hist
@@ -483,17 +483,20 @@ def merge_th2_bin_pairs(h, bin_pairs_x, bin_pairs_y, new_bin_edges_x, new_bin_ed
     return h_new2
 
 
-def get_bins_to_merge_nonnegative(h, binning_scheme, max_bin=-1):
+def get_bins_to_merge_nonnegative(h, binning_obj, max_bin=-1, ensure_nonnegative=True):
     """Figure out which bins to merge to ensure bin contents >= 0
 
     Parameters
     ----------
     h : TH1D
         Histogram
-    binning_scheme : PtVarBinning, PtVarPerPtBinning
+    binning_obj : PtVarBinning, PtVarPerPtBinning
         Object to get binning info from, to ensure we don't cross pt bin boundary
     max_bin : int, optional
         Only consider bins less than max_bin if > 0.
+    ensure_nonnegative : bool, optional
+        If True, figues out which set of adjacent bins must be merged to get
+        a result > 0. Otherwise returns the individual -ve bins
 
     Returns
     -------
@@ -507,8 +510,8 @@ def get_bins_to_merge_nonnegative(h, binning_scheme, max_bin=-1):
     contents = np.array([h.GetBinContent(i) for i in range(1, max_bin+1)])
 
     def _is_boundary_bin(bin_number):
-        pt_curr = binning_scheme.global_bin_to_physical_bin(bin_number).pt[0]
-        pt_nxt = binning_scheme.global_bin_to_physical_bin(bin_number-1).pt[0]
+        pt_curr = binning_obj.global_bin_to_physical_bin(bin_number).pt[0]
+        pt_nxt = binning_obj.global_bin_to_physical_bin(bin_number-1).pt[0]
         return pt_nxt != pt_curr
 
     for bin_num, x in enumerate(contents, 1):
@@ -516,37 +519,41 @@ def get_bins_to_merge_nonnegative(h, binning_scheme, max_bin=-1):
         if x < 0:
             negative_bin_value = x
             negative_bin_error = h.GetBinError(bin_num)
-            print("Found -ve bin", bin_num, binning_scheme.global_bin_to_physical_bin(bin_num), "=", negative_bin_value, "±", negative_bin_error)
+            print("Found -ve bin", bin_num, binning_obj.global_bin_to_physical_bin(bin_num), "=", negative_bin_value, "±", negative_bin_error)
 
             if _is_boundary_bin(bin_num):
-                pt_current = binning_scheme.global_bin_to_physical_bin(bin_num).pt[0]
-                pt_next = binning_scheme.global_bin_to_physical_bin(bin_num-1).pt[0]
+                pt_current = binning_obj.global_bin_to_physical_bin(bin_num).pt[0]
+                pt_next = binning_obj.global_bin_to_physical_bin(bin_num-1).pt[0]
                 warnings.warn("Cannot merge bin {0} across pT boundary {1} -> {2}, skipping".format(bin_num, pt_current, pt_next))
                 continue
 
             this_merge_set.append(bin_num)
-            summed_bins = negative_bin_value
 
-            # iterate over lefthand bins, but check you don't cross a pt boundary
-            iter_ind = 1
-            while summed_bins < 0:
-                this_bin = bin_num - iter_ind
+            if ensure_nonnegative:
+                # figure out how many adjacent bins you need to sum to make it +ve
+                summed_bins = negative_bin_value
 
-                if _is_boundary_bin(this_bin):
-                    pt_current = binning_scheme.global_bin_to_physical_bin(this_bin).pt[0]
-                    pt_next = binning_scheme.global_bin_to_physical_bin(this_bin-1).pt[0]
-                    warnings.warn("Cannot merge bin {0} across pT boundary {1} -> {2}, not including".format(this_bin, pt_current, pt_next))
-                    break
+                # iterate over lefthand bins, but check you don't cross a pt boundary
+                iter_ind = 1
+                while summed_bins < 0:
+                    this_bin = bin_num - iter_ind
 
-                summed_bins += contents[this_bin-1]  # -1 as numpy array
-                print("..new sum", summed_bins)
-                if summed_bins < 0:
-                    this_merge_set.append(this_bin)
+                    if _is_boundary_bin(this_bin):
+                        pt_current = binning_obj.global_bin_to_physical_bin(this_bin).pt[0]
+                        pt_next = binning_obj.global_bin_to_physical_bin(this_bin-1).pt[0]
+                        warnings.warn("Cannot merge bin {0} across pT boundary {1} -> {2}, not including".format(this_bin, pt_current, pt_next))
+                        break
 
-                iter_ind += 1
+                    summed_bins += contents[this_bin-1]  # -1 as numpy array
+                    print("..new sum", summed_bins)
+                    if summed_bins < 0:
+                        this_merge_set.append(this_bin)
 
-            this_merge_set = this_merge_set[::-1]  # reverse order so ascending
-            print("Found set that sums > 0:", this_merge_set, "=", summed_bins)
+                    iter_ind += 1
+
+                this_merge_set = this_merge_set[::-1]  # reverse order so ascending
+                print("Found set that sums > 0:", this_merge_set, "=", summed_bins)
+
             bins_to_merge.extend(this_merge_set)
     return sorted(list(set(bins_to_merge)))
 
@@ -555,6 +562,7 @@ MERGE_JSON_FILENAME = "merged_bins_history.json"
 
 
 def save_merge_bin_history_to_file(merge_bin_history, output_dir):
+    cu.check_dir_exists_create(output_dir)
     with open(os.path.join(output_dir, MERGE_JSON_FILENAME), 'w') as f:
         json.dump(merge_bin_history, f, indent=4)
 
@@ -865,29 +873,28 @@ def main():
             def zero_last_pt_bin_th1_reco(h):
                 start_bin = binning_handler.physical_bin_to_global_bin(pt=pt_bin_edges_reco[-1]+1, var=0, binning_scheme='detector')
                 end_bin = binning_handler.physical_bin_to_global_bin(pt=pt_bin_edges_reco[-1]+1, var=9999, binning_scheme='detector')
-                for r in range(start_bin, end_bin+1):
-                    h.SetBinContent(r, 0)
-                    h.SetBinError(r, 0)
+                for rb in range(start_bin, end_bin + 1):
+                    h.SetBinContent(rb, 0)
+                    h.SetBinError(rb, 0)
 
             def zero_last_pt_bin_th2_reco(h):
                 start_bin = binning_handler.physical_bin_to_global_bin(pt=pt_bin_edges_reco[-1]+1, var=0, binning_scheme='detector')
                 end_bin = binning_handler.physical_bin_to_global_bin(pt=pt_bin_edges_reco[-1]+1, var=9999, binning_scheme='detector')
                 for ix in range(0, h.GetNbinsX()+2):
-                    for r in range(start_bin, end_bin+1):
-                        h.SetBinContent(ix, r, 0)
-                        h.SetBinError(ix, r, 0)
+                    for rb in range(start_bin, end_bin+1):
+                        h.SetBinContent(ix, rb, 0)
+                        h.SetBinError(ix, rb, 0)
 
             def zero_last_pt_bin_th2_gen(h):
                 start_bin = binning_handler.physical_bin_to_global_bin(pt=pt_bin_edges_gen[-1]+1, var=0, binning_scheme='generator')
                 end_bin = binning_handler.physical_bin_to_global_bin(pt=pt_bin_edges_gen[-1]+1, var=9999, binning_scheme='generator')
-                for r in range(start_bin, end_bin+1):
+                for gb in range(start_bin, end_bin + 1):
                     for iy in range(0, h.GetNbinsY()+2):
-                        h.SetBinContent(r, iy, 0)
-                        h.SetBinError(r, iy, 0)
+                        h.SetBinContent(gb, iy, 0)
+                        h.SetBinError(gb, iy, 0)
 
             # Get lots of hists from input files
             # ------------------------------------------------------------------
-
             mc_hname_append = "split" if MC_SPLIT else "all"
             hist_mc_reco = cu.get_from_tfile(region['mc_tfile'], "%s/hist_%s_reco_%s" % (region['dirname'], angle_shortname, mc_hname_append))
             hist_mc_gen = cu.get_from_tfile(region['mc_tfile'], "%s/hist_%s_truth_%s" % (region['dirname'], angle_shortname, mc_hname_append))
@@ -1413,7 +1420,7 @@ def main():
             # ------------------------------------------------------------------
             # MERGE LAST PT BIN WITH 2ND TO LAST
             # ------------------------------------------------------------------
-            merge_dir = os.path.join(this_output_dir, 'merge_bins')
+            merge_dir = os.path.join(this_output_dir, 'merge_last_pt_bin')
             if args.mergeLastPtBin:
                 def setup_merged_last_pt_bin_unfolder(orig_unfolder):
                     """"Merge last pt bin with 2nd to last"""
@@ -1424,7 +1431,6 @@ def main():
                     orig_gen_binning = this_binning_handler.get_binning_scheme('generator')
                     # pt_bins = this_binning_handler.get_pt_bins('generator', is_signal_region=True)
                     src_pt, dest_pt = pt_bin_edges_gen[-1], pt_bin_edges_gen[-2]
-                    print("src_pt:", src_pt, "dest_pt:", dest_pt)
                     var_bins_src = orig_gen_binning.get_variable_bins(src_pt)
                     var_bins_dest = orig_gen_binning.get_variable_bins(dest_pt)
 
@@ -1459,9 +1465,7 @@ def main():
 
                     # do twice: 1500-inf -> 408-954, then 954-1500 -> 408-954
                     src_pt, src2_pt, dest_pt = pt_bin_edges_reco[-1], pt_bin_edges_reco[-2], pt_bin_edges_reco[-3]
-                    print("src_pt:", src_pt, "dest_pt:", dest_pt)
                     var_bins_src = orig_reco_binning.get_variable_bins(src_pt)
-                    var_bins_src2 = orig_reco_binning.get_variable_bins(src2_pt)
                     var_bins_dest = orig_reco_binning.get_variable_bins(dest_pt)
 
                     if set(var_bins_dest) != set(var_bins_src):
@@ -1478,16 +1482,16 @@ def main():
 
                     # create new binning objects
                     detector_binning_merged = PtVarBinning(variable_bin_edges=orig_reco_binning.variable_bin_edges,
-                                                             variable_name=orig_reco_binning.variable_name,
-                                                             pt_bin_edges_signal=np.concatenate((orig_reco_binning.pt_bin_edges_signal[:-2], orig_reco_binning.pt_bin_edges_signal[-1:])),
-                                                             pt_bin_edges_underflow=orig_reco_binning.pt_bin_edges_underflow,
-                                                             binning_name=orig_reco_binning.binning_name,
-                                                             binning_underflow_name=orig_reco_binning.binning_underflow_name,
-                                                             binning_signal_name=orig_reco_binning.binning_signal_name,
-                                                             var_uf=orig_reco_binning.var_uf,
-                                                             var_of=orig_reco_binning.var_of,
-                                                             pt_uf=orig_reco_binning.pt_uf,
-                                                             pt_of=False)
+                                                           variable_name=orig_reco_binning.variable_name,
+                                                           pt_bin_edges_signal=np.concatenate((orig_reco_binning.pt_bin_edges_signal[:-2], orig_reco_binning.pt_bin_edges_signal[-1:])),
+                                                           pt_bin_edges_underflow=orig_reco_binning.pt_bin_edges_underflow,
+                                                           binning_name=orig_reco_binning.binning_name,
+                                                           binning_underflow_name=orig_reco_binning.binning_underflow_name,
+                                                           binning_signal_name=orig_reco_binning.binning_signal_name,
+                                                           var_uf=orig_reco_binning.var_uf,
+                                                           var_of=orig_reco_binning.var_of,
+                                                           pt_uf=orig_reco_binning.pt_uf,
+                                                           pt_of=False)
 
                     binning_handler_merged = BinningHandler(generator_ptvar_binning=generator_binning_merged,
                                                             detector_ptvar_binning=detector_binning_merged)
@@ -1649,7 +1653,7 @@ def main():
             # have to do it this way to ensure combined merged bins end up correct
             # TODO is it even possible to convert into a 1D list?
             merge_bin_history = []
-
+            merge_dir = os.path.join(this_output_dir, 'merge_bins')
             if args.mergeBins or args.mergeBinsFromFile:
 
                 def setup_merged_bin_unfolder(gen_bins_to_merge, reco_bins_to_merge, orig_unfolder):
@@ -1848,18 +1852,22 @@ def main():
                 tau_merged = 0
 
                 if args.mergeBins:
-                    pt_overflow_bin = binning_handler.get_first_pt_overflow_global_bin("generator")
-                    gen_bins_to_merge = get_bins_to_merge_nonnegative(unfolder.get_output(), binning_handler.get_binning_scheme('generator'), max_bin=pt_overflow_bin-1)
+                    # pt_overflow_bin = binning_handler.get_first_pt_overflow_global_bin("generator")
+                    gen_bins_to_merge = get_bins_to_merge_nonnegative(h=unfolder.get_output(),
+                                                                      binning_obj=binning_handler.get_binning_scheme('generator'),
+                                                                      ensure_nonnegative=False)
                     merge_bin_history.append(gen_bins_to_merge)
                     counter = 0
-                    max_iterations = 1
+                    max_iterations = 3
                     while len(gen_bins_to_merge) > 0 and counter < max_iterations:
                         print("********** MERGE LOOP:", counter, "***********")
                         counter += 1
                         unfolder_merged = setup_merged_bin_unfolder(gen_bins_to_merge, reco_bins_to_merge, unfolder_merged)
                         unfolder_merged.check_input()
                         unfolder_merged.do_unfolding(tau_merged)
-                        gen_bins_to_merge = get_bins_to_merge_nonnegative(unfolder_merged.get_output(), unfolder_merged.binning_handler.get_binning_scheme('generator'))
+                        gen_bins_to_merge = get_bins_to_merge_nonnegative(h=unfolder_merged.get_output(), 
+                                                                          binning_obj=unfolder_merged.binning_handler.get_binning_scheme('generator'), 
+                                                                          ensure_nonnegative=False)
                         reco_bins_to_merge = []
                         if len(gen_bins_to_merge) > 0:
                             merge_bin_history.append(gen_bins_to_merge)

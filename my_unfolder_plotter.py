@@ -244,16 +244,18 @@ class MyUnfolderPlotter(object):
 
     def draw_probability_matrix(self, output_dir='.', append="", title=""):
         output_filename = "%s/probability_map_%s.%s" % (output_dir, append, self.output_fmt)
+        ROOT.gStyle.SetPalette(ROOT.kRainBow)
         self.draw_2d_hist(self.unfolder.get_probability_matrix(),
                           title=title,
                           output_filename=output_filename,
-                          # z_min=1E-4, z_max=1,
+                          z_min=0, z_max=1,
                           logz=False,
                           draw_bin_lines_x=True,
                           draw_bin_lines_y=True,
                           canvas_size=(800, 700),
                           xtitle='Generator bin',
                           ytitle='Detector bin')
+        ROOT.gStyle.SetPalette(self.default_palette)
 
     def draw_jacobian(self, output_dir=".", append="", title=""):
         output_filename = "%s/jacobian_%s_logZ.%s" % (output_dir, append, self.output_fmt)

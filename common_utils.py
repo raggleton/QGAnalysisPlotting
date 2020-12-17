@@ -186,7 +186,7 @@ def get_from_tfile(tfile, obj_name, info=False):
     if info:
         print("Getting %s" % obj_name)
     obj = tfile.Get(obj_name)
-    if obj == None:
+    if obj is None:
         raise IOError("No object named %s in %s" % (obj_name, tfile.GetName()))
     else:
         if isinstance(obj, (ROOT.TH1, ROOT.TH2, ROOT.TH3)):
@@ -282,7 +282,7 @@ def make_normalised_TH2(hist, norm_axis, recolour=True, do_errors=False):
         arr = arr.T
         err_arr = err_arr.T
 
-     # all operations here are done per row (i.e. per y bin)
+    # all operations here are done per row (i.e. per y bin)
     if recolour:
         # can set so the maximum in each bin is the same,
         # scale other bins accordingly
@@ -827,7 +827,7 @@ def print_th2_bins(h, print_contents=True, print_errors=True, do_oflow=False):
     end_bin_y = h.GetNbinsY()+1 if do_oflow else h.GetNbinsY()
     for ix in range(start_bin_x, end_bin_x+1):
         for iy in range(start_bin_y, end_bin_y+1):
-            print(ix, iy, h.GetBinContent(ix. iy) if print_contents else "", "± %f" % h.GetBinError(ix, iy) if print_errors else "")
+            print(ix, iy, h.GetBinContent(ix, iy) if print_contents else "", "± %f" % h.GetBinError(ix, iy) if print_errors else "")
 
 
 def get_min_max_bin_contents(hist, include_error=True, ignore_zeros=True, start_bin=None, end_bin=None):
