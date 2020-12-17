@@ -18,6 +18,7 @@ import sys
 from array import array
 import numpy as np
 import math
+import json
 from itertools import product, chain
 from copy import copy, deepcopy
 from pprint import pprint
@@ -477,6 +478,19 @@ def get_bins_to_merge_nonnegative(h, binning_scheme, max_bin=-1):
             print("Found set that sums > 0:", this_merge_set, "=", summed_bins)
             bins_to_merge.extend(this_merge_set)
     return sorted(list(set(bins_to_merge)))
+
+
+MERGE_JSON_FILENAME = "merged_bins_history.json"
+
+def save_merge_bin_history_to_file(merge_bin_history, output_dir):
+    with open(os.path.join(output_dir, MERGE_JSON_FILENAME), 'w') as f:
+        json.dump(merge_bin_history, f, indent=4)
+
+
+def get_merge_bin_history_from_file(merge_dir):
+    with open(os.path.join(merge_dir, MERGE_JSON_FILENAME)) as f:
+        merge_bin_history = json.load(f)
+    return merge_bin_history
 
 
 # To be able to export to XML, since getting std::ostream from python is impossible?
@@ -1531,32 +1545,47 @@ def main():
             # have to do it this way to ensure combined merged bins end up correct
             # TODO is it even possible to convert into a 1D list?
             merge_bin_history = []
+            merge_dir = os.path.join(this_output_dir, 'merge_bins')
 
-            if args.mergeBins:
-                pt_overflow_bin = binning_handler.get_first_pt_overflow_global_bin("generator")
-                gen_bins_to_merge = get_bins_to_merge_nonnegative(unfolder.get_output(), binning_handler.get_binning_scheme('generator'), max_bin=pt_overflow_bin-1)
-                merge_bin_history.append(gen_bins_to_merge)
-                counter = 0
-                max_iterations = 3
-                reco_bins_to_merge = []
+            if args.mergeBins or args.mergeBinsFromFile:
                 unfolder_merged = unfolder
-                while len(gen_bins_to_merge) > 0 and counter < max_iterations:
-                    print("********** MERGE LOOP:", counter, "***********")
-                    counter += 1
-                    unfolder_merged = setup_merged_bin_unfolder(gen_bins_to_merge, reco_bins_to_merge, unfolder_merged)
-                    unfolder_merged.check_input()
-                    tau2 = 0
-                    unfolder_merged.do_unfolding(tau2)
-                    gen_bins_to_merge = get_bins_to_merge_nonnegative(unfolder_merged.get_output(), unfolder_merged.binning_handler.get_binning_scheme('generator'))
-                    merge_bin_history.append(gen_bins_to_merge)
 
-                print("merge_bin_history:", merge_bin_history)
+                reco_bins_to_merge = []
+                tau_merged = 0
+
+                if args.mergeBins:
+                    pt_overflow_bin = binning_handler.get_first_pt_overflow_global_bin("generator")
+                    gen_bins_to_merge = get_bins_to_merge_nonnegative(unfolder.get_output(), binning_handler.get_binning_scheme('generator'), max_bin=pt_overflow_bin-1)
+                    merge_bin_history.append(gen_bins_to_merge)
+                    counter = 0
+                    max_iterations = 1
+                    while len(gen_bins_to_merge) > 0 and counter < max_iterations:
+                        print("********** MERGE LOOP:", counter, "***********")
+                        counter += 1
+                        unfolder_merged = setup_merged_bin_unfolder(gen_bins_to_merge, reco_bins_to_merge, unfolder_merged)
+                        unfolder_merged.check_input()
+                        unfolder_merged.do_unfolding(tau_merged)
+                        gen_bins_to_merge = get_bins_to_merge_nonnegative(unfolder_merged.get_output(max_chi2_ndf=10000000), unfolder_merged.binning_handler.get_binning_scheme('generator'))
+                        reco_bins_to_merge = []
+                        if len(gen_bins_to_merge) > 0:
+                            merge_bin_history.append(gen_bins_to_merge)
+
+                    print("merge_bin_history:", merge_bin_history)
+
+                    save_merge_bin_history_to_file(merge_bin_history, merge_dir)
+
+                elif args.mergeBinsFromFile:
+                    merge_bin_history = get_merge_bin_history_from_file(os.path.join(args.mergeBinsFromFile, region['name'], angle.var, 'merge_bins'))
+                    print("Loaded merge_bin_history:", merge_bin_history)
+                    for gen_bins_to_merge in merge_bin_history:
+                        unfolder_merged = setup_merged_bin_unfolder(gen_bins_to_merge, reco_bins_to_merge, unfolder_merged)
+                        unfolder_merged.do_unfolding(tau_merged)
 
                 unfolder_plotter2 = MyUnfolderPlotter(unfolder_merged,
                                                       is_data=not MC_INPUT,
                                                       lumi=cu.get_lumi_str(do_dijet="Dijet" in region['name'],
                                                                            do_zpj="ZPlusJets" in region['name']))
-                plot_args2 = dict(output_dir=os.path.join(this_output_dir, 'merge_bins'), append=append)
+                plot_args2 = dict(output_dir=merge_dir, append=append)
 
                 # Do lots of extra gubbins, like caching matrices,
                 # creating unfolded hists with different levels of uncertainties,
