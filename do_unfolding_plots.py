@@ -377,7 +377,6 @@ class GenPtBinnedPlotter(BinnedPlotter):
             self.save_plot(plot, "%s/unfolded_unnormalised_%s_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
 
     def plot_unfolded_normalised(self):
-        print(self.bins)
         for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
             hbc_args = dict(ind=ibin, binning_scheme='generator')
             mc_gen_hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('hist_truth', **hbc_args)
@@ -409,7 +408,7 @@ class GenPtBinnedPlotter(BinnedPlotter):
             for ix in range(1, unfolded_hist_bin_total_errors.GetNbinsX()+1):
                 val, err = unfolded_hist_bin_total_errors.GetBinContent(ix), unfolded_hist_bin_total_errors.GetBinError(ix)
                 if val < 0:
-                    warnings.warn("plot_unfolded_normalised(): bin {0} content < {1} ± {2} ".format(ibin, val, err))
+                    warnings.warn("plot_unfolded_normalised(): pt bin {}, hist bin {} content < {} ± {} ".format(ibin, ix, val, err))
 
             # get stats
             cov_matrix = self.hist_bin_chopper.get_bin_plot(self.region['unfolder'].total_ematrix_name,
@@ -1716,28 +1715,28 @@ class GenPtBinnedPlotter(BinnedPlotter):
         def _convert_error_bars_to_error_ratio_hist(h, direction=1):
             """Create hist with bin content = (bin value ± bin error) / bin value, 0 error"""
             h_new = h.Clone(h.GetName() + cu.get_unique_str())
-            for ibin in range(1, h_new.GetNbinsX()+1):
-                if h.GetBinContent(ibin) > 0:
-                    h_new.SetBinContent(ibin, 1+(direction*(h.GetBinError(ibin) / h.GetBinContent(ibin))))
+            for ix in range(1, h_new.GetNbinsX()+1):
+                if h.GetBinContent(ix) > 0:
+                    h_new.SetBinContent(ix, 1+(direction*(h.GetBinError(ix) / h.GetBinContent(ix))))
                 else:
-                    if h.GetBinContent(ibin) < 0:
-                        h_new.SetBinContent(ibin, 1+(direction*(h.GetBinError(ibin) / h.GetBinContent(ibin))))
-                        print("_convert_error_bars_to_error_ratio_hist() warning: bin %d content < 0!" % (ibin))
+                    if h.GetBinContent(ix) < 0:
+                        h_new.SetBinContent(ix, 1+(direction*(h.GetBinError(ix) / h.GetBinContent(ix))))
+                        print("_convert_error_bars_to_error_ratio_hist() warning: bin %d content < 0!" % (ix))
                     else:
-                        h_new.SetBinContent(ibin, 1)
-                h_new.SetBinError(ibin, 0)
+                        h_new.SetBinContent(ix, 1)
+                h_new.SetBinError(ix, 0)
             return h_new
 
         def _convert_syst_shift_to_error_ratio_hist(h_syst, h_nominal):
             """Create h_syst / h_nominal without error bars"""
             h_new = h_syst.Clone(h_syst.GetName() + cu.get_unique_str())
             h_new.Divide(h_nominal)
-            for ibin in range(1, h_new.GetNbinsX()+1):
-                if h_nominal.GetBinContent(ibin) == 0:
-                    h_new.SetBinContent(ibin, 1)
-                if h_syst.GetBinContent(ibin) < 0:
-                    print("Warning: _convert_syst_shift_to_error_ratio_hist bin", ibin, "of h_syst < 0", h_syst.GetName())
-                h_new.SetBinError(ibin, 0)
+            for ix in range(1, h_new.GetNbinsX()+1):
+                if h_nominal.GetBinContent(ix) == 0:
+                    h_new.SetBinContent(ix, 1)
+                if h_syst.GetBinContent(ix) < 0:
+                    print("Warning: _convert_syst_shift_to_error_ratio_hist bin", ix, "of h_syst < 0", h_syst.GetName())
+                h_new.SetBinError(ix, 0)
             return h_new
 
         for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
@@ -1893,24 +1892,24 @@ class GenPtBinnedPlotter(BinnedPlotter):
         def _convert_error_bars_to_error_ratio_hist(h, direction=1):
             """Create hist with bin content = error shift / bin value, 0 error"""
             h_new = h.Clone(h.GetName() + cu.get_unique_str())
-            for ibin in range(1, h_new.GetNbinsX()+1):
-                if h.GetBinContent(ibin) > 0:
-                    h_new.SetBinContent(ibin, 1+(direction*(h.GetBinError(ibin) / h.GetBinContent(ibin))))
+            for ix in range(1, h_new.GetNbinsX()+1):
+                if h.GetBinContent(ix) > 0:
+                    h_new.SetBinContent(ix, 1+(direction*(h.GetBinError(ix) / h.GetBinContent(ix))))
                 else:
-                    if h.GetBinContent(ibin) < 0:
-                        h_new.SetBinContent(ibin, 1+(direction*(h.GetBinError(ibin) / h.GetBinContent(ibin))))
-                        print("_convert_error_bars_to_error_ratio_hist() warning: bin %d content < 0!" % (ibin))
+                    if h.GetBinContent(ix) < 0:
+                        h_new.SetBinContent(ix, 1+(direction*(h.GetBinError(ix) / h.GetBinContent(ix))))
+                        print("_convert_error_bars_to_error_ratio_hist() warning: bin %d content < 0!" % (ix))
                     else:
-                        h_new.SetBinContent(ibin, 1)
-                h_new.SetBinError(ibin, 0)
+                        h_new.SetBinContent(ix, 1)
+                h_new.SetBinError(ix, 0)
             return h_new
 
         def _convert_syst_shift_to_error_ratio_hist(h_syst, h_nominal):
             """Create h_syst / h_nominal without error bars"""
             h_new = h_syst.Clone(h_syst.GetName() + cu.get_unique_str())
             h_new.Divide(h_nominal)
-            for ibin in range(1, h_new.GetNbinsX()+1):
-                h_new.SetBinError(ibin, 0)
+            for ix in range(1, h_new.GetNbinsX()+1):
+                h_new.SetBinError(ix, 0)
             return h_new
 
         for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
@@ -2226,7 +2225,7 @@ class GenLambdaBinnedPlotter(BinnedPlotter):
     def plot_unfolded_with_unreg_unnormalised(self):
         for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
             mc_gen_hist_bin = self.hist_bin_chopper.get_lambda_bin_div_bin_width('hist_truth', ibin, binning_scheme='generator')
-            unfolded_hist_bin_stat_errors = self.hist_bin_chopper.get_lambda_bin_div_bin_width('unfolded_stat_err', ibin, binning_scheme='generator')
+            # unfolded_hist_bin_stat_errors = self.hist_bin_chopper.get_lambda_bin_div_bin_width('unfolded_stat_err', ibin, binning_scheme='generator')
             unfolded_hist_bin_total_errors = self.hist_bin_chopper.get_lambda_bin_div_bin_width('unfolded', ibin, binning_scheme='generator')
             unreg_unfolded_hist_bin_total_errors = self.hist_bin_chopper.get_lambda_bin_div_bin_width('unreg_unfolded', ibin, binning_scheme='generator')
 
@@ -2317,7 +2316,7 @@ class GenLambdaBinnedPlotter(BinnedPlotter):
             unfolded_hist_bin_total_errors = self.hist_bin_chopper.get_lambda_bin_div_bin_width('unfolded', ibin, binning_scheme='generator')
             unfolded_hist_bin_stat_errors = self.hist_bin_chopper.get_lambda_bin_div_bin_width('unfolded_stat_err', ibin, binning_scheme='generator')
             alt_unfolded_hist_bin_total_errors = alt_unfolder.hist_bin_chopper.get_lambda_bin_div_bin_width('unfolded', ibin, binning_scheme='generator')
-            alt_mc_gen_hist_gin = self.hist_bin_chopper.get_lambda_bin_div_bin_width('alt_hist_truth', ibin, binning_scheme='generator')
+            # alt_mc_gen_hist_bin = self.hist_bin_chopper.get_lambda_bin_div_bin_width('alt_hist_truth', ibin, binning_scheme='generator')
 
             entries = [
                 Contribution(mc_gen_hist_bin,
@@ -2591,29 +2590,26 @@ class GenLambdaBinnedPlotter(BinnedPlotter):
                 h_syst.SetBinError(i, 0)
                 h_total.SetBinError(i, 0)
             c_stat = Contribution(h_stat,
-                                 label="Input stat.",
-                                 line_color=ROOT.kRed,
-                                 line_style=3,
-                                 line_width=3,
-                                 marker_size=0,
-                                 marker_color=ROOT.kRed,
-                                 )
+                                  label="Input stat.",
+                                  line_color=ROOT.kRed,
+                                  line_style=3,
+                                  line_width=3,
+                                  marker_size=0,
+                                  marker_color=ROOT.kRed)
             c_syst = Contribution(h_syst,
-                                 label="Response matrix stat.",
-                                 line_color=ROOT.kGray+2,
-                                 line_style=3,
-                                 line_width=3,
-                                 marker_size=0,
-                                 marker_color=ROOT.kGray+2,
-                                 )
+                                  label="Response matrix stat.",
+                                  line_color=ROOT.kGray+2,
+                                  line_style=3,
+                                  line_width=3,
+                                  marker_size=0,
+                                  marker_color=ROOT.kGray+2)
             c_tot = Contribution(h_total,
                                  label="Total",
                                  line_color=ROOT.kBlack,
                                  line_style=1,
                                  line_width=3,
                                  marker_size=0,
-                                 marker_color=ROOT.kBlack,
-                                 )
+                                 marker_color=ROOT.kBlack)
             entries.extend([c_stat, c_syst, c_tot])
 
             func_name = cu.get_current_func_name()
@@ -2709,24 +2705,24 @@ class GenLambdaBinnedPlotter(BinnedPlotter):
         def _convert_error_bars_to_error_ratio_hist(h, direction=1):
             """Create hist with bin content = error shift / bin value, 0 error"""
             h_new = h.Clone(h.GetName() + cu.get_unique_str())
-            for ibin in range(1, h_new.GetNbinsX()+1):
-                if h.GetBinContent(ibin) > 0:
-                    h_new.SetBinContent(ibin, 1+(direction*(h.GetBinError(ibin) / h.GetBinContent(ibin))))
+            for ix in range(1, h_new.GetNbinsX()+1):
+                if h.GetBinContent(ix) > 0:
+                    h_new.SetBinContent(ix, 1+(direction*(h.GetBinError(ix) / h.GetBinContent(ix))))
                 else:
-                    if h.GetBinContent(ibin) < 0:
-                        h_new.SetBinContent(ibin, 1+(direction*(h.GetBinError(ibin) / h.GetBinContent(ibin))))
-                        print("_convert_error_bars_to_error_ratio_hist() warning: bin %d content < 0!" % (ibin))
+                    if h.GetBinContent(ix) < 0:
+                        h_new.SetBinContent(ix, 1+(direction*(h.GetBinError(ix) / h.GetBinContent(ix))))
+                        print("_convert_error_bars_to_error_ratio_hist() warning: bin %d content < 0!" % (ix))
                     else:
-                        h_new.SetBinContent(ibin, 1)
-                h_new.SetBinError(ibin, 0)
+                        h_new.SetBinContent(ix, 1)
+                h_new.SetBinError(ix, 0)
             return h_new
 
         def _convert_syst_shift_to_error_ratio_hist(h_syst, h_nominal):
             """Create h_syst / h_nominal without error bars"""
             h_new = h_syst.Clone(h_syst.GetName() + cu.get_unique_str())
             h_new.Divide(h_nominal)
-            for ibin in range(1, h_new.GetNbinsX()+1):
-                h_new.SetBinError(ibin, 0)
+            for ix in range(1, h_new.GetNbinsX()+1):
+                h_new.SetBinError(ix, 0)
             return h_new
 
         for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
@@ -3088,9 +3084,9 @@ class RecoPtBinnedPlotter(BinnedPlotter):
                                        line_color=self.plot_styles['reco_data_colour'], line_width=self.line_width, line_style=1,
                                        marker_color=self.plot_styles['reco_data_colour'], marker_style=cu.Marker.get('circle'), marker_size=0.75)
 
-        mc_style = dict( label="%s (bg-subtracted)" % self.region['mc_label'],
-                         line_color=self.plot_styles['reco_mc_colour'], line_width=self.line_width,
-                         marker_color=self.plot_styles['reco_mc_colour'], marker_size=0)
+        mc_style = dict(label="%s (bg-subtracted)" % self.region['mc_label'],
+                        line_color=self.plot_styles['reco_mc_colour'], line_width=self.line_width,
+                        marker_color=self.plot_styles['reco_mc_colour'], marker_size=0)
 
         alt_mc_style = dict(label="%s (bg-subtracted)" % self.region['alt_mc_label'],
                             line_color=self.plot_styles['alt_reco_colour'], line_width=self.line_width, #line_style=2,

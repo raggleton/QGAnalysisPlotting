@@ -431,10 +431,10 @@ def get_bins_to_merge_nonnegative(h, binning_scheme, max_bin=-1):
         max_bin = h.GetNbinsX()
     contents = np.array([h.GetBinContent(i) for i in range(1, max_bin+1)])
 
-    def _is_boundary_bin(bin_num):
-        pt_current = binning_scheme.global_bin_to_physical_bin(bin_num).pt[0]
-        pt_next = binning_scheme.global_bin_to_physical_bin(bin_num-1).pt[0]
-        return pt_next != pt_current
+    def _is_boundary_bin(bin_number):
+        pt_curr = binning_scheme.global_bin_to_physical_bin(bin_number).pt[0]
+        pt_nxt = binning_scheme.global_bin_to_physical_bin(bin_number-1).pt[0]
+        return pt_nxt != pt_curr
 
     for bin_num, x in enumerate(contents, 1):
         this_merge_set = []
