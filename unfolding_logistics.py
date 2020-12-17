@@ -83,6 +83,11 @@ def get_unfolding_argparser(description='', parser=None):
                                'made by a previous running of unfolding.py ' \
                                'that covers the different signal regions & variables'))
 
+    parser.add_argument("--mergeLastPtBin",
+                        type=lambda x: bool(distutils.util.strtobool(x)),
+                        default=False,
+                        help=('Merge last output pt bins.'
+                               + standard_bool_description))
 
     parser.add_argument("--zeroLastPtBin",
                         type=lambda x: bool(distutils.util.strtobool(x)),
@@ -413,6 +418,9 @@ def get_unfolding_output_dir(args):
 
     if args.mergeBinsFromFile:
         append += "_mergeBinsFromFile"
+
+    if args.mergeLastPtBin:
+        append += "_mergeLastPtBin"
 
     if args.zeroLastPtBin:
         append += "_zeroLastPtBin"
