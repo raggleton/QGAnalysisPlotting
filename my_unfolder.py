@@ -116,7 +116,7 @@ class PtVarBinning(object):
         self.physical_val_to_global_bin_map = dict()
 
         self._cache_global_bin_mapping()
-        print("bin 1:", self.global_bin_to_physical_val_map[1])
+        # print("bin 1:", self.global_bin_to_physical_val_map[1])
 
     def is_signal_region(self, pt):
         return pt >= self.pt_bin_edges_signal[0]
@@ -300,7 +300,7 @@ class PtVarPerPtBinning(object):
         self.physical_val_to_global_bin_map = dict()
 
         self._cache_global_bin_mapping()
-        print("bin 1:", self.global_bin_to_physical_val_map[1])
+        # print("bin 1:", self.global_bin_to_physical_val_map[1])
 
     def is_signal_region(self, pt):
         return pt >= self.pt_bin_edges_signal[0]

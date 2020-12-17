@@ -87,7 +87,7 @@ def rm_large_rel_error_bins_th1(hist, relative_err_threshold=-1):
         return hist
     new_hist = hist.Clone()
     new_hist.SetDirectory(0)
-    for ix in range(hist.GetNbinsX()+1):
+    for ix in range(0, hist.GetNbinsX()+2):
         val = hist.GetBinContent(ix)
         err = hist.GetBinError(ix)
         if val == 0:
@@ -478,6 +478,7 @@ def get_bins_to_merge_nonnegative(h, binning_scheme, max_bin=-1):
 
 MERGE_JSON_FILENAME = "merged_bins_history.json"
 
+
 def save_merge_bin_history_to_file(merge_bin_history, output_dir):
     with open(os.path.join(output_dir, MERGE_JSON_FILENAME), 'w') as f:
         json.dump(merge_bin_history, f, indent=4)
@@ -820,6 +821,7 @@ def main():
             hist_mc_gen_all = cu.get_from_tfile(region['mc_tfile'], "%s/hist_%s_truth_all" % (region['dirname'], angle_shortname))
             hist_mc_gen_reco_map = cu.get_from_tfile(region['mc_tfile'], "%s/tu_%s_GenReco_%s" % (region['dirname'], angle_shortname, mc_hname_append))
 
+            hist_mc_reco_all = rm_large_rel_error_bins_th1(hist_mc_reco_all, relative_err_threshold=args.relErr)
 
             hist_data_reco = None
             if not MC_INPUT:
@@ -1333,6 +1335,7 @@ def main():
             # Check result with numpy
             # unfolder.do_numpy_comparison(output_dir=this_output_dir)
 
+            # ------------------------------------------------------------------
             # Figure out if we should merge any bins (i.e. -ve ones)
             # ------------------------------------------------------------------
             def setup_merged_bin_unfolder(gen_bins_to_merge, reco_bins_to_merge, orig_unfolder):
@@ -1548,7 +1551,7 @@ def main():
                         unfolder_merged = setup_merged_bin_unfolder(gen_bins_to_merge, reco_bins_to_merge, unfolder_merged)
                         unfolder_merged.check_input()
                         unfolder_merged.do_unfolding(tau_merged)
-                        gen_bins_to_merge = get_bins_to_merge_nonnegative(unfolder_merged.get_output(max_chi2_ndf=10000000), unfolder_merged.binning_handler.get_binning_scheme('generator'))
+                        gen_bins_to_merge = get_bins_to_merge_nonnegative(unfolder_merged.get_output(), unfolder_merged.binning_handler.get_binning_scheme('generator'))
                         reco_bins_to_merge = []
                         if len(gen_bins_to_merge) > 0:
                             merge_bin_history.append(gen_bins_to_merge)

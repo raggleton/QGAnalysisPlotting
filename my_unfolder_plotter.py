@@ -21,7 +21,7 @@ import qg_common as qgc
 import qg_general_plots as qgp
 
 # This doesn't seem to work...sigh
-np.set_printoptions(edgeitems=3,infstr='Infinity',
+np.set_printoptions(edgeitems=3, infstr='Infinity',
                     linewidth=75, nanstr='nan', precision=8,
                     suppress=False, threshold=1000, formatter=None)
 
@@ -713,13 +713,13 @@ class MyUnfolderPlotter(object):
         """
         which = which.lower()
         if which not in ['gen', 'reco']:
-            raise ArgumentError("'which' should be 'gen' or 'reco'")
+            raise ValueError("'which' should be 'gen' or 'reco'")
         axis = axis.lower()
         if axis not in ['x', 'y']:
-            raise ArgumentError("'axis' should be 'x' or 'y'")
+            raise ValueError("'axis' should be 'x' or 'y'")
         labels_inside_align = labels_inside_align.lower()
         if labels_inside_align not in ['lower', 'higher']:
-            raise ArgumentError("'labels_inside_align' should be 'lower' or 'higher'")
+            raise ValueError("'labels_inside_align' should be 'lower' or 'higher'")
 
         binning_handler_scheme_map = {"gen": "generator", "reco": "detector"}
         binning_scheme = binning_handler_scheme_map[which]
@@ -769,7 +769,7 @@ class MyUnfolderPlotter(object):
             # binning = this_binning.FindNode("%s_underflow" % dist_name) if pt_val < signal_pt_bins[0] else this_binning.FindNode(dist_name)
             # pt_bin = binning.GetGlobalBinNumber(first_var+0.000001, pt_val+0.01) - 0.5 # -0.5 for offset, since the bins are centered on the bin number (e.g. bin 81 goes from 80.5 to 81.5)
             pt_bin = binning_obj.physical_bin_to_global_bin(pt=pt_val, var=first_var) - 0.5
-            pt_bin_offset = 0 if do_underflow else binning_obj.get_distribution(pt).GetStartBin()
+            pt_bin_offset = 0 if do_underflow else binning_obj.get_distribution(pt_val).GetStartBin()
 
             # remove extra bins due to the lambda overflow, if it exists
             if not do_overflow and binning_obj.var_of:
@@ -1375,7 +1375,7 @@ class MyUnfolderPlotter(object):
         hist_reco = self.unfolder.input_hist_bg_subtracted
         is_bg_subtracted = True
         if not hist_reco:
-            hist_reco = self.input_hist
+            hist_reco = self.unfolder.input_hist
             is_bg_subtracted = False
         if hist_reco:
             entries.append(

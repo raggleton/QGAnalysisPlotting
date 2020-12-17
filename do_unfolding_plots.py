@@ -377,15 +377,16 @@ class GenPtBinnedPlotter(BinnedPlotter):
             self.save_plot(plot, "%s/unfolded_unnormalised_%s_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
 
     def plot_unfolded_normalised(self):
+        print(self.bins)
         for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
             hbc_args = dict(ind=ibin, binning_scheme='generator')
             mc_gen_hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('hist_truth', **hbc_args)
-            key = self.hist_bin_chopper._generate_key("unfolded_stat_err",
-                                                      ind=ibin,
-                                                      axis='pt',
-                                                      do_norm=True,
-                                                      do_div_bin_width=True,
-                                                      binning_scheme='generator')
+            # key = self.hist_bin_chopper._generate_key("unfolded_stat_err",
+            #                                           ind=ibin,
+            #                                           axis='pt',
+            #                                           do_norm=True,
+            #                                           do_div_bin_width=True,
+            #                                           binning_scheme='generator')
             # print("plot_unfolded_normalised", key)
             unfolded_hist_bin_stat_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded_stat_err', **hbc_args)
             # cu.print_th1_bins(unfolded_hist_bin_stat_errors)
@@ -404,6 +405,11 @@ class GenPtBinnedPlotter(BinnedPlotter):
                 # print("plot_unfolded_normalised total")
                 unfolded_hist_bin_total_errors = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded', **hbc_args)
             # cu.print_th1_bins(unfolded_hist_bin_total_errors)
+
+            for ix in range(1, unfolded_hist_bin_total_errors.GetNbinsX()+1):
+                val, err = unfolded_hist_bin_total_errors.GetBinContent(ix), unfolded_hist_bin_total_errors.GetBinError(ix)
+                if val < 0:
+                    warnings.warn("plot_unfolded_normalised(): bin {0} content < {1} ± {2} ".format(ibin, val, err))
 
             # get stats
             cov_matrix = self.hist_bin_chopper.get_bin_plot(self.region['unfolder'].total_ematrix_name,
