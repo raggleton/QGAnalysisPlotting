@@ -484,6 +484,110 @@ def merge_th2_bin_pairs(h, bin_pairs_x, bin_pairs_y, new_bin_edges_x, new_bin_ed
     return h_new2
 
 
+def setup_merged_last_pt_binning(orig_binning_handler):
+    """Setup BinningHandler for merged last pt bins, along with bin pairs to merge.
+
+    These can be used in merge_th1_bin_pairs(), etc
+
+    Parameters
+    ----------
+    orig_binning_handler : BinningHandler
+        To get original binning scheme.
+        Must have PtVarBinning objects for generator_/detector_binning,
+        otherwise it won't work.
+
+    Returns
+    -------
+    BinningHandler, list[[int, int]], list[[int, int]]
+        New BinningHandler, list of gen bin pairs to merge, list of reco bin pairs to merge
+
+    Raises
+    ------
+    TypeError
+        If BinningHandler doesn't have PtVarBinning objects
+    ValueError
+        If mismatch in variable bins in different pt bins
+
+    """
+    # construct bin pairs to merge
+    # generator
+    orig_gen_binning = orig_binning_handler.get_binning_scheme('generator')
+    src_pt = orig_gen_binning.get_pt_bins(is_signal_region=True)[-1]
+    var_bins_src = orig_gen_binning.get_variable_bins(src_pt)
+    dest_pt = orig_gen_binning.get_pt_bins(is_signal_region=True)[-2]
+    var_bins_dest = orig_gen_binning.get_variable_bins(dest_pt)
+
+    if set(var_bins_dest) != set(var_bins_src):
+        raise ValueError("Cannot merge last pt bin - different variable bins")
+
+    gen_bin_pairs = []
+
+    these_var_bins = var_bins_src if orig_gen_binning.var_of else var_bins_src[:-1]
+    # do all to include overflow bin
+    for var in these_var_bins:
+        src_bin = orig_gen_binning.physical_bin_to_global_bin(pt=src_pt, var=var + 1E-6)
+        dest_bin = orig_gen_binning.physical_bin_to_global_bin(pt=dest_pt, var=var + 1E-6)
+        gen_bin_pairs.append([src_bin, dest_bin])
+
+    # create new binning objects
+    if not isinstance(orig_gen_binning, PtVarBinning):
+        raise TypeError("Expected orig_gen_binning to be type PtVarBinning - cannot setup otherwise")
+    generator_binning_merged = PtVarBinning(variable_bin_edges=orig_gen_binning.variable_bin_edges,
+                                            variable_name=orig_gen_binning.variable_name,
+                                            pt_bin_edges_signal=orig_gen_binning.pt_bin_edges_signal,
+                                            pt_bin_edges_underflow=orig_gen_binning.pt_bin_edges_underflow,
+                                            binning_name=orig_gen_binning.binning_name,
+                                            binning_underflow_name=orig_gen_binning.binning_underflow_name,
+                                            binning_signal_name=orig_gen_binning.binning_signal_name,
+                                            var_uf=orig_gen_binning.var_uf,
+                                            var_of=orig_gen_binning.var_of,
+                                            pt_uf=orig_gen_binning.pt_uf,
+                                            pt_of=False)
+
+    # detector
+    orig_reco_binning = orig_binning_handler.get_binning_scheme('detector')
+    reco_bin_pairs = []
+
+    # do twice: 1500-inf -> 408-954, then 954-1500 -> 408-954
+    src_pt = orig_reco_binning.get_pt_bins(is_signal_region=True)[-1]
+    var_bins_src = orig_reco_binning.get_variable_bins(src_pt)
+    src2_pt = orig_reco_binning.get_pt_bins(is_signal_region=True)[-2]
+    dest_pt = orig_reco_binning.get_pt_bins(is_signal_region=True)[-3]
+    var_bins_dest = orig_reco_binning.get_variable_bins(dest_pt)
+
+    if set(var_bins_dest) != set(var_bins_src):
+        raise ValueError("Cannot merge last pt bin - different variable bins")
+    # do all to include overflow bin
+    these_var_bins = var_bins_src if orig_reco_binning.var_of else var_bins_src[:-1]
+
+    for var in these_var_bins:
+        src_bin = orig_reco_binning.physical_bin_to_global_bin(pt=src_pt, var=var + 1E-6)
+        src2_bin = orig_reco_binning.physical_bin_to_global_bin(pt=src2_pt, var=var + 1E-6)
+        dest_bin = orig_reco_binning.physical_bin_to_global_bin(pt=dest_pt, var=var + 1E-6)
+        reco_bin_pairs.append([src_bin, dest_bin])
+        reco_bin_pairs.append([src2_bin, dest_bin])
+
+    # create new binning objects
+    if not isinstance(orig_reco_binning, PtVarBinning):
+        raise TypeError("Expected orig_reco_binning to be type PtVarBinning - cannot setup otherwise")
+    detector_binning_merged = PtVarBinning(variable_bin_edges=orig_reco_binning.variable_bin_edges,
+                                           variable_name=orig_reco_binning.variable_name,
+                                           pt_bin_edges_signal=np.concatenate((orig_reco_binning.pt_bin_edges_signal[:-2], orig_reco_binning.pt_bin_edges_signal[-1:])),
+                                           pt_bin_edges_underflow=orig_reco_binning.pt_bin_edges_underflow,
+                                           binning_name=orig_reco_binning.binning_name,
+                                           binning_underflow_name=orig_reco_binning.binning_underflow_name,
+                                           binning_signal_name=orig_reco_binning.binning_signal_name,
+                                           var_uf=orig_reco_binning.var_uf,
+                                           var_of=orig_reco_binning.var_of,
+                                           pt_uf=orig_reco_binning.pt_uf,
+                                           pt_of=False)
+
+    binning_handler_merged = BinningHandler(generator_ptvar_binning=generator_binning_merged,
+                                            detector_ptvar_binning=detector_binning_merged)
+
+    return binning_handler_merged, gen_bin_pairs, reco_bin_pairs
+
+
 def get_bins_to_merge_probability_stats(pmatrix, min_num=10, allow_zero_entries=True, use_neff_entries=False, max_p=0.7, max_rel_err=0.6):
     """Figure out which gen bins to merge based on poor number of events & error bars
     in given column of probability matrix
@@ -1076,12 +1180,6 @@ def main():
             # ROOT.BinningXMLExporter.ExportXML(unfolder.detector_binning, this_output_dir, "detector_binning.xml", True, True, 2)
             # ROOT.BinningXMLExporter.ExportXML(unfolder.generator_binning, this_output_dir, "generator_binning.xml", True, True, 2)
 
-            unfolder_plotter = MyUnfolderPlotter(unfolder,
-                                                 is_data=not MC_INPUT,
-                                                 lumi=cu.get_lumi_str(do_dijet="Dijet" in region['name'],
-                                                                      do_zpj="ZPlusJets" in region['name']))
-            plot_args = dict(output_dir=this_output_dir, append=append)
-
             # SetEpsMatrix ensures rank properly calculated when inverting
             # Needed if you get message "rank of matrix E 55 expect 170"
             # And unfolded looks wacko
@@ -1103,7 +1201,82 @@ def main():
 
             unfolder.set_input(**input_args())
 
+            # Store any functions used to rebin/merge TH1 and TH2s, so we can apply them later
+            th1_merge_reco_funcs = []
+            th1_merge_gen_funcs = []
+            th2_merge_funcs = []
+
+            # Merge last pt bin with 2nd to last, if desired
+            # ------------------------------------------------------------------
+            # merge_dir = os.path.join(this_output_dir, 'merge_last_pt_bin')
+            def setup_merged_last_pt_bin_unfolder(orig_unfolder):
+                """Setup unfolder with last pt bin merged with 2nd to last"""
+                this_binning_handler = orig_unfolder.binning_handler
+
+                # Create new BinningHandler, bin edges, to use in merging funcs
+                binning_handler_merged, gen_bin_pairs, reco_bin_pairs = setup_merged_last_pt_binning(this_binning_handler)
+
+                new_gen_bins = np.arange(0.5, orig_unfolder.hist_truth.GetNbinsX() - len(gen_bin_pairs) + 0.5 + 1, 1) # new bin edges to match TUnfold style
+                new_reco_bins = np.arange(0.5, orig_unfolder.input_hist.GetNbinsX() - len(reco_bin_pairs) + 0.5 + 1, 1) # new bin edges to match TUnfold style
+
+                # Setup functions to do merging, since we always use same args
+                th1_merge_reco = partial(merge_th1_bin_pairs, bin_pairs=reco_bin_pairs, new_bin_edges=new_reco_bins)
+                th1_merge_gen = partial(merge_th1_bin_pairs, bin_pairs=gen_bin_pairs, new_bin_edges=new_gen_bins)
+                th2_merge = partial(merge_th2_bin_pairs, bin_pairs_x=gen_bin_pairs, new_bin_edges_x=new_gen_bins,
+                                    bin_pairs_y=reco_bin_pairs, new_bin_edges_y=new_reco_bins)
+
+                th1_merge_reco_funcs.append(th1_merge_reco)
+                th1_merge_gen_funcs.append(th1_merge_gen)
+                th2_merge_funcs.append(th2_merge)
+
+                response_map_merged = th2_merge(orig_unfolder.response_map)
+
+                print('orig response map dim:', orig_unfolder.response_map.GetNbinsX(), orig_unfolder.response_map.GetNbinsY())
+                print('rebinned response map dim:', response_map_merged.GetNbinsX(), response_map_merged.GetNbinsY())
+
+                # Setup new unfolder
+                new_unfolder = MyUnfolder(response_map=response_map_merged,
+                                          binning_handler=binning_handler_merged,
+                                          **unfolder_args)
+
+                new_unfolder.SetEpsMatrix(unfolder.GetEpsMatrix())
+
+                orig_input_handler = orig_unfolder.input_handler
+                input_handler_merged = InputHandler(input_hist=th1_merge_reco(orig_input_handler.input_hist),
+                                                    hist_truth=th1_merge_gen(orig_input_handler.hist_truth),
+                                                    hist_mc_reco=th1_merge_reco(orig_input_handler.hist_mc_reco),
+                                                    hist_mc_fakes=th1_merge_reco(orig_input_handler.hist_mc_fakes))
+
+                orig_input_handler_gen_binning = orig_unfolder.input_handler_gen_binning
+                input_handler_gen_binning_merged = InputHandler(input_hist=th1_merge_gen(orig_input_handler_gen_binning.input_hist),
+                                                                hist_truth=None,
+                                                                hist_mc_reco=th1_merge_gen(orig_input_handler_gen_binning.hist_mc_reco),
+                                                                hist_mc_fakes=th1_merge_gen(orig_input_handler_gen_binning.hist_mc_fakes))
+
+                # Set what is to be unfolded
+                # ------------------------------------------------------------------
+                new_unfolder.set_input(input_handler=input_handler_merged,
+                                       input_handler_gen_binning=input_handler_gen_binning_merged,
+                                       bias_factor=args.biasFactor,
+                                       error_unconstrained_truth_bins=False)
+
+                return new_unfolder
+
+            if args.mergeLastPtBin:
+                print(cu.pcolors.OKBLUE, "Doing last pt bin merging...", cu.pcolors.ENDC)
+                unfolder_merged = setup_merged_last_pt_bin_unfolder(unfolder)
+                unfolder_merged.check_input()
+                unfolder = unfolder_merged
+
             unfolder.hist_bin_chopper.add_obj('hist_truth', unfolder.hist_truth)
+
+            # Setup plotter
+            # ------------------------------------------------------------------
+            unfolder_plotter = MyUnfolderPlotter(unfolder,
+                                                 is_data=not MC_INPUT,
+                                                 lumi=cu.get_lumi_str(do_dijet="Dijet" in region['name'],
+                                                                      do_zpj="ZPlusJets" in region['name']))
+            plot_args = dict(output_dir=this_output_dir, append=append)
 
             # Add systematic errors as different response matrices, use TUnfold machinery
             # ------------------------------------------------------------------
@@ -1211,14 +1384,20 @@ def main():
                 alt_hist_mc_gen.Scale(alt_scale)
                 alt_hist_mc_reco.Scale(alt_scale)
 
+                # Update binnings
+                for mf in th1_merge_gen_funcs:
+                    alt_hist_mc_gen = mf(alt_hist_mc_gen)
+                for mf in th1_merge_reco_funcs:
+                    alt_hist_mc_reco = mf(alt_hist_mc_reco)
+
                 # fakes-subtracted version
                 alt_hist_mc_reco_bg_subtracted, alt_hist_fakes = unfolder.input_handler.subtract_fake_hist(alt_hist_mc_reco)
 
                 # gen-binned versions of detector-level plots
                 alt_hist_mc_reco_gen_binning = cu.get_from_tfile(region['alt_mc_tfile'], "%s/hist_%s_reco_gen_binning" % (region['dirname'], angle_shortname))
                 alt_hist_mc_reco_gen_binning.Scale(alt_scale)
-
-                # fakes-subtracted version
+                for mf in th1_merge_gen_funcs:
+                    alt_hist_mc_reco_gen_binning = mf(alt_hist_mc_reco_gen_binning)
                 alt_hist_mc_reco_bg_subtracted_gen_binning, alt_hist_fakes_gen_binning = unfolder.input_handler_gen_binning.subtract_fake_hist(alt_hist_mc_reco_gen_binning)
 
                 unfolder.hist_bin_chopper.add_obj('alt_hist_truth', alt_hist_mc_gen)
@@ -1486,311 +1665,8 @@ def main():
             # Check result with numpy
             # unfolder.do_numpy_comparison(output_dir=this_output_dir)
 
-            # ------------------------------------------------------------------
-            # MERGE LAST PT BIN WITH 2ND TO LAST
-            # TODO should do this earlier?
-            # ------------------------------------------------------------------
-            merge_dir = os.path.join(this_output_dir, 'merge_last_pt_bin')
-
-            def setup_merged_last_pt_binning(orig_binning_handler):
-                """Setup BinningHandler for merged last pt bins, along with bin pairs to merge.
-
-                These can be used in merge_th1_bin_pairs(), etc
-
-                Parameters
-                ----------
-                orig_binning_handler : BinningHandler
-                    To get original binning scheme.
-                    Must have PtVarBinning objects for generator_/detector_binning,
-                    otherwise it won't work.
-
-                Returns
-                -------
-                BinningHandler, list[[int, int]], list[[int, int]]
-                    New BinningHandler, list of gen bin pairs to merge, list of reco bin pairs to merge
-
-                Raises
-                ------
-                TypeError
-                    If BinningHandler doesn't have PtVarBinning objects
-                ValueError
-                    If mismatch in variable bins in different pt bins
-
-                """
-                # construct bin pairs to merge
-                # generator
-                orig_gen_binning = orig_binning_handler.get_binning_scheme('generator')
-                src_pt = orig_gen_binning.get_pt_bins(is_signal_region=True)[-1]
-                var_bins_src = orig_gen_binning.get_variable_bins(src_pt)
-                dest_pt = orig_gen_binning.get_pt_bins(is_signal_region=True)[-2]
-                var_bins_dest = orig_gen_binning.get_variable_bins(dest_pt)
-
-                if set(var_bins_dest) != set(var_bins_src):
-                    raise ValueError("Cannot merge last pt bin - different variable bins")
-
-                gen_bin_pairs = []
-
-                these_var_bins = var_bins_src if orig_gen_binning.var_of else var_bins_src[:-1]
-                # do all to include overflow bin
-                for var in these_var_bins:
-                    src_bin = orig_gen_binning.physical_bin_to_global_bin(pt=src_pt, var=var + 1E-6)
-                    dest_bin = orig_gen_binning.physical_bin_to_global_bin(pt=dest_pt, var=var + 1E-6)
-                    gen_bin_pairs.append([src_bin, dest_bin])
-
-                # create new binning objects
-                if not isinstance(orig_gen_binning, PtVarBinning):
-                    raise TypeError("Expected orig_gen_binning to be type PtVarBinning - cannot setup otherwise")
-                generator_binning_merged = PtVarBinning(variable_bin_edges=orig_gen_binning.variable_bin_edges,
-                                                        variable_name=orig_gen_binning.variable_name,
-                                                        pt_bin_edges_signal=orig_gen_binning.pt_bin_edges_signal,
-                                                        pt_bin_edges_underflow=orig_gen_binning.pt_bin_edges_underflow,
-                                                        binning_name=orig_gen_binning.binning_name,
-                                                        binning_underflow_name=orig_gen_binning.binning_underflow_name,
-                                                        binning_signal_name=orig_gen_binning.binning_signal_name,
-                                                        var_uf=orig_gen_binning.var_uf,
-                                                        var_of=orig_gen_binning.var_of,
-                                                        pt_uf=orig_gen_binning.pt_uf,
-                                                        pt_of=False)
-
-                # detector
-                orig_reco_binning = orig_binning_handler.get_binning_scheme('detector')
-                reco_bin_pairs = []
-
-                # do twice: 1500-inf -> 408-954, then 954-1500 -> 408-954
-                src_pt = orig_reco_binning.get_pt_bins(is_signal_region=True)[-1]
-                var_bins_src = orig_reco_binning.get_variable_bins(src_pt)
-                src2_pt = orig_reco_binning.get_pt_bins(is_signal_region=True)[-2]
-                dest_pt = orig_reco_binning.get_pt_bins(is_signal_region=True)[-3]
-                var_bins_dest = orig_reco_binning.get_variable_bins(dest_pt)
-
-                if set(var_bins_dest) != set(var_bins_src):
-                    raise ValueError("Cannot merge last pt bin - different variable bins")
-                # do all to include overflow bin
-                these_var_bins = var_bins_src if orig_reco_binning.var_of else var_bins_src[:-1]
-
-                for var in these_var_bins:
-                    src_bin = orig_reco_binning.physical_bin_to_global_bin(pt=src_pt, var=var + 1E-6)
-                    src2_bin = orig_reco_binning.physical_bin_to_global_bin(pt=src2_pt, var=var + 1E-6)
-                    dest_bin = orig_reco_binning.physical_bin_to_global_bin(pt=dest_pt, var=var + 1E-6)
-                    reco_bin_pairs.append([src_bin, dest_bin])
-                    reco_bin_pairs.append([src2_bin, dest_bin])
-
-                # create new binning objects
-                if not isinstance(orig_reco_binning, PtVarBinning):
-                    raise TypeError("Expected orig_reco_binning to be type PtVarBinning - cannot setup otherwise")
-                detector_binning_merged = PtVarBinning(variable_bin_edges=orig_reco_binning.variable_bin_edges,
-                                                       variable_name=orig_reco_binning.variable_name,
-                                                       pt_bin_edges_signal=np.concatenate((orig_reco_binning.pt_bin_edges_signal[:-2], orig_reco_binning.pt_bin_edges_signal[-1:])),
-                                                       pt_bin_edges_underflow=orig_reco_binning.pt_bin_edges_underflow,
-                                                       binning_name=orig_reco_binning.binning_name,
-                                                       binning_underflow_name=orig_reco_binning.binning_underflow_name,
-                                                       binning_signal_name=orig_reco_binning.binning_signal_name,
-                                                       var_uf=orig_reco_binning.var_uf,
-                                                       var_of=orig_reco_binning.var_of,
-                                                       pt_uf=orig_reco_binning.pt_uf,
-                                                       pt_of=False)
-
-                binning_handler_merged = BinningHandler(generator_ptvar_binning=generator_binning_merged,
-                                                        detector_ptvar_binning=detector_binning_merged)
-
-
-                return binning_handler_merged, gen_bin_pairs, reco_bin_pairs
-
-            def setup_merged_last_pt_bin_unfolder(orig_unfolder):
-                """Setup unfolder with last pt bin merged with 2nd to last"""
-                this_binning_handler = orig_unfolder.binning_handler
-
-                # Create new BinningHandler, bin edges, to use in merging funcs
-                binning_handler_merged, gen_bin_pairs, reco_bin_pairs = setup_merged_last_pt_binning(this_binning_handler)
-
-                new_gen_bins = np.arange(0.5, orig_unfolder.hist_truth.GetNbinsX() - len(gen_bin_pairs) + 0.5 + 1, 1) # new bin edges to match TUnfold style
-                new_reco_bins = np.arange(0.5, orig_unfolder.input_hist.GetNbinsX() - len(reco_bin_pairs) + 0.5 + 1, 1) # new bin edges to match TUnfold style
-                
-                # Setup functions to do merging, since we always use same args
-                th1_merge_reco = partial(merge_th1_bin_pairs, bin_pairs=reco_bin_pairs, new_bin_edges=new_reco_bins)
-                th1_merge_gen = partial(merge_th1_bin_pairs, bin_pairs=gen_bin_pairs, new_bin_edges=new_gen_bins)
-
-                response_map_merged = merge_th2_bin_pairs(orig_unfolder.response_map,
-                                                          bin_pairs_x=gen_bin_pairs, new_bin_edges_x=new_gen_bins,
-                                                          bin_pairs_y=reco_bin_pairs, new_bin_edges_y=new_reco_bins)
-
-                print('orig response map dim:', orig_unfolder.response_map.GetNbinsX(), orig_unfolder.response_map.GetNbinsY())
-                print('rebinned response map dim:', response_map_merged.GetNbinsX(), response_map_merged.GetNbinsY())
-
-                new_unfolder = MyUnfolder(response_map=response_map_merged,
-                                          binning_handler=binning_handler_merged,
-                                          **unfolder_args)
-
-                new_unfolder.SetEpsMatrix(eps_matrix)
-
-                orig_input_handler = orig_unfolder.input_handler
-                input_handler_merged = InputHandler(input_hist=th1_merge_reco(orig_input_handler.input_hist),
-                                                    hist_truth=th1_merge_gen(orig_input_handler.hist_truth),
-                                                    hist_mc_reco=th1_merge_reco(orig_input_handler.hist_mc_reco),
-                                                    hist_mc_fakes= th1_merge_reco(orig_input_handler.hist_mc_fakes))
-
-                orig_input_handler_gen_binning = orig_unfolder.input_handler_gen_binning
-                input_handler_gen_binning_merged = InputHandler(input_hist=th1_merge_gen(orig_input_handler_gen_binning.input_hist),
-                                                                hist_truth=None,
-                                                                hist_mc_reco=th1_merge_gen(orig_input_handler_gen_binning.hist_mc_reco),
-                                                                hist_mc_fakes= th1_merge_gen(orig_input_handler_gen_binning.hist_mc_fakes))
-
-                # Set what is to be unfolded
-                # ------------------------------------------------------------------
-                new_unfolder.set_input(input_handler=input_handler_merged,
-                                       input_handler_gen_binning=input_handler_gen_binning_merged,
-                                       bias_factor=args.biasFactor,
-                                       error_unconstrained_truth_bins=False)
-
-                new_unfolder.hist_bin_chopper.add_obj('hist_truth', new_unfolder.hist_truth)
-
-                # Subtract fakes (treat as background)
-                # ------------------------------------------------------------------
-                fakes_merged = input_handler_merged.calc_fake_hist(input_handler_merged.input_hist)
-                new_unfolder.subtract_background(fakes_merged, "Signal fakes")
-                fakes_gen_binning_merged = input_handler_gen_binning_merged.calc_fake_hist(input_handler_gen_binning_merged.input_hist)
-                new_unfolder.subtract_background_gen_binning(fakes_gen_binning_merged, "Signal fakes")
-
-                return new_unfolder
-
-            if args.mergeLastPtBin:
-                print(cu.pcolors.OKBLUE, "Doing last pt bin merging...", cu.pcolors.ENDC)
-                unfolder_merged = setup_merged_last_pt_bin_unfolder(unfolder)
-                unfolder_merged.check_input()
-                unfolder_merged.do_unfolding(0)
-                unfolder_merged.get_output(max_chi2_ndf=1E6)
-
-                unfolder_plotter2 = MyUnfolderPlotter(unfolder_merged,
-                                                      is_data=not MC_INPUT,
-                                                      lumi=cu.get_lumi_str(do_dijet="Dijet" in region['name'],
-                                                                           do_zpj="ZPlusJets" in region['name']))
-                plot_args2 = dict(output_dir=merge_dir, append=append)
-
-                # Do lots of extra gubbins, like caching matrices,
-                # creating unfolded hists with different levels of uncertainties,
-                # ------------------------------------------------------------------
-                unfolder_merged._post_process()
-
-                # Draw big 1D distributions
-                # ------------------------------------------------------------------
-                title = "%s\n%s region, %s" % (jet_algo, region['label'], angle_str)
-                unfolder_plotter2.draw_unfolded_1d(title=title,
-                                                   do_gen=True,
-                                                   do_logy=True,
-                                                   **plot_args2)
-
-                # reco using detector binning
-                unfolder_plotter2.draw_detector_1d(do_reco_mc=True,
-                                                   do_reco_data=not MC_INPUT,
-                                                   title=title,
-                                                   **plot_args2)
-
-                # reco using gen binning
-                unfolder_plotter2.draw_generator_1d(do_reco_data=not MC_INPUT,
-                                                    do_reco_data_bg_sub=False,
-                                                    do_reco_bg=False,
-                                                    do_reco_mc=True,
-                                                    do_reco_mc_bg_sub=False,
-                                                    do_truth_mc=True,
-                                                    title=title,
-                                                    **plot_args2)
-
-                # same plot but with bg-subtracted reco
-                unfolder_plotter2.draw_detector_1d(do_reco_data_bg_sub=not MC_INPUT,
-                                                   do_reco_bg=True,
-                                                   do_reco_mc_bg_sub=True,
-                                                   output_dir=plot_args2['output_dir'],
-                                                   append='bg_fakes_subtracted_%s' % append,
-                                                   title=title)
-
-                # same but with generator-binning
-                unfolder_plotter2.draw_generator_1d(do_reco_data=False,
-                                                    do_reco_data_bg_sub=not MC_INPUT,
-                                                    do_reco_bg=True,
-                                                    do_reco_mc=False,
-                                                    do_reco_mc_bg_sub=True,
-                                                    do_truth_mc=True,
-                                                    output_dir=plot_args2['output_dir'],
-                                                    append='bg_fakes_subtracted_%s' % append,
-                                                    title=title)
-                print("unfolder_plotter2 done")
-
-                title = "Response matrix, %s, %s region, %s" % (jet_algo, region['label'], angle_str)
-                unfolder_plotter2.draw_response_matrix(title=title, **plot_args2)
-
-                # title = "Response matrix normed by detector p_{T} bin, %s, %s region, %s" % (jet_algo, region['label'], angle_str)
-                # unfolder_plotter2.draw_response_matrix_normed_by_detector_pt(title=title, **plot_args2)
-
-                title = ("#splitline{Probability matrix, %s, %s region, %s}{Condition number: #sigma_{max} / #sigma_{min} = %.3g / %.3g = %g}"
-                         % (jet_algo, region['label'], angle_str, unfolder.sigma_max, unfolder.sigma_min, unfolder.condition_number))
-                unfolder_plotter2.draw_probability_matrix(title=title, **plot_args2)
-                unfolder_merged.print_condition_number()
-
-                # mybin = unfolder_merged.binning_handler.physical_bin_to_global_bin(pt=50, var=20, binning_scheme='generator')
-                # print(mybin, "=", unfolder_merged.binning_handler.global_bin_to_physical_bin(mybin, 'generator'))
-                # mybin_reco = unfolder_merged.binning_handler.physical_bin_to_global_bin(pt=50, var=20, binning_scheme='detector')
-                # print(mybin_reco, "=>", unfolder_merged.input_hist_bg_subtracted.GetBinContent(mybin_reco), "±", unfolder_merged.input_hist_bg_subtracted.GetBinError(mybin_reco))
-                # mybin_reco += 1
-                # print(mybin_reco, "=>", unfolder_merged.input_hist_bg_subtracted.GetBinContent(mybin_reco), "±", unfolder_merged.input_hist_bg_subtracted.GetBinError(mybin_reco))
-                # for iy in range(0, unfolder_merged.response_map.GetNbinsY()+2):
-                #     val = unfolder_merged.response_map.GetBinContent(mybin, iy)
-                #     if val == 0:
-                #         continue
-                #     print(f"[{mybin},{iy}] = ", val, "±", unfolder_merged.response_map.GetBinError(mybin, iy))
-                #
-                # mybin = unfolder_merged.binning_handler.physical_bin_to_global_bin(pt=327, var=30, binning_scheme='generator')
-                # print(mybin, "=", unfolder_merged.binning_handler.global_bin_to_physical_bin(mybin, 'generator'))
-                # for iy in range(0, unfolder_merged.response_map.GetNbinsY()+2):
-                #     val = unfolder_merged.response_map.GetBinContent(mybin, iy)
-                #     if val == 0:
-                #         continue
-                #     print(f"[{mybin},{iy}] = ", val, "±", unfolder_merged.response_map.GetBinError(mybin, iy))
-                #
-                # mybin += 1
-                # pt_var = unfolder_merged.binning_handler.global_bin_to_physical_bin(mybin, 'generator')
-                # print(mybin, "=", pt_var)
-                # mybin_reco = unfolder_merged.binning_handler.physical_bin_to_global_bin(pt=pt_var.pt[0], var=pt_var.var[0], binning_scheme='detector')
-                # print(mybin_reco, "=>", unfolder_merged.input_hist_bg_subtracted.GetBinContent(mybin_reco), "±", unfolder_merged.input_hist_bg_subtracted.GetBinError(mybin_reco))
-                # mybin_reco += 1
-                # print(mybin_reco, "=>", unfolder_merged.input_hist_bg_subtracted.GetBinContent(mybin_reco), "±", unfolder_merged.input_hist_bg_subtracted.GetBinError(mybin_reco))
-                # for iy in range(0, unfolder_merged.response_map.GetNbinsY()+2):
-                #     val = unfolder_merged.response_map.GetBinContent(mybin, iy)
-                #     if val == 0:
-                #         continue
-                #     print(f"[{mybin},{iy}] = ", val, "±", unfolder_merged.response_map.GetBinError(mybin, iy))
-                #
-                # mybin += 1
-                # pt_var = unfolder_merged.binning_handler.global_bin_to_physical_bin(mybin, 'generator')
-                # print(mybin, "=", pt_var)
-                # mybin_reco = unfolder_merged.binning_handler.physical_bin_to_global_bin(pt=pt_var.pt[0], var=pt_var.var[0], binning_scheme='detector')
-                # print(mybin_reco, "=>", unfolder_merged.input_hist_bg_subtracted.GetBinContent(mybin_reco), "±", unfolder_merged.input_hist_bg_subtracted.GetBinError(mybin_reco))
-                # mybin_reco += 1
-                # print(mybin_reco, "=>", unfolder_merged.input_hist_bg_subtracted.GetBinContent(mybin_reco), "±", unfolder_merged.input_hist_bg_subtracted.GetBinError(mybin_reco))
-                # for iy in range(0, unfolder_merged.response_map.GetNbinsY()+2):
-                #     val = unfolder_merged.response_map.GetBinContent(mybin, iy)
-                #     if val == 0:
-                #         continue
-                #     print(f"[{mybin},{iy}] = ", val, "±", unfolder_merged.response_map.GetBinError(mybin, iy))
-
-                # unfolder_merged.setup_normalised_results_per_pt_bin()
-                # unfolder_merged.setup_absolute_results_per_pt_bin()
-                # region['unfolder'] = unfolder_merged
-                # setup2 = Setup(jet_algo=jet_algo,
-                #                region=region,
-                #                angle=angle,
-                #                output_dir=plot_args2['output_dir'],
-                #                has_data=not MC_INPUT)
-                # hbc2 = do_binned_plots_per_region_angle(setup2,
-                #                                         do_binned_gen_pt=True,
-                #                                         do_binned_gen_lambda=False,
-                #                                         do_binned_reco_pt=True)
-                # # region['unfolder'] = unfolder
-                unfolder = unfolder_merged
-
-            # ------------------------------------------------------------------
             # Figure out if we should merge any bins (i.e. -ve ones)
             # ------------------------------------------------------------------
-
             # have to do it this way to ensure combined merged bins end up correct
             # TODO is it even possible to convert into a 1D list?
             merge_bin_history = []
