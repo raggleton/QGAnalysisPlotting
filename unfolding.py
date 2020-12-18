@@ -483,7 +483,7 @@ def merge_th2_bin_pairs(h, bin_pairs_x, bin_pairs_y, new_bin_edges_x, new_bin_ed
     return h_new2
 
 
-def get_bins_to_merge_probability_stats(pmatrix, min_num=10, allow_zero_entries=True, max_p=0.7, max_rel_err=0.6):
+def get_bins_to_merge_probability_stats(pmatrix, min_num=10, allow_zero_entries=True, use_neff_entries=False, max_p=0.7, max_rel_err=0.6):
     """Figure out which gen bins to merge based on poor number of events & error bars
     in given column of probability matrix
     
@@ -495,6 +495,9 @@ def get_bins_to_merge_probability_stats(pmatrix, min_num=10, allow_zero_entries=
         Minimum number of non-zero entries in each column
     allow_zero_entries : bool, optional
         If True allow matrix columns with 0 contents, otherwise include them to be merged
+    use_neff_entries : bool, optional
+        If True use number of effective entries with min_num,
+        otherwise use number of entries
     max_p : float, optional
         Maximum probability in one bin in each column
     max_rel_err : float, optional
@@ -505,9 +508,11 @@ def get_bins_to_merge_probability_stats(pmatrix, min_num=10, allow_zero_entries=
     list[int]
         Bin numbers
     """
+    print("Checking probability matrix stats...")
     bad_bins = []
     for ix in range(1, pmatrix.GetNbinsX()+1):
         value_err_pairs = []
+        # Get all the non-zero entries in the prob matrix for this column
         for iy in range(1, pmatrix.GetNbinsY()+1):
             val = pmatrix.GetBinContent(ix, iy)
             if val == 0:
@@ -515,7 +520,20 @@ def get_bins_to_merge_probability_stats(pmatrix, min_num=10, allow_zero_entries=
             err = pmatrix.GetBinError(ix, iy)
             value_err_pairs.append([val, abs(err/val)])
 
-        if (len(value_err_pairs) < min_num) and (not allow_zero_entries and len(value_err_pairs) == 0):
+        n_eff = 0
+        if len(value_err_pairs) > 0:
+            # effective number of entries - useful when dealing with weighted elements
+            # For a weighted histogram, this number corresponds to the hypothetical
+            # number of unweighted entries a histogram would need to have the same statistical power.
+            n_eff = sum([v for v, _ in value_err_pairs]) / sum([v**2 for v, _ in value_err_pairs])
+            print("p matrix gen bin", ix, "len value_err_pairs:", len(value_err_pairs), "n_eff:", n_eff)
+
+        count_entries = n_eff if use_neff_entries else len(value_err_pairs)
+        if not allow_zero_entries and count_entries == 0:
+            # handle case of 0 entries separately
+            print("p matrix gen bin", ix, "has 0 values")
+            bad_bins.append(ix)
+        elif 0 < count_entries < min_num:
             print("p matrix gen bin", ix, "has <", min_num, "values:", value_err_pairs)
             bad_bins.append(ix)
         elif any([v > max_p for v, e in value_err_pairs]):
