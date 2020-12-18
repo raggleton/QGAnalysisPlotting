@@ -502,6 +502,8 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         self.distribution = distribution
         self.axisSteering = axisSteering
 
+        self.check_binning_consistency()
+
         tunf_args = [
             self.response_map,
             self.orientation,
@@ -621,6 +623,31 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         # self.generator_binning
         # self.generator_distribution_underflow
         # self.generator_distribution
+
+    def check_binning_consistency(self):
+        """"Check binning scheme matches with binning in response matrix
+
+        Copied from TUnfoldDensity code
+        """
+        if self.orientation == ROOT.TUnfold.kHistMapOutputHoriz:
+            n_map_output_bins = self.response_map.GetXaxis().GetNbins()
+            n_map_input_bins = self.response_map.GetYaxis().GetNbins()
+        else:
+            n_map_output_bins = self.response_map.GetYaxis().GetNbins()
+            n_map_input_bins = self.response_map.GetXaxis().GetNbins()
+
+        n_output_bins_t = abs(self.generator_binning.GetTH1xNumberOfBins(True))
+        # I don't know why it needs both?
+        n_output_bins_f = abs(self.generator_binning.GetTH1xNumberOfBins(False))
+        if ((n_output_bins_t != n_map_output_bins) and (n_output_bins_f != n_map_output_bins)):
+            raise ValueError("Output binning incompatible number of bins: " \
+                             "axis %d binning scheme %d (%d)" % (n_map_output_bins, n_output_bins_t, n_output_bins_f))
+
+        n_input_bins_t = abs(self.detector_binning.GetTH1xNumberOfBins(True))
+        n_input_bins_f = abs(self.detector_binning.GetTH1xNumberOfBins(False))
+        if ((n_input_bins_t != n_map_input_bins) and (n_input_bins_f != n_map_input_bins)):
+            raise ValueError("Input binning incompatible number of bins: " \
+                             "axis %d binning scheme %d (%d)" % (n_map_input_bins, n_input_bins_t, n_input_bins_f))
 
     # rewire these to point to BinningHandler instead
     # one day I'll remove references to these
