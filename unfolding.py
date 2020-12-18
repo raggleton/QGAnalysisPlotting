@@ -1018,16 +1018,21 @@ def main():
 
             # Set what is to be unfolded
             # ------------------------------------------------------------------
-            unfolder.set_input(input_hist=reco_1d,
-                               input_hist_gen_binning=reco_1d_gen_binning,
-                               hist_truth=hist_mc_gen,
-                               hist_mc_reco=hist_mc_reco,
-                               hist_mc_reco_bg_subtracted=hist_mc_reco_bg_subtracted,  # do ourselves - subtract_background only for input_hist
-                               hist_mc_reco_gen_binning=hist_mc_reco_gen_binning,
-                               hist_mc_reco_gen_binning_bg_subtracted=hist_mc_reco_gen_binning_bg_subtracted,
-                               bias_factor=args.biasFactor,
-                               hist_mc_fakes=hist_mc_fakes_reco.Clone(),
-                               error_unconstrained_truth_bins=False)
+            # common input args for all unfolders with same input
+            # not to be used for e.g. model input variations, jackknife variations
+            input_args = dict(
+                input_hist=reco_1d,
+                input_hist_gen_binning=reco_1d_gen_binning,
+                hist_truth=hist_mc_gen,
+                hist_mc_reco=hist_mc_reco,
+                hist_mc_reco_bg_subtracted=hist_mc_reco_bg_subtracted,  # do ourselves - subtract_background only for input_hist
+                hist_mc_reco_gen_binning=hist_mc_reco_gen_binning,
+                hist_mc_reco_gen_binning_bg_subtracted=hist_mc_reco_gen_binning_bg_subtracted,
+                bias_factor=args.biasFactor,
+                hist_mc_fakes=hist_mc_fakes_reco,
+                error_unconstrained_truth_bins=False
+            )
+            unfolder.set_input(**input_args)
 
             unfolder.hist_bin_chopper.add_obj('hist_truth', unfolder.hist_truth)
 
@@ -2353,14 +2358,8 @@ def main():
 
                     # Set what is to be unfolded - same as main unfolder
                     # --------------------------------------------------------------
-                    exp_syst_unfolder.set_input(input_hist=reco_1d,
-                                                input_hist_gen_binning=reco_1d_gen_binning,
-                                                hist_truth=unfolder.hist_truth.Clone(),
-                                                hist_mc_reco=unfolder.hist_mc_reco.Clone(),
-                                                hist_mc_reco_bg_subtracted=unfolder.hist_mc_reco_bg_subtracted.Clone(),
-                                                hist_mc_reco_gen_binning=unfolder.hist_mc_reco_gen_binning.Clone(),
-                                                hist_mc_reco_gen_binning_bg_subtracted=unfolder.hist_mc_reco_gen_binning_bg_subtracted.Clone(),
-                                                bias_factor=args.biasFactor)
+                    exp_syst_unfolder.set_input(**input_args)
+
 
                     # Subtract fakes (treat as background), same as nominal
                     # --------------------------------------------------------------
@@ -2760,14 +2759,7 @@ def main():
 
                 # Set what is to be unfolded - same as main unfolder
                 # --------------------------------------------------------------
-                alt_unfolder.set_input(input_hist=unfolder.input_hist,
-                                       input_hist_gen_binning=unfolder.input_hist_gen_binning,
-                                       hist_truth=unfolder.hist_truth.Clone(),
-                                       hist_mc_reco=unfolder.hist_mc_reco.Clone(),
-                                       hist_mc_reco_bg_subtracted=unfolder.hist_mc_reco_bg_subtracted.Clone(),
-                                       hist_mc_reco_gen_binning=unfolder.hist_mc_reco_gen_binning.Clone(),
-                                       hist_mc_reco_gen_binning_bg_subtracted=unfolder.hist_mc_reco_gen_binning_bg_subtracted.Clone(),
-                                       bias_factor=args.biasFactor)
+                alt_unfolder.set_input(**input_args)
 
                 # Subtract fakes (treat as background), same as nominal
                 # --------------------------------------------------------------
@@ -2912,15 +2904,8 @@ def main():
 
                     # Set what is to be unfolded
                     # --------------------------------------------------------------
-                    # Same input as nominal unfolder, since we only change responsematrix
-                    scale_unfolder.set_input(input_hist=unfolder.input_hist,
-                                             input_hist_gen_binning=unfolder.input_hist_gen_binning,
-                                             hist_truth=unfolder.hist_truth.Clone(),
-                                             hist_mc_reco=unfolder.hist_mc_reco.Clone(),
-                                             hist_mc_reco_bg_subtracted=unfolder.hist_mc_reco_bg_subtracted.Clone(),
-                                             hist_mc_reco_gen_binning=unfolder.hist_mc_reco_gen_binning.Clone(),
-                                             hist_mc_reco_gen_binning_bg_subtracted=unfolder.hist_mc_reco_gen_binning_bg_subtracted.Clone(),
-                                             bias_factor=args.biasFactor)
+                    # Same input as nominal unfolder, since we only change response matrix
+                    scale_unfolder.set_input(**input_args)
 
                     # Subtract fakes (treat as background), same as nominal
                     # --------------------------------------------------------------
@@ -3127,7 +3112,8 @@ def main():
                                             hist_mc_reco_bg_subtracted=hist_syst_mc_reco_bg_subtracted,
                                             hist_mc_reco_gen_binning=hist_syst_reco_gen_binning,
                                             hist_mc_reco_gen_binning_bg_subtracted=hist_syst_mc_reco_gen_binning_bg_subtracted,
-                                            bias_factor=args.biasFactor)
+                                            bias_factor=args.biasFactor,
+                                            error_unconstrained_truth_bins=False)
 
                     # Subtract fakes (treat as background)
                     # --------------------------------------------------------------
@@ -3466,15 +3452,8 @@ def main():
 
                     # Set what is to be unfolded
                     # --------------------------------------------------------------
-                    # Same input as nominal unfolder, since we only change responsematrix
-                    pdf_unfolder.set_input(input_hist=unfolder.input_hist,
-                                           input_hist_gen_binning=unfolder.input_hist_gen_binning,
-                                           hist_truth=unfolder.hist_truth,
-                                           hist_mc_reco=unfolder.hist_mc_reco,
-                                           hist_mc_reco_bg_subtracted=unfolder.hist_mc_reco_bg_subtracted,
-                                           hist_mc_reco_gen_binning=unfolder.hist_mc_reco_gen_binning,
-                                           hist_mc_reco_gen_binning_bg_subtracted=unfolder.hist_mc_reco_gen_binning_bg_subtracted,
-                                           bias_factor=args.biasFactor)
+                    # Same input as nominal unfolder, since we only change response matrix
+                    pdf_unfolder.set_input(**input_args)
 
                     # Subtract fakes (treat as background)
                     # --------------------------------------------------------------
