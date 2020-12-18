@@ -405,6 +405,7 @@ class BinningHandler(object):
     def variable_name(self):
         return self.detector_ptvar_binning.variable_name
 
+    # FIXME
     # def save_binning(self, print_xml=True, txt_filename=None):
     #     """Save binning scheme to txt and/or print XML to screen"""
     #     if txt_filename:
@@ -426,6 +427,59 @@ class BinningHandler(object):
     #         # don't know how to create a ofstream in python :( best we can do is ROOT.cout
     #         ROOT.TUnfoldBinningXML.ExportXML(self.detector_binning, ROOT.cout, True, False)
     #         ROOT.TUnfoldBinningXML.ExportXML(self.generator_binning, ROOT.cout, False, True)
+
+
+class InputHandler(object):
+    """Class to handle inputs for MyUnfolder, deal with fakes, etc
+
+    Good for if you need to rebin fakes, etc
+    """
+    def __init__(self,
+                 input_hist,
+                 hist_truth=None,
+                 hist_mc_reco=None,
+                 hist_mc_fakes=None):
+
+        self.input_hist = input_hist.Clone() if input_hist else None
+        self.hist_truth = hist_truth.Clone() if hist_truth else None  # TODO: should this be here?
+        self.hist_mc_reco = hist_mc_reco.Clone() if hist_mc_reco else None
+        self.hist_mc_fakes = hist_mc_fakes.Clone() if hist_mc_fakes else None
+        self.fake_fraction = None
+        # these get modified by MyUnfolder.subtract_background()
+        self.input_hist_bg_subtracted = input_hist.Clone() if input_hist else None
+        self.hist_mc_reco_bg_subtracted = hist_mc_reco.Clone() if hist_mc_reco else None
+
+    def setup_fake_fraction(self):
+        """Calculate fake fraction template using hist_mc_fakes and hist_mc_reco"""
+        if not self.hist_mc_fakes:
+            raise ValueError("Need hist_mc_fakes for setup_fake_fraction()")
+        if not self.hist_mc_reco:
+            raise ValueError("Need hist_mc_reco for setup_fake_fraction()")
+        fake_fraction = self.hist_mc_fakes.Clone("fake_fraction_"+cu.get_unique_str())
+        fake_fraction.Divide(self.hist_mc_reco)
+        self.fake_fraction = fake_fraction
+
+    def calc_fake_hist(self, hist):
+        """Calculate fakes background from hist using internal fake_fraction"""
+        if not self.fake_fraction:
+            self.setup_fake_fraction()
+        hist_n_bins = hist.GetNbinsX()
+        fake_n_bins = self.fake_fraction.GetNbinsX()
+        if hist_n_bins != fake_n_bins:
+            raise ValueError("Mimsmatch in number of bins in calc_fake_hist(): %d vs %d" % (hist_n_bins, fake_n_bins))
+        fake_hist = hist.Clone(cu.get_unique_str())
+        fake_hist.Multiply(self.fake_fraction)
+        return fake_hist
+
+    def subtract_fake_hist(self, hist):
+        """Calculate and subtract fake background from hist
+
+        Returns boths the fake-subtracted hist, and the calculated fakes hist
+        """
+        fake_hist = self.calc_fake_hist(hist)
+        new_hist = hist.Clone(cu.get_unique_str())
+        new_hist.Add(fake_hist, -1)
+        return new_hist, fake_hist
 
 
 class MyUnfolder(ROOT.MyTUnfoldDensity):
@@ -536,30 +590,9 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         # hists that will be assigned later
         # TODO: change to properties? although still need to cache somewhere
 
-        # reco, to be unfolded (data or MC)
-        self.input_hist = None
-        self.input_hist_original = None
-        self.input_hist_bg_subtracted = None
-
-        # reco, but using gen binning
-        self.input_hist_gen_binning = None
-        self.input_hist_gen_binning_bg_subtracted = None
-
-        # fakes
-        # for total bg, use get_total_background(),
-        # or get_total_background_gen_binning()
-
-        # reco MC
-        self.hist_mc_reco = None
-        self.hist_mc_reco_bg_subtracted = None
-        self.hist_mc_fakes = None
-
-        # reco MC, but using gen binning
-        self.hist_mc_reco_gen_binning = None
-        self.hist_mc_reco_gen_binning_bg_subtracted = None
-
-        # generator-level MC truth
-        self.hist_truth = None  # gen truth
+        # store inputs
+        self.input_handler = None
+        self.input_handler_gen_binning = None
 
         self.tau = 0  # to be set by user later, via TauScanner or LCurveScanner
         self.backgrounds = {}  # gets filled with subtract_background()
@@ -604,25 +637,6 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         self.pdf_uncert_ematrix_name = "pdf_uncert_ematrix"
 
         self.total_ematrix_name = "total_ematrix"
-
-        # self.variable_bin_edges_reco
-        # self.nbins_variable_reco
-        # self.variable_bin_edges_gen
-        # self.nbins_variable_gen
-        # self.pt_bin_edges_reco
-        # self.nbins_pt_reco
-        # self.pt_bin_edges_gen
-        # self.nbins_pt_gen
-        # self.pt_bin_edges_underflow_reco
-        # self.nbins_pt_underflow_reco
-        # self.pt_bin_edges_underflow_gen
-        # self.nbins_pt_underflow_gen
-        # self.detector_binning
-        # self.detector_distribution_underflow
-        # self.detector_distribution
-        # self.generator_binning
-        # self.generator_distribution_underflow
-        # self.generator_distribution
 
     def check_binning_consistency(self):
         """"Check binning scheme matches with binning in response matrix
@@ -922,33 +936,18 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
     # SETUP INPUT, BACKGROUNDS
     # --------------------------------------------------------------------------
     def set_input(self,
-                  input_hist,
-                  input_hist_gen_binning=None,
-                  hist_truth=None,
-                  hist_mc_reco=None,
-                  hist_mc_reco_bg_subtracted=None,
-                  hist_mc_reco_gen_binning=None,
-                  hist_mc_reco_gen_binning_bg_subtracted=None,
+                  input_handler,
+                  input_handler_gen_binning=None,
                   bias_factor=0,
-                  hist_mc_fakes=None,
                   error_unconstrained_truth_bins=True):
         """Set hist to be unfolded, plus other basic hists
 
         Also allow other args to be passed to TUnfoldSys::SetInput
         """
-        self.input_hist_original = input_hist.Clone()  # FIXME - handle this better?
-        self.input_hist = input_hist.Clone()
-        self.input_hist_bg_subtracted = input_hist.Clone() if input_hist else None
-        self.input_hist_gen_binning = input_hist_gen_binning.Clone() if input_hist_gen_binning else None
-        self.input_hist_gen_binning_bg_subtracted = input_hist_gen_binning.Clone() if input_hist_gen_binning else None
-        self.hist_truth = hist_truth.Clone() if hist_truth else None
-        self.hist_mc_reco = hist_mc_reco.Clone() if hist_mc_reco else None
-        self.hist_mc_reco_bg_subtracted = hist_mc_reco_bg_subtracted.Clone() if hist_mc_reco_bg_subtracted else None
-        self.hist_mc_reco_gen_binning = hist_mc_reco_gen_binning.Clone() if hist_mc_reco_gen_binning else None
-        self.hist_mc_reco_gen_binning_bg_subtracted = hist_mc_reco_gen_binning_bg_subtracted.Clone() if hist_mc_reco_gen_binning_bg_subtracted else None
-        self.hist_mc_fakes = hist_mc_fakes.Clone() if hist_mc_fakes else None
+        self.input_handler = input_handler
+        self.input_handler_gen_binning = input_handler_gen_binning
 
-        input_status = self.SetInput(input_hist, bias_factor)
+        input_status = self.SetInput(self.input_hist, bias_factor)
 
         # input_status = nError1+10000*nError2
         # nError1: number of bins where the uncertainty is zero.
@@ -965,6 +964,56 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
                 raise ValueError("%d unconstrained truth bins - cannot unfold" % n_error_2)
             else:
                 warnings.warn("%d unconstrained truth bins - cannot unfold" % n_error_2)
+
+    # bodge up old interface - FIXME
+    @property
+    def input_hist_original(self):
+        return self.input_handler.input_hist
+
+    @property
+    def input_hist(self):
+        return self.input_handler.input_hist
+
+    @property
+    def input_hist_bg_subtracted(self):
+        return self.input_handler.input_hist_bg_subtracted
+
+    @property
+    def input_hist_gen_binning(self):
+        return self.input_handler_gen_binning.input_hist
+
+    @property
+    def input_hist_gen_binning_bg_subtracted(self):
+        return self.input_handler_gen_binning.input_hist_bg_subtracted
+
+    @property
+    def hist_truth(self):
+        return self.input_handler.hist_truth
+
+    @property
+    def hist_mc_reco(self):
+        return self.input_handler.hist_mc_reco
+
+    @property
+    def hist_mc_reco_bg_subtracted(self):
+        return self.input_handler.hist_mc_reco_bg_subtracted
+
+    @property
+    def hist_mc_reco_gen_binning(self):
+        return self.input_handler_gen_binning.hist_mc_reco
+
+    @property
+    def hist_mc_reco_gen_binning_bg_subtracted(self):
+        return self.input_handler_gen_binning.hist_mc_reco_bg_subtracted
+
+    @property
+    def hist_mc_fakes(self):
+        return self.input_handler.hist_mc_fakes
+
+    @property
+    def hist_mc_fakes_gen_binning(self):
+        return self.input_handler_gen_binning.hist_mc_fakes
+
 
     def check_input(self, hist_y=None, raise_error=False):
         """Check the input for unconstrained output bins. Returns unconstrained output gen bins,
@@ -1105,13 +1154,13 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         self.backgrounds[name] = hist.Clone()
         self.backgrounds[name].Scale(scale)
         # Also save total input subtracted
-        self.input_hist_bg_subtracted.Add(hist, -1*scale)
+        self.input_hist_bg_subtracted.Add(self.backgrounds[name], -1)
         # sanity check that none end up < 0
         for ix in range(1, self.input_hist_bg_subtracted.GetNbinsX()+1):
             val = self.input_hist_bg_subtracted.GetBinContent(ix)
             if val < 0:
                 raise ValueError("self.input_hist_bg_subtracted bin %d has contents <0: %g" % (ix, val))
-        self.SubtractBackground(hist.Clone(), name, scale, scale_err)
+        self.SubtractBackground(hist, name, scale, scale_err) # NB TUnfold doesn't modify input_hist, nor hist
 
     def subtract_background_gen_binning(self, hist, name, scale=1.0):
         """Subtract background source with gen binning from input hist
