@@ -483,6 +483,50 @@ def merge_th2_bin_pairs(h, bin_pairs_x, bin_pairs_y, new_bin_edges_x, new_bin_ed
     return h_new2
 
 
+def get_bins_to_merge_probability_stats(pmatrix, min_num=10, allow_zero_entries=True, max_p=0.7, max_rel_err=0.6):
+    """Figure out which gen bins to merge based on poor number of events & error bars
+    in given column of probability matrix
+    
+    Parameters
+    ----------
+    pmatrix : ROOT.TH2
+        Description
+    min_num : int, optional
+        Minimum number of non-zero entries in each column
+    allow_zero_entries : bool, optional
+        If True allow matrix columns with 0 contents, otherwise include them to be merged
+    max_p : float, optional
+        Maximum probability in one bin in each column
+    max_rel_err : float, optional
+        Maximum relative uncertainty across all bins in each column
+    
+    Returns
+    -------
+    list[int]
+        Bin numbers
+    """
+    bad_bins = []
+    for ix in range(1, pmatrix.GetNbinsX()+1):
+        value_err_pairs = []
+        for iy in range(1, pmatrix.GetNbinsY()+1):
+            val = pmatrix.GetBinContent(ix, iy)
+            if val == 0:
+                continue
+            err = pmatrix.GetBinError(ix, iy)
+            value_err_pairs.append([val, abs(err/val)])
+
+        if (len(value_err_pairs) < min_num) and (not allow_zero_entries and len(value_err_pairs) == 0):
+            print("p matrix gen bin", ix, "has <", min_num, "values:", value_err_pairs)
+            bad_bins.append(ix)
+        elif any([v > max_p for v, e in value_err_pairs]):
+            print("p matrix gen bin", ix, "has bin with value >", max_p, "values:", value_err_pairs)
+            bad_bins.append(ix)
+        elif any([e > max_rel_err for v, e in value_err_pairs]):
+            print("p matrix gen bin", ix, "has bin with fractional error >", max_rel_err, "values:", value_err_pairs)
+            bad_bins.append(ix)
+    return bad_bins
+
+
 def get_bins_to_merge_nonnegative(h, binning_obj, max_bin=-1, ensure_nonnegative=True):
     """Figure out which bins to merge to ensure bin contents >= 0
 
