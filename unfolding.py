@@ -1594,7 +1594,7 @@ def main():
                                                         detector_ptvar_binning=detector_binning_merged)
 
 
-                return binning_handler_merged, gen_bins_to_merge, reco_bins_to_merge
+                return binning_handler_merged, gen_bin_pairs, reco_bin_pairs
 
             def setup_merged_last_pt_bin_unfolder(orig_unfolder):
                 """"Merge last pt bin with 2nd to last"""
