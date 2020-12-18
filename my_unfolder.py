@@ -947,6 +947,25 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         self.input_handler = input_handler
         self.input_handler_gen_binning = input_handler_gen_binning
 
+        # Check dimensions are consistent between 1D hists and response_map
+        n_reco_bins = self.response_map.GetNbinsY() if self.orientation == ROOT.TUnfold.kHistMapOutputHoriz else self.response_map.GetNbinsX()
+        if self.input_handler.input_hist.GetNbinsX() != n_reco_bins:
+            raise ValueError("Mistmatch in input_handler.input_hist bins: %d vs %d" % (n_reco_bins, self.input_handler.input_hist.GetNbinsX()))
+        if self.input_handler.hist_mc_reco and self.input_handler.hist_mc_reco.GetNbinsX() != n_reco_bins:
+            raise ValueError("Mistmatch in input_handler.hist_mc_reco bins: %d vs %d" % (n_reco_bins, self.input_handler.hist_mc_reco.GetNbinsX()))
+        if self.input_handler.hist_mc_fakes and self.input_handler.hist_mc_fakes.GetNbinsX() != n_reco_bins:
+            raise ValueError("Mistmatch in input_handler.hist_mc_fakes bins: %d vs %d" % (n_reco_bins, self.input_handler.hist_mc_fakes.GetNbinsX()))
+
+        n_gen_bins = self.response_map.GetNbinsX() if self.orientation == ROOT.TUnfold.kHistMapOutputHoriz else self.response_map.GetNbinsY()
+        if self.input_handler.hist_truth.GetNbinsX() != n_gen_bins:
+            raise ValueError("Mistmatch in input_handler.hist_truth bins: %d vs %d" % (n_gen_bins, self.input_handler.hist_truth.GetNbinsX()))
+        if self.input_handler_gen_binning.input_hist.GetNbinsX() != n_gen_bins:
+            raise ValueError("Mistmatch in input_handler_gen_binning.input_hist bins: %d vs %d" % (n_gen_bins, self.input_handler_gen_binning.input_hist.GetNbinsX()))
+        if self.input_handler_gen_binning.hist_mc_reco and self.input_handler_gen_binning.hist_mc_reco.GetNbinsX() != n_gen_bins:
+            raise ValueError("Mistmatch in input_handler_gen_binning.hist_mc_reco bins: %d vs %d" % (n_gen_bins, self.input_handler_gen_binning.hist_mc_reco.GetNbinsX()))
+        if self.input_handler_gen_binning.hist_mc_fakes and self.input_handler_gen_binning.hist_mc_fakes.GetNbinsX() != n_gen_bins:
+            raise ValueError("Mistmatch in input_handler_gen_binning.hist_mc_fakes bins: %d vs %d" % (n_gen_bins, self.input_handler_gen_binning.hist_mc_fakes.GetNbinsX()))
+
         input_status = self.SetInput(self.input_hist, bias_factor)
 
         # input_status = nError1+10000*nError2
