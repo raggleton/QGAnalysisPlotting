@@ -1154,7 +1154,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         self.backgrounds[name] = hist.Clone()
         self.backgrounds[name].Scale(scale)
         # Also save total input subtracted
-        self.input_hist_bg_subtracted.Add(self.backgrounds[name], -1)
+        self.input_handler.input_hist_bg_subtracted.Add(self.backgrounds[name], -1)
         # sanity check that none end up < 0
         for ix in range(1, self.input_hist_bg_subtracted.GetNbinsX()+1):
             val = self.input_hist_bg_subtracted.GetBinContent(ix)
@@ -1171,7 +1171,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         self.backgrounds_gen_binning[name] = hist.Clone()
         self.backgrounds_gen_binning[name].Scale(scale)
         # Also save total input subtracted
-        self.input_hist_gen_binning_bg_subtracted.Add(hist, -1*scale)
+        self.input_handler_gen_binning.input_hist_bg_subtracted.Add(hist, -1*scale)
 
     def get_total_background(self):
         """Get total cumulative background"""

@@ -2745,7 +2745,7 @@ def main():
             # Only makes sense if the same MC events go into matrix & 1D plot
             # ------------------------------------------------------------------
             # FIXME should work for mergeBins
-            if not MC_SPLIT and args.relErr < 0 and not args.mergeBins:
+            if not MC_SPLIT and args.relErr < 0 and not args.mergeBins and not args.mergeLastPtBin:
                 # on gen axis
                 proj_gen = unfolder.response_map.ProjectionX("proj_gen_%s" % (append))
                 draw_projection_comparison(unfolder.hist_truth, proj_gen,
@@ -2755,7 +2755,7 @@ def main():
 
                 # on detector axis
                 proj_reco = unfolder.response_map.ProjectionY("proj_reco_%s" % (append))
-                draw_projection_comparison(hist_mc_reco_bg_subtracted, proj_reco,
+                draw_projection_comparison(unfolder.hist_mc_reco_bg_subtracted, proj_reco,
                                            title="%s\n%s region" % (jet_algo, region['label']),
                                            xtitle="%s, Detector binning" % (angle_str),
                                            output_filename="%s/projection_reco_bg_subtracted_%s.%s" % (this_output_dir, append, OUTPUT_FMT))
