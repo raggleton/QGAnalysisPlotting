@@ -72,7 +72,6 @@ class MyUnfolderPlotter(object):
         canv.SetRightMargin(0.12)
         return canv
 
-    # @staticmethod
     def draw_2d_hist(self, h2d, title, output_filename,
                      logz=True, z_min=None, z_max=None,
                      equal_pos_neg_z=False,
@@ -256,6 +255,35 @@ class MyUnfolderPlotter(object):
                           xtitle='Generator bin',
                           ytitle='Detector bin')
         ROOT.gStyle.SetPalette(self.default_palette)
+
+    def draw_probability_column(self, column_num, output_dir='.', append="", title=""):
+        prob_hist = self.unfolder.get_probability_matrix().ProjectionY(cu.get_unique_str(), column_num, column_num)
+        entries = [
+            Contribution(prob_hist,
+                         label="Gen bin %d" % column_num,
+                         line_color=ROOT.kRed,
+                         line_width=1,
+                         marker_color=ROOT.kRed,
+                         marker_size=0,
+                         normalise_hist=False),
+        ]
+        plot = Plot(entries,
+                    what='hist',
+                    title=title,
+                    xtitle="Detector bin",
+                    ytitle="p",
+                    has_data=False,
+                    # ylim=[0, 1.2],
+                    )
+        # plot.default_canvas_size = (800, 600)
+        self._modify_plot(plot)
+        plot.plot("NOSTACK HIST")
+        # plot.set_logy(do_more_labels=False, override_check=True)
+        # plot.legend.SetY1NDC(0.77)
+        # plot.legend.SetX2NDC(0.85)
+        l, t = self.draw_pt_binning_lines(plot, which='reco', axis='x')
+        output_filename = "%s/probability_col_%d_%s.%s" % (output_dir, column_num, append, self.output_fmt)
+        plot.save(output_filename)
 
     def draw_jacobian(self, output_dir=".", append="", title=""):
         output_filename = "%s/jacobian_%s_logZ.%s" % (output_dir, append, self.output_fmt)

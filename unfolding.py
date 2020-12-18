@@ -2433,6 +2433,13 @@ def main():
                     title = "Response matrix, %s, %s region, %s, %s" % (jet_algo, region['label'], angle_str, this_syst.label)
                     exp_syst_unfolder_plotter.draw_response_matrix(title=title, **exp_syst_plot_args)
 
+                    title = "Probability matrix, %s, %s region, %s, %s" % (jet_algo, region['label'], angle_str, this_syst.label)
+                    exp_syst_unfolder_plotter.draw_probability_matrix(title=title, **exp_syst_plot_args)
+
+                    col_num = exp_syst_unfolder.binning_handler.physical_bin_to_global_bin(pt=151, var=0.6, binning_scheme='generator')
+                    title = "Probability entries for gen bin %d, %s, %s region, %s, %s" % (col_num, jet_algo, region['label'], angle_str, this_syst.label)
+                    exp_syst_unfolder_plotter.draw_probability_column(col_num, title=title, **exp_syst_plot_args)
+
                     exp_syst_unfolder.setup_normalised_results_per_pt_bin()
 
                     region['experimental_systematics'][syst_ind]['unfolder'] = exp_syst_unfolder
@@ -2645,6 +2652,10 @@ def main():
             title = ("#splitline{Probability matrix, %s, %s region, %s}{Condition number: #sigma_{max} / #sigma_{min} = %.3g / %.3g = %g}"
                         % (jet_algo, region['label'], angle_str, unfolder.sigma_max, unfolder.sigma_min, unfolder.condition_number))
             unfolder_plotter.draw_probability_matrix(title=title, **plot_args)
+
+            col_num = unfolder.binning_handler.physical_bin_to_global_bin(pt=151, var=0.6, binning_scheme='generator')
+            title = "Probability entries for gen bin %d, %s, %s region, %s" % (col_num, jet_algo, region['label'], angle_str)
+            unfolder_plotter.draw_probability_column(col_num, title=title, **plot_args)
 
             title = "%s, %s region, %s"% (jet_algo, region['label'], angle_str)
             unfolder_plotter.draw_failed_reco(title=title, **plot_args)
