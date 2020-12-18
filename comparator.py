@@ -13,12 +13,12 @@ Example usage:
 
 
 import os
-import numpy as np
-import ROOT
 from copy import copy
+
+import ROOT
+
 import common_utils as cu
 from MyStyle import My_Style
-
 
 ROOT.PyConfig.IgnoreCommandLineOptions = True
 ROOT.gROOT.SetBatch(1)
@@ -88,6 +88,7 @@ def grab_obj(file_name, obj_name):
         return new_obj
     else:
         return obj
+
 
 class Contribution(object):
     """Basic class to handle information about one contribution to a canvas."""
@@ -171,7 +172,7 @@ class Contribution(object):
                 if sum([obj.GetBinWidth(i)/obj.GetBinWidth(1) for i in range(2, obj.GetNbinsX())]) < 1E-5:
                     self.obj.Scale(1./(obj.GetBinWidth(1) * obj.Integral()))
                 else:
-                    # deal with varaible bin width, much more involved
+                    # deal with variable bin width, much more involved
                     raise RuntimeError("Can't deal with variable bin width and divide_bin_width")
             else:
                 self.obj.Scale(1./(obj.Integral()))
@@ -288,7 +289,7 @@ class Plot(object):
         if self.do_legend:
             self._style_legend()
         self.reverse_legend = False
-        self.splitline_legend = False  # if True, use splitline instead of extra entries for \n. Only works with 1 \n occurence
+        self.splitline_legend = False  # if True, use splitline instead of extra entries for \n. Only works with 1 \n occurrence
         self.do_extend = extend
         self.container = None
         self.canvas = None
@@ -350,13 +351,12 @@ class Plot(object):
         if self.subplot_container:
             ROOT.SetOwnership(self.subplot_container, False)
 
-
     def _populate_container_and_legend(self):
         """Add objects to the container, and to the legend"""
         for contrib in self.contributions:
             if self.plot_what == "graph":
                 # if drawing only graph, we need to remove the fit if there is one
-                if (contrib.obj.GetListOfFunctions().GetSize() > 0):
+                if contrib.obj.GetListOfFunctions().GetSize() > 0:
                     contrib.obj.GetListOfFunctions().Remove(contrib.obj.GetListOfFunctions().At(0))
             else:
                 if isinstance(contrib.obj, ROOT.TH1) and contrib.obj.GetEntries() == 0:
@@ -382,12 +382,12 @@ class Plot(object):
                     subplot_obj = self.subplot.obj.Clone()
                     if contrib != self.subplot:
                         new_hist = contrib.obj.Clone()
-                        if (self.subplot_type == "ratio"):
+                        if self.subplot_type == "ratio":
                             new_hist.Divide(subplot_obj)
-                        elif (self.subplot_type == "diff"):
+                        elif self.subplot_type == "diff":
                             new_hist.Add(subplot_obj, -1.)
-                        elif (self.subplot_type == "ddelta"):
-                            # Do the differntial delta spectrum, see 1704.03878
+                        elif self.subplot_type == "ddelta":
+                            # Do the differential delta spectrum, see 1704.03878
                             new_hist.Add(subplot_obj, -1.)
                             new_hist.Multiply(new_hist)
                             sum_hist = contrib.obj.Clone()
@@ -397,12 +397,12 @@ class Plot(object):
                 elif contrib.subplot is not None:
                     new_hist = contrib.obj.Clone()
                     ref_obj = contrib.subplot
-                    if (self.subplot_type == "ratio"):
+                    if self.subplot_type == "ratio":
                         new_hist.Divide(ref_obj)
-                    elif (self.subplot_type == "diff"):
+                    elif self.subplot_type == "diff":
                         new_hist.Add(ref_obj, -1.)
-                    elif (self.subplot_type == "ddelta"):
-                        # Do the differntial delta spectrum, see 1704.03878
+                    elif self.subplot_type == "ddelta":
+                        # Do the differential delta spectrum, see 1704.03878
                         new_hist.Add(ref_obj, -1.)
                         new_hist.Multiply(new_hist)
                         sum_hist = contrib.obj.Clone()
@@ -657,10 +657,10 @@ class Plot(object):
             elif self.plot_what == "hist":
                 draw_opts = "NOSTACK"
 
-        if "STACK" in draw_opts and not "NOSTACK" in draw_opts:
+        if "STACK" in draw_opts and "NOSTACK" not in draw_opts:
             draw_opts = draw_opts.replace("STACK", "")
             print("WARNING: 'stack' is not a valid draw option - the default is "
-                  "stacking, so will draw with options '%s'" % (draw_opts))
+                  "stacking, so will draw with options '%s'" % draw_opts)
 
         if not subplot_draw_opts:
             subplot_draw_opts = draw_opts
@@ -757,7 +757,6 @@ class Plot(object):
             # no idea, ROOT is fucking insane
             # modifier.GetYaxis().SetRangeUser(*self.ylim)
 
-
         # Draw it again to update
         if self.plot_what == "graph":
             self.container.Draw(draw_opts)
@@ -820,16 +819,15 @@ class Plot(object):
             self.subplot_pad.cd()
             self.subplot_container.Draw(subplot_draw_opts)
 
-            if self.subplot_title == None:
-                if (self.subplot_type == "ratio"):
-                    self.subplot_title = "#splitline{Ratio vs}{%s}" % (self.subplot.label)
-                elif (self.subplot_type == "diff"):
-                    self.subplot_title = "#splitline{Difference}{vs %s}" % (self.subplot.label)
-                elif (self.subplot_type == "ddelta"):
+            if self.subplot_title is None:
+                if self.subplot_type == "ratio":
+                    self.subplot_title = "#splitline{Ratio vs}{%s}" % self.subplot.label
+                elif self.subplot_type == "diff":
+                    self.subplot_title = "#splitline{Difference}{vs %s}" % self.subplot.label
+                elif self.subplot_type == "ddelta":
                     self.subplot_title = "d#Delta/d#lambda"
 
             self.subplot_container.SetTitle(";%s;%s" % (self.xtitle, self.subplot_title))
-
 
             if self.xlim:
                 self.subplot_container.GetXaxis().SetRangeUser(*self.xlim)
@@ -885,7 +883,6 @@ class Plot(object):
 
             self.subplot_pad.Update()
             self.canvas.Update()
-
 
     def save(self, filename):
         """Save the plot to file. Do some check to make sure dir exists."""
