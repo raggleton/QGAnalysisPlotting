@@ -639,14 +639,14 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         n_output_bins_t = abs(self.generator_binning.GetTH1xNumberOfBins(True))
         # I don't know why it needs both?
         n_output_bins_f = abs(self.generator_binning.GetTH1xNumberOfBins(False))
-        if ((n_output_bins_t != n_map_output_bins) and (n_output_bins_f != n_map_output_bins)):
-            raise ValueError("Output binning incompatible number of bins: " \
+        if (n_output_bins_t != n_map_output_bins) and (n_output_bins_f != n_map_output_bins):
+            raise ValueError("Output binning incompatible number of bins: "
                              "axis %d binning scheme %d (%d)" % (n_map_output_bins, n_output_bins_t, n_output_bins_f))
 
         n_input_bins_t = abs(self.detector_binning.GetTH1xNumberOfBins(True))
         n_input_bins_f = abs(self.detector_binning.GetTH1xNumberOfBins(False))
-        if ((n_input_bins_t != n_map_input_bins) and (n_input_bins_f != n_map_input_bins)):
-            raise ValueError("Input binning incompatible number of bins: " \
+        if (n_input_bins_t != n_map_input_bins) and (n_input_bins_f != n_map_input_bins):
+            raise ValueError("Input binning incompatible number of bins: "
                              "axis %d binning scheme %d (%d)" % (n_map_input_bins, n_input_bins_t, n_input_bins_f))
 
     # rewire these to point to BinningHandler instead
@@ -1997,9 +1997,9 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         sigma_min = max(0, sig[sig.GetNrows()-1])
         print("sigma_max:", sigma_max, "sigma_min:", sigma_min)
         if sigma_min == 0:
-            print("sigma_min > 0:", min([x for x in sig if x>0]))
+            print("sigma_min > 0:", min([x for x in sig if x > 0]))
             if non_zero:
-                sigma_min = min([x for x in sig if x>0])
+                sigma_min = min([x for x in sig if x > 0])
         return sigma_max, sigma_min
 
     def print_condition_number(self, remove_underflow_bins=False, remove_overflow_bins=False):
@@ -2289,10 +2289,10 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             plot.default_canvas_size = (800, 600)
             plot.plot("NOSTACK HIST")
             l, t = debug_plotter.draw_pt_binning_lines(plot,
-                                                      which='reco' if detector_space else 'gen',
-                                                      axis='x',
-                                                      do_underflow=has_underflow,
-                                                      offset=0)
+                                                       which='reco' if detector_space else 'gen',
+                                                       axis='x',
+                                                       do_underflow=has_underflow,
+                                                       offset=0)
             plot.save(os.path.join(debugging_dir, 'one_other_hists.pdf'))
 
             # Delta, with missing bins if necessary
@@ -2309,10 +2309,10 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             plot.default_canvas_size = (800, 600)
             plot.plot("NOSTACK HIST")
             l, t = debug_plotter.draw_pt_binning_lines(plot,
-                                                      which='reco' if detector_space else 'gen',
-                                                      axis='x',
-                                                      do_underflow=has_underflow,
-                                                      offset=0)
+                                                       which='reco' if detector_space else 'gen',
+                                                       axis='x',
+                                                       do_underflow=has_underflow,
+                                                       offset=0)
             plot.save(os.path.join(debugging_dir, 'delta.pdf'))
 
             # Inverse Covariance matrix
@@ -2326,12 +2326,12 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             canv.SetRightMargin(0.18)
 
             l, t = debug_plotter.draw_pt_binning_lines(obj,
-                                                      which='reco' if detector_space else 'gen',
-                                                      axis='x',
-                                                      do_underflow=has_underflow,
-                                                      do_labels_inside=False,
-                                                      do_labels_outside=True,
-                                                      offset=1)
+                                                       which='reco' if detector_space else 'gen',
+                                                       axis='x',
+                                                       do_underflow=has_underflow,
+                                                       do_labels_inside=False,
+                                                       do_labels_outside=True,
+                                                       offset=1)
             l2, t2 = debug_plotter.draw_pt_binning_lines(obj,
                                                          which='reco' if detector_space else 'gen',
                                                          axis='y',
@@ -2662,7 +2662,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             bins = self.variable_bin_edges_gen
             nbins = len(bins) - 1
             # FIXME which binning to use? index or physical?
-            this_bin_unfolded_rsp_ematrix = ROOT.TH2D("ematrix_rsp_bin_%d_%s" % (ibin_pt, cu.get_unique_str()), "", nbins, 0, nbins, nbins,0, nbins)
+            this_bin_unfolded_rsp_ematrix = ROOT.TH2D("ematrix_rsp_bin_%d_%s" % (ibin_pt, cu.get_unique_str()), "", nbins, 0, nbins, nbins, 0, nbins)
             for ix in range(nbins):
                 for iy in range(nbins):
                     this_bin_unfolded_rsp_ematrix.SetBinContent(ix+1, iy+1, cov_matrix[ix][iy])
@@ -3279,7 +3279,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
                 # get the largest deviation across all scale variations
                 nom = nominal.GetBinContent(ix)
                 this_shift = max([abs(syst['unfolder'].get_output().GetBinContent(ix) - nom)
-                             for syst in scale_systs])
+                                  for syst in scale_systs])
                 shift.SetBinContent(ix, this_shift)
                 shift.SetBinError(ix, 0)
                 shifted_up.SetBinContent(ix, nom+this_shift)
@@ -3427,7 +3427,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             # shifted
             self.hist_bin_chopper.add_obj(exp_syst.syst_shifted_label, self.get_syst_shifted_hist(label, self.get_unfolded_with_no_errors()))
             if label == "Total":
-                print("get_pt_bin_normed_div_bin_width(%s):"% exp_syst.syst_error_bar_label)
+                print("get_pt_bin_normed_div_bin_width(%s):" % exp_syst.syst_error_bar_label)
                 h = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width(exp_syst.syst_error_bar_label, ind=0, binning_scheme='generator')
                 # cu.print_th1_bins(h)
                 h_abs = self.hist_bin_chopper.get_pt_bin(exp_syst.syst_error_bar_label, ind=0, binning_scheme='generator')
@@ -4733,7 +4733,7 @@ class TruthTemplateMaker(object):
             new_truth_hists.append(sum_hist)
 
         # signal pt bins
-        global_ibin = ibin+1
+        global_ibin = len(pt_bins_uflow) - 1
         pt_bins_signal = self.binning_handler.get_pt_bins(binning_scheme="generator", is_signal_region=True)
         for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(pt_bins_signal[:-1], pt_bins_signal[1:])):
             print("Creating template", ibin, global_ibin, bin_edge_low, bin_edge_high)
