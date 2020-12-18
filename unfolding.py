@@ -989,7 +989,7 @@ def main():
             # Actual distribution to be unfolded, but with gen binning
             reco_1d_gen_binning = hist_mc_reco_gen_binning.Clone() if MC_INPUT else hist_data_reco_gen_binning
 
-            hist_fake_fraction_gen_binning = None
+            # hist_fake_fraction_gen_binning = None
             # create template as above, but with gen binning
             hist_mc_fakes_reco_gen_binning = cu.get_from_tfile(region['mc_tfile'], "%s/hist_%s_reco_fake_gen_binning" % (region['dirname'], angle_shortname))
             hist_fake_fraction_gen_binning = hist_mc_fakes_reco_gen_binning.Clone("hist_%s_fakes_fraction_gen_binning" % angle_shortname)
@@ -1356,7 +1356,7 @@ def main():
                                  marker_color=ROOT.kAzure+1,
                                  subplot=unreg_unfolder.hist_truth),
                 ]
-                title = "%s\n%s region, %s" % (jet_algo, region['label'], angle_str)
+                # title = "%s\n%s region, %s" % (jet_algo, region['label'], angle_str)
                 unreg_unfolder_plotter.draw_unfolded_1d(do_gen=True,
                                                         do_unfolded=True,
                                                         other_contributions=ocs,
@@ -2730,14 +2730,14 @@ def main():
             unfolder_plotter.draw_response_matrix_normed_by_detector_pt(title=title, **plot_args)
 
             title = ("#splitline{Probability matrix, %s, %s region, %s}{Condition number: #sigma_{max} / #sigma_{min} = %.3g / %.3g = %g}"
-                        % (jet_algo, region['label'], angle_str, unfolder.sigma_max, unfolder.sigma_min, unfolder.condition_number))
+                     % (jet_algo, region['label'], angle_str, unfolder.sigma_max, unfolder.sigma_min, unfolder.condition_number))
             unfolder_plotter.draw_probability_matrix(title=title, **plot_args)
 
             col_num = unfolder.binning_handler.physical_bin_to_global_bin(pt=151, var=0.6, binning_scheme='generator')
             title = "Probability entries for gen bin %d, %s, %s region, %s" % (col_num, jet_algo, region['label'], angle_str)
             unfolder_plotter.draw_probability_column(col_num, title=title, **plot_args)
 
-            title = "%s, %s region, %s"% (jet_algo, region['label'], angle_str)
+            title = "%s, %s region, %s" % (jet_algo, region['label'], angle_str)
             unfolder_plotter.draw_failed_reco(title=title, **plot_args)
 
             title = "Correlation matrix, %s, %s region, %s" % (jet_algo, region['label'], angle_str)
@@ -3032,7 +3032,7 @@ def main():
                     # Do unfolding!
                     # --------------------------------------------------------------
                     scale_unfolder.do_unfolding(scale_tau)
-                    scale_unfolder.get_output(hist_name="scale_%s_unfolded_1d" % (scale_label_no_spaces))
+                    scale_unfolder.get_output(hist_name="scale_%s_unfolded_1d" % scale_label_no_spaces)
                     scale_unfolder._post_process()
                     if not args.jacobian:
                         scale_unfolder.setup_normalised_results_per_pt_bin()
@@ -3138,12 +3138,7 @@ def main():
                     print("*** Unfolding with model syst input:", syst_label, "(%d/%d) ***" % (ind+1, len(region['model_systematics'])))
                     print("*" * 80)
 
-                    is_herwig = "Herwig" in syst_label
-
-                    mc_hname_append = "split" if MC_SPLIT else "all"
-                    if is_herwig:
-                        # use all the stats!
-                        mc_hname_append = "all"
+                    # is_herwig = "Herwig" in syst_label
                     mc_hname_append = "all"
 
                     if not isinstance(syst_dict['tfile'], ROOT.TFile):
