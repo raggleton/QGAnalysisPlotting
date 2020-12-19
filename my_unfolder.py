@@ -2920,9 +2920,9 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         self.hist_bin_chopper.add_obj(self.scale_uncert_ematrix_name, self.get_unfolded_with_ematrix_stat())
 
         for ibin_pt in range(len(self.pt_bin_edges_gen[:-1])):
-            nominal = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded_stat_err',
-                                                                             ibin_pt,
-                                                                             binning_scheme='generator')
+            # nominal = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width('unfolded_stat_err',
+            #                                                                 ibin_pt,
+            #                                                                 binning_scheme='generator')
             scale_hist = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width(self.scale_uncert_name,
                                                                                ibin_pt,
                                                                                binning_scheme='generator')

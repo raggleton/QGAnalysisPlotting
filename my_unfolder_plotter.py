@@ -1041,7 +1041,7 @@ class MyUnfolderPlotter(object):
                 Contribution(reco_bg, label="Background [detector-level]",
                              line_color=ROOT.kMagenta+2, line_width=1,
                              marker_color=ROOT.kMagenta+2, marker_size=0,
-                             normalise_hist=False),
+                             normalise_hist=False)
             )
 
         reco_data = self.unfolder.input_hist
@@ -1052,7 +1052,7 @@ class MyUnfolderPlotter(object):
                              line_color=ROOT.kGray+2, line_width=0,
                              marker_color=ROOT.kGray+2, marker_size=0.6, marker_style=20,
                              normalise_hist=False, subplot=reco_mc if do_reco_mc else None,
-                             subplot_line_width=1),
+                             subplot_line_width=1)
             )
 
         reco_data_bg_sub = self.unfolder.input_hist_bg_subtracted
@@ -1063,7 +1063,7 @@ class MyUnfolderPlotter(object):
                              line_color=ROOT.kBlack, line_width=0,
                              marker_color=ROOT.kBlack, marker_size=0.6, marker_style=20,
                              normalise_hist=False, subplot=reco_mc_bg_sub if do_reco_mc_bg_sub else None,
-                             subplot_line_width=1),
+                             subplot_line_width=1)
             )
 
         if do_reco_mc and reco_mc:
@@ -1071,7 +1071,7 @@ class MyUnfolderPlotter(object):
                 Contribution(reco_mc, label="MC [detector-level]",
                              line_color=ROOT.kAzure+2, line_width=1,
                              marker_color=ROOT.kAzure+2, marker_size=0,
-                             normalise_hist=False),
+                             normalise_hist=False)
             )
 
         if do_reco_mc_bg_sub and reco_mc_bg_sub:
@@ -1079,7 +1079,7 @@ class MyUnfolderPlotter(object):
                 Contribution(reco_mc_bg_sub, label="MC bg-subtracted [detector-level]",
                              line_color=ROOT.kAzure+4, line_width=1,
                              marker_color=ROOT.kAzure+4, marker_size=0,
-                             normalise_hist=False),
+                             normalise_hist=False)
             )
 
         other_contrib_with_subplot = False
