@@ -438,13 +438,14 @@ class InputHandler(object):
                  input_hist,
                  hist_truth=None,
                  hist_mc_reco=None,
-                 hist_mc_fakes=None):
+                 hist_mc_fakes=None,
+                 hist_fake_fraction=None):
 
         self.input_hist = input_hist.Clone() if input_hist else None
         self.hist_truth = hist_truth.Clone() if hist_truth else None  # TODO: should this be here?
         self.hist_mc_reco = hist_mc_reco.Clone() if hist_mc_reco else None
         self.hist_mc_fakes = hist_mc_fakes.Clone() if hist_mc_fakes else None
-        self.fake_fraction = None
+        self.hist_fake_fraction = hist_fake_fraction.Clone() if hist_fake_fraction else None  # incase the user wants to specify noe instead
         # these get modified by MyUnfolder.subtract_background()
         self.input_hist_bg_subtracted = input_hist.Clone() if input_hist else None
         self.hist_mc_reco_bg_subtracted = hist_mc_reco.Clone() if hist_mc_reco else None
@@ -455,20 +456,19 @@ class InputHandler(object):
             raise ValueError("Need hist_mc_fakes for setup_fake_fraction()")
         if not self.hist_mc_reco:
             raise ValueError("Need hist_mc_reco for setup_fake_fraction()")
-        fake_fraction = self.hist_mc_fakes.Clone("fake_fraction_"+cu.get_unique_str())
-        fake_fraction.Divide(self.hist_mc_reco)
-        self.fake_fraction = fake_fraction
+        self.hist_fake_fraction = self.hist_mc_fakes.Clone("fake_fraction_"+cu.get_unique_str())
+        self.hist_fake_fraction.Divide(self.hist_mc_reco)
 
     def calc_fake_hist(self, hist):
         """Calculate fakes background from hist using internal fake_fraction"""
-        if not self.fake_fraction:
+        if not self.hist_fake_fraction:
             self.setup_fake_fraction()
         hist_n_bins = hist.GetNbinsX()
-        fake_n_bins = self.fake_fraction.GetNbinsX()
+        fake_n_bins = self.hist_fake_fraction.GetNbinsX()
         if hist_n_bins != fake_n_bins:
             raise ValueError("Mimsmatch in number of bins in calc_fake_hist(): %d vs %d" % (hist_n_bins, fake_n_bins))
         fake_hist = hist.Clone(cu.get_unique_str())
-        fake_hist.Multiply(self.fake_fraction)
+        fake_hist.Multiply(self.hist_fake_fraction)
         return fake_hist
 
     def subtract_fake_hist(self, hist):

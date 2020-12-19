@@ -1067,12 +1067,14 @@ def main():
             hist_mc_gen = cu.get_from_tfile(region['mc_tfile'], "%s/hist_%s_truth_%s" % (region['dirname'], angle_shortname, mc_hname_append))
 
             hist_mc_reco = rm_large_rel_error_bins_th1(hist_mc_reco, relative_err_threshold=args.relErr)
+            hist_mc_gen = rm_large_rel_error_bins_th1(hist_mc_gen, relative_err_threshold=args.relErr)
 
-            # _all versions used in TruthTemplateMaker, since we always want the full stats
+            # _all versions used in TruthTemplateMaker and fakes, since we always want the full stats
             hist_mc_reco_all = cu.get_from_tfile(region['mc_tfile'], "%s/hist_%s_reco_all" % (region['dirname'], angle_shortname))
             hist_mc_gen_all = cu.get_from_tfile(region['mc_tfile'], "%s/hist_%s_truth_all" % (region['dirname'], angle_shortname))
             hist_mc_gen_reco_map = cu.get_from_tfile(region['mc_tfile'], "%s/tu_%s_GenReco_%s" % (region['dirname'], angle_shortname, mc_hname_append))
 
+            hist_mc_gen_all = rm_large_rel_error_bins_th1(hist_mc_gen_all, relative_err_threshold=args.relErr)
             hist_mc_reco_all = rm_large_rel_error_bins_th1(hist_mc_reco_all, relative_err_threshold=args.relErr)
 
             hist_data_reco = None
@@ -1085,25 +1087,32 @@ def main():
             reco_1d = hist_mc_reco.Clone() if MC_INPUT else hist_data_reco
             reco_1d = rm_large_rel_error_bins_th1(reco_1d, relative_err_threshold=args.relErr)
 
+            # to construct our "fakes" template, we use the ratio as predicted by MC using all stats,
+            # and apply it to data. this way we ensure we don't have -ve values,
+            # and avoid any issue with cross sections
+            hist_mc_fakes_reco = cu.get_from_tfile(region['mc_tfile'], "%s/hist_%s_reco_fake_all" % (region['dirname'], angle_shortname))
+            hist_mc_fakes_reco = rm_large_rel_error_bins_th1(hist_mc_fakes_reco, relative_err_threshold=args.relErr)
+
+            hist_fake_fraction = hist_mc_fakes_reco.Clone("hist_%s_fakes_reco_fraction" % angle_shortname)
+            hist_fake_fraction.Divide(rm_large_rel_error_bins_th1(hist_mc_reco_all, relative_err_threshold=args.relErr))
+
             if args.zeroLastPtBin:
                 zero_last_pt_bin_th1_reco(hist_mc_reco)
                 zero_last_pt_bin_th1_reco(hist_mc_reco_all)
+                # zero_last_pt_bin_th1_gen(hist_mc_gen)
+                # zero_last_pt_bin_th1_gen(hist_mc_gen_all)
                 zero_last_pt_bin_th1_reco(reco_1d)
                 zero_last_pt_bin_th2_reco(hist_mc_gen_reco_map)
                 zero_last_pt_bin_th2_gen(hist_mc_gen_reco_map)
-
-            # to construct our "fakes" template, we use the ratio as predicted by MC, and apply it to data
-            # this way we ensure we don't have -ve values, and avoid any issue with cross sections
-            hist_mc_fakes_reco = cu.get_from_tfile(region['mc_tfile'], "%s/hist_%s_reco_fake_all" % (region['dirname'], angle_shortname))
-            hist_mc_fakes_reco = rm_large_rel_error_bins_th1(hist_mc_fakes_reco, relative_err_threshold=args.relErr)
-            hist_fake_fraction = hist_mc_fakes_reco.Clone("hist_%s_fakes_reco_fraction" % angle_shortname)
-            hist_fake_fraction.Divide(rm_large_rel_error_bins_th1(hist_mc_reco_all, relative_err_threshold=args.relErr))
+                zero_last_pt_bin_th1_reco(hist_mc_fakes_reco)
+                zero_last_pt_bin_th1_reco(hist_fake_fraction)
 
             input_handler_args = dict(
                 input_hist=reco_1d,
                 hist_truth=hist_mc_gen,
-                hist_mc_reco=hist_mc_reco_all,
-                hist_mc_fakes=hist_mc_fakes_reco
+                hist_mc_reco=hist_mc_reco,
+                hist_mc_fakes=hist_mc_fakes_reco,
+                hist_fake_fraction=hist_fake_fraction
             )
 
             # Gen binning versions
@@ -1128,7 +1137,8 @@ def main():
                 input_hist=reco_1d_gen_binning,
                 hist_truth=None,
                 hist_mc_reco=hist_mc_reco_gen_binning,
-                hist_mc_fakes=hist_mc_fakes_reco_gen_binning
+                hist_mc_fakes=hist_mc_fakes_reco_gen_binning,
+                hist_fake_fraction=hist_fake_fraction_gen_binning,
             )
 
             # Setup unfolder object
@@ -1268,6 +1278,20 @@ def main():
                 unfolder_merged.check_input()
                 unfolder = unfolder_merged
 
+                # update input args templates for future setups
+                input_handler_args = dict(
+                    input_hist=unfolder.input_hist,
+                    hist_truth=unfolder.hist_truth,
+                    hist_mc_reco=unfolder.hist_mc_reco,
+                    hist_mc_fakes=unfolder.hist_mc_fakes
+                )
+                input_handler_gen_binning_args = dict(
+                    input_hist=unfolder.input_hist_gen_binning,
+                    hist_truth=None,
+                    hist_mc_reco=unfolder.hist_mc_reco_gen_binning,
+                    hist_mc_fakes=unfolder.hist_mc_fakes_gen_binning
+                )
+
             unfolder.hist_bin_chopper.add_obj('hist_truth', unfolder.hist_truth)
 
             # Setup plotter
@@ -1327,9 +1351,11 @@ def main():
             # ------------------------------------------------------------------
             hist_fakes_reco = unfolder.input_handler.calc_fake_hist(unfolder.input_handler.input_hist)
             unfolder.subtract_background(hist_fakes_reco, "Signal fakes")
+            unfolder.input_handler.hist_mc_reco_bg_subtracted = unfolder.input_handler.subtract_fake_hist(unfolder.input_handler.hist_mc_reco)[0]
 
             hist_fakes_reco_gen_binning = unfolder.input_handler_gen_binning.calc_fake_hist(unfolder.input_handler_gen_binning.input_hist)
             unfolder.subtract_background_gen_binning(hist_fakes_reco_gen_binning, "Signal fakes")
+            unfolder.input_handler_gen_binning.hist_mc_reco_bg_subtracted = unfolder.input_handler_gen_binning.subtract_fake_hist(unfolder.input_handler_gen_binning.hist_mc_reco)[0]
 
             # Subtract actual backgrounds if necessary
             # ------------------------------------------------------------------
@@ -1828,13 +1854,13 @@ def main():
                 input_handler_merged = InputHandler(input_hist=th1_merge_reco(orig_input_handler.input_hist),
                                                     hist_truth=th1_merge_gen(orig_input_handler.hist_truth),
                                                     hist_mc_reco=th1_merge_reco(orig_input_handler.hist_mc_reco),
-                                                    hist_mc_fakes= th1_merge_reco(orig_input_handler.hist_mc_fakes))
+                                                    hist_mc_fakes=th1_merge_reco(orig_input_handler.hist_mc_fakes))
 
                 orig_input_handler_gen_binning = orig_unfolder.input_handler_gen_binning
                 input_handler_gen_binning_merged = InputHandler(input_hist=th1_merge_gen(orig_input_handler_gen_binning.input_hist),
                                                                 hist_truth=None,
                                                                 hist_mc_reco=th1_merge_gen(orig_input_handler_gen_binning.hist_mc_reco),
-                                                                hist_mc_fakes= th1_merge_gen(orig_input_handler_gen_binning.hist_mc_fakes))
+                                                                hist_mc_fakes=th1_merge_gen(orig_input_handler_gen_binning.hist_mc_fakes))
 
                 # Set what is to be unfolded
                 # ------------------------------------------------------------------
@@ -2043,12 +2069,14 @@ def main():
                     input_handler_jk = InputHandler(input_hist=jk_input_hist,
                                                     hist_truth=jk_dict['input_gen'].Clone(),
                                                     hist_mc_reco=jk_hist_mc_reco,
-                                                    hist_mc_fakes=unfolder.input_handler.hist_mc_fakes) # FIXME this will give wrong fake fraction!
+                                                    hist_mc_fakes=unfolder.input_handler.hist_mc_fakes,
+                                                    hist_fake_fraction=hist_fake_fraction)
 
                     input_handler_gen_binning_jk = InputHandler(input_hist=jk_hist_mc_reco_gen_binning,
                                                                 hist_truth=None,
                                                                 hist_mc_reco=jk_hist_mc_reco_gen_binning,
-                                                                hist_mc_fakes=unfolder.input_handler_gen_binning.hist_mc_fakes)
+                                                                hist_mc_fakes=unfolder.input_handler_gen_binning.hist_mc_fakes,
+                                                                hist_fake_fraction=hist_fake_fraction_gen_binning)
 
                     jk_unfolder.set_input(input_handler=input_handler_jk,
                                            input_handler_gen_binning=input_handler_gen_binning_jk,
