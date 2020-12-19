@@ -117,27 +117,11 @@ def rm_large_rel_error_bins_th2(hist, relative_err_threshold=-1):
     return new_hist
 
 
-def draw_projection_comparison(h_orig, h_projection, title, xtitle, output_filename, print_bin_comparison=True):
-    """Draw 2 hists, h_orig the original, and h_projection the projection of a 2D hist"""
+def draw_projection_comparison(h_orig, h_projection, title, xtitle, output_filename, do_bin_comparison=True):
+    """Draw 2 hists, h_orig the original, and h_projection the projection of a 2D hist
 
-    # Check integrals
-    int_orig = h_orig.Integral()
-    int_proj = h_projection.Integral()
-    if abs(int_orig - int_proj)/int_orig > 0.01:
-        print("draw_projection_comparison: different integrals: %f vs %f" % (int_orig, int_proj))
-
-    # Check bin-by-bin
-    if print_bin_comparison:
-        for i in range(1, h_orig.GetNbinsX()+1):
-            value_orig = h_orig.GetBinContent(i)
-            value_proj = h_projection.GetBinContent(i)
-            if value_orig == 0 and value_proj == 0:
-                continue
-            rel_diff = abs((value_orig - value_proj)/max(abs(value_orig), abs(value_proj)))
-            if rel_diff > 1E-5:
-                # print("draw_projection_comparison: bin %s has different contents: %f vs %f (rel diff %f)" % (i, value_orig, value_proj, rel_diff))
-                raise ValueError("draw_projection_comparison: bin %s has different contents: %f vs %f (rel diff %f)" % (i, value_orig, value_proj, rel_diff))
-
+    Also compares total integrals, and bin-by-bin (if do_bin_comparison = True)
+    """
     entries = [
         Contribution(h_orig, label="1D hist",
                      line_color=ROOT.kBlue, line_width=1,
@@ -156,7 +140,8 @@ def draw_projection_comparison(h_orig, h_projection, title, xtitle, output_filen
                 ytitle="N",
                 subplot_type='ratio',
                 subplot_title='Projection / 1D',
-                subplot_limits=(0.999, 1.001))
+                subplot_limits=(0.999, 1.001)
+                )
     plot.default_canvas_size = (800, 600)
     plot.plot("NOSTACK HIST")
     plot.main_pad.SetLogy(1)
@@ -166,6 +151,27 @@ def draw_projection_comparison(h_orig, h_projection, title, xtitle, output_filen
     plot.legend.SetY1NDC(0.77)
     plot.legend.SetX2NDC(0.85)
     plot.save(output_filename)
+
+    # Check integrals
+    int_orig = h_orig.Integral()
+    int_proj = h_projection.Integral()
+    if abs(int_orig - int_proj)/int_orig > 0.01:
+        warnings.warn(cu.pcolors.WARNING + "draw_projection_comparison: different integrals: %f vs %f" % (int_orig, int_proj) + cu.pcolors.ENDC)
+
+    # Check bin-by-bin
+    if do_bin_comparison:
+        for i in range(1, h_orig.GetNbinsX()+1):
+            value_orig = h_orig.GetBinContent(i)
+            value_proj = h_projection.GetBinContent(i)
+            if value_orig == 0 and value_proj == 0:
+                continue
+            rel_diff = abs((value_orig - value_proj)/max(abs(value_orig), abs(value_proj)))
+            if rel_diff > 1E-5:
+                # print("draw_projection_comparison: bin %s has different contents: %f vs %f (rel diff %f)" % (i, value_orig, value_proj, rel_diff))
+                raise ValueError(
+                    "draw_projection_comparison: bin %s has different contents: "
+                    "hist: %f vs projection: %f (abs diff %f, rel diff %f)" % (
+                    i, value_orig, value_proj, value_orig - value_proj, rel_diff))
 
 
 # def fill_empty_bins(response_map,
