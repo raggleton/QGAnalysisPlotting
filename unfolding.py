@@ -1224,7 +1224,6 @@ def main():
 
             # Merge last pt bin with 2nd to last, if desired
             # ------------------------------------------------------------------
-            # merge_dir = os.path.join(this_output_dir, 'merge_last_pt_bin')
             def setup_merged_last_pt_bin_unfolder(orig_unfolder):
                 """Setup unfolder with last pt bin merged with 2nd to last"""
                 this_binning_handler = orig_unfolder.binning_handler
@@ -1298,6 +1297,13 @@ def main():
                     hist_mc_fakes=unfolder.hist_mc_fakes_gen_binning
                 )
 
+            # update some other hists
+            for merge_func in th1_merge_reco_funcs:
+                hist_mc_reco = merge_func(hist_mc_reco)
+
+            for merge_func in th1_merge_reco_funcs:
+                hist_mc_gen = merge_func(hist_mc_gen)
+
             unfolder.hist_bin_chopper.add_obj('hist_truth', unfolder.hist_truth)
 
             # Setup plotter
@@ -1336,6 +1342,9 @@ def main():
                         if not isinstance(syst_dict['tfile'], ROOT.TFile):
                             syst_dict['tfile'] = cu.open_root_file(syst_dict['tfile'])
                         map_syst = cu.get_from_tfile(syst_dict['tfile'], "%s/tu_%s_GenReco_all" % (region['dirname'], angle_shortname))
+                        # update binnings
+                        for merge_func in th2_merge_funcs:
+                            map_syst = merge_func(map_syst)
                         print("    syst bin", chosen_rsp_bin, map_syst.GetBinContent(*chosen_rsp_bin))
                         unfolder.add_sys_error(rm_large_rel_error_bins_th2(map_syst), syst_dict['label'], ROOT.TUnfoldDensity.kSysErrModeMatrix)
 
@@ -1376,8 +1385,12 @@ def main():
                     mc_hname_append = "split" if MC_SPLIT else "all"
                     bg_hist = cu.get_from_tfile(bg_dict['tfile'], "%s/hist_%s_reco_%s" % (region['dirname'], angle_shortname, mc_hname_append))
                     bg_hist_gen = cu.get_from_tfile(bg_dict['tfile'], "%s/hist_%s_truth_%s" % (region['dirname'], angle_shortname, mc_hname_append))
+                    for merge_func in th1_merge_reco_funcs:
+                        bg_hist = merge_func(bg_hist)
+                    for merge_func in th1_merge_gen_funcs:
+                        bg_hist_gen = merge_func(bg_hist_gen)
                     bg_dict['hist'] = bg_hist
-                    bg_dict['hist_gen'] = bg_hist
+                    bg_dict['hist_gen'] = bg_hist_gen
 
                     # keep one big hist
                     if not background_reco_1d:
@@ -1417,10 +1430,10 @@ def main():
                 alt_hist_mc_reco.Scale(alt_scale)
 
                 # Update binnings
-                for mf in th1_merge_gen_funcs:
-                    alt_hist_mc_gen = mf(alt_hist_mc_gen)
-                for mf in th1_merge_reco_funcs:
-                    alt_hist_mc_reco = mf(alt_hist_mc_reco)
+                for merge_func in th1_merge_gen_funcs:
+                    alt_hist_mc_gen = merge_func(alt_hist_mc_gen)
+                for merge_func in th1_merge_reco_funcs:
+                    alt_hist_mc_reco = merge_func(alt_hist_mc_reco)
 
                 # fakes-subtracted version
                 alt_hist_mc_reco_bg_subtracted, alt_hist_fakes = unfolder.input_handler.subtract_fake_hist(alt_hist_mc_reco)
@@ -1428,8 +1441,8 @@ def main():
                 # gen-binned versions of detector-level plots
                 alt_hist_mc_reco_gen_binning = cu.get_from_tfile(region['alt_mc_tfile'], "%s/hist_%s_reco_gen_binning" % (region['dirname'], angle_shortname))
                 alt_hist_mc_reco_gen_binning.Scale(alt_scale)
-                for mf in th1_merge_gen_funcs:
-                    alt_hist_mc_reco_gen_binning = mf(alt_hist_mc_reco_gen_binning)
+                for merge_func in th1_merge_gen_funcs:
+                    alt_hist_mc_reco_gen_binning = merge_func(alt_hist_mc_reco_gen_binning)
                 alt_hist_mc_reco_bg_subtracted_gen_binning, alt_hist_fakes_gen_binning = unfolder.input_handler_gen_binning.subtract_fake_hist(alt_hist_mc_reco_gen_binning)
 
                 unfolder.hist_bin_chopper.add_obj('alt_hist_truth', alt_hist_mc_gen)
@@ -1465,28 +1478,13 @@ def main():
 
                 # Subtract fakes (treat as background)
                 # ------------------------------------------------------------------
-                unreg_unfolder.subtract_background(hist_fakes_reco, "Signal fakes", scale=1., scale_err=0.0)
-                unreg_unfolder.subtract_background_gen_binning(hist_fakes_reco_gen_binning, "Signal fakes", scale=1.)
+                for key, h_bkg in unfolder.backgrounds.items():
+                    unreg_unfolder.subtract_background(h_bkg, key)
+                for key, h_bkg in unfolder.backgrounds_gen_binning.items():
+                    unreg_unfolder.subtract_background_gen_binning(h_bkg, key)
 
-                # Subtract actual backgrounds if necessary
+                # Do the unfolding
                 # ------------------------------------------------------------------
-                if "backgrounds" in region and args.subtractBackgrounds:
-                    for bg_ind, bg_dict in enumerate(region['backgrounds']):
-                        print("Subtracting", bg_dict['name'], 'background')
-                        if not isinstance(bg_dict['tfile'], ROOT.TFile):
-                            bg_dict['tfile'] = cu.open_root_file(bg_dict['tfile'])
-
-                        mc_hname_append = "split" if MC_SPLIT else "all"
-                        bg_hist = cu.get_from_tfile(bg_dict['tfile'], "%s/hist_%s_reco_%s" % (region['dirname'], angle_shortname, mc_hname_append))
-                        bg_hist_gen = cu.get_from_tfile(bg_dict['tfile'], "%s/hist_%s_truth_%s" % (region['dirname'], angle_shortname, mc_hname_append))
-                        bg_dict['hist'] = bg_hist
-                        bg_dict['hist_gen'] = bg_hist_gen
-
-                        unreg_unfolder.subtract_background(hist=bg_hist,
-                                                           name=bg_dict['name'],
-                                                           scale=bg_dict.get('rate', 1.),
-                                                           scale_err=bg_dict.get('rate_unc', 0.))
-
                 unreg_unfolder.do_unfolding(0)
                 unreg_unfolder.get_output(hist_name="unreg_unfolded_1d")
                 unreg_unfolder._post_process()
@@ -1533,6 +1531,7 @@ def main():
                         hist_mc_otherProc_gen_all = cu.get_from_tfile(region['mc_otherProc_tfile'], "%s/hist_%s_truth_all" % (region['dirname_otherProc'], angle_shortname))
                         hist_mc_otherProc_reco_gen_binning_all = cu.get_from_tfile(region['mc_otherProc_tfile'], "%s/hist_%s_reco_gen_binning" % (region['dirname_otherProc'], angle_shortname))
                         hist_mc_otherProc_fakes_reco_gen_binning = cu.get_from_tfile(region['mc_otherProc_tfile'], "%s/hist_%s_reco_fake_gen_binning" % (region['dirname_otherProc'], angle_shortname))
+                        # FIXME need to apply th1_merge_funcs
                         hist_otherProc_fake_fraction_gen_binning = hist_mc_otherProc_fakes_reco_gen_binning.Clone("hist_%s_fakes_fraction_gen_binning" % angle_shortname)
                         hist_otherProc_fake_fraction_gen_binning.Divide(hist_mc_otherProc_reco_gen_binning_all)
                         hist_mc_otherProc_reco_gen_binning_all_bg_subtracted, hist_otherProc_fakes_reco_all_gen_binning = subtract_background(hist_mc_otherProc_reco_gen_binning_all, hist_otherProc_fake_fraction_gen_binning)
@@ -2390,6 +2389,12 @@ def main():
                     if not isinstance(syst_dict['tfile'], ROOT.TFile):
                         syst_dict['tfile'] = cu.open_root_file(syst_dict['tfile'])
                     map_syst = cu.get_from_tfile(syst_dict['tfile'], "%s/tu_%s_GenReco_all" % (region['dirname'], angle_shortname))
+                    for merge_func in th2_merge_funcs:
+                        map_syst = merge_func(map_syst)
+
+                    if args.zeroLastPtBin:
+                        zero_last_pt_bin_th2_reco(map_syst)
+                        zero_last_pt_bin_th2_gen(map_syst)
 
                     this_syst = ExpSystematic(label=syst_dict['label'], syst_map=None)
 
@@ -2408,10 +2413,6 @@ def main():
                     # --------------------------------------------------------------
                     exp_syst_unfolder.subtract_background(hist_fakes_reco, "fakes")
                     exp_syst_unfolder.subtract_background_gen_binning(hist_fakes_reco_gen_binning, "fakes")
-
-                    if args.mergeLastPtBin:
-                        exp_syst_unfolder_merged = setup_merged_last_pt_bin_unfolder(exp_syst_unfolder)
-                        exp_syst_unfolder = exp_syst_unfolder_merged
 
                     # Setup regularisation
                     # --------------------------------------------------------------
@@ -2772,6 +2773,8 @@ def main():
 
                 hist_mc_gen_reco_map_alt = cu.get_from_tfile(region['alt_mc_tfile'], "%s/tu_%s_GenReco_all" % (region['dirname'], angle_shortname))
                 hist_mc_gen_reco_map_alt.Scale(unfolder.response_map.Integral() / hist_mc_gen_reco_map_alt.Integral())  # just for display purposes, doesn't affect result
+                for merge_func in th2_merge_funcs:
+                        hist_mc_gen_reco_map_alt = merge_func(hist_mc_gen_reco_map_alt)
 
                 alt_unfolder = MyUnfolder(response_map=rm_large_rel_error_bins_th2(hist_mc_gen_reco_map_alt, args.relErr),
                                           binning_handler=unfolder.binning_handler,
@@ -2941,12 +2944,14 @@ def main():
 
                     if isinstance(scale_dict['tfile'], str):
                         scale_dict['tfile'] = cu.open_root_file(scale_dict['tfile'])
-
-                    scale_unfolder = MyUnfolder(response_map=cu.get_from_tfile(scale_dict['tfile'], "%s/tu_%s_GenReco_all" % (region['dirname'], angle_shortname)),
+                    scale_map = cu.get_from_tfile(scale_dict['tfile'], "%s/tu_%s_GenReco_all" % (region['dirname'], angle_shortname))
+                    for merge_func in th2_merge_funcs:
+                        scale_map = merge_func(scale_map)
+                    scale_unfolder = MyUnfolder(response_map=rm_large_rel_error_bins_th2(scale_map, args.relErr),
                                                 binning_handler=unfolder.binning_handler,
                                                 **unfolder_args)
 
-                    # Needed beacuse some of the variations struggle to unfold
+                    # Needed because some of the variations struggle to unfold
                     # Even 1E-18 wouldn't work - needs to be v.small
                     scale_unfolder.SetEpsMatrix(eps_matrix)
 
@@ -3144,6 +3149,12 @@ def main():
                     hist_syst_reco.Scale(sf)
                     hist_syst_gen.Scale(sf)
                     hist_syst_reco_gen_binning.Scale(sf)
+
+                    for merge_func in th1_merge_reco_funcs:
+                        hist_syst_reco = merge_func(hist_syst_reco)
+                    for merge_func in th1_merge_gen_funcs:
+                        hist_syst_gen = merge_func(hist_syst_gen)
+                        hist_syst_reco_gen_binning = merge_func(hist_syst_reco_gen_binning)
 
                     # Set what is to be unfolded
                     # --------------------------------------------------------------
@@ -3490,6 +3501,8 @@ def main():
                     print("*** Unfolding with PDF variation:", pdf_label, "(%d/%d) ***" % (ind+1, len(region['pdf_systematics'])))
                     print("*" * 80)
                     pdf_response_map = cu.get_from_tfile(pdf_tfile, pdf_dict['response_map'])
+                    for merge_func in th2_merge_funcs:
+                        pdf_response_map = merge_func(pdf_response_map)
                     pdf_unfolder = MyUnfolder(response_map=pdf_response_map,
                                               binning_handler=unfolder.binning_handler,
                                               **unfolder_args)
