@@ -923,7 +923,11 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
 
         def _del_attr(name):
             if hasattr(self, name) and getattr(self, name) is not None:
-                delattr(self, name)
+                try:
+                    delattr(self, name)
+                except AttributeError as e:
+                    print(cu.pcolors.RED + "Error using _del_attr(%s):" % name + cu.pcolors.ENDC)
+                    raise e
 
         if not keep_response_map:
             for x in ['response_map',
@@ -943,14 +947,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
                 _del_attr(x)
 
         if not keep_1d_hists:
-            for x in ['hist_mc_reco_bg_subtracted',
-                      'input_hist',
-                      'input_hist_bg_subtracted',
-                      'hist_mc_reco',
-                      'hist_mc_reco_gen_binning_bg_subtracted',
-                      'input_hist_gen_binning',
-                      'input_hist_gen_binning_bg_subtracted',
-                      'hist_mc_reco_gen_binning']:
+            for x in ['input_handler', 'input_handler_gen_binning']:
                 _del_attr(x)
 
         if not keep_backgrounds:

@@ -1523,11 +1523,18 @@ def main():
 
             if args.mergeBadResponseBins:
                 print(cu.pcolors.OKBLUE, "Doing bad probability bin merging...", cu.pcolors.ENDC)
-                gen_bins_to_merge = get_bins_to_merge_probability_stats(unfolder.get_probability_matrix(), unfolder.response_map)
+                gen_bins_to_merge = get_bins_to_merge_bad_probability_bins(unfolder.get_probability_matrix(), unfolder.response_map)
+                ix = unfolder.binning_handler.physical_bin_to_global_bin(pt=254, var=40, binning_scheme='generator')
+                for iy in range(0, unfolder.response_map.GetNbinsY()+1):
+                    val = unfolder.response_map.GetBinContent(ix, iy)
+                    err = unfolder.response_map.GetBinError(ix, iy)
+                    if val != 0:
+                        print(f"Bin ({ix},{iy}) has contents {val:.3f} ± {err:.3f}")
+
                 unfolder = setup_merged_bin_unfolder(gen_bins_to_merge, None, unfolder)
                 unfolder.check_input()
 
-                 # update input args templates for future setups
+                # update input args templates for future setups
                 input_handler_args = dict(
                     input_hist=unfolder.input_hist,
                     hist_truth=unfolder.hist_truth,
@@ -1966,11 +1973,11 @@ def main():
                 if args.mergeBins:
                     print(cu.pcolors.OKBLUE, "Doing bin merging...", cu.pcolors.ENDC)
                     # pt_overflow_bin = binning_handler.get_first_pt_overflow_global_bin("generator")
-                    gen_bins_to_merge = get_bins_to_merge_probability_stats(unfolder.get_probability_matrix())
+                    # gen_bins_to_merge = get_bins_to_merge_probability_stats(unfolder.get_probability_matrix())
 
-                    # gen_bins_to_merge2 = get_bins_to_merge_nonnegative(h=unfolder.get_output(),
-                    #                                                   binning_obj=binning_handler.get_binning_scheme('generator'),
-                    #                                                   ensure_nonnegative=False)
+                    gen_bins_to_merge = get_bins_to_merge_nonnegative(h=unfolder.get_output(),
+                                                                      binning_obj=binning_handler.get_binning_scheme('generator'),
+                                                                      ensure_nonnegative=False)
                     # gen_bins_to_merge.extend(gen_bins_to_merge2)
                     counter = 0
                     max_iterations = 1
