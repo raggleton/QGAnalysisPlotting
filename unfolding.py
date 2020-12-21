@@ -643,7 +643,7 @@ def get_bins_to_merge_probability_stats(pmatrix, response_map, min_num=15, allow
             print("p matrix gen bin", ix, "len value_err_pairs:", len(value_err_pairs), "n_eff:", n_eff)
 
         def _print_val_err_pairs(pairs):
-            return ",".join(["{:.3f} ± {:.3f}".format(v, e) for v, e in pairs])
+            return ", ".join(["{:.3f} ± {:.3f}".format(v, e) for v, e in pairs])
 
         count_entries = n_eff if use_neff_entries else len(value_err_pairs)
         sorted_pairs = sorted(value_err_pairs, key=lambda x:x[0], reverse=True)
@@ -1335,9 +1335,9 @@ def main():
                         hist_mc_gen_reco_map.SetBinContent(gen_bin, r, 0)
                         hist_mc_gen_reco_map.SetBinError(gen_bin, r, 0)
 
-            unfolder = MyUnfolder(response_map=hist_mc_gen_reco_map,
-                                  binning_handler=binning_handler,
-                                  **unfolder_args)
+                unfolder = MyUnfolder(response_map=hist_mc_gen_reco_map,
+                                      binning_handler=binning_handler,
+                                      **unfolder_args)
 
             # Save binning to file
             # unfolder.save_binning(txt_filename="%s/binning_scheme.txt" % (this_output_dir), print_xml=False)
@@ -2428,8 +2428,6 @@ def main():
                     if not isinstance(syst_dict['tfile'], ROOT.TFile):
                         syst_dict['tfile'] = cu.open_root_file(syst_dict['tfile'])
                     map_syst = cu.get_from_tfile(syst_dict['tfile'], "%s/tu_%s_GenReco_all" % (region['dirname'], angle_shortname))
-                    for merge_func in th2_merge_funcs:
-                        map_syst = merge_func(map_syst)
 
                     if args.zeroLastPtBin:
                         zero_last_pt_bin_th2_reco(map_syst)
@@ -2439,6 +2437,20 @@ def main():
 
                     # construct unfolder like original but with this response matrix, do unfolding
                     exp_syst_unfolder = MyUnfolder(response_map=rm_large_rel_error_bins_th2(map_syst, args.relErr),
+                                                   binning_handler=binning_handler,
+                                                   **unfolder_args)
+
+                    if args.zeroBadResponseBins:
+                        bad_bins = get_bins_to_merge_probability_stats(exp_syst_unfolder.get_probability_matrix(), exp_syst_unfolder.response_map)
+                        for gen_bin in bad_bins:
+                            for r in range(0, exp_syst_unfolder.get_probability_matrix().GetNbinsY()+1):
+                                map_syst.SetBinContent(gen_bin, r, 0)
+                                map_syst.SetBinError(gen_bin, r, 0)
+
+                    for merge_func in th2_merge_funcs:
+                        map_syst = merge_func(map_syst)
+
+                    exp_syst_unfolder = MyUnfolder(response_map=map_syst,
                                                    binning_handler=unfolder.binning_handler,
                                                    **unfolder_args)
 
@@ -2489,6 +2501,7 @@ def main():
                     exp_syst_unfolder.do_unfolding(exp_tau)
                     exp_syst_unfolder.get_output(hist_name="exp_syst_%s_unfolded_1d" % this_syst.label_no_spaces)
                     exp_syst_unfolder._post_process()
+                    exp_syst_unfolder.inspect_output()
 
                     # Do plots
                     # --------------------------------------------------------------
