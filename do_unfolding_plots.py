@@ -3845,21 +3845,21 @@ class BigNormalised1DPlotter(object):
         self.setup = setup
         self.hist_bin_chopper = hist_bin_chopper
         self.unfolder = setup.region['unfolder']
-        self.plot_with_bin_widths = plot_with_bin_widths # use bin widths in plot instead of uniform bin widths
+        self.binning_handler = self.unfolder.binning_handler
+        self.plot_with_bin_widths = plot_with_bin_widths  # use bin widths in plot instead of uniform bin widths
 
-        self.pt_bin_edges_generator = self.unfolder.pt_bin_edges_gen
-        self.num_pt_bins_generator = len(self.pt_bin_edges_generator)-1
-        self.lambda_bin_edges_generator = self.unfolder.variable_bin_edges_gen
-        self.num_lambda_bins_generator = len(self.lambda_bin_edges_generator)-1
-        self.nbins_generator = self.num_pt_bins_generator * self.num_lambda_bins_generator
+        # cache all these things since they don't (shouldn't!) change
+        # but the user should more often use the methods below, since it takes
+        # care if you need to change binning scheme
+        self.pt_bin_edges_generator = self.binning_handler.get_pt_bins('generator', is_signal_region=True)
+        self.num_pt_bins_generator = len(self.pt_bin_edges_generator) - 1
         self.all_bin_edges_generator = self._calc_bin_edges('generator')
+        self.nbins_generator = len(self.all_bin_edges_generator) - 1
 
-        self.pt_bin_edges_detector = self.unfolder.pt_bin_edges_reco
-        self.num_pt_bins_detector = len(self.pt_bin_edges_detector)-1
-        self.lambda_bin_edges_detector = self.unfolder.variable_bin_edges_reco
-        self.num_lambda_bins_detector = len(self.lambda_bin_edges_detector)-1
-        self.nbins_detector = self.num_pt_bins_detector * self.num_lambda_bins_detector
+        self.pt_bin_edges_detector = self.binning_handler.get_pt_bins('detector', is_signal_region=True)
+        self.num_pt_bins_detector = len(self.pt_bin_edges_detector) - 1
         self.all_bin_edges_detector = self._calc_bin_edges('detector')
+        self.nbins_detector = len(self.all_bin_edges_detector) - 1
 
         self.line_width = 1
 
@@ -3869,14 +3869,8 @@ class BigNormalised1DPlotter(object):
     def pt_bin_edges(self, binning_scheme):
         return self.pt_bin_edges_generator if binning_scheme == 'generator' else self.pt_bin_edges_detector
 
-    def lambda_bin_edges(self, binning_scheme):
-        return self.lambda_bin_edges_generator if binning_scheme == 'generator' else self.lambda_bin_edges_detector
-
     def num_pt_bins(self, binning_scheme):
         return self.num_pt_bins_generator if binning_scheme == 'generator' else self.num_pt_bins_detector
-
-    def num_lambda_bins(self, binning_scheme):
-        return self.num_lambda_bins_generator if binning_scheme == 'generator' else self.num_lambda_bins_detector
 
     def nbins(self, binning_scheme):
         return self.nbins_generator if binning_scheme == 'generator' else self.nbins_detector
@@ -3885,23 +3879,29 @@ class BigNormalised1DPlotter(object):
         return self.all_bin_edges_generator if binning_scheme == 'generator' else self.all_bin_edges_detector
 
     def _calc_bin_edges(self, binning_scheme='generator'):
-        pt_bin_edges = self.pt_bin_edges(binning_scheme)
-        lambda_bin_edges = self.lambda_bin_edges(binning_scheme)
-        num_pt_bins = self.num_pt_bins(binning_scheme)
-        num_lambda_bins = self.num_lambda_bins(binning_scheme)
-        nbins = self.nbins(binning_scheme)
+        """Construct bin edges for big TH1s
 
-        if self.plot_with_bin_widths:
-            bins = []
-            for i in range(num_pt_bins):
-                offset = i * math.ceil(lambda_bin_edges[-1])
+        If self.plot_with_bin_widths, returns properly sized bins
+        according to lambda bins widths.
+        Otherwise just returns evenly-spaced integers for uniform bin width
+        """
+        pt_bin_edges = self.pt_bin_edges(binning_scheme)
+        num_pt_bins = self.num_pt_bins(binning_scheme)
+        bins = []
+        for ibin_pt, pt in enumerate(pt_bin_edges[:-1]):
+            lambda_bin_edges = self.binning_handler.get_variable_bins(pt=pt,
+                                                                      binning_scheme=binning_scheme)
+            if self.plot_with_bin_widths:
+                offset = ibin_pt * math.ceil(lambda_bin_edges[-1])
                 bins.extend(lambda_bin_edges[:-1] + offset)
-                if i == (num_pt_bins-1):
-                    bins.append(lambda_bin_edges[-1:] + offset)
-            all_bin_edges = array('d', bins)
-        else:
-            all_bin_edges = array('d', list(range(0, nbins+1)))
-        return all_bin_edges
+                if ibin_pt == (num_pt_bins - 1):
+                    bins.append(lambda_bin_edges[-1] + offset)
+            else:
+                start = 0 if len(bins) == 0 else (bins[-1] + 1)
+                end = start + len(lambda_bin_edges) - 1 
+                # -1 to account for first bin having lower edge of last bin
+                bins.extend(list(range(start, end)))
+        return array('d', bins)
 
     @staticmethod
     def _get_ylim(entries):
@@ -3931,7 +3931,7 @@ class BigNormalised1DPlotter(object):
         this_plot.lumi = self.setup.lumi
 
     def _plot_pt_bins(self, plot, binning_scheme='generator'):
-        """Plot vertical pt bin lines"""
+        """Plot vertical pt bin lines & text labels"""
         sub_xax = plot.subplot_container.GetXaxis()
         sub_xax.SetTitleOffset(sub_xax.GetTitleOffset()*.9)
         sub_xax.SetTitleOffset(sub_xax.GetTitleOffset()*.9)
@@ -3946,65 +3946,69 @@ class BigNormalised1DPlotter(object):
         obj = plot.container.GetHistogram()
         y_low, y_high = obj.GetMinimum(), obj.GetMaximum()
 
-        for ibin, _ in enumerate(self.pt_bin_edges(binning_scheme)[1:-1], 1):
-            pt_bin = self.all_bin_edges(binning_scheme)[ibin * self.num_lambda_bins(binning_scheme)]
-            plot.main_pad.cd()
-            line = ROOT.TLine(pt_bin, y_low, pt_bin, y_high)
-            line.SetLineStyle(2)
-            line.SetLineColor(14)
-            line.Draw()
-            lines.append(line)
+        # iterate over each pt bin
+        lower_bin = 1  # ROOT bin numbers. bin num for the start of this pt bin
+        for ibin, pt_val in enumerate(self.pt_bin_edges(binning_scheme)[:-1]):
+            # Get Lambda bins for this pt bin
+            lambda_bins = self.binning_handler.get_variable_bins(pt=pt_val,
+                                                                 binning_scheme=binning_scheme)
+            num_bins = len(lambda_bins) - 1
+            next_lower_bin = lower_bin + num_bins  # bin num for the start of next pt bin
 
-            # lines on subplot if available
-            if isinstance(plot, Plot) and plot.subplot_pad:
-                plot.subplot_pad.cd()
-                subplot_y_low, subplot_y_high = plot.subplot_container.GetHistogram().GetMinimum(), plot.subplot_container.GetHistogram().GetMaximum()  # BINGO
-                line = ROOT.TLine(pt_bin, subplot_y_low, pt_bin, subplot_y_high)
+            # Do pt bin boundary line for end of this pt bin
+            if ibin != self.num_pt_bins(binning_scheme):
+                pt_bin = plot.get_modifier().GetXaxis().GetBinLowEdge(next_lower_bin)
+                plot.main_pad.cd()
+                line = ROOT.TLine(pt_bin, y_low, pt_bin, y_high)
                 line.SetLineStyle(2)
                 line.SetLineColor(14)
                 line.Draw()
                 lines.append(line)
 
-        plot.main_pad.cd()
+                # lines on subplot if available
+                if isinstance(plot, Plot) and plot.subplot_pad:
+                    plot.subplot_pad.cd()
+                    subplot_y_low, subplot_y_high = plot.subplot_container.GetHistogram().GetMinimum(), plot.subplot_container.GetHistogram().GetMaximum()  # BINGO
+                    line = ROOT.TLine(pt_bin, subplot_y_low, pt_bin, subplot_y_high)
+                    line.SetLineStyle(2)
+                    line.SetLineColor(14)
+                    line.Draw()
+                    lines.append(line)
 
-        # add bin texts
-        for ibin, (pt_val, pt_val_upper) in enumerate(zip(self.pt_bin_edges(binning_scheme)[:-1], self.pt_bin_edges(binning_scheme)[1:])):
+                plot.main_pad.cd()
+
+            # Do bin label texts
             labels_inside_align = 'lower'
 
-            # fixgure out x location
-            pt_bin = self.all_bin_edges(binning_scheme)[ibin * self.num_lambda_bins(binning_scheme)]
-            pt_bin_higher = self.all_bin_edges(binning_scheme)[(ibin+1) * self.num_lambda_bins(binning_scheme)]
-            pt_bin_interval = pt_bin_higher - pt_bin
-            text_x = pt_bin + 0.35*(pt_bin_interval)
+            # Get physical values on x axis of pt bin boundaries
+            pt_bin_lower = plot.get_modifier().GetXaxis().GetBinLowEdge(lower_bin)
+            pt_bin_higher = plot.get_modifier().GetXaxis().GetBinLowEdge(next_lower_bin)
+            pt_bin_interval = pt_bin_higher - pt_bin_lower
+            text_x = pt_bin_lower + 0.35*(pt_bin_interval)
 
             # figure out y location from axes
             axis_range = y_high - y_low
             # assumes logarithmic?
             if ROOT.gPad.GetLogy():
                 if y_low <= 0:
-                    print("y_low is %f so can't take log" %y_low)
+                    print("y_low is %f so can't take log" % y_low)
                     return None, None
                     # raise ValueError("y_low is %f so can't take log" %y_low)
                 log_axis_range = math.log10(y_high) - math.log10(y_low)
                 y_start = math.pow(10, 0.03*log_axis_range + math.log10(y_low))
-                y_end = 10*y_low
             else:
-                y_start = (0.02*axis_range) + y_low
                 y_start = (0.3*axis_range) + y_low
-                y_end = 10*y_low
 
             if labels_inside_align == 'higher':
                 if ROOT.gPad.GetLogy():
                     y_start = y_high/10
-                    y_end = y_high/1.05
                 else:
                     y_start = y_high*0.8
-                    y_end = y_high*0.9
 
-            text = ROOT.TPaveText(text_x, y_start, text_x + .5*pt_bin_interval, y_start)
+            text = ROOT.TPaveText(text_x, y_start, text_x + .5*pt_bin_interval, y_start)  # end y determined by text size
             text.SetBorderSize(0)
             text.SetFillStyle(0)
-            contents = '%g < p_{T} < %g GeV' % (pt_val, pt_val_upper)
+            contents = '%g < p_{T} < %g GeV' % (pt_val, self.pt_bin_edges(binning_scheme)[ibin+1])
             # You have to style the thing that is returned by AddText, not the TPaveText obj itself
             # WTAF
             t = text.AddText(contents)  # t is a TText
@@ -4021,12 +4025,15 @@ class BigNormalised1DPlotter(object):
             text.Draw()
             texts.append(text)
 
+            lower_bin = next_lower_bin
+
         return lines, texts
 
     def make_big_1d_normalised_hist(self, name, binning_scheme='generator', hist_bin_chopper=None, do_div_bin_width=True):
         """Make big 1D plot with normalised distribution per pt bin"""
         hist_bin_chopper = hist_bin_chopper or self.hist_bin_chopper
         h_new = ROOT.TH1D(name + "_1d_all_" + cu.get_unique_str(), "", self.nbins(binning_scheme), self.all_bin_edges(binning_scheme))
+        global_bin = 1
         for ibin, _ in enumerate(self.pt_bin_edges(binning_scheme)[:-1]):
             # hist_bin = hist_bin_chopper.get_pt_bin_normed_div_bin_width(name, ibin, binning_scheme=binning_scheme)
             hist_bin = hist_bin_chopper.get_bin_plot(name, ibin,
@@ -4036,9 +4043,9 @@ class BigNormalised1DPlotter(object):
                                                      binning_scheme=binning_scheme)
 
             for lbin in range(1, hist_bin.GetNbinsX()+1):
-                global_bin = (ibin * self.num_lambda_bins(binning_scheme)) + lbin
                 h_new.SetBinContent(global_bin, hist_bin.GetBinContent(lbin))
                 h_new.SetBinError(global_bin, hist_bin.GetBinError(lbin))
+                global_bin += 1
 
         return h_new
 
