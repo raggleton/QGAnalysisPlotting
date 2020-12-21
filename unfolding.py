@@ -1987,6 +1987,7 @@ def main():
                         unfolder_merged = setup_merged_bin_unfolder(gen_bins_to_merge, reco_bins_to_merge, unfolder_merged)
                         unfolder_merged.check_input()
 
+                        # TODO put this into a function, since we do the same below
                         # Subtract fakes
                         hist_fakes_reco = unfolder_merged.input_handler.calc_fake_hist(unfolder_merged.input_handler.input_hist)
                         unfolder_merged.subtract_background(hist_fakes_reco, "Signal fakes")
@@ -2034,7 +2035,41 @@ def main():
                     print("Loaded merge_bin_history:", merge_bin_history)
                     for gen_bins_to_merge in merge_bin_history:
                         unfolder_merged = setup_merged_bin_unfolder(gen_bins_to_merge, reco_bins_to_merge, unfolder_merged)
+
                         unfolder_merged.do_unfolding(tau_merged)
+
+                        # Subtract fakes
+                        hist_fakes_reco = unfolder_merged.input_handler.calc_fake_hist(unfolder_merged.input_handler.input_hist)
+                        unfolder_merged.subtract_background(hist_fakes_reco, "Signal fakes")
+                        unfolder_merged.input_handler.hist_mc_reco_bg_subtracted = unfolder_merged.input_handler.subtract_fake_hist(unfolder_merged.input_handler.hist_mc_reco)[0]
+
+                        hist_fakes_reco_gen_binning = unfolder_merged.input_handler_gen_binning.calc_fake_hist(unfolder_merged.input_handler_gen_binning.input_hist)
+                        unfolder_merged.subtract_background_gen_binning(hist_fakes_reco_gen_binning, "Signal fakes")
+                        unfolder_merged.input_handler_gen_binning.hist_mc_reco_bg_subtracted = unfolder_merged.input_handler_gen_binning.subtract_fake_hist(unfolder_merged.input_handler_gen_binning.hist_mc_reco)[0]
+
+                        unfolder_merged.do_unfolding(tau_merged)
+
+                        input_handler_args = dict(
+                            input_hist=unfolder_merged.input_hist,
+                            hist_truth=unfolder_merged.hist_truth,
+                            hist_mc_reco=unfolder_merged.hist_mc_reco,
+                            hist_mc_fakes=unfolder_merged.hist_mc_fakes
+                        )
+                        input_handler_gen_binning_args = dict(
+                            input_hist=unfolder_merged.input_hist_gen_binning,
+                            hist_truth=None,
+                            hist_mc_reco=unfolder_merged.hist_mc_reco_gen_binning,
+                            hist_mc_fakes=unfolder_merged.hist_mc_fakes_gen_binning
+                        )
+
+                        # merge alt hists as well using last merge func
+                        alt_hist_mc_gen = th1_merge_gen_funcs[-1](alt_hist_mc_gen)
+                        alt_hist_mc_reco_gen_binning = th1_merge_gen_funcs[-1](alt_hist_mc_reco_gen_binning)
+                        alt_hist_mc_reco = th1_merge_reco_funcs[-1](alt_hist_mc_reco)
+
+                        # and redo BG-subtracted
+                        alt_hist_mc_reco_bg_subtracted, alt_hist_fakes = unfolder_merged.input_handler.subtract_fake_hist(alt_hist_mc_reco)
+                        alt_hist_mc_reco_bg_subtracted_gen_binning, alt_hist_fakes_gen_binning = unfolder_merged.input_handler_gen_binning.subtract_fake_hist(alt_hist_mc_reco_gen_binning)
 
                 # Do lots of extra gubbins, like caching matrices,
                 # creating unfolded hists with different levels of uncertainties,
