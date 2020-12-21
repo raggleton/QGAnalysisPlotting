@@ -639,19 +639,22 @@ def get_bins_to_merge_probability_stats(pmatrix, min_num=10, allow_zero_entries=
             n_eff = sum([v for v, _ in value_err_pairs]) / sum([v**2 for v, _ in value_err_pairs])
             print("p matrix gen bin", ix, "len value_err_pairs:", len(value_err_pairs), "n_eff:", n_eff)
 
+        def _print_val_err_pairs(pairs):
+            return ",".join(["{} ± {}".format(v, e) for v, e in pairs])
+
         count_entries = n_eff if use_neff_entries else len(value_err_pairs)
         if not allow_zero_entries and count_entries == 0:
             # handle case of 0 entries separately
             print("p matrix gen bin", ix, "has 0 values")
             bad_bins.append(ix)
         elif 0 < count_entries < min_num:
-            print("p matrix gen bin", ix, "has <", min_num, "values:", value_err_pairs)
+            print("p matrix gen bin", ix, "has <", min_num, "values:", _print_val_err_pairs(value_err_pairs))
             bad_bins.append(ix)
         elif any([v > max_p for v, e in value_err_pairs]):
-            print("p matrix gen bin", ix, "has bin with value >", max_p, "values:", value_err_pairs)
+            print("p matrix gen bin", ix, "has bin with value >", max_p, "values:", __print_val_err_pairs(value_err_pairs))
             bad_bins.append(ix)
         elif any([e > max_rel_err for v, e in value_err_pairs]):
-            print("p matrix gen bin", ix, "has bin with fractional error >", max_rel_err, "values:", value_err_pairs)
+            print("p matrix gen bin", ix, "has bin with fractional error >", max_rel_err, "values:", _print_val_err_pairs(value_err_pairs))
             bad_bins.append(ix)
     return bad_bins
 
@@ -736,9 +739,11 @@ def setup_merged_bin_binning(gen_bins_to_merge, reco_bins_to_merge, orig_binning
 
     Returns BinningHandler with PtVarPerPtBinning objects
     """
+    gen_bins_to_merge = gen_bins_to_merge or []
     print("gen bins to merge:", gen_bins_to_merge)
     for b in gen_bins_to_merge:
         print(b, ":", orig_binning_handler.global_bin_to_physical_bin(b, "generator"))
+    reco_bins_to_merge = reco_bins_to_merge or []
     print("reco bins to merge:", reco_bins_to_merge)
     for b in reco_bins_to_merge:
         print(b, ":", orig_binning_handler.global_bin_to_physical_bin(b, "detector"))
@@ -1408,11 +1413,83 @@ def main():
 
             if args.mergeLastPtBin:
                 print(cu.pcolors.OKBLUE, "Doing last pt bin merging...", cu.pcolors.ENDC)
-                unfolder_merged = setup_merged_last_pt_bin_unfolder(unfolder)
-                unfolder_merged.check_input()
-                unfolder = unfolder_merged
+                unfolder = setup_merged_last_pt_bin_unfolder(unfolder)
+                unfolder.check_input()
 
                 # update input args templates for future setups
+                input_handler_args = dict(
+                    input_hist=unfolder.input_hist,
+                    hist_truth=unfolder.hist_truth,
+                    hist_mc_reco=unfolder.hist_mc_reco,
+                    hist_mc_fakes=unfolder.hist_mc_fakes
+                )
+                input_handler_gen_binning_args = dict(
+                    input_hist=unfolder.input_hist_gen_binning,
+                    hist_truth=None,
+                    hist_mc_reco=unfolder.hist_mc_reco_gen_binning,
+                    hist_mc_fakes=unfolder.hist_mc_fakes_gen_binning
+                )
+
+            # Merge any bad columns in the probability matrix
+            # ------------------------------------------------------------------
+            def setup_merged_bin_unfolder(gen_bins_to_merge, reco_bins_to_merge, orig_unfolder):
+                """"Merge bins, and setup MyUnfolder with pt-dependent binning"""
+                gen_bins_to_merge = gen_bins_to_merge or []
+                reco_bins_to_merge = reco_bins_to_merge or []
+                binning_handler_merged = setup_merged_bin_binning(gen_bins_to_merge, reco_bins_to_merge, orig_unfolder.binning_handler)
+
+                # Create new inputs
+                new_gen_bins = np.arange(0.5, orig_unfolder.hist_truth.GetNbinsX() - len(gen_bins_to_merge) + 0.5 + 1, 1) # new bin edges to match TUnfold style
+                new_reco_bins = np.arange(0.5, orig_unfolder.input_hist.GetNbinsX() - len(reco_bins_to_merge) + 0.5 + 1, 1) # new bin edges to match TUnfold style
+
+                # Setup functions to do merging, since we always use same args
+                th1_merge_reco = partial(merge_th1_bins, bin_list=reco_bins_to_merge, new_bin_edges=new_reco_bins)
+                th1_merge_gen = partial(merge_th1_bins, bin_list=gen_bins_to_merge, new_bin_edges=new_gen_bins)
+                th2_merge = partial(merge_th2_bins, bin_list_x=gen_bins_to_merge, new_bin_edges_x=new_gen_bins,
+                                    bin_list_y=reco_bins_to_merge, new_bin_edges_y=new_reco_bins)
+
+                th1_merge_reco_funcs.append(th1_merge_reco)
+                th1_merge_gen_funcs.append(th1_merge_gen)
+                th2_merge_funcs.append(th2_merge)
+
+                response_map_merged = th2_merge(orig_unfolder.response_map)
+                print('orig response map dim:', orig_unfolder.response_map.GetNbinsX(), orig_unfolder.response_map.GetNbinsY())
+                print('rebinned response map dim:', response_map_merged.GetNbinsX(), response_map_merged.GetNbinsY())
+
+                new_unfolder = MyUnfolder(response_map=response_map_merged,
+                                          binning_handler=binning_handler_merged,
+                                          **unfolder_args)
+
+                new_unfolder.SetEpsMatrix(eps_matrix)
+
+                orig_input_handler = orig_unfolder.input_handler
+                input_handler_merged = InputHandler(input_hist=th1_merge_reco(orig_input_handler.input_hist),
+                                                    hist_truth=th1_merge_gen(orig_input_handler.hist_truth),
+                                                    hist_mc_reco=th1_merge_reco(orig_input_handler.hist_mc_reco),
+                                                    hist_mc_fakes=th1_merge_reco(orig_input_handler.hist_mc_fakes))
+
+                orig_input_handler_gen_binning = orig_unfolder.input_handler_gen_binning
+                input_handler_gen_binning_merged = InputHandler(input_hist=th1_merge_gen(orig_input_handler_gen_binning.input_hist),
+                                                                hist_truth=None,
+                                                                hist_mc_reco=th1_merge_gen(orig_input_handler_gen_binning.hist_mc_reco),
+                                                                hist_mc_fakes=th1_merge_gen(orig_input_handler_gen_binning.hist_mc_fakes))
+
+                # Set what is to be unfolded
+                # ------------------------------------------------------------------
+                new_unfolder.set_input(input_handler=input_handler_merged,
+                                       input_handler_gen_binning=input_handler_gen_binning_merged,
+                                       bias_factor=args.biasFactor,
+                                       error_unconstrained_truth_bins=False)
+
+                return new_unfolder
+
+            if args.mergeBadResponseBins:
+                print(cu.pcolors.OKBLUE, "Doing bad probability bin merging...", cu.pcolors.ENDC)
+                gen_bins_to_merge = get_bins_to_merge_probability_stats(unfolder.get_probability_matrix())
+                unfolder = setup_merged_bin_unfolder(gen_bins_to_merge, None, unfolder)
+                unfolder.check_input()
+
+                 # update input args templates for future setups
                 input_handler_args = dict(
                     input_hist=unfolder.input_hist,
                     hist_truth=unfolder.hist_truth,
@@ -1831,61 +1908,6 @@ def main():
             # TODO is it even possible to convert into a 1D list?
             merge_bin_history = []
             merge_dir = os.path.join(this_output_dir, 'merge_bins')
-
-            def setup_merged_bin_unfolder(gen_bins_to_merge, reco_bins_to_merge, orig_unfolder):
-                """"Merge bins, and setup MyUnfolder with pt-dependent binning"""
-                binning_handler_merged = setup_merged_bin_binning(gen_bins_to_merge, reco_bins_to_merge, orig_unfolder.binning_handler)
-
-                # Create new inputs
-                new_gen_bins = np.arange(0.5, orig_unfolder.hist_truth.GetNbinsX() - len(gen_bins_to_merge) + 0.5 + 1, 1) # new bin edges to match TUnfold style
-                new_reco_bins = np.arange(0.5, orig_unfolder.input_hist.GetNbinsX() - len(reco_bins_to_merge) + 0.5 + 1, 1) # new bin edges to match TUnfold style
-
-                # Setup functions to do merging, since we always use same args
-                th1_merge_reco = partial(merge_th1_bins, bin_list=reco_bins_to_merge, new_bin_edges=new_reco_bins)
-                th1_merge_gen = partial(merge_th1_bins, bin_list=gen_bins_to_merge, new_bin_edges=new_gen_bins)
-
-                response_map_merged = merge_th2_bins(orig_unfolder.response_map,
-                                                     bin_list_x=gen_bins_to_merge, new_bin_edges_x=new_gen_bins,
-                                                     bin_list_y=reco_bins_to_merge, new_bin_edges_y=new_reco_bins)
-
-                print('orig response map dim:', orig_unfolder.response_map.GetNbinsX(), orig_unfolder.response_map.GetNbinsY())
-                print('rebinned response map dim:', response_map_merged.GetNbinsX(), response_map_merged.GetNbinsY())
-
-                new_unfolder = MyUnfolder(response_map=response_map_merged,
-                                          binning_handler=binning_handler_merged,
-                                          **unfolder_args)
-
-                new_unfolder.SetEpsMatrix(eps_matrix)
-
-                orig_input_handler = orig_unfolder.input_handler
-                input_handler_merged = InputHandler(input_hist=th1_merge_reco(orig_input_handler.input_hist),
-                                                    hist_truth=th1_merge_gen(orig_input_handler.hist_truth),
-                                                    hist_mc_reco=th1_merge_reco(orig_input_handler.hist_mc_reco),
-                                                    hist_mc_fakes=th1_merge_reco(orig_input_handler.hist_mc_fakes))
-
-                orig_input_handler_gen_binning = orig_unfolder.input_handler_gen_binning
-                input_handler_gen_binning_merged = InputHandler(input_hist=th1_merge_gen(orig_input_handler_gen_binning.input_hist),
-                                                                hist_truth=None,
-                                                                hist_mc_reco=th1_merge_gen(orig_input_handler_gen_binning.hist_mc_reco),
-                                                                hist_mc_fakes=th1_merge_gen(orig_input_handler_gen_binning.hist_mc_fakes))
-
-                # Set what is to be unfolded
-                # ------------------------------------------------------------------
-                new_unfolder.set_input(input_handler=input_handler_merged,
-                                       input_handler_gen_binning=input_handler_gen_binning_merged,
-                                       bias_factor=args.biasFactor,
-                                       error_unconstrained_truth_bins=False)
-
-                new_unfolder.hist_bin_chopper.add_obj('hist_truth', new_unfolder.hist_truth)
-
-                # Subtract fakes (treat as background)
-                # ------------------------------------------------------------------
-                fakes_merged = input_handler_merged.calc_fake_hist(input_handler_merged.input_hist)
-                new_unfolder.subtract_background(fakes_merged, "Signal fakes")
-                fakes_gen_binning_merged = input_handler_gen_binning_merged.calc_fake_hist(input_handler_gen_binning_merged.input_hist)
-                new_unfolder.subtract_background_gen_binning(fakes_gen_binning_merged, "Signal fakes")
-
-                return new_unfolder
 
             if args.mergeBins or args.mergeBinsFromFile:
                 unfolder_merged = unfolder
@@ -3689,7 +3711,8 @@ def main():
                 unfolder.setup_normalised_results_per_pt_bin()
 
                 unfolder.setup_absolute_results_per_pt_bin()
-                unfolder.setup_absolute_results_per_lambda_bin()
+                if not any([args.mergeBins, args.mergeBinsFromFile, args.mergeBadResponseBins]):
+                    unfolder.setup_absolute_results_per_lambda_bin()
 
             else:
                 unfolder.create_normalisation_jacobian_np()

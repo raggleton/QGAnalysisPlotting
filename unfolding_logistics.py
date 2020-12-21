@@ -78,15 +78,22 @@ def get_unfolding_argparser(description='', parser=None):
                                + standard_bool_description))
     parser.add_argument("--mergeBinsFromFile",
                         default=None,
-                        help=('Merge -ve output bins, using binning from another unfolding.' \
-                              'This should be a directory ' \
-                               'made by a previous running of unfolding.py ' \
+                        help=('Merge -ve output bins, using binning from another unfolding.'
+                              'This should be a directory '
+                               'made by a previous running of unfolding.py '
                                'that covers the different signal regions & variables'))
-
     parser.add_argument("--mergeLastPtBin",
                         type=lambda x: bool(distutils.util.strtobool(x)),
                         default=False,
                         help=('Merge last output pt bins.'
+                               + standard_bool_description))
+    parser.add_argument("--mergeBadResponseBins",
+                        type=lambda x: bool(distutils.util.strtobool(x)),
+                        default=False,
+                        help=('Merge bad bins in response/probability matrix '
+                              '(e.g. those gen bins with only a few entries, '
+                              'or large errors, which would lead to large '
+                              'unfolded error or bad value).'
                                + standard_bool_description))
 
     parser.add_argument("--zeroLastPtBin",
@@ -421,6 +428,9 @@ def get_unfolding_output_dir(args):
 
     if args.mergeLastPtBin:
         append += "_mergeLastPtBin"
+
+    if args.mergeBadResponseBins:
+        append += "_mergeBadResponseBins"
 
     if args.zeroLastPtBin:
         append += "_zeroLastPtBin"
