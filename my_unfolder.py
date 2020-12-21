@@ -74,13 +74,13 @@ class PtVarBinning(object):
                  pt_uf=False,
                  pt_of=True):
         self.variable_name = variable_name
-        self.variable_bin_edges = variable_bin_edges
+        self.variable_bin_edges = np.array(variable_bin_edges, dtype='float')
         self.nbins_variable = len(variable_bin_edges)-1 if variable_bin_edges is not None else 0
 
-        self.pt_bin_edges_signal = pt_bin_edges_signal
+        self.pt_bin_edges_signal = np.array(pt_bin_edges_signal, dtype='float')
         self.nbins_pt = len(pt_bin_edges_signal) - 1 if pt_bin_edges_signal is not None else 0
 
-        self.pt_bin_edges_underflow = pt_bin_edges_underflow
+        self.pt_bin_edges_underflow = np.array(pt_bin_edges_underflow, dtype='float')
         self.nbins_pt_underflow = len(pt_bin_edges_underflow)-1 if pt_bin_edges_underflow is not None else 0
 
         self.var_uf = var_uf
@@ -322,7 +322,11 @@ class PtVarPerPtBinning(object):
         pos = bisect_right(pt_bins, pt)-1
         if pos > (len(config)-1):
             raise IndexError("Can't find variable bins for pt %f" % pt)
-        return config[pos][1]
+        thing = config[pos][1]
+        if not isinstance(thing, np.ndarray):
+            return np.array(thing)
+        else:
+            return thing
 
     def _cache_global_bin_mapping(self):
         """Create maps of global bin <> physical bin values,
