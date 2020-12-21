@@ -528,7 +528,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
     ]
 
     def __init__(self,
-                 response_map,  # 2D GEN-RECO heatmap
+                 response_map,
                  binning_handler,
                  orientation=ROOT.TUnfold.kHistMapOutputHoriz,
                  constraintMode=ROOT.TUnfold.kEConstraintArea,
@@ -536,7 +536,33 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
                  densityFlags=ROOT.TUnfoldDensity.kDensityModeBinWidth,
                  distribution='generatordistribution',
                  axisSteering='*[b]'):
+        """MyUnfolder constructor.
 
+        Parameters
+        ----------
+        response_map : ROOT.TH2
+            Response map
+        binning_handler : BinningHandler
+            BinningHandler object to contain gen & reco binnings
+        orientation : int, optional
+            Orientation of response map.
+            ROOT.TUnfold.kHistMapOutputHoriz if gen on x axis.
+        constraintMode : int, optional
+            Optional area constraint term to enforce when unfolding
+        regMode : int, optional
+            Regularisation mode when setting up L matrix
+        densityFlags : int, optional
+            How to handel bin widths when setting up regularisation L matrix
+        distribution : str, optional
+            Name of TUnfoldBinning distribution to use when regularising
+        axisSteering : str, optional
+            Axis options for specifying which axes are used in regularising
+
+        Raises
+        ------
+        RuntimeError
+            If response_map has entries in the 0th gen bin
+        """
         # print("Calling __init__ with args:", locals())
 
         self.response_map = response_map
@@ -2142,21 +2168,22 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         if getattr(self, 'response_map_normed_by_detector_pt', None) is None:
             normed_response_map = self.response_map.Clone("response_map_normed_by_detector_pt")
             sums = []
-            bins = list(self.pt_bin_edges_underflow_reco) + list(self.pt_bin_edges_reco)[1:]
+            pt_bins = list(self.pt_bin_edges_underflow_reco) + list(self.pt_bin_edges_reco)[1:]
+            binning_scheme = self.binning_handler.get_binning_scheme("detector")
+            if not binning_scheme.pt_of:
+                # if no pt overflow, no extra bins
+                pt_bins = pt_bins[:-1]
+
             # print(bins)
             # First get the sum over all bins corresponding to this reco pT bin
             # Means summing over a number of reco lambda bins, and all generator bins
-            for ibin_pt, (pt, pt_next) in enumerate(zip(bins[:-1], bins[1:])):
+            for ibin_pt, (pt, pt_next) in enumerate(zip(pt_bins[:-1], pt_bins[1:])):
                 # print(ibin_pt, pt, pt_next)
                 this_sum = 0
-                var = self.binning_handler.get_variable_bins(pt, binning_scheme="detector")[0]+0.001
-                # urgh this is horrible, but crashes if you use self.detector_binning.GetGlobalBinNumber() whyyyy
-                # need separate binning obj for each value, else it misses bins
-                binning = self.detector_distribution_underflow if pt in self.pt_bin_edges_underflow_reco else self.detector_distribution
-                binning_next = self.detector_distribution_underflow if pt_next in self.pt_bin_edges_underflow_reco else self.detector_distribution
-                global_bin_reco = binning.GetGlobalBinNumber(var, pt+0.001)
-                global_bin_reco_next = binning_next.GetGlobalBinNumber(var, pt_next+0.001)
-                # print(ibin_pt, pt, pt_next, global_bin_reco, global_bin_reco_next)
+                var = binning_scheme.get_variable_bins(pt)[0]+0.001
+                global_bin_reco = binning_scheme.physical_bin_to_global_bin(var=var, pt=pt+0.001)
+                global_bin_reco_next = binning_scheme.physical_bin_to_global_bin(var=var, pt=pt_next+0.001)
+
                 for i_reco in range(global_bin_reco, global_bin_reco_next):
                     for global_bin_gen in range(self.response_map.GetNbinsX()+1):
                         this_sum += self.response_map.GetBinContent(global_bin_gen, i_reco)
@@ -2164,13 +2191,10 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             # print(sums)
 
             # Now set the new bin contents and error bars by scaling using these sums
-            for ibin_pt, (pt, pt_next) in enumerate(zip(bins[:-1], bins[1:])):
-                var = self.binning_handler.get_variable_bins(pt, binning_scheme="detector")[0]+0.001
-                # urgh this is horrible, but crashes if you use self.detector_binning.GetGlobalBinNumber() whyyyy
-                binning = self.detector_distribution_underflow if pt in self.pt_bin_edges_underflow_reco else self.detector_distribution
-                binning_next = self.detector_distribution_underflow if pt_next in self.pt_bin_edges_underflow_reco else self.detector_distribution
-                global_bin_reco = binning.GetGlobalBinNumber(var, pt+0.001)
-                global_bin_reco_next = binning_next.GetGlobalBinNumber(var, pt_next+0.001)
+            for ibin_pt, (pt, pt_next) in enumerate(zip(pt_bins[:-1], pt_bins[1:])):
+                var = binning_scheme.get_variable_bins(pt)[0]+0.001
+                global_bin_reco = binning_scheme.physical_bin_to_global_bin(var=var, pt=pt+0.001)
+                global_bin_reco_next = binning_scheme.physical_bin_to_global_bin(var=var, pt=pt_next+0.001)
                 for i_reco in range(global_bin_reco, global_bin_reco_next):
                     for global_bin_gen in range(self.response_map.GetNbinsX()+1):
                         factor = 1./sums[ibin_pt] if sums[ibin_pt] != 0 else 0

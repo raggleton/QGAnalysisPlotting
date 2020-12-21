@@ -2528,9 +2528,9 @@ def main():
                     title = "Probability matrix, %s, %s region, %s, %s" % (jet_algo, region['label'], angle_str, this_syst.label)
                     exp_syst_unfolder_plotter.draw_probability_matrix(title=title, **exp_syst_plot_args)
 
-                    col_num = exp_syst_unfolder.binning_handler.physical_bin_to_global_bin(pt=151, var=0.6, binning_scheme='generator')
-                    title = "Probability entries for gen bin %d, %s, %s region, %s, %s" % (col_num, jet_algo, region['label'], angle_str, this_syst.label)
-                    exp_syst_unfolder_plotter.draw_probability_column(col_num, title=title, **exp_syst_plot_args)
+                    # col_num = exp_syst_unfolder.binning_handler.physical_bin_to_global_bin(pt=151, var=0.6, binning_scheme='generator')
+                    # title = "Probability entries for gen bin %d, %s, %s region, %s, %s" % (col_num, jet_algo, region['label'], angle_str, this_syst.label)
+                    # exp_syst_unfolder_plotter.draw_probability_column(col_num, title=title, **exp_syst_plot_args)
 
                     exp_syst_unfolder.setup_normalised_results_per_pt_bin()
 

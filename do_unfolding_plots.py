@@ -170,7 +170,7 @@ def calc_chi2_stats(one_hist, other_hist, cov_matrix):
     try:
         v_inv = np.linalg.inv(v)
     except np.linalg.LinAlgError:
-        print("Trying pseudo-inverse instead")
+        # print("Trying pseudo-inverse instead")
         v_inv = np.linalg.pinv(v, rcond=1E-30)
     inter = v_inv.dot(delta.T)
     # print("parts:", delta * inter.T)
