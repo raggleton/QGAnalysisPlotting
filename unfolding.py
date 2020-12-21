@@ -594,14 +594,16 @@ def setup_merged_last_pt_binning(orig_binning_handler):
     return binning_handler_merged, gen_bin_pairs, reco_bin_pairs
 
 
-def get_bins_to_merge_probability_stats(pmatrix, min_num=10, allow_zero_entries=True, use_neff_entries=False, max_p=0.7, max_rel_err=0.6):
+def get_bins_to_merge_probability_stats(pmatrix, response_map, min_num=15, allow_zero_entries=True, use_neff_entries=False, max_p=0.7, max_rel_err=0.6):
     """Figure out which gen bins to merge based on poor number of events & error bars
     in given column of probability matrix
 
     Parameters
     ----------
     pmatrix : ROOT.TH2
-        Description
+        Probability matrix (doesn't have uncertainties)
+    response_map : ROOT.TH2
+        Response map (needed as it has the uncertainties)
     min_num : int, optional
         Minimum number of non-zero entries in each column
     allow_zero_entries : bool, optional
@@ -622,14 +624,15 @@ def get_bins_to_merge_probability_stats(pmatrix, min_num=10, allow_zero_entries=
     print("Checking probability matrix stats...")
     bad_bins = []
     for ix in range(1, pmatrix.GetNbinsX()+1):
-        value_err_pairs = []
+        value_err_pairs = []  # store value & relative error for each non-zero entry in this gen bin
         # Get all the non-zero entries in the prob matrix for this column
         for iy in range(1, pmatrix.GetNbinsY()+1):
             val = pmatrix.GetBinContent(ix, iy)
             if val == 0:
                 continue
-            err = pmatrix.GetBinError(ix, iy)
-            value_err_pairs.append([val, abs(err/val)])
+            actual_val = response_map.GetBinContent(ix, iy)
+            err = response_map.GetBinError(ix, iy)
+            value_err_pairs.append([val, abs(err / actual_val)])
 
         n_eff = 0
         if len(value_err_pairs) > 0:
@@ -640,9 +643,10 @@ def get_bins_to_merge_probability_stats(pmatrix, min_num=10, allow_zero_entries=
             print("p matrix gen bin", ix, "len value_err_pairs:", len(value_err_pairs), "n_eff:", n_eff)
 
         def _print_val_err_pairs(pairs):
-            return ",".join(["{} ± {}".format(v, e) for v, e in pairs])
+            return ",".join(["{:.3f} ± {:.3f}".format(v, e) for v, e in pairs])
 
         count_entries = n_eff if use_neff_entries else len(value_err_pairs)
+        sorted_pairs = sorted(value_err_pairs, key=lambda x:x[0], reverse=True)
         if not allow_zero_entries and count_entries == 0:
             # handle case of 0 entries separately
             print("p matrix gen bin", ix, "has 0 values")
@@ -650,12 +654,13 @@ def get_bins_to_merge_probability_stats(pmatrix, min_num=10, allow_zero_entries=
         elif 0 < count_entries < min_num:
             print("p matrix gen bin", ix, "has <", min_num, "values:", _print_val_err_pairs(value_err_pairs))
             bad_bins.append(ix)
-        elif any([v > max_p for v, e in value_err_pairs]):
-            print("p matrix gen bin", ix, "has bin with value >", max_p, "values:", __print_val_err_pairs(value_err_pairs))
-            bad_bins.append(ix)
-        elif any([e > max_rel_err for v, e in value_err_pairs]):
-            print("p matrix gen bin", ix, "has bin with fractional error >", max_rel_err, "values:", _print_val_err_pairs(value_err_pairs))
-            bad_bins.append(ix)
+        elif len(value_err_pairs) > 0:
+            if sorted_pairs[0][0] > max_p:
+                print("p matrix gen bin", ix, "has bin with value >", max_p, "values:", __print_val_err_pairs(value_err_pairs))
+                bad_bins.append(ix)
+            elif sorted_pairs[0][1] > max_rel_err:
+                print("p matrix gen bin", ix, "has bin with fractional error >", max_rel_err, "values:", _print_val_err_pairs(value_err_pairs))
+                bad_bins.append(ix)
     return bad_bins
 
 
@@ -1320,10 +1325,19 @@ def main():
             #         print('    reco bin', r, "=", binning_handler.global_bin_to_physical_bin(r, 'detector'))
             #         hist_mc_gen_reco_map.SetBinContent(gen_bin, r, 0)
             #         hist_mc_gen_reco_map.SetBinError(gen_bin, r, 0)
-            #
-            # unfolder = MyUnfolder(response_map=hist_mc_gen_reco_map,
-            #                       binning_handler=binning_handler,
-            #                       **unfolder_args)
+
+            # Set all elements in a gen bin (col) to 0 if deemed bad
+            # i.e. low stats, big errors
+            if args.zeroBadResponseBins:
+                bad_bins = get_bins_to_merge_probability_stats(unfolder.get_probability_matrix(), unfolder.response_map)
+                for gen_bin in bad_bins:
+                    for r in range(0, unfolder.get_probability_matrix().GetNbinsY()+1):
+                        hist_mc_gen_reco_map.SetBinContent(gen_bin, r, 0)
+                        hist_mc_gen_reco_map.SetBinError(gen_bin, r, 0)
+
+            unfolder = MyUnfolder(response_map=hist_mc_gen_reco_map,
+                                  binning_handler=binning_handler,
+                                  **unfolder_args)
 
             # Save binning to file
             # unfolder.save_binning(txt_filename="%s/binning_scheme.txt" % (this_output_dir), print_xml=False)
@@ -1485,7 +1499,7 @@ def main():
 
             if args.mergeBadResponseBins:
                 print(cu.pcolors.OKBLUE, "Doing bad probability bin merging...", cu.pcolors.ENDC)
-                gen_bins_to_merge = get_bins_to_merge_probability_stats(unfolder.get_probability_matrix())
+                gen_bins_to_merge = get_bins_to_merge_probability_stats(unfolder.get_probability_matrix(), unfolder.response_map)
                 unfolder = setup_merged_bin_unfolder(gen_bins_to_merge, None, unfolder)
                 unfolder.check_input()
 

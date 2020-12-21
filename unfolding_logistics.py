@@ -95,6 +95,14 @@ def get_unfolding_argparser(description='', parser=None):
                               'or large errors, which would lead to large '
                               'unfolded error or bad value).'
                                + standard_bool_description))
+    parser.add_argument("--zeroBadResponseBins",
+                        type=lambda x: bool(distutils.util.strtobool(x)),
+                        default=False,
+                        help=('Seto to 0 bad bins in response/probability matrix '
+                              '(e.g. those gen bins with only a few entries, '
+                              'or large errors, which would lead to large '
+                              'unfolded error or bad value).'
+                               + standard_bool_description))
 
     parser.add_argument("--zeroLastPtBin",
                         type=lambda x: bool(distutils.util.strtobool(x)),
@@ -431,6 +439,9 @@ def get_unfolding_output_dir(args):
 
     if args.mergeBadResponseBins:
         append += "_mergeBadResponseBins"
+
+    if args.zeroBadResponseBins:
+        append += "_zeroBadResponseBins"
 
     if args.zeroLastPtBin:
         append += "_zeroLastPtBin"
