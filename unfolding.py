@@ -3014,6 +3014,7 @@ def main():
             region["alt_hist_mc_reco"] = alt_hist_mc_reco
             region["alt_hist_mc_reco_bg_subtracted"] = alt_hist_mc_reco_bg_subtracted
             region["alt_hist_mc_reco_bg_subtracted_gen_binning"] = alt_hist_mc_reco_bg_subtracted_gen_binning
+            unfolder.hist_bin_chopper.add_obj('alt_hist_truth', alt_hist_mc_gen)
 
             # ------------------------------------------------------------------
             # SCALE SYST VARIATIONS
