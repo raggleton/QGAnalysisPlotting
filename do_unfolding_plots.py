@@ -2102,7 +2102,7 @@ class GenPtBinnedPlotter(BinnedPlotter):
             plot.plot("NOSTACK E1")
             self.save_plot(plot, "%s/detector_gen_binning_bg_subtracted_%s_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
 
-    def plot_ematrix(self, h2d, title, output_filename):
+    def plot_ematrix(self, h2d, variable_bins, title, output_filename):
         """Generic function to plot error matrix for a given pt bin"""
         canv = ROOT.TCanvas(cu.get_unique_str(), "", 700, 600)
         canv.SetTicks(1, 1)
@@ -2111,7 +2111,7 @@ class GenPtBinnedPlotter(BinnedPlotter):
         h2d.SetTitle("%s;%s;%s" % (title, self.setup.particle_title, self.setup.particle_title))
         h2d.SetTitleSize(0.015, "t")  # the "t" is anything that isn't x, y, z
         # Setup bin labels
-        for i, (val_low, val_high) in enumerate(zip(self.unfolder.variable_bin_edges_gen[:-1], self.unfolder.variable_bin_edges_gen[1:]), 1):
+        for i, (val_low, val_high) in enumerate(zip(variable_bins[:-1], variable_bins[1:]), 1):
             h2d.GetXaxis().SetBinLabel(i, "%g-%g" % (val_low, val_high))
             h2d.GetYaxis().SetBinLabel(i, "%g-%g" % (val_low, val_high))
         h2d.SetContour(256)
@@ -2135,6 +2135,7 @@ class GenPtBinnedPlotter(BinnedPlotter):
             output_filename = os.path.join(self.setup.output_dir,
                                            "unfolded_ematrix_total_%s_bin_%d_norm_divBinWidth.%s" % (self.setup.append, ibin, self.setup.output_fmt))
             self.plot_ematrix(ematrix,
+                              variable_bins=self.unfolder.binning_handler.get_variable_bins(bin_edge_low, binning_scheme='generator'),
                               title=title,
                               output_filename=output_filename)
 
