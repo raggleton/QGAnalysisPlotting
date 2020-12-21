@@ -41,6 +41,7 @@ class pcolors:
     WARNING = YELLOW
     RED = '\033[91m'
     FAIL = RED
+    MAGENTA = '\u001b[35m'
     ENDC = '\033[0m'
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m'
