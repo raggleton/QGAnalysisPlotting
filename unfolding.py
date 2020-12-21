@@ -1676,6 +1676,7 @@ def main():
             alt_unfolder = None
             alt_hist_mc_gen = None  # mc truth of the alternate generator used to make reponse matrix
             alt_hist_mc_reco = None  # reco of the alternate generator used to make reponse matrix
+            alt_hist_mc_reco_gen_binning = None
             alt_hist_mc_reco_bg_subtracted = None
             alt_hist_mc_reco_bg_subtracted_gen_binning = None
 
@@ -1972,13 +1973,9 @@ def main():
 
                 if args.mergeBins:
                     print(cu.pcolors.OKBLUE, "Doing bin merging...", cu.pcolors.ENDC)
-                    # pt_overflow_bin = binning_handler.get_first_pt_overflow_global_bin("generator")
-                    # gen_bins_to_merge = get_bins_to_merge_probability_stats(unfolder.get_probability_matrix())
-
                     gen_bins_to_merge = get_bins_to_merge_nonnegative(h=unfolder.get_output(),
                                                                       binning_obj=binning_handler.get_binning_scheme('generator'),
                                                                       ensure_nonnegative=False)
-                    # gen_bins_to_merge.extend(gen_bins_to_merge2)
                     counter = 0
                     max_iterations = 1
                     while len(gen_bins_to_merge) > 0 and counter < max_iterations:
@@ -1989,12 +1986,43 @@ def main():
 
                         unfolder_merged = setup_merged_bin_unfolder(gen_bins_to_merge, reco_bins_to_merge, unfolder_merged)
                         unfolder_merged.check_input()
+
+                        # Subtract fakes
+                        hist_fakes_reco = unfolder_merged.input_handler.calc_fake_hist(unfolder_merged.input_handler.input_hist)
+                        unfolder_merged.subtract_background(hist_fakes_reco, "Signal fakes")
+                        unfolder_merged.input_handler.hist_mc_reco_bg_subtracted = unfolder_merged.input_handler.subtract_fake_hist(unfolder_merged.input_handler.hist_mc_reco)[0]
+
+                        hist_fakes_reco_gen_binning = unfolder_merged.input_handler_gen_binning.calc_fake_hist(unfolder_merged.input_handler_gen_binning.input_hist)
+                        unfolder_merged.subtract_background_gen_binning(hist_fakes_reco_gen_binning, "Signal fakes")
+                        unfolder_merged.input_handler_gen_binning.hist_mc_reco_bg_subtracted = unfolder_merged.input_handler_gen_binning.subtract_fake_hist(unfolder_merged.input_handler_gen_binning.hist_mc_reco)[0]
+
                         unfolder_merged.do_unfolding(tau_merged)
-                        # gen_bins_to_merge = get_bins_to_merge_probability_stats(unfolder_merged.get_probability_matrix())
+
+                        input_handler_args = dict(
+                            input_hist=unfolder_merged.input_hist,
+                            hist_truth=unfolder_merged.hist_truth,
+                            hist_mc_reco=unfolder_merged.hist_mc_reco,
+                            hist_mc_fakes=unfolder_merged.hist_mc_fakes
+                        )
+                        input_handler_gen_binning_args = dict(
+                            input_hist=unfolder_merged.input_hist_gen_binning,
+                            hist_truth=None,
+                            hist_mc_reco=unfolder_merged.hist_mc_reco_gen_binning,
+                            hist_mc_fakes=unfolder_merged.hist_mc_fakes_gen_binning
+                        )
+
+                        # merge alt hists as well using last merge func
+                        alt_hist_mc_gen = th1_merge_gen_funcs[-1](alt_hist_mc_gen)
+                        alt_hist_mc_reco_gen_binning = th1_merge_gen_funcs[-1](alt_hist_mc_reco_gen_binning)
+                        alt_hist_mc_reco = th1_merge_reco_funcs[-1](alt_hist_mc_reco)
+
+                        # and redo BG-subtracted
+                        alt_hist_mc_reco_bg_subtracted, alt_hist_fakes = unfolder_merged.input_handler.subtract_fake_hist(alt_hist_mc_reco)
+                        alt_hist_mc_reco_bg_subtracted_gen_binning, alt_hist_fakes_gen_binning = unfolder_merged.input_handler_gen_binning.subtract_fake_hist(alt_hist_mc_reco_gen_binning)
+
                         gen_bins_to_merge = get_bins_to_merge_nonnegative(h=unfolder_merged.get_output(),
-                                                                           binning_obj=unfolder_merged.binning_handler.get_binning_scheme('generator'),
-                                                                           ensure_nonnegative=False)
-                        # gen_bins_to_merge.extend(gen_bins_to_merge2)
+                                                                          binning_obj=unfolder_merged.binning_handler.get_binning_scheme('generator'),
+                                                                          ensure_nonnegative=False)
                         reco_bins_to_merge = []
 
                     print("merge_bin_history:", merge_bin_history)
@@ -2008,86 +2036,15 @@ def main():
                         unfolder_merged = setup_merged_bin_unfolder(gen_bins_to_merge, reco_bins_to_merge, unfolder_merged)
                         unfolder_merged.do_unfolding(tau_merged)
 
-                unfolder_plotter2 = MyUnfolderPlotter(unfolder_merged,
-                                                      is_data=not MC_INPUT,
-                                                      lumi=cu.get_lumi_str(do_dijet="Dijet" in region['name'],
-                                                                           do_zpj="ZPlusJets" in region['name']))
-                plot_args2 = dict(output_dir=merge_dir, append=append)
-
                 # Do lots of extra gubbins, like caching matrices,
                 # creating unfolded hists with different levels of uncertainties,
                 # ------------------------------------------------------------------
+                unfolder_merged.inspect_output()
                 unfolder_merged._post_process()
                 unfolder_merged.print_condition_number()
 
-                # Draw big 1D distributions
-                # ------------------------------------------------------------------
-                title = "%s\n%s region, %s" % (jet_algo, region['label'], angle_str)
-                unfolder_plotter2.draw_unfolded_1d(title=title,
-                                                   do_gen=True,
-                                                   do_logy=True,
-                                                   **plot_args2)
-
-                # reco using detector binning
-                unfolder_plotter2.draw_detector_1d(do_reco_mc=True,
-                                                   do_reco_data=not MC_INPUT,
-                                                   title=title,
-                                                   **plot_args2)
-
-                # reco using gen binning
-                unfolder_plotter2.draw_generator_1d(do_reco_data=not MC_INPUT,
-                                                    do_reco_data_bg_sub=False,
-                                                    do_reco_bg=False,
-                                                    do_reco_mc=True,
-                                                    do_reco_mc_bg_sub=False,
-                                                    do_truth_mc=True,
-                                                    title=title,
-                                                    **plot_args2)
-
-                # same plot but with bg-subtracted reco
-                unfolder_plotter2.draw_detector_1d(do_reco_data_bg_sub=not MC_INPUT,
-                                                   do_reco_bg=True,
-                                                   do_reco_mc_bg_sub=True,
-                                                   output_dir=plot_args2['output_dir'],
-                                                   append='bg_fakes_subtracted_%s' % append,
-                                                   title=title)
-
-                # same but with generator-binning
-                unfolder_plotter2.draw_generator_1d(do_reco_data=False,
-                                                    do_reco_data_bg_sub=not MC_INPUT,
-                                                    do_reco_bg=True,
-                                                    do_reco_mc=False,
-                                                    do_reco_mc_bg_sub=True,
-                                                    do_truth_mc=True,
-                                                    output_dir=plot_args2['output_dir'],
-                                                    append='bg_fakes_subtracted_%s' % append,
-                                                    title=title)
-                print("unfolder_plotter2 done")
-
-                title = "Response matrix, %s, %s region, %s" % (jet_algo, region['label'], angle_str)
-                unfolder_plotter2.draw_response_matrix(title=title, **plot_args2)
-
-                # title = "Response matrix normed by detector p_{T} bin, %s, %s region, %s" % (jet_algo, region['label'], angle_str)
-                # unfolder_plotter2.draw_response_matrix_normed_by_detector_pt(title=title, **plot_args2)
-
-                title = ("#splitline{Probability matrix, %s, %s region, %s}{Condition number: #sigma_{max} / #sigma_{min} = %.3g / %.3g = %g}"
-                         % (jet_algo, region['label'], angle_str, unfolder.sigma_max, unfolder.sigma_min, unfolder.condition_number))
-                unfolder_plotter2.draw_probability_matrix(title=title, **plot_args2)
-
-                unfolder_merged.setup_normalised_results_per_pt_bin()
-                unfolder_merged.setup_absolute_results_per_pt_bin()
-                region['unfolder'] = unfolder_merged
-                setup2 = Setup(jet_algo=jet_algo,
-                               region=region,
-                               angle=angle,
-                               output_dir=plot_args2['output_dir'],
-                               has_data=not MC_INPUT)
-                hbc2 = do_binned_plots_per_region_angle(setup2,
-                                                        do_binned_gen_pt=True,
-                                                        do_binned_gen_lambda=False,
-                                                        do_binned_reco_pt=True)
-
-                region['unfolder'] = unfolder
+                unfolder = unfolder_merged
+                unfolder_plotter.unfolder = unfolder
 
             prof_end_nominal()
 
