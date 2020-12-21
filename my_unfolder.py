@@ -673,25 +673,27 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
 
         Copied from TUnfoldDensity code
         """
-        if self.orientation == ROOT.TUnfold.kHistMapOutputHoriz:
-            n_map_output_bins = self.response_map.GetXaxis().GetNbins()
-            n_map_input_bins = self.response_map.GetYaxis().GetNbins()
-        else:
-            n_map_output_bins = self.response_map.GetYaxis().GetNbins()
-            n_map_input_bins = self.response_map.GetXaxis().GetNbins()
+        if (getattr(self, "response_map", None) is not None
+                and getattr(self, "generator_binning", None) is not None):
+            if self.orientation == ROOT.TUnfold.kHistMapOutputHoriz:
+                n_map_output_bins = self.response_map.GetXaxis().GetNbins()
+                n_map_input_bins = self.response_map.GetYaxis().GetNbins()
+            else:
+                n_map_output_bins = self.response_map.GetYaxis().GetNbins()
+                n_map_input_bins = self.response_map.GetXaxis().GetNbins()
 
-        n_output_bins_t = abs(self.generator_binning.GetTH1xNumberOfBins(True))
-        # I don't know why it needs both?
-        n_output_bins_f = abs(self.generator_binning.GetTH1xNumberOfBins(False))
-        if (n_output_bins_t != n_map_output_bins) and (n_output_bins_f != n_map_output_bins):
-            raise ValueError("Output binning incompatible number of bins: "
-                             "axis %d binning scheme %d (%d)" % (n_map_output_bins, n_output_bins_t, n_output_bins_f))
+            n_output_bins_t = abs(self.generator_binning.GetTH1xNumberOfBins(True))
+            # I don't know why it needs both?
+            n_output_bins_f = abs(self.generator_binning.GetTH1xNumberOfBins(False))
+            if (n_output_bins_t != n_map_output_bins) and (n_output_bins_f != n_map_output_bins):
+                raise ValueError("Output binning incompatible number of bins: "
+                                 "axis %d binning scheme %d (%d)" % (n_map_output_bins, n_output_bins_t, n_output_bins_f))
 
-        n_input_bins_t = abs(self.detector_binning.GetTH1xNumberOfBins(True))
-        n_input_bins_f = abs(self.detector_binning.GetTH1xNumberOfBins(False))
-        if (n_input_bins_t != n_map_input_bins) and (n_input_bins_f != n_map_input_bins):
-            raise ValueError("Input binning incompatible number of bins: "
-                             "axis %d binning scheme %d (%d)" % (n_map_input_bins, n_input_bins_t, n_input_bins_f))
+            n_input_bins_t = abs(self.detector_binning.GetTH1xNumberOfBins(True))
+            n_input_bins_f = abs(self.detector_binning.GetTH1xNumberOfBins(False))
+            if (n_input_bins_t != n_map_input_bins) and (n_input_bins_f != n_map_input_bins):
+                raise ValueError("Input binning incompatible number of bins: "
+                                 "axis %d binning scheme %d (%d)" % (n_map_input_bins, n_input_bins_t, n_input_bins_f))
 
     # rewire these to point to BinningHandler instead
     # one day I'll remove references to these
@@ -921,10 +923,10 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
                   keep_folded_hists=False):
         """Delete various large member objects to reduce its size"""
 
-        def _del_attr(name):
-            if hasattr(self, name) and getattr(self, name) is not None:
+        def _del_attr(name, owner=self):
+            if hasattr(owner, name) and getattr(owner, name) is not None:
                 try:
-                    delattr(self, name)
+                    delattr(owner, name)
                 except AttributeError as e:
                     print(cu.pcolors.RED + "Error using _del_attr(%s):" % name + cu.pcolors.ENDC)
                     raise e
@@ -947,8 +949,15 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
                 _del_attr(x)
 
         if not keep_1d_hists:
-            for x in ['input_handler', 'input_handler_gen_binning']:
-                _del_attr(x)
+            for handler_name in ['input_handler', 'input_handler_gen_binning']:
+                handler = getattr(self, handler_name)
+                for x in ['input_hist',
+                          'input_hist_bg_subtracted',
+                          'hist_mc_reco',
+                          'hist_mc_reco_bg_subtracted',
+                          'hist_mc_fakes',
+                          'hist_fake_fraction']:
+                    _del_attr(x, owner=handler)
 
         if not keep_backgrounds:
             self.backgrounds.clear()
