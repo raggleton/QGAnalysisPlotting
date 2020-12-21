@@ -3091,8 +3091,8 @@ def main():
                     unfolder.create_normalised_scale_syst_ematrices_per_pt_bin()
 
                     unfolder.create_scale_syst_uncertainty_per_pt_bin(region['scale_systematics'])
-
-                    unfolder.create_scale_syst_uncertainty_per_lambda_bin(region['scale_systematics'])
+                    if not isinstance(unfolder.binning_handler.get_binning_scheme('generator'), PtVarPerPtBinning):
+                        unfolder.create_scale_syst_uncertainty_per_lambda_bin(region['scale_systematics'])
 
             # ------------------------------------------------------------------
             # LOAD SCALE VARIATIONS FROM ANOTHER FILE
@@ -3655,7 +3655,8 @@ def main():
 
                     unfolder.create_pdf_syst_uncertainty_per_pt_bin(region['pdf_systematics'])
 
-                    unfolder.create_pdf_syst_uncertainty_per_lambda_bin(region['pdf_systematics'])
+                    if not isinstance(unfolder.binning_handler.get_binning_scheme('generator'), PtVarPerPtBinning):
+                        unfolder.create_pdf_syst_uncertainty_per_lambda_bin(region['pdf_systematics'])
 
                 cu.close_tfile(pdf_tfile)
 
