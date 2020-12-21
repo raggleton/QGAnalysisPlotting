@@ -3800,7 +3800,7 @@ def main():
                 unfolder.setup_normalised_results_per_pt_bin()
 
                 unfolder.setup_absolute_results_per_pt_bin()
-                if not any([args.mergeBins, args.mergeBinsFromFile, args.mergeBadResponseBins]):
+                if not isinstance(unfolder.binning_handler.get_binning_scheme('generator'), PtVarPerPtBinning):
                     unfolder.setup_absolute_results_per_lambda_bin()
 
             else:
