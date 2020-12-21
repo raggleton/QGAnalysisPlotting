@@ -594,7 +594,7 @@ def setup_merged_last_pt_binning(orig_binning_handler):
     return binning_handler_merged, gen_bin_pairs, reco_bin_pairs
 
 
-def get_bins_to_merge_probability_stats(pmatrix, response_map, min_num=15, allow_zero_entries=True, use_neff_entries=False, max_p=0.7, max_rel_err=0.6):
+def get_bins_to_merge_bad_probability_bins(pmatrix, response_map, min_num=15, allow_zero_entries=True, use_neff_entries=False, max_p=0.7, max_rel_err=0.6):
     """Figure out which gen bins to merge based on poor number of events & error bars
     in given column of probability matrix
 
@@ -625,6 +625,7 @@ def get_bins_to_merge_probability_stats(pmatrix, response_map, min_num=15, allow
     bad_bins = []
     for ix in range(1, pmatrix.GetNbinsX()+1):
         value_err_pairs = []  # store value & relative error for each non-zero entry in this gen bin
+        actual_value_err_pairs = []  # store value & relative error for each non-zero entry in this gen bin
         # Get all the non-zero entries in the prob matrix for this column
         for iy in range(1, pmatrix.GetNbinsY()+1):
             val = pmatrix.GetBinContent(ix, iy)
@@ -633,14 +634,15 @@ def get_bins_to_merge_probability_stats(pmatrix, response_map, min_num=15, allow
             actual_val = response_map.GetBinContent(ix, iy)
             err = response_map.GetBinError(ix, iy)
             value_err_pairs.append([val, abs(err / actual_val)])
+            actual_value_err_pairs.append([actual_val, abs(err / actual_val)])
 
         n_eff = 0
         if len(value_err_pairs) > 0:
             # effective number of entries - useful when dealing with weighted elements
             # For a weighted histogram, this number corresponds to the hypothetical
             # number of unweighted entries a histogram would need to have the same statistical power.
-            n_eff = sum([v for v, _ in value_err_pairs]) / sum([v**2 for v, _ in value_err_pairs])
-            print("p matrix gen bin", ix, "len value_err_pairs:", len(value_err_pairs), "n_eff:", n_eff)
+            n_eff = sum([v for v, _ in actual_value_err_pairs]) / sum([v**2 for v, _ in actual_value_err_pairs])
+            # print("p matrix gen bin", ix, "len value_err_pairs:", len(value_err_pairs), "n_eff:", n_eff)
 
         def _print_val_err_pairs(pairs):
             return ", ".join(["{:.3f} ± {:.3f}".format(v, e) for v, e in pairs])
@@ -656,12 +658,39 @@ def get_bins_to_merge_probability_stats(pmatrix, response_map, min_num=15, allow
             bad_bins.append(ix)
         elif len(value_err_pairs) > 0:
             if sorted_pairs[0][0] > max_p:
-                print("p matrix gen bin", ix, "has bin with value >", max_p, "values:", __print_val_err_pairs(value_err_pairs))
+                print("p matrix gen bin", ix, "has bin with value >", max_p, "values:", _print_val_err_pairs(value_err_pairs))
                 bad_bins.append(ix)
             elif sorted_pairs[0][1] > max_rel_err:
                 print("p matrix gen bin", ix, "has bin with fractional error >", max_rel_err, "values:", _print_val_err_pairs(value_err_pairs))
                 bad_bins.append(ix)
     return bad_bins
+
+
+def zero_bad_response_bins(pmatrix, response_map, *args, **kwargs):
+    """
+    Parameters
+    ----------
+    pmatrix : ROOT.TH2
+        Probability matrix
+    response_map : ROOT.TH2
+        Response map
+    *args
+        Other args for get_bins_to_merge_probability_stats()
+    **kwargs
+        Kwargs for get_bins_to_merge_probability_stats()
+    
+    Returns
+    -------
+    ROOT.TH2
+        New response map with zeroed columns
+    """
+    bad_bins = get_bins_to_merge_bad_probability_bins(pmatrix, response_map, *args, **kwargs)
+    new_response_map = response_map.Clone()
+    for gen_bin in bad_bins:
+        for r in range(0, pmatrix.GetNbinsY()+1):
+            new_response_map.SetBinContent(gen_bin, r, 0)
+            new_response_map.SetBinError(gen_bin, r, 0)
+    return new_response_map
 
 
 def get_bins_to_merge_nonnegative(h, binning_obj, max_bin=-1, ensure_nonnegative=True):
@@ -1326,18 +1355,13 @@ def main():
             #         hist_mc_gen_reco_map.SetBinContent(gen_bin, r, 0)
             #         hist_mc_gen_reco_map.SetBinError(gen_bin, r, 0)
 
-            # Set all elements in a gen bin (col) to 0 if deemed bad
-            # i.e. low stats, big errors
-            if args.zeroBadResponseBins:
-                bad_bins = get_bins_to_merge_probability_stats(unfolder.get_probability_matrix(), unfolder.response_map)
-                for gen_bin in bad_bins:
-                    for r in range(0, unfolder.get_probability_matrix().GetNbinsY()+1):
-                        hist_mc_gen_reco_map.SetBinContent(gen_bin, r, 0)
-                        hist_mc_gen_reco_map.SetBinError(gen_bin, r, 0)
-
-                unfolder = MyUnfolder(response_map=hist_mc_gen_reco_map,
-                                      binning_handler=binning_handler,
-                                      **unfolder_args)
+            # # Set all elements in a gen bin (col) to 0 if deemed bad
+            # # i.e. low stats, big errors
+            # if args.zeroBadResponseBins:
+            #     new_response_map = zero_bad_response_bins(unfolder..get_probability_matrix(), unfolder.response_map)
+            #     unfolder = MyUnfolder(response_map=new_response_map,
+            #                           binning_handler=binning_handler,
+            #                           **unfolder_args)
 
             # Save binning to file
             # unfolder.save_binning(txt_filename="%s/binning_scheme.txt" % (this_output_dir), print_xml=False)
@@ -1516,6 +1540,16 @@ def main():
                     hist_mc_reco=unfolder.hist_mc_reco_gen_binning,
                     hist_mc_fakes=unfolder.hist_mc_fakes_gen_binning
                 )
+
+            # Zero elements in a gen bin (col) to 0 if deemed bad
+            # i.e. low stats, big errors
+            # ------------------------------------------------------------------
+            if args.zeroBadResponseBins:
+                new_response_map = zero_bad_response_bins(unfolder.get_probability_matrix(), unfolder.response_map)
+                unfolder = MyUnfolder(response_map=new_response_map,
+                                      binning_handler=unfolder.binning_handler,
+                                      **unfolder_args)
+                unfolder.set_input(**input_args())
 
             # update some other hists
             for merge_func in th1_merge_reco_funcs:
@@ -2436,16 +2470,10 @@ def main():
                     this_syst = ExpSystematic(label=syst_dict['label'], syst_map=None)
 
                     # construct unfolder like original but with this response matrix, do unfolding
-                    exp_syst_unfolder = MyUnfolder(response_map=rm_large_rel_error_bins_th2(map_syst, args.relErr),
-                                                   binning_handler=binning_handler,
-                                                   **unfolder_args)
+                    # exp_syst_unfolder = MyUnfolder(response_map=rm_large_rel_error_bins_th2(map_syst, args.relErr),
+                    #                                binning_handler=binning_handler,
+                    #                                **unfolder_args)
 
-                    if args.zeroBadResponseBins:
-                        bad_bins = get_bins_to_merge_probability_stats(exp_syst_unfolder.get_probability_matrix(), exp_syst_unfolder.response_map)
-                        for gen_bin in bad_bins:
-                            for r in range(0, exp_syst_unfolder.get_probability_matrix().GetNbinsY()+1):
-                                map_syst.SetBinContent(gen_bin, r, 0)
-                                map_syst.SetBinError(gen_bin, r, 0)
 
                     for merge_func in th2_merge_funcs:
                         map_syst = merge_func(map_syst)
@@ -2453,6 +2481,11 @@ def main():
                     exp_syst_unfolder = MyUnfolder(response_map=map_syst,
                                                    binning_handler=unfolder.binning_handler,
                                                    **unfolder_args)
+                    if args.zeroBadResponseBins:
+                        new_map_syst = zero_bad_response_bins(exp_syst_unfolder.get_probability_matrix(), exp_syst_unfolder.response_map)
+                        exp_syst_unfolder = MyUnfolder(response_map=new_map_syst,
+                                                       binning_handler=exp_syst_unfolder.binning_handler,
+                                                       **unfolder_args)
 
                     exp_syst_unfolder.SetEpsMatrix(eps_matrix)
 
@@ -2826,12 +2859,16 @@ def main():
                 hist_mc_gen_reco_map_alt = cu.get_from_tfile(region['alt_mc_tfile'], "%s/tu_%s_GenReco_all" % (region['dirname'], angle_shortname))
                 hist_mc_gen_reco_map_alt.Scale(unfolder.response_map.Integral() / hist_mc_gen_reco_map_alt.Integral())  # just for display purposes, doesn't affect result
                 for merge_func in th2_merge_funcs:
-                        hist_mc_gen_reco_map_alt = merge_func(hist_mc_gen_reco_map_alt)
+                    hist_mc_gen_reco_map_alt = merge_func(hist_mc_gen_reco_map_alt)
 
                 alt_unfolder = MyUnfolder(response_map=rm_large_rel_error_bins_th2(hist_mc_gen_reco_map_alt, args.relErr),
                                           binning_handler=unfolder.binning_handler,
                                           **unfolder_args)
-
+                if args.zeroBadResponseBins:
+                    new_map = zero_bad_response_bins(alt_unfolder.get_probability_matrix(), alt_unfolder.response_map)
+                    alt_unfolder = MyUnfolder(response_map=new_map,
+                                              binning_handler=alt_unfolder.binning_handler,
+                                              **unfolder_args)
                 # SetEpsMatrix ensures rank properly calculated when inverting
                 # Needed if you get message "rank of matrix E 55 expect 170"
                 # And unfolded looks wacko
@@ -2997,11 +3034,18 @@ def main():
                     if isinstance(scale_dict['tfile'], str):
                         scale_dict['tfile'] = cu.open_root_file(scale_dict['tfile'])
                     scale_map = cu.get_from_tfile(scale_dict['tfile'], "%s/tu_%s_GenReco_all" % (region['dirname'], angle_shortname))
+
                     for merge_func in th2_merge_funcs:
                         scale_map = merge_func(scale_map)
+
                     scale_unfolder = MyUnfolder(response_map=rm_large_rel_error_bins_th2(scale_map, args.relErr),
                                                 binning_handler=unfolder.binning_handler,
                                                 **unfolder_args)
+                    if args.zeroBadResponseBins:
+                        new_scale_map = zero_bad_response_bins(scale_unfolder.get_probability_matrix(), scale_unfolder.response_map)
+                        scale_unfolder = MyUnfolder(response_map=new_scale_map,
+                                                    binning_handler=scale_unfolder.binning_handler,
+                                                    **unfolder_args)
 
                     # Needed because some of the variations struggle to unfold
                     # Even 1E-18 wouldn't work - needs to be v.small
@@ -3063,6 +3107,8 @@ def main():
                     scale_unfolder.do_unfolding(scale_tau)
                     scale_unfolder.get_output(hist_name="scale_%s_unfolded_1d" % scale_label_no_spaces)
                     scale_unfolder._post_process()
+                    scale_unfolder.inspect_output()
+
                     if not args.jacobian:
                         scale_unfolder.setup_normalised_results_per_pt_bin()
 
@@ -3329,6 +3375,7 @@ def main():
                     syst_unfolder.do_unfolding(syst_tau)
                     syst_unfolder.get_output(hist_name="syst_%s_unfolded_1d" % syst_label_no_spaces)
                     syst_unfolder._post_process()
+                    syst_unfolder.inspect_output()
                     if not args.jacobian:
                         syst_unfolder.setup_normalised_results_per_pt_bin()
 
@@ -3559,6 +3606,12 @@ def main():
                                               binning_handler=unfolder.binning_handler,
                                               **unfolder_args)
 
+                    if args.zeroBadResponseBins:
+                        new_pdf_map = zero_bad_response_bins(pdf_unfolder.get_probability_matrix(), pdf_unfolder.response_map)
+                        pdf_unfolder = MyUnfolder(response_map=new_pdf_map,
+                                                  binning_handler=pdf_unfolder.binning_handler,
+                                                  **unfolder_args)
+
                     # Needed because some fo the PDF variations struggle to unfold
                     # Even 1E-18 wouldn't work - needs to be v.small
                     pdf_unfolder.SetEpsMatrix(eps_matrix)
@@ -3617,6 +3670,7 @@ def main():
                     pdf_unfolder.do_unfolding(pdf_tau)
                     pdf_unfolder.get_output(hist_name="syst_%s_unfolded_1d" % pdf_label_no_spaces)
                     pdf_unfolder._post_process()
+                    pdf_unfolder.inspect_output()
 
                     if not args.jacobian:
                         pdf_unfolder.setup_normalised_results_per_pt_bin()
