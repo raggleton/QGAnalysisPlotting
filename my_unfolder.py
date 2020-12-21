@@ -1637,6 +1637,14 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
 
         return self.unfolded
 
+    def inspect_output(self):
+        for ix in range(1, self.get_output().GetNbinsX()+1):
+            val = self.get_output().GetBinContent(ix)
+            if val < 0:
+                err = self.get_output().GetBinError(ix)
+                msg = "Unfolded bin %d = %s has value %f ± %f" % (ix, self.binning_handler.global_bin_to_physical_bin(ix, 'generator'), val, err)
+                print(cu.pcolors.OKCYAN + msg + cu.pcolors.ENDC)
+
     def _post_process(self):
         """Do some standard things & store various things that are done after unfolding"""
         self.get_ematrix_input()

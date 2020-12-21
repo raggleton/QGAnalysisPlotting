@@ -1907,6 +1907,7 @@ def main():
             # ------------------------------------------------------------------
             unfolder.do_unfolding(tau)
             unfolder.get_output(hist_name="unfolded_1d")
+            unfolder.inspect_output()
 
             # Do lots of extra gubbins, like caching matrices,
             # creating unfolded hists with different levels of uncertainties,
