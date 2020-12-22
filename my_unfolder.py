@@ -797,8 +797,6 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
 
     # def save_to_tfile(self, tfile):
     #     """Save important stuff to TFile/TDirectory"""
-    #     self._check_save_to_tfile(tfile, self.detector_binning, "detector_binning")
-    #     self._check_save_to_tfile(tfile, self.generator_binning, "generator_binning")
     #     self._check_save_to_tfile(tfile, self.response_map, "response_map")
     #     self._check_save_to_tfile(tfile, self.orientation, "orientation")
     #     self._check_save_to_tfile(tfile, self.constraintMode, "constraintMode")
@@ -807,15 +805,8 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
     #     self._check_save_to_tfile(tfile, self.distribution, "distribution")
     #     self._check_save_to_tfile(tfile, self.axisSteering, "axisSteering")
 
-    #     self._check_save_to_tfile(tfile, self.variable_bin_edges_reco, "variable_bin_edges_reco")
-    #     self._check_save_to_tfile(tfile, self.variable_bin_edges_gen, "variable_bin_edges_gen")
+    #     self._check_save_to_tfile(tfile, self.binning_handler, "binning_handler")
     #     self._check_save_to_tfile(tfile, self.variable_name, "variable_name")
-
-    #     self._check_save_to_tfile(tfile, self.pt_bin_edges_reco, "pt_bin_edges_reco")
-    #     self._check_save_to_tfile(tfile, self.pt_bin_edges_gen, "pt_bin_edges_gen")
-
-    #     self._check_save_to_tfile(tfile, self.pt_bin_edges_underflow_reco, "pt_bin_edges_underflow_reco")
-    #     self._check_save_to_tfile(tfile, self.pt_bin_edges_underflow_gen, "pt_bin_edges_underflow_gen")
 
     #     # handle most of the simple hists
     #     for name in MyUnfolder._simple_attr:
@@ -1262,28 +1253,14 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         # the corresponding gen bin, and add it to it from hist
         #
         # TODO: account for overflow in each axis?
-        for ibin_var, (var_low, var_high) in enumerate(zip(self.variable_bin_edges_reco[:-1], self.variable_bin_edges_reco[1:])):
-            for ibin_pt, (pt_low, pt_high) in enumerate(zip(self.pt_bin_edges_underflow_reco[:-1], self.pt_bin_edges_underflow_reco[1:])):
-                gen_bin = self.generator_distribution_underflow.GetGlobalBinNumber(var_low+0.001, pt_low+0.001)
-                det_bin = self.detector_distribution_underflow.GetGlobalBinNumber(var_low+0.001, pt_low+0.001)
-                # print("Converting bin", pt_low, var_low, ":", det_bin, "->", gen_bin)
-                val = new_hist.GetBinContent(gen_bin)
-                val += hist.GetBinContent(det_bin)
-                new_hist.SetBinContent(gen_bin, val)
-                err2 = new_hist.GetBinError(gen_bin)**2
-                err2 += hist.GetBinError(det_bin)**2
-                new_hist.SetBinError(gen_bin, math.sqrt(err2))
-
-            for ibin_pt, (pt_low, pt_high) in enumerate(zip(self.pt_bin_edges_reco[:-1], self.pt_bin_edges_reco[1:])):
-                gen_bin = self.generator_distribution.GetGlobalBinNumber(var_low+0.001, pt_low+0.001)
-                det_bin = self.detector_distribution.GetGlobalBinNumber(var_low+0.001, pt_low+0.001)
-                # print("Converting bin", pt_low, var_low, ":", det_bin, "->", gen_bin)
-                val = new_hist.GetBinContent(gen_bin)
-                val += hist.GetBinContent(det_bin)
-                new_hist.SetBinContent(gen_bin, val)
-                err2 = new_hist.GetBinError(gen_bin)**2
-                err2 += hist.GetBinError(det_bin)**2
-                new_hist.SetBinError(gen_bin, math.sqrt(err2))
+        for pt in chain(self.pt_bin_edges_underflow_reco[:-1], self.pt_bin_edges_reco[:-1]):
+            variable_bins = self.binning_handler.get_variable_bins(pt, 'detector')
+            for var in variable_bins[:-1]:
+                gen_bin = self.binning_handler.physical_bin_to_global_bin(pt=pt, var=var, binning_scheme='generator')
+                det_bin = self.binning_handler.physical_bin_to_global_bin(pt=pt, var=var, binning_scheme='detector')
+                # print("Converting bin", pt, var, ":", det_bin, "->", gen_bin)
+                new_hist.SetBinContent(gen_bin, new_hist.GetBinContent(gen_bin) +  hist.GetBinContent(det_bin))
+                new_hist.SetBinError(gen_bin, np.hypot(new_hist.GetBinError(gen_bin), hist.GetBinError(det_bin)))
 
         return new_hist
 
@@ -1339,29 +1316,31 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
 
         # Get integral of 1st pt bin in signal region
         gen_node = self.generator_binning.FindNode('generatordistribution')
-        first_var = self.variable_bin_edges_gen[0]
-        last_var = self.variable_bin_edges_gen[-1]
         pt_val = self.pt_bin_edges_gen[0]
-        start_bin = gen_node.GetGlobalBinNumber(first_var+0.001, pt_val+0.001)
-        end_bin = gen_node.GetGlobalBinNumber(last_var-0.001, pt_val+0.001)
+        gen_binning = self.binning_handler.get_binning_scheme('generator')
+        first_var = gen_binning.get_variable_bins(pt_val)[0]
+        last_var = gen_binning.get_variable_bins(pt_val)[-1]
+        start_bin = gen_binning.physical_bin_to_global_bin(var=first_var, pt=pt_val)
+        end_bin = gen_binning.physical_bin_to_global_bin(var=last_var - 1E-6, pt=pt_val)  # need to be inside last bin - or include overflow?
         first_bin_integral = hist.Integral(start_bin, end_bin)  # ROOTs integral is inclusive of last bin
 
         bin_factors = {}
         # Add 1s for the 1st pt bin
-        for var in self.variable_bin_edges_gen[:-1]:
-            this_bin = gen_node.GetGlobalBinNumber(var+0.001, pt_val+0.001)
+        for var in gen_binning.get_variable_bins(pt_val)[:-1]:
+            this_bin = gen_binning.physical_bin_to_global_bin(pt=pt_val, var=var)
             bin_factors[this_bin] = 1
 
         # Iterate through pt bins, figure out integral, scale according to first bin
         for pt_val in self.pt_bin_edges_gen[1:-1]:
-            start_bin = gen_node.GetGlobalBinNumber(first_var+0.001, pt_val+0.001)
-            end_bin = gen_node.GetGlobalBinNumber(last_var-0.001, pt_val+0.001)
+            variable_bins = gen_binning.get_variable_bins(pt_val)
+            start_bin = gen_binning.physical_bin_to_global_bin(var=variable_bins[0], pt=pt_val)
+            end_bin = gen_binning.physical_bin_to_global_bin(var=variable_bins[-1] - 1E-6, pt=pt_val)
             integral = hist.Integral(start_bin, end_bin)
             sf = first_bin_integral / integral
 
             # Store bin factor for each lambda bin
-            for var in self.variable_bin_edges_gen[:-1]:
-                this_bin = gen_node.GetGlobalBinNumber(var+0.001, pt_val+0.001)
+            for var in variable_bins[:-1]:
+                this_bin = gen_binning.physical_bin_to_global_bin(pt=pt_val, var=var)
                 bin_factors[this_bin] = sf
 
         return bin_factors
@@ -1403,59 +1382,62 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
 
         # Add regularisation across pt bins, per lambda bin
         if axis in ["both", "pt"]:
-            for ilambda in range(len(self.variable_bin_edges_gen[:-1])):
-                for ipt in range(len(self.pt_bin_edges_gen[:-3])):
-                    pt_cen = self.pt_bin_edges_gen[ipt+1]+0.001  # add a tiny bit to make sure we're in the bin properly
-                    lambda_cen = self.variable_bin_edges_gen[ilambda]+0.001
-
-                    bin_ind_pt_down = gen_node.GetGlobalBinNumber(lambda_cen, self.pt_bin_edges_gen[ipt]+0.001)
-                    bin_ind_pt_up = gen_node.GetGlobalBinNumber(lambda_cen, self.pt_bin_edges_gen[ipt+2]+0.001)
-
-                    bin_ind_cen = gen_node.GetGlobalBinNumber(lambda_cen, pt_cen)
-
-                    # bin_ind_var_down = gen_node.GetGlobalBinNumber(self.variable_bin_edges_gen[ilambda], pt_cen)
-                    # bin_ind_var_up = gen_node.GetGlobalBinNumber(self.variable_bin_edges_gen[ilambda+2], pt_cen)
-
-                    # print("Adding L matrix entry", nr_counter)
-                    # print('lambda:', self.variable_bin_edges_gen[ilambda], 'pt:', (self.pt_bin_edges_gen[ipt], self.pt_bin_edges_gen[ipt+1], self.pt_bin_edges_gen[ipt+2]))
-
-                    # pt_bin_width_down = pt_bin_edges_gen[ipt+1] - pt_bin_edges_gen[ipt]
-                    # pt_bin_width_up = pt_bin_edges_gen[ipt+2] - pt_bin_edges_gen[ipt+1]
-                    # factor = (pt_bin_width_down + pt_bin_width_up)
-                    # value_pt_down = bin_factors[bin_ind_pt_down]
-                    # value_pt_up = bin_factors[bin_ind_pt_up]
-                    # ref_hist = unreg_self.unfolded
-
-                    val_down = ref_hist.GetBinContent(bin_ind_pt_down)
-                    value_pt_down = 1./val_down if val_down != 0 else 0
-
-                    val_up = ref_hist.GetBinContent(bin_ind_pt_up)
-                    value_pt_up = 1./val_up if val_up != 0 else 0
-
-                    # value_pt_down = bin_factors[bin_ind_pt_down]
-                    # value_pt_up = bin_factors[bin_ind_pt_up]
-                    value_pt_cen = - (value_pt_down + value_pt_up)
-
-                    val_cen = ref_hist.GetBinContent(bin_ind_cen)
-                    value_pt_cen = -2. / val_cen if val_cen != 0 else 0
-
-                    # print(bin_ind_pt_down, value_pt_down, bin_ind_cen, value_pt_cen, bin_ind_pt_up, value_pt_up)
-                    L_args = [bin_ind_pt_down, value_pt_down, bin_ind_cen, value_pt_cen, bin_ind_pt_up, value_pt_up]
-                    L_matrix_entries.append(L_args)
-                    self.AddRegularisationCondition(*L_args)
-                    nr_counter += 1
-                    print(L_args)
-
-                    # value_pt_down = unfolded_max/ref_hist.GetBinContent(bin_ind_pt_down)
-                    # value_pt_up = unfolded_max/ref_hist.GetBinContent(bin_ind_pt_up)
-                    # value_var_down = unfolded_max/ref_hist.GetBinContent(bin_ind_var_down)
-                    # value_var_up = unfolded_max/ref_hist.GetBinContent(bin_ind_var_up)
-                    # value_cen = - (value_pt_down + value_pt_up + value_var_down + value_var_up)
-                    # print(bin_ind_pt_down, value_pt_down, bin_ind_cen, value_cen, bin_ind_pt_up, value_pt_up)
-                    # indices = [bin_ind_pt_down, bin_ind_var_down, bin_ind_cen, bin_ind_pt_up, bin_ind_var_up]
-                    # row_data = [value_pt_down, value_var_down, value_cen, value_pt_up, value_var_up]
-                    # self.AddRegularisationCondition(5, array('i', indices), array('d', row_data))
-                    # print(indices, row_data)
+            if isinstance(self.binning_handler.get_binning_scheme('generator'), PtVarPerPtBinning):
+                warnings.warn(cu.pcolors.RED + "Cannot do setup_L_matrix_curvature() across pt bins with PtVarPerPtBinning" + cu.pcolors.ENDC)
+            else:
+                for ilambda in range(len(self.variable_bin_edges_gen[:-1])):
+                    for ipt in range(len(self.pt_bin_edges_gen[:-3])):
+                        pt_cen = self.pt_bin_edges_gen[ipt+1]+0.001  # add a tiny bit to make sure we're in the bin properly
+                        lambda_cen = self.variable_bin_edges_gen[ilambda]+0.001
+    
+                        bin_ind_pt_down = gen_node.GetGlobalBinNumber(lambda_cen, self.pt_bin_edges_gen[ipt]+0.001)
+                        bin_ind_pt_up = gen_node.GetGlobalBinNumber(lambda_cen, self.pt_bin_edges_gen[ipt+2]+0.001)
+    
+                        bin_ind_cen = gen_node.GetGlobalBinNumber(lambda_cen, pt_cen)
+    
+                        # bin_ind_var_down = gen_node.GetGlobalBinNumber(self.variable_bin_edges_gen[ilambda], pt_cen)
+                        # bin_ind_var_up = gen_node.GetGlobalBinNumber(self.variable_bin_edges_gen[ilambda+2], pt_cen)
+    
+                        # print("Adding L matrix entry", nr_counter)
+                        # print('lambda:', self.variable_bin_edges_gen[ilambda], 'pt:', (self.pt_bin_edges_gen[ipt], self.pt_bin_edges_gen[ipt+1], self.pt_bin_edges_gen[ipt+2]))
+    
+                        # pt_bin_width_down = pt_bin_edges_gen[ipt+1] - pt_bin_edges_gen[ipt]
+                        # pt_bin_width_up = pt_bin_edges_gen[ipt+2] - pt_bin_edges_gen[ipt+1]
+                        # factor = (pt_bin_width_down + pt_bin_width_up)
+                        # value_pt_down = bin_factors[bin_ind_pt_down]
+                        # value_pt_up = bin_factors[bin_ind_pt_up]
+                        # ref_hist = unreg_self.unfolded
+    
+                        val_down = ref_hist.GetBinContent(bin_ind_pt_down)
+                        value_pt_down = 1./val_down if val_down != 0 else 0
+    
+                        val_up = ref_hist.GetBinContent(bin_ind_pt_up)
+                        value_pt_up = 1./val_up if val_up != 0 else 0
+    
+                        # value_pt_down = bin_factors[bin_ind_pt_down]
+                        # value_pt_up = bin_factors[bin_ind_pt_up]
+                        value_pt_cen = - (value_pt_down + value_pt_up)
+    
+                        val_cen = ref_hist.GetBinContent(bin_ind_cen)
+                        value_pt_cen = -2. / val_cen if val_cen != 0 else 0
+    
+                        # print(bin_ind_pt_down, value_pt_down, bin_ind_cen, value_pt_cen, bin_ind_pt_up, value_pt_up)
+                        L_args = [bin_ind_pt_down, value_pt_down, bin_ind_cen, value_pt_cen, bin_ind_pt_up, value_pt_up]
+                        L_matrix_entries.append(L_args)
+                        self.AddRegularisationCondition(*L_args)
+                        nr_counter += 1
+                        print(L_args)
+    
+                        # value_pt_down = unfolded_max/ref_hist.GetBinContent(bin_ind_pt_down)
+                        # value_pt_up = unfolded_max/ref_hist.GetBinContent(bin_ind_pt_up)
+                        # value_var_down = unfolded_max/ref_hist.GetBinContent(bin_ind_var_down)
+                        # value_var_up = unfolded_max/ref_hist.GetBinContent(bin_ind_var_up)
+                        # value_cen = - (value_pt_down + value_pt_up + value_var_down + value_var_up)
+                        # print(bin_ind_pt_down, value_pt_down, bin_ind_cen, value_cen, bin_ind_pt_up, value_pt_up)
+                        # indices = [bin_ind_pt_down, bin_ind_var_down, bin_ind_cen, bin_ind_pt_up, bin_ind_var_up]
+                        # row_data = [value_pt_down, value_var_down, value_cen, value_pt_up, value_var_up]
+                        # self.AddRegularisationCondition(5, array('i', indices), array('d', row_data))
+                        # print(indices, row_data)
 
         # Add regularisation across lambda bins, per pt bin
         if axis in ["both", "angle"]:
@@ -1521,27 +1503,30 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
 
         # Add regularisation across pt bins, per lambda bin
         if axis in ["both", "pt"]:
-            for ilambda in range(len(self.variable_bin_edges_gen[:-1])):
-                for ipt in range(len(self.pt_bin_edges_gen[:-2])):
-                    lambda_cen = self.variable_bin_edges_gen[ilambda]+0.001  # add a tiny bit to make sure we're in the bin properly (I can never remember if included or not)
+            if isinstance(self.binning_handler.get_binning_scheme('generator'), PtVarPerPtBinning):
+                warnings.warn(cu.pcolors.RED + "Cannot do setup_L_matrix_derivative() across pt bins with PtVarPerPtBinning" + cu.pcolors.ENDC)
+            else:
+                for ilambda in range(len(self.variable_bin_edges_gen[:-1])):
+                    for ipt in range(len(self.pt_bin_edges_gen[:-2])):
+                        lambda_cen = self.variable_bin_edges_gen[ilambda]+0.001  # add a tiny bit to make sure we're in the bin properly (I can never remember if included or not)
 
-                    bin_ind_pt_down = gen_node.GetGlobalBinNumber(lambda_cen, self.pt_bin_edges_gen[ipt]+0.001)
-                    bin_ind_pt_up = gen_node.GetGlobalBinNumber(lambda_cen, self.pt_bin_edges_gen[ipt+1]+0.001)
+                        bin_ind_pt_down = gen_node.GetGlobalBinNumber(lambda_cen, self.pt_bin_edges_gen[ipt]+0.001)
+                        bin_ind_pt_up = gen_node.GetGlobalBinNumber(lambda_cen, self.pt_bin_edges_gen[ipt+1]+0.001)
 
-                    # print("Adding L matrix entry", nr_counter)
-                    # print('lambda:', self.variable_bin_edges_gen[ilambda], 'pt:', (self.pt_bin_edges_gen[ipt], self.pt_bin_edges_gen[ipt+1]))
+                        # print("Adding L matrix entry", nr_counter)
+                        # print('lambda:', self.variable_bin_edges_gen[ilambda], 'pt:', (self.pt_bin_edges_gen[ipt], self.pt_bin_edges_gen[ipt+1]))
 
-                    val_down = ref_hist.GetBinContent(bin_ind_pt_down)
-                    value_pt_down = 1./val_down if val_down != 0 else 0
+                        val_down = ref_hist.GetBinContent(bin_ind_pt_down)
+                        value_pt_down = 1./val_down if val_down != 0 else 0
 
-                    val_up = ref_hist.GetBinContent(bin_ind_pt_up)
-                    value_pt_up = 1./val_up if val_up != 0 else 0
+                        val_up = ref_hist.GetBinContent(bin_ind_pt_up)
+                        value_pt_up = 1./val_up if val_up != 0 else 0
 
-                    L_args = [bin_ind_pt_down, -value_pt_down, bin_ind_pt_up, value_pt_up]
-                    L_matrix_entries.append(L_args)
-                    self.AddRegularisationCondition(*L_args)
-                    nr_counter += 1
-                    print(L_args)
+                        L_args = [bin_ind_pt_down, -value_pt_down, bin_ind_pt_up, value_pt_up]
+                        L_matrix_entries.append(L_args)
+                        self.AddRegularisationCondition(*L_args)
+                        nr_counter += 1
+                        print(L_args)
 
         # Add regularisation across lambda bins, per pt bin
         if axis in ["both", "angle"]:
@@ -1870,13 +1855,13 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         x_index = -1
         x_distribution = self.generator_distribution if xbinning == 'generator' else self.detector_distribution
         pt_bin_edges_x = self.pt_bin_edges_gen if xbinning == 'generator' else self.pt_bin_edges_reco
-        variable_bin_edges_x = self.variable_bin_edges_gen if xbinning == 'generator' else self.variable_bin_edges_reco
 
         y_distribution = self.generator_distribution if ybinning == 'generator' else self.detector_distribution
         pt_bin_edges_y = self.pt_bin_edges_gen if ybinning == 'generator' else self.pt_bin_edges_reco
-        variable_bin_edges_y = self.variable_bin_edges_gen if ybinning == 'generator' else self.variable_bin_edges_reco
 
         for pt_ind_x, pt_x in enumerate(pt_bin_edges_x[:-1]):
+            variable_bin_edges_x = self.binning_handler.get_variable_bins(pt_x, xbinning)
+            variable_bin_edges_y = self.binning_handler.get_variable_bins(pt_x, ybinning)
             for var_ind_x, var_x in enumerate(variable_bin_edges_x[:-1]):
                 global_bin_x = x_distribution.GetGlobalBinNumber(var_x+0.001, pt_x+0.001)
                 x_index += 1
@@ -2769,7 +2754,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             cov_matrix = np.cov(all_values, rowvar=True, ddof=0)
             cov_matrix *= (scale_factor**2)
 
-            bins = self.variable_bin_edges_gen
+            bins = self.binning_handler.get_variable_bins(pt=self.pt_bin_edges_gen[ibin_pt], binning_scheme='generator')
             nbins = len(bins) - 1
             # FIXME which binning to use? index or physical?
             this_bin_unfolded_rsp_ematrix = ROOT.TH2D("ematrix_rsp_bin_%d_%s" % (ibin_pt, cu.get_unique_str()), "", nbins, 0, nbins, nbins, 0, nbins)
@@ -2851,7 +2836,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             cov_matrix = np.cov(all_values, rowvar=True, ddof=0)
             cov_matrix *= (scale_factor**2)
 
-            bins = self.variable_bin_edges_gen
+            bins = self.binning_handler.get_variable_bins(pt=self.pt_bin_edges_gen[ibin_pt], binning_scheme='generator')
             nbins = len(bins) - 1
             # FIXME which binning to use? index or physical?
             this_bin_unfolded_stat_ematrix = ROOT.TH2D("ematrix_stat_bin_%d_%s" % (ibin_pt, cu.get_unique_str()), "", nbins, 0, nbins, nbins, 0, nbins)
@@ -3972,6 +3957,10 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             "unfolder": MyUnfolder,
         }
         """
+        if isinstance(self.binning_handler.get_binning_scheme('generator'), PtVarPerPtBinning):
+            warnings.warn(cu.pcolors.RED + "Cannot do create_scale_syst_uncertainty_per_lambda_bin() with PtVarPerPtBinning" + cu.pcolors.ENDC)
+            return
+
         for syst in scale_systs:
             syst['hbc_key_unfolded'] = 'scale_syst_%s_unfolded' % cu.no_space_str(syst['label'])
             self.hist_bin_chopper.add_obj(syst['hbc_key_unfolded'], syst['unfolder'].get_unfolded_with_ematrix_stat())
@@ -4027,6 +4016,10 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             "unfolder": None,
         }
         """
+        if isinstance(self.binning_handler.get_binning_scheme('generator'), PtVarPerPtBinning):
+            warnings.warn(cu.pcolors.RED + "Cannot do create_pdf_syst_uncertainty_per_lambda_bin() with PtVarPerPtBinning" + cu.pcolors.ENDC)
+            return
+
         # Add dummy object to hist_bin_chopper for later, so we can directly manipulate the cache
         self.hist_bin_chopper.add_obj(self.pdf_uncert_name, self.get_unfolded_with_ematrix_stat())
 
@@ -4061,6 +4054,10 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
 
         Experimental, model & PDF absolute systs should have already been setup.
         """
+        if isinstance(self.binning_handler.get_binning_scheme('generator'), PtVarPerPtBinning):
+            warnings.warn(cu.pcolors.RED + "Cannot do setup_absolute_results_per_lambda_bin() with PtVarPerPtBinning" + cu.pcolors.ENDC)
+            return
+
         self.hist_bin_chopper.add_obj('hist_truth', self.hist_truth)
         self.hist_bin_chopper.add_obj('unfolded', self.get_output())
         self.hist_bin_chopper.add_obj('unfolded_stat_err', self.get_unfolded_with_ematrix_stat())

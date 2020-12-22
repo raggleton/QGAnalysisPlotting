@@ -1448,7 +1448,7 @@ class GenPtBinnedPlotter(BinnedPlotter):
 
             # hists of all jackknife variations for all bins
             hists = [ROOT.TH1D("jk_ratios_%d" % ind, "%s, %s, bin %d;Unfolded/Gen;N" % (self.setup.angle_str, self.get_pt_bin_title(bin_edge_low, bin_edge_high).replace("\n", ", "), ind), 25, 0.6, 1.4)
-                     for ind in range(len(self.unfolder.variable_bin_edges_gen)-1)]
+                     for ind in range(len(self.unfolder.binning_handler.get_variable_bins(bin_edge_low, 'generator'))-1)]
 
             for ind, jk_dict in enumerate(jackknife_variations):
                 jk_unfolder = jk_dict['unfolder']
