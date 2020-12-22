@@ -178,7 +178,7 @@ class DijetZPJGenPtBinnedPlotter(object):
         else:
             bin_areas = contents
         mean = float(metrics.calc_mean_jax(bin_areas, centers))
-        mean_err = float(metrics.calc_mean_cov_matrix_jax(bin_areas, centers, cov_matrix))
+        mean_err = float(metrics.calc_mean_correlated_error_jax(bin_areas, centers, cov_matrix))
         return mean, mean_err
 
     def plot_detector_unfolded(self, do_dijet=True, do_zpj=True):

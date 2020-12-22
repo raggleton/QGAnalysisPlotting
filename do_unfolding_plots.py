@@ -204,7 +204,7 @@ def get_correlated_mean_err(hist, ematrix, is_density=True):
         bin_areas = contents
     # print(bin_areas.shape, centers.shape, cov_matrix.shape)
     mean = float(metrics.calc_mean_jax(bin_areas, centers))
-    mean_err = float(metrics.calc_mean_cov_matrix_jax(bin_areas, centers, cov_matrix))
+    mean_err = float(metrics.calc_mean_correlated_error_jax(bin_areas, centers, cov_matrix))
     return mean, mean_err
 
 
@@ -222,7 +222,7 @@ def get_correlated_rms_err(hist, ematrix, is_density=True):
         bin_areas = contents
     # print(bin_areas.shape, centers.shape, cov_matrix.shape)
     rms = float(metrics.calc_rms_jax(bin_areas, centers))
-    rms_err = float(metrics.calc_rms_cov_matrix_jax(bin_areas, centers, cov_matrix))
+    rms_err = float(metrics.calc_rms_correlated_error_jax(bin_areas, centers, cov_matrix))
     return rms, rms_err
 
 

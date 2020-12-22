@@ -85,7 +85,7 @@ try:
         return jnp.sqrt(err_sq)
 
 
-    def calc_mean_cov_matrix_jax(bin_areas, bin_centers, error_matrix):
+    def calc_mean_correlated_error_jax(bin_areas, bin_centers, error_matrix):
         """Get error on mean, assuming covariance matrix error_matrix"""
         diffs = mean_differential_jax(bin_areas, bin_centers)
         # sum_sq = diffs.T @ error_matrix @ diffs
@@ -130,7 +130,7 @@ try:
         """
         areas, widths, centers, errors = uproot_th1_to_arrays(hist)
         mean = calc_mean_jax(areas, centers)
-        err = calc_mean_cov_matrix_jax(areas, centers, ematrix)
+        err = calc_mean_correlated_error_jax(areas, centers, ematrix)
         return float(mean), float(err)
 
     # --------------------------------
@@ -165,7 +165,7 @@ try:
         return jnp.sqrt(err_sq)
 
 
-    def calc_rms_cov_matrix_jax(bin_areas, bin_centers, error_matrix):
+    def calc_rms_correlated_error_jax(bin_areas, bin_centers, error_matrix):
         """Get error on rms, assuming covariance matrix error_matrix"""
         diffs = rms_differential_jax(bin_areas, bin_centers)
         # sum_sq = diffs @ error_matrix @ diffs
