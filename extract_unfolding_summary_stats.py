@@ -11,8 +11,6 @@ Output is saved to HDF5 file, to be used in do_summary_unfolding_plots.py
 from __future__ import print_function, division
 
 import os
-os.nice(10)
-import sys
 import argparse
 import pandas as pd
 from copy import copy
@@ -20,17 +18,15 @@ from copy import copy
 # make things blazingly fast
 import uproot
 
-import yoda
-
 import ROOT
 
 # my packages
 import common_utils as cu
 import qg_common as qgc
-from my_unfolder import unpickle_region, unpack_slim_unfolding_root_file
 from unfolding_config import get_dijet_config, get_zpj_config
 import metric_calculators as metrics
 
+os.nice(10)
 
 ROOT.gErrorIgnoreLevel = ROOT.kWarning
 ROOT.gErrorIgnoreLevel = ROOT.kError

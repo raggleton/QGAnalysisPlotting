@@ -11,19 +11,22 @@ Output is saved to HDF5 file, to be used in do_summary_unfolding_plots.py
 from __future__ import print_function, division
 
 import os
-os.nice(10)
-import sys
+
 import argparse
 import pandas as pd
-import numpy as np
 import uproot
 import yoda
+import warnings
 
 # my packages
 import common_utils as cu
 import rivet_naming as rn
 import metric_calculators as metrics
 from extract_unfolding_summary_stats import unpack_slim_unfolding_root_file_uproot, scale_ematrix_by_bin_widths, check_hist_for_negatives
+
+os.nice(10)
+# monkey-patch warning formatter
+warnings.formatwarning = cu._formatwarning
 
 
 def normalize_areas(areas, errors):
@@ -249,7 +252,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--h5output",
                         default='rivet_summary.h5',
-                        help=("Output HDF5 filename. Default is 'rivet_summary.h5'"))
+                        help="Output HDF5 filename. Default is 'rivet_summary.h5'")
     parser.add_argument("--ak4source",
                         default=None,
                         help="Source directory for AK4 jets (should be the one made by unfolding.py")
