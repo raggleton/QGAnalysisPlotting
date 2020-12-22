@@ -156,12 +156,16 @@ def get_yoda_stats_dict(input_filename,
                         check_hist_for_negatives(unfolded_hist_bin_total_errors)
                         areas_a, widths_a, centers_a, errors_a = metrics.uproot_th1_to_arrays(unfolded_hist_bin_total_errors)
                         areas_b, widths_b, centers_b, errors_b = metrics.yoda_hist_to_values(hist)
-                        print(centers_a)
-                        print(widths_a)
-                        print(centers_b)
-                        print(widths_b)
-                        delta = metrics.calc_delta_jax(areas_a, areas_b)
-                        delta_err = metrics.calc_delta_correlated_error_jax(areas_a, ematrix, areas_b, errors_b)
+                        if areas_a.shape != areas_b.shape:
+                            if ibin == 0:
+                                warnings.warn(cu.pcolors.WARNING + "%s %s %s: cannot calculate delta, areas.shape mismatch" % (algo_name, region.name, lambda_var.hist_name) + cu.pcolors.ENDC)
+                        else:
+                            # print(centers_a)
+                            # print(widths_a)
+                            # print(centers_b)
+                            # print(widths_b)
+                            delta = metrics.calc_delta_jax(areas_a, areas_b)
+                            delta_err = metrics.calc_delta_correlated_error_jax(areas_a, ematrix, areas_b, errors_b)
 
                     result_dict = {
                         'jet_algo': algo_name,
