@@ -80,7 +80,8 @@ class MyUnfolderPlotter(object):
                      canvas_size=(800, 600),
                      draw_bin_lines_x=False,
                      draw_bin_lines_y=False,
-                     draw_values=False):
+                     draw_values=False,
+                     other_obj_to_draw=None):
         canv = MyUnfolderPlotter.generate_2d_canvas(canvas_size)
         if draw_bin_lines_x:
             canv.SetBottomMargin(0.18)
@@ -137,7 +138,9 @@ class MyUnfolderPlotter(object):
                                                 do_underflow=True,
                                                 do_labels_inside=False,
                                                 do_labels_outside=True)
-
+        if other_obj_to_draw and len(other_obj_to_draw) > 0:
+            for thing in other_obj_to_draw:
+                thing.Draw("SAME")
         odir = os.path.dirname(os.path.abspath(output_filename))
         cu.check_dir_exists_create(odir)
         canv.SaveAs(output_filename)
@@ -241,10 +244,21 @@ class MyUnfolderPlotter(object):
                           draw_bin_lines_y=True,
                           canvas_size=(800, 700))
 
-    def draw_probability_matrix(self, output_dir='.', append="", title=""):
+    def draw_probability_matrix(self, output_dir='.', append="", title="", bins_to_highlight=None):
         output_filename = "%s/probability_map_%s.%s" % (output_dir, append, self.output_fmt)
-        ROOT.gStyle.SetPalette(ROOT.kRainBow)
-        self.draw_2d_hist(self.unfolder.get_probability_matrix(),
+        ROOT.gStyle.SetPalette(ROOT.kRainBow)  # important to see dodgy bins
+        boxes = []
+        pmatrix = self.unfolder.get_probability_matrix()
+        if bins_to_highlight:
+            y_min = pmatrix.GetYaxis().GetBinLowEdge(1)
+            y_max = pmatrix.GetYaxis().GetBinLowEdge(pmatrix.GetNbinsY()+1)
+            for bin in bins_to_highlight:
+                xax = pmatrix.GetXaxis()
+                box = ROOT.TBox(xax.GetBinLowEdge(bin), y_min, xax.GetBinLowEdge(bin+1), y_max)
+                box.SetLineColor(ROOT.kPink+9)
+                box.SetFillStyle(0)
+                boxes.append(box)
+        self.draw_2d_hist(pmatrix,
                           title=title,
                           output_filename=output_filename,
                           z_min=0, z_max=1,
@@ -253,7 +267,8 @@ class MyUnfolderPlotter(object):
                           draw_bin_lines_y=True,
                           canvas_size=(800, 700),
                           xtitle='Generator bin',
-                          ytitle='Detector bin')
+                          ytitle='Detector bin',
+                          other_obj_to_draw=boxes)
         ROOT.gStyle.SetPalette(self.default_palette)
 
     def draw_probability_column(self, column_num, output_dir='.', append="", title=""):

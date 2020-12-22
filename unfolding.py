@@ -2786,9 +2786,11 @@ def main():
             title = "Response matrix normed by detector p_{T} bin, %s, %s region, %s" % (jet_algo, region['label'], angle_str)
             unfolder_plotter.draw_response_matrix_normed_by_detector_pt(title=title, **plot_args)
 
-            title = ("#splitline{Probability matrix, %s, %s region, %s}{Condition number: #sigma_{max} / #sigma_{min} = %.3g / %.3g = %g}"
-                     % (jet_algo, region['label'], angle_str, unfolder.sigma_max, unfolder.sigma_min, unfolder.condition_number))
-            unfolder_plotter.draw_probability_matrix(title=title, **plot_args)
+            # title = ("#splitline{Probability matrix, %s, %s region, %s}{Condition number: #sigma_{max} / #sigma_{min} = %.3g / %.3g = %g}"
+            #          % (jet_algo, region['label'], angle_str, unfolder.sigma_max, unfolder.sigma_min, unfolder.condition_number))
+            title = "Probability matrix, %s, %s region, %s" % (jet_algo, region['label'], angle_str)
+            bins_to_highlight = get_bins_to_merge_bad_probability_bins(unfolder.get_probability_matrix(), unfolder.response_map)
+            unfolder_plotter.draw_probability_matrix(title=title, bins_to_highlight=bins_to_highlight, **plot_args)
 
             col_num = unfolder.binning_handler.physical_bin_to_global_bin(pt=151, var=0.6, binning_scheme='generator')
             title = "Probability entries for gen bin %d, %s, %s region, %s" % (col_num, jet_algo, region['label'], angle_str)
