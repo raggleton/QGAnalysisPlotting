@@ -558,12 +558,15 @@ class GenPtBinnedPlotter(BinnedPlotter):
             if not self.check_entries(entries, "%s bin %d" % (func_name, ibin)):
                 return
 
+            ymin = 0
+            if np.any(cu.th1_to_ndarray(unfolded_hist_bin_total_errors)[0] < 0):
+                ymin = None  # let it do its thing and auto calc ymin
             plot = Plot(entries,
                         ytitle=self.setup.pt_bin_normalised_differential_label,
                         title=self.get_pt_bin_title(bin_edge_low, bin_edge_high),
                         legend=True,
                         xlim=qgp.calc_auto_xlim(entries[2:3]),  # set x lim to where data is non-0
-                        ylim=[0, None],
+                        ylim=[ymin, None],
                         **self.pt_bin_plot_args)
 
             plot.subplot_title = "Simulation / data"
