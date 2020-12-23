@@ -851,18 +851,14 @@ class MyUnfolderPlotter(object):
                         # raise ValueError("axis_low is %f so can't take log" %axis_low)
                     log_axis_range = math.log10(axis_high) - math.log10(axis_low)
                     y_start = math.pow(10, 0.03*log_axis_range + math.log10(axis_low))
-                    y_end = 10*axis_low
                 else:
                     y_start = (0.02*axis_range) + axis_low
-                    y_end = 10*axis_low
 
                 if labels_inside_align == 'higher':
                     if ROOT.gPad.GetLogy():
                         y_start = axis_high/10
-                        y_end = axis_high/1.05
                     else:
                         y_start = axis_high*0.8
-                        y_end = axis_high*0.9
 
                 text = ROOT.TPaveText(text_x, y_start, text_x + .5*pt_bin_interval, y_start)
                 text.SetBorderSize(0)

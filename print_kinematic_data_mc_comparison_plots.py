@@ -119,7 +119,7 @@ def do_1D_plot(hists, output_filename, components_styles_dicts=None,
              subplot_title="* / %s" % contributions[0].label,
              subplot=contributions[0],
              # subplot_limits=(0.5, 1.5),
-             subplot_limits=(0, 2) if logy else (0.5, 1.5),
+             subplot_limits=(0.25, 1.75) if logy else (0.5, 1.5),
              )
     # p.legend.SetX1(0.55)
     # # p.legend.SetX2(0.95)
@@ -201,8 +201,10 @@ def do_all_1D_projection_plots_in_dir(directories,
         if not isinstance(objs[0], (ROOT.TH2F, ROOT.TH2D, ROOT.TH2I)):
             logx = obj_name in ["pt_jet", "pt_jet1", "pt_jet2", "pt_mumu", 'gen_ht', 'pt_jet_response_binning', 'pt_genjet_response_binning', 'pt_jet1_unweighted', 'pt_jet_unweighted']
             rebin = 1
+            xlim = None
             if obj_name in ['pt_jet', 'pt_jet1', 'pt_jet2', 'pt_mumu']:
                 rebin = 10
+                xlim = [30, None]
             for obj in objs:
                 obj.Rebin(rebin)
             do_1D_plot(objs,
@@ -310,8 +312,27 @@ def do_comparison_plots(workdir_label_pairs, output_dir):
 
 
     # COMPARE NOMINAL DY
-    # if exists_in_all(qgc.DY_FILENAME, dirnames):
-    #     pass
+    if exists_in_all(qgc.DY_FILENAME, dirnames):
+        root_files = [cu.open_root_file(os.path.join(d, qgc.DY_FILENAME)) for d in dirnames]
+        directories = [cu.get_from_tfile(rf, "ZPlusJets") for rf in root_files]
+
+        this_sources = deepcopy(sources)
+        for s in this_sources:
+            s['label'] = "Z+Jet [MG+PY8] [%s]" % s['label']
+
+        do_all_1D_projection_plots_in_dir(directories=directories,
+                                          components_styles_dicts=this_sources,
+                                          output_dir=os.path.join(output_dir, "plots_dy_compare_kinematics_absolute"),
+                                          jet_config_str=jet_config_str,
+                                          normalise_hists=False,
+                                          bin_by='Z')
+        
+        do_all_1D_projection_plots_in_dir(directories=directories,
+                                          components_styles_dicts=this_sources,
+                                          output_dir=os.path.join(output_dir, "plots_dy_compare_kinematics_normalised"),
+                                          jet_config_str=jet_config_str,
+                                          normalise_hists=True,
+                                          bin_by='Z')
 
     # COMPARE JETHT+ZEROBIAS
     if exists_in_all(qgc.JETHT_ZB_FILENAME, dirnames):
@@ -349,8 +370,66 @@ def do_comparison_plots(workdir_label_pairs, output_dir):
     # COMPARE SINGLEMU
 
     # COMPARE HERWIG++ QCD
+    if exists_in_all(qgc.QCD_HERWIG_FILENAME, dirnames):
+        root_files = [cu.open_root_file(os.path.join(d, qgc.QCD_HERWIG_FILENAME)) for d in dirnames]
+        directories = [cu.get_from_tfile(rf, "Dijet_tighter") for rf in root_files]
+
+        this_sources = deepcopy(sources)
+        for s in this_sources:
+            s['label'] = "QCD [H++] [%s]" % s['label']
+
+        # do_all_1D_projection_plots_in_dir(directories=directories,
+        #                                   components_styles_dicts=this_sources,
+        #                                   output_dir=os.path.join(output_dir, "plots_qcd_hpp_compare_dijet_tighter_kinematics_normalised"),
+        #                                   jet_config_str=jet_config_str,
+        #                                   normalise_hists=True,
+        #                                   bin_by='ave')
+
+        # directories = [cu.get_from_tfile(rf, "Dijet_eta_ordered") for rf in root_files]
+        # do_all_1D_projection_plots_in_dir(directories=directories,
+        #                                   components_styles_dicts=this_sources,
+        #                                   output_dir=os.path.join(output_dir, "plots_qcd_hpp_compare_dijet_eta_ordered_kinematics_normalised"),
+        #                                   jet_config_str=jet_config_str,
+        #                                   normalise_hists=True,
+        #                                   bin_by='ave')
+        
+        do_all_1D_projection_plots_in_dir(directories=directories,
+                                          components_styles_dicts=this_sources,
+                                          output_dir=os.path.join(output_dir, "plots_qcd_hpp_compare_dijet_tighter_kinematics_absolute"),
+                                          jet_config_str=jet_config_str,
+                                          normalise_hists=False,
+                                          bin_by='ave')
+
+        directories = [cu.get_from_tfile(rf, "Dijet_eta_ordered") for rf in root_files]
+        do_all_1D_projection_plots_in_dir(directories=directories,
+                                          components_styles_dicts=this_sources,
+                                          output_dir=os.path.join(output_dir, "plots_qcd_hpp_compare_dijet_eta_ordered_kinematics_absolute"),
+                                          jet_config_str=jet_config_str,
+                                          normalise_hists=False,
+                                          bin_by='ave')
 
     # COMPARE HERWIG++ DY
+    if exists_in_all(qgc.DY_HERWIG_FILENAME, dirnames):
+        root_files = [cu.open_root_file(os.path.join(d, qgc.DY_HERWIG_FILENAME)) for d in dirnames]
+        directories = [cu.get_from_tfile(rf, "ZPlusJets") for rf in root_files]
+
+        this_sources = deepcopy(sources)
+        for s in this_sources:
+            s['label'] = "Z+Jet [H++] [%s]" % s['label']
+
+        do_all_1D_projection_plots_in_dir(directories=directories,
+                                          components_styles_dicts=this_sources,
+                                          output_dir=os.path.join(output_dir, "plots_dy_hpp_compare_kinematics_absolute"),
+                                          jet_config_str=jet_config_str,
+                                          normalise_hists=False,
+                                          bin_by='Z')
+        
+        do_all_1D_projection_plots_in_dir(directories=directories,
+                                          components_styles_dicts=this_sources,
+                                          output_dir=os.path.join(output_dir, "plots_dy_hpp_compare_kinematics_normalised"),
+                                          jet_config_str=jet_config_str,
+                                          normalise_hists=True,
+                                          bin_by='Z')
 
 
 if __name__ == "__main__":

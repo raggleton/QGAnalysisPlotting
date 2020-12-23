@@ -267,7 +267,7 @@ def do_jet_pt_with_var_cuts(histname, cuts, input_filename, output_filename):
 
     jet_str = pt_genjet_str if "_vs_pt_genjet_vs_" in histname else pt_str
     weight_str = "(unweighted)" if "unweighted" in histname else "(weighted)"
-    ratio_lims = None
+    ratio_lims = (0.98, 1.02) if "unweighted" in histname else None
     plot = Plot(conts, what='hist',
                 title='%s for cuts on %s %s' % (jet_str, get_var_str(histname), weight_str),
                 xtitle=None,
@@ -324,7 +324,7 @@ def do_jet_pt_rel_error_with_var_cuts(histname, cuts, input_filename, output_fil
 
     jet_str = pt_genjet_str if "_vs_pt_genjet_vs_" in histname else pt_str
     weight_str = "(unweighted)" if "unweighted" in histname else "(weighted)"
-    ratio_lims = None
+    ratio_lims = (0.98, 1.02) if "unweighted" in histname else None
     plot = Plot(conts, what='hist',
                 title='%s for cuts on %s %s' % (jet_str, get_var_str(histname), weight_str),
                 xtitle=None,
@@ -685,14 +685,15 @@ if __name__ == "__main__":
         # "workdir_102X_v3data_v2mc_ak4puppi_fixSelCutOrder_puppiJER_tightJetId_constitPt0MultPt1_weightHistsBig_noWeightCuts",
         # "workdir_102X_v3data_v2mc_ak4puppi_fixSelCutOrder_puppiJER_tightJetId_constitPt0MultPt1_weightHists_PUWeightCuts",
         # "workdir_102X_v2_ak4puppi_fixSelCutOrder_puppiJER_tightJetId_constitPt0MultPt1_PUWeightCuts",
-        "workdir_102X_v2_ak4puppi_fixSelCutOrder_puppiJER_tightJetId_constitPt0MultPt1_WeightCuts",
+        "workdir_102X_v2_ak8puppi_fixSelCutOrder_puppiJER_tightJetId_constitPt0MultPt1_PUWeightCuts",
+        # "workdir_102X_v2_ak4puppi_fixSelCutOrder_puppiJER_tightJetId_constitPt0MultPt1_WeightCuts",
     ]
 
 
     qcd_filenames = [
-        qgc.QCD_FILENAME,
-        # qgc.QCD_PYTHIA_ONLY_FILENAME,
-        # qgc.QCD_HERWIG_FILENAME,
+        # qgc.QCD_FILENAME,
+        qgc.QCD_PYTHIA_ONLY_FILENAME,
+        qgc.QCD_HERWIG_FILENAME,
     ]
 
     dy_filenames = [
@@ -746,12 +747,13 @@ if __name__ == "__main__":
                     cuts = [10, 8, 6, 4, 3, 2]
                     cuts = [100, 75, 50, 25, 10, 8, 5, 2]
                     cuts = [25, 10, 8, 5, 2]
+                    cuts = [5, 2]
                     if "PU_ptHat" in hname:
                         cuts.extend([1.5, 1, 0.5])
                     if 'pt_genjet_genHT_ratio' in hname:
                         cuts.extend([1.5, 1])
                     if 'pt_jet_genHT_ratio' in hname:
-                        cuts.extend([1.5, 1])
+                        cuts = [5, 2, 1.5, 1, 0.9, 0.8, 0.75]
                     do_jet_pt_with_var_cuts(histname=hname,
                                             cuts=cuts,
                                             input_filename=ifile,

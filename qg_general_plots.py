@@ -1082,6 +1082,9 @@ def do_mean_rms_summary_plot(entries,
         ax.yaxis.set_minor_locator(plticker.AutoMinorLocator())
 
     n_datasets = len(entries[0])
+    if n_datasets == 0:
+        print("Warning: 0 entries in do_mean_rms_summary_plot - skipping")
+        return
     bin_widths = [(x[1]-x[0])/(n_datasets) for x in bins]
 
     # Convert ROOT colors to hex for matplotlib

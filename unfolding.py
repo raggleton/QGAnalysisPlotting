@@ -1198,17 +1198,17 @@ def main():
             binning_handler = BinningHandler(generator_ptvar_binning=generator_binning,
                                              detector_ptvar_binning=detector_binning)
 
-            def zero_column_th2(h2d, column_num):
-                for iy in range(0, h2d.GetNbinsY()+2):
-                    if h2d.GetBinContent(column_num, iy) != 0:
-                        print("Zeroing (%d, %d)" % (column_num, iy))
-                    h2d.SetBinContent(column_num, iy, 0)
-                    h2d.SetBinError(column_num, iy, 0)
-
-            def zero_row_th2(h2d, row_num):
-                for ix in range(0, h2d.GetNbinsX()+2):
-                    h2d.SetBinContent(ix, row_num, 0)
-                    h2d.SetBinError(ix, row_num, 0)
+            # def zero_column_th2(h2d, column_num):
+            #     for iy in range(0, h2d.GetNbinsY()+2):
+            #         if h2d.GetBinContent(column_num, iy) != 0:
+            #             print("Zeroing (%d, %d)" % (column_num, iy))
+            #         h2d.SetBinContent(column_num, iy, 0)
+            #         h2d.SetBinError(column_num, iy, 0)
+            #
+            # def zero_row_th2(h2d, row_num):
+            #     for ix in range(0, h2d.GetNbinsX()+2):
+            #         h2d.SetBinContent(ix, row_num, 0)
+            #         h2d.SetBinError(ix, row_num, 0)
 
             # Remove last pt bin entries - detector level
             def zero_last_pt_bin_th1_reco(h):
@@ -1557,6 +1557,27 @@ def main():
                                       binning_handler=unfolder.binning_handler,
                                       **unfolder_args)
                 unfolder.set_input(**input_args())
+
+            # special one for pTD
+            # if angle.var == "jet_pTD" and jet_algo == "AK4" and region['name'] == "ZPlusJets":
+            #     print(cu.pcolors.MAGENTA + "Doing special merging for pTD..." + cu.pcolors.ENDC)
+            #     gen_bins_to_merge = [unfolder.binning_handler.physical_bin_to_global_bin(pt=151, var=0.6, binning_scheme='generator')]
+            #     unfolder = setup_merged_bin_unfolder(gen_bins_to_merge, None, unfolder)
+            #     unfolder.check_input()
+
+                # # update input args templates for future setups
+                # input_handler_args = dict(
+                #     input_hist=unfolder.input_hist,
+                #     hist_truth=unfolder.hist_truth,
+                #     hist_mc_reco=unfolder.hist_mc_reco,
+                #     hist_mc_fakes=unfolder.hist_mc_fakes
+                # )
+                # input_handler_gen_binning_args = dict(
+                #     input_hist=unfolder.input_hist_gen_binning,
+                #     hist_truth=None,
+                #     hist_mc_reco=unfolder.hist_mc_reco_gen_binning,
+                #     hist_mc_fakes=unfolder.hist_mc_fakes_gen_binning
+                # )
 
             # update some other hists
             for merge_func in th1_merge_reco_funcs:
@@ -1977,7 +1998,7 @@ def main():
                                                                       binning_obj=binning_handler.get_binning_scheme('generator'),
                                                                       ensure_nonnegative=False)
                     counter = 0
-                    max_iterations = 1
+                    max_iterations = 3
                     while len(gen_bins_to_merge) > 0 and counter < max_iterations:
                         print("********** MERGE LOOP:", counter, "***********")
                         counter += 1
@@ -2574,7 +2595,8 @@ def main():
                     exp_syst_unfolder_plotter.draw_probability_matrix(title=title, **exp_syst_plot_args)
 
                     # col_num = exp_syst_unfolder.binning_handler.physical_bin_to_global_bin(pt=151, var=0.6, binning_scheme='generator')
-                    # title = "Probability entries for gen bin %d, %s, %s region, %s, %s" % (col_num, jet_algo, region['label'], angle_str, this_syst.label)
+                    col_num = exp_syst_unfolder.binning_handler.physical_bin_to_global_bin(pt=121, var=0.6, binning_scheme='generator')
+                    title = "Probability entries for gen bin %d, %s, %s region, %s, %s" % (col_num, jet_algo, region['label'], angle_str, this_syst.label)
                     # exp_syst_unfolder_plotter.draw_probability_column(col_num, title=title, **exp_syst_plot_args)
 
                     exp_syst_unfolder.setup_normalised_results_per_pt_bin()
@@ -2792,9 +2814,10 @@ def main():
             bins_to_highlight = get_bins_to_merge_bad_probability_bins(unfolder.get_probability_matrix(), unfolder.response_map)
             unfolder_plotter.draw_probability_matrix(title=title, bins_to_highlight=bins_to_highlight, **plot_args)
 
-            col_num = unfolder.binning_handler.physical_bin_to_global_bin(pt=151, var=0.6, binning_scheme='generator')
-            title = "Probability entries for gen bin %d, %s, %s region, %s" % (col_num, jet_algo, region['label'], angle_str)
-            unfolder_plotter.draw_probability_column(col_num, title=title, **plot_args)
+            # col_num = unfolder.binning_handler.physical_bin_to_global_bin(pt=254, var=40, binning_scheme='generator')
+            # col_num = unfolder.binning_handler.physical_bin_to_global_bin(pt=121, var=0.6, binning_scheme='generator')
+            # title = "Probability entries for gen bin %d, %s, %s region, %s" % (col_num, jet_algo, region['label'], angle_str)
+            # unfolder_plotter.draw_probability_column(col_num, title=title, **plot_args)
 
             title = "%s, %s region, %s" % (jet_algo, region['label'], angle_str)
             unfolder_plotter.draw_failed_reco(title=title, **plot_args)

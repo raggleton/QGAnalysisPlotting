@@ -350,6 +350,20 @@ class DijetZPJGenPtBinnedPlotter(object):
             plot.plot("NOSTACK  E1")
             plot.get_modifier().GetYaxis().SetTitleOffset(plot.get_modifier().GetYaxis().GetTitleOffset()*1.5)
 
+            # unfolded_fit = ROOT.TF1("beta_fit_dijet_unfolded", "[2]*TMath::BetaDist(x,[0],[1])", 0, 1)
+            # unfolded_fit.SetParameter(0, 3)
+            # unfolded_fit.SetParLimits(0, 0, 100)
+            # unfolded_fit.SetParameter(1, 5)
+            # unfolded_fit.SetParLimits(1, 0, 100)
+            # unfolded_fit.SetParameter(2, .1)
+            # unfolded_fit.SetParLimits(2, 0, 1000)
+            # # fit_result = unfolded_hist.Fit(unfolded_fit, "EMSR", "", 0, 1)
+            # # fit_result.Print()
+            # unfolded_fit.SetLineColor(ROOT.kRed)
+            # unfolded_fit.SetLineWidth(2)
+            # plot.main_pad.cd()
+            # unfolded_fit.Draw("SAME")
+
             # Create dummy graphs with the same styling to put into the legend
             dummy_gr = ROOT.TGraphErrors(1, array('d', [1]), array('d', [1]), array('d', [1]), array('d', [1]))
             dummies = []  # to stop garbage collection
