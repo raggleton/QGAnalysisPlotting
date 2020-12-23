@@ -932,6 +932,13 @@ class SummaryPlotter(object):
             y_down = min(min([h.GetBinContent(i) - h.GetBinError(i) for i in range(1, h.GetNbinsX()+1)]), y_down)
         return y_up, y_down
 
+    def calc_auto_ylim(self, hists, up_padding_frac=0.2, down_padding_frac=0.2):
+        y_up, y_down = self.calc_hists_max_min(hists)
+        y_range = y_up - y_down
+        down_padding = down_padding_frac * y_range
+        up_padding = up_padding_frac * y_range
+        return y_up + up_padding, y_down - down_padding
+
     def construct_mean_rms_hist_groups(self, selections):
         """Construct mean & RMS hists for plots
 
@@ -1492,7 +1499,8 @@ class SummaryPlotter(object):
                                        lower_row_label="#splitline{Quark-enriched}{         mean}",
                                        output_file=output_file,
                                        legend_header=legend_header,
-                                       label_every_bin=False)
+                                       label_every_bin=False,
+                                       upper_lower_same_ylim=True)
 
 
     @staticmethod
@@ -1528,7 +1536,8 @@ class SummaryPlotter(object):
                                   upper_row_label="",
                                   lower_row_label="",
                                   label_every_bin=True,
-                                  lower_row_is_ratio=False):
+                                  lower_row_is_ratio=False,
+                                  upper_lower_same_ylim=False):
         """Plot 2 row summary plot showing values from choice bins
 
         `selection_groups` is a multi-level list
@@ -1585,12 +1594,18 @@ class SummaryPlotter(object):
         label_every_bin : bool, optional
             Description
         lower_row_is_ratio : bool, optional
-            Description
+            True if lower row should be made into ratio plot of simulation / data
+            Where data is the first entry in each hist group
+        upper_lower_same_ylim : bool, optional
+            Enforce same ylimit for upper and lower plots, per column
+
         TODO: move into own class to be more customisable?
 
         Raises
         ------
         RuntimeError
+            Description
+        ValueError
             Description
         """
         if lower_row_is_ratio and not self.has_data:
@@ -1732,19 +1747,23 @@ class SummaryPlotter(object):
             yax.SetLabelOffset(yax.GetLabelOffset()*factor*label_offset_fudge)
             tick_fudge = 2
             yax.SetTickLength(yax.GetTickLength()*factor*tick_fudge)
-            primary = 3
+
+            primary = 4 # 4 is the magic primary number, not 3
             secondary = 5
             # n_divisions = 510  # default
             n_divisions_opts = [primary, secondary, 0, True]
             yax.SetNdivisions(*n_divisions_opts)
 
-            # Set range using bin contents + error bars
-            y_up, y_down = self.calc_hists_max_min(upper_hist_group)
-            y_range = y_up - y_down
-            down_padding = 0.2 * y_range
-            up_padding = 0.2 * y_range
-            upper_draw_hist.SetMinimum(y_down - down_padding)
-            upper_draw_hist.SetMaximum(y_up + up_padding)
+            if upper_lower_same_ylim:
+                # Use all hists
+                y_up, y_down = self.calc_auto_ylim(upper_hist_group + lower_hist_group)
+            else:
+                # Set range using bin contents + error bars
+                y_up, y_down = self.calc_auto_ylim(upper_hist_group + lower_hist_group)
+
+            upper_draw_hist.SetMinimum(y_down)
+            upper_draw_hist.SetMaximum(y_up)
+
 
             # DO LOWER ROW
             # ------------
@@ -1803,6 +1822,7 @@ class SummaryPlotter(object):
             yax.SetLabelSize(yax.GetLabelSize()*factor*label_size_fudge)
             yax.SetLabelOffset(yax.GetLabelOffset()*factor*label_offset_fudge)
             yax.SetTickLength(yax.GetTickLength()*factor*tick_fudge)  # extra bit of fudging, probably becasue pads are sligthly different sizes
+            yax.SetNdivisions(*n_divisions_opts)
 
             # Instead of labelling every bin, replace with numbers,
             # and add key to plot
@@ -1813,21 +1833,18 @@ class SummaryPlotter(object):
                 xax.SetLabelSize(xax.GetLabelSize()*1.5)
                 xax.SetLabelOffset(xax.GetLabelOffset()*2)
 
-            # Set range using bin contents + error bars
-            y_up, y_down = self.calc_hists_max_min(lower_hist_group)
-            y_range = y_up - y_down
-            down_padding = 0.2 * y_range
-            up_padding = 0.2 * y_range
-            lower_draw_hist.SetMinimum(y_down - down_padding)
-            lower_draw_hist.SetMaximum(y_up + up_padding)
+            if not upper_lower_same_ylim:
+                y_up, y_down = self.calc_auto_ylim(lower_hist_group)
+
+            lower_draw_hist.SetMinimum(y_down)
+            lower_draw_hist.SetMaximum(y_up)
+
             if lower_row_is_ratio:
                 # avoid awkward bit where 1 is right at the top, or not even shown
+                y_range = y_up - y_down
                 min_ratio_y_max = 1. + y_range*0.1
                 if lower_draw_hist.GetMaximum() < min_ratio_y_max:
                     lower_draw_hist.SetMaximum(min_ratio_y_max)
-
-            # 4 is the magic primary number, not 3
-            yax.SetNdivisions(4, 5, 0, True)
 
             # Draw variable name
             var_latex = ROOT.TLatex()
@@ -2136,7 +2153,7 @@ if __name__ == "__main__":
     print("Reading in unfolding data from existing HDF5 file...")
     if not os.path.isfile(args.h5input):
         raise IOError("Cannot find --h5input file")
-    
+
     with pd.HDFStore(args.h5input) as store:
         df = store['df']
     print(df.head())
