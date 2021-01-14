@@ -296,7 +296,8 @@ class DijetZPJGenPtBinnedPlotter(object):
                                                   line_style=self.line_style_detector,
                                                   marker_color=self.plot_colours['dijet_colour'],
                                                   marker_style=cu.Marker.get('circle', filled=False),
-                                                  marker_size=0.75))
+                                                  marker_size=0.75,
+                                                  subplot=zpj_detector_hist if do_zpj else None))
                 dijet_entries.append(Contribution(dijet_unfolded_hist,
                                                   label='Particle-level\n%s' % (_stat_label(dijet_unfolded_mean, dijet_unfolded_mean_err, n_dp)),
                                                   line_color=self.plot_colours['dijet_colour'],
@@ -304,7 +305,8 @@ class DijetZPJGenPtBinnedPlotter(object):
                                                   line_style=1,
                                                   marker_color=self.plot_colours['dijet_colour'],
                                                   marker_style=cu.Marker.get('circle', filled=True),
-                                                  marker_size=0.75))
+                                                  marker_size=0.75,
+                                                  subplot=zpj_unfolded_hist if do_zpj else None))
 
             if do_zpj:
                 zpj_entries.append(Contribution(zpj_detector_hist,
@@ -335,11 +337,18 @@ class DijetZPJGenPtBinnedPlotter(object):
                         has_data=self.has_data,
                         ylim=[0, None],
                         )
-            plot.default_canvas_size = (600, 600)
-            plot.left_margin = 0.2
-            plot.left_title_offset_fudge_factor = 8
+            # plot.default_canvas_size = (600, 600)
+            # plot.left_margin = 0.2
+            # plot.left_title_offset_fudge_factor = 8
             plot.y_padding_max_linear = 1.8
+            plot.top_margin = 0.07
+            plot.title_start_y = 0.888
+            plot.cms_text_y = 0.94
             plot.lumi = cu.get_lumi_str(do_dijet=do_dijet, do_zpj=do_zpj)
+            if do_zpj and do_dijet:
+                plot.subplot_type = 'ratio'
+                plot.subplot_title = 'Dijet / Z+jet'
+                plot.subplot_limits = (0.25, 2.75)
 
             # disable adding objects to legend & drawing - we'll do it manually
             # since we want proper error bar
@@ -348,7 +357,9 @@ class DijetZPJGenPtBinnedPlotter(object):
             # plot.legend.SetFillColor(ROOT.kRed)
             # plot.legend.SetFillStyle(1001)
             plot.plot("NOSTACK  E1")
-            plot.get_modifier().GetYaxis().SetTitleOffset(plot.get_modifier().GetYaxis().GetTitleOffset()*1.5)
+            # plot.get_modifier().GetYaxis().SetTitleOffset(plot.get_modifier().GetYaxis().GetTitleOffset()*1.5)
+            plot.main_pad.cd()
+            plot.canvas.cd()
 
             # unfolded_fit = ROOT.TF1("beta_fit_dijet_unfolded", "[2]*TMath::BetaDist(x,[0],[1])", 0, 1)
             # unfolded_fit.SetParameter(0, 3)
@@ -367,14 +378,15 @@ class DijetZPJGenPtBinnedPlotter(object):
             # Create dummy graphs with the same styling to put into the legend
             dummy_gr = ROOT.TGraphErrors(1, array('d', [1]), array('d', [1]), array('d', [1]), array('d', [1]))
             dummies = []  # to stop garbage collection
+            dummy_entries = []  # to stop garbage collection
             label_height = 0.03
-            legend_height = 0.14
+            legend_height = 0.12
             legend_x1 = 0.54
-            legend_x2 = 0.77
+            legend_x2 = 0.75 # this doesn't really control width - legend_text_size mainly does
             label_left_offset = 0.01
-            label_text_size = 0.035
-            label_top = 0.86
-            legend_text_size = 0.032
+            label_text_size = 0.032
+            label_top = plot.title_start_y
+            legend_text_size = 0.028
             inter_region_offset = 0.025
             if do_dijet:
                 dijet_legend = plot.legend.Clone()
@@ -402,7 +414,7 @@ class DijetZPJGenPtBinnedPlotter(object):
                         dijet_legend.AddEntry(this_dummy_entry, "#splitline{%s}{%s}" % (parts[0], parts[1]), "LEP")
                     else:
                         dijet_legend.AddEntry(this_dummy_entry, cont.label, "LEP")
-                    dummies.append(this_dummy_entry)  # to avoid garbage collection
+                    dummy_entries.append(this_dummy_entry)  # to avoid garbage collection
                 dijet_legend.Draw()
                 dummies.append(dijet_legend)
                 # setup for Z+J
@@ -434,9 +446,23 @@ class DijetZPJGenPtBinnedPlotter(object):
                         zpj_legend.AddEntry(this_dummy_entry, "#splitline{%s}{%s}" % (parts[0], parts[1]), "LEP")
                     else:
                         zpj_legend.AddEntry(this_dummy_entry, cont.label, "LEP")
-                    dummies.append(this_dummy_entry)
+                    dummy_entries.append(this_dummy_entry)
                 zpj_legend.Draw()
                 dummies.append(zpj_legend)
+
+            # Add legend to ratio plot
+            plot.subplot_pad.cd()
+            plot.subplot_leg = ROOT.TLegend(0.3, 0.73, 0.9, 0.9)
+            plot.subplot_leg.SetTextSize(0.07)
+            plot.subplot_leg.SetFillStyle(0)
+            plot.subplot_leg.SetNColumns(2)
+            plot.subplot_leg.AddEntry(dummy_entries[0], "Detector-level", "LEP")
+            plot.subplot_leg.AddEntry(dummy_entries[1], "Particle-level", "LEP")
+            plot.subplot_leg.Draw()
+
+            plot.canvas.cd()
+
+
 
             parts = ['detector_unfolded',
                      'dijet' if do_dijet else None,
