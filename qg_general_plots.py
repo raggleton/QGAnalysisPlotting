@@ -431,6 +431,7 @@ def do_all_exclusive_plots_comparison(sources,
                                       title="",
                                       subplot_type=None,
                                       subplot_title=None,
+                                      subplot_limits=None,
                                       do_flav_tagged=True,
                                       show_region_labels=True,
                                       has_data=False,
@@ -682,7 +683,7 @@ def do_all_exclusive_plots_comparison(sources,
                                subplot=subplot,
                                subplot_type=subplot_type,
                                subplot_title=subplot_title,
-                               subplot_limits=None)
+                               subplot_limits=subplot_limits)
 
 
             if do_flav_plot:
@@ -701,7 +702,9 @@ def do_all_exclusive_plots_comparison(sources,
                                    subplot=subplot,
                                    subplot_type=subplot_type,
                                    subplot_title=subplot_title,
-                                   subplot_limits=(0, 2))
+                                   subplot_limits=subplot_limits)
+
+
     for source in sources:
         if 'tfile_zpj' in source:
             source['tfile_zpj'].Close()
