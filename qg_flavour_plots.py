@@ -199,7 +199,7 @@ def compare_flavour_fractions_vs_pt(input_files, dirnames, pt_bins, labels, flav
         '1-g': 'Non-gluon',
     }
     flav_str = flav_str_dict[flav]
-    ytitle = "Fraction of %s flavour %ss" % (flav_str.lower(), get_jet_str(var_prepend))
+    ytitle = "Fraction of %s %ss" % (flav_str.lower(), get_jet_str(var_prepend))
     p = Plot(contribs,
              what='graph',
              xtitle=xtitle,
