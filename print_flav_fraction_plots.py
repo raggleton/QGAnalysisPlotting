@@ -10,7 +10,7 @@ os.nice(10)
 import argparse
 
 # My stuff
-from comparator import Contribution, Plot, grab_obj
+from comparator import Contribution, Plot
 import qg_common as qgc
 import qg_general_plots as qgg
 import qg_flavour_plots as qgf

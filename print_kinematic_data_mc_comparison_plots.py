@@ -21,7 +21,7 @@ import argparse
 from copy import copy, deepcopy
 
 # My stuff
-from comparator import Contribution, Plot, grab_obj
+from comparator import Contribution, Plot
 import qg_common as qgc
 import qg_general_plots as qgg
 import common_utils as cu

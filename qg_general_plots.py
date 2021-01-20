@@ -10,7 +10,7 @@ from array import array
 from math import sqrt, log10
 
 # My stuff
-from comparator import Contribution, Plot, grab_obj
+from comparator import Contribution, Plot
 import common_utils as cu
 import qg_common as qgc
 import metric_calculators as metrics

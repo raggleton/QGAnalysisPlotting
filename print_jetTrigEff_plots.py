@@ -14,7 +14,6 @@ from bisect import bisect_left
 from copy import deepcopy
 
 # My stuff
-# from comparator import Contribution, Plot, grab_obj
 # import qg_common as qgc
 # import qg_general_plots as qgg
 import common_utils as cu
