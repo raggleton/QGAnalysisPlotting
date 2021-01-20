@@ -325,6 +325,7 @@ class Plot(object):
         self.subplot_line_color = ROOT.kBlack
         self.has_data = has_data
         self.lumi = lumi
+        self.cms_text_y = 0.915
         self.is_preliminary = is_preliminary
 
     def add_contribution(self, *contribution):
@@ -773,27 +774,26 @@ class Plot(object):
         cms_latex.SetTextAlign(ROOT.kHAlignLeft + ROOT.kVAlignBottom)
         cms_latex.SetTextFont(42)
         cms_latex.SetTextSize(self.cms_text_font_size)
-        latex_height = 0.915
         # left_offset = (self.left_margin - 0.08)  # to account for left margin, magic numbers ahoy
 
         start_x = self.left_margin + self.text_left_offset
         if self.is_preliminary:
             if self.has_data:
-                cms_latex.DrawLatex(start_x, latex_height, "#font[62]{CMS}#font[52]{ Preliminary}")
+                cms_latex.DrawLatex(start_x, self.cms_text_y, "#font[62]{CMS}#font[52]{ Preliminary}")
             else:
-                cms_latex.DrawLatex(start_x, latex_height, "#font[62]{CMS}#font[52]{ Preliminary Simulation}")
+                cms_latex.DrawLatex(start_x, self.cms_text_y, "#font[62]{CMS}#font[52]{ Preliminary Simulation}")
         else:
             if self.has_data:
-                cms_latex.DrawLatex(start_x, latex_height, "#font[62]{CMS}")
+                cms_latex.DrawLatex(start_x, self.cms_text_y, "#font[62]{CMS}")
             else:
-                cms_latex.DrawLatex(start_x, latex_height, "#font[62]{CMS}#font[52]{ Simulation}")
-        # cms_latex.DrawLatex(0.14, latex_height, "#font[62]{CMS}#font[52]{ Preliminary}")
-        # cms_latex.DrawLatex(0.14, latex_height, "#font[62]{CMS}")
+                cms_latex.DrawLatex(start_x, self.cms_text_y, "#font[62]{CMS}#font[52]{ Simulation}")
+        # cms_latex.DrawLatex(0.14, self.cms_text_y, "#font[62]{CMS}#font[52]{ Preliminary}")
+        # cms_latex.DrawLatex(0.14, self.cms_text_y, "#font[62]{CMS}")
         cms_latex.SetTextAlign(ROOT.kHAlignRight + ROOT.kVAlignBottom)
         rh_str = "13 TeV"
         if self.lumi is not None:
             rh_str = " %s fb^{-1} (%s)" % (self.lumi, rh_str)
-        cms_latex.DrawLatex(0.94, latex_height, rh_str)
+        cms_latex.DrawLatex(0.94, self.cms_text_y, rh_str)
 
         # Add title to plot
         text_latex = ROOT.TLatex()
@@ -801,7 +801,9 @@ class Plot(object):
         text_latex.SetTextFont(42)
         text_latex.SetTextSize(self.title_font_size)
         for ind, line in enumerate(self.title.split('\n')):
+            # print(self.top_margin)
             text_latex.DrawLatex(self.left_margin + self.title_left_offset + self.text_left_offset, self.title_start_y - (ind*self.title_diff_y), line)
+            # text_latex.DrawLatex(self.left_margin + self.title_left_offset + self.text_left_offset, self.title_start_y + (self.top_margin - 0.1) - (ind*self.title_diff_y), line)
 
         # Do subplot
         if self.subplot_type:
