@@ -15,6 +15,7 @@ import ROOT
 from MyStyle import My_Style
 My_Style.cd()
 import argparse
+from copy import deepcopy
 
 # My stuff
 from comparator import Contribution, Plot, grab_obj
@@ -57,10 +58,10 @@ def do_comparison_plots(workdir_label_pairs, output_dir):
     mark = cu.Marker()
     sources = [
        {
-           "root_dir": wd, 
-           'label': label, 
+           "root_dir": wd,
+           'label': label,
            "style": {
-               'line_style': 1, 
+               'line_style': 1,
                'line_color': cu.get_colour_seq(ind, total_len),
                'marker_color': cu.get_colour_seq(ind, total_len),
                'marker_style': m,
@@ -74,36 +75,79 @@ def do_comparison_plots(workdir_label_pairs, output_dir):
 
     # COMPARE NOMINAL QCD
     if exists_in_all(qgc.QCD_FILENAME, dirnames):
-        qgp.do_all_exclusive_plots_comparison(sources,
-                                              var_list=qgc.COMMON_VARS,
-                                              pt_bins=qgc.PT_BINS,
-                                              qcd_filename=qgc.QCD_FILENAME,
-                                              dj_cen_dirname="Dijet_QG_central_tighter",
-                                              dj_fwd_dirname=None,
-                                              zpj_dirname=None,
-                                              plot_dir=os.path.join(output_dir, "plots_qcd_compare_dijet_central"),
-                                              subplot_type="ratio", # will use the 1st entry by default
-                                              subplot_title="* / %s" % (sources[0]['label']),
-                                              do_flav_tagged=False,
-                                              has_data=False)
-  
-        qgp.do_all_exclusive_plots_comparison(sources,
+        # qgp.do_all_exclusive_plots_comparison(sources,
+        #                                       var_list=qgc.COMMON_VARS,
+        #                                       pt_bins=qgc.PT_BINS,
+        #                                       qcd_filename=qgc.QCD_FILENAME,
+        #                                       dj_cen_dirname="Dijet_QG_central_tighter",
+        #                                       dj_fwd_dirname=None,
+        #                                       zpj_dirname=None,
+        #                                       plot_dir=os.path.join(output_dir, "plots_qcd_compare_dijet_central"),
+        #                                       subplot_type="ratio", # will use the 1st entry by default
+        #                                       subplot_title="* / %s" % (sources[0]['label']),
+        #                                       do_flav_tagged=False,
+        #                                       has_data=False)
+
+        # qgp.do_all_exclusive_plots_comparison(sources,
+        #                                       var_list=qgc.COMMON_VARS,
+        #                                       pt_bins=qgc.PT_BINS,
+        #                                       qcd_filename=qgc.QCD_FILENAME,
+        #                                       dj_cen_dirname=None,
+        #                                       dj_fwd_dirname="Dijet_QG_forward_tighter",
+        #                                       zpj_dirname=None,
+        #                                       plot_dir=os.path.join(output_dir, "plots_qcd_compare_dijet_forward"),
+        #                                       subplot_type="ratio", # will use the 1st entry by default
+        #                                       subplot_title="* / %s" % (sources[0]['label']),
+        #                                       do_flav_tagged=False,
+        #                                       has_data=False)
+
+        # do both dijet jets together
+        # add gen level
+        gen_qcd_sources = [deepcopy(sources[0])] # only 1st one for now
+        for gd in gen_qcd_sources:
+            gd.update({
+                'dj_fwd_dirname': 'Dijet_QG_gen',
+                'label': gd['label'] + ' [Gen]'
+            })
+            style_dict = gd['style']
+            style_dict.update({'line_style': 2})
+            style_dict.update({'line_color': style_dict['line_color']+5})
+            style_dict.update({'marker_color': style_dict['marker_color']+5})
+            style_dict.update({'marker_style': style_dict['marker_style']+1})
+
+        qgp.do_all_exclusive_plots_comparison(sources + gen_qcd_sources,
                                               var_list=qgc.COMMON_VARS,
                                               pt_bins=qgc.PT_BINS,
                                               qcd_filename=qgc.QCD_FILENAME,
                                               dj_cen_dirname=None,
-                                              dj_fwd_dirname="Dijet_QG_forward_tighter",
+                                              dj_fwd_dirname="Dijet_QG_tighter",
                                               zpj_dirname=None,
-                                              plot_dir=os.path.join(output_dir, "plots_qcd_compare_dijet_forward"),
+                                              plot_dir=os.path.join(output_dir, "plots_qcd_compare_dijet"),
                                               subplot_type="ratio", # will use the 1st entry by default
                                               subplot_title="* / %s" % (sources[0]['label']),
                                               do_flav_tagged=False,
-                                              has_data=False)
+                                              has_data=False,
+                                              title=qgc.Dijet_LABEL,
+                                              show_region_labels=False)
 
     # COMPARE NOMINAL DY
-    # if exists_in_all(qgc.DY_FILENAME, dirnames):
-    #     pass
-    
+    if exists_in_all(qgc.DY_FILENAME, dirnames):
+        qgp.do_all_exclusive_plots_comparison(sources,
+                                              var_list=qgc.COMMON_VARS,
+                                              pt_bins=qgc.PT_BINS,
+                                              qcd_filename=qgc.DY_FILENAME,
+                                              dj_cen_dirname=None,
+                                              dj_fwd_dirname=None,
+                                              zpj_dirname="ZPlusJets_QG",
+                                              plot_dir=os.path.join(output_dir, "plots_dy_compare"),
+                                              subplot_type="ratio", # will use the 1st entry by default
+                                              subplot_title="* / %s" % (sources[0]['label']),
+                                              do_flav_tagged=False,
+                                              has_data=False,
+                                              title=qgc.ZpJ_LABEL,
+                                              show_region_labels=False)
+
+
     # COMPARE JETHT+ZEROBIAS
     if exists_in_all(qgc.JETHT_ZB_FILENAME, dirnames):
         qgp.do_all_exclusive_plots_comparison(sources,
@@ -118,7 +162,7 @@ def do_comparison_plots(workdir_label_pairs, output_dir):
                                               subplot_title="* / %s" % (sources[0]['label']),
                                               do_flav_tagged=False,
                                               has_data=True)
-  
+
         qgp.do_all_exclusive_plots_comparison(sources,
                                               var_list=qgc.COMMON_VARS,
                                               pt_bins=qgc.PT_BINS,
@@ -131,11 +175,11 @@ def do_comparison_plots(workdir_label_pairs, output_dir):
                                               subplot_title="* / %s" % (sources[0]['label']),
                                               do_flav_tagged=False,
                                               has_data=True)
-    
+
     # COMPARE SINGLEMU
-    
+
     # COMPARE HERWIG++ QCD
-    
+
     # COMPARE HERWIG++ DY
 
 
