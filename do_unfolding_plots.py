@@ -536,11 +536,13 @@ class GenPtBinnedPlotter(BinnedPlotter):
                 # print(mc_stats)
                 # print(alt_mc_stats)
                 nbins = unfolded_hist_bin_total_errors.GetNbinsX()
-                reduced_chi2 = mc_stats[0] / nbins
-                alt_reduced_chi2 = alt_mc_stats[0] / nbins
+                # reduced_chi2 = mc_stats[0] / nbins
+                # alt_reduced_chi2 = alt_mc_stats[0] / nbins
 
-                this_mc_style['label'] += "\n#lower[-0.1]{(#chi^{2} / N_{bins} = %g)}" % cu.nsf(reduced_chi2, 2)
-                this_alt_mc_style['label'] += "\n#lower[-0.1]{(#chi^{2} / N_{bins} = %g)}" % cu.nsf(alt_reduced_chi2, 2)
+                n_sig_fig = 2
+                chi2_template = "\n#lower[-0.1]{{(#chi^{{2}} / N_{{bins}} = {chi2:g} / {nbins:d})}}"
+                this_mc_style['label'] += chi2_template.format(chi2=cu.nsf(mc_stats[0], n_sig_fig), nbins=nbins)
+                this_alt_mc_style['label'] += chi2_template.format(chi2=cu.nsf(alt_mc_stats[0], n_sig_fig), nbins=nbins)
 
             mc_entries = [
                 Contribution(mc_gen_hist_bin, subplot=data_no_errors, **this_mc_style),
