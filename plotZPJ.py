@@ -934,7 +934,6 @@ if __name__ == "__main__":
     pt_jet1_z_ratio_str = "{ptJ} / {ptZ}".format(ptJ=pt_jet1_str, ptZ=pt_z_str)
     jet1_z_asym_str = "({ptJ} - {ptZ}) / ({ptJ} + {ptZ})".format(ptJ=pt_jet1_str, ptZ=pt_z_str)
 
-    """
     jet_label = 'AK4 jets'
 
     make_data_mc_plot(COMPONENTS,
@@ -946,6 +945,7 @@ if __name__ == "__main__":
                       do_logx=True, x_min=20, x_max=3E3,
                       do_logy=True, y_min=1E-1, y_max=1E6)
 
+    """
     make_data_mc_plot(COMPONENTS,
                       hist_name="ZPlusJets/pt_jet1",
                       x_label=pt_jet1_gev_str,
@@ -963,7 +963,7 @@ if __name__ == "__main__":
                       do_compare_shapes=True,
                       do_logx=True, x_min=20, x_max=3E3,
                       do_logy=False, y_min=0, y_max=0.4)
-
+    """
     make_data_mc_plot(COMPONENTS,
                       hist_name="ZPlusJets/pt_mumu",
                       x_label=pt_z_gev_str,
@@ -973,6 +973,7 @@ if __name__ == "__main__":
                       do_logx=True, x_min=10, x_max=3E3,
                       do_logy=True, y_min=1E-1, y_max=1E6)
 
+    """
     make_data_mc_plot(COMPONENTS,
                       hist_name="ZPlusJets/pt_mumu",
                       x_label=pt_z_gev_str,
@@ -990,9 +991,10 @@ if __name__ == "__main__":
                       do_compare_shapes=True,
                       do_logx=True, x_min=10, x_max=3E3,
                       do_logy=False, y_min=0, y_max=0.3)
-
+    """
     # exit()
 
+    """
     # Do pt-binned plots
 
     # THINGS BINNED BY PT Z
@@ -1265,97 +1267,97 @@ if __name__ == "__main__":
 
     # COMPARE MC
     # --------------------------------------------------------------------------
-    tfile_dy_amcatnlo = cu.open_root_file("%s/%s" % (zpj_dir, qgc.DY_AMCATNLO_FILENAME))
-    tfile_dy_herwig = cu.open_root_file("%s/%s" % (zpj_dir, qgc.DY_HERWIG_FILENAME))
-    tfile_dy_mg_herwig = cu.open_root_file("%s/%s" % (zpj_dir, qgc.DY_MG_HERWIG_FILENAME))
-    lw = 2
-    MC_COMPONENTS = [
-        {
-            'tfile': tfile_data,
-            'label': "Data",
-            'is_data': True,
-            'style': {
-                'fill_color': ROOT.kBlack,
-                'fill_style': 0,
-                'marker_color': ROOT.kBlack,
-                'marker_size': 1,
-                'marker_style': 20,
-                'line_color': ROOT.kBlack,
-                'line_width': 2,
-            }
-        },
-        {
-            'tfile': tfile_dy,
-            'label': "DY#rightarrowLL (MG+Pythi8)",
-            'is_data': False,
-            'is_bkg': False,
-            'style': {
-                'fill_color': ROOT.kAzure+6,
-                'marker_color': ROOT.kAzure+6,
-                'marker_size': 0,
-                'line_color': ROOT.kAzure+6,
-                'line_width': lw,
-            }
-        },
-        {
-            'tfile': tfile_dy_amcatnlo,
-            'label': "DY#rightarrowLL (aMC@NLO)",
-            'is_data': False,
-            'is_bkg': False,
-            'style': {
-                'fill_color': ROOT.kGreen+3,
-                'marker_color': ROOT.kGreen+3,
-                'marker_size': 0,
-                'line_color': ROOT.kGreen+3,
-                'line_width': lw,
-            }
-        },
-        {
-            'tfile': tfile_dy_herwig,
-            'label': "DY#rightarrowLL (Herwig++)",
-            'is_data': False,
-            'is_bkg': False,
-            'style': {
-                'fill_color': ROOT.kOrange-3,
-                'marker_color': ROOT.kOrange-3,
-                'marker_size': 0,
-                'line_color': ROOT.kOrange-3,
-                'line_width': lw,
-            }
-        },
-        {
-            'tfile': tfile_dy_mg_herwig,
-            'label': "DY#rightarrowLL (MG+Herwig++)",
-            'is_data': False,
-            'is_bkg': False,
-            'style': {
-                'fill_color': ROOT.kRed-7,
-                'marker_color': ROOT.kRed-7,
-                'marker_size': 0,
-                'line_color': ROOT.kRed-7,
-                'line_width': lw,
-            }
-        },
-    ]
-    make_binned_data_mc_plots(MC_COMPONENTS,
-                             hist_name="ZPlusJets/pt_jet1_z_ratio_vs_pt_jet1",
-                             bins=qgc.PT_BINS_ZPJ,
-                             bin_variable=pt_jet1_gev_str,
-                             x_label=pt_jet1_z_ratio_str,
-                             output_filename="%s/dy_only_zpj_ptJ_ptZ_ratio_binned_by_ptJ_shapes.pdf" % (zpj_dir),
-                             rebin=2,
-                             do_logx=False,
-                             do_logy=True,
-                             do_compare_shapes=True)
+    # tfile_dy_amcatnlo = cu.open_root_file("%s/%s" % (zpj_dir, qgc.DY_AMCATNLO_FILENAME))
+    # tfile_dy_herwig = cu.open_root_file("%s/%s" % (zpj_dir, qgc.DY_HERWIG_FILENAME))
+    # tfile_dy_mg_herwig = cu.open_root_file("%s/%s" % (zpj_dir, qgc.DY_MG_HERWIG_FILENAME))
+    # lw = 2
+    # MC_COMPONENTS = [
+    #     {
+    #         'tfile': tfile_data,
+    #         'label': "Data",
+    #         'is_data': True,
+    #         'style': {
+    #             'fill_color': ROOT.kBlack,
+    #             'fill_style': 0,
+    #             'marker_color': ROOT.kBlack,
+    #             'marker_size': 1,
+    #             'marker_style': 20,
+    #             'line_color': ROOT.kBlack,
+    #             'line_width': 2,
+    #         }
+    #     },
+    #     {
+    #         'tfile': tfile_dy,
+    #         'label': "DY#rightarrowLL (MG+Pythi8)",
+    #         'is_data': False,
+    #         'is_bkg': False,
+    #         'style': {
+    #             'fill_color': ROOT.kAzure+6,
+    #             'marker_color': ROOT.kAzure+6,
+    #             'marker_size': 0,
+    #             'line_color': ROOT.kAzure+6,
+    #             'line_width': lw,
+    #         }
+    #     },
+    #     {
+    #         'tfile': tfile_dy_amcatnlo,
+    #         'label': "DY#rightarrowLL (aMC@NLO)",
+    #         'is_data': False,
+    #         'is_bkg': False,
+    #         'style': {
+    #             'fill_color': ROOT.kGreen+3,
+    #             'marker_color': ROOT.kGreen+3,
+    #             'marker_size': 0,
+    #             'line_color': ROOT.kGreen+3,
+    #             'line_width': lw,
+    #         }
+    #     },
+    #     {
+    #         'tfile': tfile_dy_herwig,
+    #         'label': "DY#rightarrowLL (Herwig++)",
+    #         'is_data': False,
+    #         'is_bkg': False,
+    #         'style': {
+    #             'fill_color': ROOT.kOrange-3,
+    #             'marker_color': ROOT.kOrange-3,
+    #             'marker_size': 0,
+    #             'line_color': ROOT.kOrange-3,
+    #             'line_width': lw,
+    #         }
+    #     },
+    #     {
+    #         'tfile': tfile_dy_mg_herwig,
+    #         'label': "DY#rightarrowLL (MG+Herwig++)",
+    #         'is_data': False,
+    #         'is_bkg': False,
+    #         'style': {
+    #             'fill_color': ROOT.kRed-7,
+    #             'marker_color': ROOT.kRed-7,
+    #             'marker_size': 0,
+    #             'line_color': ROOT.kRed-7,
+    #             'line_width': lw,
+    #         }
+    #     },
+    # ]
+    # make_binned_data_mc_plots(MC_COMPONENTS,
+    #                          hist_name="ZPlusJets/pt_jet1_z_ratio_vs_pt_jet1",
+    #                          bins=qgc.PT_BINS_ZPJ,
+    #                          bin_variable=pt_jet1_gev_str,
+    #                          x_label=pt_jet1_z_ratio_str,
+    #                          output_filename="%s/dy_only_zpj_ptJ_ptZ_ratio_binned_by_ptJ_shapes.pdf" % (zpj_dir),
+    #                          rebin=2,
+    #                          do_logx=False,
+    #                          do_logy=True,
+    #                          do_compare_shapes=True)
 
-    make_binned_data_mc_plots(MC_COMPONENTS,
-                             hist_name="ZPlusJets/jet1_z_asym_vs_pt_jet1",
-                             bins=qgc.PT_BINS_ZPJ,
-                             bin_variable=pt_jet1_gev_str,
-                             x_label=jet1_z_asym_str,
-                             output_filename="%s/dy_only_zpj_ptJ_ptZ_asym_binned_by_ptJ_shapes.pdf" % (zpj_dir),
-                             rebin=1,
-                             leg_location=(0.75, 0.35, 0.89, 0.55),
-                             do_logx=False,
-                             do_logy=True,
-                             do_compare_shapes=True)
+    # make_binned_data_mc_plots(MC_COMPONENTS,
+    #                          hist_name="ZPlusJets/jet1_z_asym_vs_pt_jet1",
+    #                          bins=qgc.PT_BINS_ZPJ,
+    #                          bin_variable=pt_jet1_gev_str,
+    #                          x_label=jet1_z_asym_str,
+    #                          output_filename="%s/dy_only_zpj_ptJ_ptZ_asym_binned_by_ptJ_shapes.pdf" % (zpj_dir),
+    #                          rebin=1,
+    #                          leg_location=(0.75, 0.35, 0.89, 0.55),
+    #                          do_logx=False,
+    #                          do_logy=True,
+    #                          do_compare_shapes=True)
