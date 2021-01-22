@@ -2192,9 +2192,16 @@ if __name__ == "__main__":
         # Figure out YODA entries from column names
         mean_columns = [c.replace("mean_err_", '') for c in df_rivet.columns if 'mean_err_' in c]
         print(mean_columns)
-        yoda_labels = mean_columns
-        print("Setting yoda_labels to", yoda_labels)
         df = pd.merge(df, df_rivet, how='outer')
+        # sort manually, but check the ones we want are actually in the dataframe
+        yoda_labels_ideal = ['Pythia8_CP2', 'Pythia8_CP5', 'Herwig7_CH3', 'Sherpa']
+        yoda_labels = []
+        for yl in yoda_labels_ideal:
+            if yl not in mean_columns:
+                warnings.warn("Missing yoda input %s from rivet file" % yl)
+            else:
+                yoda_labels.append(yl)
+        print("Setting yoda_labels to", yoda_labels)
 
     convert_df_types(df)
     print(df.columns)
