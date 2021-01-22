@@ -1065,7 +1065,7 @@ class SummaryPlotter(object):
 
         return mean_hists, rms_hists
 
-    def plot_mean_rms_bins_summary(self, selections, output_file, legend_header=None):
+    def plot_mean_rms_bins_summary(self, selections, output_file, legend_header=None, ylims_upper=None, ylims_lower=None):
         """Make plot of mean & RMS for various selections, showing data, mc, alt mc, etc """
         print("Plotting mean_rms_bins_summary for", legend_header)
         # Get data for plots
@@ -1078,7 +1078,9 @@ class SummaryPlotter(object):
                                        upper_row_label="Mean",
                                        lower_row_label="RMS",
                                        legend_header=legend_header,
-                                       label_every_bin=False)
+                                       label_every_bin=False,
+                                       ylims_upper=ylims_upper,
+                                       ylims_lower=ylims_lower)
 
     def construct_delta_hist_groups(self, selections):
         """Construct delta hists for plots (nominal MC, & alt MC)
@@ -1459,7 +1461,7 @@ class SummaryPlotter(object):
             new_hists.append(this_group)
         return new_hists
 
-    def plot_q_vs_g_bins_summary(self, quark_selections, gluon_selections, output_file, legend_header=None):
+    def plot_q_vs_g_bins_summary(self, quark_selections, gluon_selections, output_file, legend_header=None, ylims_upper=None, ylims_lower=None):
         """Plot gluon/quark summary stats for various selections, showing data, MCs.
 
         Also show MC / Data for the various simulations.
@@ -1476,10 +1478,12 @@ class SummaryPlotter(object):
                                        output_file=output_file,
                                        legend_header=legend_header,
                                        label_every_bin=False,
-                                       lower_row_is_ratio=True)
+                                       lower_row_is_ratio=True,
+                                       ylims_upper=ylims_upper,
+                                       ylims_lower=ylims_lower)
 
 
-    def plot_q_g_mean_bins_summary(self, quark_selections, gluon_selections, output_file, legend_header=None):
+    def plot_q_g_mean_bins_summary(self, quark_selections, gluon_selections, output_file, legend_header=None, ylims=None):
         """Plot means for quark & gluon separately for various selections, showing data, MCs
 
         Like plot_mean_rms_bins_summary, but instead of RMS, bottom row is also mean,
@@ -1500,7 +1504,9 @@ class SummaryPlotter(object):
                                        output_file=output_file,
                                        legend_header=legend_header,
                                        label_every_bin=False,
-                                       upper_lower_same_ylim=True)
+                                       upper_lower_same_ylim=True,
+                                       ylims_upper=ylims,
+                                       ylims_lower=ylims)
 
 
     @staticmethod
@@ -1537,7 +1543,9 @@ class SummaryPlotter(object):
                                   lower_row_label="",
                                   label_every_bin=True,
                                   lower_row_is_ratio=False,
-                                  upper_lower_same_ylim=False):
+                                  upper_lower_same_ylim=False,
+                                  ylims_upper=None,
+                                  ylims_lower=None):
         """Plot 2 row summary plot showing values from choice bins
 
         `selection_groups` is a multi-level list
@@ -1598,6 +1606,12 @@ class SummaryPlotter(object):
             Where data is the first entry in each hist group
         upper_lower_same_ylim : bool, optional
             Enforce same ylimit for upper and lower plots, per column
+        ylims_upper : list[(float, float)], optional
+            List of y axis limits to use on upper row
+            One entry per column (i.e. variable), of a tuple of (lower, upper)
+        ylims_lower : list[(float, float)], optional
+            List of y axis limits to use on lower row
+            Ignored if upper_lower_same_ylim = True and ylims_upper is set
 
         TODO: move into own class to be more customisable?
 
@@ -1754,12 +1768,15 @@ class SummaryPlotter(object):
             n_divisions_opts = [primary, secondary, 0, True]
             yax.SetNdivisions(*n_divisions_opts)
 
-            if upper_lower_same_ylim:
-                # Use all hists
-                y_up, y_down = self.calc_auto_ylim(upper_hist_group + lower_hist_group)
+            if ylims_upper is not None:
+                y_down, y_up = ylims_upper[isel]
             else:
-                # Set range using bin contents + error bars
-                y_up, y_down = self.calc_auto_ylim(upper_hist_group + lower_hist_group)
+                if upper_lower_same_ylim:
+                    # Use all hists
+                    y_up, y_down = self.calc_auto_ylim(upper_hist_group + lower_hist_group)
+                else:
+                    # Set range using bin contents + error bars
+                    y_up, y_down = self.calc_auto_ylim(upper_hist_group + lower_hist_group)
 
             upper_draw_hist.SetMinimum(y_down)
             upper_draw_hist.SetMaximum(y_up)
@@ -1783,15 +1800,6 @@ class SummaryPlotter(object):
                 # need to have drawn hists already. now draw other things,
                 # then redraw hists on top
 
-                # create line at 1
-                ax_min, ax_max = xax.GetXmin(), xax.GetXmax()
-                line = ROOT.TLine(ax_min, 1, ax_max, 1)
-                line.SetLineWidth(2)
-                line.SetLineStyle(2)
-                line.SetLineColor(ROOT.kBlack)
-                line.Draw()
-                gc_stash.append(line)
-
                 # draw hashed area for data uncertainty
                 # Easiest way to get errors right is to do data (with 0 errors)
                 # and divide by data (with errors), as if you had MC = data with 0 error
@@ -1801,11 +1809,20 @@ class SummaryPlotter(object):
                 data_total_ratio = data_no_errors.Clone()
                 data_total_ratio.Divide(data_hist)
                 data_total_ratio.SetFillStyle(3754)
-                data_total_ratio.SetFillColor(COMMON_STYLE_DICT['data_color'])
+                data_total_ratio.SetFillColor(ROOT.kGray+1)
                 data_total_ratio.SetLineWidth(0)
                 data_total_ratio.SetMarkerSize(0)
                 data_total_ratio.Draw("E2 SAME")
                 gc_stash.append(data_total_ratio)
+
+                # create line at 1
+                ax_min, ax_max = xax.GetXmin(), xax.GetXmax()
+                line = ROOT.TLine(ax_min, 1, ax_max, 1)
+                line.SetLineWidth(2)
+                line.SetLineStyle(2)
+                line.SetLineColor(ROOT.kBlack)
+                line.Draw()
+                gc_stash.append(line)
 
                 # now draw all the other hists
                 for ind, hist in enumerate(lower_hist_group):
@@ -1833,8 +1850,14 @@ class SummaryPlotter(object):
                 xax.SetLabelSize(xax.GetLabelSize()*1.5)
                 xax.SetLabelOffset(xax.GetLabelOffset()*2)
 
-            if not upper_lower_same_ylim:
-                y_up, y_down = self.calc_auto_ylim(lower_hist_group)
+            if ylims_lower is not None:
+                y_down, y_up = ylims_lower[isel]
+            else:
+                if upper_lower_same_ylim:
+                    if ylims_upper is not None:
+                        y_down, y_up = ylims_upper[isel]
+                else:
+                    y_up, y_down = self.calc_auto_ylim(lower_hist_group)
 
             lower_draw_hist.SetMinimum(y_down)
             lower_draw_hist.SetMaximum(y_up)
@@ -2466,17 +2489,45 @@ if __name__ == "__main__":
 
         qg_legend_header = g_legend_header + "\n" + q_legend_header
 
+        # hard-coded y axis limits to ensure e.g. data w/ mg_py, h++ is same as data + other MC
+        # I CBA to try and loop over all, figure it out, etc
+        # ...re-evaluate as necessary
+        ylims_g_q_enriched_mean = [
+            (0.14, 0.42),
+            (0.07, 0.24),
+            (0.02, 0.16),
+            (0, 55),
+            (0.06, 0.38)
+        ]
+
         plotter.plot_q_g_mean_bins_summary(
             gluon_selections=g_selections,
             quark_selections=q_selections,
             legend_header=qg_legend_header,
-            output_file=os.path.join(args.outputDir, "quark_gluon_mean_summary%s.pdf" % (filename_append))
+            output_file=os.path.join(args.outputDir, "quark_gluon_mean_summary%s.pdf" % (filename_append)),
+            ylims=ylims_g_q_enriched_mean,
         )
 
+        ylims_g_q_ratio = [
+            (0.98, 1.39),
+            (0.95, 1.57),
+            (0.98, 1.65),
+            (0.96, 1.45),
+            (0.55, 1.05)
+        ]
+        ylims_g_q_data_mc_ratio = [
+            (0.98, 1.14),
+            (0.96, 1.19),
+            (0.94, 1.35),
+            (0.95, 1.18),
+            (0.77, 1.06)
+        ]
         plotter.plot_q_vs_g_bins_summary(
             gluon_selections=g_selections,
             quark_selections=q_selections,
             legend_header=qg_legend_header,
-            output_file=os.path.join(args.outputDir, "quark_gluon_data_mc_mean_summary%s.pdf" % (filename_append))
+            output_file=os.path.join(args.outputDir, "quark_gluon_data_mc_mean_summary%s.pdf" % (filename_append)),
+            ylims_upper=ylims_g_q_ratio,
+            ylims_lower=ylims_g_q_data_mc_ratio
         )
 
