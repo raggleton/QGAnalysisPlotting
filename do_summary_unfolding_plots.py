@@ -2028,9 +2028,16 @@ class SummaryPlotter(object):
 
         # Add upper/lower y labels
         text_width = left_margin
-        text_x = (0.5 * left_margin) - (0.5*text_width)
-        if "splitline" in upper_row_label:
-            text_x += 0.001
+        def _is_multiline(text):
+            return any(f in text for f in ['frac', 'splitline'])
+
+        def _calc_text_x(is_multiline=False):
+            x = (0.55 * left_margin) - (0.5*text_width)
+            if is_multiline:
+                x += 0.002
+            return x
+
+        text_x = _calc_text_x(is_multiline=_is_multiline(upper_row_label))
         # let ROOT center it, just make the box the height of the axis
         text_y_end = 1 - pad_offset_top - (pad_top_margin*upper_pads[0].GetAbsHNDC())
         text_y = 1 - pad_offset_top - upper_pads[0].GetAbsHNDC() + (upper_pads[0].GetAbsHNDC()*pad_bottom_margin)
@@ -2044,9 +2051,7 @@ class SummaryPlotter(object):
         text.SetTextSize(text_size)
         upper_text.Draw()
 
-        text_x = (0.5 * left_margin) - (0.5*text_width)
-        if "splitline" in lower_row_label:
-            text_x += 0.001
+        text_x = _calc_text_x(is_multiline=_is_multiline(lower_row_label))
         text_y = (lower_pads[0].GetAbsHNDC() * pad_bottom_margin) + pad_offset_bottom
         text_y_end = (lower_pads[0].GetAbsHNDC() * (1-pad_top_margin)) + pad_offset_bottom
         lower_text = ROOT.TPaveText(text_x, text_y, text_x+text_width, text_y_end, "NDC NB")
