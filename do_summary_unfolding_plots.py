@@ -2163,6 +2163,9 @@ if __name__ == "__main__":
     if not any([args.doMetricVsPt, args.doSummaryBins]):
         raise RuntimeError("You should do at least one of --doMetricVsPt, --doSummaryBins")
 
+    if args.onlyYodaData and not args.h5inputRivet:
+        raise RuntimeError("--onlyYodaData requires --h5inputRivet")
+
     if not args.outputDir:
         if args.h5input:
             args.outputDir = os.path.dirname(os.path.abspath(args.h5input))
