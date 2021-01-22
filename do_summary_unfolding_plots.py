@@ -1644,7 +1644,7 @@ class SummaryPlotter(object):
         # pad_left_titles_gap = 0.01 # gap between pad_left_titles and all plots
         pad_to_pad_gap = 0.0025  # gap between plot pad columns
         # how far in from the left the first plotting pad starts. used for y axis title
-        left_margin = 0.04
+        left_margin = 0.045
         # figure out width per pad - get total width available, then divide by number of pads
         pad_width = (1 - left_margin - right_margin - (pad_to_pad_gap*(n_pads - 1))) / n_pads
 
