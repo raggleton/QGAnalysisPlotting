@@ -169,7 +169,8 @@ def compare_flavour_fractions_vs_pt(input_files, dirnames, pt_bins, labels, flav
                                          metric=metric)
                 for ifile, dname in zip(input_files, dirnames)]
         N = len(bin_centers)
-        colours = [ROOT.kRed, ROOT.kBlack, ROOT.kBlue, ROOT.kGreen-3]
+        
+        colours = [ROOT.kBlack, ROOT.kBlue, ROOT.kRed, ROOT.kGreen+2]
 
         for i, fdict in enumerate(info):
             if flav in ['u', 'd', 's', 'c', 'b', 't', 'g']:

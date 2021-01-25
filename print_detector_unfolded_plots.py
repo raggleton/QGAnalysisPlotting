@@ -108,7 +108,7 @@ class DijetZPJGenPtBinnedPlotter(object):
 
         self.plot_colours = dict(
             dijet_colour=ROOT.kBlack,
-            zpj_colour=ROOT.kBlue
+            zpj_colour=ROOT.kRed
         )
         self.line_width = 2
         self.line_style_detector = 22
