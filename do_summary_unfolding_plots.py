@@ -511,7 +511,7 @@ class SummaryPlotter(object):
 
         # for plot axis titles
         if metric == "mean":
-            angle_str = "#LT %s #GT" % create_angle_label(angle, do_groomed)
+            angle_str = "#LT%s#GT" % create_angle_label(angle, do_groomed)
         elif metric == "rms":
             angle_str = "RMS %s" % create_angle_label(angle, do_groomed)
         elif metric == "delta":
@@ -1075,8 +1075,8 @@ class SummaryPlotter(object):
                                        upper_row_hist_groups=mean_hists,
                                        lower_row_hist_groups=rms_hists,
                                        output_file=output_file,
-                                       upper_row_label="Mean",
-                                       lower_row_label="RMS",
+                                       upper_row_label="#LT#lambda^{#kappa}_{#beta}#GT",
+                                       lower_row_label="RMS #lambda^{#kappa}_{#beta}",
                                        legend_header=legend_header,
                                        label_every_bin=False,
                                        ylims_upper=ylims_upper,
@@ -1473,8 +1473,18 @@ class SummaryPlotter(object):
         self.plot_two_row_bins_summary(selection_groups=quark_selections[0:1]+gluon_selections[1:], # merge the two to get correct identification of doing dijet and Z+J e.g. for lumi
                                        upper_row_hist_groups=mean_q_vs_g_ratio_hists,
                                        lower_row_hist_groups=mean_q_vs_g_data_vs_mc_ratio_hists,
-                                       upper_row_label="#splitline{Gluon mean /}{Quark mean}",
-                                       lower_row_label="#splitline{Simulation /}{     Data}",
+                                       # upper_row_label="#splitline{g-enriched mean /}{q-enriched mean}",  # don't use #frac, numerator too close to line, and kerning doesn't work
+                                       # upper_row_label="#frac{g-enriched mean}{q-enriched mean}",  # don't use #frac, numerator too close to line, and kerning doesn't work
+                                       # upper_row_label="#frac{g-enriched #LT #lambda #GT}{q-enriched #LT #lambda #GT}",  # don't use #frac, numerator too close to line, and kerning doesn't work
+                                       # upper_row_label="#splitline{g-enriched #LT #lambda #GT /}{q-enriched #LT #lambda #GT}",  # don't use #frac, numerator too close to line, and kerning doesn't work
+                                       # upper_row_label="#splitline{g-enriched #LT #lambda^{#kappa}_{#beta} #GT /}{q-enriched #LT #lambda^{#kappa}_{#beta} #GT}",  # don't use #frac, numerator too close to line, and kerning doesn't work
+                                       upper_row_label="#frac{g-enriched #LT#lambda^{#kappa}_{#beta}#GT}{#lower[0.08]{q-enriched #LT#lambda^{#kappa}_{#beta}#GT}}",  # don't use #frac, numerator too close to line, and kerning doesn't work
+                                       # upper_row_label="#splitline{#LT g-enriched #GT /}{#LT q-enriched #GT}",
+                                       # upper_row_label="#frac{#lower[-0.3]{#LT g-enriched #GT}}{#lower[0.15]{#LT q-enriched #GT}}",
+                                       # upper_row_label="#lower[0.2]{#frac{#lower[0.]{#LT g-enriched #GT}}{#lower[0.15]{#LT q-enriched #GT}}}",
+                                       # upper_row_label="#lower[0.2]{#frac{#lower[0.]{#LT g-enriched #GT}}{#lower[0.15]{#LT q-enriched #GT}}}",
+                                       # lower_row_label="#splitline{Simulation /}{     Data}",
+                                       lower_row_label="#frac{#lower[-0.08]{Simulation}}{#lower[0.15]{Data}}",
                                        output_file=output_file,
                                        legend_header=legend_header,
                                        label_every_bin=False,
@@ -1499,8 +1509,12 @@ class SummaryPlotter(object):
         self.plot_two_row_bins_summary(selection_groups=quark_selections[0:1]+gluon_selections[1:], # merge the two to get correct identification of doing dijet and Z+J e.g. for lumi
                                        upper_row_hist_groups=gluon_mean_hists,
                                        lower_row_hist_groups=quark_mean_hists,
-                                       upper_row_label="#splitline{Gluon-enriched}{         mean}",  # manually do spacing, since ROOT only left-aligns splitline
-                                       lower_row_label="#splitline{Quark-enriched}{         mean}",
+                                       # upper_row_label="#splitline{Gluon-enriched}{         mean}",  # manually do spacing, since ROOT only left-aligns splitline
+                                       # lower_row_label="#splitline{Quark-enriched}{         mean}",
+                                       # upper_row_label=" #LT Gluon-enriched #GT",  # manually do spacing, since ROOT only left-aligns splitline
+                                       # lower_row_label="#LT Quark-enriched #GT",
+                                       upper_row_label=" g-enriched #LT#lambda^{#kappa}_{#beta}#GT",  # manually do spacing, since ROOT only left-aligns splitline
+                                       lower_row_label="q-enriched #LT#lambda^{#kappa}_{#beta}#GT",
                                        output_file=output_file,
                                        legend_header=legend_header,
                                        label_every_bin=False,
@@ -1639,12 +1653,15 @@ class SummaryPlotter(object):
         upper_pads, lower_pads = [], []
         n_pads = len(selection_groups)
 
+        def _is_multiline(text):
+            return any(f in text for f in ['frac', 'splitline'])
+
         # gap between right end of plots and edge of canvas, used for legend
         right_margin = 0.19
         # pad_left_titles_gap = 0.01 # gap between pad_left_titles and all plots
         pad_to_pad_gap = 0.0025  # gap between plot pad columns
         # how far in from the left the first plotting pad starts. used for y axis title
-        left_margin = 0.045
+        left_margin = 0.055 if any(_is_multiline(t) for t in [upper_row_label, lower_row_label]) else 0.04
         # figure out width per pad - get total width available, then divide by number of pads
         pad_width = (1 - left_margin - right_margin - (pad_to_pad_gap*(n_pads - 1))) / n_pads
 
@@ -2028,13 +2045,11 @@ class SummaryPlotter(object):
 
         # Add upper/lower y labels
         text_width = left_margin
-        def _is_multiline(text):
-            return any(f in text for f in ['frac', 'splitline'])
 
         def _calc_text_x(is_multiline=False):
             x = (0.55 * left_margin) - (0.5*text_width)
             if is_multiline:
-                x += 0.002
+                x += 0.005
             return x
 
         text_x = _calc_text_x(is_multiline=_is_multiline(upper_row_label))
