@@ -1,8 +1,12 @@
 *.a
 *.d
+*.csv
 *.dat
+*.eps
 *.o
+*.gif
 *.h5
+*.json
 *.log
 *.out
 *.pcm
@@ -10,12 +14,16 @@
 *.pkl
 *.png
 *.prof
+*.ps
 *.pyc
 *.root
 *.so
 *.svg
+*.tex
 *.xml
+*.yoda
 
+.idea
 workdir*
 # unfolding_*
 notebooks
