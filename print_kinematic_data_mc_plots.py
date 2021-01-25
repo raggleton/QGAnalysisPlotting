@@ -12,6 +12,7 @@ import numpy as np
 np.seterr(all='raise')
 from array import array
 from uuid import uuid1
+from copy import deepcopy
 
 # My stuff
 from comparator import Contribution, Plot
@@ -73,6 +74,7 @@ def do_1D_plot(hists,
                xtitle=None,
                mean_rel_error=0.4,
                data_first=True,
+               show_integrals=False,
                lumi=cu.get_lumi_str(do_dijet=False, do_zpj=True)):
 
     if (len(hists) != len(components_styles_dicts)):
@@ -89,18 +91,22 @@ def do_1D_plot(hists,
 
     do_ratio = (do_ratio and len(hists) > 1)
 
-    entries = [(h.Clone(cu.get_unique_str()), csd)
-               for h, csd in zip(hists, components_styles_dicts)]
+    entries = []
+    components_styles_dicts = deepcopy(components_styles_dicts)
+    for h, csd in zip(hists, components_styles_dicts):
+        if show_integrals:
+            csd['label'] += "\nIntegral = {:.4g}".format(h.Integral())
+        entries.append((h.Clone(cu.get_unique_str()), csd))
 
     # print("Auto y limits:", min_val, max_val)
     ylim = None
-    if not normalise_hists:
-        min_val, min_bin, max_val, max_bin = cu.get_min_max_bin_contents_multiple_hists(hists)
-        if logy:
-            ylim = [0.5*min_val, 50*max_val]
-        else:
-            # ylim = [0.5*min_val, 1.5*max_val]
-            ylim = [0, 1.5*max_val]
+    # if not normalise_hists:
+    #     min_val, min_bin, max_val, max_bin = cu.get_min_max_bin_contents_multiple_hists(hists)
+    #     if logy:
+    #         ylim = [0.5*min_val, 50*max_val]
+    #     else:
+    #         # ylim = [0.5*min_val, 1.5*max_val]
+    #         ylim = [0, 1.5*max_val]
 
     xlim = "auto" # Auto calc x limits to avoid lots of empty bins
 
@@ -112,6 +118,7 @@ def do_1D_plot(hists,
     qgp.do_comparison_plot(entries,
                            output_filename,
                            # rebin=rebin,
+                           normalise_hist=normalise_hists,
                            draw_opt=draw_opt,
                            title=title,
                            xtitle=xtitle,
@@ -164,6 +171,8 @@ def do_all_1D_projection_plots_in_dir(directories,
     if "dijet" in region_str.lower():
       lumi = cu.get_lumi_str(do_dijet=True, do_zpj=False)
 
+    show_integrals = not normalise_hists
+
     for obj_name in common_list_of_obj:
 
         if "flav" in obj_name:
@@ -199,27 +208,31 @@ def do_all_1D_projection_plots_in_dir(directories,
             if title is not None:
                 this_title += "\n%s" % (title)
 
-            if obj_name in ['pt_jet', 'pt_jet1', 'pt_jet2', 'pt_mumu']:
-                # small rebinned version
-                for obj in objs:
-                    obj.Rebin(1)
+            # if obj_name in ['pt_jet', 'pt_jet1', 'pt_jet2', 'pt_mumu']:
+            #     # small rebinned version
+            #     for obj in objs:
+            #         obj.Rebin(1)
 
-            if normalise_hists:
-                do_1D_plot(objs,
-                           components_styles_dicts=components_styles_dicts,
-                           do_ratio=do_ratio,
-                           normalise_hists=normalise_hists,
-                           logx=logx,
-                           logy=True,
-                           title=this_title,
-                           mean_rel_error=-1,
-                           lumi=lumi,
-                           output_filename=os.path.join(output_dir, obj_name+".%s" % (OUTPUT_FMT)))
+            # if normalise_hists:
+            do_1D_plot(objs,
+                       components_styles_dicts=components_styles_dicts,
+                       do_ratio=do_ratio,
+                       normalise_hists=normalise_hists,
+                       logx=logx,
+                       logy=True,
+                       title=this_title,
+                       mean_rel_error=-1,
+                       lumi=lumi,
+                       show_integrals=show_integrals,
+                       output_filename=os.path.join(output_dir, obj_name+".%s" % (OUTPUT_FMT)))
 
             # do a rebinned version for some variables
-            if obj_name in ['pt_jet', 'pt_jet1', 'pt_jet2', 'pt_mumu']:
+            if obj_name in ['pt_jet', 'pt_jet1', 'pt_jet2', 'pt_mumu', 'pt_jet_response_binning']:
                 for obj in objs:
-                    obj.Rebin(20) # this is multiplied by the previous rebin
+                    if obj_name == 'pt_jet_response_binning':
+                        obj.Rebin(2) # to get gen level pt binning
+                    else:
+                        obj.Rebin(20) # this is multiplied by the previous rebin
 
                 this_title = (("{jet_algo}\n"
                                "{region_label}\n")
@@ -236,6 +249,7 @@ def do_all_1D_projection_plots_in_dir(directories,
                            logy=True,
                            title=this_title,
                            lumi=lumi,
+                           show_integrals=show_integrals,
                            output_filename=os.path.join(output_dir, obj_name+"_rebin.%s" % (OUTPUT_FMT)))
 
         else:
@@ -328,6 +342,7 @@ def do_all_1D_projection_plots_in_dir(directories,
                            xtitle=xtitle,
                            mean_rel_error=-1,
                            lumi=lumi,
+                           show_integrals=show_integrals,
                            output_filename=os.path.join(output_dir, obj_name+"_pt%dto%d.%s" % (pt_min, pt_max, OUTPUT_FMT)))
 
 
@@ -368,21 +383,21 @@ def do_dijet_distributions(root_dir, title):
     jet_config_str = qgc.extract_jet_config(root_dir)
 
     # Compare yields
-    # do_all_1D_projection_plots_in_dir(directories=directories,
-    #                                   output_dir=os.path.join(root_dir, "Dijet_data_mc_kin_comparison_absolute"),
-    # #                                   # output_dir=os.path.join(root_dir, "Dijet_data_mc_kin_comparison_absolute_pythiaOnly"),
-    #                                   # output_dir=os.path.join(root_dir, "Dijet_data_mc_kin_comparison_absolute_both"),
-    #                                   # output_dir=os.path.join(root_dir, "Dijet_data_mc_kin_comparison_absolute_everything"),
-    # #                                   # output_dir=os.path.join(root_dir, "Dijet_data_mc_kin_comparison_absolute_all"),
-    #                                   components_styles_dicts=csd,
-    #                                   region_str=qgc.Dijet_LABEL,
-    #                                   jet_config_str=jet_config_str,
-    #                                   normalise_hists=False,
-    #                                   bin_by='ave')
+    do_all_1D_projection_plots_in_dir(directories=directories,
+                                      output_dir=os.path.join(root_dir, "Dijet_data_mc_kin_comparison_absolute2"),
+    #                                   # output_dir=os.path.join(root_dir, "Dijet_data_mc_kin_comparison_absolute_pythiaOnly"),
+                                      # output_dir=os.path.join(root_dir, "Dijet_data_mc_kin_comparison_absolute_both"),
+                                      # output_dir=os.path.join(root_dir, "Dijet_data_mc_kin_comparison_absolute_everything"),
+    #                                   # output_dir=os.path.join(root_dir, "Dijet_data_mc_kin_comparison_absolute_all"),
+                                      components_styles_dicts=csd,
+                                      region_str=qgc.Dijet_LABEL,
+                                      jet_config_str=jet_config_str,
+                                      normalise_hists=False,
+                                      bin_by='ave')
 
     # Compare shapes
     do_all_1D_projection_plots_in_dir(directories=directories,
-                                      output_dir=os.path.join(root_dir, "Dijet_data_mc_kin_comparison_normalised"),
+                                      output_dir=os.path.join(root_dir, "Dijet_data_mc_kin_comparison_normalised2"),
                                       # output_dir=os.path.join(root_dir, "Dijet_data_mc_kin_comparison_normalised_pythiaOnly"),
                                       # output_dir=os.path.join(root_dir, "Dijet_data_mc_kin_comparison_normalised_both"),
                                       # output_dir=os.path.join(root_dir, "Dijet_data_mc_kin_comparison_normalised_all"),
@@ -395,7 +410,7 @@ def do_dijet_distributions(root_dir, title):
     # Do eta-ordered
     directories = [rf.get("Dijet_eta_ordered") for rf in root_files[:]]
     do_all_1D_projection_plots_in_dir(directories=directories,
-                                      output_dir=os.path.join(root_dir, "Dijet_data_mc_kin_comparison_eta_ordered_normalised"),
+                                      output_dir=os.path.join(root_dir, "Dijet_data_mc_kin_comparison_eta_ordered_normalised2"),
                                       components_styles_dicts=csd,
                                       region_str=qgc.Dijet_LABEL,
                                       jet_config_str=jet_config_str,
@@ -429,19 +444,19 @@ def do_zpj_distributions(root_dir, title):
     jet_config_str = qgc.extract_jet_config(root_dir)
 
     # Compare yields
-    # do_all_1D_projection_plots_in_dir(directories=directories,
-    #                                   output_dir=os.path.join(root_dir, "ZPlusJets_data_mc_kin_comparison_absolute"),
-    #                                   # output_dir=os.path.join(root_dir, "ZPlusJets_data_mc_kin_comparison_absolute_compareKFactor"),
-    #                                   # output_dir=os.path.join(root_dir, "ZPlusJets_data_mc_kin_comparison_absolute_all"),
-    #                                   components_styles_dicts=csd,
-    #                                   jet_config_str=jet_config_str,
-    #                                   normalise_hists=False,
-    #                                   region_str=qgc.ZpJ_LABEL,
-    #                                   bin_by='Z')
+    do_all_1D_projection_plots_in_dir(directories=directories,
+                                      output_dir=os.path.join(root_dir, "ZPlusJets_data_mc_kin_comparison_absolute2"),
+                                      # output_dir=os.path.join(root_dir, "ZPlusJets_data_mc_kin_comparison_absolute_compareKFactor"),
+                                      # output_dir=os.path.join(root_dir, "ZPlusJets_data_mc_kin_comparison_absolute_all"),
+                                      components_styles_dicts=csd,
+                                      jet_config_str=jet_config_str,
+                                      normalise_hists=False,
+                                      region_str=qgc.ZpJ_LABEL,
+                                      bin_by='Z')
 
     # Compare shapes
     do_all_1D_projection_plots_in_dir(directories=directories,
-                                      output_dir=os.path.join(root_dir, "ZPlusJets_data_mc_kin_comparison_normalised_compare"),
+                                      output_dir=os.path.join(root_dir, "ZPlusJets_data_mc_kin_comparison_normalised_compare2"),
                                       # output_dir=os.path.join(root_dir, "ZPlusJets_data_mc_kin_comparison_normalised_compare_KFactor"),
                                       # output_dir=os.path.join(root_dir, "ZPlusJets_data_mc_kin_comparison_normalised_all"),
                                       jet_config_str=jet_config_str,
