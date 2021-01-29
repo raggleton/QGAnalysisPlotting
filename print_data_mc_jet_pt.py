@@ -49,6 +49,7 @@ def do_jet_pt_plot(entries,
                    xlim=None,
                    ylim=None,
                    title="",
+                   subplot_title="",
                    rebin=1,
                    data_first=True,
                    normalise_hists=True,
@@ -95,8 +96,8 @@ def do_jet_pt_plot(entries,
                 # ytitle="#DeltaN/N" if normalise_hists else "N",
                 ytitle="#frac{dN}{dp_{T}} [events / GeV]",
                 title=title,
+                subplot_title=subplot_title,
                 subplot_type='ratio',
-                subplot_title="Simulation / Data",
                 subplot_limits=subplot_limits,
                 lumi=lumi)
     plot.y_padding_max_log = 1E4
@@ -319,6 +320,7 @@ def create_pt_hist(hist, binning, binning_uflow, pt_bin_edges, pt_bin_edges_uflo
 
 
 def do_dijet_pt_plots(workdir,
+                      subplot_vs_data=True, # otherwise vs MC
                       show_total_systematics=True,
                       show_grouped_systematics=True,
                       show_individual_systematics=True):
@@ -608,14 +610,15 @@ def do_dijet_pt_plots(workdir,
 
         # Create entries for plot
         # --------------------------------------------------------------------------
-
+        ref_hist = data_hist if subplot_vs_data else mg_hist
         entries = [
             # DATA
             [
                 data_hist,
                 dict(line_color=qgc.JETHT_COLOUR, line_width=data_line_width, fill_color=qgc.JETHT_COLOUR,
                      marker_color=qgc.JETHT_COLOUR, marker_style=cu.Marker.get(qgc.DY_MARKER), marker_size=msize*0.7,
-                     label="Data")
+                     label="Data",
+                     subplot=None if subplot_vs_data else ref_hist)
             ],
 
             # MG5+PYTHIA8 MC
@@ -624,7 +627,7 @@ def do_dijet_pt_plots(workdir,
                 dict(line_color=qgc.QCD_COLOUR, line_width=lw, fill_color=qgc.QCD_COLOUR,
                      marker_color=qgc.QCD_COLOUR, marker_style=cu.Marker.get(qgc.DY_MARKER), marker_size=mc_msize,
                      label=mgpy_label,
-                     subplot=data_hist)
+                     subplot=ref_hist if subplot_vs_data else None)
             ],
 
             # PYTHIA-only MC
@@ -633,7 +636,7 @@ def do_dijet_pt_plots(workdir,
             #     dict(line_color=qgc.QCD_COLOURS[2], line_width=lw, fill_color=qgc.QCD_COLOURS[2],
             #          marker_color=qgc.QCD_COLOURS[2], marker_style=cu.Marker.get(qgc.QCD_MARKER), marker_size=mc_msize,
             #          label="Pythia8",
-            #          subplot=data_hist)
+            #          subplot=ref_hist)
             # ],
 
             # HERWIG++
@@ -642,7 +645,7 @@ def do_dijet_pt_plots(workdir,
                 dict(line_color=qgc.HERWIGPP_QCD_COLOUR, line_width=lw, fill_color=qgc.HERWIGPP_QCD_COLOUR,
                      marker_color=qgc.HERWIGPP_QCD_COLOUR, marker_style=cu.Marker.get(qgc.DY_MARKER), marker_size=mc_msize,
                      label=hpp_label,
-                     subplot=data_hist)
+                     subplot=ref_hist)
             ]
         ]
 
@@ -703,7 +706,7 @@ def do_dijet_pt_plots(workdir,
                 entries.append([scale_dict['hist'],
                                 dict(line_color=scale_dict['colour'], line_width=lw, fill_color=scale_dict['colour'],
                                      marker_color=scale_dict['colour'], marker_size=0, label=scale_dict['label'],
-                                     subplot=data_hist)
+                                     subplot=ref_hist)
                                ])
 
         if show_grouped_systematics:
@@ -715,14 +718,14 @@ def do_dijet_pt_plots(workdir,
                     dict(line_color=scale_col, line_width=lw, line_style=1,
                          fill_color=scale_col,
                          marker_color=scale_col, marker_size=0, label="Scale up",
-                         subplot=data_hist)
+                         subplot=ref_hist)
                 ],
                 [
                     scale_hist_down.Clone(),
                     dict(line_color=scale_col2, line_width=lw, line_style=2,
                          fill_color=scale_col2,
                          marker_color=scale_col2, marker_size=0, label="Scale down",
-                         subplot=data_hist)
+                         subplot=ref_hist)
                 ],
             ])
 
@@ -747,7 +750,7 @@ def do_dijet_pt_plots(workdir,
                         dict(label=pdf_dict['label'],
                              line_color=pdf_dict['colour'],
                              # subplot=mg_hist)
-                             subplot=data_hist)
+                             subplot=ref_hist)
                     ]
                 )
 
@@ -760,14 +763,14 @@ def do_dijet_pt_plots(workdir,
                     dict(line_color=pdf_col, line_width=lw, line_style=1,
                          fill_color=pdf_col,
                          marker_color=pdf_col, marker_size=0, label="PDF up",
-                         subplot=data_hist)
+                         subplot=ref_hist)
                 ],
                 [
                     pdf_hist_down.Clone(),
                     dict(line_color=pdf_col2, line_width=lw, line_style=2,
                          fill_color=pdf_col2,
                          marker_color=pdf_col2, marker_size=0, label="PDF down",
-                         subplot=data_hist)
+                         subplot=ref_hist)
                 ],
             ])
 
@@ -820,7 +823,9 @@ def do_dijet_pt_plots(workdir,
         jet_str = "AK%s" % (radius.upper())
         title = "{jet_algo}\n{region_label}".format(jet_algo=jet_str,
                                                       region_label=region_label)
-
+        subplot_title = "* / %s" % entries[1][1]['label']
+        if subplot_vs_data:
+            subplot_title = "Simulation / Data"
         do_jet_pt_plot(entries,
                        output_filename=os.path.join(workdir, "data_mc_jet_pt/Dijet_%s/jet_pt.%s" % (region_shortname, OUTPUT_FMT)),
                        rebin=1,
@@ -828,6 +833,7 @@ def do_dijet_pt_plots(workdir,
                        ylim=(5E-3, 1E14),
                        title=title,
                        subplot_limits=(0, 2.5),
+                       subplot_title=subplot_title,
                        data_first=True,
                        normalise_hists=False,
                        # experimental_syst=exp_gr,
@@ -842,6 +848,7 @@ def do_dijet_pt_plots(workdir,
 
 
 def do_zpj_pt_plots(workdir,
+                    subplot_vs_data=True, # otherwise vs MC
                     show_total_systematics=True,
                     show_grouped_systematics=True,
                     show_individual_systematics=True):
@@ -1126,13 +1133,15 @@ def do_zpj_pt_plots(workdir,
 
     # Create entries for plot
     # --------------------------------------------------------------------------
+    ref_hist = data_hist if subplot_vs_data else mg_hist
     entries = [
         # SINGLE MU DATA
         [
             data_hist,
             dict(line_color=qgc.SINGLE_MU_COLOUR, line_width=data_line_width, fill_color=qgc.SINGLE_MU_COLOUR,
                  marker_color=qgc.SINGLE_MU_COLOUR, marker_style=cu.Marker.get(qgc.DY_MARKER), marker_size=msize*0.7,
-                 label="Data")
+                 label="Data",
+                 subplot=None if subplot_vs_data else ref_hist)
         ],
 
         # MG5+PYTHIA8 MC
@@ -1141,7 +1150,7 @@ def do_zpj_pt_plots(workdir,
             dict(line_color=qgc.DY_COLOUR, line_width=lw, fill_color=qgc.DY_COLOUR,
                  marker_color=qgc.DY_COLOUR, marker_style=cu.Marker.get(qgc.DY_MARKER), marker_size=mc_msize,
                  label=mgpy_label,
-                 subplot=data_hist)
+                 subplot=ref_hist if subplot_vs_data else None)
         ],
 
         # HERWIG++
@@ -1150,7 +1159,7 @@ def do_zpj_pt_plots(workdir,
             dict(line_color=col_hpp, line_width=lw, fill_color=col_hpp,
                  marker_color=col_hpp, marker_style=cu.Marker.get(qgc.DY_MARKER), marker_size=mc_msize,
                  label=hpp_label,
-                 subplot=data_hist)
+                 subplot=ref_hist)
         ]
     ]
 
@@ -1162,7 +1171,7 @@ def do_zpj_pt_plots(workdir,
                             dict(line_color=exp_dict['colour'], line_width=1, fill_color=exp_dict['colour'],
                                  marker_color=exp_dict['colour'], marker_size=0, label=exp_dict['label'],
                                  line_style=1 if "up" in exp_dict['label'].lower() else 2,
-                                 subplot=data_hist)
+                                 subplot=ref_hist)
                            ])
 
     if show_grouped_systematics:
@@ -1174,14 +1183,14 @@ def do_zpj_pt_plots(workdir,
                 dict(line_color=exp_col, line_width=lw, line_style=1,
                      fill_color=exp_col,
                      marker_color=exp_col, marker_size=0, label="Exp systs up",
-                     subplot=data_hist)
+                     subplot=ref_hist)
             ],
             [
                 exp_hist_down.Clone(),
                 dict(line_color=exp_col2, line_width=lw, line_style=2,
                      fill_color=exp_col2,
                      marker_color=exp_col2, marker_size=0, label="Exp systs down",
-                     subplot=data_hist)
+                     subplot=ref_hist)
             ],
         ])
 
@@ -1210,7 +1219,7 @@ def do_zpj_pt_plots(workdir,
             entries.append([scale_dict['hist'],
                             dict(line_color=scale_dict['colour'], line_width=lw, fill_color=scale_dict['colour'],
                                  marker_color=scale_dict['colour'], marker_size=0, label=scale_dict['label'],
-                                 subplot=data_hist)
+                                 subplot=ref_hist)
                            ])
 
     if show_grouped_systematics:
@@ -1222,14 +1231,14 @@ def do_zpj_pt_plots(workdir,
                 dict(line_color=scale_col, line_width=lw, line_style=1,
                      fill_color=scale_col,
                      marker_color=scale_col, marker_size=0, label="Scale up",
-                     subplot=data_hist)
+                     subplot=ref_hist)
             ],
             [
                 scale_hist_down.Clone(),
                 dict(line_color=scale_col2, line_width=lw, line_style=2,
                      fill_color=scale_col2,
                      marker_color=scale_col2, marker_size=0, label="Scale down",
-                     subplot=data_hist)
+                     subplot=ref_hist)
             ],
         ])
 
@@ -1266,14 +1275,14 @@ def do_zpj_pt_plots(workdir,
                 dict(line_color=pdf_col, line_width=lw, line_style=1,
                      fill_color=pdf_col,
                      marker_color=pdf_col, marker_size=0, label="PDF up",
-                     subplot=data_hist)
+                     subplot=ref_hist)
             ],
             [
                 pdf_hist_down.Clone(),
                 dict(line_color=pdf_col2, line_width=lw, line_style=2,
                      fill_color=pdf_col2,
                      marker_color=pdf_col2, marker_size=0, label="PDF down",
-                     subplot=data_hist)
+                     subplot=ref_hist)
             ],
         ])
 
@@ -1299,14 +1308,14 @@ def do_zpj_pt_plots(workdir,
                 dict(line_color=total_col, line_width=lw, line_style=1,
                      fill_color=total_col,
                      marker_color=total_col, marker_size=0, label="Total up",
-                     subplot=data_hist)
+                     subplot=ref_hist)
             ],
             [
                 total_hist_down.Clone(),
                 dict(line_color=total_col2, line_width=lw, line_style=2,
                      fill_color=total_col2,
                      marker_color=total_col2, marker_size=0, label="Total down",
-                     subplot=data_hist)
+                     subplot=ref_hist)
             ],
         ])
 
@@ -1328,7 +1337,9 @@ def do_zpj_pt_plots(workdir,
     jet_str = "AK%s" % (radius.upper())
     title = "{jet_algo}\n{region_label}".format(jet_algo=jet_str,
                                                   region_label=qgc.ZpJ_LABEL)
-
+    subplot_title = "* / %s" % entries[1][1]['label']
+    if subplot_vs_data:
+        subplot_title = "Simulation / Data"
     do_jet_pt_plot(entries,
                    output_filename=os.path.join(workdir, "data_mc_jet_pt/ZPlusJets/jet_pt.%s" % (OUTPUT_FMT)),
                    rebin=1,
@@ -1336,6 +1347,7 @@ def do_zpj_pt_plots(workdir,
                    ylim=(1E-2, 1E7),
                    title=title,
                    data_first=True,
+                   subplot_title=subplot_title,
                    subplot_limits=(0, 2.5),
                    # subplot_limits=(0.5, 1.5),
                    normalise_hists=False,
