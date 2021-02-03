@@ -815,6 +815,7 @@ class MyUnfolderPlotter(object):
             # pt_bin = binning.GetGlobalBinNumber(first_var+0.000001, pt_val+0.01) - 0.5 # -0.5 for offset, since the bins are centered on the bin number (e.g. bin 81 goes from 80.5 to 81.5)
             pt_bin = binning_obj.physical_bin_to_global_bin(pt=pt_val, var=first_var) - 0.5
             pt_bin_offset = 0 if do_underflow else binning_obj.get_distribution(pt_val).GetStartBin()
+            pt_bin_offset = 0
 
             # remove extra bins due to the lambda overflow, if it exists
             if not do_overflow and binning_obj.var_of:
