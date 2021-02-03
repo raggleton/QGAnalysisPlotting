@@ -881,7 +881,10 @@ class Plot(object):
 
             # If subplot y label is 2 lines, let's scale it down a bit
             if "splitline" in self.subplot_title:
-                self.subplot_container.GetYaxis().SetTitleSize(self.subplot_container.GetYaxis().GetTitleSize()*0.8)
+                factor = 0.8
+                if len(self.subplot_title) - len("#splitline{}{}") > 10:
+                    factor = 0.6
+                self.subplot_container.GetYaxis().SetTitleSize(self.subplot_container.GetYaxis().GetTitleSize()*factor)
                 self.subplot_container.GetYaxis().SetTitleOffset(self.subplot_container.GetYaxis().GetTitleOffset()*1.3)
 
             self.subplot_pad.Update()
