@@ -38,6 +38,9 @@ ROOT.gROOT.SetBatch(1)
 ROOT.TH1.SetDefaultSumw2()
 ROOT.TH1.AddDirectory(False)  # VERY IMPORTANT - somewhere, closing a TFile for exp systs deletes a map...dunno why
 
+palette_2D = ROOT.kBird
+palette_2D = ROOT.kRainBow
+palette_1D = ROOT.kRainBow
 
 pt_str = "p_{T}^{RecoJet}"
 pt_genjet_str = "p_{T}^{GenJet}"
@@ -75,6 +78,7 @@ def get_var_str(histname):
 
 
 def do_var_vs_pt_plot(histname, input_filename, output_filename):
+    ROOT.gStyle.SetPalette(palette_2D)
     tf = cu.open_root_file(input_filename)
     h3d = cu.get_from_tfile(tf, histname)
     if h3d.GetEntries() == 0:
@@ -83,6 +87,7 @@ def do_var_vs_pt_plot(histname, input_filename, output_filename):
 
     xlabel = h2d.GetXaxis().GetTitle()
     ylabel = h2d.GetYaxis().GetTitle()
+    ylabel = get_var_str(histname)
 
     # find largest var value (ie row) that has a filled bin
     h2d_ndarray = cu.th2_to_ndarray(h2d)[0]
@@ -93,23 +98,23 @@ def do_var_vs_pt_plot(histname, input_filename, output_filename):
     # remove dodgy bins with 0 width cos I was an idiot and duplicated some bins
     n_deleted = 0
     # weight bin
-    xax = h2d.GetXaxis()
-    for ix in range(1, h2d.GetNbinsX()+1):
-        if xax.GetBinWidth(ix) == 0:
-            h2d_ndarray = np.delete(h2d_ndarray, ix-1-n_deleted, axis=1)
-            xbins = np.delete(xbins, ix-1-n_deleted, axis=0)
-            n_deleted += 1
-            print("Deleting bin", ix)
+    # xax = h2d.GetXaxis()
+    # for ix in range(1, h2d.GetNbinsX()+1):
+    #     if xax.GetBinWidth(ix) == 0:
+    #         h2d_ndarray = np.delete(h2d_ndarray, ix-1-n_deleted, axis=1)
+    #         xbins = np.delete(xbins, ix-1-n_deleted, axis=0)
+    #         n_deleted += 1
+    #         print("Deleting bin", ix)
 
     # pt bin
-    n_deleted = 0
-    yax = h2d.GetYaxis()
-    for iy in range(1, h2d.GetNbinsY()+1):
-        if yax.GetBinWidth(iy) == 0:
-            h2d_ndarray = np.delete(h2d_ndarray, iy-1-n_deleted, axis=0)
-            ybins = np.delete(ybins, iy-1-n_deleted, axis=0)
-            n_deleted += 1
-            print("Deleting bin", iy)
+    # n_deleted = 0
+    # yax = h2d.GetYaxis()
+    # for iy in range(1, h2d.GetNbinsY()+1):
+    #     if yax.GetBinWidth(iy) == 0:
+    #         h2d_ndarray = np.delete(h2d_ndarray, iy-1-n_deleted, axis=0)
+    #         ybins = np.delete(ybins, iy-1-n_deleted, axis=0)
+    #         n_deleted += 1
+    #         print("Deleting bin", iy)
 
     # nonzero returns (row #s)(col #s) of non-zero elements
     # we only want the largest row #
@@ -124,11 +129,14 @@ def do_var_vs_pt_plot(histname, input_filename, output_filename):
     h2d.GetYaxis().SetRange(1, max_filled_row_ind+2)  # +1 as ROOT 1-indexed, +1 for padding
     h2d.GetYaxis().SetTitle(get_var_str(histname))
 
+    xmin = 15 if "pt_genjet_vs" in histname else 30
+    xmax = 300
+
     canv = ROOT.TCanvas(cu.get_unique_str(), "", 800, 600)
     canv.SetTicks(1, 1)
     canv.SetLeftMargin(0.12)
     canv.SetRightMargin(0.15)
-    canv.SetLogz()
+    # canv.SetLogz()
     # canv.SetLogy()
     h2d_copy = h2d.Clone()
     # h2d_copy.Scale(1, "width")
@@ -137,18 +145,72 @@ def do_var_vs_pt_plot(histname, input_filename, output_filename):
     h2d_copy.GetXaxis().SetMoreLogLabels()
     canv.SaveAs(output_filename)
 
+    zoom_ymin, zoom_ymax = 0.1, 5
+
+    h2d_copy.SetAxisRange(zoom_ymin, zoom_ymax,"Y")
+    h2d_copy.SetAxisRange(xmin, xmax, "X")
+    canv.SaveAs(output_filename.replace(".pdf", "_zoomY.pdf"))
+    
+    canv.SetLogz()
+    canv.SaveAs(output_filename.replace(".pdf", "_zoomY_logZ.pdf"))
+
     canv.SetLogz(False)
     # h2d.Scale(1, "width")
     h2d_normed = cu.make_normalised_TH2(h2d, norm_axis='x', recolour=True)
     h2d_normed.Draw("COLZ")
     h2d_normed.GetXaxis().SetMoreLogLabels()
     # h2d_normed.SetMinimum(1E-5)
+    h2d_normed.SetAxisRange(xmin, xmax, "X")
     canv.SaveAs(output_filename.replace(".pdf", "_normX.pdf"))
+    
+    h2d_normed.SetAxisRange(zoom_ymin, zoom_ymax,"Y")
+    canv.SaveAs(output_filename.replace(".pdf", "_normX_zoomY.pdf"))
+
+    # Do cumulative plot per column (ie fraction of events passing cut < y)
+    h2d_ndarray_cumsum = h2d_ndarray.cumsum(axis=0)
+    nonzero_mask = h2d_ndarray_cumsum[-1] > 0
+    h2d_ndarray_cumsum[:, nonzero_mask] /= h2d_ndarray_cumsum[-1][nonzero_mask] # scale so total is 1
+    
+    h2d_cumsum = cu.ndarray_to_th2(h2d_ndarray_cumsum, binsx=xbins, binsy=ybins)
+    # Get max row ind
+    max_filled_row_ind = int(h2d_ndarray_cumsum.argmax(axis=0).max())
+    h2d_cumsum.GetYaxis().SetRange(1, max_filled_row_ind+1)  # +1 as ROOT 1-indexed
+
+    # ROOT.gStyle.SetPalette(ROOT.kBird)
+    ylabel = "Fraction of events with " + ylabel + " < y"
+    if "unweighted" in histname:
+        h2d_cumsum.SetTitle("Unweighted;%s;%s" % (xlabel, ylabel))
+    else:
+        h2d_cumsum.SetTitle("Weighted;%s;%s" % (xlabel, ylabel))
+    canv.Clear()
+    canv.SetLogz(False)
+
+    h2d_cumsum.SetContour(20)
+    h2d_cumsum.Draw("CONT1Z")
+    h2d_cumsum.SetAxisRange(xmin, xmax, "X")
+    canv.SetLogx()
+    h2d_cumsum.GetXaxis().SetMoreLogLabels()
+    canv.SaveAs(output_filename.replace(".pdf", "_cumulY.pdf"))
+
+    h2d_cumsum.SetAxisRange(zoom_ymin, zoom_ymax,"Y")
+    canv.SaveAs(output_filename.replace(".pdf", "_cumulY_zoomY.pdf"))
+    canv.Clear()
+
+    h2d_normed.Draw("COL")
+    h2d_cumsum.Draw("CONT1Z SAME")
+    h2d_cumsum.SetAxisRange(xmin, xmax, "X")
+    canv.SetLogx()
+    h2d_cumsum.GetXaxis().SetMoreLogLabels()
+    canv.SaveAs(output_filename.replace(".pdf", "_cumulY_normX.pdf"))
+
+    h2d_cumsum.SetAxisRange(zoom_ymin, zoom_ymax,"Y")
+    canv.SaveAs(output_filename.replace(".pdf", "_cumulY_normX_zoomY.pdf"))
 
     tf.Close()
 
 
 def do_weight_vs_var_plot(histname, input_filename, output_filename):
+    ROOT.gStyle.SetPalette(palette_2D)
     tf = cu.open_root_file(input_filename)
     h3d = cu.get_from_tfile(tf, histname)
     if h3d.GetEntries() == 0:
@@ -171,6 +233,7 @@ def do_weight_vs_var_plot(histname, input_filename, output_filename):
 
 
 def do_weight_vs_var_plot_per_pt(histname, input_filename, output_filename):
+    ROOT.gStyle.SetPalette(palette_2D)
     tf = cu.open_root_file(input_filename)
     h3d = cu.get_from_tfile(tf, histname)
     if h3d.GetEntries() == 0:
@@ -203,6 +266,7 @@ def do_weight_vs_var_plot_per_pt(histname, input_filename, output_filename):
 
 
 def do_weight_vs_pt_plot(input_filename, output_filename):
+    ROOT.gStyle.SetPalette(palette_2D)
     histname = "Weight_Presel/weight_vs_pt_vs_pt_jet_qScale_ratio"
     tf = cu.open_root_file(input_filename)
     h3d = cu.get_from_tfile(tf, histname)
@@ -222,6 +286,7 @@ def do_weight_vs_pt_plot(input_filename, output_filename):
 
 
 def do_weight_vs_genjet_pt_plot(input_filename, output_filename):
+    ROOT.gStyle.SetPalette(palette_2D)
     histname = "Weight_Presel/weight_vs_pt_vs_pt_genjet_qScale_ratio"
     tf = cu.open_root_file(input_filename)
     h3d = cu.get_from_tfile(tf, histname)
@@ -242,6 +307,7 @@ def do_weight_vs_genjet_pt_plot(input_filename, output_filename):
 
 
 def do_jet_pt_with_var_cuts(histname, cuts, input_filename, output_filename):
+    ROOT.gStyle.SetPalette(palette_1D)
     tf = cu.open_root_file(input_filename)
     h3d = cu.get_from_tfile(tf, histname)
     if h3d.GetEntries() == 0:
@@ -249,25 +315,29 @@ def do_jet_pt_with_var_cuts(histname, cuts, input_filename, output_filename):
     pt_hists = []
     for cut in cuts:
         max_bin = h3d.GetZaxis().FindFixBin(cut)
-        print("cut:", cut, "bin:", max_bin)
+        # print("cut:", cut, "bin:", max_bin)
         h = h3d.ProjectionY("pt_var_lt_%g" % cut, 0, -1, 0, max_bin, "e")
         h2 = h.Clone()
+        h2.Rebin(2)
         if h.GetEntries() > 0:
             h3 = qgp.hist_divide_bin_width(h2)
         pt_hists.append(h3)
 
     line_styles = [1, 2, 3]
     n_line_styles = len(line_styles)
+    ref_ind = 0
     conts = [Contribution(h, label=" < %g" % cut,
                           line_color=cu.get_colour_seq(ind, len(cuts)),
                           line_style=line_styles[ind % n_line_styles],
+                          line_width=2,
                           marker_color=cu.get_colour_seq(ind, len(cuts)),
-                          subplot=pt_hists[-1])
+                          subplot=pt_hists[ref_ind] if ind != ref_ind else None)
              for ind, (h, cut) in enumerate(zip(pt_hists, cuts))]
 
     jet_str = pt_genjet_str if "_vs_pt_genjet_vs_" in histname else pt_str
     weight_str = "(unweighted)" if "unweighted" in histname else "(weighted)"
-    ratio_lims = (0.98, 1.02) if "unweighted" in histname else None
+    ratio_lims = (0.5, 2.5)
+    ratio_lims = None
     plot = Plot(conts, what='hist',
                 title='%s for cuts on %s %s' % (jet_str, get_var_str(histname), weight_str),
                 xtitle=None,
@@ -275,24 +345,25 @@ def do_jet_pt_with_var_cuts(histname, cuts, input_filename, output_filename):
                 # xlim=None, ylim=None,
                 legend=True,
                 subplot_type='ratio',
-                subplot_title='* / var < %g' % cuts[-1],
+                subplot_title='* / var < %g' % cuts[ref_ind],
                 subplot_limits=ratio_lims,
                 has_data=False)
     plot.y_padding_max_log = 200
-    plot.subplot_maximum_ceil = 5
+    plot.subplot_maximum_ceil = 4
     plot.subplot_maximum_floor = 1.02
     plot.subplot_minimum_ceil = 0.98
     plot.legend.SetY1(0.7)
     plot.legend.SetY2(0.89)
     plot.legend.SetX1(0.78)
     plot.legend.SetX2(0.88)
-    plot.plot("NOSTACK HISTE")
+    plot.plot("NOSTACK HISTE", "NOSTACK HIST")
     plot.set_logx(True, do_more_labels=True)
     plot.set_logy(True, do_more_labels=False)
     plot.save(output_filename)
 
 
 def do_jet_pt_rel_error_with_var_cuts(histname, cuts, input_filename, output_filename):
+    ROOT.gStyle.SetPalette(palette_1D)
     tf = cu.open_root_file(input_filename)
     h3d = cu.get_from_tfile(tf, histname)
     if h3d.GetEntries() == 0:
@@ -300,9 +371,10 @@ def do_jet_pt_rel_error_with_var_cuts(histname, cuts, input_filename, output_fil
     pt_hists = []
     for cut in cuts:
         max_bin = h3d.GetZaxis().FindFixBin(cut)
-        print("cut:", cut, "bin:", max_bin)
+        # print("cut:", cut, "bin:", max_bin)
         h = h3d.ProjectionY("pt_var_lt_%g" % cut, 0, -1, 0, max_bin, "e")
         h2 = h.Clone()
+        h2.Rebin(2)
         if h.GetEntries() > 0:
             h3 = qgp.hist_divide_bin_width(h2)
         # convert bin contents to bin error/bin contents
@@ -318,6 +390,7 @@ def do_jet_pt_rel_error_with_var_cuts(histname, cuts, input_filename, output_fil
     conts = [Contribution(h, label=" < %g" % cut,
                           line_color=cu.get_colour_seq(ind, len(cuts)),
                           line_style=line_styles[ind % n_line_styles],
+                          line_width=2,
                           marker_color=cu.get_colour_seq(ind, len(cuts)),
                           subplot=pt_hists[-1])
              for ind, (h, cut) in enumerate(zip(pt_hists, cuts))]
@@ -336,20 +409,21 @@ def do_jet_pt_rel_error_with_var_cuts(histname, cuts, input_filename, output_fil
                 subplot_limits=ratio_lims,
                 has_data=False)
     plot.y_padding_max_log = 200
-    plot.subplot_maximum_ceil = 5
+    plot.subplot_maximum_ceil = 2
     plot.subplot_maximum_floor = 1.02
     plot.subplot_minimum_ceil = 0.98
     plot.legend.SetY1(0.7)
     plot.legend.SetY2(0.89)
     plot.legend.SetX1(0.78)
     plot.legend.SetX2(0.88)
-    plot.plot("NOSTACK HISTE")
+    plot.plot("NOSTACK HISTE", "NOSTACK HIST")
     plot.set_logx(True, do_more_labels=True)
     plot.set_logy(True, do_more_labels=False)
     plot.save(output_filename)
 
 
 def do_cut_scan_per_pt(histname, input_filename, output_filename):
+    ROOT.gStyle.SetPalette(palette_1D)
     tf = cu.open_root_file(input_filename)
     h3d = cu.get_from_tfile(tf, histname)
     h3d_unweighted = cu.get_from_tfile(tf, histname+"_unweighted")
@@ -444,6 +518,7 @@ def do_cut_roc_per_pt(histname, input_filename, output_filename):
     """Plot fractional # unweighted vs fraction # weighted, for different cuts
     Not a true ROC, but kinda like one
     """
+    ROOT.gStyle.SetPalette(palette_1D)
     tf = cu.open_root_file(input_filename)
     h3d = cu.get_from_tfile(tf, histname)
     h3d_unweighted = cu.get_from_tfile(tf, histname+"_unweighted")
@@ -640,42 +715,39 @@ def do_cut_roc_per_pt(histname, input_filename, output_filename):
 if __name__ == "__main__":
     MAINDIR="/Volumes/Extreme SSD/Projects/QGAnalysis"
     histnames = [
-        "weight_vs_pt_vs_pt_jet_genHT_ratio",
-        "weight_vs_pt_vs_pt_genjet_genHT_ratio",
-        "weight_vs_pt_genjet_vs_pt_genjet_genHT_ratio",
+        # "weight_vs_pt_vs_pt_jet_genHT_ratio",
+        # "weight_vs_pt_genjet_vs_pt_jet_genHT_ratio",
+        
+        # "weight_vs_pt_vs_pt_genjet_genHT_ratio",
+        # "weight_vs_pt_genjet_vs_pt_genjet_genHT_ratio",
 
-        "weight_vs_pt_vs_pt_jet_qScale_ratio",
-        "weight_vs_pt_vs_pt_genjet_qScale_ratio",
-        "weight_vs_pt_genjet_vs_pt_genjet_qScale_ratio",
+        # "weight_vs_pt_vs_pt_jet_qScale_ratio",
+        # "weight_vs_pt_genjet_vs_pt_jet_qScale_ratio",
+        
+        # "weight_vs_pt_vs_pt_genjet_qScale_ratio",
+        # "weight_vs_pt_genjet_vs_pt_genjet_qScale_ratio",
 
         "weight_vs_pt_vs_pt_jet_ptHat_ratio",
+        "weight_vs_pt_genjet_vs_pt_jet_ptHat_ratio",
+        
         "weight_vs_pt_vs_pt_genjet_ptHat_ratio",
         "weight_vs_pt_genjet_vs_pt_genjet_ptHat_ratio",
 
-        "weight_vs_pt_vs_pt_jet_genHT_ratio_unweighted",
-        "weight_vs_pt_vs_pt_genjet_genHT_ratio_unweighted",
-        "weight_vs_pt_genjet_vs_pt_genjet_genHT_ratio_unweighted",
-
-        "weight_vs_pt_vs_pt_jet_qScale_ratio_unweighted",
-        "weight_vs_pt_vs_pt_genjet_qScale_ratio_unweighted",
-        "weight_vs_pt_genjet_vs_pt_genjet_qScale_ratio_unweighted",
-
-        "weight_vs_pt_vs_pt_jet_ptHat_ratio_unweighted",
-        "weight_vs_pt_vs_pt_genjet_ptHat_ratio_unweighted",
-        "weight_vs_pt_genjet_vs_pt_genjet_ptHat_ratio_unweighted",
-
-        "weight_vs_pt_vs_PU_ptHat_genHT_ratio",
-        "weight_vs_pt_vs_PU_ptHat_genHT_ratio_unweighted",
-
+        # "weight_vs_pt_vs_PU_ptHat_genHT_ratio",
+        # "weight_vs_pt_genjet_vs_PU_ptHat_genHT_ratio",
+        
         "weight_vs_pt_vs_PU_ptHat_ptHat_ratio",
-        "weight_vs_pt_vs_PU_ptHat_ptHat_ratio_unweighted",
-
-        "weight_vs_pt_vs_PU_ptHat_jetkT_ratio",
-        "weight_vs_pt_vs_PU_ptHat_jetkT_ratio_unweighted",
-
-        "weight_vs_pt_vs_pt_jet_jetkT_ratio_unweighted",
-        "weight_vs_pt_vs_pt_jet_jetkT_ratio",
+        "weight_vs_pt_genjet_vs_PU_ptHat_ptHat_ratio",
+        
+        # "weight_vs_pt_vs_PU_ptHat_jetkT_ratio",
+        # "weight_vs_pt_genjet_vs_PU_ptHat_jetkT_ratio",
+        
+        # "weight_vs_pt_vs_pt_jet_jetkT_ratio",
+        # "weight_vs_pt_genjet_vs_pt_jet_jetkT_ratio",
     ]
+
+    histnames_unweighted = [h + "_unweighted" for h in histnames]
+    histnames.extend(histnames_unweighted)
 
     hist_dirs = ['Weight_Presel', 'Weight_Reco_sel'][1:]
 
@@ -685,14 +757,15 @@ if __name__ == "__main__":
         # "workdir_102X_v3data_v2mc_ak4puppi_fixSelCutOrder_puppiJER_tightJetId_constitPt0MultPt1_weightHistsBig_noWeightCuts",
         # "workdir_102X_v3data_v2mc_ak4puppi_fixSelCutOrder_puppiJER_tightJetId_constitPt0MultPt1_weightHists_PUWeightCuts",
         # "workdir_102X_v2_ak4puppi_fixSelCutOrder_puppiJER_tightJetId_constitPt0MultPt1_PUWeightCuts",
-        "workdir_102X_v2_ak8puppi_fixSelCutOrder_puppiJER_tightJetId_constitPt0MultPt1_PUWeightCuts",
         # "workdir_102X_v2_ak4puppi_fixSelCutOrder_puppiJER_tightJetId_constitPt0MultPt1_WeightCuts",
+        "workdir_102X_v3data_v2mc_ak4puppi_fixSelCutOrder_puppiJER_tightJetId_constitPt0MultPt1_WeightCuts_zjAsym_genjetGhostFlav_noBCpref_genJetNoMu_fixCharged_jetIDSel_newBinning6_noPUcuts",
+        "workdir_102X_v3data_v2mc_ak4puppi_fixSelCutOrder_puppiJER_tightJetId_constitPt0MultPt1_WeightCuts_zjAsym_genjetGhostFlav_noBCpref_genJetNoMu_fixCharged_jetIDSel_newBinning6_onlyPUPtHatCut",
     ]
 
 
     qcd_filenames = [
         # qgc.QCD_FILENAME,
-        qgc.QCD_PYTHIA_ONLY_FILENAME,
+        # qgc.QCD_PYTHIA_ONLY_FILENAME,
         qgc.QCD_HERWIG_FILENAME,
     ]
 
@@ -715,6 +788,7 @@ if __name__ == "__main__":
                 continue
 
             for hist_dir in hist_dirs:
+                print("...Doing", hist_dir)
 
                 dir_append = hist_dir.lower().replace("weight_", "")
                 odir = os.path.join(MAINDIR, workdir, "var_jet_pt_weights_%s_%s" % (dir_append, filename.replace("uhh2.AnalysisModuleRunner.MC.MC_", "").replace(".root", "")))
@@ -746,10 +820,9 @@ if __name__ == "__main__":
                     cuts = [10, 9, 8, 7, 6, 5, 4, 3, 2]
                     cuts = [10, 8, 6, 4, 3, 2]
                     cuts = [100, 75, 50, 25, 10, 8, 5, 2]
-                    cuts = [25, 10, 8, 5, 2]
-                    cuts = [5, 2]
+                    cuts = [25, 10, 8, 5, 4, 3, 2]
                     if "PU_ptHat" in hname:
-                        cuts.extend([1.5, 1, 0.5])
+                        cuts = [25, 1, 0.7]
                     if 'pt_genjet_genHT_ratio' in hname:
                         cuts.extend([1.5, 1])
                     if 'pt_jet_genHT_ratio' in hname:
