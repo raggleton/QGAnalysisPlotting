@@ -2341,7 +2341,44 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         # plot.set_logy(do_more_labels=False)
         plot.save(os.path.join(output_dir, 'tunfold_vs_numpy.pdf'))
 
-    def calculate_chi2(self, one_hist, other_hist, cov_inv_matrix, cov_matrix=None, detector_space=True, ignore_underflow_bins=True, has_underflow=True, debugging_dir=None):
+    def calculate_chi2(self, one_hist, other_hist, cov_inv_matrix,
+                       cov_matrix=None, detector_space=True, ignore_underflow_bins=True,
+                       has_underflow=True, has_overflow=True, debugging_dir=None):
+        """Calculate chi2 stats between one_hist and other_hist,
+        using cov_inv_matrix: chi2 = (delta)^T * cov_inv_matrix * delta,
+        where delta = one_hist-other_hist
+
+        Can also do debugging plots, to plot individual parts of calculation
+
+        Parameters
+        ----------
+        one_hist : ROOT.TH1, numpy.ndarray
+            1D input hist
+        other_hist : ROOT.TH1, numpy.ndarray
+            Other 1D input hist
+        cov_inv_matrix : ROOT.TH2, numpy.ndarray
+            Inverse covariance matrix
+        cov_matrix : None, optional
+            Covariance matrix. Only used for plotting V^-1 * V
+        detector_space : bool, optional
+            True if working in detector binning, otherwise working in generator binning
+        ignore_underflow_bins : bool, optional
+            If True, remove pt underflow region from calculation (input hists & matrix)
+        has_underflow : bool, optional
+            If underflow bins are included in the input hists/cov matrix
+            Only used for plotting purposes
+        has_overflow : bool, optional
+            If over bins are included in the input hists/cov matrix
+            Only used for plotting purposes
+        debugging_dir : None, optional str
+            Output dir for debugging plot.
+            If None or "", plots will not be made
+
+        Returns
+        -------
+        float, int, float
+            chi2, nbins, p-value
+        """
         one_vec = one_hist
         if isinstance(one_hist, ROOT.TH1):
             one_vec, _ = cu.th1_to_ndarray(one_hist, False)
@@ -2366,9 +2403,11 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
         ndof = len(delta[0][first_signal_bin-1:])
         p = 1-scipy.stats.chi2.cdf(chi2, int(ndof))
 
+        # Print some debugging plots
+        # --------------------------
         if debugging_dir:
-            # print some debugging plots
-            debug_plotter = MyUnfolderPlotter(self, False)
+            debug_plotter = MyUnfolderPlotter(self, is_data=False)
+
             # 1D inputs
             h_one = one_hist
             h_other = other_hist
@@ -2383,12 +2422,23 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             plot = Plot(entries, what='hist', has_data=False,)
             plot.default_canvas_size = (800, 600)
             plot.plot("NOSTACK HIST")
+
+            offset = 0
+            if not has_underflow:
+                first_signal_bin = self.detector_distribution.GetStartBin() if detector_space else self.generator_distribution.GetStartBin()
+                offset = -first_signal_bin + 2
+                # print("Setting offset to", offset)
             l, t = debug_plotter.draw_pt_binning_lines(plot,
                                                        which='reco' if detector_space else 'gen',
                                                        axis='x',
                                                        do_underflow=has_underflow,
-                                                       offset=0)
+                                                       do_overflow=has_overflow,
+                                                       offset=offset)
+
             plot.save(os.path.join(debugging_dir, 'one_other_hists.pdf'))
+            
+            plot.set_logy(override_check=True)
+            plot.save(os.path.join(debugging_dir, 'one_other_hists_logY.pdf'))
 
             # Delta, with missing bins if necessary
             delta_hist = cu.ndarray_to_th1(delta, offset=0.5)
@@ -2403,12 +2453,16 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
                         )
             plot.default_canvas_size = (800, 600)
             plot.plot("NOSTACK HIST")
-            l, t = debug_plotter.draw_pt_binning_lines(plot,
-                                                       which='reco' if detector_space else 'gen',
-                                                       axis='x',
-                                                       do_underflow=has_underflow,
-                                                       offset=0)
+            l,t = debug_plotter.draw_pt_binning_lines(plot,
+                                                      which='reco' if detector_space else 'gen',
+                                                      axis='x',
+                                                      do_underflow=has_underflow,
+                                                      do_overflow=has_overflow,
+                                                      offset=offset)
             plot.save(os.path.join(debugging_dir, 'delta.pdf'))
+            
+            plot.set_logy(override_check=True)
+            plot.save(os.path.join(debugging_dir, 'delta_logY.pdf'))
 
             # Inverse Covariance matrix
             canv = ROOT.TCanvas("c", "Inverse covariance matrix V^{-1}", 800, 600)
@@ -2420,20 +2474,22 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             canv.SetLeftMargin(0.15)
             canv.SetRightMargin(0.18)
 
-            l, t = debug_plotter.draw_pt_binning_lines(obj,
-                                                       which='reco' if detector_space else 'gen',
-                                                       axis='x',
-                                                       do_underflow=has_underflow,
-                                                       do_labels_inside=False,
-                                                       do_labels_outside=True,
-                                                       offset=1)
-            l2, t2 = debug_plotter.draw_pt_binning_lines(obj,
-                                                         which='reco' if detector_space else 'gen',
-                                                         axis='y',
-                                                         do_underflow=has_underflow,
-                                                         do_labels_inside=False,
-                                                         do_labels_outside=True,
-                                                         offset=1)
+            l,t = debug_plotter.draw_pt_binning_lines(obj,
+                                                      which='reco' if detector_space else 'gen',
+                                                      axis='x',
+                                                      do_underflow=has_underflow,
+                                                      do_overflow=has_overflow,
+                                                      do_labels_inside=False,
+                                                      do_labels_outside=True,
+                                                      offset=offset+1)
+            l2,t2 = debug_plotter.draw_pt_binning_lines(obj,
+                                                        which='reco' if detector_space else 'gen',
+                                                        axis='y',
+                                                        do_underflow=has_underflow,
+                                                        do_overflow=has_overflow,
+                                                        do_labels_inside=False,
+                                                        do_labels_outside=True,
+                                                        offset=offset+1)
             canv.SaveAs(os.path.join(debugging_dir, 'cov_inv_matrix_linZ.pdf'))
 
             canv.SetLogz(1)
@@ -2454,20 +2510,22 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
                 canv.SetLeftMargin(0.15)
                 canv.SetRightMargin(0.18)
 
-                l, t = debug_plotter.draw_pt_binning_lines(obj,
-                                                           which='reco' if detector_space else 'gen',
-                                                           axis='x',
-                                                           do_underflow=has_underflow,
-                                                           do_labels_inside=False,
-                                                           do_labels_outside=True,
-                                                           offset=1)
-                l2, t2 = debug_plotter.draw_pt_binning_lines(obj,
-                                                             which='reco' if detector_space else 'gen',
-                                                             axis='y',
-                                                             do_underflow=has_underflow,
-                                                             do_labels_inside=False,
-                                                             do_labels_outside=True,
-                                                             offset=1)
+                l,t = debug_plotter.draw_pt_binning_lines(obj,
+                                                          which='reco' if detector_space else 'gen',
+                                                          axis='x',
+                                                          do_underflow=has_underflow,
+                                                          do_overflow=has_overflow,
+                                                          do_labels_inside=False,
+                                                          do_labels_outside=True,
+                                                          offset=offset+1)
+                l2,t2 = debug_plotter.draw_pt_binning_lines(obj,
+                                                            which='reco' if detector_space else 'gen',
+                                                            axis='y',
+                                                            do_underflow=has_underflow,
+                                                            do_overflow=has_overflow,
+                                                            do_labels_inside=False,
+                                                            do_labels_outside=True,
+                                                            offset=offset+1)
                 canv.SaveAs(os.path.join(debugging_dir, 'cov_matrix_linZ.pdf'))
 
                 canv.SetLogz(1)
@@ -2489,9 +2547,25 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
                 prod = v @ v_inv
                 print("product shape:", prod.shape)
                 canv.Clear()
-                prod_th2 = cu.ndarray_to_th2(prod)
+                prod_th2 = cu.ndarray_to_th2(prod, offset=0.5)
                 prod_th2.SetTitle("V V^{-1}")
                 prod_th2.Draw("COLZ")
+                l,t = debug_plotter.draw_pt_binning_lines(prod_th2,
+                                                          which='reco' if detector_space else 'gen',
+                                                          axis='x',
+                                                          do_underflow=has_underflow,
+                                                          do_overflow=has_overflow,
+                                                          do_labels_inside=False,
+                                                          do_labels_outside=True,
+                                                          offset=offset+1)
+                l2,t2 = debug_plotter.draw_pt_binning_lines(prod_th2,
+                                                            which='reco' if detector_space else 'gen',
+                                                            axis='y',
+                                                            do_underflow=has_underflow,
+                                                            do_overflow=has_overflow,
+                                                            do_labels_inside=False,
+                                                            do_labels_outside=True,
+                                                            offset=offset+1)
                 canv.SetLogz(False)
                 canv.SaveAs(os.path.join(debugging_dir, "cov_cov_inv_product_linZ.pdf"))
                 canv.SetLogz(True)
@@ -2508,16 +2582,17 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
                         what='hist',
                         xtitle='%s bin' % ('Detector' if detector_space else 'Generator'),
                         ytitle='Component of chi2 (#Delta V^{-1} #Delta)',
-                        # ylim=(0, y_max),
+                        ylim=(0, 70000),
                         has_data=False,
                         )
             plot.default_canvas_size = (800, 600)
             plot.plot("NOSTACK HIST")
-            l, t = debug_plotter.draw_pt_binning_lines(plot,
-                                                       which='reco' if detector_space else 'gen',
-                                                       axis='x',
-                                                       do_underflow=has_underflow,
-                                                       offset=0)
+            l,t = debug_plotter.draw_pt_binning_lines(plot,
+                                                      which='reco' if detector_space else 'gen',
+                                                      axis='x',
+                                                      do_underflow=has_underflow,
+                                                      do_overflow=has_overflow,
+                                                      offset=offset)
             plot.save(os.path.join(debugging_dir, 'components.pdf'))
 
             # pt_bin_edges = self.pt_bin_edges_reco if detector_space else self.pt_bin_edges_gen

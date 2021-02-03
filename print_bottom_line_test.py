@@ -14,6 +14,7 @@ import pandas as pd
 from copy import copy
 import numpy as np
 import scipy
+from scipy import optimize
 
 # for webpage
 from jinja2 import Environment, FileSystemLoader
@@ -29,7 +30,7 @@ import qg_common as qgc
 from my_unfolder import unpickle_region
 from unfolding_config import setup_regions_from_argparse
 
-pd.set_option('display.max_columns', None)
+pd.set_option('display.max_columns', 0)
 
 # Use rootpy to throw exceptions on ROOT errors, but need DANGER enabled
 # Doesn't work with python 3.8 for now
@@ -119,51 +120,74 @@ def get_bottom_line_stats(setup):
     # TODO: convert detector space to gen binning to match NdF, improve chi2
 
     # do smeared chi2
-    # folded_mc_truth_gen_binning = unfolder.get_ndarray_signal_region_no_overflow(
-    #                                   unfolder.convert_reco_binned_hist_to_gen_binned(
-    #                                       unfolder.get_folded_mc_truth()
-    #                                   ),
-    #                                   xbinning='generator',
-    #                                   ybinning=None
-    #                               )
-    # folded_alt_mc_truth_gen_binning = unfolder.get_ndarray_signal_region_no_overflow(
-    #                                       unfolder.convert_reco_binned_hist_to_gen_binned(
-    #                                         unfolder.fold_generator_level(setup.region['alt_hist_mc_gen'])
-    #                                       ),
-    #                                       xbinning='generator',
-    #                                       ybinning=None
-    #                                   )
-    # input_hist_gen_binning_bg_subtracted_signal = unfolder.get_ndarray_signal_region_no_overflow(
-    #                                                   unfolder.input_hist_gen_binning_bg_subtracted,
-    #                                                   xbinning='generator',
-    #                                                   ybinning=None
-    #                                               )
+    folded_mc_truth_gen_binning = unfolder.get_ndarray_signal_region_no_overflow(
+                                      unfolder.convert_reco_binned_hist_to_gen_binned(
+                                          unfolder.get_folded_mc_truth()
+                                      ),
+                                      xbinning='generator',
+                                      ybinning=None
+                                  )
+    folded_alt_mc_truth_gen_binning = unfolder.get_ndarray_signal_region_no_overflow(
+                                          unfolder.convert_reco_binned_hist_to_gen_binned(
+                                            unfolder.fold_generator_level(setup.region['alt_hist_mc_gen'])
+                                          ),
+                                          xbinning='generator',
+                                          ybinning=None
+                                      )
+    input_hist_gen_binning_bg_subtracted_signal = unfolder.get_ndarray_signal_region_no_overflow(
+                                                      unfolder.input_hist_gen_binning_bg_subtracted,
+                                                      xbinning='generator',
+                                                      ybinning=None
+                                                  )
+
+    x_vals = np.arange(0, folded_mc_truth_gen_binning.shape[1], 1, dtype=np.int16)
+
+    def folded_func(x, c):
+        return c * folded_mc_truth_gen_binning[0][x.astype(int)]
+
+    folded_scale, _ = optimize.curve_fit(folded_func, x_vals, input_hist_gen_binning_bg_subtracted_signal[0], p0=[1])
+    folded_scale = folded_scale[0]
+    print("folded_scale:", folded_scale)
+
+    def folded_func2(x, c):
+        return c * folded_alt_mc_truth_gen_binning[0][x.astype(int)]
+
+    alt_folded_scale, _ = optimize.curve_fit(folded_func2, x_vals, input_hist_gen_binning_bg_subtracted_signal[0], p0=[1])
+    alt_folded_scale = alt_folded_scale[0]
+    print("alt_folded_scale:", alt_folded_scale)
+
+    # folded_scale = input_hist_gen_binning_bg_subtracted_signal.sum() / folded_mc_truth_gen_binning.sum()
+    # alt_folded_scale = input_hist_gen_binning_bg_subtracted_signal.sum() / folded_alt_mc_truth_gen_binning.sum()
+
+    folded_mc_truth_gen_binning *= folded_scale
+    folded_alt_mc_truth_gen_binning *= alt_folded_scale
 
     vyy = unfolder.make_diag_cov_hist_from_errors(
               h1d=unfolder.input_hist_gen_binning_bg_subtracted,
               inverse=False
           )
-    # vyy_gen_binning = unfolder.get_ndarray_signal_region_no_overflow(
-    #                       vyy,
-    #                       xbinning='generator',
-    #                       ybinning='generator'
-    #                   )
-
+    vyy_gen_binning = unfolder.get_ndarray_signal_region_no_overflow(
+                          vyy,
+                          xbinning='generator',
+                          ybinning='generator'
+                      )
+    vyy_gen_binning *= (folded_scale * folded_scale)
     vyy_inv = unfolder.make_diag_cov_hist_from_errors(
                   h1d=unfolder.input_hist_gen_binning_bg_subtracted,
                   inverse=True
               )
-    # vyy_inv_gen_binning = unfolder.get_ndarray_signal_region_no_overflow(
-    #                           vyy_inv,
-    #                           xbinning='generator',
-    #                           ybinning='generator'
-    #                       )
+    vyy_inv_gen_binning = unfolder.get_ndarray_signal_region_no_overflow(
+                              vyy_inv,
+                              xbinning='generator',
+                              ybinning='generator'
+                          )
+    vyy_inv_gen_binning /= (folded_scale * folded_scale)
 
-    folded_mc_truth_gen_binning = unfolder.convert_reco_binned_hist_to_gen_binned(unfolder.get_folded_mc_truth())
-    folded_alt_mc_truth_gen_binning = unfolder.convert_reco_binned_hist_to_gen_binned(unfolder.fold_generator_level(setup.region['alt_hist_mc_gen']))
-    input_hist_gen_binning_bg_subtracted_signal = unfolder.input_hist_gen_binning_bg_subtracted
-    vyy_gen_binning = vyy
-    vyy_inv_gen_binning = vyy_inv
+    # folded_mc_truth_gen_binning = unfolder.convert_reco_binned_hist_to_gen_binned(unfolder.get_folded_mc_truth())
+    # folded_alt_mc_truth_gen_binning = unfolder.convert_reco_binned_hist_to_gen_binned(unfolder.fold_generator_level(setup.region['alt_hist_mc_gen']))
+    # input_hist_gen_binning_bg_subtracted_signal = unfolder.input_hist_gen_binning_bg_subtracted
+    # vyy_gen_binning = vyy
+    # vyy_inv_gen_binning = vyy_inv
 
     smeared_chi2, smeared_ndf, smeared_p = unfolder.calculate_chi2(one_hist=folded_mc_truth_gen_binning,
                                                                    # one_hist=unfolder.get_folded_mc_truth(),
@@ -176,10 +200,13 @@ def get_bottom_line_stats(setup):
                                                                    detector_space=False,
                                                                    ignore_underflow_bins=False,
                                                                    has_underflow=False,
+                                                                   has_overflow=False,
                                                                    debugging_dir=os.path.join(setup.output_dir, "smeared_chi2_gen_binning_signal"))
                                                                    # debugging_dir=None)
-    print('smeared chi2, mdf, chi2/ndf, p:', smeared_chi2, smeared_ndf, smeared_chi2/smeared_ndf, smeared_p)
-
+    print('smeared chi2, ndf, chi2/ndf, p:', smeared_chi2, smeared_ndf, smeared_chi2/smeared_ndf, smeared_p)
+    
+    vyy_gen_binning *= ((alt_folded_scale * alt_folded_scale) / (folded_scale * folded_scale))
+    vyy_inv_gen_binning /= ((alt_folded_scale * alt_folded_scale) / (folded_scale * folded_scale))
     # do for alt model
     smeared_alt_chi2, smeared_alt_ndf, smeared_alt_p = unfolder.calculate_chi2(one_hist=folded_alt_mc_truth_gen_binning,
                                                                                # one_hist=unfolder.fold_generator_level(setup.region['alt_hist_mc_gen']),
@@ -191,46 +218,87 @@ def get_bottom_line_stats(setup):
                                                                                detector_space=False,
                                                                                ignore_underflow_bins=False,
                                                                                has_underflow=False,
+                                                                               has_overflow=False,
                                                                                debugging_dir=os.path.join(setup.output_dir, "smeared_alt_chi2_gen_binning_signal"))
                                                                                # debugging_dir=None)
-    print('smeared alt chi2, mdf, chi2/ndf, p:', smeared_alt_chi2, smeared_alt_ndf, smeared_alt_chi2/smeared_alt_ndf, smeared_alt_p)
+    print('smeared alt chi2, ndf, chi2/ndf, p:', smeared_alt_chi2, smeared_alt_ndf, smeared_alt_chi2/smeared_alt_ndf, smeared_alt_p)
 
-    # unfolded_signal = unfolder.get_ndarray_signal_region_no_overflow(
-    #                       unfolder.unfolded,
-    #                       xbinning='generator',
-    #                       ybinning=None
-    #                   )
-    # hist_truth_signal = unfolder.get_ndarray_signal_region_no_overflow(
-    #                         unfolder.hist_truth,
-    #                         xbinning='generator',
-    #                         ybinning=None
-    #                     )
-    # hist_alt_truth_signal = unfolder.get_ndarray_signal_region_no_overflow(
-    #                         setup.region['alt_hist_mc_gen'],
-    #                         xbinning='generator',
-    #                         ybinning=None
-    #                     )
-    # vxx_total_signal = unfolder.get_ndarray_signal_region_no_overflow(
-    #                        # unfolder.get_ematrix_tunfold_total(),
-    #                        unfolder.get_vxx_ndarray(),  # tunfold's version
-    #                        xbinning='generator',
-    #                        ybinning='generator'
-    #                    )
+    unfolded_signal = unfolder.get_ndarray_signal_region_no_overflow(
+                          unfolder.unfolded,
+                          xbinning='generator',
+                          ybinning=None
+                      )
+    print("unfolded_signal.shape:", unfolded_signal.shape)
+
+    # Do an overall best-fit to remove normalisation effects
+    # Trick to do in scipy: define a func using hist
+    hist_truth_signal = unfolder.get_ndarray_signal_region_no_overflow(
+                            unfolder.hist_truth,
+                            xbinning='generator',
+                            ybinning=None
+                        )
+
+    # scale = unfolded_signal.sum() / hist_truth_signal.sum()
+    # print("integral fit:", scale)
+    # hist_truth_signal *= scale
+
+    x_vals = np.arange(0, hist_truth_signal.shape[1], 1, dtype=np.int16)
+
+    def signal_func(x, c):
+        return c * hist_truth_signal[0][x.astype(int)]
+
+    signal_scale, _ = optimize.curve_fit(signal_func, x_vals, unfolded_signal[0], p0=[1])
+    signal_scale = signal_scale[0]
+    print("signal_scale:", signal_scale)
+
+    hist_truth_signal *= signal_scale
+
+    hist_alt_truth_signal = unfolder.get_ndarray_signal_region_no_overflow(
+                            setup.region['alt_hist_mc_gen'],
+                            xbinning='generator',
+                            ybinning=None
+                        )
+    # alt_scale = unfolded_signal.sum() / hist_alt_truth_signal.sum()
+    # print("integral fit:", alt_scale)
+    # hist_alt_truth_signal *= alt_scale
+
+    def signal_func2(x, c):
+        return c * hist_alt_truth_signal[0][x.astype(int)]
+
+    alt_signal_scale, _ = optimize.curve_fit(signal_func2, x_vals, unfolded_signal[0], p0=[1])
+    alt_signal_scale = alt_signal_scale[0]
+    print("alt_signal_scale:", alt_signal_scale)
+
+    hist_alt_truth_signal *= alt_signal_scale
+
+
+    vxx_total_signal = unfolder.get_ndarray_signal_region_no_overflow(
+                           # unfolder.get_ematrix_tunfold_total(),
+                           unfolder.get_vxx_ndarray(),  # tunfold's version
+                           xbinning='generator',
+                           ybinning='generator'
+                       )
+    # vxx_total_signal *= (scale*scale)
+    vxx_total_signal *= (signal_scale*signal_scale)
+
 
     # vxx_total_signal_inv = np.linalg.pinv(vxx_total_signal, 1E-200)  # no need to cut down to signal region
 
     # tunfold's version
-    # vxx_total_signal_inv = unfolder.get_ndarray_signal_region_no_overflow(
-    #                           unfolder.get_vxx_inv_ndarray(),
-    #                           xbinning='generator',
-    #                           ybinning='generator'
-    #                       )
+    vxx_total_signal_inv = unfolder.get_ndarray_signal_region_no_overflow(
+                              unfolder.get_vxx_inv_ndarray(),
+                              xbinning='generator',
+                              ybinning='generator'
+                          )
 
-    unfolded_signal = unfolder.unfolded
-    hist_truth_signal = unfolder.hist_truth
-    hist_alt_truth_signal = setup.region['alt_hist_mc_gen']
-    vxx_total_signal = unfolder.get_ematrix_tunfold_total()
-    vxx_total_signal_inv = unfolder.get_vxx_inv_ndarray()
+    # vxx_total_signal_inv /= (scale*scale)
+    vxx_total_signal_inv /= (signal_scale*signal_scale)
+
+    # unfolded_signal = unfolder.unfolded
+    # hist_truth_signal = unfolder.hist_truth
+    # hist_alt_truth_signal = setup.region['alt_hist_mc_gen']
+    # vxx_total_signal = unfolder.get_ematrix_tunfold_total()
+    # vxx_total_signal_inv = unfolder.get_vxx_inv_ndarray()
 
     # do unfolded chi2
     unfolded_chi2, unfolded_ndf, unfolded_p = unfolder.calculate_chi2(one_hist=unfolded_signal,
@@ -240,10 +308,17 @@ def get_bottom_line_stats(setup):
                                                                       detector_space=False,
                                                                       ignore_underflow_bins=False,
                                                                       has_underflow=False,
+                                                                      has_overflow=False,
                                                                       debugging_dir=os.path.join(setup.output_dir, "unfolded_chi2_signal_full_inv"))
                                                                       # debugging_dir=None)
-    print('unfolded chi2, mdf, chi2/ndf, p:', unfolded_chi2, unfolded_ndf, unfolded_chi2/unfolded_ndf, unfolded_p)
+    print('unfolded chi2, ndf, chi2/ndf, p:', unfolded_chi2, unfolded_ndf, unfolded_chi2/unfolded_ndf, unfolded_p)
 
+    vxx_total_signal *= ((alt_signal_scale*alt_signal_scale) / (signal_scale*signal_scale))
+    vxx_total_signal_inv /= ((alt_signal_scale*alt_signal_scale) / (signal_scale*signal_scale))
+    
+    # vxx_total_signal *= ((alt_scale*alt_scale) / (scale*scale))
+    # vxx_total_signal_inv /= ((alt_scale*alt_scale) / (scale*scale))
+    
     # do for alt model
     unfolded_alt_chi2, unfolded_alt_ndf, unfolded_alt_p = unfolder.calculate_chi2(one_hist=unfolded_signal,
                                                                                   other_hist=hist_alt_truth_signal,
@@ -251,9 +326,10 @@ def get_bottom_line_stats(setup):
                                                                                   detector_space=False,
                                                                                   ignore_underflow_bins=False,
                                                                                   has_underflow=False,
+                                                                                  has_overflow=False,
                                                                                   debugging_dir=os.path.join(setup.output_dir, "unfolded_alt_chi2_signal_full_inv"))
                                                                                   # debugging_dir=None)
-    print('unfolded alt chi2, mdf, chi2/ndf, p:', unfolded_alt_chi2, unfolded_alt_ndf, unfolded_alt_chi2/unfolded_alt_ndf, unfolded_alt_p)
+    print('unfolded alt chi2, ndf, chi2/ndf, p:', unfolded_alt_chi2, unfolded_alt_ndf, unfolded_alt_chi2/unfolded_alt_ndf, unfolded_alt_p)
 
     return {
                 "region": setup.region['label'],
