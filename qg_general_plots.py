@@ -644,7 +644,8 @@ def do_all_exclusive_plots_comparison(sources,
                 rebin = 2
 
             xlim = None
-            if "width" in v_lower or "thrust" in v_lower: # or "pTD" in v_lower:
+            # if "width" in v_lower or "thrust" in v_lower: # or "pTD" in v_lower:
+            if "thrust" in v_lower: # or "pTD" in v_lower:
                 xlim = (0, 0.5)
             elif "multiplicity" in v_lower and "ak4" in sources[0]['root_dir'].lower():
                 xlim = (0, 100)
