@@ -110,16 +110,23 @@ def do_1D_plot(hists, output_filename, components_styles_dicts=None,
     low_bin = min([find_first_filled_bin(h)[0] for h in hists])
     xlim = [hists[0].GetBinLowEdge(low_bin-1), hists[0].GetBinLowEdge(high_bin+2)]
 
+    subplot_title = "* / %s" % contributions[0].label
+    if len(contributions[0].label) > 10:
+        # need padding to centralise it
+        padding = ' ' * int(len(contributions[0].label)/2)
+        subplot_title = "#splitline{%s* /%s}{%s}" % (padding, padding, contributions[0].label)
+
     p = Plot(contributions, what='hist',
              ytitle="#DeltaN/N" if normalise_hists else "N",
              title=title,
              xlim=xlim,
              ylim=ylim,
              subplot_type="ratio" if do_ratio else None,
-             subplot_title="* / %s" % contributions[0].label,
+             subplot_title=subplot_title,
              subplot=contributions[0],
              # subplot_limits=(0.5, 1.5),
-             subplot_limits=(0.25, 1.75) if logy else (0.5, 1.5),
+             # subplot_limits=(0, 2) if logy else (0.5, 1.5),
+             subplot_limits=(0, 2.5) if logy else (0.5, 1.5),
              )
     # p.legend.SetX1(0.55)
     # # p.legend.SetX2(0.95)
@@ -199,19 +206,25 @@ def do_all_1D_projection_plots_in_dir(directories,
 
         # Ignore TH1s
         if not isinstance(objs[0], (ROOT.TH2F, ROOT.TH2D, ROOT.TH2I)):
-            logx = obj_name in ["pt_jet", "pt_jet1", "pt_jet2", "pt_mumu", 'gen_ht', 'pt_jet_response_binning', 'pt_genjet_response_binning', 'pt_jet1_unweighted', 'pt_jet_unweighted']
-            rebin = 1
-            xlim = None
-            if obj_name in ['pt_jet', 'pt_jet1', 'pt_jet2', 'pt_mumu']:
-                rebin = 10
-                xlim = [30, None]
-            for obj in objs:
-                obj.Rebin(rebin)
+            logx = obj_name in ["pt_jet", "pt_jet1", "pt_jet2", "pt_mumu", 'gen_ht', 
+                                'pt_jet_response_binning', 'pt_genjet_response_binning', 
+                                'pt_jet1_unweighted', 'pt_jet_unweighted', 'pt_dijet_ave', 'ptHat']
             do_1D_plot(objs,
                        components_styles_dicts=components_styles_dicts,
                        draw_opts=draw_opts, do_ratio=do_ratio, normalise_hists=normalise_hists, logy=True,
                        title=jet_config_str, logx=logx,
                        output_filename=os.path.join(output_dir, obj_name+".%s" % (OUTPUT_FMT)))
+
+            # do rebinned version for some variables
+            if obj_name in ['pt_jet', 'pt_jet1', 'pt_jet2', 'pt_mumu']:
+                rebin = 5
+                for obj in objs:
+                    obj.Rebin(rebin)
+                do_1D_plot(objs,
+                           components_styles_dicts=components_styles_dicts,
+                           draw_opts=draw_opts, do_ratio=do_ratio, normalise_hists=normalise_hists, logy=True,
+                           title=jet_config_str, logx=logx,
+                           output_filename=os.path.join(output_dir, obj_name+"_rebin.%s" % (OUTPUT_FMT)))
         else:
 
             for pt_min, pt_max in pt_bins:
@@ -278,7 +291,7 @@ def do_comparison_plots(workdir_label_pairs, output_dir):
            }
 
        }
-       for ind, ((wd, label), m) in enumerate(zip(workdir_label_pairs, mark.cycle()))
+       for ind, ((wd, label), m) in enumerate(zip(workdir_label_pairs, mark.cycle(cycle_filling=True)))
     ]
 
     jet_config_str = qgc.extract_jet_config(dirnames[0])
@@ -288,6 +301,7 @@ def do_comparison_plots(workdir_label_pairs, output_dir):
 
     # COMPARE NOMINAL QCD
     if exists_in_all(qgc.QCD_FILENAME, dirnames):
+        print("Found", qgc.QCD_FILENAME, "in all dirs")
         root_files = [cu.open_root_file(os.path.join(d, qgc.QCD_FILENAME)) for d in dirnames]
         directories = [cu.get_from_tfile(rf, "Dijet_tighter") for rf in root_files]
 
@@ -336,6 +350,7 @@ def do_comparison_plots(workdir_label_pairs, output_dir):
 
     # COMPARE JETHT+ZEROBIAS
     if exists_in_all(qgc.JETHT_ZB_FILENAME, dirnames):
+        print("Found", qgc.JETHT_ZB_FILENAME, "in all dirs")
         root_files = [cu.open_root_file(os.path.join(d, qgc.JETHT_ZB_FILENAME)) for d in dirnames]
         directories = [cu.get_from_tfile(rf, "Dijet_tighter") for rf in root_files]
 
@@ -447,7 +462,7 @@ if __name__ == "__main__":
                         help="Directory to put output plot dirs into. Default is workdir.",
                         default=None)
     args = parser.parse_args()
-    print(args)
+    # print(args)
 
     if args.output is None:
         args.output = args.workdir[0]
