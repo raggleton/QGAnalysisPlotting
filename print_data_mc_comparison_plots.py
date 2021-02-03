@@ -69,7 +69,7 @@ def do_comparison_plots(workdir_label_pairs, output_dir):
            }
 
        }
-       for ind, ((wd, label), m) in enumerate(zip(workdir_label_pairs, mark.cycle()))
+       for ind, ((wd, label), m) in enumerate(zip(workdir_label_pairs, mark.cycle(cycle_filling=True)))
     ]
     # print(sources)
 
@@ -179,6 +179,34 @@ def do_comparison_plots(workdir_label_pairs, output_dir):
     # COMPARE SINGLEMU
 
     # COMPARE HERWIG++ QCD
+    if exists_in_all(qgc.QCD_HERWIG_FILENAME, dirnames):
+        qgp.do_all_exclusive_plots_comparison(sources,
+                                              var_list=qgc.COMMON_VARS,
+                                              pt_bins=qgc.PT_BINS,
+                                              qcd_filename=qgc.QCD_HERWIG_FILENAME,
+                                              dj_cen_dirname="Dijet_QG_central_tighter",
+                                              dj_fwd_dirname=None,
+                                              zpj_dirname=None,
+                                              plot_dir=os.path.join(output_dir, "plots_qcd_herwig_compare_dijet_central"),
+                                              subplot_type="ratio", # will use the 1st entry by default
+                                              subplot_title="* / %s" % (sources[0]['label']),
+                                              subplot_limits=[0.9, 1.1],
+                                              do_flav_tagged=False,
+                                              has_data=False)
+
+        qgp.do_all_exclusive_plots_comparison(sources,
+                                              var_list=qgc.COMMON_VARS,
+                                              pt_bins=qgc.PT_BINS,
+                                              qcd_filename=qgc.QCD_HERWIG_FILENAME,
+                                              dj_cen_dirname=None,
+                                              dj_fwd_dirname="Dijet_QG_forward_tighter",
+                                              zpj_dirname=None,
+                                              plot_dir=os.path.join(output_dir, "plots_qcd_herwig_compare_dijet_forward"),
+                                              subplot_type="ratio", # will use the 1st entry by default
+                                              subplot_title="* / %s" % (sources[0]['label']),
+                                              subplot_limits=[0.9, 1.1],
+                                              do_flav_tagged=False,
+                                              has_data=False)
 
     # COMPARE HERWIG++ DY
 
