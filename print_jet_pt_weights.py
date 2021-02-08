@@ -41,6 +41,7 @@ ROOT.TH1.AddDirectory(False)  # VERY IMPORTANT - somewhere, closing a TFile for 
 palette_2D = ROOT.kBird
 palette_2D = ROOT.kRainBow
 palette_1D = ROOT.kRainBow
+ROOT.gStyle.SetPalette(palette_1D)
 
 pt_str = "p_{T}^{RecoJet}"
 pt_genjet_str = "p_{T}^{GenJet}"
@@ -308,6 +309,14 @@ def do_weight_vs_genjet_pt_plot(input_filename, output_filename):
 
 def do_jet_pt_with_var_cuts(histname, cuts, input_filename, output_filename):
     ROOT.gStyle.SetPalette(palette_1D)
+    total = len(cuts) -1 + .1
+    if len(cuts) <= 3:
+        # ROOT.gStyle.SetPalette(ROOT.kCool)
+        num_colours = ROOT.TColor.GetPalette().fN - 1
+        print('num_colours:', num_colours)
+        for index in range(len(cuts)):
+            print(num_colours, index, len(cuts), index / len(cuts), num_colours * index / total)
+            print(index, ROOT.TColor.GetColorPalette(int(num_colours * 1. * index / total)))
     tf = cu.open_root_file(input_filename)
     h3d = cu.get_from_tfile(tf, histname)
     if h3d.GetEntries() == 0:
@@ -324,13 +333,15 @@ def do_jet_pt_with_var_cuts(histname, cuts, input_filename, output_filename):
         pt_hists.append(h3)
 
     line_styles = [1, 2, 3]
+    if len(cuts) <= 3:
+        line_styles = [1]
     n_line_styles = len(line_styles)
     ref_ind = 0
     conts = [Contribution(h, label=" < %g" % cut,
-                          line_color=cu.get_colour_seq(ind, len(cuts)),
+                          line_color=cu.get_colour_seq(ind, total),
                           line_style=line_styles[ind % n_line_styles],
                           line_width=2,
-                          marker_color=cu.get_colour_seq(ind, len(cuts)),
+                          marker_color=cu.get_colour_seq(ind, total),
                           subplot=pt_hists[ref_ind] if ind != ref_ind else None)
              for ind, (h, cut) in enumerate(zip(pt_hists, cuts))]
 
@@ -779,6 +790,7 @@ if __name__ == "__main__":
     # ROOT.gStyle.SetPalette(ROOT.kPastel)
 
     for workdir in workdirs:
+        print(".Doing", workdir)
         # for filename in dy_filenames:
         for filename in qcd_filenames:
         # for filename in chain(qcd_filenames, dy_filenames):
