@@ -1248,7 +1248,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
     def convert_reco_binned_hist_to_gen_binned(self, hist):
         """Convert a hist with detector level binning to gen level binning"""
         new_hist = self.generator_binning.CreateHistogram(cu.get_unique_str())
-        print('convert_reco_binned_hist_to_gen_binned: bin(1) low edge:', new_hist.GetBinLowEdge(1))
+        # print('convert_reco_binned_hist_to_gen_binned: bin(1) low edge:', new_hist.GetBinLowEdge(1))
         # Iterate through all the finer reco bins, and for each determine
         # the corresponding gen bin, and add it to it from hist
         #
@@ -2436,7 +2436,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
                                                        offset=offset)
 
             plot.save(os.path.join(debugging_dir, 'one_other_hists.pdf'))
-            
+
             plot.set_logy(override_check=True)
             plot.save(os.path.join(debugging_dir, 'one_other_hists_logY.pdf'))
 
@@ -2460,7 +2460,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
                                                       do_overflow=has_overflow,
                                                       offset=offset)
             plot.save(os.path.join(debugging_dir, 'delta.pdf'))
-            
+
             plot.set_logy(override_check=True)
             plot.save(os.path.join(debugging_dir, 'delta_logY.pdf'))
 
@@ -2582,7 +2582,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
                         what='hist',
                         xtitle='%s bin' % ('Detector' if detector_space else 'Generator'),
                         ytitle='Component of chi2 (#Delta V^{-1} #Delta)',
-                        ylim=(0, 70000),
+                        ylim=(0, None),
                         has_data=False,
                         )
             plot.default_canvas_size = (800, 600)
