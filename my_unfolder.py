@@ -2041,7 +2041,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             # I cannot figure out how to make the int** object for bin_map
             # So we are trusting that the default args for title and axisSteering are correct
             # Gnahhhhhhh
-            self.vxx_th2 = this_binning.CreateErrorMatrixHistogram("ematrix_vxxinv_"+cu.get_unique_str(), self.use_axis_binning) #, bin_map, "", "*[]")
+            self.vxx_th2 = this_binning.CreateErrorMatrixHistogram("ematrix_vxx_"+cu.get_unique_str(), self.use_axis_binning) #, bin_map, "", "*[]")
             self.ErrorMatrixToHist(self.vxx_th2, self.GetVxx())
             print('vxx_th2.GetXaxis().GetBinLowEdge(1):', self.vxx_th2.GetXaxis().GetBinLowEdge(1))
         return self.vxx_th2
