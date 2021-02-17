@@ -118,6 +118,21 @@ class PtVarBinning(object):
         self._cache_global_bin_mapping()
         # print("bin 1:", self.global_bin_to_physical_val_map[1])
 
+    def __str__(self):
+        s = """PtVarBinning(
+    variable_bin_edges={variable_bin_edges},
+    variable_name={variable_name},
+    pt_bin_edges_signal={pt_bin_edges_signal},
+    pt_bin_edges_underflow={pt_bin_edges_underflow},
+    binning_name={binning_name},
+    binning_underflow_name={binning_underflow_name},
+    binning_signal_name={binning_signal_name},
+    var_uf={var_uf},
+    var_of={var_of},
+    pt_uf={pt_uf},
+    pt_of={pt_of})""".format(**self.__dict__)
+        return s
+
     def is_signal_region(self, pt):
         return pt >= self.pt_bin_edges_signal[0]
 
@@ -302,6 +317,19 @@ class PtVarPerPtBinning(object):
         self._cache_global_bin_mapping()
         # print("bin 1:", self.global_bin_to_physical_val_map[1])
 
+
+    def __str__(self):
+        s = """PtVarPerPtBinning(
+    variable_name={variable_name},
+    pt_underflow_bin_config={pt_underflow_bin_config},
+    pt_signal_bin_config={pt_signal_bin_config},
+    binning_name={binning_name},
+    binning_underflow_name={binning_underflow_name},
+    binning_signal_name={binning_signal_name},
+    var_uf={var_uf},
+    var_of={var_of})""".format(**self.__dict__)
+        return s
+
     def is_signal_region(self, pt):
         return pt >= self.pt_bin_edges_signal[0]
 
@@ -384,10 +412,16 @@ class BinningHandler(object):
             self.detector_binning_name: self.detector_ptvar_binning,
         }
 
+    def __str__(self):
+        s = """BinningHandler(
+    detector_ptvar_binning={detector_ptvar_binning},
+    generator_ptvar_binning={generator_ptvar_binning})""".format(**self.__dict__)
+        return s
+
     def get_binning_scheme(self, binning_scheme):
         valid_args = list(self.binning_mapping.keys())
         if binning_scheme not in valid_args:
-            raise ValueError("binning_scheme should be one of: %s" % ",".join(valid_args))
+            raise ValueError("binning_scheme should be one of: %s, instead got %s" % (", ".join(valid_args), binning_scheme))
         return self.binning_mapping[binning_scheme]
 
     def global_bin_to_physical_bin(self, global_bin_number, binning_scheme):
