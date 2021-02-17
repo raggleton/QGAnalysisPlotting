@@ -126,13 +126,13 @@ def get_bottom_line_stats(setup):
                                           unfolder.get_folded_mc_truth()
                                       ),
                                       xbinning='generator',
-                                      ybinning=None
+                                      ybinning='generator'
                                   )
 
     input_hist_gen_binning_bg_subtracted_signal = unfolder.get_ndarray_signal_region_no_overflow(
                                                       unfolder.input_hist_gen_binning_bg_subtracted,
                                                       xbinning='generator',
-                                                      ybinning=None
+                                                      ybinning='generator'
                                                   )
 
     vyy = unfolder.make_diag_cov_hist_from_errors(
