@@ -2635,7 +2635,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
                         what='hist',
                         xtitle='%s bin' % ('Detector' if detector_space else 'Generator'),
                         ytitle='Component of chi2 (#Delta V^{-1} #Delta)',
-                        ylim=(0, None),
+                        ylim=None,
                         has_data=False,
                         )
             plot.default_canvas_size = (800, 600)
