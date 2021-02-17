@@ -678,7 +678,7 @@ def zero_bad_response_bins(pmatrix, response_map, *args, **kwargs):
         Other args for get_bins_to_merge_probability_stats()
     **kwargs
         Kwargs for get_bins_to_merge_probability_stats()
-    
+
     Returns
     -------
     ROOT.TH2
@@ -1421,6 +1421,9 @@ def main():
                 print('orig response map dim:', orig_unfolder.response_map.GetNbinsX(), orig_unfolder.response_map.GetNbinsY())
                 print('rebinned response map dim:', response_map_merged.GetNbinsX(), response_map_merged.GetNbinsY())
 
+                print('orig binning_handler:', this_binning_handler)
+                print('binning_handler_merged:', binning_handler_merged)
+
                 # Setup new unfolder
                 new_unfolder = MyUnfolder(response_map=response_map_merged,
                                           binning_handler=binning_handler_merged,
@@ -1552,6 +1555,7 @@ def main():
             # i.e. low stats, big errors
             # ------------------------------------------------------------------
             if args.zeroBadResponseBins:
+                print(cu.pcolors.OKBLUE, "Doing bad probability bin zeroing...", cu.pcolors.ENDC)
                 new_response_map = zero_bad_response_bins(unfolder.get_probability_matrix(), unfolder.response_map)
                 unfolder = MyUnfolder(response_map=new_response_map,
                                       binning_handler=unfolder.binning_handler,

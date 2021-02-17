@@ -1423,45 +1423,45 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
                     for ipt in range(len(self.pt_bin_edges_gen[:-3])):
                         pt_cen = self.pt_bin_edges_gen[ipt+1]+0.001  # add a tiny bit to make sure we're in the bin properly
                         lambda_cen = self.variable_bin_edges_gen[ilambda]+0.001
-    
+
                         bin_ind_pt_down = gen_node.GetGlobalBinNumber(lambda_cen, self.pt_bin_edges_gen[ipt]+0.001)
                         bin_ind_pt_up = gen_node.GetGlobalBinNumber(lambda_cen, self.pt_bin_edges_gen[ipt+2]+0.001)
-    
+
                         bin_ind_cen = gen_node.GetGlobalBinNumber(lambda_cen, pt_cen)
-    
+
                         # bin_ind_var_down = gen_node.GetGlobalBinNumber(self.variable_bin_edges_gen[ilambda], pt_cen)
                         # bin_ind_var_up = gen_node.GetGlobalBinNumber(self.variable_bin_edges_gen[ilambda+2], pt_cen)
-    
+
                         # print("Adding L matrix entry", nr_counter)
                         # print('lambda:', self.variable_bin_edges_gen[ilambda], 'pt:', (self.pt_bin_edges_gen[ipt], self.pt_bin_edges_gen[ipt+1], self.pt_bin_edges_gen[ipt+2]))
-    
+
                         # pt_bin_width_down = pt_bin_edges_gen[ipt+1] - pt_bin_edges_gen[ipt]
                         # pt_bin_width_up = pt_bin_edges_gen[ipt+2] - pt_bin_edges_gen[ipt+1]
                         # factor = (pt_bin_width_down + pt_bin_width_up)
                         # value_pt_down = bin_factors[bin_ind_pt_down]
                         # value_pt_up = bin_factors[bin_ind_pt_up]
                         # ref_hist = unreg_self.unfolded
-    
+
                         val_down = ref_hist.GetBinContent(bin_ind_pt_down)
                         value_pt_down = 1./val_down if val_down != 0 else 0
-    
+
                         val_up = ref_hist.GetBinContent(bin_ind_pt_up)
                         value_pt_up = 1./val_up if val_up != 0 else 0
-    
+
                         # value_pt_down = bin_factors[bin_ind_pt_down]
                         # value_pt_up = bin_factors[bin_ind_pt_up]
                         value_pt_cen = - (value_pt_down + value_pt_up)
-    
+
                         val_cen = ref_hist.GetBinContent(bin_ind_cen)
                         value_pt_cen = -2. / val_cen if val_cen != 0 else 0
-    
+
                         # print(bin_ind_pt_down, value_pt_down, bin_ind_cen, value_pt_cen, bin_ind_pt_up, value_pt_up)
                         L_args = [bin_ind_pt_down, value_pt_down, bin_ind_cen, value_pt_cen, bin_ind_pt_up, value_pt_up]
                         L_matrix_entries.append(L_args)
                         self.AddRegularisationCondition(*L_args)
                         nr_counter += 1
                         print(L_args)
-    
+
                         # value_pt_down = unfolded_max/ref_hist.GetBinContent(bin_ind_pt_down)
                         # value_pt_up = unfolded_max/ref_hist.GetBinContent(bin_ind_pt_up)
                         # value_var_down = unfolded_max/ref_hist.GetBinContent(bin_ind_var_down)
