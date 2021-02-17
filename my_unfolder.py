@@ -1880,24 +1880,41 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
                  (isinstance(arr, np.ndarray) and arr.shape[0] == 1) or
                  (ybinning is None))
 
-        nrows = self.nbins_pt_gen*self.nbins_variable_gen if ybinning == 'generator' else self.nbins_pt_reco*self.nbins_variable_reco
+        if ybinning is None:
+            ybinning = xbinning # dummy value
+
+        def get_num_bins(binning_scheme):
+            n_bins = 0
+            binning_obj = self.binning_handler.get_binning_scheme(binning_scheme)
+            for pt_bin in binning_obj.get_pt_bins(is_signal_region=True)[:-1]:
+                var_bins = binning_obj.get_variable_bins(pt_bin)
+                # print("For pt_bin", pt_bin, "I have var bins", var_bins, "adding", len(var_bins)-1, "to the sum")
+                n_bins += len(var_bins)-1
+            return n_bins
+
         if is_1d:
             nrows = 1
-        ncols = self.nbins_pt_gen*self.nbins_variable_gen if xbinning == 'generator' else self.nbins_pt_reco*self.nbins_variable_reco
+        else:
+            # nrows = self.nbins_pt_gen*self.nbins_variable_gen if ybinning == 'generator' else self.nbins_pt_reco*self.nbins_variable_reco
+            nrows = get_num_bins(ybinning)
+        # ncols = self.nbins_pt_gen*self.nbins_variable_gen if xbinning == 'generator' else self.nbins_pt_reco*self.nbins_variable_reco
+        ncols = get_num_bins(xbinning)
         output_arr = np.zeros(shape=(nrows, ncols))
 
         x_index = -1
-        x_distribution = self.generator_distribution if xbinning == 'generator' else self.detector_distribution
-        pt_bin_edges_x = self.pt_bin_edges_gen if xbinning == 'generator' else self.pt_bin_edges_reco
+        # x_distribution = self.generator_distribution if xbinning == 'generator' else self.detector_distribution
+        # pt_bin_edges_x = self.pt_bin_edges_gen if xbinning == 'generator' else self.pt_bin_edges_reco
+        pt_bin_edges_x = self.binning_handler.get_pt_bins(binning_scheme=xbinning, is_signal_region=True)
 
-        y_distribution = self.generator_distribution if ybinning == 'generator' else self.detector_distribution
-        pt_bin_edges_y = self.pt_bin_edges_gen if ybinning == 'generator' else self.pt_bin_edges_reco
+        # y_distribution = self.generator_distribution if ybinning == 'generator' else self.detector_distribution
+        # pt_bin_edges_y = self.pt_bin_edges_gen if ybinning == 'generator' else self.pt_bin_edges_reco
+        pt_bin_edges_y = self.binning_handler.get_pt_bins(binning_scheme=ybinning, is_signal_region=True)
 
         for pt_ind_x, pt_x in enumerate(pt_bin_edges_x[:-1]):
             variable_bin_edges_x = self.binning_handler.get_variable_bins(pt_x, xbinning)
-            variable_bin_edges_y = self.binning_handler.get_variable_bins(pt_x, ybinning)
             for var_ind_x, var_x in enumerate(variable_bin_edges_x[:-1]):
-                global_bin_x = x_distribution.GetGlobalBinNumber(var_x+0.001, pt_x+0.001)
+                global_bin_x = self.binning_handler.physical_bin_to_global_bin(pt=pt_x, var=var_x, binning_scheme=xbinning)
+                # global_bin_x = x_distribution.GetGlobalBinNumber(var_x+0.001, pt_x+0.001)
                 x_index += 1
                 if is_1d:
                     if isinstance(arr, ROOT.TH1):
@@ -1907,8 +1924,10 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
                 else:
                     y_index = -1
                     for pt_ind_y, pt_y in enumerate(pt_bin_edges_y[:-1]):
+                        variable_bin_edges_y = self.binning_handler.get_variable_bins(pt_y, ybinning)
                         for var_ind_y, var_y in enumerate(variable_bin_edges_y[:-1]):
-                            global_bin_y = y_distribution.GetGlobalBinNumber(var_y+0.001, pt_y+0.001)
+                            global_bin_y = self.binning_handler.physical_bin_to_global_bin(pt=pt_y, var=var_y, binning_scheme=ybinning)
+                            # global_bin_y = y_distribution.GetGlobalBinNumber(var_y+0.001, pt_y+0.001)
                             y_index += 1
                             if isinstance(arr, ROOT.TH2):
                                 output_arr[y_index, x_index] = arr.GetBinContent(global_bin_x, global_bin_y)
