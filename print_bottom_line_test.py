@@ -254,8 +254,12 @@ def get_bottom_line_stats(setup):
                             ybinning=None
                         )
 
+    ematrix_input = unfolder.get_ematrix_input().Clone()
+    ematrix_rsp = unfolder.get_ematrix_stat_response()
+    ematrix_input.Add(ematrix_rsp)
+
     vxx_total_signal = unfolder.get_ndarray_signal_region_no_overflow(
-                           unfolder.get_ematrix_tunfold_total(),
+                           ematrix_input,
                            # unfolder.get_vxx_ndarray(),  # tunfold's version
                            xbinning='generator',
                            ybinning='generator'
