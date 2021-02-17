@@ -3550,7 +3550,7 @@ def do_binned_plots_per_region_angle(setup, do_binned_gen_pt, do_binned_gen_lamb
         if not only_paper_plots:
             gen_pt_binned_plotter.plot_unfolded_normalised()
             gen_pt_binned_plotter.plot_unfolded_unnormalised()
-            # gen_pt_binned_plotter.plot_total_ematrix()
+            gen_pt_binned_plotter.plot_total_ematrix()
 
             if unfolder.tau > 0 and unreg_unfolder:
                 print("...doing unregularised vs regularised")
