@@ -416,6 +416,29 @@ def merge_th2_bins(h, bin_list_x, bin_list_y, new_bin_edges_x=None, new_bin_edge
 
 
 def merge_th1_bin_pairs(h, bin_pairs, new_bin_edges):
+    """Create a new histogram with binning new_bin_edges, where the contents
+    are the same as h, but for each pair (a, b) in bin_pairs,
+    we add h.GetBinContent(a) to h_new[b]
+
+    IMPORTANT: the first N bins (= len(new_bin_edges)-1) are COPIED from h to h_new
+
+    DO NOT USE FOR ARBITRARILY MERGING BINS
+
+    Parameters
+    ----------
+    h : ROOT.TH1
+        Description
+    bin_pairs : list[[int, int]]
+        List of bin pairs, corresponding to [source bin in h, destination bin in h_new]
+    new_bin_edges : list[float], numpy.array
+        Bin edges for new histogram
+
+    Returns
+    -------
+    ROOT.TH1
+        Description
+
+    """
     if not bin_pairs or len(bin_pairs) == 0:
         return h
     h_new = ROOT.TH1D(h.GetName() + cu.get_unique_str(),
@@ -423,7 +446,8 @@ def merge_th1_bin_pairs(h, bin_pairs, new_bin_edges):
                       len(new_bin_edges)-1,
                       array('d', new_bin_edges))
 
-    for ix in range(0, h_new.GetNbinsX()+2):
+    for ix in range(0, h_new.GetNbinsX()+1):
+        # TODO it should not be +2 - would that also select a "valid" bin in h?
         # copy original data first, but only the subset of overlapping bins
         h_new.SetBinContent(ix, h.GetBinContent(ix))
         h_new.SetBinError(ix, h.GetBinError(ix))
@@ -437,6 +461,25 @@ def merge_th1_bin_pairs(h, bin_pairs, new_bin_edges):
 
 
 def merge_th2_bin_pairs(h, bin_pairs_x, bin_pairs_y, new_bin_edges_x, new_bin_edges_y):
+    """Seet merge_th1_bin_pairs for description
+
+    Parameters
+    ----------
+    h : ROOT.TH2
+    bin_pairs_x : list[[int, int]]
+        Description
+    bin_pairs_y : list[[int, int]]
+        Description
+    new_bin_edges_x : list[float], numpy.array
+        Description
+    new_bin_edges_y : list[float], numpy.array
+        Description
+
+    Returns
+    -------
+    ROOT.TH2
+        Description
+    """
     if not bin_pairs_x or len(bin_pairs_x) == 0:
         print("Skipping merging x pairs")
         h_new = h
@@ -450,8 +493,8 @@ def merge_th2_bin_pairs(h, bin_pairs_x, bin_pairs_y, new_bin_edges_x, new_bin_ed
                           len(bin_edges_y_orig)-1,
                           array('d', bin_edges_y_orig))
 
-        for iy in range(0, h_new.GetNbinsY()+2):
-            for ix in range(0, h_new.GetNbinsX()+2):
+        for iy in range(0, h_new.GetNbinsY()+1):
+            for ix in range(0, h_new.GetNbinsX()+1):
                 # copy original data first, but only the subset of overlapping bins
                 h_new.SetBinContent(ix, iy, h.GetBinContent(ix, iy))
                 h_new.SetBinError(ix, iy, h.GetBinError(ix, iy))
@@ -475,8 +518,8 @@ def merge_th2_bin_pairs(h, bin_pairs_x, bin_pairs_y, new_bin_edges_x, new_bin_ed
                        len(new_bin_edges_y)-1,
                        array('d', new_bin_edges_y))
 
-    for ix in range(0, h_new2.GetNbinsX()+2):
-        for iy in range(0, h_new2.GetNbinsY()+2):
+    for ix in range(0, h_new2.GetNbinsX()+1):
+        for iy in range(0, h_new2.GetNbinsY()+1):
             # copy original data first, but only the subset of overlapping bins
             h_new2.SetBinContent(ix, iy, h_new.GetBinContent(ix, iy))
             h_new2.SetBinError(ix, iy, h_new.GetBinError(ix, iy))
