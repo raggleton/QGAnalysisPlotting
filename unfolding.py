@@ -321,6 +321,7 @@ def merge_th1_bins(h, bin_list, new_bin_edges=None):
                       len(new_bin_edges)-1,
                       array('d', new_bin_edges))
     for ix in range(0, h.GetNbinsX()+2):
+        # figure out the corresponding index in the new histogram
         val = h.GetBinContent(ix)
         err = h.GetBinError(ix)
         pos = bisect_right(bin_list, ix)
@@ -957,6 +958,144 @@ def get_merge_bin_history_from_file(merge_dir):
     return merge_bin_history
 
 
+def setup_non_null_binning_scheme(null_bins, gen_binning):
+    """
+    Parameters
+    ----------
+    null_bins : list[int]
+        Global bin numbers to remove
+    gen_binning : PtVarBinning, PtVarPerPtBinning
+        Binning scheme object to convert global bins to/form physical bins
+
+    Returns
+    -------
+    PtVarPerPtBinning
+        Description
+    """
+    # TODO checker to see if we are not removing a bin with larger variable in the same pt bin
+    # Would this mess things up?
+    def _create_new_bin_config(pt_bins):
+        output_config = []
+        for pt_low, pt_high in zip(pt_bins[:-1], pt_bins[1:]):
+            var_bins = list(gen_binning.get_variable_bins(pt_low))
+            for b in null_bins:
+                phys_bin = gen_binning.global_bin_to_physical_bin(b)
+                if phys_bin.pt[0] != pt_low:
+                    continue
+                var = phys_bin.var[1] # remove end value to ensure last good end value remains
+                # don't worry about overflow bin - PtVarPerPtBinning adds that in automatically
+                if var in var_bins:
+                    var_bins.remove(var)
+            if len(var_bins) > 0:
+                output_config.append([(pt_low, pt_high), var_bins])
+        return output_config
+
+    gen_underflow_config = _create_new_bin_config(gen_binning.get_pt_bins(is_signal_region=False))
+    gen_signal_config = _create_new_bin_config(gen_binning.get_pt_bins(is_signal_region=True))
+    gen_signal_config = _create_new_bin_config(gen_binning.get_pt_bins(is_signal_region=True))
+
+    # Add pt overflow bin explicitly
+    has_pt_of = gen_binning.pt_of
+    if has_pt_of:
+        gen_oflow_config = _create_new_bin_config([gen_binning.get_pt_bins(is_signal_region=True)[-1], 13000])
+        gen_signal_config.extend(gen_oflow_config)
+
+    gen_perpt_binning = PtVarPerPtBinning(gen_binning.variable_name,
+                                          gen_underflow_config,
+                                          gen_signal_config,
+                                          gen_binning.binning_name,
+                                          gen_binning.binning_underflow_name,
+                                          gen_binning.binning_signal_name,
+                                          var_uf=gen_binning.var_uf,
+                                          var_of=gen_binning.var_of)
+    return gen_perpt_binning
+
+
+def remap_th1_bins(h, bin_mapping, new_bin_edges):
+    """Summary
+
+    Parameters
+    ----------
+    h : ROOT.TH1
+        Description
+    bin_mapping : dict[int, int]
+        Description
+    new_bin_edges : list[float], numpy.array
+        Description
+    """
+    h_new = ROOT.TH1D(h.GetName() + cu.get_unique_str(),
+                      ";".join([h.GetTitle(), h.GetXaxis().GetTitle(), h.GetYaxis().GetTitle()]),
+                      len(new_bin_edges)-1,
+                      array('d', new_bin_edges))
+
+    for src, dest in bin_mapping.items():
+        h_new.SetBinContent(dest, h_new.GetBinContent(dest) + h.GetBinContent(src))
+        h_new.SetBinError(dest, np.hypot(h_new.GetBinError(dest), h.GetBinError(src)))
+
+    return h_new
+
+
+def remap_th2_bins(h, bin_mapping_x, bin_mapping_y, new_bin_edges_x, new_bin_edges_y):
+    """Summary
+
+    Parameters
+    ----------
+    h : ROOT.TH2
+        Description
+    bin_mapping_x : dict[int, int]
+        Description
+    bin_mapping_y : dict[int, int]
+        Description
+    new_bin_edges_x : list[float], numpy.array
+        Description
+    new_bin_edges_y : list[float], numpy.array
+        Description
+
+    Returns
+    -------
+    TYPE
+        Description
+    """
+    if not bin_mapping_x or len(bin_mapping_x) == 0:
+        h_new = h
+    else:
+        # do x bins first
+        bin_edges_x_orig = cu.get_bin_edges(h, 'x')
+        bin_edges_y_orig = cu.get_bin_edges(h, 'y')
+
+        h_new = ROOT.TH2D(h.GetName() + cu.get_unique_str(),
+                          ";".join([h.GetTitle(), h.GetXaxis().GetTitle(), h.GetYaxis().GetTitle()]),
+                          len(new_bin_edges_x)-1,
+                          array('d', new_bin_edges_x),
+                          len(bin_edges_y_orig)-1,
+                          array('d', bin_edges_y_orig))
+
+        for iy in range(0, h.GetNbinsY()+2):
+            for src, dest in bin_mapping_x.items():
+                h_new.SetBinContent(dest, iy, h_new.GetBinContent(dest, iy) + h.GetBinContent(src, iy))
+                h_new.SetBinError(dest, iy, np.hypot(h_new.GetBinError(dest, iy), h.GetBinError(src, iy)))
+
+    if not bin_mapping_y or len(bin_mapping_y) == 0:
+        return h_new
+
+    # now do y bins
+    bin_edges_x_orig = cu.get_bin_edges(h_new, 'x')
+    bin_edges_y_orig = cu.get_bin_edges(h, 'y')
+
+    h_new2 = ROOT.TH2D(h.GetName() + cu.get_unique_str(),
+                       ";".join([h.GetTitle(), h.GetXaxis().GetTitle(), h.GetYaxis().GetTitle()]),
+                       len(bin_edges_x_orig)-1,
+                       array('d', bin_edges_x_orig),
+                       len(new_bin_edges_y)-1,
+                       array('d', new_bin_edges_y))
+
+    for ix in range(0, h_new.GetNbinsX()+2):
+        for src, dest in bin_mapping_y.items():
+            h_new.SetBinContent(ix, dest, h_new.GetBinContent(ix, dest) + h.GetBinContent(ix, src))
+            h_new.SetBinError(ix, dest, np.hypot(h_new.GetBinError(ix, dest), h.GetBinError(ix, src)))
+    return h_new2
+
+
 # To be able to export to XML, since getting std::ostream from python is impossible?
 my_binning_xml_code = """
 class BinningXMLExporter {
@@ -1521,6 +1660,7 @@ def main():
                 gen_bins_to_merge = gen_bins_to_merge or []
                 reco_bins_to_merge = reco_bins_to_merge or []
                 binning_handler_merged = setup_merged_bin_binning(gen_bins_to_merge, reco_bins_to_merge, orig_unfolder.binning_handler)
+                print("New binning_handler_merged:", binning_handler_merged)
 
                 # Create new inputs
                 new_gen_bins = np.arange(0.5, orig_unfolder.hist_truth.GetNbinsX() - len(gen_bins_to_merge) + 0.5 + 1, 1) # new bin edges to match TUnfold style
@@ -1626,7 +1766,110 @@ def main():
                 #     hist_mc_fakes=unfolder.hist_mc_fakes_gen_binning
                 # )
 
+
+            # Remove null gen bins in response matrix
+            # ------------------------------------------------------------------
+            if args.noNullGenBins:
+                print(cu.pcolors.OKBLUE, "Doing null gen bin removing...", cu.pcolors.ENDC)
+
+                def setup_null_bin_removed_unfolder(orig_unfolder):
+                    # TUnfold actually does this internally, but if we want to use
+                    # the error matrices, we need to do this ourselves as well
+                    # Note that it's a bit complicated - we need to think about
+                    # systematics, other MCs, which _could_ have entries in these "null" bins,
+                    # so we want to relegate them to overflow
+                    # We also don't want to naively "merge" the bins, otherwise we
+                    # would have v.v.wide bins that are useless for e.g. mean
+                    # (we lose information about where the largest value was)
+                    include_underflow, include_overflow = False, False
+                    null_gen_bins = orig_unfolder.find_null_gen_bins(include_underflow=include_underflow,
+                                                                     include_overflow=include_overflow)
+                    print("Null gen bins:", null_gen_bins)
+                    non_null_gen_bins = orig_unfolder.find_non_null_gen_bins(include_underflow=include_underflow,
+                                                                             include_overflow=include_overflow)
+
+                    # Create new binning schme without null bins
+                    orig_gen_binning = orig_unfolder.binning_handler.get_binning_scheme('generator')
+                    new_gen_binning = setup_non_null_binning_scheme(null_gen_bins, orig_gen_binning)
+                    print("new_gen_binning:", new_gen_binning)
+
+                    # Create mapping to use to update hists
+                    null_bin_mapping = orig_unfolder.make_null_bin_mapping(null_gen_bins,
+                                                                           new_binning_scheme=new_gen_binning)
+                    normal_bin_mapping = orig_unfolder.make_bin_mapping(orig_bins=non_null_gen_bins,
+                                                                        current_binning_scheme=orig_gen_binning,
+                                                                        new_binning_scheme=new_gen_binning)
+
+                    # Sanity check: should be no overlapping keys in these maps
+                    if len(set(normal_bin_mapping.keys()).intersection(set(null_bin_mapping.keys()))) > 0:
+                        raise ValueError("Bin mapping for null bins gone wrong, overlapping bins in maps")
+
+                    # Now create functions to update hists
+                    normal_bin_mapping.update(null_bin_mapping)
+                    new_gen_bins = np.arange(0.5, new_gen_binning.get_total_number_of_bins() + 0.5 + 1, 1)
+                    th1_remap_gen = partial(remap_th1_bins, bin_mapping=normal_bin_mapping, new_bin_edges=new_gen_bins)
+                    th2_remap_gen = partial(remap_th2_bins, bin_mapping_x=normal_bin_mapping, new_bin_edges_x=new_gen_bins,
+                                                            bin_mapping_y=None, new_bin_edges_y=None) # assumes horizontal axis is gen
+
+                    th1_merge_gen_funcs.append(th1_remap_gen)
+                    th2_merge_funcs.append(th2_remap_gen)
+
+                    # Apply to response map
+                    response_map_no_null = th2_remap_gen(orig_unfolder.response_map)
+
+                    # Setup new unfolder & BinningHandler
+                    binning_handler_no_null = BinningHandler(generator_ptvar_binning=new_gen_binning,
+                                                             detector_ptvar_binning=orig_unfolder.binning_handler.get_binning_scheme('detector'))
+
+                    new_unfolder = MyUnfolder(response_map=response_map_no_null,
+                                              binning_handler=binning_handler_no_null,
+                                              **unfolder_args)
+
+                    new_unfolder.SetEpsMatrix(unfolder.GetEpsMatrix())
+
+                    # Setup new InputHandlers
+                    orig_input_handler = orig_unfolder.input_handler
+                    input_handler_merged = InputHandler(input_hist=orig_input_handler.input_hist,
+                                                        hist_truth=th1_remap_gen(orig_input_handler.hist_truth),
+                                                        hist_mc_reco=orig_input_handler.hist_mc_reco,
+                                                        hist_mc_fakes=orig_input_handler.hist_mc_fakes)
+
+                    orig_input_handler_gen_binning = orig_unfolder.input_handler_gen_binning
+                    input_handler_gen_binning_merged = InputHandler(input_hist=th1_remap_gen(orig_input_handler_gen_binning.input_hist),
+                                                                    hist_truth=None,
+                                                                    hist_mc_reco=th1_remap_gen(orig_input_handler_gen_binning.hist_mc_reco),
+                                                                    hist_mc_fakes=th1_remap_gen(orig_input_handler_gen_binning.hist_mc_fakes))
+
+                    # Set what is to be unfolded
+                    # ------------------------------------------------------------------
+                    new_unfolder.set_input(input_handler=input_handler_merged,
+                                           input_handler_gen_binning=input_handler_gen_binning_merged,
+                                           bias_factor=args.biasFactor,
+                                           error_unconstrained_truth_bins=False)
+
+                    return new_unfolder
+
+
+                unfolder = setup_null_bin_removed_unfolder(unfolder)
+                # update input args templates for future setups
+                input_handler_args = dict(
+                    input_hist=unfolder.input_hist,
+                    hist_truth=unfolder.hist_truth,
+                    hist_mc_reco=unfolder.hist_mc_reco,
+                    hist_mc_fakes=unfolder.hist_mc_fakes
+                )
+                input_handler_gen_binning_args = dict(
+                    input_hist=unfolder.input_hist_gen_binning,
+                    hist_truth=None,
+                    hist_mc_reco=unfolder.hist_mc_reco_gen_binning,
+                    hist_mc_fakes=unfolder.hist_mc_fakes_gen_binning
+                )
+
+
+            # Apply merging functions to other hists
+            # ------------------------------------------------------------------
             # update some other hists
+            # Haven't we done this already?!
             for merge_func in th1_merge_reco_funcs:
                 hist_mc_reco = merge_func(hist_mc_reco)
 

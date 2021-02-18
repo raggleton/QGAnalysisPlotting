@@ -146,6 +146,12 @@ class PtVarBinning(object):
         # pt in args to duck type with PtVarPerPtBinning method
         return self.variable_bin_edges
 
+    def get_start_bin(self, is_signal_region):
+        if is_signal_region:
+            return self.physical_bin_to_global_bin(pt=self.pt_bin_edges_signal[0], var=self.variable_bin_edges[0])
+        else:
+            return self.physical_bin_to_global_bin(pt=self.pt_bin_edges_underflow[0], var=self.variable_bin_edges[0])
+
     def _cache_global_bin_mapping(self):
         """Create maps of global bin <> physical bin values,
         by iterating through all the physical bins (inc oflow)
@@ -200,6 +206,7 @@ class PtVarBinning(object):
         return dist.GetGlobalBinNumber(var, pt)
 
     def global_bin_to_physical_bin(self, global_bin_number):
+        """returns PtVar obj"""
         if global_bin_number not in self.global_bin_to_physical_val_map:
             raise KeyError("No global bin %d" % global_bin_number)
         return self.global_bin_to_physical_val_map[global_bin_number]
@@ -217,6 +224,9 @@ class PtVarBinning(object):
         else:
             global_bin = binning_obj.GetGlobalBinNumber(pt)
         return global_bin
+
+    def get_total_number_of_bins(self):
+        return len(self.global_bin_to_physical_val_map)
 
 
 def flatten_unique(list_of_lists):
@@ -356,6 +366,12 @@ class PtVarPerPtBinning(object):
         else:
             return thing
 
+    def get_start_bin(self, is_signal_region):
+        pt = self.pt_bin_edges_underflow[0]
+        if is_signal_region:
+            pt = self.pt_bin_edges_signal[0]
+        return self.physical_bin_to_global_bin(pt=pt, var=self.get_variable_bins(pt)[0])
+
     def _cache_global_bin_mapping(self):
         """Create maps of global bin <> physical bin values,
         by iterating through all the physical bins (inc oflow)
@@ -385,6 +401,7 @@ class PtVarPerPtBinning(object):
         return dist.GetGlobalBinNumber(var, pt)
 
     def global_bin_to_physical_bin(self, global_bin_number):
+        """Returns PtVar object"""
         if global_bin_number not in self.global_bin_to_physical_val_map:
             raise KeyError("No global bin %d" % global_bin_number)
         return self.global_bin_to_physical_val_map[global_bin_number]
@@ -392,6 +409,9 @@ class PtVarPerPtBinning(object):
     def get_first_pt_overflow_global_bin(self):
         """Get global bin corresponding to first pt overflow bin"""
         return self.physical_bin_to_global_bin(pt=9999999., var=100000)
+
+    def get_total_number_of_bins(self):
+        return len(self.global_bin_to_physical_val_map)
 
 
 class BinningHandler(object):
@@ -438,6 +458,9 @@ class BinningHandler(object):
 
     def get_variable_bins(self, pt, binning_scheme):
         return self.get_binning_scheme(binning_scheme).get_variable_bins(pt)
+
+    def get_total_number_of_bins(self, binning_scheme):
+        return self.get_binning_scheme(binning_scheme).get_total_number_of_bins()
 
     @property
     def variable_name(self):
@@ -1227,6 +1250,87 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
                 warnings.warn(msg)
 
         return ignored_input_bins
+
+    def find_null_gen_bins(self, include_underflow=False, include_overflow=False):
+        """Look for columns (gen bins) in response matrix with 0 entries, for removal
+        (because y does not contain any information on that bin in x)
+        """
+        # quick way: get X projection (including y = 0 bin) and iterate throught that
+        response_x_proj = self.response_map.ProjectionX("rsp_projX", 0, -1)
+        null_gen_bins = []
+        first_bin = 0 if include_underflow else 1
+        last_bin = response_x_proj.GetNbinsX()+(2 if include_overflow else 1)
+        for ix in range(first_bin, last_bin):
+            val = response_x_proj.GetBinContent(ix)
+            if val == 0:
+                null_gen_bins.append(ix)
+        return null_gen_bins
+
+    def find_non_null_gen_bins(self, include_underflow=False, include_overflow=False):
+        """Look for columns (gen bins) in response matrix with != 0 entries
+        """
+        # quick way: get X projection (including y = 0 bin) and iterate throught that
+        response_x_proj = self.response_map.ProjectionX("rsp_projX", 0, -1)
+        non_null_gen_bins = []
+        first_bin = 0 if include_underflow else 1
+        last_bin = response_x_proj.GetNbinsX()+(2 if include_overflow else 1)
+        for ix in range(first_bin, last_bin):
+            val = response_x_proj.GetBinContent(ix)
+            if val != 0:
+                non_null_gen_bins.append(ix)
+        return non_null_gen_bins
+
+    @staticmethod
+    def make_bin_mapping(orig_bins, current_binning_scheme, new_binning_scheme):
+        """Make map of global bin numbers, corresponding to same physical bin in new_binning_scheme
+
+        Parameters
+        ----------
+        orig_bins : list[int]
+            Description
+        new_binning_scheme : PtVarBinnins, PtVarPerPtBinning
+            Description
+        """
+        new_bin_mapping = {}
+        for ob in orig_bins:
+            # ob is a global bin in the current binning scheme
+            physical_bin = current_binning_scheme.global_bin_to_physical_bin(ob)
+            # physical bin is PtVar obj
+            pt = physical_bin.pt[0]+1E-6
+            var = physical_bin.var[0]+1E-6
+            # map to overflow bin for this pt bin
+            new_bin = new_binning_scheme.physical_bin_to_global_bin(pt=pt, var=var)
+            # print('found', ob, '=', physical_bin, '->', new_bin, "=", new_binning_scheme.global_bin_to_physical_bin(new_bin))
+            new_bin_mapping[ob] = new_bin
+        return new_bin_mapping
+
+    def make_null_bin_mapping(self, null_bins, new_binning_scheme=None):
+        """Make mapping of {null global bin : overflow global bin}, for the correct pt bin
+
+        Use new_binning_scheme to convert from physical value to global bin
+        for the overflow bin
+        """
+        # figure out which pt bin we're in,
+        # then get the index of the variable overflow bin in the pt bin
+        # this way we can move any entries into that one
+        new_binning_scheme = new_binning_scheme or self.binning_handler.get_binning_scheme('generator')
+        if not new_binning_scheme.var_of:
+            warnings.warn("new_binning_scheme doesn't have var_of=True, no idea what to do here")
+            return {}
+        null_bin_mapping = {}
+        gen_binning = self.binning_handler.get_binning_scheme('generator')
+        for nb in null_bins:
+            # nb is a global bin in the current binning scheme
+            physical_bin = gen_binning.global_bin_to_physical_bin(nb)
+            # physical bin is PtVar obj
+            pt = physical_bin.pt[0]+1E-6
+            var = physical_bin.var[0]+1E-6
+            # map to overflow bin for this pt bin
+            new_bin = new_binning_scheme.physical_bin_to_global_bin(pt=pt, var=999999999)
+            # print('found', nb, '=', physical_bin, '->', new_bin, "=", new_binning_scheme.global_bin_to_physical_bin(new_bin))
+            null_bin_mapping[nb] = new_bin
+        return null_bin_mapping
+
 
     def subtract_background(self, hist, name, scale=1.0, scale_err=0.0):
         """Subtract background source from input hist"""
@@ -2440,10 +2544,11 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             other_vec, _ = cu.th1_to_ndarray(other_hist, False)
         delta = one_vec - other_vec
 
+        bs = 'detector' if detector_space else 'generator'
         first_signal_bin = 1
         if ignore_underflow_bins:
             # set to 0 all the pt underflow bins
-            first_signal_bin = self.detector_distribution.GetStartBin() if detector_space else self.generator_distribution.GetStartBin()
+            first_signal_bin = self.binning_handler.get_binning_scheme(bs).get_start_bin(is_signal_region=True)
             delta[0][:first_signal_bin-1] = 0. # subtract 1 as numpy indices start at 0, hists start at 1
 
         if isinstance(cov_inv_matrix, ROOT.TH2):
@@ -2478,7 +2583,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
 
             offset = 0
             if not has_underflow:
-                first_signal_bin = self.detector_distribution.GetStartBin() if detector_space else self.generator_distribution.GetStartBin()
+                first_signal_bin = self.binning_handler.get_binning_scheme(bs).get_start_bin(is_signal_region=True)
                 offset = -first_signal_bin + 2
                 # print("Setting offset to", offset)
             l, t = debug_plotter.draw_pt_binning_lines(plot,

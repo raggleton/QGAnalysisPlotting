@@ -17,6 +17,11 @@ import qg_common as qgc
 import distutils
 from distutils import util
 import ROOT
+import warnings
+
+import common_utils as cu
+# monkey-patch warning formatter
+warnings.formatwarning = cu._formatwarning
 
 ROOT.PyConfig.IgnoreCommandLineOptions = True
 ROOT.gROOT.SetBatch(1)
@@ -108,6 +113,12 @@ def get_unfolding_argparser(description='', parser=None):
                         type=lambda x: bool(distutils.util.strtobool(x)),
                         default=False,
                         help=('Set contents of last pt reco bin to 0.'
+                               + standard_bool_description))
+
+    parser.add_argument("--noNullGenBins",
+                        type=lambda x: bool(distutils.util.strtobool(x)),
+                        default=False,
+                        help=('Remove gen bins that have 0 entries in response matrix.'
                                + standard_bool_description))
 
 
@@ -307,9 +318,7 @@ def sanitise_args(args):
         raise RuntimeError("You need to specify at least one signal region e.g. --doDijetCentral")
 
     if args.MCinput and args.subtractBackgrounds:
-        print("")
-        print("!!!! Cannot subtract backgrounds while using MC input, ignoring for now")
-        print("")
+        warnings.warn("!!!! Cannot subtract backgrounds while using MC input, ignoring for now")
         args.subtractBackgrounds = False
 
     if args.mergeBins and args.mergeBinsFromFile:
@@ -327,11 +336,11 @@ def sanitise_args(args):
     if (args.doExperimentalSysts or args.doExperimentalSystsOnlyHerwig) and args.doExperimentalSystsFromFile:
         args.doExperimentalSysts = False
         args.doExperimentalSystsOnlyHerwig = False
-        print("Warning: will use experimental systs from --doExperimentalSystsFromFile option only, "
+        warnings.warn("Warning: will use experimental systs from --doExperimentalSystsFromFile option only, "
               "ignoring --doExperimentalSysts and --doExperimentalSystsOnlyHerwig")
 
     if (args.doExperimentalSystsAsAltResponse and not any([args.doExperimentalSysts, args.doExperimentalSystsOnlyHerwig])):
-        print("Warning: --doExperimentalSystsAsAltResponse requires one of --doExperimentalSysts/--doExperimentalSystsOnlyHerwig")
+        warnings.warn("Warning: --doExperimentalSystsAsAltResponse requires one of --doExperimentalSysts/--doExperimentalSystsOnlyHerwig")
 
     if ((args.doModelSystsOnlyScale or args.doModelSystsOnlyHerwig or args.doModelSysts or args.doModelSystsNotScale)
         and args.doModelSystsFromFile):
@@ -339,21 +348,21 @@ def sanitise_args(args):
         args.doModelSystsOnlyScale = False
         args.doModelSystsOnlyHerwig = False
         args.doModelSystsNotScale = False
-        print("Warning: will use model systs from --doModelSystsFromFile option only, "
+        warnings.warn("Warning: will use model systs from --doModelSystsFromFile option only, "
               "ignoring --doModelSysts, --doModelSystsOnlyHerwig, --doModelSystsOnlyScale, --doModelSystsNotScale")
 
     if args.doPDFSystsFromFile and args.doPDFSysts:
         args.doPDFSysts = False
-        print("Warning: will use PDF systs from --doPDFSystsFromFile option only, ignoring --doPDFSysts")
+        warnings.warn("Warning: will use PDF systs from --doPDFSystsFromFile option only, ignoring --doPDFSysts")
 
     # if args.useAltResponse and args.doExperimentalSysts:
     #     args.doExperimentalSysts = False
-    #     print("You cannot use both --useAltResponse and --doExperimentalSysts: disabling doExperimentalSysts")
+    #     warnings.warn("You cannot use both --useAltResponse and --doExperimentalSysts: disabling doExperimentalSysts")
 
     # # TODO handle both?
     # if args.useAltResponse and args.doModelSysts:
     #     args.doExperimentalSysts = False
-    #     print("You cannot use both --useAltResponse and --doModelSysts: disabling doModelSysts")
+    #     warnings.warn("You cannot use both --useAltResponse and --doModelSysts: disabling doModelSysts")
 
 
 def get_unfolding_output_dir(args):
@@ -445,6 +454,9 @@ def get_unfolding_output_dir(args):
 
     if args.zeroLastPtBin:
         append += "_zeroLastPtBin"
+
+    if args.noNullGenBins:
+        append += "_noNullGenBins"
 
     reg_axis_str = ""
     bias_str = ""
