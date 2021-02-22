@@ -384,7 +384,7 @@ def get_bottom_line_stats(setup, no_null_bins=True):
             }
 
 
-def print_chi2_table(df):
+def print_chi2_latex_table(df):
     df_sorted = df.sort_values(by=['region', 'angle'])
     # print(r'\begin{tabular}{c|c|c|c|c|c|c|c|c|c|c|c}')
     print(r'\begin{tabular}{c|c|c|c|c|c|c|c}')
@@ -401,10 +401,14 @@ def print_chi2_table(df):
            r"$\chi_{\text{unfolded}}^2 < \chi_{\text{smeared}}^2$ & "
            r"$\chi_{\text{unfolded, alt. model}}^2 < \chi_{\text{smeared, alt. model}}^2$ \\"))
     print(r"\hline \\")
+
+    angle_lookup = {a.var: a.mathmode for a in qgc.COMMON_VARS}
     for row in df_sorted.itertuples():
         angle_name = row.angle.replace("jet_", "").replace("_charged", " (charged)")
+        angle_name = "$"+angle_lookup[row.angle]+"$"
         if row.is_groomed:
             angle_name = "Groomed " + angle_name
+
         # print(dir(row))
         print(("{region} & "
                "{angle_name} & "
@@ -422,6 +426,25 @@ def print_chi2_table(df):
                                            result_alt=r"$\checkmark$" if row.unfolded_alt_chi2_ov_ndf < row.smeared_alt_chi2_ov_ndf else r"$\times$",
                                            **row._asdict()))
     print(r'\end{tabular}')
+
+
+def print_chi2_user_table(df):
+    """Print chi2 results to screen as quick pass/fail table"""
+    df_sorted = df.sort_values(by=['region', 'angle'])
+    df_sorted['pass nominal?'] = df_sorted['unfolded_chi2_ov_ndf'] < df_sorted['smeared_chi2_ov_ndf']
+    df_sorted['pass alt.?'] = df_sorted['unfolded_alt_chi2_ov_ndf'] < df_sorted['smeared_alt_chi2_ov_ndf']
+    # use emoji for visual speed & clarity
+    check = u'\u2705'
+    cross = u'\u274C'
+    danger = u'\u2757'
+    df_sorted['pass nominal?'].replace({True: check, False: cross}, inplace=True)
+    df_sorted['pass alt.?'].replace({True: check, False: cross}, inplace=True)
+    bad_nominal = df_sorted['unfolded_chi2'] < 0
+    df_sorted['pass nominal?'][bad_nominal] =  danger
+    bad_alt = df_sorted['unfolded_alt_chi2'] < 0
+    df_sorted['pass alt.?'][bad_alt] =  danger
+    cols = ['region', 'is_groomed', 'angle', 'pass nominal?', 'pass alt.?']
+    print(df_sorted.to_string(index=False, columns=cols))
 
 
 def main():
@@ -550,7 +573,9 @@ def main():
         df_stats['angle'] = df_stats['angle'].astype('category')
         print(df_stats.head())
         print("")
-        print_chi2_table(df_stats)
+        print_chi2_user_table(df_stats)
+        print("")
+        print_chi2_latex_table(df_stats)
 
 if __name__ == "__main__":
     main()
