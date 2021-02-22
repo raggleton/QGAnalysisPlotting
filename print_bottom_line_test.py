@@ -109,7 +109,34 @@ def calc_chi2_stats(one_hist, other_hist, cov_matrix):
     return chi2, ndof, p
 
 
-def get_bottom_line_stats(setup):
+def get_null_bins(h):
+    null_bins = []
+    if isinstance(h, (ROOT.TH1, ROOT.TH2)):
+        if isinstance(h, ROOT.TH2):
+            h_proj = h.ProjectionX()
+        else:
+            h_proj = h
+        for ix in range(1, h_proj.GetNbinsX()+1):
+            if h_proj.GetBinContent(ix) == 0:
+                null_bins.append(ix)
+        return null_bins
+    else:
+        proj = h.sum(axis=0)
+        return np.where(proj == 0)[0]
+
+
+def remove_null_bins(arr, null_bins):
+    print(arr.shape)
+    if len(arr.shape) > 1:
+        for ax in range(len(arr.shape)):
+            if arr.shape[ax] > 1:
+                arr = np.delete(arr, null_bins, axis=ax)
+    else:
+        arr = np.delete(arr, null_bins)
+    return arr
+
+
+def get_bottom_line_stats(setup, no_null_bins=True):
     """Construct dict of bottom-line (i.e. chi2) stats for this region/angle combo"""
     unfolder = setup.region['unfolder']
 
@@ -264,6 +291,12 @@ def get_bottom_line_stats(setup):
                            xbinning='generator',
                            ybinning='generator'
                        )
+    if no_null_bins:
+        null_bins = get_null_bins(vxx_total_signal)
+        print('null bins:', null_bins)
+        unfolded_signal = remove_null_bins(unfolded_signal, null_bins)
+        hist_truth_signal = remove_null_bins(hist_truth_signal, null_bins)
+        vxx_total_signal = remove_null_bins(vxx_total_signal, null_bins)
 
     vxx_total_signal_inv = np.linalg.pinv(vxx_total_signal, 1E-200)  # no need to cut down to signal region
 
@@ -308,6 +341,10 @@ def get_bottom_line_stats(setup):
     #                                    cov_inv_matrix=vxx_total_signal_inv)
     # unfolded_alt_fit = optimize.minimize_scalar(unfolded_alt_scaled_chi2, bounds=(0.1, 10.))
     # alt_signal_scale = unfolded_alt_fit.x
+
+    if no_null_bins:
+        hist_alt_truth_signal = remove_null_bins(hist_alt_truth_signal, null_bins)
+
     alt_signal_scale = alt_folded_scale
     print("alt signal scale:", alt_signal_scale)
     hist_alt_truth_signal *= alt_signal_scale
@@ -381,8 +418,8 @@ def print_chi2_table(df):
                # "{smeared_alt_p:.3e} & "
                "{result} & "
                "{result_alt} \\\\").format(angle_name=angle_name,
-                                           result=r"$\checkmark$" if row.unfolded_chi2 < row.smeared_chi2 else r"$\times$",
-                                           result_alt=r"$\checkmark$" if row.unfolded_alt_chi2 < row.smeared_alt_chi2 else r"$\times$",
+                                           result=r"$\checkmark$" if row.unfolded_chi2_ov_ndf < row.smeared_chi2_ov_ndf else r"$\times$",
+                                           result_alt=r"$\checkmark$" if row.unfolded_alt_chi2_ov_ndf < row.smeared_alt_chi2_ov_ndf else r"$\times$",
                                            **row._asdict()))
     print(r'\end{tabular}')
 
@@ -396,6 +433,10 @@ def main():
                         nargs='+',
                         help="Lambda angles to unfold, or 'all' for all of them (default).",
                         default=["all"])
+
+    parser.add_argument("--noNullBins",
+                        help='Remove null bins',
+                        action='store_true')
 
     region_group = parser.add_argument_group('Region selection')
     region_group.add_argument("--doAllRegions",
@@ -494,7 +535,7 @@ def main():
                           output_dir=angle_output_dir,
                           has_data=has_data)
 
-            all_chi2_stats.append(get_bottom_line_stats(setup))
+            all_chi2_stats.append(get_bottom_line_stats(setup, no_null_bins=args.noNullBins))
 
             # cleanup object, as it uses loads of memory
             if num_all_iterations > 1:
