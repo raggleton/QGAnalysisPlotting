@@ -2558,7 +2558,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
 
         inter = v_inv.dot(delta.T)
         chi2 = delta.dot(inter)[0][0]
-        ndof = len(delta[0][first_signal_bin-1:])
+        ndof = len((one_vec[0][first_signal_bin-1:] != 0) | (other_vec[0][first_signal_bin-1:] != 0))  # only consider n bins where at least one has data - if both 0, don't count it
         p = 1-scipy.stats.chi2.cdf(chi2, int(ndof))
 
         # Print some debugging plots
@@ -2703,7 +2703,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
                     v_inv = cu.th2_to_ndarray(cov_inv_matrix)[0]
 
                 prod = v @ v_inv
-                print("product shape:", prod.shape)
+                # print("product shape:", prod.shape)
                 canv.Clear()
                 prod_th2 = cu.ndarray_to_th2(prod, offset=0.5)
                 prod_th2.SetTitle("V V^{-1}")
