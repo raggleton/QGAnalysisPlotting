@@ -1324,6 +1324,12 @@ def main():
             this_output_dir = "%s/%s/%s" % (output_dir, region['name'], angle.var)
             cu.check_dir_exists_create(this_output_dir)
 
+            # save program args to file for future reference
+            args_json = os.path.join(this_output_dir, 'args.json')
+            with open(args_json, 'w') as f:
+                json.dump(vars(args), f, indent=4)
+                print("Saved input args to JSON:", args_json)
+
             # Save minimal set of hists etc to ROOT file for access later
             # For everything, we pickle it
             output_tfile_slim = ROOT.TFile("%s/unfolding_result_slim.root" % this_output_dir, "RECREATE")
