@@ -904,11 +904,11 @@ def get_visible_axis_range(axis):
 
 
 def get_lumi_str(do_dijet=True, do_zpj=True):
-    """Get correct luminosity depending on signal region(s), since dijet prescaled"""
+    """Get correct luminosity depending on signal region(s), since some dijet prescaled"""
     lumi = "35.9"
-    if do_zpj and do_dijet:
+    if do_dijet:
         lumi = " #leq#kern[-0.7dx]{ }35.9"
-    elif not do_zpj and do_dijet:
-        lumi = " <#kern[-0.5dx]{ }35.9"
+    # elif not do_zpj and do_dijet:
+    #     lumi = " <#kern[-0.5dx]{ }35.9"
     return lumi
 

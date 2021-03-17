@@ -99,7 +99,8 @@ def do_jet_pt_plot(entries,
                 subplot_title=subplot_title,
                 subplot_type='ratio',
                 subplot_limits=subplot_limits,
-                lumi=lumi)
+                lumi=lumi,
+                is_preliminary=False)
     plot.y_padding_max_log = 1E4
     plot.legend.SetX1(0.6)
     plot.legend.SetY1(0.68)

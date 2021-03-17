@@ -160,7 +160,7 @@ class SummaryPlotter(object):
         self.output_fmt = 'pdf'
         self.output_dir = output_dir
         self.has_data = has_data
-        self.is_preliminary = True
+        self.is_preliminary = False
         # use kerning to avoid splitline taking up too much space
         # lower the whole thing a little to avoid clashing with hashed bit in plots with ratio
         self.mc_label = '#lower[0.1]{#splitline{MG5+Pythia8}{#lower[-0.15]{CUETP8M1}}}'
@@ -1168,8 +1168,8 @@ class SummaryPlotter(object):
         # figure out width per pad - get total width available, then divide by number of pads
         pad_width = (1 - left_margin - right_margin - (pad_to_pad_gap*(n_pads - 1))) / n_pads
 
-        pad_offset_bottom = 0.01 # spacing between bottom of RMS pad and canvas edge
-        pad_offset_top = 0.08  # spacing between top of mean pad and canvas edge - for CMS and lumi text
+        pad_offset_bottom = 0.01 # spacing between bottom of pad and canvas edge
+        pad_offset_top = 0.08  # spacing between top of pad and canvas edge - for CMS and lumi text
 
         # per-pad margins: these determine where the hist axes lie,
         # and are fractions of the **pad** width/height, not the global canvas
@@ -1181,7 +1181,7 @@ class SummaryPlotter(object):
 
         # extra bit to add to the top margins of lower and upper pads
         # to ensure y axis numbers don't get cut off
-        pad_top_margin = 0.012
+        pad_top_margin = 0.018
 
         for isel, selection_group in enumerate(selections):
             canvas.cd()
@@ -1227,9 +1227,10 @@ class SummaryPlotter(object):
             yax.SetLabelSize(yax.GetLabelSize()*factor*label_size_fudge)
             yax.SetLabelOffset(yax.GetLabelOffset()*factor*label_offset_fudge)
             yax.SetTickLength(yax.GetTickLength()*factor*tick_fudge)  # extra bit of fudging, probably becasue pads are sligthly different sizes
-            n_divisions = 1005  # fewer big ticks so less chance of overlapping with lower plot
-            n_divisions = 510
-            yax.SetNdivisions(n_divisions)
+            primary = 4 # 4 is the magic primary number, not 3
+            secondary = 5
+            n_divisions_opts = [primary, secondary, 0, True]
+            yax.SetNdivisions(*n_divisions_opts)
 
             # Set range using bin contents + error bars
             y_up, y_down = self.calc_hists_max_min(hist_group)
@@ -1254,20 +1255,15 @@ class SummaryPlotter(object):
         canvas.cd()
 
         # Add legend
-        # Bit of a hack here - to get the fill hashing style the same as in the plots,
-        # we have to put it in a pad of the same size as a plotting pad
-        # This is because the hashing separation is scaled by the pad size
-        # So we can't just put the legend in the global canvas.
-        # We also can't modify the fill style of the legend entries (I tried, it does nothing)
-        leg_y_top = 0.93
+        leg_y_top = 1 - pad_offset_top
         leg_left = pads[-1].GetAbsXlowNDC() + pads[-1].GetAbsWNDC() + pad_to_pad_gap
         leg_right = 1-0.02
-        leg_y_bottom = leg_y_top-(1.*pads[0].GetAbsHNDC())
+        leg_y_bottom = leg_y_top-pads[0].GetAbsHNDC()+(pad_bottom_margin*pads[0].GetAbsHNDC()) # want the pad to correspond to the plotable area
         leg_pad = ROOT.TPad("leg_pad_"+cu.get_unique_str(), "", leg_left, leg_y_bottom, leg_right, leg_y_top)
         ROOT.SetOwnership(leg_pad, False)  # important! otherwise seg fault
+        leg_pad.SetFillStyle(4000)
         # leg_pad.SetFillColor(ROOT.kYellow)
         # leg_pad.SetFillStyle(3004)
-        leg_pad.SetFillStyle(4000)
         leg_pad.SetLeftMargin(0)
         leg_pad.SetRightMargin(0)
         leg_pad.SetTopMargin(0)
@@ -1284,7 +1280,7 @@ class SummaryPlotter(object):
             # Assumes first line most important, so bolded
             # Dont account for blank lines
             num_header_lines = len([x for x in legend_header.split("\n") if len(x) > 0])
-            line_height = 0.1
+            line_height = 0.15
             offset = num_header_lines * line_height
             # move legend down by the height of the new TPaveText
             leg.SetY1(leg.GetY1()-offset)
@@ -1367,7 +1363,7 @@ class SummaryPlotter(object):
         # Get the lumi text aligned to right edge of axes
         # i.e. 1-pad_right_margin, but remember to scale by pad width
         end_x = 1 - right_margin - (pads[0].GetAbsWNDC() * pad_right_margin)
-        end_x = 0.985  # to match legend
+        # end_x = 0.985  # to match last pad
         # Figure out why physical region(s) are in plot, to get correct lumi
         do_zpj, do_dijet = False, False
         for sg in selections:

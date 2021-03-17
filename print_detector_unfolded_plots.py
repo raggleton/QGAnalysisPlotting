@@ -336,6 +336,7 @@ class DijetZPJGenPtBinnedPlotter(object):
                         xtitle=self.particle_title,
                         has_data=self.has_data,
                         ylim=[0, None],
+                        is_preliminary=False
                         )
             # plot.default_canvas_size = (600, 600)
             # plot.left_margin = 0.2

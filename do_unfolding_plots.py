@@ -326,6 +326,10 @@ class GenPtBinnedPlotter(BinnedPlotter):
         this_plot.y_padding_max_linear = 1.8
         this_plot.lumi = self.setup.lumi
 
+    def _modify_plot_paper(self, this_plot):
+        self._modify_plot(this_plot)
+        this_plot.is_preliminary = False
+
     def get_pt_bin_title(self, bin_edge_low, bin_edge_high):
         title = (("{jet_algo}\n"
                   "{region_label} region\n"
@@ -535,7 +539,8 @@ class GenPtBinnedPlotter(BinnedPlotter):
                 alt_mc_stats = calc_chi2_stats(unfolded_hist_bin_total_errors, alt_mc_gen_hist_bin, ematrix)
                 # print(mc_stats)
                 # print(alt_mc_stats)
-                nbins = unfolded_hist_bin_total_errors.GetNbinsX()
+                nbins = sum([1 for i in range(1, unfolded_hist_bin_total_errors.GetNbinsX()+1) 
+                             if unfolded_hist_bin_total_errors.GetBinContent(i) != 0])
                 # reduced_chi2 = mc_stats[0] / nbins
                 # alt_reduced_chi2 = alt_mc_stats[0] / nbins
 
@@ -572,7 +577,7 @@ class GenPtBinnedPlotter(BinnedPlotter):
                         **self.pt_bin_plot_args)
 
             plot.subplot_title = "Simulation / data"
-            self._modify_plot(plot)
+            self._modify_plot_paper(plot)
 
             # disable adding objects to legend & drawing - we'll do it manually
             plot.do_legend = False
@@ -1617,10 +1622,11 @@ class GenPtBinnedPlotter(BinnedPlotter):
                 this_syst = self.unfolder.get_exp_syst(syst_dict['label'])
                 syst_unfolded_hist_bin = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width(this_syst.syst_shifted_label, **hbc_args)
                 _remove_error_bars(syst_unfolded_hist_bin)
+                default_linestyle = 2 if 'down' in syst_dict['label'].lower() else 1
                 c = Contribution(syst_unfolded_hist_bin,
                                  label=syst_dict['label'],
                                  line_color=syst_dict['colour'], line_width=self.line_width,
-                                 line_style=2 if 'down' in syst_dict['label'].lower() else 1,
+                                 line_style=syst_dict.get('linestyle', default_linestyle),
                                  marker_color=syst_dict['colour'], marker_size=0,
                                  subplot=unfolded_hist_bin_stat_errors)
                 entries.append(c)
@@ -1870,7 +1876,7 @@ class GenPtBinnedPlotter(BinnedPlotter):
                         xlim=xlim,
                         ylim=ylim,
                         subplot_type=None)
-            self._modify_plot(plot)
+            self._modify_plot_paper(plot)
             plot.default_canvas_size = (800, 700)
             plot.legend.SetX1(0.43)
             plot.legend.SetY1(0.63)
@@ -2039,8 +2045,9 @@ class GenPtBinnedPlotter(BinnedPlotter):
                         has_data=self.setup.has_data,
                         xlim=xlim,
                         ylim=ylim,
-                        subplot_type=None)
-            self._modify_plot(plot)
+                        subplot_type=None,
+                        is_preliminary=False)
+            self._modify_plot_paper(plot)
             plot.default_canvas_size = (800, 700)
             plot.legend.SetX1(0.43)
             plot.legend.SetY1(0.63)
@@ -2952,6 +2959,10 @@ class RecoPtBinnedPlotter(BinnedPlotter):
         this_plot.left_margin = 0.16
         this_plot.lumi = self.setup.lumi
 
+    def _modify_plot_paper(self, this_plot):
+        self._modify_plot(this_plot)
+        this_plot.is_preliminary = False
+
     def get_pt_bin_title(self, bin_edge_low, bin_edge_high):
         title = (("{jet_algo}\n"
                   "{region_label} region\n"
@@ -3028,7 +3039,7 @@ class RecoPtBinnedPlotter(BinnedPlotter):
                         subplot_type='ratio',
                         subplot_title='Simulation / data',
                         subplot_limits=(0.5, 2.5) if self.setup.has_data else (0.75, 1.25))
-            self._modify_plot(plot)
+            self._modify_plot_paper(plot)
 
             # disable adding objects to legend & drawing - we'll do it manually
             plot.do_legend = False

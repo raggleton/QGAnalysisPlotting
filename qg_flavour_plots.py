@@ -208,7 +208,8 @@ def compare_flavour_fractions_vs_pt(input_files, dirnames, pt_bins, labels, flav
              title=title,
              xlim=(pt_bins[0][0], pt_bins[-1][1]),
              ylim=(0, 1),
-             has_data=False)
+             has_data=False,
+             is_preliminary=False)
     p.default_canvas_size = (600, 600)
     try:
         p.plot("AP")
