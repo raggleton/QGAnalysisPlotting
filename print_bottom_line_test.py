@@ -126,7 +126,6 @@ def get_null_bins(h):
 
 
 def remove_null_bins(arr, null_bins):
-    print(arr.shape)
     if len(arr.shape) > 1:
         for ax in range(len(arr.shape)):
             if arr.shape[ax] > 1:
@@ -162,6 +161,8 @@ def get_bottom_line_stats(setup, no_null_bins=True):
                                                       ybinning='generator'
                                                   )
 
+
+
     vyy = unfolder.make_diag_cov_hist_from_errors(
               h1d=unfolder.input_hist_gen_binning_bg_subtracted,
               inverse=False
@@ -172,15 +173,25 @@ def get_bottom_line_stats(setup, no_null_bins=True):
                           ybinning='generator'
                       )
 
+
     vyy_inv = unfolder.make_diag_cov_hist_from_errors(
                   h1d=unfolder.input_hist_gen_binning_bg_subtracted,
                   inverse=True
               )
+
     vyy_inv_gen_binning = unfolder.get_ndarray_signal_region_no_overflow(
                               vyy_inv,
                               xbinning='generator',
                               ybinning='generator'
                           )
+
+    if no_null_bins:
+        null_bins = get_null_bins(vyy_gen_binning)
+        print('null bins smeared space:', null_bins)
+        vyy_gen_binning = remove_null_bins(vyy_gen_binning, null_bins)
+        vyy_inv_gen_binning = remove_null_bins(vyy_inv_gen_binning, null_bins)
+        folded_mc_truth_gen_binning = remove_null_bins(folded_mc_truth_gen_binning, null_bins)
+        input_hist_gen_binning_bg_subtracted_signal = remove_null_bins(input_hist_gen_binning_bg_subtracted_signal, null_bins)
 
     # folded_mc_truth_gen_binning = unfolder.convert_reco_binned_hist_to_gen_binned(unfolder.get_folded_mc_truth())
     # input_hist_gen_binning_bg_subtracted_signal = unfolder.input_hist_gen_binning_bg_subtracted
@@ -243,6 +254,9 @@ def get_bottom_line_stats(setup, no_null_bins=True):
                                       )
     # folded_alt_mc_truth_gen_binning = unfolder.convert_reco_binned_hist_to_gen_binned(unfolder.fold_generator_level(setup.region['alt_hist_mc_gen']))
 
+    if no_null_bins:
+        folded_alt_mc_truth_gen_binning = remove_null_bins(folded_alt_mc_truth_gen_binning, null_bins)
+
     alt_smeared_scaled_chi2 = partial(scaled_chi2,
                                       ref_hist=input_hist_gen_binning_bg_subtracted_signal,
                                       scaled_hist=folded_alt_mc_truth_gen_binning,
@@ -273,7 +287,7 @@ def get_bottom_line_stats(setup, no_null_bins=True):
                           xbinning='generator',
                           ybinning=None
                       )
-    print("unfolded_signal.shape:", unfolded_signal.shape)
+    # print("unfolded_signal.shape:", unfolded_signal.shape)
 
     hist_truth_signal = unfolder.get_ndarray_signal_region_no_overflow(
                             unfolder.hist_truth,
@@ -293,7 +307,7 @@ def get_bottom_line_stats(setup, no_null_bins=True):
                        )
     if no_null_bins:
         null_bins = get_null_bins(vxx_total_signal)
-        print('null bins:', null_bins)
+        print('null bins unfolded space:', null_bins)
         unfolded_signal = remove_null_bins(unfolded_signal, null_bins)
         hist_truth_signal = remove_null_bins(hist_truth_signal, null_bins)
         vxx_total_signal = remove_null_bins(vxx_total_signal, null_bins)
@@ -458,7 +472,7 @@ def main():
                         default=["all"])
 
     parser.add_argument("--noNullBins",
-                        help='Remove null bins',
+                        help='Remove null bins - this is important for inversion!',
                         action='store_true')
 
     region_group = parser.add_argument_group('Region selection')
