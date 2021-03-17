@@ -218,7 +218,7 @@ class Plot(object):
     which can have several contributions.
     """
 
-    def __init__(self, contributions=None, what="graph",
+    def __init__(self, contributions=None, what="hist",
                  title=None, xtitle=None, ytitle=None, xlim=None, ylim=None,
                  legend=True, extend=False,
                  subplot=None, subplot_type=None, subplot_title=None, subplot_limits=None,
