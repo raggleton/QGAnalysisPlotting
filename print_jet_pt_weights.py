@@ -309,14 +309,14 @@ def do_weight_vs_genjet_pt_plot(input_filename, output_filename):
 
 def do_jet_pt_with_var_cuts(histname, cuts, input_filename, output_filename):
     ROOT.gStyle.SetPalette(palette_1D)
-    total = len(cuts) -1 + .1
-    if len(cuts) <= 3:
+    total = len(cuts) - 1 + .1 # slight offset to not hit the maximum or minimum
+    # if len(cuts) <= 3:
         # ROOT.gStyle.SetPalette(ROOT.kCool)
-        num_colours = ROOT.TColor.GetPalette().fN - 1
-        print('num_colours:', num_colours)
-        for index in range(len(cuts)):
-            print(num_colours, index, len(cuts), index / len(cuts), num_colours * index / total)
-            print(index, ROOT.TColor.GetColorPalette(int(num_colours * 1. * index / total)))
+        # num_colours = ROOT.TColor.GetPalette().fN - 1
+        # print('num_colours:', num_colours)
+        # for index in range(len(cuts)):
+        #     print(num_colours, index, len(cuts), index / len(cuts), num_colours * index / total)
+        #     print(index, ROOT.TColor.GetColorPalette(int(num_colours * 1. * index / total)))
     tf = cu.open_root_file(input_filename)
     h3d = cu.get_from_tfile(tf, histname)
     if h3d.GetEntries() == 0:
@@ -348,7 +348,7 @@ def do_jet_pt_with_var_cuts(histname, cuts, input_filename, output_filename):
     jet_str = pt_genjet_str if "_vs_pt_genjet_vs_" in histname else pt_str
     weight_str = "(unweighted)" if "unweighted" in histname else "(weighted)"
     ratio_lims = (0.5, 2.5)
-    ratio_lims = None
+    ratio_lims = (0.5, 1.1)
     plot = Plot(conts, what='hist',
                 title='%s for cuts on %s %s' % (jet_str, get_var_str(histname), weight_str),
                 xtitle=None,
@@ -770,7 +770,7 @@ if __name__ == "__main__":
         # "workdir_102X_v2_ak4puppi_fixSelCutOrder_puppiJER_tightJetId_constitPt0MultPt1_PUWeightCuts",
         # "workdir_102X_v2_ak4puppi_fixSelCutOrder_puppiJER_tightJetId_constitPt0MultPt1_WeightCuts",
         "workdir_102X_v3data_v2mc_ak4puppi_fixSelCutOrder_puppiJER_tightJetId_constitPt0MultPt1_WeightCuts_zjAsym_genjetGhostFlav_noBCpref_genJetNoMu_fixCharged_jetIDSel_newBinning6_noPUcuts",
-        "workdir_102X_v3data_v2mc_ak4puppi_fixSelCutOrder_puppiJER_tightJetId_constitPt0MultPt1_WeightCuts_zjAsym_genjetGhostFlav_noBCpref_genJetNoMu_fixCharged_jetIDSel_newBinning6_onlyPUPtHatCut",
+        # "workdir_102X_v3data_v2mc_ak4puppi_fixSelCutOrder_puppiJER_tightJetId_constitPt0MultPt1_WeightCuts_zjAsym_genjetGhostFlav_noBCpref_genJetNoMu_fixCharged_jetIDSel_newBinning6_onlyPUPtHatCut",
     ]
 
 
@@ -834,7 +834,7 @@ if __name__ == "__main__":
                     cuts = [100, 75, 50, 25, 10, 8, 5, 2]
                     cuts = [25, 10, 8, 5, 4, 3, 2]
                     if "PU_ptHat" in hname:
-                        cuts = [25, 1, 0.7]
+                        cuts = [1, 0.7]
                     if 'pt_genjet_genHT_ratio' in hname:
                         cuts.extend([1.5, 1])
                     if 'pt_jet_genHT_ratio' in hname:
