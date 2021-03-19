@@ -2167,6 +2167,9 @@ if __name__ == "__main__":
     parser.add_argument("--onlyYodaData",
                         action='store_true',
                         help='Only plot data & Yoda inputs (ignore MG+Py, H++)')
+    parser.add_argument("--onlyYodaOldMC",
+                        action='store_true',
+                        help='Only plot data & non-Yoda MCs (i.e. only MG+Py, H++)')
     parser.add_argument("--doMetricVsPt",
                         action='store_true',
                         help='Plot metric vs pT (e.g. mean vs pT)')
@@ -2184,6 +2187,9 @@ if __name__ == "__main__":
 
     if args.onlyYodaData and not args.h5inputRivet:
         raise RuntimeError("--onlyYodaData requires --h5inputRivet")
+
+    if args.onlyYodaData and args.onlyYodaOldMC:
+        raise RuntimeError("--onlyYodaData and --onlyYodaOldMC are mutually exclusive, can only use one of them")
 
     if not args.outputDir:
         if args.h5input:
@@ -2205,7 +2211,7 @@ if __name__ == "__main__":
     print("# entries:", len(df.index))
 
     yoda_labels = []
-    if args.h5inputRivet:
+    if args.h5inputRivet and not args.onlyYodaOldMC:
         print("Reading in RIVET data from existing HDF5 file...")
         with pd.HDFStore(args.h5inputRivet) as store:
             df_rivet = store['df']
@@ -2292,7 +2298,7 @@ if __name__ == "__main__":
     ak4_str = "AK4"
     ak8_str = "AK8"
 
-    if not args.h5inputRivet and not args.onlyYodaData:
+    if (not args.h5inputRivet and not args.onlyYodaData) or args.onlyYodaOldMC:
         plotter.filename_append += "_onlyDataNomMC"
 
     filename_append = plotter.filename_append
