@@ -96,6 +96,20 @@ SAMPLE_STYLE_DICTS = {
         "marker_size": COMMON_STYLE_DICT['marker_size'] * 1,
     },
 
+    dataframe_yoda_key("Sherpa LO"): {
+        "color": ROOT.kGreen+2,
+        "label": "Sherpa LO",
+        "marker_style": cu.Marker.get('triangleDown', filled=False),
+        "marker_size": COMMON_STYLE_DICT['marker_size'] * 1,
+    },
+
+    dataframe_yoda_key("Sherpa LO+jet"): {
+        "color": ROOT.kViolet-6,
+        "label": "Sherpa LO+jet",
+        "marker_style": cu.Marker.get('triangleUp', filled=False),
+        "marker_size": COMMON_STYLE_DICT['marker_size'] * 1,
+    },
+
     dataframe_yoda_key("Herwig7 CH3"): {
         "color": ROOT.kOrange-3,
         "label": "Herwig7 CH3",
@@ -2222,13 +2236,20 @@ if __name__ == "__main__":
         print(mean_columns)
         df = pd.merge(df, df_rivet, how='outer')
         # sort manually, but check the ones we want are actually in the dataframe
-        yoda_labels_ideal = ['Pythia8_CP2', 'Pythia8_CP5', 'Herwig7_CH3', 'Sherpa']
-        yoda_labels = []
-        for yl in yoda_labels_ideal:
-            if yl not in mean_columns:
-                warnings.warn("Missing yoda input %s from rivet file" % yl)
-            else:
-                yoda_labels.append(yl)
+        only_these_yoda_labels = ['Pythia8_CP2', 'Pythia8_CP5', 'Herwig7_CH3', 'Sherpa_LO', 'Sherpa_LO+jet'][:]
+        for mc in mean_columns:
+            if only_these_yoda_labels:
+                if mc in only_these_yoda_labels:
+                    yoda_labels.append(mc)
+                else:
+                    print("Skipping column", mc)
+
+        # yoda_labels_ideal = ['Pythia8_CP2', 'Pythia8_CP5', 'Herwig7_CH3', 'Sherpa']
+        # for yl in yoda_labels_ideal:
+        #     if yl not in mean_columns:
+        #         warnings.warn("Missing yoda input %s from rivet file" % yl)
+        #     else:
+        #         yoda_labels.append(yl)
         print("Setting yoda_labels to", yoda_labels)
 
     convert_df_types(df)
