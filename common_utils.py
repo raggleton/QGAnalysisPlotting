@@ -650,7 +650,7 @@ def th1_to_ndarray(hist_A, oflow_x=False):
     ncol = hist_A.GetNbinsX()
     if oflow_x:
         ncol += 2
-    
+
     # makes column vectors
     contents = np.zeros(shape=(1, ncol), dtype=np.float64)
     errors = np.zeros(shape=(1, ncol), dtype=np.float64)
@@ -912,3 +912,26 @@ def get_lumi_str(do_dijet=True, do_zpj=True):
     #     lumi = " <#kern[-0.5dx]{ }35.9"
     return lumi
 
+
+def tgraph_to_th1(gr, bins=None):
+    if not isinstance(gr, (ROOT.TGraphErrors, ROOT.TGraphAsymmErrors)) and bins is None:
+        raise TypeError("Cannot convert a plain TGraph without explicit binning")
+
+    N = gr.GetN()
+    x_arr = array('d', gr.GetX())
+    y_arr = array('d', gr.GetY())
+
+    if not bins:
+        bins = [x - abs(gr.GetErrorXlow(i)) for i, x in enumerate(x_arr)]
+        bins.append(x_arr[-1] + gr.GetErrorXhigh(N-1))
+        bins = np.array(bins, dtype=float)
+
+    assert(N == len(bins)-1)
+    assert(N == len(x_arr))
+
+    h = ROOT.TH1D(get_unique_str(), "", N, bins)
+    for i in range(N):
+        h.SetBinContent(i+1, y_arr[i])
+        h.SetBinError(i+1, max(abs(gr.GetErrorYhigh(i)), abs(gr.GetErrorYlow(i))))
+    h.SetEntries(N)
+    return h

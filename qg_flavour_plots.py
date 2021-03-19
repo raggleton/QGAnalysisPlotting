@@ -9,6 +9,7 @@ import numpy as np
 import os
 from array import array
 import warnings
+from itertools import cycle
 
 # My stuff
 from comparator import Contribution, Plot, grab_obj, ZeroContributions
@@ -32,6 +33,17 @@ ROOT.gROOT.SetBatch(1)
 ROOT.TH1.SetDefaultSumw2()
 ROOT.gStyle.SetOptStat(0)
 
+
+FLAV_STR_DICT = {
+    'u': 'Up quark',
+    'd': 'Down quark',
+    'c': 'Charm quark',
+    's': 'Strange quark',
+    'b': 'Bottom quark',
+    't': 'Top quark',
+    'g': 'Gluon',
+    '1-g': 'Non-gluon',
+}
 
 class FlavourInfoCache(object):
     """Cache flavour efficiencies, such that getting efficiencies from TFiles
@@ -123,16 +135,6 @@ def get_flavour_efficiencies(input_file, hist_name, bins):
         flav_dict['total'].append([total, total_err])
 
 
-    flav_str_dict = {
-        'u': 'Up quark',
-        'd': 'Down quark',
-        'c': 'Charm quark',
-        's': 'Strange quark',
-        'b': 'Bottom quark',
-        't': 'Top quark',
-        'g': 'Gluon',
-        '1-g': 'Non-gluon',
-    }
     flav_eff_dict = {
         'd': None,
         'u': None,
@@ -214,17 +216,7 @@ def compare_flavour_fractions_vs_pt(input_files, dirnames, pt_bins, labels, flav
                              leg_draw_opt="LP")
             contribs.append(c)
 
-    flav_str_dict = {
-        'u': 'Up quark',
-        'd': 'Down quark',
-        'c': 'Charm quark',
-        's': 'Strange quark',
-        'b': 'Bottom quark',
-        't': 'Top quark',
-        'g': 'Gluon',
-        '1-g': 'Non-gluon',
-    }
-    flav_str = flav_str_dict[flav]
+    flav_str = FLAV_STR_DICT[flav]
     ytitle = "Fraction of %s %ss" % (flav_str.lower(), get_jet_str(''))
     p = Plot(contribs,
              what='graph',
@@ -259,9 +251,9 @@ def create_contibutions_compare_vs_pt(input_files, hist_names, pt_bins, labels, 
             for ifile, hname in zip(input_files, hist_names)]
     N = len(bin_centers)
 
-    colours = [ROOT.kBlack, ROOT.kBlue, ROOT.kRed, ROOT.kGreen+2, ROOT.kOrange-3]
+    colours = cycle([ROOT.kBlack, ROOT.kBlue, ROOT.kRed, ROOT.kGreen+2, ROOT.kOrange-3, ROOT.kViolet+6])
 
-    for i, fdict in enumerate(info):
+    for i, (fdict, label, col) in enumerate(zip(info, labels, colours)):
         if flav in ['u', 'd', 's', 'c', 'b', 't', 'g']:
             obj = fdict[flav].CreateGraph()
         else:
@@ -270,10 +262,10 @@ def create_contibutions_compare_vs_pt(input_files, hist_names, pt_bins, labels, 
         if obj.GetN() == 0:
             continue
         c = Contribution(obj,
-                         label=labels[i],
-                         line_color=colours[i], line_width=1,
+                         label=label,
+                         line_color=col, line_width=1,
                          line_style=1,
-                         marker_style=20+i, marker_color=colours[i], marker_size=1,
+                         marker_style=20+i, marker_color=col, marker_size=1,
                          leg_draw_opt="LP",
                          **contrib_kwargs)
         contribs.append(c)
@@ -285,17 +277,7 @@ def compare_flavour_fraction_hists_vs_pt_from_contribs(contribs, flav, output_fi
 
     TODO: use this one more often - compare_flavour_fractions_vs_pt() is almost identical but has to deal with npartons
     """
-    flav_str_dict = {
-        'u': 'Up quark',
-        'd': 'Down quark',
-        'c': 'Charm quark',
-        's': 'Strange quark',
-        'b': 'Bottom quark',
-        't': 'Top quark',
-        'g': 'Gluon',
-        '1-g': 'Non-gluon',
-    }
-    flav_str = flav_str_dict[flav]
+    flav_str = FLAV_STR_DICT[flav]
     ytitle = "Fraction of %s %ss" % (flav_str.lower(), get_jet_str(''))
     p = Plot(contribs,
              what='graph',
@@ -359,17 +341,7 @@ def compare_flavour_fraction_hists_vs_pt(input_files, hist_names, pt_bins, label
                          leg_draw_opt="LP")
         contribs.append(c)
 
-    flav_str_dict = {
-        'u': 'Up quark',
-        'd': 'Down quark',
-        'c': 'Charm quark',
-        's': 'Strange quark',
-        'b': 'Bottom quark',
-        't': 'Top quark',
-        'g': 'Gluon',
-        '1-g': 'Non-gluon',
-    }
-    flav_str = flav_str_dict[flav]
+    flav_str = FLAV_STR_DICT[flav]
     ytitle = "Fraction of %s %ss" % (flav_str.lower(), get_jet_str(''))
     p = Plot(contribs,
              what='graph',

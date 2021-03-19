@@ -597,10 +597,9 @@ def compare_flavour_fraction_plots_with_rivet(root_dir,
     radius_ind = 1 if '_ak4puppi_' in root_dir else 2
     radius_str = 'AK4' if radius_ind == 1 else 'AK8'
 
+    # Z+jets
     if zpj_dirname or rivet_zpj_files:
-        # Z+jets
         zpj_histname = qgf.get_flavour_hist_name(dirname=zpj_dirname, var_prepend=var_prepend, which_jet="1")
-
         zpj_rivet_histname = qgf.get_rivet_flavour_hist_name(dirname='CMS_2018_PAS_SMP_18_QGX_ZPJ', region='zpj', radius_ind=radius_ind)
 
         for this_flav in ['g', 'u', 'd', 's', 'c', 'b'][:]:
@@ -628,8 +627,8 @@ def compare_flavour_fraction_plots_with_rivet(root_dir,
                                                                        output_filename=output_filename,
                                                                        title=qgc.ZpJ_LABEL + "\n%s jets" % radius_str)
 
+    # Central dijet
     if dj_cen_dirname or rivet_dijet_files:
-        # Central dijet
         dj_cen_histname = qgf.get_flavour_hist_name(dirname=dj_cen_dirname, var_prepend=var_prepend, which_jet="1")
         dijet_cen_rivet_histname = qgf.get_rivet_flavour_hist_name(dirname='CMS_2018_PAS_SMP_18_QGX_DIJET', region='central_jet', radius_ind=radius_ind)
 
@@ -659,8 +658,8 @@ def compare_flavour_fraction_plots_with_rivet(root_dir,
                                                                        output_filename=output_filename,
                                                                        title=qgc.Dijet_CEN_LABEL + "\n%s jets" % radius_str)
 
+    # Forward dijet
     if dj_fwd_dirname and rivet_dijet_files:
-        # Forward dijet
         dj_fwd_histname = qgf.get_flavour_hist_name(dirname=dj_fwd_dirname, var_prepend=var_prepend, which_jet="1")
         dijet_fwd_rivet_histname = qgf.get_rivet_flavour_hist_name(dirname='CMS_2018_PAS_SMP_18_QGX_DIJET', region='forward_jet', radius_ind=radius_ind)
 
@@ -688,6 +687,105 @@ def compare_flavour_fraction_plots_with_rivet(root_dir,
                                                                        flav=this_flav,
                                                                        output_filename=output_filename,
                                                                        title=qgc.Dijet_FWD_LABEL + "\n%s jets" % radius_str)
+
+    # Do g ratio in dijet vs ZJet
+    if all([rivet_dijet_files, rivet_zpj_files, dj_cen_dirname, zpj_dirname]):
+        # Central dijet
+        dj_cen_histname = qgf.get_flavour_hist_name(dirname=dj_cen_dirname, var_prepend=var_prepend, which_jet="1")
+        dijet_cen_rivet_histname = qgf.get_rivet_flavour_hist_name(dirname='CMS_2018_PAS_SMP_18_QGX_DIJET', region='central_jet', radius_ind=radius_ind)
+        # Z+jets
+        zpj_histname = qgf.get_flavour_hist_name(dirname=zpj_dirname, var_prepend=var_prepend, which_jet="1")
+        zpj_rivet_histname = qgf.get_rivet_flavour_hist_name(dirname='CMS_2018_PAS_SMP_18_QGX_ZPJ', region='zpj', radius_ind=radius_ind)
+
+        for this_flav in ['g', 'u', 'd', 's', 'c', 'b'][:]:
+            non_rivet_files = []
+            non_rivet_histnames = []
+            non_rivet_labels = []
+            if os.path.isfile(os.path.join(root_dir, qgc.QCD_FILENAME)):
+                non_rivet_files.append(os.path.join(root_dir, qgc.QCD_FILENAME))
+                non_rivet_histnames.append(dj_cen_histname)
+                non_rivet_labels.append(MG_SAMPLE)
+
+            if os.path.isfile(os.path.join(root_dir, qgc.QCD_HERWIG_FILENAME)):
+                non_rivet_files.append(os.path.join(root_dir, qgc.QCD_HERWIG_FILENAME))
+                non_rivet_histnames.append(dj_cen_histname)
+                non_rivet_labels.append(HPP_SAMPLE)
+
+            dj_cen_contribs = qgf.create_contibutions_compare_vs_pt(input_files=[*non_rivet_files, *rivet_dijet_files],
+                                                                    hist_names=[*non_rivet_histnames, *[dijet_cen_rivet_histname for r in rivet_dijet_files]],
+                                                                    pt_bins=pt_bins,
+                                                                    labels=[*non_rivet_labels, *rivet_dijet_labels],
+                                                                    flav=this_flav)
+
+            non_rivet_files = []
+            non_rivet_histnames = []
+            non_rivet_labels = []
+            if os.path.isfile(os.path.join(root_dir, qgc.DY_FILENAME)):
+                non_rivet_files.append(os.path.join(root_dir, qgc.DY_FILENAME))
+                non_rivet_histnames.append(zpj_histname)
+                non_rivet_labels.append(MG_SAMPLE)
+            if os.path.isfile(os.path.join(root_dir, qgc.DY_HERWIG_FILENAME)):
+                non_rivet_files.append(os.path.join(root_dir, qgc.DY_HERWIG_FILENAME))
+                non_rivet_histnames.append(zpj_histname)
+                non_rivet_labels.append(HPP_SAMPLE)
+
+            zpj_contribs = qgf.create_contibutions_compare_vs_pt(input_files=[*non_rivet_files, *rivet_zpj_files],
+                                                                 hist_names=[*non_rivet_histnames, *[zpj_rivet_histname for r in rivet_zpj_files]],
+                                                                 pt_bins=pt_bins,
+                                                                 labels=[*non_rivet_labels, *rivet_zpj_labels],
+                                                                 flav=this_flav)
+
+            # Now create ratio hists from each contrib pair
+            if len(dj_cen_contribs) != len(zpj_contribs):
+                raise ValueError('len(dj_cen_contribs) != len(zpj_contribs)')
+
+            ratio_contribs = []
+            for dj_contrib, zpj_contrib in zip(dj_cen_contribs, zpj_contribs):
+                h_ratio = cu.tgraph_to_th1(dj_contrib.obj)
+                h_ratio.Divide(cu.tgraph_to_th1(zpj_contrib.obj))
+                ratio_contrib = Contribution(h_ratio,
+                                             label=dj_contrib.label,
+                                             line_color=dj_contrib.line_color,
+                                             line_width=dj_contrib.line_width,
+                                             line_style=dj_contrib.line_style,
+                                             marker_style=dj_contrib.marker_style,
+                                             marker_color=dj_contrib.marker_color,
+                                             marker_size=dj_contrib.marker_size,
+                                             leg_draw_opt=dj_contrib.leg_draw_opt,)
+                ratio_contribs.append(ratio_contrib)
+
+            flav_str = qgf.FLAV_STR_DICT[this_flav]
+            ytitle = "%s : %s" % (qgc.Dijet_CEN_LABEL, qgc.ZpJ_LABEL)
+            p = Plot(ratio_contribs,
+                     what='hist',
+                     xtitle="p_{T}^{jet} [GeV]",
+                     ytitle=ytitle,
+                     title="%s flavour\n%s jets" % (flav_str, radius_str),
+                     xlim=(50, 2000),
+                     # ylim=(0, 1),
+                     has_data=False,
+                     is_preliminary=False)
+            p.default_canvas_size = (600, 600)
+
+            output_filename="%s/dj_central_vs_zpj_%s_flavour_fractions_compare_rivet_%s.%s" % (plot_dir, this_flav, radius_str, OUTPUT_FMT)
+            try:
+                p.plot("E NOSTACK")
+                # p.main_pad.SetLeftMargin(0.18)
+                # p.get_modifier().GetXaxis().SetTitleOffset(1.4)
+                # p.get_modifier().GetXaxis().SetTitleSize(.045)
+                # p.get_modifier().GetYaxis().SetTitleSize(.025)
+                p.legend.SetX1(0.56)
+                p.legend.SetY1(0.65)
+                p.legend.SetY2(0.87)
+                if len(ratio_contribs) >=4:
+                    p.legend.SetY1(0.75)
+                    p.legend.SetX1(0.5)
+                    p.legend.SetNColumns(2)
+                p.set_logx(do_more_labels=True, do_exponent=False)
+                p.save(output_filename)
+            except ZeroContributions as e:
+                warnings.warn("No contributions for %s" % output_filename)
+                print(e.message)
 
 
 if __name__ == '__main__':
@@ -723,7 +821,7 @@ if __name__ == '__main__':
     print(args)
 
     if args.rivetdj or args.rivetzpj:
-        do_flavour_fraction_plots_with_rivet(plot_dir=os.path.join("flav_fractions_with_rivet_buggy"),
+        do_flavour_fraction_plots_with_rivet(plot_dir=os.path.join("flav_fractions_with_rivet"),
                                              rivet_dijet_files=args.rivetdj,
                                              rivet_dijet_labels=args.rivetdjLabel,
                                              rivet_zpj_files=args.rivetzpj,
@@ -736,7 +834,7 @@ if __name__ == '__main__':
                                                       zpj_dirname="ZPlusJets_QG" if args.zpj else None,
                                                       dj_cen_dirname="Dijet_QG_central_tighter" if args.dj else None,
                                                       dj_fwd_dirname="Dijet_QG_forward_tighter" if args.dj else None,
-                                                      plot_dir=os.path.join("flav_fractions_with_rivet_compare_buggy"),
+                                                      plot_dir=os.path.join("flav_fractions_with_rivet_compare"),
                                                       rivet_dijet_files=args.rivetdj,
                                                       rivet_dijet_labels=args.rivetdjLabel,
                                                       rivet_zpj_files=args.rivetzpj,
