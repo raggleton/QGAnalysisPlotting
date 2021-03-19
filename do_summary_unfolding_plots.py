@@ -19,6 +19,7 @@ import numpy as np
 from itertools import product
 from array import array
 from copy import copy
+import warnings
 
 import yoda
 
@@ -36,6 +37,8 @@ import rivet_naming as rn
 import metric_calculators as metrics
 from extract_rivet_summary_stats import get_dataframe_from_yoda_inputs, dataframe_yoda_key, convert_df_types
 
+# monkey-patch warning formatter
+warnings.formatwarning = cu._formatwarning
 
 ROOT.gErrorIgnoreLevel = ROOT.kWarning
 ROOT.gErrorIgnoreLevel = ROOT.kError
