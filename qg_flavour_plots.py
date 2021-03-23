@@ -317,7 +317,7 @@ def compare_flavour_fraction_hists_vs_pt_from_contribs(contribs, flav, output_fi
         p.legend.SetY1(0.65)
         p.legend.SetY2(0.87)
         if len(contribs) >=4:
-            p.legend.SetY1(0.75)
+            p.legend.SetY1(0.7)
             p.legend.SetX1(0.5)
             p.legend.SetNColumns(2)
         p.set_logx(do_more_labels=True, do_exponent=False)
