@@ -1833,7 +1833,7 @@ class SummaryPlotter(object):
                 # draw hashed area for data uncertainty
                 # Easiest way to get errors right is to do data (with 0 errors)
                 # and divide by data (with errors), as if you had MC = data with 0 error
-                data_hist = hist_group[0]
+                data_hist = upper_hist_group[0]
                 data_no_errors = data_hist.Clone()
                 cu.remove_th1_errors(data_no_errors)
                 data_total_ratio = data_no_errors.Clone()
