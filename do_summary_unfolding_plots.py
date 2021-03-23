@@ -1408,6 +1408,7 @@ class SummaryPlotter(object):
         gc_stash.append(cms_latex)
 
         canvas.Update()
+        cu.check_dir_exists_create(os.path.dirname(os.path.abspath(output_file)))
         canvas.SaveAs(output_file)
 
 
@@ -2147,6 +2148,7 @@ class SummaryPlotter(object):
         gc_stash.append(cms_latex)
 
         canvas.Update()
+        cu.check_dir_exists_create(os.path.dirname(os.path.abspath(output_file)))
         canvas.SaveAs(output_file)
 
 
