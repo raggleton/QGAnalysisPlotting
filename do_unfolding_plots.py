@@ -77,7 +77,7 @@ if not any(['profile' in locals(),
 class Setup(object):
     """Loads of common consts, useful for plotting etc"""
 
-    def __init__(self, jet_algo, region, angle, output_dir='.', has_data=False, is_ave_pt_binning=False):
+    def __init__(self, jet_algo, region, angle, output_dir='.', has_data=False, is_ave_pt_binning=False, is_preliminary=True):
         self.jet_algo = jet_algo
         self.region = region
         do_zpj = "ZPlusJets" in region['name']
@@ -111,6 +111,11 @@ class Setup(object):
         self.output_dir = output_dir
         self.output_fmt = 'pdf'
         self.append = "%s_%s" % (region['name'], angle.var)  # common str to put on filenames, etc. don't need angle_prepend as 'groomed' in region name
+        self.is_preliminary = is_preliminary
+
+    @property
+    def paper_str(self):
+        return "_paper" if not self.is_preliminary else ""
 
 
 PLOT_STYLES = dict(
@@ -328,7 +333,7 @@ class GenPtBinnedPlotter(BinnedPlotter):
 
     def _modify_plot_paper(self, this_plot):
         self._modify_plot(this_plot)
-        this_plot.is_preliminary = False
+        this_plot.is_preliminary = self.setup.is_preliminary
 
     def get_pt_bin_title(self, bin_edge_low, bin_edge_high):
         title = (("{jet_algo}\n"
@@ -637,7 +642,9 @@ class GenPtBinnedPlotter(BinnedPlotter):
             plot.subplot_legend.Draw()
             plot.canvas.cd()
 
-            self.save_plot(plot, "%s/unfolded_%s_alt_truth_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
+            stp = self.setup
+            fname = f"unfolded_{stp.append}_alt_truth_bin_{ibin:d}_divBinWidth{stp.paper_str}.{stp.output_fmt}"
+            self.save_plot(plot, os.path.join(stp.output_dir, fname))
 
             if do_zoomed:
                 if self.setup.angle.var in ["jet_thrust_charged", "jet_width_charged", "jet_thrust", "jet_width"]:
@@ -646,7 +653,8 @@ class GenPtBinnedPlotter(BinnedPlotter):
                     plot.y_padding_min_log = 0.5
                     plot.ylim = None
                     plot.set_logy(do_exponent=False, do_more_labels=False)
-                    self.save_plot(plot, "%s/unfolded_%s_alt_truth_bin_%d_divBinWidth_logY.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
+                    fname = f"unfolded_{stp.append}_alt_truth_bin_{ibin:d}_divBinWidth_logY.{stp.output_fmt}"
+                    self.save_plot(plot, os.path.join(stp.output_dir, fname))
 
                 if self.setup.angle.var in ["jet_LHA_charged", "jet_thrust_charged", "jet_width_charged", "jet_thrust", "jet_width"]:
                     bin_edges = cu.get_bin_edges(mc_gen_hist_bin, 'x')
@@ -662,7 +670,8 @@ class GenPtBinnedPlotter(BinnedPlotter):
                     plot2.subplot_title = "* / Generator"
                     plot2.plot("NOSTACK E1")
                     # plot2.set_logx(do_exponent=False)
-                    self.save_plot(plot2, "%s/unfolded_%s_alt_truth_bin_%d_divBinWidth_lowX.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
+                    fname = f"unfolded_{stp.append}_alt_truth_bin_{ibin:d}_divBinWidth_lowX.{stp.output_fmt}"
+                    self.save_plot(plot2, os.path.join(stp.output_dir, fname))
 
 
     def plot_unfolded_with_unreg_normalised(self):
@@ -1894,7 +1903,9 @@ class GenPtBinnedPlotter(BinnedPlotter):
             line.SetLineColor(ROOT.kGray+2)
             line.SetLineColor(ROOT.kBlack)
             line.Draw()
-            self.save_plot(plot, "%s/unfolded_syst_variations_vs_nominal_%s_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
+            stp = self.setup
+            fname = f'unfolded_syst_variations_vs_nominal_{stp.append}_bin_{ibin:d}_divBinWidth{stp.paper_str}.{stp.output_fmt}'
+            self.save_plot(plot, os.path.join(self.setup.output_dir, fname))
 
     def plot_syst_fraction_unnormalised(self):
         """Plot varation / central value on absolute hists
@@ -2045,8 +2056,7 @@ class GenPtBinnedPlotter(BinnedPlotter):
                         has_data=self.setup.has_data,
                         xlim=xlim,
                         ylim=ylim,
-                        subplot_type=None,
-                        is_preliminary=False)
+                        subplot_type=None)
             self._modify_plot_paper(plot)
             plot.default_canvas_size = (800, 700)
             plot.legend.SetX1(0.43)
@@ -2065,7 +2075,9 @@ class GenPtBinnedPlotter(BinnedPlotter):
             line.SetLineColor(ROOT.kGray+2)
             line.SetLineColor(ROOT.kBlack)
             line.Draw()
-            self.save_plot(plot, "%s/unfolded_unnormalised_syst_variations_vs_nominal_%s_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
+            stp = self.setup
+            fname = f'unfolded_unnormalised_syst_variations_vs_nominal_{stp.append}_bin_{ibin:d}_divBinWidth{stp.paper_str}.{stp.output_fmt}'
+            self.save_plot(plot, os.path.join(self.setup.output_dir, fname))
 
     def plot_detector_normalised_bg_subtracted(self, alt_detector=None):
         for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
@@ -2961,7 +2973,7 @@ class RecoPtBinnedPlotter(BinnedPlotter):
 
     def _modify_plot_paper(self, this_plot):
         self._modify_plot(this_plot)
-        this_plot.is_preliminary = False
+        this_plot.is_preliminary = self.setup.is_preliminary
 
     def get_pt_bin_title(self, bin_edge_low, bin_edge_high):
         title = (("{jet_algo}\n"
@@ -3094,7 +3106,9 @@ class RecoPtBinnedPlotter(BinnedPlotter):
 
             plot.canvas.cd()
 
-            self.save_plot(plot, "%s/detector_reco_binning_%s_bin_%d_divBinWidth.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
+            stp = self.setup
+            fname = f"detector_reco_binning_{self.setup.append}_bin_{ibin:d}_divBinWidth{self.setup.paper_str}.{self.setup.output_fmt}"
+            self.save_plot(plot, os.path.join(stp.output_dir, fname))
 
     def plot_detector_normalised_bg_subtracted(self, alt_detector=None):
         data_total_errors_style = dict(label="Data (bg-subtracted)",
@@ -5276,6 +5290,10 @@ def main():
                         action='store_true',
                         help='Only do paper plots (applies to --doBinnedPlotsGenPt, etc)')
 
+    parser.add_argument("--final",
+                        action='store_true',
+                        help='Don\'t add "Preliminary" to plots')
+
     parser.add_argument("--webpage",
                         action='store_true',
                         help='Do webpage of unfolded results & systematics')
@@ -5390,7 +5408,8 @@ def main():
                           region=this_region,
                           angle=angle,
                           output_dir=angle_output_dir,
-                          has_data=has_data)
+                          has_data=has_data,
+                          is_preliminary=not args.final)
 
             hist_bin_chopper = this_region['unfolder'].hist_bin_chopper
 

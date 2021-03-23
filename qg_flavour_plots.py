@@ -168,7 +168,18 @@ def get_flavour_efficiencies(input_file, hist_name, bins):
     return flav_eff_dict
 
 
-def compare_flavour_fractions_vs_pt(input_files, dirnames, pt_bins, labels, flav, output_filename, title="", var_prepend="", which_jet="both", xtitle="p_{T}^{jet} [GeV]", n_partons='all'):
+def compare_flavour_fractions_vs_pt(input_files, 
+                                    dirnames, 
+                                    pt_bins, 
+                                    labels, 
+                                    flav, 
+                                    output_filename, 
+                                    title="", 
+                                    var_prepend="", 
+                                    which_jet="both", 
+                                    xtitle="p_{T}^{jet} [GeV]", 
+                                    n_partons='all', 
+                                    is_preliminary=True):
     """Plot a specified flavour fraction vs pT for several sources.
     Each entry in input_files, dirnames, and labels corresponds to one line
     n_partons can be a str, 'all', '1', etc, or a list of str to include
@@ -226,7 +237,7 @@ def compare_flavour_fractions_vs_pt(input_files, dirnames, pt_bins, labels, flav
              xlim=(pt_bins[0][0], pt_bins[-1][1]),
              ylim=(0, 1),
              has_data=False,
-             is_preliminary=False)
+             is_preliminary=is_preliminary)
     p.default_canvas_size = (600, 600)
     try:
         p.plot("AP")
@@ -308,7 +319,7 @@ def compare_flavour_fraction_hists_vs_pt_from_contribs(contribs, flav, output_fi
         warnings.warn("No contributions for %s" % output_filename)
 
 
-def compare_flavour_fraction_hists_vs_pt(input_files, hist_names, pt_bins, labels, flav, output_filename, title="", xtitle="p_{T}^{jet} [GeV]"):
+def compare_flavour_fraction_hists_vs_pt(input_files, hist_names, pt_bins, labels, flav, output_filename, title="", xtitle="p_{T}^{jet} [GeV]", is_preliminary=True):
     """Plot a specified flavour fraction vs pT for several sources.
     Each entry in input_files, dirnames, and labels corresponds to one line
     n_partons can be a str, 'all', '1', etc, or a list of str to include
@@ -351,7 +362,7 @@ def compare_flavour_fraction_hists_vs_pt(input_files, hist_names, pt_bins, label
              xlim=(50, 2000),
              ylim=(0, 1),
              has_data=False,
-             is_preliminary=False)
+             is_preliminary=is_preliminary)
     p.default_canvas_size = (600, 600)
     try:
         p.plot("AP")

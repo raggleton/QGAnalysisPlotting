@@ -123,7 +123,8 @@ def do_all_flavour_fraction_plots(root_dir,
                                   dj_cen_dirname="Dijet_QG_central_tighter",
                                   dj_fwd_dirname="Dijet_QG_forward_tighter",
                                   do_nparton_plots=True,
-                                  var_prepend=""):
+                                  var_prepend="",
+                                  is_preliminary=True):
     """Do plots of jet flavour fractions vs pT, eta for both Z+jets and dijets regions"""
     # pt_bins = qgc.PT_BINS_INC_UFLOW
     pt_bins = qgc.PT_BINS_ZPJ
@@ -293,15 +294,17 @@ def do_all_flavour_fraction_plots(root_dir,
 
             labels = [qgc.Dijet_CEN_LABEL, qgc.Dijet_FWD_LABEL, qgc.ZpJ_LABEL]
 
+            append = "_paper" if not is_preliminary else ""
             qgf.compare_flavour_fractions_vs_pt(input_files=input_files,
                                                 dirnames=dirnames,
                                                 pt_bins=pt_bins,
                                                 labels=labels,
                                                 flav=this_flav,
-                                                output_filename="%s/%s_flav_fraction_compare_jet1.%s" % (plot_dir, this_flav, OUTPUT_FMT),
+                                                output_filename="%s/%s_flav_fraction_compare_jet1%s.%s" % (plot_dir, this_flav, append, OUTPUT_FMT),
                                                 var_prepend=var_prepend,
                                                 which_jet="1",
-                                                xtitle="p_{T}^{%s} [GeV]" % qgf.get_jet_str(''))
+                                                xtitle="p_{T}^{%s} [GeV]" % qgf.get_jet_str(''),
+                                                is_preliminary=is_preliminary)
 
             if do_nparton_plots:
                 # Do for various n partons exclusively
@@ -817,6 +820,10 @@ if __name__ == '__main__':
     parser.add_argument("--rivetzpjLabel",
                         help="Rivet Z+jet ROOT file label. Must be used in conjunction with --rivetzpjLabel, once per entry.",
                         action='append')
+
+    parser.add_argument("--final",
+                        action='store_true',
+                        help='Don\'t add "Preliminary" to plots')
     args = parser.parse_args()
     print(args)
 
@@ -840,28 +847,30 @@ if __name__ == '__main__':
                                                       rivet_zpj_files=args.rivetzpj,
                                                       rivet_zpj_labels=args.rivetzpjLabel)
 
-    # # One set of plots per input
-    # for adir in args.dir:
-    #     do_all_flavour_fraction_plots(adir,
-    #                                   plot_dir=os.path.join(adir, "flav_fractions%s" % ("_gen" if args.gen else "")),
-    #                                   var_prepend="gen" if args.gen else "",
-    #                                   zpj_dirname="ZPlusJets_QG" if args.zpj else None,
-    #                                   dj_cen_dirname="Dijet_QG_central_tighter" if args.dj else None,
-    #                                   dj_fwd_dirname="Dijet_QG_forward_tighter" if args.dj else None)
+    # One set of plots per input
+    for adir in args.dir:
+        do_all_flavour_fraction_plots(adir,
+                                      plot_dir=os.path.join(adir, "flav_fractions%s" % ("_gen" if args.gen else "")),
+                                      var_prepend="gen" if args.gen else "",
+                                      zpj_dirname="ZPlusJets_QG" if args.zpj else None,
+                                      dj_cen_dirname="Dijet_QG_central_tighter" if args.dj else None,
+                                      dj_fwd_dirname="Dijet_QG_forward_tighter" if args.dj else None,
+                                      is_preliminary=not args.final)
 
-    #     do_all_flavour_fraction_plots(adir,
-    #                                   plot_dir=os.path.join(adir, "flav_fractions_gen_selection"),
-    #                                   var_prepend="",
-    #                                   zpj_dirname="ZPlusJets_QG_gen" if args.zpj else None,
-    #                                   dj_cen_dirname="Dijet_QG_gen_central" if args.dj else None,
-    #                                   dj_fwd_dirname="Dijet_QG_gen_forward" if args.dj else None)
+        do_all_flavour_fraction_plots(adir,
+                                      plot_dir=os.path.join(adir, "flav_fractions_gen_selection"),
+                                      var_prepend="",
+                                      zpj_dirname="ZPlusJets_QG_gen" if args.zpj else None,
+                                      dj_cen_dirname="Dijet_QG_gen_central" if args.dj else None,
+                                      dj_fwd_dirname="Dijet_QG_gen_forward" if args.dj else None,
+                                      is_preliminary=not args.final)
 
-    # if len(args.dir) > 1:
-    #     # Now comparison across all inputs
-    #     do_flavour_fraction_input_comparison_plots(args.dir,
-    #                                                plot_dir=os.path.join(args.dir[0], "flav_fractions_comparison%s" % ("_gen" if args.gen else "")),
-    #                                                labels=args.dirLabel,
-    #                                                var_prepend="gen" if args.gen else "",
-    #                                                dj_cen_dirname="Dijet_QG_central_tighter" if args.dj else None,
-    #                                                dj_fwd_dirname="Dijet_QG_forward_tighter" if args.dj else None,
-    #                                                zpj_dirname="ZPlusJets_QG" if args.zpj else None)
+    if len(args.dir) > 1:
+        # Now comparison across all inputs
+        do_flavour_fraction_input_comparison_plots(args.dir,
+                                                   plot_dir=os.path.join(args.dir[0], "flav_fractions_comparison%s" % ("_gen" if args.gen else "")),
+                                                   labels=args.dirLabel,
+                                                   var_prepend="gen" if args.gen else "",
+                                                   dj_cen_dirname="Dijet_QG_central_tighter" if args.dj else None,
+                                                   dj_fwd_dirname="Dijet_QG_forward_tighter" if args.dj else None,
+                                                   zpj_dirname="ZPlusJets_QG" if args.zpj else None)

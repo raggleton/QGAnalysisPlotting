@@ -162,7 +162,7 @@ def create_angle_label(angle, do_groomed=False):
 class SummaryPlotter(object):
     """Do lots of summary plots"""
 
-    def __init__(self, jet_algos, angles, pt_bins_dijet, pt_bins_zpj, df, output_dir, has_data, only_yoda_data):
+    def __init__(self, jet_algos, angles, pt_bins_dijet, pt_bins_zpj, df, output_dir, has_data, is_preliminary, only_yoda_data):
         if len(jet_algos) == 0:
             raise RuntimeError("jet_algos is empty")
         self.jet_algos = jet_algos
@@ -177,7 +177,7 @@ class SummaryPlotter(object):
         self.output_fmt = 'pdf'
         self.output_dir = output_dir
         self.has_data = has_data
-        self.is_preliminary = False
+        self.is_preliminary = is_preliminary
         # use kerning to avoid splitline taking up too much space
         # lower the whole thing a little to avoid clashing with hashed bit in plots with ratio
         self.mc_label = '#lower[0.1]{#splitline{MG5+Pythia8}{#lower[-0.15]{CUETP8M1}}}'
@@ -186,6 +186,8 @@ class SummaryPlotter(object):
         self.other_samples = []
         self.only_yoda_data = only_yoda_data
         self.filename_append = "_onlyYodaData" if self.only_yoda_data else ""
+        if not self.is_preliminary:
+            self.filename_append += "_paper"
 
     def add_sample(self, key, style_dict):
         self.other_samples.append({
@@ -2203,6 +2205,9 @@ if __name__ == "__main__":
     parser.add_argument("--doSummaryBins",
                         action='store_true',
                         help='Plot summary bin plots')
+    parser.add_argument("--final",
+                        action='store_true',
+                        help='Don\'t add "Preliminary" to plots')
     args = parser.parse_args()
 
     # Get input data
@@ -2310,6 +2315,7 @@ if __name__ == "__main__":
                              df,
                              args.outputDir,
                              has_data=True,
+                             is_preliminary=not args.final,
                              only_yoda_data=args.onlyYodaData)
 
     has_dijet = any(["Dijet" in r['name'] for r in regions])

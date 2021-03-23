@@ -63,7 +63,7 @@ def scale_ematrix_by_bin_widths(ematrix, widths):
 class DijetZPJGenPtBinnedPlotter(object):
     """Class to do plots of dijet and/or ZPJ with generator pt binning"""
 
-    def __init__(self, jet_algo, angle, bins, dijet_region, zpj_region, output_dir, is_groomed):
+    def __init__(self, jet_algo, angle, bins, dijet_region, zpj_region, output_dir, is_groomed, is_preliminary):
         self.jet_algo = jet_algo
         self.has_data = has_data
         self.angle = angle
@@ -105,6 +105,9 @@ class DijetZPJGenPtBinnedPlotter(object):
         self.output_fmt = 'pdf'
         angle_prepend = "groomed_" if self.is_groomed else ""
         self.append = "%s%s" % (angle_prepend, angle.var)  # common str to put on filenames, etc
+        self.is_preliminary = is_preliminary
+        if not self.is_preliminary:
+            self.append += "_paper"
 
         self.plot_colours = dict(
             dijet_colour=ROOT.kBlack,
@@ -336,7 +339,7 @@ class DijetZPJGenPtBinnedPlotter(object):
                         xtitle=self.particle_title,
                         has_data=self.has_data,
                         ylim=[0, None],
-                        is_preliminary=False
+                        is_preliminary=self.is_preliminary
                         )
             # plot.default_canvas_size = (600, 600)
             # plot.left_margin = 0.2
@@ -484,6 +487,10 @@ if __name__ == "__main__":
                         nargs='+',
                         help="Lambda angles to unfold, or 'all' for all of them (default).",
                         default=["all"])
+
+    parser.add_argument("--final",
+                        action='store_true',
+                        help='Don\'t add "Preliminary" to plots')
     args = parser.parse_args()
 
     if args.angles[0] == "all":
@@ -555,7 +562,8 @@ if __name__ == "__main__":
                                                         dijet_region=dijet_region,
                                                         zpj_region=zpj_region,
                                                         output_dir=output_dir,
-                                                        is_groomed=do_grooming)
+                                                        is_groomed=do_grooming,
+                                                        is_preliminary=not args.final)
 
             # dijet-only
             # binned_plotter.plot_detector_unfolded(do_dijet=True, do_zpj=False)

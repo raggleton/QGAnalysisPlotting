@@ -58,8 +58,8 @@ def do_jet_pt_plot(entries,
                    scale_syst=None,
                    pdf_syst=None,
                    total_syst=None,
-                   lumi=cu.get_lumi_str(do_dijet=False, do_zpj=True)
-                   ):
+                   lumi=cu.get_lumi_str(do_dijet=False, do_zpj=True),
+                   is_preliminary=True):
     # entries = [ent for ent in entries if ent]
 
     conts = [Contribution(ent[0], rebin_hist=rebin, **ent[1])  # Don't use noramlise_hist - screws up with unequal binning
@@ -100,7 +100,7 @@ def do_jet_pt_plot(entries,
                 subplot_type='ratio',
                 subplot_limits=subplot_limits,
                 lumi=lumi,
-                is_preliminary=False)
+                is_preliminary=is_preliminary)
     plot.y_padding_max_log = 1E4
     plot.legend.SetX1(0.6)
     plot.legend.SetY1(0.68)
@@ -324,7 +324,8 @@ def do_dijet_pt_plots(workdir,
                       subplot_vs_data=True, # otherwise vs MC
                       show_total_systematics=True,
                       show_grouped_systematics=True,
-                      show_individual_systematics=True):
+                      show_individual_systematics=True,
+                      is_preliminary=True):
 
     data_tfile = cu.open_root_file(os.path.join(workdir, qgc.JETHT_ZB_FILENAME))
     mg_tfile = cu.open_root_file(os.path.join(workdir, qgc.QCD_FILENAME))
@@ -827,8 +828,9 @@ def do_dijet_pt_plots(workdir,
         subplot_title = "* / %s" % entries[1][1]['label']
         if subplot_vs_data:
             subplot_title = "Simulation / Data"
+        paper_str = "_paper" if not is_preliminary else ""
         do_jet_pt_plot(entries,
-                       output_filename=os.path.join(workdir, "data_mc_jet_pt/Dijet_%s/jet_pt.%s" % (region_shortname, OUTPUT_FMT)),
+                       output_filename=os.path.join(workdir, "data_mc_jet_pt/Dijet_%s/jet_pt%s.%s" % (region_shortname, paper_str, OUTPUT_FMT)),
                        rebin=1,
                        xlim=(30, qgc.PT_UNFOLD_DICT['signal_gen'][-1]),
                        ylim=(5E-3, 1E14),
@@ -844,15 +846,16 @@ def do_dijet_pt_plots(workdir,
                        scale_syst=None,
                        pdf_syst=None,
                        total_syst=total_gr if show_total_systematics else None,
-                       lumi=cu.get_lumi_str(do_dijet=True, do_zpj=False))
-
+                       lumi=cu.get_lumi_str(do_dijet=True, do_zpj=False),
+                       is_preliminary=is_preliminary)
 
 
 def do_zpj_pt_plots(workdir,
                     subplot_vs_data=True, # otherwise vs MC
                     show_total_systematics=True,
                     show_grouped_systematics=True,
-                    show_individual_systematics=True):
+                    show_individual_systematics=True,
+                    is_preliminary=True):
 
     single_mu_tfile = cu.open_root_file(os.path.join(workdir, qgc.SINGLE_MU_FILENAME))
     mg_dy_tfile = cu.open_root_file(os.path.join(workdir, qgc.DY_FILENAME))
@@ -1341,8 +1344,9 @@ def do_zpj_pt_plots(workdir,
     subplot_title = "* / %s" % entries[1][1]['label']
     if subplot_vs_data:
         subplot_title = "Simulation / Data"
+    paper_str = "_paper" if not is_preliminary else ""
     do_jet_pt_plot(entries,
-                   output_filename=os.path.join(workdir, "data_mc_jet_pt/ZPlusJets/jet_pt.%s" % (OUTPUT_FMT)),
+                   output_filename=os.path.join(workdir, "data_mc_jet_pt/ZPlusJets/jet_pt%s.%s" % (paper_str, OUTPUT_FMT)),
                    rebin=1,
                    xlim=(30, qgc.PT_UNFOLD_DICT['signal_zpj_gen'][-1]),
                    ylim=(1E-2, 1E7),
@@ -1359,7 +1363,8 @@ def do_zpj_pt_plots(workdir,
                    scale_syst=None,
                    pdf_syst=None,
                    total_syst=total_gr if show_total_systematics else None,
-                   lumi=cu.get_lumi_str(do_dijet=False, do_zpj=True)
+                   lumi=cu.get_lumi_str(do_dijet=False, do_zpj=True),
+                   is_preliminary=is_preliminary
                    )
 
 
@@ -1369,16 +1374,21 @@ if __name__ == "__main__":
                         nargs='+',
                         help='Workdir(s) with ROOT files to process. '
                              'Several dirs can be specified here, separated by a space.')
+    parser.add_argument("--final",
+                        action='store_true',
+                        help='Don\'t add "Preliminary" to plots')
     args = parser.parse_args()
 
     for workdir in args.workdirs:
         do_dijet_pt_plots(workdir,
                           show_total_systematics=True,
                           show_grouped_systematics=False,
-                          show_individual_systematics=False)
+                          show_individual_systematics=False,
+                          is_preliminary=not args.final)
         do_zpj_pt_plots(workdir,
                         show_total_systematics=True,
                         show_grouped_systematics=False,
-                        show_individual_systematics=False)
+                        show_individual_systematics=False,
+                        is_preliminary=not args.final)
 
     sys.exit(0)
