@@ -111,6 +111,10 @@ def get_flavour_efficiencies(input_file, hist_name, bins):
         if not cu.same_floats(total, total2):
             # raise RuntimeError("totals dont match: %.9g vs %.9g" % (total, total2))
             warnings.warn("totals dont match: %.9g vs %.9g" % (total, total2))
+        if total <= 0:
+            warnings.warn("Total = 0")
+        if total2 <= 0:
+            warnings.warn("Total2 = 0")
 
         unknown_err = h_flav.GetBinError(1)
         d_err = h_flav.GetBinError(2)
@@ -160,6 +164,9 @@ def get_flavour_efficiencies(input_file, hist_name, bins):
         for ind, val in enumerate(flav_dict[flav_key], 1):
             h_flav.SetBinContent(ind, val[0])
             h_flav.SetBinError(ind, val[1])
+
+        if (h_flav.GetNbinsX() != h_total.GetNbinsX()):
+            raise ValueError("flav %s has diff # bins to total (%d vs %d)" % flav_key, h_flav.GetNbinsX(), h_total.GetNbinsX())
 
         eff_flav = ROOT.TEfficiency(h_flav, h_total)
         eff_flav.SetStatisticOption(1)  # normal approx
