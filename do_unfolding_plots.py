@@ -544,7 +544,7 @@ class GenPtBinnedPlotter(BinnedPlotter):
                 alt_mc_stats = calc_chi2_stats(unfolded_hist_bin_total_errors, alt_mc_gen_hist_bin, ematrix)
                 # print(mc_stats)
                 # print(alt_mc_stats)
-                nbins = sum([1 for i in range(1, unfolded_hist_bin_total_errors.GetNbinsX()+1) 
+                nbins = sum([1 for i in range(1, unfolded_hist_bin_total_errors.GetNbinsX()+1)
                              if unfolded_hist_bin_total_errors.GetBinContent(i) != 0])
                 # reduced_chi2 = mc_stats[0] / nbins
                 # alt_reduced_chi2 = alt_mc_stats[0] / nbins
@@ -3700,7 +3700,7 @@ def do_binned_plots_per_region_angle(setup, do_binned_gen_pt, do_binned_gen_lamb
         #     unfolder.create_pdf_syst_uncertainty_per_pt_bin(region['pdf_systematics'])
         # unfolder.setup_absolute_results_per_pt_bin()
 
-        # gen_pt_binned_plotter.plot_syst_fraction_unnormalised()
+        gen_pt_binned_plotter.plot_syst_fraction_unnormalised()
 
         # # if has_data:
         # print("...doing detector-level")
@@ -3708,7 +3708,7 @@ def do_binned_plots_per_region_angle(setup, do_binned_gen_pt, do_binned_gen_lamb
         # gen_pt_binned_plotter.hist_bin_chopper.add_obj("hist_mc_reco_gen_binning_bg_subtracted", unfolder.hist_mc_reco_gen_binning_bg_subtracted)
         # gen_pt_binned_plotter.plot_detector_normalised_bg_subtracted(alt_detector=alt_hist_reco_bg_subtracted_gen_binning)
 
-    if do_binned_gen_lambda and not only_paper_plots:
+    if do_binned_gen_lambda:
         # Iterate through lambda bins - gen binning
         # ------------------------------------------------------------------
         print("Doing GenLambdaBinnedPlotter...")
@@ -3723,99 +3723,110 @@ def do_binned_plots_per_region_angle(setup, do_binned_gen_pt, do_binned_gen_lamb
                                                                # this is the same object as gen_pt_binned_plotter, so has all the objects already
                                                                unfolder=unfolder)
 
-            gen_lambda_binned_plotter.plot_unfolded_unnormalised()
+            if not only_paper_plots:
+                gen_lambda_binned_plotter.plot_unfolded_unnormalised()
 
-            if unfolder.tau > 0 and unreg_unfolder:
-                print("...doing unregularised vs regularised")
-                gen_lambda_binned_plotter.hist_bin_chopper.add_obj("unreg_unfolded", unreg_unfolder.unfolded)
-                gen_lambda_binned_plotter.hist_bin_chopper.add_obj("truth_template", unreg_unfolder.truth_template)
-                gen_lambda_binned_plotter.plot_unfolded_with_unreg_unnormalised()
-                gen_lambda_binned_plotter.plot_unfolded_with_template_unnormalised()
+                if unfolder.tau > 0 and unreg_unfolder:
+                    print("...doing unregularised vs regularised")
+                    gen_lambda_binned_plotter.hist_bin_chopper.add_obj("unreg_unfolded", unreg_unfolder.unfolded)
+                    gen_lambda_binned_plotter.hist_bin_chopper.add_obj("truth_template", unreg_unfolder.truth_template)
+                    gen_lambda_binned_plotter.plot_unfolded_with_unreg_unnormalised()
+                    gen_lambda_binned_plotter.plot_unfolded_with_template_unnormalised()
 
-            if alt_unfolder:
-                print("...doing alt unfolder")
-                gen_lambda_binned_plotter.plot_unfolded_with_alt_response_unnormalised(alt_unfolder=alt_unfolder)
+                if alt_unfolder:
+                    print("...doing alt unfolder")
+                    gen_lambda_binned_plotter.plot_unfolded_with_alt_response_unnormalised(alt_unfolder=alt_unfolder)
 
-            if has_exp_systs:
-                # gen_lambda_binned_plotter.plot_uncertainty_shifts_unnormalised()
-                print("...doing exp systs")
-                gen_lambda_binned_plotter.plot_unfolded_with_exp_systs_unnormalised()
+                if has_exp_systs:
+                    # gen_lambda_binned_plotter.plot_uncertainty_shifts_unnormalised()
+                    print("...doing exp systs")
+                    gen_lambda_binned_plotter.plot_unfolded_with_exp_systs_unnormalised()
 
-            if has_scale_systs:
-                print("...doing scale systs")
-                gen_lambda_binned_plotter.plot_unfolded_with_scale_systs_unnormalised()
+                if has_scale_systs:
+                    print("...doing scale systs")
+                    gen_lambda_binned_plotter.plot_unfolded_with_scale_systs_unnormalised()
 
-            if has_model_systs:
-                print("...doing model systs")
-                gen_lambda_binned_plotter.plot_unfolded_with_model_systs_unnormalised()
-                # Do a set of individual plots for these model variations
-                for syst_dict in region['model_systematics']:
-                    print(".......", syst_dict['label'])
-                    this_setup = copy(setup)
-                    this_setup.output_dir = os.path.join(setup.output_dir,
-                                                         "modelSyst_" + cu.no_space_str(syst_dict['label']))
-                    syst_gen_lambda_binned_plotter = GenLambdaBinnedPlotter(setup=this_setup,
-                                                                            bins=unfolder.variable_bin_edges_gen,
-                                                                            hist_bin_chopper=syst_dict[
-                                                                                'unfolder'].hist_bin_chopper,
-                                                                            unfolder=syst_dict['unfolder'])
-                    syst_gen_lambda_binned_plotter.plot_unfolded_unnormalised()
-                    if syst_dict['unfolder'].tau > 0:
-                        syst_gen_lambda_binned_plotter.hist_bin_chopper.add_obj("unreg_unfolded",
-                                                                                syst_dict['unfolder'].unfolded)
-                        syst_gen_lambda_binned_plotter.hist_bin_chopper.add_obj("truth_template",
-                                                                                syst_dict['unfolder'].truth_template)
-                        syst_gen_lambda_binned_plotter.plot_unfolded_with_unreg_unnormalised()
-                        syst_gen_lambda_binned_plotter.plot_unfolded_with_template_unnormalised()
+                if has_model_systs:
+                    print("...doing model systs")
+                    gen_lambda_binned_plotter.plot_unfolded_with_model_systs_unnormalised()
+                    # Do a set of individual plots for these model variations
+                    for syst_dict in region['model_systematics']:
+                        print(".......", syst_dict['label'])
+                        this_setup = copy(setup)
+                        this_setup.output_dir = os.path.join(setup.output_dir,
+                                                             "modelSyst_" + cu.no_space_str(syst_dict['label']))
+                        syst_gen_lambda_binned_plotter = GenLambdaBinnedPlotter(setup=this_setup,
+                                                                                bins=unfolder.variable_bin_edges_gen,
+                                                                                hist_bin_chopper=syst_dict[
+                                                                                    'unfolder'].hist_bin_chopper,
+                                                                                unfolder=syst_dict['unfolder'])
+                        syst_gen_lambda_binned_plotter.plot_unfolded_unnormalised()
+                        if syst_dict['unfolder'].tau > 0:
+                            syst_gen_lambda_binned_plotter.hist_bin_chopper.add_obj("unreg_unfolded",
+                                                                                    syst_dict['unfolder'].unfolded)
+                            syst_gen_lambda_binned_plotter.hist_bin_chopper.add_obj("truth_template",
+                                                                                    syst_dict['unfolder'].truth_template)
+                            syst_gen_lambda_binned_plotter.plot_unfolded_with_unreg_unnormalised()
+                            syst_gen_lambda_binned_plotter.plot_unfolded_with_template_unnormalised()
 
-            # if has_pdf_systs:
-            #     print("...doing pdf systs")
-            #     gen_lambda_binned_plotter.plot_unfolded_with_pdf_systs_unnormalised()
-            #     # Do a set of individual plots for these PDF variations
-            #     for syst_dict in region['pdf_systematics']:
-            #         print(".......", syst_dict['label'])
-            #         this_setup = copy(setup)
-            #         this_setup.output_dir = os.path.join(setup.output_dir, "pdfSyst", cu.no_space_str(syst_dict['label']))
-            #         syst_gen_lambda_binned_plotter = GenLambdaBinnedPlotter(setup=this_setup,
-            #                                                                 bins=unfolder.pt_bin_edges_gen,
-            #                                                                 hist_bin_chopper=syst_dict['unfolder'].hist_bin_chopper,
-            #                                                                 unfolder=syst_dict['unfolder'])
-            #         syst_gen_lambda_binned_plotter.plot_unfolded_unnormalised()
-            #         syst_gen_lambda_binned_plotter.plot_unfolded_normalised()
+                # if has_pdf_systs:
+                #     print("...doing pdf systs")
+                #     gen_lambda_binned_plotter.plot_unfolded_with_pdf_systs_unnormalised()
+                #     # Do a set of individual plots for these PDF variations
+                #     for syst_dict in region['pdf_systematics']:
+                #         print(".......", syst_dict['label'])
+                #         this_setup = copy(setup)
+                #         this_setup.output_dir = os.path.join(setup.output_dir, "pdfSyst", cu.no_space_str(syst_dict['label']))
+                #         syst_gen_lambda_binned_plotter = GenLambdaBinnedPlotter(setup=this_setup,
+                #                                                                 bins=unfolder.pt_bin_edges_gen,
+                #                                                                 hist_bin_chopper=syst_dict['unfolder'].hist_bin_chopper,
+                #                                                                 unfolder=syst_dict['unfolder'])
+                #         syst_gen_lambda_binned_plotter.plot_unfolded_unnormalised()
+                #         syst_gen_lambda_binned_plotter.plot_unfolded_normalised()
 
-            if has_jackknife_input_vars:
-                # Do a set of individual plots for these jackknife variations
-                for jk_dict in region['jackknife_input_variations']:
-                    print(".......", jk_dict['label'])
-                    this_setup = copy(setup)
-                    this_setup.output_dir = os.path.join(setup.output_dir, "jackknife_input", jk_dict['label'])
-                    jk_gen_lambda_binned_plotter = GenLambdaBinnedPlotter(setup=this_setup,
-                                                                          bins=unfolder.pt_bin_edges_gen,
-                                                                          hist_bin_chopper=jk_dict[
-                                                                              'unfolder'].hist_bin_chopper,
-                                                                          unfolder=jk_dict['unfolder'])
-                    jk_gen_lambda_binned_plotter.plot_unfolded_unnormalised()
-                    if jk_dict['unfolder'].tau > 0:
-                        # plot with template since template different to nominal template
-                        jk_gen_lambda_binned_plotter.hist_bin_chopper.add_obj("unreg_unfolded",
-                                                                              jk_dict['unfolder'].unfolded)
-                        jk_gen_lambda_binned_plotter.hist_bin_chopper.add_obj("truth_template",
-                                                                              jk_dict['unfolder'].truth_template)
-                        jk_gen_lambda_binned_plotter.plot_unfolded_with_unreg_unnormalised()
-                        jk_gen_lambda_binned_plotter.plot_unfolded_with_template_unnormalised()
+                if has_jackknife_input_vars:
+                    # Do a set of individual plots for these jackknife variations
+                    for jk_dict in region['jackknife_input_variations']:
+                        print(".......", jk_dict['label'])
+                        this_setup = copy(setup)
+                        this_setup.output_dir = os.path.join(setup.output_dir, "jackknife_input", jk_dict['label'])
+                        jk_gen_lambda_binned_plotter = GenLambdaBinnedPlotter(setup=this_setup,
+                                                                              bins=unfolder.pt_bin_edges_gen,
+                                                                              hist_bin_chopper=jk_dict[
+                                                                                  'unfolder'].hist_bin_chopper,
+                                                                              unfolder=jk_dict['unfolder'])
+                        jk_gen_lambda_binned_plotter.plot_unfolded_unnormalised()
+                        if jk_dict['unfolder'].tau > 0:
+                            # plot with template since template different to nominal template
+                            jk_gen_lambda_binned_plotter.hist_bin_chopper.add_obj("unreg_unfolded",
+                                                                                  jk_dict['unfolder'].unfolded)
+                            jk_gen_lambda_binned_plotter.hist_bin_chopper.add_obj("truth_template",
+                                                                                  jk_dict['unfolder'].truth_template)
+                            jk_gen_lambda_binned_plotter.plot_unfolded_with_unreg_unnormalised()
+                            jk_gen_lambda_binned_plotter.plot_unfolded_with_template_unnormalised()
 
-            if has_jackknife_response_vars:
-                # Do a set of individual plots for these jackknife variations
-                for jk_dict in region['jackknife_response_variations']:
-                    print(".......", jk_dict['label'])
-                    this_setup = copy(setup)
-                    this_setup.output_dir = os.path.join(setup.output_dir, "jackknife_response", jk_dict['label'])
-                    jk_gen_lambda_binned_plotter = GenLambdaBinnedPlotter(setup=this_setup,
-                                                                          bins=unfolder.pt_bin_edges_gen,
-                                                                          hist_bin_chopper=jk_dict[
-                                                                              'unfolder'].hist_bin_chopper,
-                                                                          unfolder=jk_dict['unfolder'])
-                    jk_gen_lambda_binned_plotter.plot_unfolded_unnormalised()
+                if has_jackknife_response_vars:
+                    # Do a set of individual plots for these jackknife variations
+                    for jk_dict in region['jackknife_response_variations']:
+                        print(".......", jk_dict['label'])
+                        this_setup = copy(setup)
+                        this_setup.output_dir = os.path.join(setup.output_dir, "jackknife_response", jk_dict['label'])
+                        jk_gen_lambda_binned_plotter = GenLambdaBinnedPlotter(setup=this_setup,
+                                                                              bins=unfolder.pt_bin_edges_gen,
+                                                                              hist_bin_chopper=jk_dict[
+                                                                                  'unfolder'].hist_bin_chopper,
+                                                                              unfolder=jk_dict['unfolder'])
+                        jk_gen_lambda_binned_plotter.plot_unfolded_unnormalised()
+
+
+
+                # if has_data:
+                print("...doing detector-level")
+                gen_lambda_binned_plotter.hist_bin_chopper.add_obj("input_hist_gen_binning_bg_subtracted",
+                                                                   unfolder.input_hist_gen_binning_bg_subtracted)
+                gen_lambda_binned_plotter.hist_bin_chopper.add_obj("hist_mc_reco_gen_binning_bg_subtracted",
+                                                                   unfolder.hist_mc_reco_gen_binning_bg_subtracted)
+                gen_lambda_binned_plotter.plot_detector_unnormalised(alt_detector=alt_hist_reco_bg_subtracted_gen_binning)
 
             # bit of a hack, should do it in main unfolding.py script
             # if has_scale_systs:
@@ -3823,17 +3834,8 @@ def do_binned_plots_per_region_angle(setup, do_binned_gen_pt, do_binned_gen_lamb
             # if has_pdf_systs:
             #     unfolder.create_pdf_syst_uncertainty_per_lambda_bin(region['pdf_systematics'])
             # unfolder.setup_absolute_results_per_lambda_bin()
-
             print("...doing uncert fraction")
             gen_lambda_binned_plotter.plot_syst_fraction_unnormalised()
-
-            # if has_data:
-            print("...doing detector-level")
-            gen_lambda_binned_plotter.hist_bin_chopper.add_obj("input_hist_gen_binning_bg_subtracted",
-                                                               unfolder.input_hist_gen_binning_bg_subtracted)
-            gen_lambda_binned_plotter.hist_bin_chopper.add_obj("hist_mc_reco_gen_binning_bg_subtracted",
-                                                               unfolder.hist_mc_reco_gen_binning_bg_subtracted)
-            gen_lambda_binned_plotter.plot_detector_unnormalised(alt_detector=alt_hist_reco_bg_subtracted_gen_binning)
 
     if do_binned_reco_pt:
         # Iterate through pt bins - reco binning
@@ -3929,7 +3931,7 @@ class BigNormalised1DPlotter(object):
                     bins.append(lambda_bin_edges[-1] + offset)
             else:
                 start = 0 if len(bins) == 0 else (bins[-1] + 1)
-                end = start + len(lambda_bin_edges) - 1 
+                end = start + len(lambda_bin_edges) - 1
                 # -1 to account for first bin having lower edge of last bin
                 bins.extend(list(range(start, end)))
         return array('d', bins)
