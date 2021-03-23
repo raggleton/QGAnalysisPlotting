@@ -239,6 +239,10 @@ class SummaryPlotter(object):
         dijet_cen_col = COMMON_STYLE_DICT['dijet_cen_color']
         other_samples_dijet_central_hists = []
         dijet_central_hist_no_errors = None
+        dijet_central_hist_truth = None
+        dijet_central_hist_alt_truth = None
+        dijet_central_hist = None
+        dijet_central_hist_ratio_error = None
         if do_dijet_cen:
             region_name = 'Dijet_central'
             if do_groomed:
@@ -273,6 +277,10 @@ class SummaryPlotter(object):
         dijet_fwd_col = COMMON_STYLE_DICT['dijet_fwd_color']
         other_samples_dijet_forward_hists = []
         dijet_forward_hist_no_errors = None
+        dijet_forward_hist_truth = None
+        dijet_forward_hist_alt_truth = None
+        dijet_forward_hist = None
+        dijet_forward_hist_ratio_error = None
         if do_dijet_fwd:
             region_name = 'Dijet_forward'
             if do_groomed:
@@ -303,6 +311,10 @@ class SummaryPlotter(object):
         zpj_col = COMMON_STYLE_DICT['zpj_color']
         other_samples_zpj_hists = []
         zpj_hist_no_errors = None
+        zpj_hist_truth = None
+        zpj_hist_alt_truth = None
+        zpj_hist = None
+        zpj_hist_ratio_error = None
         if do_zpj:
             region_name = 'ZPlusJets'
             if do_groomed:
@@ -527,6 +539,7 @@ class SummaryPlotter(object):
 
 
         # for plot axis titles
+        angle_str = ""
         if metric == "mean":
             angle_str = "#LT%s#GT" % create_angle_label(angle, do_groomed)
         elif metric == "rms":
@@ -2326,18 +2339,20 @@ if __name__ == "__main__":
 
     g_selections, q_selections = None, None
 
-    charged_only_template = "#splitline{{{jet_str}, {pt_str}}}{{      Charged-only}}"
-    groomed_template = "#splitline{{{jet_str}, {pt_str}}}{{         Groomed}}"
+    # charged_only_template = "#splitline{{{jet_str}, {pt_str}}}{{      Charged-only}}"
+    # groomed_template = "#splitline{{{jet_str}, {pt_str}}}{{         Groomed}}"
 
     normal_template = "{jet_str}, {pt_str}"
     charged_only_template = "{jet_str}, {pt_str},\ncharged-only"
     groomed_template = "{jet_str}, {pt_str},\ngroomed"
 
-    gev_template = "p_{{T}}#in  [{:g}, {:g}] GeV"
-    tev_template = "p_{{T}}#in  [{:g}, {:g}] TeV"
+    # gev_template = "p_{{T}}#in  [{:g}, {:g}] GeV"
+    # tev_template = "p_{{T}}#in  [{:g}, {:g}] TeV"
 
     gev_template = "[{:g}, {:g}] GeV"
     tev_template = "[{:g}, {:g}] TeV"
+
+    g_legend_header = "Gluon-enriched jets:\n" + qgc.Dijet_CEN_LABEL
 
     if has_dijet:
         if args.doMetricVsPt:
@@ -2391,7 +2406,6 @@ if __name__ == "__main__":
                 output_file=os.path.join(args.outputDir, "dijet_central_delta_summary%s.pdf" % (filename_append))
             )
 
-            g_legend_header = "Gluon-enriched jets:\n" + qgc.Dijet_CEN_LABEL
             plotter.plot_mean_rms_bins_summary(
                 selections=g_selections,
                 legend_header=g_legend_header,
