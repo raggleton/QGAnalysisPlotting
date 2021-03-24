@@ -488,7 +488,7 @@ if __name__ == "__main__":
                         help="Lambda angles to unfold, or 'all' for all of them (default).",
                         default=["all"])
 
-    parser.add_argument("--final",
+    parser.add_argument("--paper",
                         action='store_true',
                         help='Don\'t add "Preliminary" to plots')
     args = parser.parse_args()
@@ -563,7 +563,7 @@ if __name__ == "__main__":
                                                         zpj_region=zpj_region,
                                                         output_dir=output_dir,
                                                         is_groomed=do_grooming,
-                                                        is_preliminary=not args.final)
+                                                        is_preliminary=not args.paper)
 
             # dijet-only
             # binned_plotter.plot_detector_unfolded(do_dijet=True, do_zpj=False)

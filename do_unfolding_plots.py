@@ -5293,7 +5293,7 @@ def main():
                         action='store_true',
                         help='Only do paper plots (applies to --doBinnedPlotsGenPt, etc)')
 
-    parser.add_argument("--final",
+    parser.add_argument("--paper",
                         action='store_true',
                         help='Don\'t add "Preliminary" to plots')
 
@@ -5412,7 +5412,7 @@ def main():
                           angle=angle,
                           output_dir=angle_output_dir,
                           has_data=has_data,
-                          is_preliminary=not args.final)
+                          is_preliminary=not args.paper)
 
             hist_bin_chopper = this_region['unfolder'].hist_bin_chopper
 

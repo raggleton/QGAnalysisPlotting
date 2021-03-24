@@ -829,7 +829,7 @@ if __name__ == '__main__':
                         help="Rivet Z+jet ROOT file label. Must be used in conjunction with --rivetzpjLabel, once per entry.",
                         action='append')
 
-    parser.add_argument("--final",
+    parser.add_argument("--paper",
                         action='store_true',
                         help='Don\'t add "Preliminary" to plots')
     args = parser.parse_args()
@@ -863,7 +863,7 @@ if __name__ == '__main__':
                                       zpj_dirname="ZPlusJets_QG" if args.zpj else None,
                                       dj_cen_dirname="Dijet_QG_central_tighter" if args.dj else None,
                                       dj_fwd_dirname="Dijet_QG_forward_tighter" if args.dj else None,
-                                      is_preliminary=not args.final)
+                                      is_preliminary=not args.paper)
 
         do_all_flavour_fraction_plots(adir,
                                       plot_dir=os.path.join(adir, "flav_fractions_gen_selection"),
@@ -871,7 +871,7 @@ if __name__ == '__main__':
                                       zpj_dirname="ZPlusJets_QG_gen" if args.zpj else None,
                                       dj_cen_dirname="Dijet_QG_gen_central" if args.dj else None,
                                       dj_fwd_dirname="Dijet_QG_gen_forward" if args.dj else None,
-                                      is_preliminary=not args.final)
+                                      is_preliminary=not args.paper)
 
     if len(args.dir) > 1:
         # Now comparison across all inputs

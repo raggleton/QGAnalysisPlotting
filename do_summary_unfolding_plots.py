@@ -2216,7 +2216,7 @@ if __name__ == "__main__":
     parser.add_argument("--doSummaryBins",
                         action='store_true',
                         help='Plot summary bin plots')
-    parser.add_argument("--final",
+    parser.add_argument("--paper",
                         action='store_true',
                         help='Don\'t add "Preliminary" to plots')
     parser.add_argument("--supplementary",
@@ -2329,7 +2329,7 @@ if __name__ == "__main__":
                              df,
                              args.outputDir,
                              has_data=True,
-                             is_preliminary=not args.final,
+                             is_preliminary=not args.paper,
                              is_supplementary=args.supplementary,
                              only_yoda_data=args.onlyYodaData)
 

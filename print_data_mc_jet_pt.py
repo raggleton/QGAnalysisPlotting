@@ -1374,7 +1374,7 @@ if __name__ == "__main__":
                         nargs='+',
                         help='Workdir(s) with ROOT files to process. '
                              'Several dirs can be specified here, separated by a space.')
-    parser.add_argument("--final",
+    parser.add_argument("--paper",
                         action='store_true',
                         help='Don\'t add "Preliminary" to plots')
     args = parser.parse_args()
@@ -1384,11 +1384,11 @@ if __name__ == "__main__":
                           show_total_systematics=True,
                           show_grouped_systematics=False,
                           show_individual_systematics=False,
-                          is_preliminary=not args.final)
+                          is_preliminary=not args.paper)
         do_zpj_pt_plots(workdir,
                         show_total_systematics=True,
                         show_grouped_systematics=False,
                         show_individual_systematics=False,
-                        is_preliminary=not args.final)
+                        is_preliminary=not args.paper)
 
     sys.exit(0)
