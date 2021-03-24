@@ -407,6 +407,8 @@ class Plot(object):
                     continue
                 new_hist = None
                 if self.subplot:
+                    if not isinstance(self.subplot, Contribution):
+                        raise TypeError("Plot.subplot should be of type Contribution, not %s" % type(self.subplot))
                     # Use one reference object for all entries
                     subplot_obj = self.subplot.obj.Clone()
                     if contrib != self.subplot:
