@@ -213,58 +213,72 @@ class ZeroContributions(Exception):
 
 
 class Plot(object):
-    """
-    Basic class to handle information about one plot,
-    which can have several contributions.
-    """
 
     def __init__(self, contributions=None, what="hist",
                  title=None, xtitle=None, ytitle=None, xlim=None, ylim=None,
                  legend=True, extend=False,
                  subplot=None, subplot_type=None, subplot_title=None, subplot_limits=None,
-                 has_data=True, is_preliminary=True,
+                 has_data=True, is_preliminary=True, is_supplementary=False,
                  lumi=cu.get_lumi_str(do_dijet=False, do_zpj=True)):
         """
-        contributions: list
+        Class to handle information about one plot, which can have several contributions,
+        can have subplot, etc
+
+
+        Parameters
+        ----------
+        contributions : list[Contribution]
             List of Contribution objects.
-        what: str
-            Options are "graph", "function", "both".
-        title: str
-            Title of plot.
-        xtitle: str
-            X axis title.
-        ytitle: str
-            Y axis title.
-        xlim: list
-            Limits of x axis. If None then determines suitable limits.
-        ylim: list
+        what : str, optional
+            Type of thing in contributions: "hist", graph", "function", "both" (=graph+function).
+        title : None, optional
+            Title to put on plot
+        xtitle : None, optional
+            X axis title
+        ytitle : None, optional
+            Y axis title
+        xlim : None, optional
+            Limits of x axis. If None, then determines suitable limits.
+        ylim : None, optional
             Limits of y axis. If either or both element is None,
             then determines suitable limits.
-        legend: bool
+        legend : bool, optional
             Include legend on plot.
-        extend: bool
+        extend : bool, optional
             Extend functions to cover the whole x axis range.
-        subplot : object, None
+        subplot : None, optional
             If not None, draws a plot below the main hist with
             all plots compared to the object provided as the argument here.
-        subplot_type : str
+        subplot_type : None, optional
             The method of comparison in the subplot: ratio, difference, or ddelta/dlambda
-        subplot_limits : (float, float), optional
+        subplot_title : None, optional
+            Y axis title for subplot
+        subplot_limits : None, optional
             Set hard limits on subplot y axis range. If None, will choose some
             vaguely sensible ones
+        has_data : bool, optional
+            For CMS labelling: If plot contains data
+        is_preliminary : bool, optional
+            For CMS labelling: If plot is not for publication yet (PAS, AN)
+        is_supplementary : bool, optional
+            For CMS labelling: If plot is supplementary material
+        lumi : str, optional
+            Luminosity string to put on plot (ignored if has_data=False)
+
+        Raises
+        ------
+        ValueError
+            If `what` not one of possible options
+            If `xlim` or `lim` not length = 2
+            If `subplot_type` not one of possible options
         """
         self.contributions = contributions if contributions else []
         self.contributions_objs = []
         options = ['hist', 'graph', 'function', 'both']
         if what not in options:
-            raise RuntimeError("`what` argument must be one of %s" % options)
+            raise ValueError("`what` argument must be one of %s" % options)
         self.plot_what = what
-        self.title = title or ""
-        self.title_start_y = 0.87
-        self.title_diff_y = 0.04
-        self.title_left_offset = 0.03 # only for title in plot
-        self.title_font_size = 0.03
-        self.cms_text_font_size = 0.035
+
         self.xtitle = xtitle
         self.ytitle = ytitle
         if xlim is not None:
@@ -283,28 +297,30 @@ class Plot(object):
         self.y_padding_max_log = 10  # factor to auto extend y upper limit for log scale
         self.y_padding_min_linear = 1.4 # factor to auto extend y lower limit for linear scale
         self.y_padding_min_log = 0.1  # factor to auto extend y lower limit for log scale
-        self.y_padding_mode = 'abs'  # abs = times max/min, range = times range, add/subtract on
+        # self.y_padding_mode = 'abs'  # abs = times max/min, range = times range, add/subtract on
+
         self.do_legend = legend
         self.legend = ROOT.TLegend(0.65, 0.6, 0.94, 0.85) if legend else None
         if self.do_legend:
             self._style_legend()
         self.reverse_legend = False
         self.splitline_legend = False  # if True, use splitline instead of extra entries for \n. Only works with 1 \n occurrence
+
         self.do_extend = extend
         self.container = None
         self.canvas = None
         self.default_canvas_size = (600, 800)
         # self.default_canvas_size = (800, 600)
+        self.main_pad = None
+
         self.right_margin = 0.04
         self.left_margin = 0.12 # use ROOT default
-        self.left_title_offset_fudge_factor = 7
-        self.text_left_offset = self.left_margin * (0.055/0.12)
-        self.text_left_offset = 0 # for title and CMS texts together
         self.top_margin = 0.1
-        self.main_pad = None
+
+        # Subplot vars:
         self.subplot = subplot # Contribution for subplot
         if subplot_type and subplot_type not in ['ratio', 'diff', "ddelta"]:
-            raise RuntimeError("subplot_type must be one of None, ratio, diff, or ddelta")
+            raise ValueError("subplot_type must be one of None, ratio, diff, or ddelta")
         self.subplot_type = subplot_type
         if not self.subplot_type:
             self.subplot = None
@@ -323,10 +339,22 @@ class Plot(object):
         self.subplot_line_style = 2
         self.subplot_line_width = 2
         self.subplot_line_color = ROOT.kBlack
-        self.has_data = has_data
-        self.lumi = lumi
+
+        # Labelling vars:
+        self.title = title or ""
+        self.title_start_y = 0.87
+        self.title_diff_y = 0.04
+        self.title_left_offset = 0.03 # only for title in plot
+        self.title_font_size = 0.03
+        self.cms_text_font_size = 0.035
         self.cms_text_y = 0.915
+        self.left_title_offset_fudge_factor = 7
+        self.text_left_offset = 0 # for title and CMS texts together
+
+        self.has_data = has_data
         self.is_preliminary = is_preliminary
+        self.is_supplementary = is_supplementary
+        self.lumi = lumi
 
     def add_contribution(self, *contribution):
         """Add Contribution to Plot. Can be single item or list."""
