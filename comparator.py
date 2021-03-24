@@ -810,26 +810,34 @@ class Plot(object):
         cms_latex.SetTextAlign(ROOT.kHAlignLeft + ROOT.kVAlignBottom)
         cms_latex.SetTextFont(42)
         cms_latex.SetTextSize(self.cms_text_font_size)
-        # left_offset = (self.left_margin - 0.08)  # to account for left margin, magic numbers ahoy
 
-        start_x = self.left_margin + self.text_left_offset + 0.01
+        start_x = self.left_margin + self.text_left_offset + 0.0075
         if self.is_preliminary:
             if self.has_data:
-                cms_latex.DrawLatex(start_x, self.cms_text_y, "#font[62]{CMS}#font[52]{ Preliminary}")
+                cms_latex.DrawLatexNDC(start_x, self.cms_text_y, "#font[62]{CMS}#font[52]{ Preliminary}")
             else:
-                cms_latex.DrawLatex(start_x, self.cms_text_y, "#font[62]{CMS}#font[52]{ Preliminary Simulation}")
+                cms_latex.DrawLatexNDC(start_x, self.cms_text_y, "#font[62]{CMS}#font[52]{ Simulation Preliminary}")
         else:
-            if self.has_data:
-                cms_latex.DrawLatex(start_x, self.cms_text_y, "#font[62]{CMS}")
+            if self.is_supplementary:
+                if self.has_data:
+                    cms_latex.DrawLatexNDC(start_x, self.cms_text_y, "#font[62]{CMS}#font[52]{ Supplementary}")
+                else:
+                    cms_latex.DrawLatexNDC(start_x, self.cms_text_y, "#font[62]{CMS}#font[52]{ Simulation Supplementary}")
             else:
-                cms_latex.DrawLatex(start_x, self.cms_text_y, "#font[62]{CMS}#font[52]{ Simulation}")
-        # cms_latex.DrawLatex(0.14, self.cms_text_y, "#font[62]{CMS}#font[52]{ Preliminary}")
-        # cms_latex.DrawLatex(0.14, self.cms_text_y, "#font[62]{CMS}")
-        cms_latex.SetTextAlign(ROOT.kHAlignRight + ROOT.kVAlignBottom)
+                if self.has_data:
+                    cms_latex.DrawLatexNDC(start_x, self.cms_text_y, "#font[62]{CMS}")
+                else:
+                    cms_latex.DrawLatexNDC(start_x, self.cms_text_y, "#font[62]{CMS}#font[52]{ Simulation}")
+
+        # Add lumi / CoM text
+        lumi_latex = ROOT.TLatex()
+        lumi_latex.SetTextFont(42)
+        lumi_latex.SetTextSize(self.cms_text_font_size)
+        lumi_latex.SetTextAlign(ROOT.kHAlignRight + ROOT.kVAlignBottom)
         rh_str = "13 TeV"
         if self.lumi is not None and self.has_data:
             rh_str = " %s fb^{-1} (%s)" % (self.lumi, rh_str)
-        cms_latex.DrawLatex(0.95, self.cms_text_y, rh_str)
+        lumi_latex.DrawLatexNDC(1-self.right_margin-0.0075, self.cms_text_y, rh_str)
 
         # Add title to plot
         text_latex = ROOT.TLatex()
