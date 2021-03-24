@@ -600,6 +600,11 @@ def compare_flavour_fraction_plots_with_rivet(root_dir,
     radius_ind = 1 if '_ak4puppi_' in root_dir else 2
     radius_str = 'AK4' if radius_ind == 1 else 'AK8'
 
+    plot_kwargs = dict(
+        is_preliminary=False,
+        is_supplementary=True
+    )
+
     # Z+jets
     if zpj_dirname or rivet_zpj_files:
         zpj_histname = qgf.get_flavour_hist_name(dirname=zpj_dirname, var_prepend=var_prepend, which_jet="1")
@@ -628,7 +633,8 @@ def compare_flavour_fraction_plots_with_rivet(root_dir,
                 qgf.compare_flavour_fraction_hists_vs_pt_from_contribs(contribs,
                                                                        flav=this_flav,
                                                                        output_filename=output_filename,
-                                                                       title=qgc.ZpJ_LABEL + "\n%s jets" % radius_str)
+                                                                       title=qgc.ZpJ_LABEL + "\n%s jets" % radius_str,
+                                                                       **plot_kwargs)
 
     # Central dijet
     if dj_cen_dirname or rivet_dijet_files:
@@ -659,7 +665,8 @@ def compare_flavour_fraction_plots_with_rivet(root_dir,
                 qgf.compare_flavour_fraction_hists_vs_pt_from_contribs(contribs,
                                                                        flav=this_flav,
                                                                        output_filename=output_filename,
-                                                                       title=qgc.Dijet_CEN_LABEL + "\n%s jets" % radius_str)
+                                                                       title=qgc.Dijet_CEN_LABEL + "\n%s jets" % radius_str,
+                                                                       **plot_kwargs)
 
     # Forward dijet
     if dj_fwd_dirname and rivet_dijet_files:
@@ -689,7 +696,8 @@ def compare_flavour_fraction_plots_with_rivet(root_dir,
                 qgf.compare_flavour_fraction_hists_vs_pt_from_contribs(contribs,
                                                                        flav=this_flav,
                                                                        output_filename=output_filename,
-                                                                       title=qgc.Dijet_FWD_LABEL + "\n%s jets" % radius_str)
+                                                                       title=qgc.Dijet_FWD_LABEL + "\n%s jets" % radius_str,
+                                                                       **plot_kwargs)
 
     # Do g ratio in dijet vs ZJet
     if all([rivet_dijet_files, rivet_zpj_files, dj_cen_dirname, zpj_dirname]):
@@ -767,7 +775,7 @@ def compare_flavour_fraction_plots_with_rivet(root_dir,
                      xlim=(50, 2000),
                      # ylim=(0, 1),
                      has_data=False,
-                     is_preliminary=False)
+                     **plot_kwargs)
             p.default_canvas_size = (600, 600)
 
             output_filename="%s/dj_central_vs_zpj_%s_flavour_fractions_compare_rivet_%s.%s" % (plot_dir, this_flav, radius_str, OUTPUT_FMT)

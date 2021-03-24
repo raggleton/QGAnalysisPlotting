@@ -162,7 +162,7 @@ def create_angle_label(angle, do_groomed=False):
 class SummaryPlotter(object):
     """Do lots of summary plots"""
 
-    def __init__(self, jet_algos, angles, pt_bins_dijet, pt_bins_zpj, df, output_dir, has_data, is_preliminary, only_yoda_data):
+    def __init__(self, jet_algos, angles, pt_bins_dijet, pt_bins_zpj, df, output_dir, has_data, is_preliminary, is_supplementary, only_yoda_data):
         if len(jet_algos) == 0:
             raise RuntimeError("jet_algos is empty")
         self.jet_algos = jet_algos
@@ -178,6 +178,7 @@ class SummaryPlotter(object):
         self.output_dir = output_dir
         self.has_data = has_data
         self.is_preliminary = is_preliminary
+        self.is_supplementary = is_supplementary
         # use kerning to avoid splitline taking up too much space
         # lower the whole thing a little to avoid clashing with hashed bit in plots with ratio
         self.mc_label = '#lower[0.1]{#splitline{MG5+Pythia8}{#lower[-0.15]{CUETP8M1}}}'
@@ -606,6 +607,7 @@ class SummaryPlotter(object):
                     ylim=ylim,
                     has_data=self.has_data,
                     is_preliminary=self.is_preliminary,
+                    is_supplementary=self.is_supplementary,
                     subplot_type='ratio' if metric != 'delta' else None,
                     subplot_title='Simulation / Data',
                     subplot_limits=(0.5, 1.5) if self.has_data else (0.9, 1.1)
@@ -1381,16 +1383,23 @@ class SummaryPlotter(object):
         # Want it to start at the left edge of the first plot
         start_x = left_margin + (pad_width*pad_left_margin)
         # # start_x = 100
+        is_supplementary = True
         if self.is_preliminary:
             if self.has_data:
                 cms_latex.DrawLatexNDC(start_x, latex_height, "#font[62]{CMS}#font[52]{ Preliminary}")
             else:
-                cms_latex.DrawLatexNDC(start_x, latex_height, "#font[62]{CMS}#font[52]{ Preliminary Simulation}")
+                cms_latex.DrawLatexNDC(start_x, latex_height, "#font[62]{CMS}#font[52]{ Simulation Preliminary}")
         else:
-            if self.has_data:
-                cms_latex.DrawLatexNDC(start_x, latex_height, "#font[62]{CMS}")
+            if is_supplementary:
+                if self.has_data:
+                    cms_latex.DrawLatexNDC(start_x, latex_height, "#font[62]{CMS}#font[52]{ Supplementary}")
+                else:
+                    cms_latex.DrawLatexNDC(start_x, latex_height, "#font[62]{CMS}#font[52]{ Simulation Supplementary}")
             else:
-                cms_latex.DrawLatexNDC(start_x, latex_height, "#font[62]{CMS}#font[52]{ Simulation}")
+                if self.has_data:
+                    cms_latex.DrawLatexNDC(start_x, latex_height, "#font[62]{CMS}")
+                else:
+                    cms_latex.DrawLatexNDC(start_x, latex_height, "#font[62]{CMS}#font[52]{ Simulation}")
         cms_latex.SetTextAlign(ROOT.kHAlignRight + ROOT.kVAlignBottom)
         # Get the lumi text aligned to right edge of axes
         # i.e. 1-pad_right_margin, but remember to scale by pad width
@@ -2210,6 +2219,9 @@ if __name__ == "__main__":
     parser.add_argument("--final",
                         action='store_true',
                         help='Don\'t add "Preliminary" to plots')
+    parser.add_argument("--supplementary",
+                        action='store_true',
+                        help='Add "Supplementary" to plots')
     args = parser.parse_args()
 
     # Get input data
@@ -2318,6 +2330,7 @@ if __name__ == "__main__":
                              args.outputDir,
                              has_data=True,
                              is_preliminary=not args.final,
+                             is_supplementary=args.supplementary,
                              only_yoda_data=args.onlyYodaData)
 
     has_dijet = any(["Dijet" in r['name'] for r in regions])

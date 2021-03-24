@@ -305,7 +305,6 @@ def compare_flavour_fraction_hists_vs_pt_from_contribs(contribs, flav, output_fi
              xlim=(50, 2000),
              ylim=(0, 1),
              has_data=False,
-             is_preliminary=False,
              **plot_kwargs)
     p.default_canvas_size = (600, 600)
     try:

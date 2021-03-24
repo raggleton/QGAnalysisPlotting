@@ -2974,6 +2974,7 @@ class RecoPtBinnedPlotter(BinnedPlotter):
     def _modify_plot_paper(self, this_plot):
         self._modify_plot(this_plot)
         this_plot.is_preliminary = self.setup.is_preliminary
+        this_plot.is_supplementary = True
 
     def get_pt_bin_title(self, bin_edge_low, bin_edge_high):
         title = (("{jet_algo}\n"
