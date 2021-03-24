@@ -106,8 +106,7 @@ class DijetZPJGenPtBinnedPlotter(object):
         angle_prepend = "groomed_" if self.is_groomed else ""
         self.append = "%s%s" % (angle_prepend, angle.var)  # common str to put on filenames, etc
         self.is_preliminary = is_preliminary
-        if not self.is_preliminary:
-            self.append += "_paper"
+        self.paper_str = "paper" if not self.is_preliminary else ""
 
         self.plot_colours = dict(
             dijet_colour=ROOT.kBlack,
@@ -473,7 +472,8 @@ class DijetZPJGenPtBinnedPlotter(object):
                      'zpj' if do_zpj else None,
                      self.append,
                      'bin_%d' % ibin,
-                     'divBinWidth.%s' % self.output_fmt]
+                     'divBinWidth',
+                     f'{self.paper_str}.{self.output_fmt}']
             filename = '_'.join([x for x in parts if x])
             plot.save("%s/%s" % (self.output_dir, filename))
 
