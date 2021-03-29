@@ -827,7 +827,7 @@ def do_dijet_pt_plots(workdir,
                                                       region_label=region_label)
         subplot_title = "* / %s" % entries[1][1]['label']
         if subplot_vs_data:
-            subplot_title = "Simulation / Data"
+            subplot_title = "Sim. / Data"
         paper_str = "_paper" if not is_preliminary else ""
         do_jet_pt_plot(entries,
                        output_filename=os.path.join(workdir, "data_mc_jet_pt/Dijet_%s/jet_pt%s.%s" % (region_shortname, paper_str, OUTPUT_FMT)),
@@ -1343,7 +1343,7 @@ def do_zpj_pt_plots(workdir,
                                                   region_label=qgc.ZpJ_LABEL)
     subplot_title = "* / %s" % entries[1][1]['label']
     if subplot_vs_data:
-        subplot_title = "Simulation / Data"
+        subplot_title = "Sim. / Data"
     paper_str = "_paper" if not is_preliminary else ""
     do_jet_pt_plot(entries,
                    output_filename=os.path.join(workdir, "data_mc_jet_pt/ZPlusJets/jet_pt%s.%s" % (paper_str, OUTPUT_FMT)),

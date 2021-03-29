@@ -609,7 +609,7 @@ class SummaryPlotter(object):
                     is_preliminary=self.is_preliminary,
                     is_supplementary=self.is_supplementary,
                     subplot_type='ratio' if metric != 'delta' else None,
-                    subplot_title='Simulation / Data',
+                    subplot_title='Sim. / Data',
                     subplot_limits=(0.5, 1.5) if self.has_data else (0.9, 1.1)
                     )
         plot.lumi = cu.get_lumi_str(do_dijet=any([do_dijet_fwd, do_dijet_cen]),

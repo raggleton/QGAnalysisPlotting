@@ -581,7 +581,7 @@ class GenPtBinnedPlotter(BinnedPlotter):
                         ylim=[ymin, None],
                         **self.pt_bin_plot_args)
 
-            plot.subplot_title = "Simulation / data"
+            plot.subplot_title = "Sim. / data"
             self._modify_plot_paper(plot)
 
             # disable adding objects to legend & drawing - we'll do it manually
@@ -3050,7 +3050,7 @@ class RecoPtBinnedPlotter(BinnedPlotter):
                         has_data=self.setup.has_data,
                         xlim=qgp.calc_auto_xlim(entries[0:1]),  # reduce x axis to where reference prediction is non-0
                         subplot_type='ratio',
-                        subplot_title='Simulation / data',
+                        subplot_title='Sim. / data',
                         subplot_limits=(0.5, 2.5) if self.setup.has_data else (0.75, 1.25))
             self._modify_plot_paper(plot)
 
