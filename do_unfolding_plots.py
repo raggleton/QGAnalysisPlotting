@@ -573,11 +573,12 @@ class GenPtBinnedPlotter(BinnedPlotter):
             ymin = 0
             if np.any(cu.th1_to_ndarray(unfolded_hist_bin_total_errors)[0] < 0):
                 ymin = None  # let it do its thing and auto calc ymin
+            max_rel_err = 0.5 if "multiplicity" in self.setup.angle.var.lower() else -1
             plot = Plot(entries,
                         ytitle=self.setup.pt_bin_normalised_differential_label,
                         title=self.get_pt_bin_title(bin_edge_low, bin_edge_high),
                         legend=True,
-                        xlim=qgp.calc_auto_xlim(entries[2:3]),  # set x lim to where data is non-0
+                        xlim=qgp.calc_auto_xlim(entries[2:3], max_rel_err=0.5),  # set x lim to where data is non-0
                         ylim=[ymin, None],
                         **self.pt_bin_plot_args)
 
@@ -3042,13 +3043,14 @@ class RecoPtBinnedPlotter(BinnedPlotter):
             func_name = cu.get_current_func_name()
             if not self.check_entries(entries, "%s bin %d" % (func_name, ibin)):
                 continue
+            max_rel_err = 0.5 if "multiplicity" in self.setup.angle.var.lower() else -1
             plot = Plot(entries,
                         xtitle=self.setup.detector_title,
                         ytitle=self.setup.pt_bin_detector_normalised_differential_label,
                         what="hist",
                         title=self.get_pt_bin_title(bin_edge_low, bin_edge_high),
                         has_data=self.setup.has_data,
-                        xlim=qgp.calc_auto_xlim(entries[0:1]),  # reduce x axis to where reference prediction is non-0
+                        xlim=qgp.calc_auto_xlim(entries[0:1], max_rel_err=max_rel_err),  # reduce x axis to where reference prediction is non-0
                         subplot_type='ratio',
                         subplot_title='Sim. / data',
                         subplot_limits=(0.5, 2.5) if self.setup.has_data else (0.75, 1.25))

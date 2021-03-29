@@ -1423,8 +1423,11 @@ def normalise_hist_divide_bin_width(h):
     return h_new
 
 
-def calc_auto_xlim(entries):
-    """Figure out x axis range that includes all non-0 bins from all Contributions or TH1s"""
+def calc_auto_xlim(entries, max_rel_err=-1):
+    """Figure out x axis range that includes all non-0 bins from all Contributions or TH1s
+    
+    Can also select on maximum relative error
+    """
     if len(entries) == 0:
         return None
     if not isinstance(entries[0], Contribution) and not isinstance(entries[0], ROOT.TH1):
@@ -1432,6 +1435,15 @@ def calc_auto_xlim(entries):
 
     x_min = 9999999999
     x_max = -9999999999
+
+    def _rel_err_ok(val, err, max_rel_err):
+        if max_rel_err < 0:
+            return True
+        if val == 0:
+            return False
+        else:
+            return  abs(err / val) < max_rel_err
+
     for ent in entries:
         if isinstance(ent, ROOT.TH1):
             obj = ent
@@ -1444,15 +1456,17 @@ def calc_auto_xlim(entries):
         found_min = False
         for i in range(1, nbins+1):
             val = obj.GetBinContent(i)
+            err = obj.GetBinError(i)
             if not found_min:
                 # find the first non-empty bin
-                if val != 0:
+                if val != 0 and _rel_err_ok(val, err, max_rel_err):
                     x_min = min(xax.GetBinLowEdge(i), x_min)
                     found_min = True
         for i in range(nbins, 0, -1):
             val = obj.GetBinContent(i)
+            err = obj.GetBinError(i)
             # find the last empty bin, work from rightmost bin
-            if val != 0:
+            if val != 0 and _rel_err_ok(val, err, max_rel_err):
                 x_max = max(xax.GetBinLowEdge(i+1), x_max)
                 break
 
