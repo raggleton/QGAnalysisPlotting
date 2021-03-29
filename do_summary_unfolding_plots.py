@@ -707,15 +707,15 @@ class SummaryPlotter(object):
             draw_opt = "E2 SAME"
             if do_dijet_cen:
                 dijet_central_hist_ratio_error.Draw(draw_opt)
-                plot.subplot_legend.AddEntry(dijet_central_hist_ratio_error, "Data uncert%s" % (". (central)" if do_dijet_fwd else "ainty"), "F")
+                plot.subplot_legend.AddEntry(dijet_central_hist_ratio_error, "Total data uncert%s" % (". (central)" if do_dijet_fwd else "ainty"), "F")
                 if do_dijet_fwd:
                     plot.subplot_legend.SetNColumns(2)
                     plot.subplot_legend.SetX2(0.8)
             if do_dijet_fwd:
                 dijet_forward_hist_ratio_error.Draw(draw_opt)
-                plot.subplot_legend.AddEntry(dijet_forward_hist_ratio_error, "Data uncert%s" % (". (forward)" if do_dijet_cen else "ainty"), "F")
+                plot.subplot_legend.AddEntry(dijet_forward_hist_ratio_error, "Total data uncert%s" % (". (forward)" if do_dijet_cen else "ainty"), "F")
             if do_zpj:
-                plot.subplot_legend.AddEntry(zpj_hist_ratio_error, "Data uncertainty", "F")
+                plot.subplot_legend.AddEntry(zpj_hist_ratio_error, "Total data uncertainty", "F")
                 zpj_hist_ratio_error.Draw(draw_opt)
             plot.subplot_line.Draw()
             # draw hists after line otherwise ugly overlap
