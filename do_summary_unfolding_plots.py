@@ -619,41 +619,33 @@ class SummaryPlotter(object):
         plot.title_start_y = 0.85
         plot.title_left_offset = 0.05
         plot.title_font_size = 0.035
-        if only_one_region:
-            plot.legend.SetX1(0.6)
-            plot.legend.SetX2(0.9)
-            plot.legend.SetY1(0.72)
-            for c in entries:
-                if '#splitline' or '\n' in c.label:
-                    plot.legend.SetY1(plot.legend.GetY1() - 0.03)
-        else:
-            plot.legend.SetX1(0.55)
-            plot.legend.SetX2(0.78)
-            plot.legend.SetY1(0.72)
-        plot.legend.SetY2(0.95)
-        # plot.legend.SetFillColor(ROOT.kYellow)
-        # plot.legend.SetFillStyle(3200)
+
+        plot.legend.SetX1(0.6)
+        plot.legend.SetX2(0.9)
+
+        leg_y2 = plot.title_start_y + 0.01  # magic extra bit
+        plot.legend.SetY2(leg_y2)
         plot.legend.SetTextSize(0.035)
-        if len(entries) > 4:
-            # TODO: scale with numberof entries
-            # plot.legend.SetNColumns(2)
-            # plot.legend.SetX1(0.55)
-            plot.legend.SetY1(0.6)
-            # plot.legend.SetX2(0.92)
-            plot.legend.SetY2(0.95)
-            # plot.legend.SetBorderSize(1)
-            # plot.legend.SetLineColor(ROOT.kBlack)
-            plot.title_left_offset = 0.03
-            plot.legend.SetTextSize(0.03)
-            plot.legend.SetEntrySeparation(0.01)
+        plot.legend.SetTextSize(0.03)
+        plot.legend.SetEntrySeparation(0.01)
+
+        # scale height with number of entries
+        if len(entries) < 8:
+            plot.legend.SetY1(leg_y2 - (len(entries) * (0.27/6))) # magic good separation
+        else:
+            plot.legend.SetY1(leg_y2 - (len(entries) * (0.23/6))) # magic good separation
+
+        # plot.legend.SetBorderSize(1)
+        # plot.legend.SetLineColor(ROOT.kBlack)
+
         if len(entries) > 8:
             plot.legend.SetNColumns(3)
             plot.legend.SetTextSize(0.02)
-        plot.legend.SetY2(0.87)
         # plot.legend.SetTextAlign(13)
+
         plot.left_margin = 0.16
         plot.subplot_line_style = 1
-        plot.y_padding_max_linear = 1.9
+        # plot.y_padding_max_linear = 1.9
 
         plot.do_legend = False  # do it ourselves manually
         subplot_draw_opts = "NOSTACK E1"
