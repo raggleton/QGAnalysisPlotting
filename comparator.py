@@ -846,7 +846,7 @@ class Plot(object):
         text_latex.SetTextSize(self.title_font_size)
         for ind, line in enumerate(self.title.split('\n')):
             # print(self.top_margin)
-            text_latex.DrawLatex(self.left_margin + self.title_left_offset + self.text_left_offset, self.title_start_y - (ind*self.title_diff_y), line)
+            text_latex.DrawLatexNDC(self.left_margin + self.title_left_offset + self.text_left_offset, self.title_start_y - (ind*self.title_diff_y), line)
             # text_latex.DrawLatex(self.left_margin + self.title_left_offset + self.text_left_offset, self.title_start_y + (self.top_margin - 0.1) - (ind*self.title_diff_y), line)
 
         # Do subplot
