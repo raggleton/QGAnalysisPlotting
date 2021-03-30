@@ -464,6 +464,13 @@ JETHT_RUNG_FILENAME = "uhh2.AnalysisModuleRunner.DATA.Data_JetHT_RunG.root"
 JETHT_RUNH_FILENAME = "uhh2.AnalysisModuleRunner.DATA.Data_JetHT_RunH.root"
 
 
+
+DATA_TOTAL_UNC_STR = "Data total unc."
+DATA_STAT_UNC_STR = "Data stat. unc."
+
+SIM_DATA_STR = "Sim. / data"
+
+
 def get_parser():
     """Return a parser to loop over several input dirs"""
     parser = argparse.ArgumentParser(description=__doc__)

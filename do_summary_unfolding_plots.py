@@ -638,14 +638,14 @@ class SummaryPlotter(object):
                     is_preliminary=self.is_preliminary,
                     is_supplementary=self.is_supplementary,
                     subplot_type='ratio' if metric != 'delta' else None,
-                    subplot_title='Sim. / Data',
+                    subplot_title=qgc.SIM_DATA_STR,
                     subplot_limits=(0.5, 1.5) if self.has_data else (0.9, 1.1)
                     )
         plot.lumi = cu.get_lumi_str(do_dijet=any([do_dijet_fwd, do_dijet_cen]),
                                     do_zpj=do_zpj)
 
         # plot.default_canvas_size = (700, 600)
-        plot.title_start_y = 0.85
+        # plot.title_start_y = 0.85
         plot.title_left_offset = 0.05
         plot.title_font_size = 0.035
 
@@ -694,8 +694,8 @@ class SummaryPlotter(object):
             min_ratio -= 2*ratio_padding  # bit more padding on lower limit as upper has legend space already
             max_ratio += ratio_padding
             new_ratio_range = max_ratio - min_ratio
-            # now add on half this range to accommodate subplot legend
-            new_ratio_range += 0.5*new_ratio_range
+            # now add on a fraction of this range to accommodate subplot legend
+            new_ratio_range += 0.6*new_ratio_range
             plot.subplot_container.SetMinimum(min_ratio)
             plot.subplot_container.SetMaximum(min_ratio + new_ratio_range)
 
@@ -724,19 +724,22 @@ class SummaryPlotter(object):
             plot.subplot_pad.cd()
             plot.subplot_legend = ROOT.TLegend(0.25, 0.75, 0.65, 0.9)
             plot.subplot_legend.SetFillStyle(0)
-            plot.subplot_legend.SetTextSize(0.095)
+            plot.subplot_legend.SetTextSize(0.085)
             draw_opt = "E2 SAME"
             if do_dijet_cen:
                 dijet_central_hist_ratio_error.Draw(draw_opt)
-                plot.subplot_legend.AddEntry(dijet_central_hist_ratio_error, "Total data uncert%s" % (". (central)" if do_dijet_fwd else "ainty"), "F")
+                # plot.subplot_legend.AddEntry(dijet_central_hist_ratio_error, "Total data uncert%s" % (". (central)" if do_dijet_fwd else "ainty"), "F")
+                plot.subplot_legend.AddEntry(dijet_central_hist_ratio_error, "Total data uncert. (central)" if do_dijet_fwd else qgc.DATA_TOTAL_UNC_STR, "F")
                 if do_dijet_fwd:
                     plot.subplot_legend.SetNColumns(2)
                     plot.subplot_legend.SetX2(0.8)
             if do_dijet_fwd:
                 dijet_forward_hist_ratio_error.Draw(draw_opt)
-                plot.subplot_legend.AddEntry(dijet_forward_hist_ratio_error, "Total data uncert%s" % (". (forward)" if do_dijet_cen else "ainty"), "F")
+                # plot.subplot_legend.AddEntry(dijet_forward_hist_ratio_error, "Total data uncert%s" % (". (forward)" if do_dijet_cen else "ainty"), "F")
+                plot.subplot_legend.AddEntry(dijet_forward_hist_ratio_error, "Total data uncert (forward)" if do_dijet_cen else qgc.DATA_TOTAL_UNC_STR, "F")
             if do_zpj:
-                plot.subplot_legend.AddEntry(zpj_hist_ratio_error, "Total data uncertainty", "F")
+                # plot.subplot_legend.AddEntry(zpj_hist_ratio_error, "Total data uncertainty", "F")
+                plot.subplot_legend.AddEntry(zpj_hist_ratio_error, qgc.DATA_TOTAL_UNC_STR, "F")
                 zpj_hist_ratio_error.Draw(draw_opt)
             plot.subplot_line.Draw()
             # draw hists after line otherwise ugly overlap

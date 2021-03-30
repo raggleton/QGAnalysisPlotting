@@ -190,11 +190,16 @@ def do_jet_pt_plot(entries,
         data_total_ratio.Draw(data_draw_opt)
 
         # draw small legend for shadings
-        plot.subplot_leg = ROOT.TLegend(0.25, 0.73, 0.9, 0.9)
-        plot.subplot_leg.SetTextSize(0.07)
+        x_left = 0.25
+        y_bottom = 0.75
+        width = 0.63
+        height = 0.15
+        plot.subplot_leg = ROOT.TLegend(x_left, y_bottom, x_left+width, y_bottom+height)
+        # plot.subplot_leg = ROOT.TLegend(0.25, 0.73, 0.9, 0.9)
+        # plot.subplot_leg.SetTextSize(0.07)
         plot.subplot_leg.SetFillStyle(0)
         plot.subplot_leg.SetNColumns(2)
-        plot.subplot_leg.AddEntry(data_total_ratio, "Data stat. uncert.", "F")
+        plot.subplot_leg.AddEntry(data_total_ratio, qgc.DATA_STAT_UNC_STR, "F")
 
         # Do systematic shading
         if experimental_syst:
@@ -233,6 +238,8 @@ def do_jet_pt_plot(entries,
         plot.subplot_container.Draw("SAME " + draw_opt)
         plot.subplot_line.Draw()
 
+        if total_syst and not any([experimental_syst, scale_syst, pdf_syst]):
+            plot.subplot_leg.SetTextSize(0.085)
 
         if experimental_syst:
             plot.subplot_leg.AddEntry(experimental_syst, "Exp. syst.", "F")
@@ -241,7 +248,7 @@ def do_jet_pt_plot(entries,
         if pdf_syst:
             plot.subplot_leg.AddEntry(pdf_syst, "PDF syst.", "F")
         if total_syst:
-            plot.subplot_leg.AddEntry(total_syst, "Total MC syst. uncert.", "F")
+            plot.subplot_leg.AddEntry(total_syst, "MC syst. unc.", "F")
 
         plot.subplot_leg.Draw()
 
@@ -827,7 +834,7 @@ def do_dijet_pt_plots(workdir,
                                                       region_label=region_label)
         subplot_title = "* / %s" % entries[1][1]['label']
         if subplot_vs_data:
-            subplot_title = "Sim. / Data"
+            subplot_title = qgc.SIM_DATA_STR
         paper_str = "_paper" if not is_preliminary else ""
         do_jet_pt_plot(entries,
                        output_filename=os.path.join(workdir, "data_mc_jet_pt/Dijet_%s/jet_pt%s.%s" % (region_shortname, paper_str, OUTPUT_FMT)),
@@ -1343,7 +1350,7 @@ def do_zpj_pt_plots(workdir,
                                                   region_label=qgc.ZpJ_LABEL)
     subplot_title = "* / %s" % entries[1][1]['label']
     if subplot_vs_data:
-        subplot_title = "Sim. / Data"
+        subplot_title = qgc.SIM_DATA_STR
     paper_str = "_paper" if not is_preliminary else ""
     do_jet_pt_plot(entries,
                    output_filename=os.path.join(workdir, "data_mc_jet_pt/ZPlusJets/jet_pt%s.%s" % (paper_str, OUTPUT_FMT)),

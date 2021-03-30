@@ -473,7 +473,7 @@ class GenPtBinnedPlotter(BinnedPlotter):
                 self.save_plot(plot2, "%s/unfolded_%s_bin_%d_divBinWidth_lowX.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
 
     def plot_unfolded_with_alt_truth_normalised(self, do_chi2=False, do_zoomed=True):
-        data_total_errors_style = dict(label="Data (total uncert.)",
+        data_total_errors_style = dict(label="Data (total unc.)",
                                        line_color=self.plot_styles['unfolded_total_colour'],
                                        line_width=self.line_width,
                                        line_style=1,
@@ -481,7 +481,7 @@ class GenPtBinnedPlotter(BinnedPlotter):
                                        marker_style=cu.Marker.get('circle'),
                                        marker_size=self.plot_styles['unfolded_marker_size'],
                                        leg_draw_opt="LEP")
-        data_stat_errors_style = dict(label="Data (stat. uncert.)",
+        data_stat_errors_style = dict(label="Data (stat. unc.)",
                                       line_color=self.plot_styles['unfolded_stat_colour'],
                                       line_width=self.line_width,
                                       line_style=1,
@@ -582,14 +582,15 @@ class GenPtBinnedPlotter(BinnedPlotter):
                         ylim=[ymin, None],
                         **self.pt_bin_plot_args)
 
-            plot.subplot_title = "Sim. / data"
+            plot.subplot_title = qgc.SIM_DATA_STR
             self._modify_plot_paper(plot)
 
             # disable adding objects to legend & drawing - we'll do it manually
             plot.do_legend = False
+            plot.legend.SetTextSize(0.03)
             plot.legend.SetY1(0.6)
-            plot.legend.SetX1(0.59)
-            plot.legend.SetX2(0.95)
+            plot.legend.SetX1(0.57)
+            plot.legend.SetX2(0.93)
             # plot.legend.SetEntrySeparation(0.005)
             subplot_draw_opts = "NOSTACK E1"
             plot.plot("NOSTACK E1", subplot_draw_opts)
@@ -631,12 +632,14 @@ class GenPtBinnedPlotter(BinnedPlotter):
             # Add subplot legend
             x_left = 0.25
             y_bottom = 0.75
-            width = 0.5
+            width = 0.67
             height = 0.15
             plot.subplot_legend = ROOT.TLegend(x_left, y_bottom, x_left+width, y_bottom+height)
             # plot.subplot_legend = ROOT.TLegend(width, height, width, height)  # automatic placement doesn't work
-            plot.subplot_legend.AddEntry(data_total_ratio, "Total uncert.", "F")
-            plot.subplot_legend.AddEntry(data_stat_ratio, "Stat. uncert.", "F")
+            # plot.subplot_legend.AddEntry(data_total_ratio, "Total uncert.", "F")
+            # plot.subplot_legend.AddEntry(data_stat_ratio, "Stat. uncert.", "F")
+            plot.subplot_legend.AddEntry(data_total_ratio, qgc.DATA_TOTAL_UNC_STR, "F")
+            plot.subplot_legend.AddEntry(data_stat_ratio, qgc.DATA_STAT_UNC_STR, "F")
             plot.subplot_legend.SetTextSize(0.085)
             plot.subplot_legend.SetFillStyle(0)
             plot.subplot_legend.SetNColumns(2)
@@ -1869,6 +1872,8 @@ class GenPtBinnedPlotter(BinnedPlotter):
             # find upper limit where there is no data
             xlim = qgp.calc_auto_xlim([unfolded_hist_bin_total_errors])
             ylim = [0.8, 1.45] if "Dijet" in self.setup.region['name'] else [0.3, 1.9]
+            # sepcial one for paper
+            ylim = [0.85, 1.3] if ("Dijet" in self.setup.region['name'] and "LHA" in self.setup.angle.var and "AK4" in self.setup.jet_algo.upper()) else ylim
             min_total = _convert_error_bars_to_error_ratio_hist(unfolded_hist_bin_total_errors, -1).GetMinimum()
             max_total = _convert_error_bars_to_error_ratio_hist(unfolded_hist_bin_total_errors).GetMaximum()
             if max_total > ylim[1]:
@@ -2043,6 +2048,8 @@ class GenPtBinnedPlotter(BinnedPlotter):
             # find upper limit where there is no data
             xlim = qgp.calc_auto_xlim([unfolded_hist_bin_total_errors])
             ylim = [0.8, 1.45] if "Dijet" in self.setup.region['name'] else [0.3, 1.9]
+            # special one for paper
+            ylim = [0.85, 1.3] if ("Dijet" in self.setup.region['name'] and "LHA" in self.setup.angle.var and "AK4" in self.setup.jet_algo.upper()) else ylim
             min_total = _convert_error_bars_to_error_ratio_hist(unfolded_hist_bin_total_errors, -1).GetMinimum()
             max_total = _convert_error_bars_to_error_ratio_hist(unfolded_hist_bin_total_errors).GetMaximum()
             if max_total > ylim[1]:
@@ -3052,7 +3059,7 @@ class RecoPtBinnedPlotter(BinnedPlotter):
                         has_data=self.setup.has_data,
                         xlim=qgp.calc_auto_xlim(entries[0:1], max_rel_err=max_rel_err),  # reduce x axis to where reference prediction is non-0
                         subplot_type='ratio',
-                        subplot_title='Sim. / data',
+                        subplot_title=qgc.SIM_DATA_STR,
                         subplot_limits=(0.5, 2.5) if self.setup.has_data else (0.75, 1.25))
             self._modify_plot_paper(plot)
 
@@ -3103,7 +3110,7 @@ class RecoPtBinnedPlotter(BinnedPlotter):
             width = 0.55
             height = 0.13
             plot.subplot_legend = ROOT.TLegend(x_left, y_bottom, x_left+width, y_bottom+height)
-            plot.subplot_legend.AddEntry(data_total_ratio, "Data stat. uncertainty", "F")
+            plot.subplot_legend.AddEntry(data_total_ratio, qgc.DATA_STAT_UNC_STR, "F")
             plot.subplot_legend.SetFillStyle(0)
             plot.subplot_legend.Draw()
 
