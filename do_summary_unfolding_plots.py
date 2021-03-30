@@ -563,38 +563,67 @@ class SummaryPlotter(object):
 
         # determine y range of main pad
         # look for global min/max across all contributions
-        h_min, min_bin_num, h_max, max_bin_num = cu.get_min_max_bin_contents_multiple_hists([c.obj for c in entries])
+        nbins = entries[-1].obj.GetNbinsX()
+
+        # For the paper, we want LHA to have all the same limits for onlyYodaData and onlyDataOldMC
+        is_paper = (metric == "mean" and angle.var == "jet_LHA" and jet_algo['name'] == "ak4puppi" and not do_groomed)
+        use_entries = entries[-1:] if is_paper else entries
+        
+        h_min, min_bin_num, h_max, max_bin_num = cu.get_min_max_bin_contents_multiple_hists([c.obj for c in use_entries])
+        # print('h_min, min_bin_num, h_max, max_bin_num:', h_min, min_bin_num, h_max, max_bin_num)
         h_range = h_max - h_min
         lower_padding = h_range*0.1
-        upper_padding = h_range*0.15
-        new_h_max = h_max+(6*upper_padding)
-        new_h_min = h_min-lower_padding
+        upper_padding = h_range*0.1
+        new_h_max = h_max+(4*upper_padding)
+        new_h_min = h_min-(3*lower_padding)
 
-        # If the any bin overlaps with the legend region (upper 50% end of x axis)
-        # then increase range so plot sits in lower half or so
-        nbins = entries[-1].obj.GetNbinsX()
-        check_x_bin = int(0.5*nbins) # any bin > this is checked to see if it might overlap w/legend
-        hits_legend = max_bin_num >= check_x_bin  # quick: check if maximum overlaps legend
-        if not hits_legend:
-            # check if any bin, not just the maximum, hits the legend
-            # legend is location is based on a rough fraction of the current y range
-            y_limit = 0.5*(new_h_max-new_h_min) + new_h_min
-            for ent in entries:
-                hist = ent.obj
-                for i in range(check_x_bin, nbins+1):
-                    if (hist.GetBinContent(i) + hist.GetBinError(i)) > y_limit:
-                        hits_legend = True
-                        break
+        if not is_paper:
+            # If the any bin overlaps with the legend region (upper 50% end of x axis)
+            # then increase range so plot sits in lower half or so
+            check_x_bin = int(0.75*nbins) # any bin > this is checked to see if it might overlap w/legend
 
-        # if metric == "mean" and angle.var == "jet_pTD" and jet_algo['name'] == "ak8puppi" and do_groomed:
-        #     print('h_min, min_bin_num, h_max, max_bin_num:', h_min, min_bin_num, h_max, max_bin_num)
-        #     print('0.6*entries[-1].obj.GetNbinsX():', 0.6*entries[-1].obj.GetNbinsX())
-        #     print("hits_legend:", hits_legend)
+            # if not ish_min_all, min_bin_num_all, h_max_all, max_bin_num_all = cu.get_min_max_bin_contents_multiple_hists([c.obj for c in entries])
+            # new_h_min = h_min_all-lower_padding
+            
+            hits_legend = max_bin_num >= check_x_bin  # quick: check if maximum overlaps legend
+            hits_legend = False
+            frac_height = 0.4
+            max_h_check = -1
+            max_ind_check = -1
+            if not hits_legend:
+                # check if any bin, not just the maximum, hits the legend
+                # legend is location is based on a rough fraction of the current y range
+                y_limit = frac_height*(new_h_max-new_h_min) + new_h_min
+                for ent in entries:
+                    hist = ent.obj
+                    for i in range(check_x_bin, nbins+1):
+                        new_max = hist.GetBinContent(i) + hist.GetBinError(i)
+                        if new_max > y_limit and new_max > max_h_check:
+                            max_h_check = new_max
+                            hits_legend = True
+                            max_ind_check = i
+                            # break
 
-        if hits_legend:
-            # add more upper headroom, so plot essentially only covers lower half
-            new_h_max = h_max + upper_padding
-            new_h_max += (new_h_max-new_h_min)
+            # if metric == "mean" and angle.var == "jet_LHA_charged" and jet_algo['name'] == "ak8puppi" and not do_groomed:
+            if metric == "mean" and angle.var == "jet_pTD" and jet_algo['name'] == "ak8puppi" and not do_groomed:
+                print('h_min, min_bin_num, h_max, max_bin_num:', h_min, min_bin_num, h_max, max_bin_num)
+                # print('h_min_all, min_bin_num_all, h_max_all, max_bin_num_all:', h_min_all, min_bin_num_all, h_max_all, max_bin_num_all)
+                # print('0.6*entries[-1].obj.GetNbinsX():', 0.6*entries[-1].obj.GetNbinsX())
+                print("max_h_check, max_ind_check:", max_h_check, max_ind_check)
+                print("hits_legend:", hits_legend)
+
+            if hits_legend:
+                buffer_factor = 0.9
+                new_h_max = (max_h_check / (frac_height*buffer_factor)) - (new_h_min * (1 - (frac_height*buffer_factor)) / (frac_height*buffer_factor))
+                # print("new_h_max", new_h_max)
+                # add more upper headroom, so plot essentially only covers lower half
+                # new_h_max += 1*upper_padding
+                # new_h_max = h_max + 0.5*upper_padding
+                # new_h_max += (new_h_max-new_h_min)
+            # else:
+                # print("Not hit legend")
+                # print('h_min, min_bin_num, h_max, max_bin_num:', h_min, min_bin_num, h_max, max_bin_num)
+                # print(new_h_min, new_h_max)
 
         ylim = (max(0, new_h_min), new_h_max)
         plot = Plot(entries,
