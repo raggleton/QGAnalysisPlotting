@@ -16,11 +16,20 @@ source /afs/desy.de/user/a/aggleton/.bashrc
 conda activate unfolding_py3
 
 # Actually run all the unfolding jobs
-set -x
+set -xu
 # INPUTDIR and OUTPUTDIR come from the grid-control config
 ODIR="${INPUTDIR}/${OUTPUTDIR}"
 
-COMMON_ARGS="$INPUTDIR --outputDir=$ODIR --do$CHANNEL --angles $ANGLE --noBinnedPlots"
+MERGE_LAST_PT_BIN=0
+ZERO_BAD_RSP_BIN=0
+if [[ "$CHANNEL" == *"ZPJ"* ]]; then
+    if [[ "$ANGLE" == *"Multiplicity"* ]]; then
+        MERGE_LAST_PT_BIN=1
+        ZERO_BAD_RSP_BIN=1
+    fi
+fi
+
+COMMON_ARGS="$INPUTDIR --outputDir=$ODIR --do$CHANNEL --angles $ANGLE --noBinnedPlots --mergeLastPtBin ${MERGE_LAST_PT_BIN} --zeroBadResponseBins ${ZERO_BAD_RSP_BIN}"
 
 # MC input, all MC
 # ------------------------------------------------------------------------------
@@ -34,42 +43,34 @@ COMMON_ARGS="$INPUTDIR --outputDir=$ODIR --do$CHANNEL --angles $ANGLE --noBinned
 # ------------------------------------------------------------------------------
 # Do some per-variable/channel settings
 EXP_SYST_AS_ALT_RSP=0
-MERGE_LAST_PT_BIN=0
-ZERO_BAD_RSP_BIN=0
 if [[ "$CHANNEL" == *"Dijet"* ]]; then
     EXP_SYST_AS_ALT_RSP=1
-else
-    if [[ "ANGLE" == *"Multiplicity"* ]]; then
-        MERGE_LAST_PT_BIN=1
-        ZERO_BAD_RSP_BIN=1
-    fi
 fi
 
 ARGS="${COMMON_ARGS} --MCinput=True "\
-"--doExperimentalSysts=True --doExperimentalSystsAsAltResponse ${EXP_SYST_AS_ALT_RSP} "\
-"--doScaleSysts=True --doPDFSysts=True "\
-"--mergeLastPtBin ${MERGE_LAST_PT_BIN} --zeroBadResponseBins ${ZERO_BAD_RSP_BIN}"
+"--doExperimentalSysts=True --doExperimentalSystsAsAltResponse=${EXP_SYST_AS_ALT_RSP} "\
+"--doScaleSysts=True --doPDFSysts=True "
 
 # stash location of output file for use later with data
 REFFILE=$(python unfolding_logistics.py out $ARGS)
-python unfolding.py $ARGS
+
+if [[ "$CHANNEL" != *"Dijet"* ]]; then
+    python unfolding.py $ARGS
+fi
 
 # Data input, use previous MC file to get systs if necessary
 # ------------------------------------------------------------------------------
-EXP_SYSTS_ARGS="--doExperimentalSystsFromFile=$REFFILE"
+SYSTS_ARGS="--doExperimentalSystsFromFile=$REFFILE --doScaleSystsFromFile=$REFFILE --doPDFSystsFromFile=$REFFILE"
 if [[ "$CHANNEL" == *"Dijet"* ]]; then
-    EXP_SYSTS_ARGS="--doExperimentalSysts=True --doExperimentalSystsAsAltResponse=${EXP_SYST_AS_ALT_RSP}"
+    SYSTS_ARGS="--doExperimentalSysts=True --doExperimentalSystsAsAltResponse=${EXP_SYST_AS_ALT_RSP} --doScaleSysts 1 --doPDFSysts 1"
 fi
 
-ARGS="${COMMON_ARGS} "\
-"${EXP_SYSTS_ARGS} "\
-"--doScaleSystsFromFile=$REFFILE "\
-"--doPDFSystsFromFile=$REFFILE "\
-"--mergeLastPtBin ${MERGE_LAST_PT_BIN} --zeroBadResponseBins ${ZERO_BAD_RSP_BIN}"
+ARGS="${COMMON_ARGS} ${SYSTS_ARGS}"
 
 python unfolding.py $ARGS
 
 # Data input, use alt response matrix as cross-check
+# also good for bottom-line test
 # ------------------------------------------------------------------------------
 #python unfolding.py ${COMMON_ARGS} --useAltResponse=True
 
