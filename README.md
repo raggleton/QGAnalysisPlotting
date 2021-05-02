@@ -58,9 +58,11 @@ Some of it also relies on less common packages, including the `uproot` (the olde
 If you need python 3 and/or ROOT, [miniconda](https://docs.conda.io/en/latest/miniconda.html) is my choice (especially on the NAF), since it requires no special permissions.
 You can create a copy of my conda environment using:
 
-```conda create -n qganalysis --file conda_spec_file.txt```
+```conda create -n unfolding_py3 --file conda_spec_file.txt```
 
-If you already have python3 & ROOT and jsut want the other packages, you can instead use the `requirements.txt` to install these via `pip install -r requirements.txt`.
+Note that you cannot run grid-control with python3, so for doing batch unfolding plots, you'll need to `conda deactivate` first.
+
+If you already have python3 & ROOT and just want the other packages, you can instead use the `requirements.txt` to install these via `pip install -r requirements.txt`.
 
 ## Running
 
