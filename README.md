@@ -56,11 +56,10 @@ It also requires several python packages: `numpy`, `scipy`, `pandas` - these can
 Some of it also relies on less common packages, including the `uproot` (the older uproot3, not the more recent 4), `uncertainties`, `jax`, and `rootpy` packages.
 
 If you need python 3 and/or ROOT, [miniconda](https://docs.conda.io/en/latest/miniconda.html) is my choice (especially on the NAF), since it requires no special permissions.
-You can create a copy of my conda environment using:
 
-```conda create -n unfolding_py3 --file conda_spec_file.txt```
+**Only for Linux**: you can create a copy of my conda environment using:
 
-Note that you cannot run grid-control with python3, so for doing batch unfolding plots, you'll need to `conda deactivate` first.
+```conda create -n qganalysis --file conda_spec_file.txt```
 
 If you already have python3 & ROOT and just want the other packages, you can instead use the `requirements.txt` to install these via `pip install -r requirements.txt`.
 
@@ -121,8 +120,12 @@ The output from unfolding is organised as follows:
 
 Doing the unfolding for all angles/regions/systematics will take a very long time. Instead, do it in parallel jobs on the BIRD cluster.
 Jobs are handled using [grid-control](https://grid-control.github.io/).
+This assumes you are using a conda environment.
 
 The scripts [`gc_submitUnfoldingJobs_ak4.conf`](gc_submitUnfoldingJobs_ak4.conf) and [gc_submitUnfoldingJobs_ak8.conf](`gc_submitUnfoldingJobs_ak8.conf`) are the job submit files for AK4 and AK8 jobs, respectively. Each runs the commands in [`runUnfoldingJob.sh`](runUnfoldingJob.sh)
+You should update `runUnfoldingJob.sh` to match your conda environment name, and any other dir locations. 
+
+Note that you cannot run grid-control with python3, so for doing batch unfolding plots, you'll need to `conda deactivate` first.
 
 ### Plotting the results of unfolding
 
