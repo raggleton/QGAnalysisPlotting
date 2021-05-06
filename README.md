@@ -48,12 +48,12 @@ Most of this code relies on `ROOT` (especially `PyROOT` & `TUnfold`). Note that 
 
 :warning: **You must use ROOT < 6.22!** :warning:
 
-(I ran on 6.18)
-
 See https://root.cern/manual/python/#new-pyroot-backwards-incompatible-changes for details (this code uses `ROOT.Double`, and there may be other changes I am unaware of).
 
+I used ROOT 6.20.2, which uses TUnfold 17.6 - analysis unverified using newer TUnfold versions!
+
 It also requires several python packages: `numpy`, `scipy`, `pandas` - these can generally be found in any vaguely recent CMSSW setup (>= 10_2_X).
-Some of it also relies on less common packages, including the `uproot` (the older uproot3, not the more recent 4), `uncertainties`, `jax`, and `rootpy` packages.
+Some of it also relies on less common packages, including the `uproot` (the older uproot3, not the more recent 4, but **not** via the `uproot3` package), `uncertainties`, `jax`, and `rootpy` packages.
 
 If you need python 3 and/or ROOT, [miniconda](https://docs.conda.io/en/latest/miniconda.html) is my choice (especially on the NAF), since it requires no special permissions.
 
@@ -62,6 +62,26 @@ You can create a copy of my conda environment called `qganalysis` using:
 ```conda env create -f conda_environment.yml```
 
 You can then activate with the usual `conda activate qganalysis`, etc.
+
+However, YODA cannot be installed easily via conda. For the scripts that need YODA, I just do them within CMSSW (since they often do not need other packages outside of CMSSW), to convert them into a more portable format.
+
+To install YODA manually, into a directory `PREFIX` (must be full filepath) of your choosing:
+
+NB version 1.8.2 used since earlier versions do not compile under python 3.7+
+
+```
+conda activate qganalysis
+wget --no-check-certificate http://www.hepforge.org/archive/yoda/YODA-1.8.2.tar.gz
+tar xzf YODA-1.8.2.tar.gz
+cd YODA-1.8.2
+./configure --prefix=$PREFIX
+make -j4
+make -j4 install
+cp yodaenv.sh $PREFIX/yodaenv.sh
+cp yodaenv.sh ${CONDA_PREFIX}/etc/conda/activate.d/
+```
+
+By copying to the `activate.d`, `yodaenv.sh` will be called whenever the conda environment is activated.
 
 If you already have python3 & ROOT and just want the other packages, you can instead use the `requirements.txt` to install these via `pip install -r requirements.txt`.
 
