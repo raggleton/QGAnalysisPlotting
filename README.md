@@ -57,9 +57,11 @@ Some of it also relies on less common packages, including the `uproot` (the olde
 
 If you need python 3 and/or ROOT, [miniconda](https://docs.conda.io/en/latest/miniconda.html) is my choice (especially on the NAF), since it requires no special permissions.
 
-**Only for Linux**: you can create a copy of my conda environment using:
+You can create a copy of my conda environment called `qganalysis` using:
 
-```conda create -n qganalysis --file conda_spec_file.txt```
+```conda env create -f conda_environment.yml```
+
+You can then activate with the usual `conda activate qganalysis`, etc.
 
 If you already have python3 & ROOT and just want the other packages, you can instead use the `requirements.txt` to install these via `pip install -r requirements.txt`.
 
