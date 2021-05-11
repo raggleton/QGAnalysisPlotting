@@ -860,29 +860,29 @@ if __name__ == '__main__':
                                                       is_preliminary=not args.paper)
 
     # One set of plots per input
-    # for adir in args.dir:
-    #     do_all_flavour_fraction_plots(adir,
-    #                                   plot_dir=os.path.join(adir, "flav_fractions%s" % ("_gen" if args.gen else "")),
-    #                                   var_prepend="gen" if args.gen else "",
-    #                                   zpj_dirname="ZPlusJets_QG" if args.zpj else None,
-    #                                   dj_cen_dirname="Dijet_QG_central_tighter" if args.dj else None,
-    #                                   dj_fwd_dirname="Dijet_QG_forward_tighter" if args.dj else None,
-    #                                   is_preliminary=not args.paper)
+    for adir in args.dir:
+        do_all_flavour_fraction_plots(adir,
+                                      plot_dir=os.path.join(adir, "flav_fractions%s" % ("_gen" if args.gen else "")),
+                                      var_prepend="gen" if args.gen else "",
+                                      zpj_dirname="ZPlusJets_QG" if args.zpj else None,
+                                      dj_cen_dirname="Dijet_QG_central_tighter" if args.dj else None,
+                                      dj_fwd_dirname="Dijet_QG_forward_tighter" if args.dj else None,
+                                      is_preliminary=not args.paper)
 
-    #     do_all_flavour_fraction_plots(adir,
-    #                                   plot_dir=os.path.join(adir, "flav_fractions_gen_selection"),
-    #                                   var_prepend="",
-    #                                   zpj_dirname="ZPlusJets_QG_gen" if args.zpj else None,
-    #                                   dj_cen_dirname="Dijet_QG_gen_central" if args.dj else None,
-    #                                   dj_fwd_dirname="Dijet_QG_gen_forward" if args.dj else None,
-    #                                   is_preliminary=not args.paper)
+        do_all_flavour_fraction_plots(adir,
+                                      plot_dir=os.path.join(adir, "flav_fractions_gen_selection"),
+                                      var_prepend="",
+                                      zpj_dirname="ZPlusJets_QG_gen" if args.zpj else None,
+                                      dj_cen_dirname="Dijet_QG_gen_central" if args.dj else None,
+                                      dj_fwd_dirname="Dijet_QG_gen_forward" if args.dj else None,
+                                      is_preliminary=not args.paper)
 
-    # if len(args.dir) > 1:
-    #     # Now comparison across all inputs
-    #     do_flavour_fraction_input_comparison_plots(args.dir,
-    #                                                plot_dir=os.path.join(args.dir[0], "flav_fractions_comparison%s" % ("_gen" if args.gen else "")),
-    #                                                labels=args.dirLabel,
-    #                                                var_prepend="gen" if args.gen else "",
-    #                                                dj_cen_dirname="Dijet_QG_central_tighter" if args.dj else None,
-    #                                                dj_fwd_dirname="Dijet_QG_forward_tighter" if args.dj else None,
-    #                                                zpj_dirname="ZPlusJets_QG" if args.zpj else None)
+    if len(args.dir) > 1:
+        # Now comparison across all inputs
+        do_flavour_fraction_input_comparison_plots(args.dir,
+                                                   plot_dir=os.path.join(args.dir[0], "flav_fractions_comparison%s" % ("_gen" if args.gen else "")),
+                                                   labels=args.dirLabel,
+                                                   var_prepend="gen" if args.gen else "",
+                                                   dj_cen_dirname="Dijet_QG_central_tighter" if args.dj else None,
+                                                   dj_fwd_dirname="Dijet_QG_forward_tighter" if args.dj else None,
+                                                   zpj_dirname="ZPlusJets_QG" if args.zpj else None)
