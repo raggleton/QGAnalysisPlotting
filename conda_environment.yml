@@ -12,11 +12,12 @@ dependencies:
   - binutils_impl_linux-64=2.34=h53a641e_0
   - binutils_linux-64=2.34=hc952b39_18
   - bleach=3.1.4=pyh9f0ad1d_0
+  - blosc=1.21.0=h9c3ff4c_0
   - bzip2=1.0.8=h516909a_2
   - c-compiler=1.0.4=h516909a_0
   - ca-certificates=2020.12.5=ha878542_0
   - cairo=1.16.0=hcf35c78_1003
-  - certifi=2020.12.5=py38h578d9bd_0
+  - certifi=2020.12.5=py38h578d9bd_1
   - cfitsio=3.470=hb60a0a2_2
   - compilers=1.0.4=0
   - cxx-compiler=1.0.4=hc9558a2_0
@@ -53,6 +54,7 @@ dependencies:
   - gxx_impl_linux-64=7.3.0=hdf63c60_5
   - gxx_linux-64=7.3.0=h553295d_18
   - harfbuzz=2.4.0=h9f30f68_3
+  - hdf5=1.10.6=nompi_h3c11f04_101
   - icu=64.2=he1b5a44_1
   - importlib-metadata=1.6.0=py38h32f6830_0
   - importlib_metadata=1.6.0=0
@@ -79,10 +81,10 @@ dependencies:
   - libcxxabi=9.0.1=1
   - libedit=3.1.20170329=hf8c457e_1001
   - libffi=3.2.1=he1b5a44_1007
-  - libgcc-ng=9.2.0=h24d8f2e_2
+  - libgcc-ng=9.3.0=h2828fa1_19
   - libgfortran-ng=7.3.0=hdf63c60_5
   - libglu=9.0.0=he1b5a44_1001
-  - libgomp=9.2.0=h24d8f2e_2
+  - libgomp=9.3.0=h2828fa1_19
   - libiconv=1.15=h516909a_1006
   - liblapack=3.8.0=16_openblas
   - libllvm9=9.0.1=hc9558a2_0
@@ -92,7 +94,7 @@ dependencies:
   - librsvg=2.46.4=h33a7fed_1
   - libsodium=1.0.17=h516909a_0
   - libssh2=1.8.2=h22169c7_2
-  - libstdcxx-ng=9.2.0=hdf63c60_2
+  - libstdcxx-ng=9.3.0=h6de172a_19
   - libtiff=4.1.0=hc7e4089_6
   - libtool=2.4.6=h14c3975_1002
   - libuuid=2.32.1=h14c3975_1000
@@ -102,19 +104,22 @@ dependencies:
   - libxml2=2.9.10=hee79883_0
   - llvm-openmp=9.0.1=hc9558a2_2
   - lz4-c=1.8.3=he1b5a44_1001
+  - lzo=2.10=h516909a_1000
   - markupsafe=1.1.1=py38h1e0a361_1
   - matplotlib=3.2.1=0
   - matplotlib-base=3.2.1=py38h2af1d28_0
   - metakernel=0.24.3=py_0
   - mistune=0.8.4=py38h516909a_1000
+  - mock=4.0.3=py38h578d9bd_1
   - nbconvert=5.6.1=py38_0
   - nbformat=5.0.4=py_0
   - ncurses=6.1=hf484d3e_1002
   - notebook=6.0.3=py38_0
   - nspr=4.25=he1b5a44_0
   - nss=3.47=he751ad9_0
+  - numexpr=2.7.3=py38h51da96c_0
   - numpy=1.18.1=py38h8854b6b_1
-  - openssl=1.1.1e=h516909a_0
+  - openssl=1.1.1k=h7f98852_0
   - opt_einsum=3.3.0=py_0
   - pandas=1.0.3=py38hcb8c335_0
   - pandoc=2.9.2=0
@@ -136,6 +141,7 @@ dependencies:
   - pyparsing=2.4.6=py_0
   - pyqt=5.12.3=py38hcca6a23_1
   - pyrsistent=0.16.0=py38h1e0a361_0
+  - pytables=3.6.1=py38hc386592_3
   - pythia8=8.244=py38h950e882_0
   - python=3.8.2=h8356626_5_cpython
   - python-dateutil=2.8.1=py_0
