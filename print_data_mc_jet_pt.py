@@ -21,8 +21,6 @@ import qg_common as qgc
 import qg_general_plots as qgg
 import common_utils as cu
 
-from my_unfolder import MyUnfolder
-
 ROOT.PyConfig.IgnoreCommandLineOptions = True
 ROOT.gROOT.SetBatch(1)
 ROOT.TH1.SetDefaultSumw2()
