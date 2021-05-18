@@ -66,6 +66,30 @@ You can then activate with the usual `conda activate qganalysis`, etc.
 However, YODA cannot be installed easily via conda, and there are API changes that clash with python3 (1.7.7 has different API to 1.8.X, e.g. `.bins` vs `.bins()`, but the former doesn't compile under Python3.7 TODO: update my usage of API). 
 For the scripts that need YODA, I just do them within CMSSW 10_6_X (since they often do not need other packages outside of CMSSW), to convert them into a more portable format.
 
+If you really want to install it:
+
+To install YODA manually, into a directory `PREFIX` (must be full filepath) of your choosing:
+
+
+```
+conda activate qganalysis
+pip install -U Cython
+wget --no-check-certificate http://www.hepforge.org/archive/yoda/YODA-1.7.7.tar.gz
+tar xzf YODA-1.7.7.tar.gz
+cd YODA-1.7.7
+cd pyext/yoda
+cython ./core.pyx --cplus -I . -I ./include  -I . -I ./include -o core.cpp
+cython ./util.pyx --cplus -I . -I ./include  -I . -I ./include -o util.cpp
+cython ./rootcompat.pyx --cplus -I . -I ./include  -I . -I ./include -o rootcompat.cpp
+./configure --prefix=$PREFIX
+make -j4
+make -j4 install
+cp yodaenv.sh $PREFIX/yodaenv.sh
+cp yodaenv.sh ${CONDA_PREFIX}/etc/conda/activate.d/
+```
+
+By copying to the `activate.d`, `yodaenv.sh` will be called whenever the conda environment is activated.
+
 If you already have python3 & ROOT and just want the other packages, you can instead use the `requirements.txt` to install these via `pip install -r requirements.txt`.
 
 ## Running
@@ -165,8 +189,6 @@ Before we can plot the grand summary plots (e.g. mean vs pT), we first extract t
 `extract_unfolding_summary_stats.py --ak4source <ak4 unfolding dir> --ak8source <ak8 unfolding dir> --h5output <output H5 filename>`
 
 **To convert RIVET results:**
-
-> NB do this part under CMSSW_10_6_X to use YODA. Once you have the output H5 file, you can work outside CMSSW again
 
 This is more complicated, since there are many RIVET inputs corresponding to different generators. For each generator, we specify:
 
