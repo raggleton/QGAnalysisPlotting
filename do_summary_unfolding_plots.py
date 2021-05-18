@@ -21,8 +21,6 @@ from array import array
 from copy import copy
 import warnings
 
-import yoda
-
 import ROOT
 from MyStyle import My_Style
 from comparator import Contribution, Plot
@@ -35,7 +33,7 @@ import qg_general_plots as qgp
 from unfolding_config import get_dijet_config, get_zpj_config
 import rivet_naming as rn
 import metric_calculators as metrics
-from extract_rivet_summary_stats import get_dataframe_from_yoda_inputs, dataframe_yoda_key, convert_df_types
+from extract_rivet_summary_stats import dataframe_yoda_key, convert_df_types
 
 # monkey-patch warning formatter
 warnings.formatwarning = cu._formatwarning
@@ -802,6 +800,12 @@ class SummaryPlotter(object):
         per angle, per jet algo, per groomed/ungroomed"""
         print('plot_zpj_means_vs_pt_all...')
         for jet_algo, angle, groomed in product(self.jet_algos, self.angles, [False, True]):
+            # if 'AK8' not in jet_algo['label']:
+            #     continue
+            # if angle.var != "jet_pTD":
+            #     continue
+            # if groomed:
+            #     continue
             print("  ...doing", jet_algo['label'], angle.name, 'groomed' if groomed else 'ungroomed')
             self.plot_dijet_zpj_metric_vs_pt_one_angle_one_jet('mean',
                                                                angle,

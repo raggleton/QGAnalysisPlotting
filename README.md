@@ -63,25 +63,8 @@ You can create a copy of my conda environment called `qganalysis` using:
 
 You can then activate with the usual `conda activate qganalysis`, etc.
 
-However, YODA cannot be installed easily via conda. For the scripts that need YODA, I just do them within CMSSW (since they often do not need other packages outside of CMSSW), to convert them into a more portable format.
-
-To install YODA manually, into a directory `PREFIX` (must be full filepath) of your choosing:
-
-NB version 1.8.2 used since earlier versions do not compile under python 3.7+
-
-```
-conda activate qganalysis
-wget --no-check-certificate http://www.hepforge.org/archive/yoda/YODA-1.8.2.tar.gz
-tar xzf YODA-1.8.2.tar.gz
-cd YODA-1.8.2
-./configure --prefix=$PREFIX
-make -j4
-make -j4 install
-cp yodaenv.sh $PREFIX/yodaenv.sh
-cp yodaenv.sh ${CONDA_PREFIX}/etc/conda/activate.d/
-```
-
-By copying to the `activate.d`, `yodaenv.sh` will be called whenever the conda environment is activated.
+However, YODA cannot be installed easily via conda, and there are API changes that clash with python3 (1.7.7 has different API to 1.8.X, e.g. `.bins` vs `.bins()`, but the former doesn't compile under Python3.7 TODO: update my usage of API). 
+For the scripts that need YODA, I just do them within CMSSW 10_6_X (since they often do not need other packages outside of CMSSW), to convert them into a more portable format.
 
 If you already have python3 & ROOT and just want the other packages, you can instead use the `requirements.txt` to install these via `pip install -r requirements.txt`.
 
@@ -183,6 +166,8 @@ Before we can plot the grand summary plots (e.g. mean vs pT), we first extract t
 
 **To convert RIVET results:**
 
+> NB do this part under CMSSW_10_6_X to use YODA. Once you have the output H5 file, you can work outside CMSSW again
+
 This is more complicated, since there are many RIVET inputs corresponding to different generators. For each generator, we specify:
 
 - the dijet YODA file (`--yodaInputDijet`)
@@ -227,6 +212,8 @@ Note that these have an optional `--paper` argument for formatting for the final
 ### Jet pT plot
 
 Use [`print_data_mc_jet_pt.py <workdir>`](print_data_mc_jet_pt.py), where `<workdir>` is a directory containing the UHH2 ntuples. By default, it includes systematics combined into one band.
+
+Plots produced in `<workdir>/data_mc_jet_pt`
 
 ### Flavour fraction plot
 

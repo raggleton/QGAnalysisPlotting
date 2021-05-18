@@ -17,8 +17,6 @@ from array import array
 from copy import copy
 from functools import partial
 
-import yoda
-
 import ROOT
 from MyStyle import My_Style
 from comparator import Contribution, Plot
@@ -31,7 +29,7 @@ import qg_general_plots as qgp
 from unfolding_config import get_dijet_config, get_zpj_config
 import rivet_naming as rn
 import metric_calculators as metrics
-from extract_rivet_summary_stats import get_dataframe_from_yoda_inputs, dataframe_yoda_key, convert_df_types
+from extract_rivet_summary_stats import dataframe_yoda_key, convert_df_types
 
 
 if __name__ == "__main__":
