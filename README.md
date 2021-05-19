@@ -63,12 +63,17 @@ You can create a copy of my conda environment called `qganalysis` using:
 
 You can then activate with the usual `conda activate qganalysis`, etc.
 
-However, YODA cannot be installed easily via conda, and there are API changes that clash with python3 (1.7.7 has different API to 1.8.X, e.g. `.bins` vs `.bins()`, but the former doesn't compile under Python3.7 TODO: update my usage of API). 
+If you already have python3 & ROOT and just want the other packages, you can instead use the `requirements.txt` to install these via `pip install -r requirements.txt`.
+
+
+### YODA
+
+However, YODA cannot be installed easily via conda, and there are API changes that clash with python3 (1.7.7 has different API to 1.8.X, e.g. `.bins` vs `.bins()`, but the former doesn't compile under Python3.7). 
+> TODO: update my usage of API
+
 For the scripts that need YODA, I just do them within CMSSW 10_6_X (since they often do not need other packages outside of CMSSW), to convert them into a more portable format.
 
-If you really want to install it:
-
-To install YODA manually, into a directory `PREFIX` (must be full filepath) of your choosing:
+But if you really want to install it: to install YODA manually, into a directory `PREFIX` (must be **absolute** filepath) of your choosing:
 
 
 ```
@@ -81,6 +86,7 @@ cd pyext/yoda
 cython ./core.pyx --cplus -I . -I ./include  -I . -I ./include -o core.cpp
 cython ./util.pyx --cplus -I . -I ./include  -I . -I ./include -o util.cpp
 cython ./rootcompat.pyx --cplus -I . -I ./include  -I . -I ./include -o rootcompat.cpp
+cd ../..
 ./configure --prefix=$PREFIX
 make -j4
 make -j4 install
@@ -89,8 +95,6 @@ cp yodaenv.sh ${CONDA_PREFIX}/etc/conda/activate.d/
 ```
 
 By copying to the `activate.d`, `yodaenv.sh` will be called whenever the conda environment is activated.
-
-If you already have python3 & ROOT and just want the other packages, you can instead use the `requirements.txt` to install these via `pip install -r requirements.txt`.
 
 ## Running
 
