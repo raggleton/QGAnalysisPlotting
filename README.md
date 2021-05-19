@@ -212,7 +212,7 @@ extract_rivet_summary_stats.py --ak4source <ak4 unfolding dir> --ak8source <ak8 
 Use `do_summary_unfolding_plots.py` with arguments:
 
 - `--h5input <unfolding.h5>`: the HDF5 file made by `extract_unfolding_summary_stats.py`
-- `--h5inputRivet <rivet.h5>`: the HDF5 file made by `extract_rivet_summary_stats.py`
+- `--h5inputRivet <rivet.h5>`: the HDF5 file made by `extract_rivet_summary_stats.py`. Note that you should add an entry to `SAMPLE_STYLE_DICTS` with the **same** label you used for `extract_rivet_summary_stats.py` to choose styling options.
 - `--outputDir`: directory to put plots
 
 By default, the script will plot all inputs (data, nominal MCs, RIVET files). You can also specify which sets of inputs to plot:
