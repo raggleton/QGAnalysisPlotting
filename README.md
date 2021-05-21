@@ -198,7 +198,7 @@ This is more complicated, since there are many RIVET inputs corresponding to dif
 
 - the dijet YODA file (`--yodaInputDijet`)
 - the Z+Jet YODA file (`--yodaInputZPJ`)
-- the label (`--yodaInputLabel`)
+- the label (`--yodaLabel`)
 
 NB the label here must be one of those keys specified in `SAMPLE_STYLE_DICTS` in `do_summary_unfolding_plots.py`.
 
@@ -265,6 +265,20 @@ For each RIVET input, you must specify:
 
 ### Detector & unfolded plots
 
-Use [`print_detector_unfolded_plots.py <unfolding_dir>`](`print_detector_unfolded_plots.py`), where `<unfolding_dir>` is the top-level directory from `unfolding.py` (see description above).
+Use [`print_detector_unfolded_plots.py <unfolding_dir>`](print_detector_unfolded_plots.py), where `<unfolding_dir>` is the top-level directory from `unfolding.py` (see description above).
 
 You can specify which angles using the same options as for `unfolding.py` (e.g. "jet_LHA jet_pTD_charged", or "all")
+
+### Rivet & unfolded plots
+
+Use [`print_unfolded_rivet_plots.py`](print_unfolded_rivet_plots.py). Like `do_unfolding_plots.py` and `print_detector_unfolded_plots.py`, you should give it the name of a top-level directory made by `unfolding.py`.
+
+You can specify which regions and angles to plot,  using the same options as for `unfolding.py` (e.g. `--doDijetCentral`, "jet_LHA jet_pTD_charged", or "all")
+
+For each RIVET input, you must specify:
+
+- the dijet YODA file (`--yodaInputDijet`)
+- the Z+Jet YODA file (`--yodaInputZPJ`)
+- the label (`--yodaLabel`)
+
+Like for `do_summary_unfolding_plots.py`, the label given to `--yodaLabel` should match with an entry in `SAMPLE_STYLE_DICTS` in `do_summary_unfolding_plots.py`
